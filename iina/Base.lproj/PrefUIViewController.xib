@@ -2140,7 +2140,7 @@
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="749" verticalStackHuggingPriority="749" verticalHuggingPriority="249" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xuk-tu-yGo" userLabel="Aspect HStack View">
                             <rect key="frame" x="0.0" y="0.0" width="392" height="112"/>
                             <subviews>
-                                <box identifier="ContentCustomFullScreen" horizontalHuggingPriority="750" verticalHuggingPriority="750" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="gkn-iF-oiJ" userLabel="Video-Settings-Sidebar Box">
+                                <box identifier="VideoSettingsSidebar-Box" horizontalHuggingPriority="750" verticalHuggingPriority="750" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="gkn-iF-oiJ" userLabel="Video-Settings-Sidebar Box">
                                     <rect key="frame" x="-3" y="-4" width="390" height="118"/>
                                     <view key="contentView" id="Or9-ec-vBZ" userLabel="Video-Settings-Sidebar-Box Content View">
                                         <rect key="frame" x="4" y="5" width="382" height="110"/>

@@ -143,8 +143,6 @@ extension PrefAdvancedViewController: NSTableViewDelegate, NSTableViewDataSource
       return nil
     }
 
-    guard let textField = cell.textField else { return nil }
-
     switch columnName {
     case "Key":
       setFormattedText(for: cell, to: options[row][0], isEnabled: tableView.isEnabled)
