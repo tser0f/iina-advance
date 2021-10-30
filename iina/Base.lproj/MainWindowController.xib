@@ -458,8 +458,8 @@
         <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="BE1-yC-oJL" userLabel="OSC Fragment: Playback Position Slider">
             <rect key="frame" x="0.0" y="0.0" width="500" height="42"/>
             <subviews>
-                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback-Position Horizontal Slider">
-                    <rect key="frame" x="46" y="5" width="408" height="28"/>
+                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" customClass="PlaySlider" customModule="IINA" customModuleProvider="target" userLabel="Playback Slider">
+                    <rect key="frame" x="48" y="-1" width="404" height="28"/>
                     <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
                         <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>

@@ -201,4 +201,5 @@ extension Notification.Name {
   static let iinaPluginChanged = Notification.Name("IINAPluginChanged")
   static let iinaPlayerStopped = Notification.Name("iinaPlayerStopped")
   static let iinaPlayerShutdown = Notification.Name("iinaPlayerShutdown")
+  static let iinaPlaySliderLoopKnobChanged = Notification.Name("iinaPlaySliderLoopKnobChanged")
 }

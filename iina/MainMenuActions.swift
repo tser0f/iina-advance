@@ -118,7 +118,7 @@ extension PlayerWindowController {
   }
 
   @objc func menuABLoop(_ sender: NSMenuItem) {
-    player.abLoop()
+    player.mainWindow.abLoop()
   }
 
   @objc func menuFileLoop(_ sender: NSMenuItem) {
