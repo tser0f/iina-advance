@@ -412,6 +412,13 @@ class PlayerCore: NSObject {
     info.fileLoading = true
     info.justOpenedFile = true
     mpv.command(.loadfile, args: [path])
+
+    if Preference.bool(for: .enablePlaylistLoop) {
+      mpv.setString(MPVOption.PlaybackControl.loopPlaylist, "inf")
+    }
+    if Preference.bool(for: .enableFileLoop) {
+      mpv.setString(MPVOption.PlaybackControl.loopFile, "inf")
+    }
   }
 
   func startMPV() {
@@ -1665,7 +1672,7 @@ class PlayerCore: NSObject {
     case chapterList
     case playlist
     case playlistLoop
-//    case fileLoop
+    case fileLoop
     case additionalInfo
   }
 
@@ -1771,7 +1778,12 @@ class PlayerCore: NSObject {
 
     case .playlistLoop:
       DispatchQueue.main.async {
-        self.mainWindow.playlistView.updateLoopBtnStatus()
+        self.mainWindow.playlistView.updateLoopPlaylistBtnStatus()
+      }
+
+    case .fileLoop:
+      DispatchQueue.main.async {
+        self.mainWindow.playlistView.updateLoopFileBtnStatus()
       }
 
     case .additionalInfo:

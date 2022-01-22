@@ -374,8 +374,8 @@ class MenuController: NSObject, NSMenuDelegate {
     quickSettingsSub.action = #selector(MainWindowController.menuShowSubQuickSettings(_:))
     loadExternalSub.action = #selector(PlayerWindowController.menuLoadExternalSub(_:))
     subTrackMenu.delegate = self
-    hideSubtitles.action = #selector(MainMenuActionHandler.menuToggleSubVisibility(_:))
-    hideSecondSubtitles.action = #selector(MainMenuActionHandler.menuToggleSecondSubVisibility(_:))
+    hideSubtitles.action = #selector(PlayerWindowController.menuToggleSubVisibility(_:))
+    hideSecondSubtitles.action = #selector(PlayerWindowController.menuToggleSecondSubVisibility(_:))
     secondSubTrackMenu.delegate = self
 
     findOnlineSub.action = #selector(PlayerWindowController.menuFindOnlineSub(_:))
