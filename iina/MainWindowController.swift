@@ -217,6 +217,8 @@ class MainWindowController: PlayerWindowController {
   var isShowingPersistentOSD = false
   var osdContext: Any?
 
+  private var isClosing = false
+
   // MARK: - Enums
 
   // Window state
@@ -281,7 +283,9 @@ class MainWindowController: PlayerWindowController {
       switch fsState {
       case .fullscreen: player.mpv.setFlag(MPVOption.Window.fullscreen, true)
       case .animating:  break
-      case .windowed:   player.mpv.setFlag(MPVOption.Window.fullscreen, false)
+      case .windowed:
+        guard !isClosing else { return }
+        player.mpv.setFlag(MPVOption.Window.fullscreen, false)
       }
     }
   }
@@ -1311,6 +1315,7 @@ class MainWindowController: PlayerWindowController {
 
   func windowWillOpen() {
     Logger.log("WindowWillOpen", level: .verbose, subsystem: player.subsystem)
+    isClosing = false
     if #available(macOS 12, *) {
       // Apparently Apple fixed AppKit for Monterey so the workaround below is only needed for
       // previous versions of macOS. Support for #unavailable is coming in Swift 5.6. The version of
@@ -1412,6 +1417,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
+    isClosing = true
     shouldApplyInitialWindowSize = true
     // Close PIP
     if pipStatus == .inPIP {
@@ -1574,6 +1580,14 @@ class MainWindowController: PlayerWindowController {
 
     fsState.startAnimatingToWindow()
 
+    // If a window is closed while in full screen mode (control-w pressed) AppKit will still call
+    // this method. Because windows are tied to player cores and cores are cached and reused some
+    // processing must be performed to leave the window in a consistent state for reuse. However
+    // the windowWillClose method will have initiated unloading of the file being played. That
+    // operation is processed asynchronously by mpv. If the window is being close due to IINA
+    // quitting then mpv could be shutting down. Must not access mpv while it is asynchronously
+    // processing stop and quit commands.
+    guard !isClosing else { return }
     videoView.videoLayer.suspend()
     player.mpv.setFlag(MPVOption.Window.keepaspect, false)
   }
@@ -1587,6 +1601,20 @@ class MainWindowController: PlayerWindowController {
     addBackTopOverlayViewToFadeableViews()
     addBackStandardButtonsToFadeableViews()
     topOverlayView.isHidden = false
+    fsState.finishAnimating()
+
+    if Preference.bool(for: .blackOutMonitor) {
+      removeBlackWindows()
+    }
+
+    if #available(macOS 10.12.2, *) {
+      player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
+    }
+
+    window!.addTitlebarAccessoryViewController(titlebarAccesoryViewController)
+
+    // Must not access mpv while it is asynchronously processing stop and quit commands.
+    guard !isClosing else { return }
     showUI()
     updateTimer()
 
@@ -1595,25 +1623,14 @@ class MainWindowController: PlayerWindowController {
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
 
-    fsState.finishAnimating()
-
-    if Preference.bool(for: .blackOutMonitor) {
-      removeBlackWindows()
-    }
-
     if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
       player.pause()
-    }
-
-    if #available(macOS 10.12.2, *) {
-      player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
     }
 
     // restore ontop status
     if player.info.isPlaying {
       setWindowFloatingOnTop(isOntop, updateOnTopStatus: false)
     }
-    window!.addTitlebarAccessoryViewController(titlebarAccesoryViewController)
 
     resetCollectionBehavior()
     updateWindowParametersForMPV()
