@@ -158,7 +158,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
 
     mainView.wantsLayer = true
 
-    let (version, build) = Utility.iinaVersion()
+    let (version, build) = InfoDictionary.shared.version
     let isStableRelease = !version.contains("-")
     versionLabel.stringValue = isStableRelease ? version : "\(version) (\(build))"
     betaIndicatorView.isHidden = isStableRelease
