@@ -581,35 +581,29 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   // MARK: - Context menu
 
-  var selectedRows: IndexSet?
-
   func menuNeedsUpdate(_ menu: NSMenu) {
-    let selectedRow = playlistTableView.selectedRowIndexes
-    let clickedRow = playlistTableView.clickedRow
-    var target = IndexSet()
+    buildContextMenu(menu)
+  }
 
-    if clickedRow != -1 {
-      if selectedRow.contains(clickedRow) {
-        target = selectedRow
-      } else {
-        target.insert(clickedRow)
-      }
+  private func getTargetRowsForContextMenu() -> IndexSet {
+    let selectedRows = playlistTableView.selectedRowIndexes
+    let clickedRow = playlistTableView.clickedRow
+    guard clickedRow != -1 else {
+      return IndexSet()
     }
 
-    selectedRows = target
-    menu.removeAllItems()
-    let items = buildMenu(forRows: target).items
-    for item in items {
-      menu.addItem(item)
+    if selectedRows.contains(clickedRow) {
+      return selectedRows
+    } else {
+      return IndexSet(integer: clickedRow)
     }
   }
 
-  @IBAction func contextMenuPlayNext(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows else { return }
+  @IBAction func contextMenuPlayNext(_ sender: ContextMenuItem) {
     let current = player.mpv.getInt(MPVProperty.playlistPos)
     var ob = 0  // index offset before current playing item
     var mc = 1  // moved item count, +1 because move to next item of current played one
-    for item in selectedRows {
+    for item in sender.targetRows {
       if item == current { continue }
       if item < current {
         player.playlistMove(item + ob, to: current + mc + ob)
@@ -623,44 +617,46 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     player.postNotification(.iinaPlaylistChanged)
   }
 
-  @IBAction func contextMenuPlayInNewWindow(_ sender: NSMenuItem) {
-    let files = selectedRows!.enumerated().map { (_, i) in
+  @IBAction func contextMenuPlayInNewWindow(_ sender: ContextMenuItem) {
+    let files = sender.targetRows.enumerated().map { (_, i) in
       URL(fileURLWithPath: player.info.playlist[i].filename)
     }
     PlayerCore.newPlayerCore.openURLs(files, shouldAutoLoad: false)
   }
 
-  @IBAction func contextMenuRemove(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows else { return }
-    player.playlistRemove(selectedRows)
+  @IBAction func contextMenuRemove(_ sender: ContextMenuItem) {
+    Logger.log("User chose to remove rows \(sender.targetRows.map{$0}) from playlist")
+    player.playlistRemove(sender.targetRows)
   }
 
-  @IBAction func contextMenuDeleteFile(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows else { return }
-    var count = 0
-    for index in selectedRows {
-      player.playlistRemove(index)
+  @IBAction func contextMenuDeleteFile(_ sender: ContextMenuItem) {
+    Logger.log("User chose to delete files from playlist at indexes: \(sender.targetRows.map{$0})")
+
+    var successes = IndexSet()
+    for index in sender.targetRows {
       guard !player.info.playlist[index].isNetworkResource else { continue }
       let url = URL(fileURLWithPath: player.info.playlist[index].filename)
       do {
+        Logger.log("Trashing row \(index): \(url.standardizedFileURL)")
         try FileManager.default.trashItem(at: url, resultingItemURL: nil)
-        count += 1
+        successes.insert(index)
       } catch let error {
         Utility.showAlert("playlist.error_deleting", arguments:
           [error.localizedDescription])
       }
     }
-    playlistTableView.deselectAll(nil)
+    if !successes.isEmpty {
+      player.playlistRemove(successes)
+    }
   }
 
   @IBAction func contextMenuDeleteFileAfterPlayback(_ sender: NSMenuItem) {
     // WIP
   }
 
-  @IBAction func contextMenuShowInFinder(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows else { return }
+  @IBAction func contextMenuShowInFinder(_ sender: ContextMenuItem) {
     var urls: [URL] = []
-    for index in selectedRows {
+    for index in sender.targetRows {
       if !player.info.playlist[index].isNetworkResource {
         urls.append(URL(fileURLWithPath: player.info.playlist[index].filename))
       }
@@ -669,8 +665,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     NSWorkspace.shared.activateFileViewerSelecting(urls)
   }
 
-  @IBAction func contextMenuAddSubtitle(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows, let index = selectedRows.first else { return }
+  @IBAction func contextMenuAddSubtitle(_ sender: ContextMenuItem) {
+    guard let index = sender.targetRows.first else { return }
     let filename = player.info.playlist[index].filename
     let fileURL = URL(fileURLWithPath: filename).deletingLastPathComponent()
     Utility.quickMultipleOpenPanel(title: NSLocalizedString("alert.choose_media_file.title", comment: "Choose Media File"), dir: fileURL, canChooseDir: true) { subURLs in
@@ -678,23 +674,21 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         guard Utility.supportedFileExt[.sub]!.contains(subURL.pathExtension.lowercased()) else { return }
         self.player.info.matchedSubs[filename, default: []].append(subURL)
       }
-      self.playlistTableView.reloadData(forRowIndexes: selectedRows, columnIndexes: IndexSet(integersIn: 0...1))
+      self.playlistTableView.reloadData(forRowIndexes: sender.targetRows, columnIndexes: IndexSet(integersIn: 0...1))
     }
   }
 
-  @IBAction func contextMenuWrongSubtitle(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows else { return }
-    for index in selectedRows {
+  @IBAction func contextMenuWrongSubtitle(_ sender: ContextMenuItem) {
+    for index in sender.targetRows {
       let filename = player.info.playlist[index].filename
       player.info.matchedSubs[filename]?.removeAll()
-      playlistTableView.reloadData(forRowIndexes: selectedRows, columnIndexes: IndexSet(integersIn: 0...1))
+      playlistTableView.reloadData(forRowIndexes: sender.targetRows, columnIndexes: IndexSet(integersIn: 0...1))
     }
 
   }
 
-  @IBAction func contextOpenInBrowser(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows else { return }
-    selectedRows.forEach { i in
+  @IBAction func contextOpenInBrowser(_ sender: ContextMenuItem) {
+    sender.targetRows.forEach { i in
       let info = player.info.playlist[i]
       if info.isNetworkResource, let url = URL(string: info.filename) {
         NSWorkspace.shared.open(url)
@@ -702,9 +696,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
   }
 
-  @IBAction func contextCopyURL(_ sender: NSMenuItem) {
-    guard let selectedRows = selectedRows else { return }
-    let urls = selectedRows.compactMap { i -> String? in
+  @IBAction func contextCopyURL(_ sender: ContextMenuItem) {
+    let urls = sender.targetRows.compactMap { i -> String? in
       let info = player.info.playlist[i]
       return info.isNetworkResource ? info.filename : nil
     }
@@ -712,8 +705,12 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     NSPasteboard.general.writeObjects([urls.joined(separator: "\n") as NSString])
   }
 
-  private func buildMenu(forRows rows: IndexSet) -> NSMenu {
-    let result = NSMenu()
+  private func buildContextMenu(_ menu: NSMenu) {
+    let rows = getTargetRowsForContextMenu()
+    Logger.log("Building context menu for rows: \(rows.map{ $0 })", level: .verbose)
+
+    menu.removeAllItems()
+
     let isSingleItem = rows.count == 1
 
     if !rows.isEmpty {
@@ -723,41 +720,41 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         firstURL.filenameForDisplay :
         String(format: NSLocalizedString("pl_menu.title_multi", comment: "%d Items"), rows.count)
 
-      result.addItem(withTitle: title)
-      result.addItem(NSMenuItem.separator())
-      result.addItem(withTitle: NSLocalizedString("pl_menu.play_next", comment: "Play Next"), action: #selector(self.contextMenuPlayNext(_:)))
-      result.addItem(withTitle: NSLocalizedString("pl_menu.play_in_new_window", comment: "Play in New Window"), action: #selector(self.contextMenuPlayInNewWindow(_:)))
-      result.addItem(withTitle: NSLocalizedString(isSingleItem ? "pl_menu.remove" : "pl_menu.remove_multi", comment: "Remove"), action: #selector(self.contextMenuRemove(_:)))
+      menu.addItem(withTitle: title)
+      menu.addItem(NSMenuItem.separator())
+      menu.addItem(forRows: rows, withTitle: NSLocalizedString("pl_menu.play_next", comment: "Play Next"), action: #selector(self.contextMenuPlayNext(_:)))
+      menu.addItem(forRows: rows, withTitle: NSLocalizedString("pl_menu.play_in_new_window", comment: "Play in New Window"), action: #selector(self.contextMenuPlayInNewWindow(_:)))
+      menu.addItem(forRows: rows, withTitle: NSLocalizedString(isSingleItem ? "pl_menu.remove" : "pl_menu.remove_multi", comment: "Remove"), action: #selector(self.contextMenuRemove(_:)))
 
       if !player.isInMiniPlayer {
-        result.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem.separator())
         if isSingleItem {
-          result.addItem(withTitle: String(format: NSLocalizedString("pl_menu.matched_sub", comment: "Matched %d Subtitle(s)"), matchedSubCount))
-          result.addItem(withTitle: NSLocalizedString("pl_menu.add_sub", comment: "Add Subtitle…"), action: #selector(self.contextMenuAddSubtitle(_:)))
+          menu.addItem(forRows: rows, withTitle: String(format: NSLocalizedString("pl_menu.matched_sub", comment: "Matched %d Subtitle(s)"), matchedSubCount))
+          menu.addItem(forRows: rows, withTitle: NSLocalizedString("pl_menu.add_sub", comment: "Add Subtitle…"), action: #selector(self.contextMenuAddSubtitle(_:)))
         }
         if matchedSubCount != 0 {
-          result.addItem(withTitle: NSLocalizedString("pl_menu.wrong_sub", comment: "Wrong Subtitle"), action: #selector(self.contextMenuWrongSubtitle(_:)))
+          menu.addItem(forRows: rows, withTitle: NSLocalizedString("pl_menu.wrong_sub", comment: "Wrong Subtitle"), action: #selector(self.contextMenuWrongSubtitle(_:)))
         }
       }
 
-      result.addItem(NSMenuItem.separator())
+      menu.addItem(NSMenuItem.separator())
       // network resources related operations
       let networkCount = rows.filter {
         player.info.playlist[$0].isNetworkResource
       }.count
       if networkCount != 0 {
-        result.addItem(withTitle: NSLocalizedString("pl_menu.browser", comment: "Open in Browser"), action: #selector(self.contextOpenInBrowser(_:)))
-        result.addItem(withTitle: NSLocalizedString(networkCount == 1 ? "pl_menu.copy_url" : "pl_menu.copy_url_multi", comment: "Copy URL(s)"), action: #selector(self.contextCopyURL(_:)))
-        result.addItem(NSMenuItem.separator())
+        menu.addItem(forRows: rows, withTitle: NSLocalizedString("pl_menu.browser", comment: "Open in Browser"), action: #selector(self.contextOpenInBrowser(_:)))
+        menu.addItem(forRows: rows, withTitle: NSLocalizedString(networkCount == 1 ? "pl_menu.copy_url" : "pl_menu.copy_url_multi", comment: "Copy URL(s)"), action: #selector(self.contextCopyURL(_:)))
+        menu.addItem(NSMenuItem.separator())
       }
       // file related operations
       let localCount = rows.count - networkCount
       if localCount != 0 {
-        result.addItem(withTitle: NSLocalizedString(localCount == 1 ? "pl_menu.delete" : "pl_menu.delete_multi", comment: "Delete"), action: #selector(self.contextMenuDeleteFile(_:)))
-        // result.addItem(withTitle: NSLocalizedString(isSingleItem ? "pl_menu.delete_after_play" : "pl_menu.delete_after_play_multi", comment: "Delete After Playback"), action: #selector(self.contextMenuDeleteFileAfterPlayback(_:)))
+        menu.addItem(forRows: rows, withTitle: NSLocalizedString(localCount == 1 ? "pl_menu.delete" : "pl_menu.delete_multi", comment: "Delete"), action: #selector(self.contextMenuDeleteFile(_:)))
+        // menu.addItem(forRows: rows, withTitle: NSLocalizedString(isSingleItem ? "pl_menu.delete_after_play" : "pl_menu.delete_after_play_multi", comment: "Delete After Playback"), action: #selector(self.contextMenuDeleteFileAfterPlayback(_:)))
 
-        result.addItem(withTitle: NSLocalizedString("pl_menu.show_in_finder", comment: "Show in Finder"), action: #selector(self.contextMenuShowInFinder(_:)))
-        result.addItem(NSMenuItem.separator())
+        menu.addItem(forRows: rows, withTitle: NSLocalizedString("pl_menu.show_in_finder", comment: "Show in Finder"), action: #selector(self.contextMenuShowInFinder(_:)))
+        menu.addItem(NSMenuItem.separator())
       }
     }
 
@@ -776,19 +773,18 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       return (plugin, [])
     }
     if hasPluginMenuItems {
-      result.addItem(withTitle: NSLocalizedString("preference.plugins", comment: "Plugins"))
+      menu.addItem(withTitle: NSLocalizedString("preference.plugins", comment: "Plugins"))
       for (plugin, items) in pluginMenuItems {
         for item in items {
-          add(menuItemDef: item, to: result, for: plugin)
+          add(menuItemDef: item, to: menu, for: plugin)
         }
       }
-      result.addItem(NSMenuItem.separator())
+      menu.addItem(NSMenuItem.separator())
     }
 
-    result.addItem(withTitle: NSLocalizedString("pl_menu.add_file", comment: "Add File"), action: #selector(self.addFileAction(_:)))
-    result.addItem(withTitle: NSLocalizedString("pl_menu.add_url", comment: "Add URL"), action: #selector(self.addURLAction(_:)))
-    result.addItem(withTitle: NSLocalizedString("pl_menu.clear_playlist", comment: "Clear Playlist"), action: #selector(self.clearPlaylistBtnAction(_:)))
-    return result
+    menu.addItem(withTitle: NSLocalizedString("pl_menu.add_file", comment: "Add File"), action: #selector(self.addFileAction(_:)))
+    menu.addItem(withTitle: NSLocalizedString("pl_menu.add_url", comment: "Add URL"), action: #selector(self.addURLAction(_:)))
+    menu.addItem(withTitle: NSLocalizedString("pl_menu.clear_playlist", comment: "Clear Playlist"), action: #selector(self.clearPlaylistBtnAction(_:)))
   }
 
   @discardableResult

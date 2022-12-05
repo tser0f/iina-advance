@@ -215,11 +215,29 @@ extension Array {
   }
 }
 
+class ContextMenuItem: NSMenuItem {
+  let targetRows: IndexSet
+
+  init(targetRows: IndexSet, title: String, action: Selector?, keyEquivalent: String) {
+    self.targetRows = targetRows
+    super.init(title: title, action: action, keyEquivalent: keyEquivalent)
+  }
+
+  required init(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented for ContextMenuItem")
+  }
+}
+
 extension NSMenu {
   @discardableResult
-  func addItem(withTitle string: String, action selector: Selector? = nil, target: AnyObject? = nil,
+  func addItem(forRows targetRows: IndexSet? = nil, withTitle string: String, action selector: Selector? = nil, target: AnyObject? = nil,
                tag: Int? = nil, obj: Any? = nil, stateOn: Bool = false, enabled: Bool = true) -> NSMenuItem {
-    let menuItem = NSMenuItem(title: string, action: selector, keyEquivalent: "")
+    let menuItem: NSMenuItem
+    if let targetRows = targetRows {
+      menuItem = ContextMenuItem(targetRows: targetRows, title: string, action: selector, keyEquivalent: "")
+    } else {
+      menuItem = NSMenuItem(title: string, action: selector, keyEquivalent: "")
+    }
     menuItem.tag = tag ?? -1
     menuItem.representedObject = obj
     menuItem.target = target

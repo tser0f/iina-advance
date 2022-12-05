@@ -962,15 +962,18 @@ class PlayerCore: NSObject {
   }
 
   private func _playlistRemove(_ index: Int) {
+    Logger.log("Removing row \(index) from playlist", level: .verbose)
     mpv.command(.playlistRemove, args: [index.description])
   }
 
   func playlistRemove(_ index: Int) {
+    Logger.log("Will remove row \(index) from playlist")
     _playlistRemove(index)
     postNotification(.iinaPlaylistChanged)
   }
 
   func playlistRemove(_ indexSet: IndexSet) {
+    Logger.log("Will remove rows \(indexSet.map{$0}) from playlist")
     var count = 0
     for i in indexSet {
       _playlistRemove(i - count)
