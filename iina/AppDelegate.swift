@@ -325,6 +325,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       showWelcomeWindow(checkingForUpdatedData: checkingForUpdatedData)
     case .openPanel:
       openFile(self)
+    case .historyWindow:
+      historyWindow.showWindow(self)
     default:
       break
     }
@@ -336,6 +338,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   private func showWelcomeWindow(checkingForUpdatedData: Bool = false) {
+    Logger.log("Showing Welcome window", level: .verbose)
     let window = PlayerCore.first.initialWindow!
     window.showWindow(nil)
     if checkingForUpdatedData {
@@ -345,14 +348,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-    guard PlayerCore.active.mainWindow.loaded || PlayerCore.active.initialWindow.loaded,
-          !PlayerCore.active.mainWindow.isWindowHidden else { return false }
     if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {
+      Logger.log("applicationShouldTerminateAfterLastWindowClosed(); whatToDo: \(whatToDo)", level: .verbose)
       switch whatToDo {
         case .quit:
           return true
         case .welcomeWindow:
           showWelcomeWindow(checkingForUpdatedData: true)
+        case .historyWindow:
+          historyWindow.showWindow(self)
         default:
           break
       }

@@ -44,7 +44,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bV8-LP-cwH">
-                    <rect key="frame" x="186" y="470" width="179" height="25"/>
+                    <rect key="frame" x="186" y="470" width="227" height="25"/>
                     <popUpButtonCell key="cell" type="push" title="Show welcome window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="z9T-8h-1T0" id="6y1-KS-0tJ">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -52,6 +52,7 @@
                             <items>
                                 <menuItem title="Show welcome window" state="on" id="z9T-8h-1T0"/>
                                 <menuItem title="Show open file panel" tag="1" id="1ce-4b-kgG"/>
+                                <menuItem title="Show Playback History window" tag="3" id="jRC-yk-Ohu"/>
                                 <menuItem title="Do nothing" tag="2" id="JfZ-D8-aF2"/>
                             </items>
                         </menu>
@@ -402,13 +403,14 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hgu-y0-ExB">
-                    <rect key="frame" x="304" y="194" width="179" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Do nothing" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="Fs6-nN-5xA" id="tYn-kA-qou">
+                    <rect key="frame" x="304" y="194" width="227" height="25"/>
+                    <popUpButtonCell key="cell" type="push" title="Show welcome window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="LIN-tj-dkl" id="tYn-kA-qou">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="goc-77-KKW">
                             <items>
                                 <menuItem title="Show welcome window" id="LIN-tj-dkl"/>
+                                <menuItem title="Show Playback History window" tag="3" id="eKR-GE-Xiz"/>
                                 <menuItem title="Quit" tag="1" id="6gI-C4-fwd"/>
                                 <menuItem title="Do nothing" state="on" tag="2" id="Fs6-nN-5xA"/>
                             </items>

@@ -328,6 +328,7 @@ struct Preference {
     case welcomeWindow = 0
     case openPanel
     case none
+    case historyWindow
 
     static var defaultValue = ActionAfterLaunch.welcomeWindow
 
@@ -352,6 +353,7 @@ struct Preference {
     case welcomeWindow = 0
     case quit
     case none
+    case historyWindow
 
     static var defaultValue = ActionWhenNoOpenedWindow.none
 
