@@ -187,6 +187,7 @@
 		D1FD2DD828521AD500CF7B35 /* MPVLogHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DD728521AD500CF7B35 /* MPVLogHandler.swift */; };
 		D1FD2DDA28521B5900CF7B35 /* MPVLogLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DD928521B5900CF7B35 /* MPVLogLevel.swift */; };
 		D1FD2DDC28533EE700CF7B35 /* InputSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DDB28533EE700CF7B35 /* InputSection.swift */; };
+		D17504A82918F13E005C3DD0 /* OSCToolbarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D17504A72918F13E005C3DD0 /* OSCToolbarButton.swift */; };
 		E301EFDA21312AB300BC8588 /* KeychainAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = E301EFD921312AB300BC8588 /* KeychainAccess.swift */; };
 		E30D2EBD21F5FD2600E1FF0D /* PluginOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30D2EBC21F5FD2600E1FF0D /* PluginOverlayView.swift */; };
 		E322A4F820A8442E00C67D32 /* PlaylistPlaybackProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E322A4F720A8442E00C67D32 /* PlaylistPlaybackProgressView.swift */; };
@@ -1532,6 +1533,7 @@
 		D1FD2DD728521AD500CF7B35 /* MPVLogHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVLogHandler.swift; sourceTree = "<group>"; };
 		D1FD2DD928521B5900CF7B35 /* MPVLogLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVLogLevel.swift; sourceTree = "<group>"; };
 		D1FD2DDB28533EE700CF7B35 /* InputSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSection.swift; sourceTree = "<group>"; };
+		D17504A72918F13E005C3DD0 /* OSCToolbarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OSCToolbarButton.swift; sourceTree = "<group>"; };
 		D27556FC1EC6E1C300CAB2A4 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/HistoryWindowController.strings"; sourceTree = "<group>"; };
 		D27E35CE1E379B6D0064BE57 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/MainMenu.strings"; sourceTree = "<group>"; };
 		D27E35CF1E379B6D0064BE57 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/MainWindowController.strings"; sourceTree = "<group>"; };
@@ -2440,6 +2442,7 @@
 				E32712B424F2B8CA00359DAB /* ScreenshootOSDView.xib */,
 				E3958563253133E80096811F /* SidebarTabView.swift */,
 				E3958564253133E80096811F /* SidebarTabView.xib */,
+				D17504A72918F13E005C3DD0 /* OSCToolbarButton.swift */,
 			);
 			name = Accessories;
 			sourceTree = "<group>";
@@ -3050,6 +3053,7 @@
 				841B14281E941DFF00744AB8 /* TimeLabelOverflowedStackView.swift in Sources */,
 				E33BA5C7204BD9FE0069A0F6 /* SubChooseViewController.swift in Sources */,
 				8460FBA91D6497490081841B /* PlaylistViewController.swift in Sources */,
+				D17504A82918F13E005C3DD0 /* OSCToolbarButton.swift in Sources */,
 				8450404A1E0B13230079C194 /* CropBoxView.swift in Sources */,
 				84F7258F1D486185000DEF1B /* MPVProperty.swift in Sources */,
 				E35306FC214813B7008FE492 /* JavascriptPluginInstance.swift in Sources */,
