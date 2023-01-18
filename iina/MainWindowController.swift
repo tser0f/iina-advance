@@ -1893,7 +1893,7 @@ class MainWindowController: PlayerWindowController {
     NSLayoutConstraint.activate(constraintsH)
     NSLayoutConstraint.activate(constraintsV)
     var viewController = viewController
-    viewController.downShift = TitleBarHeightNormal - 15
+    viewController.downShift = TitleBarHeightNormal - 14
     // show sidebar
     NSAnimationContext.runAnimationGroup({ (context) in
       context.duration = AccessibilityPreferences.adjustedDuration(SideBarAnimationDuration)
