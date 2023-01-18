@@ -19,7 +19,7 @@ fileprivate let isMacOS11: Bool = {
   return false
 }()
 
-fileprivate let TitleBarHeightNormal: CGFloat = {
+let TitleBarHeightNormal: CGFloat = {
   if #available(macOS 10.16, *) {
     return 28
   } else {
@@ -724,9 +724,9 @@ class MainWindowController: PlayerWindowController {
         titleBarHeightConstraint.constant = TitleBarHeightWithOSC
       }
       // Remove this if it's acceptable in 10.13-
-      // titleBarBottomBorder.isHidden = true
+      titleBarBottomBorder.isHidden = true
     } else {
-      // titleBarBottomBorder.isHidden = false
+       titleBarBottomBorder.isHidden = false
     }
 
     if isSwitchingFromTop {
@@ -1893,7 +1893,7 @@ class MainWindowController: PlayerWindowController {
     NSLayoutConstraint.activate(constraintsH)
     NSLayoutConstraint.activate(constraintsV)
     var viewController = viewController
-    viewController.downShift = titleBarView.frame.height
+    viewController.downShift = TitleBarHeightNormal - 15
     // show sidebar
     NSAnimationContext.runAnimationGroup({ (context) in
       context.duration = AccessibilityPreferences.adjustedDuration(SideBarAnimationDuration)
