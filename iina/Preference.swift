@@ -123,6 +123,8 @@ struct Preference {
     static let resizeWindowTiming = Key("resizeWindowTiming")
     static let resizeWindowOption = Key("resizeWindowOption")
 
+    static let enableOSC = Key("enableOSC")
+    static let showTitleBarWhenShowingOSC = Key("showTitleBarWhenShowingOSC")
     static let oscPosition = Key("oscPosition")
 
     static let playlistWidth = Key("playlistWidth")
@@ -725,6 +727,8 @@ struct Preference {
     .controlBarStickToCenter: true,
     .controlBarAutoHideTimeout: Float(2.5),
     .controlBarToolbarButtons: [ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
+    .enableOSC: true,
+    .showTitleBarWhenShowingOSC: true,
     .oscPosition: OSCPosition.floating.rawValue,
     .playlistWidth: 270,
     .prefetchPlaylistVideoDuration: true,

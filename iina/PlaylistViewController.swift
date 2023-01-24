@@ -77,20 +77,42 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   private var playlistTotalLengthIsReady = false
   private var playlistTotalLength: Double? = nil
 
-  var downShift: CGFloat = 0 {
-    didSet {
-      buttonTopConstraint.constant = downShift
-    }
-  }
-
   var useCompactTabHeight = false {
     didSet {
       tabHeightConstraint.constant = useCompactTabHeight ? 32 : 48
     }
   }
 
+  internal var observedPrefKeys: [Preference.Key] = [
+    .showTitleBarWhenShowingOSC
+  ]
+
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    guard let keyPath = keyPath else { return }
+
+    switch keyPath {
+      case PK.showTitleBarWhenShowingOSC.rawValue:
+        refreshDownshiftFromTop()
+      default:
+        return
+    }
+  }
+
+  private func refreshDownshiftFromTop() {
+    let downShift: CGFloat
+    if Preference.bool(for: .showTitleBarWhenShowingOSC) {
+      downShift = TitleBarHeightNormal - 14
+    } else {
+      downShift = 0
+    }
+    buttonTopConstraint.constant = downShift
+  }
+
   override func viewDidLoad() {
     super.viewDidLoad()
+
+    refreshDownshiftFromTop()
+
     withAllTableViews { (view) in
       view.dataSource = self
     }
@@ -120,7 +142,11 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       pendingSwitchRequest = nil
     }
 
-    // nofitications
+    observedPrefKeys.forEach { key in
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
+
+    // notifications
     playlistChangeObserver = NotificationCenter.default.addObserver(forName: .iinaPlaylistChanged, object: player, queue: OperationQueue.main) { [unowned self] _ in
       self.playlistTotalLengthIsReady = false
       self.reloadData(playlist: true, chapters: false)

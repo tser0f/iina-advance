@@ -235,6 +235,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let returnValue: Int32
       // execute the command
       switch keyBinding.action.first! {
+      // TODO: replace this with a key binding interceptor
       case MPVCommand.abLoop.rawValue:
         player.abLoop()
         returnValue = 0
@@ -251,15 +252,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func keyDown(with event: NSEvent) {
-    if let keyBinding = player.inputConfig.resolveKeyEvent(event) {
-      if !keyBinding.isIgnored {  // if "ignore", do nothing. No beep, no send
-        if !handleKeyBinding(keyBinding) {
-          // beep if cmd failed
-          super.keyDown(with: event)
-        }
-      }
-    } else {
+    guard let keyBinding = player.inputConfig.resolveKeyEvent(event) else {
       // invalid key
+      super.keyDown(with: event)
+      return
+    }
+
+    // if "ignore", just swallow the event. Do not forward; do not beep
+    guard !keyBinding.isIgnored else {
+      return
+    }
+
+    let cmdSucceeded = handleKeyBinding(keyBinding)
+    if !cmdSucceeded {
+      // beep if cmd failed
       super.keyDown(with: event)
     }
   }

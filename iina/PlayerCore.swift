@@ -415,8 +415,6 @@ class PlayerCore: NSObject {
     syncUITime()
     let playlistView = mainWindow.playlistView.view
     let videoView = mainWindow.videoView
-    // reset down shift for playlistView
-    mainWindow.playlistView.downShift = TitleBarHeightNormal - 14
     // hide sidebar
     if mainWindow.sideBarStatus != .hidden {
       mainWindow.hideSideBar(animate: false)

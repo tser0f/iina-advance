@@ -170,14 +170,36 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   private var pluginTabsStackView: NSStackView!
   private var pluginTabs: [String: SidebarTabView] = [:]
 
-  var downShift: CGFloat = 0 {
-    didSet {
-      buttonTopConstraint.constant = downShift
+  internal var observedPrefKeys: [Preference.Key] = [
+    .showTitleBarWhenShowingOSC
+  ]
+
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    guard let keyPath = keyPath else { return }
+
+    switch keyPath {
+      case PK.showTitleBarWhenShowingOSC.rawValue:
+        refreshDownshiftFromTop()
+      default:
+        return
     }
+  }
+
+  private func refreshDownshiftFromTop() {
+    let downShift: CGFloat
+    if Preference.bool(for: .showTitleBarWhenShowingOSC) {
+      downShift = TitleBarHeightNormal - 14
+    } else {
+      downShift = 0
+    }
+    buttonTopConstraint.constant = downShift
   }
 
   override func viewDidLoad() {
     super.viewDidLoad()
+
+    refreshDownshiftFromTop()
+
     withAllTableViews { (view, _) in
       view.delegate = self
       view.dataSource = self
@@ -202,6 +224,10 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     switchHorizontalLine.layer?.opacity = 0.5
     switchHorizontalLine2.wantsLayer = true
     switchHorizontalLine2.layer?.opacity = 0.5
+
+    observedPrefKeys.forEach { key in
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
 
     func observe(_ name: Notification.Name, block: @escaping (Notification) -> Void) {
       observers.append(NotificationCenter.default.addObserver(forName: name, object: player, queue: .main, using: block))
@@ -562,6 +588,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     }
   }
 
+  // Sets mpv's `MPVOption.Video.videoRotate` property if it is one of the 4 `AppData.rotations` values
   @IBAction func rotationChangedAction(_ sender: NSSegmentedControl) {
     let value = AppData.rotations[sender.selectedSegment]
     player.setVideoRotate(value)

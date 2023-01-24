@@ -26,10 +26,10 @@ let TitleBarHeightNormal: CGFloat = {
     return 22
   }
 }()
-fileprivate let TitleBarHeightWithOSC: CGFloat = TitleBarHeightNormal + 24 + 10
-fileprivate let TitleBarHeightWithOSCInFullScreen: CGFloat = 24 + 10
+fileprivate let TitleBarHeightWithOSCInFullScreen: CGFloat = 24 + 10  // OSC only
+fileprivate let TitleBarHeightWithOSC: CGFloat = TitleBarHeightNormal + TitleBarHeightWithOSCInFullScreen
+fileprivate let OSCTopMainViewMarginTopInFullScreen: CGFloat = 6  // No title bar
 fileprivate let OSCTopMainViewMarginTop: CGFloat = 26
-fileprivate let OSCTopMainViewMarginTopInFullScreen: CGFloat = 6
 
 fileprivate let SettingsWidth: CGFloat = 360
 fileprivate let PlaylistMinWidth: CGFloat = 240
@@ -107,6 +107,7 @@ class MainWindowController: PlayerWindowController {
   var cachedScreenCount = 0
   var blackWindows: [NSWindow] = []
 
+  // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` (can only be one of 0, 90, 180, 270)
   lazy var rotation: Int = {
     return player.mpv.getInt(MPVProperty.videoParamsRotate)
   }()
@@ -306,8 +307,6 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Observed user defaults
 
-  private var oscIsInitialized = false
-
   // Cached user default values
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
@@ -323,7 +322,8 @@ class MainWindowController: PlayerWindowController {
     .useLegacyFullScreen,
     .displayTimeAndBatteryInFullScreen,
     .controlBarToolbarButtons,
-    .alwaysShowOnTopIcon
+    .alwaysShowOnTopIcon,
+    .showTitleBarWhenShowingOSC,
   ]
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -377,6 +377,14 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
+    case PK.showTitleBarWhenShowingOSC.rawValue:
+        // TODO
+
+
+
+        if let oscPosition = Preference.OSCPosition(key: .oscPosition) {
+        setupOnScreenController(withPosition: oscPosition)
+      }
     default:
       return
     }
@@ -552,6 +560,7 @@ class MainWindowController: PlayerWindowController {
 
     // gesture recognizer
     cv.addGestureRecognizer(magnificationGestureRecognizer)
+    cv.addGestureRecognizer(NSRotationGestureRecognizer(target: self, action: #selector(MainWindowController.handleRotationGesture(recognizer:))))
 
     // Work around a bug in macOS Ventura where HDR content becomes dimmed when playing in full
     // screen mode once overlaying views are fully hidden (issue #3844). After applying this
@@ -684,13 +693,12 @@ class MainWindowController: PlayerWindowController {
 
   private func setupOnScreenController(withPosition newPosition: Preference.OSCPosition) {
 
-    guard !oscIsInitialized || oscPosition != newPosition else { return }
-    oscIsInitialized = true
-
     let isSwitchingToTop = newPosition == .top
     let isSwitchingFromTop = oscPosition == .top
     let isFloating = newPosition == .floating
+    let showTitleBar = Preference.bool(for: .showTitleBarWhenShowingOSC)
 
+    
     if let cb = currentControlBar {
       // remove current osc view from fadeable views
       fadeableViews = fadeableViews.filter { $0 != cb }
@@ -698,7 +706,13 @@ class MainWindowController: PlayerWindowController {
 
     // reset
     ([controlBarFloating, controlBarBottom, oscTopMainView] as [NSView]).forEach { $0.isHidden = true }
-    titleBarHeightConstraint.constant = TitleBarHeightNormal
+    if showTitleBar {
+      titleBarHeightConstraint.constant = TitleBarHeightNormal
+      self.window?.titleVisibility = .visible
+    } else {
+      titleBarHeightConstraint.constant = 0
+      self.window?.titleVisibility = .hidden
+    }
 
     controlBarFloating.isDragging = false
 
@@ -717,13 +731,14 @@ class MainWindowController: PlayerWindowController {
     if isSwitchingToTop {
       if isInFullScreen {
         addBackTitlebarViewToFadeableViews()
+      }
+      if isInFullScreen || !showTitleBar {
         oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTopInFullScreen
         titleBarHeightConstraint.constant = TitleBarHeightWithOSCInFullScreen
       } else {
         oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTop
         titleBarHeightConstraint.constant = TitleBarHeightWithOSC
       }
-      // Remove this if it's acceptable in 10.13-
       titleBarBottomBorder.isHidden = true
     } else {
        titleBarBottomBorder.isHidden = false
@@ -739,7 +754,7 @@ class MainWindowController: PlayerWindowController {
     oscPosition = newPosition
 
     // add fragment views
-    switch oscPosition {
+    switch newPosition {
     case .floating:
       currentControlBar = controlBarFloating
       fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewLeftView)
@@ -816,7 +831,7 @@ class MainWindowController: PlayerWindowController {
   @discardableResult
   override func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
     let success = super.handleKeyBinding(keyBinding)
-    // FIXME: find a better place to check for this
+    // TODO: replace this with a key binding interceptor
     if success && keyBinding.action.first == MPVCommand.screenshot.rawValue {
       player.sendOSD(.screenshot)
     }
@@ -1030,6 +1045,35 @@ class MainWindowController: PlayerWindowController {
       } else if recognizer.state == .ended {
         updateWindowParametersForMPV()
       }
+    }
+  }
+
+  @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
+    switch recognizer.state {
+      case .began, .changed:
+        break
+      case .failed, .cancelled:
+        break
+      case .ended:
+        let rotationDegrees = Int(-recognizer.rotationInDegrees) %% 360
+        let minRotationThreshold = 45
+        guard rotationDegrees > minRotationThreshold else {
+          Logger.log("Rotation gesture of \(rotationDegrees)° is not enough to rotate the video")
+          return
+        }
+        for rightAngle in AppData.rotations {
+          if rotationDegrees < rightAngle + minRotationThreshold {
+            var newRotation = (self.rotation + rightAngle) %% 360
+            Logger.log("User's gesture of \(rotationDegrees)° is closest to \(rightAngle)°: changing video rotation from \(rotation)° to \(newRotation)°")
+            if newRotation < 0 {
+              newRotation += 360
+            }
+            player.setVideoRotate(newRotation)
+            return
+          }
+        }
+      default:
+        return
     }
   }
 
@@ -1892,8 +1936,6 @@ class MainWindowController: PlayerWindowController {
     let constraintsV = NSLayoutConstraint.constraints(withVisualFormat: "V:|[v]|", options: [], metrics: nil, views: ["v": view])
     NSLayoutConstraint.activate(constraintsH)
     NSLayoutConstraint.activate(constraintsV)
-    var viewController = viewController
-    viewController.downShift = TitleBarHeightNormal - 14
     // show sidebar
     NSAnimationContext.runAnimationGroup({ (context) in
       context.duration = AccessibilityPreferences.adjustedDuration(SideBarAnimationDuration)
@@ -2884,5 +2926,4 @@ extension MainWindowController: PIPViewControllerDelegate {
 }
 
 protocol SidebarViewController {
-  var downShift: CGFloat { get set }
 }
