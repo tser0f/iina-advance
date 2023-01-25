@@ -698,7 +698,6 @@ class MainWindowController: PlayerWindowController {
     let isFloating = newPosition == .floating
     let showTitleBar = Preference.bool(for: .showTitleBarWhenShowingOSC)
 
-    
     if let cb = currentControlBar {
       // remove current osc view from fadeable views
       fadeableViews = fadeableViews.filter { $0 != cb }
@@ -706,12 +705,20 @@ class MainWindowController: PlayerWindowController {
 
     // reset
     ([controlBarFloating, controlBarBottom, oscTopMainView] as [NSView]).forEach { $0.isHidden = true }
-    if showTitleBar {
+
+    if showTitleBar { // SHOW title bar
       titleBarHeightConstraint.constant = TitleBarHeightNormal
-      self.window?.titleVisibility = .visible
-    } else {
+      if let window = self.window as? MainWindow {
+        NSMenu.setMenuBarVisible(true)
+        window.titleVisibility = .visible
+        addBackTitlebarViewToFadeableViews()
+      }
+    } else { // HIDE title bar
       titleBarHeightConstraint.constant = 0
-      self.window?.titleVisibility = .hidden
+      if let window = self.window as? MainWindow {
+        NSMenu.setMenuBarVisible(false)
+        window.titleVisibility = .hidden
+      }
     }
 
     controlBarFloating.isDragging = false

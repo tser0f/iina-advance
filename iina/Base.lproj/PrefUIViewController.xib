@@ -619,8 +619,8 @@
                     </textFieldCell>
                 </textField>
                 <button verticalHuggingPriority="252" translatesAutoresizingMaskIntoConstraints="NO" id="ut0-bi-Xwh">
-                    <rect key="frame" x="118" y="334" width="226" height="18"/>
-                    <buttonCell key="cell" type="check" title="Show window's title bar on hover" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="jtP-Yl-0I8">
+                    <rect key="frame" x="118" y="334" width="281" height="18"/>
+                    <buttonCell key="cell" type="check" title="Show title bar when hovering over window" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="jtP-Yl-0I8">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -629,11 +629,11 @@
                     </connections>
                 </button>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bVg-yv-fOx">
-                    <rect key="frame" x="118" y="310" width="147" height="18"/>
+                    <rect key="frame" x="118" y="310" width="91" height="18"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="16" id="hJ9-XQ-HlL"/>
                     </constraints>
-                    <buttonCell key="cell" type="check" title="Show OSC on hover" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="pLU-gl-VK3">
+                    <buttonCell key="cell" type="check" title="Show OSC" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="pLU-gl-VK3">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -1115,7 +1115,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqQ-ue-KEO">
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqQ-ue-KEO">
                     <rect key="frame" x="362" y="8" width="44" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Width:" id="f0s-sH-rz8">
                         <font key="font" metaFont="system"/>
@@ -1123,7 +1123,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField hidden="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="QSd-B9-68V">
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="QSd-B9-68V">
                     <rect key="frame" x="412" y="6" width="58" height="21"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="58" id="173-i4-0c1"/>
@@ -1143,7 +1143,7 @@
                         </binding>
                     </connections>
                 </textField>
-                <textField identifier="MaximumCacheWidthPx" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3kE-zA-EH8">
+                <textField identifier="MaximumCacheWidthPx" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3kE-zA-EH8">
                     <rect key="frame" x="476" y="8" width="19" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="px" id="F9N-Mm-Fvd">
                         <font key="font" metaFont="system"/>
@@ -1152,8 +1152,8 @@
                     </textFieldCell>
                 </textField>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="5Om-Um-kQ4">
-                    <rect key="frame" x="138" y="31" width="229" height="18"/>
-                    <buttonCell key="cell" type="check" title="For media on remote volumes too" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="1NF-4u-sGn">
+                    <rect key="frame" x="138" y="31" width="186" height="18"/>
+                    <buttonCell key="cell" type="check" title="Enable for remote files too" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="1NF-4u-sGn">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
