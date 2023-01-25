@@ -709,14 +709,12 @@ class MainWindowController: PlayerWindowController {
     if showTitleBar { // SHOW title bar
       titleBarHeightConstraint.constant = TitleBarHeightNormal
       if let window = self.window as? MainWindow {
-        NSMenu.setMenuBarVisible(true)
         window.titleVisibility = .visible
-        addBackTitlebarViewToFadeableViews()
+//        addBackTitlebarViewToFadeableViews()
       }
     } else { // HIDE title bar
       titleBarHeightConstraint.constant = 0
       if let window = self.window as? MainWindow {
-        NSMenu.setMenuBarVisible(false)
         window.titleVisibility = .hidden
       }
     }
