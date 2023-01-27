@@ -311,6 +311,7 @@ class MainWindowController: PlayerWindowController {
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
   private lazy var pinchAction: Preference.PinchAction = Preference.enum(for: .pinchAction)
+  private lazy var rotationGesturesEnabled = Preference.bool(for: .enableTrackpadVideoRotation)
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
   private let localObservedPrefKeys: [Preference.Key] = [
@@ -319,6 +320,7 @@ class MainWindowController: PlayerWindowController {
     .showChapterPos,
     .arrowButtonAction,
     .pinchAction,
+    .enableTrackpadVideoRotation,
     .blackOutMonitor,
     .useLegacyFullScreen,
     .displayTimeAndBatteryInFullScreen,
@@ -367,6 +369,10 @@ class MainWindowController: PlayerWindowController {
       if let newValue = change[.newKey] as? Int {
         pinchAction = Preference.PinchAction(rawValue: newValue)!
       }
+      case PK.enableTrackpadVideoRotation.rawValue:
+        if let newValue = change[.newKey] as? Bool {
+          rotationGesturesEnabled = newValue
+        }
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
         if fsState.isFullscreen {
@@ -1065,6 +1071,8 @@ class MainWindowController: PlayerWindowController {
   }
 
   @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
+    guard rotationGesturesEnabled else { return }
+
     switch recognizer.state {
       case .began, .changed:
         break

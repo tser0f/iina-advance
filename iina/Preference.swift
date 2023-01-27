@@ -236,6 +236,7 @@ struct Preference {
     static let middleClickAction = Key("middleClickAction")
     static let pinchAction = Key("pinchAction")
     static let forceTouchAction = Key("forceTouchAction")
+    static let enableTrackpadVideoRotation = Key("enableTrackpadVideoRotation")
 
     static let showRemainingTime = Key("showRemainingTime")
     static let timeDisplayPrecision = Key("timeDisplayPrecision")
@@ -883,6 +884,7 @@ struct Preference {
     .middleClickAction: MouseClickAction.none.rawValue,
     .pinchAction: PinchAction.windowSize.rawValue,
     .forceTouchAction: MouseClickAction.none.rawValue,
+    .enableTrackpadVideoRotation: true,
 
     .screenshotSaveToFile: true,
     .screenshotCopyToClipboard: false,
