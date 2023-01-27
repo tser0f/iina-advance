@@ -203,6 +203,11 @@ class PreferenceWindowController: NSWindowController {
       self.isIndexing = false
     }
 
+    // To restore selection properly, must set table to allow empty selection initially (in XIB).
+    // Otherwise, it will automatically select the first value and trigger the selection notification.
+    // Much safer to disable empty selection after selecting a row.
+    loadTab(at: Preference.uiState(for: .prefWindowNavTableSelectionIndex))
+    tableView.allowsEmptySelection = false
   }
 
   override func mouseDown(with event: NSEvent) {
@@ -280,6 +285,10 @@ class PreferenceWindowController: NSWindowController {
       if let collapseView = findCollapseView(label) {
         collapseView.setCollapsed(false, animated: false)
       }
+    }
+
+    if Preference.integer(for: .prefWindowNavTableSelectionIndex) != index {
+      Preference.set(index, for: .prefWindowNavTableSelectionIndex)
     }
   }
 

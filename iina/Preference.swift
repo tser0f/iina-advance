@@ -303,6 +303,13 @@ struct Preference {
     /** unused */
     // static let resizeFrameBuffer = Key("resizeFrameBuffer")
 
+    // Internal UI State
+
+    static let keepStateOfUIBetweenLaunches = Key("keepStateOfUIBetweenLaunches")
+
+    // Index of currently selected tab in Navigator table
+    static let prefWindowNavTableSelectionIndex = Key("prefWindowNavTableSelectionIndex")
+
     /** User defined options ([string, string]) */
     static let userOptions = Key("userOptions")
 
@@ -854,6 +861,8 @@ struct Preference {
     .acceptRawTextAsKeyBindings: false,
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
+    .keepStateOfUIBetweenLaunches: true,
+    .prefWindowNavTableSelectionIndex: 0,
     .userOptions: [],
     .useUserDefinedConfDir: false,
     .userDefinedConfDir: "~/.config/mpv/",
@@ -941,6 +950,20 @@ struct Preference {
     return ud.value(forKey: key.rawValue)
   }
 
+  static func typedValue<T>(for key: Key) -> T {
+    if let val = Preference.value(for: key) as? T {
+      return val
+    }
+    fatalError("Unexpected type or missing default for preference key \(key.rawValue.quoted)")
+  }
+
+  static func typedDefault<T>(for key: Key) -> T {
+    if let defaultVal = Preference.defaultPreference[key] as? T {
+      return defaultVal
+    }
+    fatalError("Unexpected type or missing default for preference key \(key.rawValue.quoted)")
+  }
+
   static func mpvColor(for key: Key) -> String? {
     return ud.mpvColor(forKey: key.rawValue)
   }
@@ -977,4 +1000,11 @@ struct Preference {
     return T.init(key: key) ?? T.defaultValue
   }
 
+  // For restoring UI state from prev launch (if enabled)
+  static func uiState<T>(for key: Key) -> T {
+    if Preference.bool(for: .keepStateOfUIBetweenLaunches) {
+      return Preference.typedValue(for: key)
+    }
+    return Preference.typedDefault(for: key)
+  }
 }
