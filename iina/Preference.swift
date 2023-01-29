@@ -309,18 +309,6 @@ struct Preference {
     /** unused */
     // static let resizeFrameBuffer = Key("resizeFrameBuffer")
 
-    // Internal UI State
-
-    static let keepStateOfUIBetweenLaunches = Key("keepStateOfUIBetweenLaunches")
-
-    // Index of currently selected tab in Navigator table
-    static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
-    static let uiPrefDetailViewScrollOffsetY = Key("uiPrefDetailViewScrollOffsetY")
-    // These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with "uiCollapseView"
-    static let uiCollapseViewMediaIsOpened = Key("uiCollapseViewMediaIsOpened")
-    static let uiCollapseViewSubAdvanced = Key("uiCollapseViewSubAdvanced")
-    static let uiCollapseViewPauseResume = Key("uiCollapseViewPauseResume")
-
     /** User defined options ([string, string]) */
     static let userOptions = Key("userOptions")
 
@@ -340,6 +328,21 @@ struct Preference {
     static let suppressCannotPreventDisplaySleep = Key("suppressCannotPreventDisplaySleep")
 
     static let iinaEnablePluginSystem = Key("iinaEnablePluginSystem")
+
+    // Internal UI State
+
+    static let keepStateOfUIBetweenLaunches = Key("keepStateOfUIBetweenLaunches")
+
+    // Index of currently selected tab in Navigator table
+    static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
+    static let uiPrefDetailViewScrollOffsetY = Key("uiPrefDetailViewScrollOffsetY")
+    // These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with "uiCollapseView"
+    // `true` == open;  `false` == folded
+    static let uiCollapseViewMediaIsOpened = Key("uiCollapseViewMediaIsOpened")
+    static let uiCollapseViewPauseResume = Key("uiCollapseViewPauseResume")
+    static let uiCollapseViewSubAutoLoadAdvanced = Key("uiCollapseViewSubAutoLoadAdvanced")
+    static let uiCollapseViewSubTextSubsAdvanced = Key("uiCollapseViewSubTextSubsAdvanced")
+
   }
 
   // MARK: - Enums
@@ -875,9 +878,10 @@ struct Preference {
     .keepStateOfUIBetweenLaunches: true,
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
-    .uiCollapseViewMediaIsOpened: false,
-    .uiCollapseViewSubAdvanced: false,
-    .uiCollapseViewPauseResume: false,
+    .uiCollapseViewMediaIsOpened: true,
+    .uiCollapseViewPauseResume: true,
+    .uiCollapseViewSubAutoLoadAdvanced: false,
+    .uiCollapseViewSubTextSubsAdvanced: false,
     .userOptions: [],
     .useUserDefinedConfDir: false,
     .userDefinedConfDir: "~/.config/mpv/",
