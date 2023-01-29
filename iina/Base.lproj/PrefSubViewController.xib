@@ -67,7 +67,7 @@
                         <customView horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="FkP-nh-hj4">
                             <rect key="frame" x="0.0" y="136" width="360" height="17"/>
                             <subviews>
-                                <button identifier="Trigger0" horizontalHuggingPriority="750" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="F0d-QD-wgF">
+                                <button identifier="TriggerSubAdvanced" horizontalHuggingPriority="750" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="F0d-QD-wgF">
                                     <rect key="frame" x="0.0" y="0.0" width="13" height="13"/>
                                     <buttonCell key="cell" type="disclosureTriangle" bezelStyle="disclosure" imagePosition="only" alignment="left" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="JH0-QA-eIN">
                                         <behavior key="behavior" pushIn="YES" changeBackground="YES" changeGray="YES" lightByContents="YES"/>

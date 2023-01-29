@@ -35,6 +35,11 @@ struct Preference {
 
     init?(rawValue: RawValue) { self.rawValue = rawValue }
 
+    func isValid() -> Bool {
+      // It is valid if it exists and has a default
+      return Preference.defaultPreference[self] != nil
+    }
+
     static let receiveBetaUpdate = Key("receiveBetaUpdate")
 
     static let actionAfterLaunch = Key("actionAfterLaunch")
@@ -309,7 +314,12 @@ struct Preference {
     static let keepStateOfUIBetweenLaunches = Key("keepStateOfUIBetweenLaunches")
 
     // Index of currently selected tab in Navigator table
-    static let prefWindowNavTableSelectionIndex = Key("prefWindowNavTableSelectionIndex")
+    static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
+    static let uiPrefDetailViewScrollOffsetY = Key("uiPrefDetailViewScrollOffsetY")
+    // These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with "uiCollapseView"
+    static let uiCollapseViewMediaIsOpened = Key("uiCollapseViewMediaIsOpened")
+    static let uiCollapseViewSubAdvanced = Key("uiCollapseViewSubAdvanced")
+    static let uiCollapseViewPauseResume = Key("uiCollapseViewPauseResume")
 
     /** User defined options ([string, string]) */
     static let userOptions = Key("userOptions")
@@ -863,7 +873,11 @@ struct Preference {
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
     .keepStateOfUIBetweenLaunches: true,
-    .prefWindowNavTableSelectionIndex: 0,
+    .uiPrefWindowNavTableSelectionIndex: 0,
+    .uiPrefDetailViewScrollOffsetY: 0.0,
+    .uiCollapseViewMediaIsOpened: false,
+    .uiCollapseViewSubAdvanced: false,
+    .uiCollapseViewPauseResume: false,
     .userOptions: [],
     .useUserDefinedConfDir: false,
     .userDefinedConfDir: "~/.config/mpv/",
@@ -1002,11 +1016,36 @@ struct Preference {
     return T.init(key: key) ?? T.defaultValue
   }
 
-  // For restoring UI state from prev launch (if enabled)
-  static func uiState<T>(for key: Key) -> T {
-    if Preference.bool(for: .keepStateOfUIBetweenLaunches) {
-      return Preference.typedValue(for: key)
+  // NSUserDefaults uses an in-memory cache which periodically saves "dirty" values to disk
+  // (although the interval between writes is unclear).
+  // This means that "get" operations should be very cheap, while "set" operations *probably* won't be too bad.
+  // Also, IINA is a very data-intensive app which may put a heavy load on the disk while playing some videos.
+  // However, it mikght still be prudent to avoid any unnecessary writes while it is not playing. So some extra effort is made here
+  // to hold UI state in memory and only save it at key times.
+  class UIState {
+    static fileprivate var pendingWriteDict: [Key: Any] = [:]
+
+    // For restoring UI state from prev launch (if enabled)
+    static func get<T>(_ key: Key) -> T {
+      if Preference.bool(for: .keepStateOfUIBetweenLaunches) {
+        return Preference.typedValue(for: key)
+      }
+      return Preference.typedDefault(for: key)
     }
-    return Preference.typedDefault(for: key)
+
+    static func set<T: Equatable>(_ value: T, for key: Key) {
+      if let existing = Preference.object(for: key) as? T, existing == value {
+        return
+      }
+      pendingWriteDict[key] = value
+    }
+
+    static func saveAll() {
+      for (key, value) in pendingWriteDict {
+        Preference.set(value, for: key)
+      }
+      Logger.log("Saved \(pendingWriteDict.count) UI elements", level: .verbose)
+      pendingWriteDict.removeAll()
+    }
   }
 }

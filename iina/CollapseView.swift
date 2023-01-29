@@ -24,7 +24,20 @@ class CollapseView: NSStackView {
   private var originalTarget: AnyObject?
   private var originalAction: Selector?
 
-  var folded = true
+  private var persistentUIStateKey: Preference.Key? = nil
+
+  var folded = true {
+    didSet {
+      // Update button to match (but ONLY if it is a disclosure button, not checkbox)
+      if let triangle = trigger as? NSButton, triangle.bezelStyle == .disclosure {
+        triangle.state = folded ? .off : .on
+      }
+      if let key = persistentUIStateKey {
+        // Update persisted UI state
+        Preference.UIState.set(folded, for: key)
+      }
+    }
+  }
 
   override func viewDidMoveToWindow() {
     guard trigger == nil && contentView == nil else { return }
@@ -35,7 +48,17 @@ class CollapseView: NSStackView {
 
     // try to get the state of the control
     if let button = trigger as? NSButton {
+
       folded = button.state != .on
+
+      // Restore state if available
+      if let triggerName = button.identifier {
+        let prefKeyRaw = triggerName.rawValue.replacingOccurrences(of: triggerIdentifier, with: "uiCollapseView")
+        if let key = Preference.Key(rawValue: prefKeyRaw), key.isValid() {
+          persistentUIStateKey = key
+          folded = Preference.UIState.get(key)
+        }
+      }
     }
     updateContentView(animated: false)
 
@@ -49,9 +72,6 @@ class CollapseView: NSStackView {
   func setCollapsed(_ collapsed: Bool, animated: Bool = true) {
     guard collapsed != folded else { return }
     folded = collapsed
-    if let triangle = trigger as? NSButton, triangle.bezelStyle == .disclosure {
-      triangle.state = folded ? .off : .on
-    }
     updateContentView(animated: animated)
   }
 
