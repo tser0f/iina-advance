@@ -540,7 +540,7 @@
             </constraints>
             <point key="canvasLocation" x="-143" y="713"/>
         </customView>
-        <customView placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4">
+        <customView placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4" userLabel="Playback Movement Buttons">
             <rect key="frame" x="0.0" y="0.0" width="148" height="24"/>
             <subviews>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="10x-bg-xlj" userLabel="Left Button">
