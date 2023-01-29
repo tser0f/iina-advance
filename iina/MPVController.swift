@@ -12,6 +12,8 @@ import JavaScriptCore
 fileprivate let yes_str = "yes"
 fileprivate let no_str = "no"
 
+fileprivate let logEvents = false
+
 extension mpv_event_id: CustomStringConvertible {
   // Generated code from mpv is objc and does not have Swift's built-in enum name introspection.
   // We provide that here using mpv_event_name()
@@ -824,6 +826,9 @@ class MPVController: NSObject {
   // Handle the event
   private func handleEvent(_ event: UnsafePointer<mpv_event>!) {
     let eventId: mpv_event_id = event.pointee.event_id
+    if logEvents && Logger.isEnabled(.verbose) {
+      Logger.log("Got mpv event: \(eventId)", level: .verbose)
+    }
 
     switch eventId {
       case MPV_EVENT_CLIENT_MESSAGE:
@@ -1025,14 +1030,15 @@ class MPVController: NSObject {
     if player.info.rotation == 90 || player.info.rotation == 270 {
       swap(&dwidth, &dheight)
     }
+    Logger.log("Got 'video-reconfig' msg. mpv = (width: \(dwidth), height: \(dheight)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)")
     if dwidth != player.info.displayWidth! || dheight != player.info.displayHeight! {
       // filter the last video-reconfig event before quit
       if dwidth == 0 && dheight == 0 && getFlag(MPVProperty.coreIdle) { return }
       // video size changed
       player.info.displayWidth = dwidth
       player.info.displayHeight = dheight
-      DispatchQueue.main.sync {
-        player.notifyMainWindowVideoSizeChanged()
+      DispatchQueue.main.async {
+        self.player.notifyMainWindowVideoSizeChanged()
       }
     }
   }

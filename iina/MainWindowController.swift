@@ -1070,9 +1070,14 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func setVideoViewRotation(rotationDegrees: CGFloat, animate: Bool = true) {
-    let rotationWithFudge = rotationDegrees - 0.1
-    let rotationRadians = rotationWithFudge * CGFloat.pi / 180
+  func degToRad(_ degrees: CGFloat) -> CGFloat {
+    return degrees * CGFloat.pi / 180
+  }
+
+  // `newRotationDegrees` is the goal; `videoView` may already be rotated
+  private func updateRotationOfVideoView(fromDegrees: CGFloat, toDegrees: CGFloat, animate: Bool = true) {
+    let rotationWithFudge = toDegrees - 0.1
+    let rotationRadians = degToRad(rotationWithFudge)
 
     // Animation is enabled by default for this view.
     // We only want to animate some rotations and not others, and never want to animate
@@ -1086,17 +1091,16 @@ class MainWindowController: PlayerWindowController {
     CATransaction.commit()
 
     if animate {
-      Logger.log("Animating rotation from \(lastRotation)° to \(rotationWithFudge)° (dividend: \(rotationWithFudge / 180))")
-      let lastRotationInRadians = lastRotation * CGFloat.pi / 180
+      Logger.log("Animating rotation from \(fromDegrees)° to \(rotationWithFudge)°")
+      let lastRotationInRadians = degToRad(fromDegrees)
 
       CATransaction.begin()
       // This will show an animation but doesn't change its permanent state.
-      // Still need the rotation call down below
+      // Still need the rotation call down below to do that.
       let rotateAnimation = CABasicAnimation(keyPath: "transform")
       rotateAnimation.valueFunction = CAValueFunction(name: .rotateZ)
-
-      rotateAnimation.fromValue = lastRotationInRadians //CATransform3DMakeRotation(lastRotationInRadians, 0, 0, 1)
-      rotateAnimation.toValue = rotationRadians //CATransform3DMakeRotation(rotationRadians, 0, 0, 1)
+      rotateAnimation.fromValue = lastRotationInRadians
+      rotateAnimation.toValue = rotationRadians
       rotateAnimation.duration = 0.2
       videoView.layer?.add(rotateAnimation, forKey: "transform")
       CATransaction.commit()
@@ -1117,10 +1121,9 @@ class MainWindowController: PlayerWindowController {
 
     switch recognizer.state {
       case .began, .changed:
-        let rotationDegrees = recognizer.rotationInDegrees
-        Logger.log("Rotating \(rotationDegrees)°")
-        setVideoViewRotation(rotationDegrees: rotationDegrees, animate: false)
-        lastRotation = rotationDegrees
+        let newRotationDegrees = recognizer.rotationInDegrees
+        updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: newRotationDegrees, animate: false)
+        lastRotation = newRotationDegrees
         break
       case .failed, .cancelled:
         lastRotation = 0
@@ -1145,13 +1148,13 @@ class MainWindowController: PlayerWindowController {
             snapRotation = completeRotationsTotalDegrees + (closestQuarterCircleRotation - 360)
           }
           Logger.log("completeRotationsTotalDegrees: \(completeRotationsTotalDegrees) lessThanWholeRotation: \(lessThanWholeRotation); closestQuarterCircleRotationMPV: \(closestQuarterCircleRotation) -> snap to \(snapRotation)")
-          setVideoViewRotation(rotationDegrees: snapRotation, animate: true)
+          updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: snapRotation, animate: true)
           lastRotation = 0
           player.setVideoRotate(newRotation)
           return
         }
         Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation")
-        setVideoViewRotation(rotationDegrees: 0, animate: true)
+        updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: 0, animate: true)
         lastRotation = 0
 
       default:
@@ -2387,11 +2390,14 @@ class MainWindowController: PlayerWindowController {
     return winFrame
   }
 
-  /** Set window size when info available, or video size changed. */
+  /** Set window size when info available, or video size changed. Called in response to receiving 'video-reconfig' msg  */
   func adjustFrameByVideoSize() {
     guard let window = window else { return }
 
     let (width, height) = player.videoSizeForDisplay
+    if width != player.info.displayWidth || height != player.info.displayHeight {
+      Logger.log("videoSizeForDisplay (width: \(width), height: \(height)) does not match PlayerInfo (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .error)
+    }
 
     // set aspect ratio
     let originalVideoSize = NSSize(width: width, height: height)
@@ -2400,13 +2406,16 @@ class MainWindowController: PlayerWindowController {
       pip.aspectRatio = originalVideoSize
     }
 
-    videoView.videoSize = window.convertToBacking(videoView.frame).size
+    Logger.log("videoView.frame: \(videoView.frame)")
+    let newSize = window.convertToBacking(videoView.frame).size
+    videoView.videoSize = newSize
 
     var rect: NSRect
     let needResizeWindow: Bool
 
     let frame = fsState.priorWindowedFrame ?? window.frame
 
+    // FIXME: this looks wrong, but what is the actual intent?
     if player.info.justStartedFile {
       // resize option applies
       let resizeTiming = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
@@ -2422,6 +2431,8 @@ class MainWindowController: PlayerWindowController {
       // video size changed during playback
       needResizeWindow = true
     }
+
+    Logger.log("Setting videoSize from \(width)x\(height) resulted in: \(newSize); willResizeWindow: \(needResizeWindow)")
 
     if needResizeWindow {
       let resizeRatio = (Preference.enum(for: .resizeWindowOption) as Preference.ResizeWindowOption).ratio
@@ -2478,12 +2489,13 @@ class MainWindowController: PlayerWindowController {
       if let screenFrame = window.screen?.frame {
         rect = rect.constrain(in: screenFrame)
       }
+      Logger.log("Setting frame to: \(rect). animate: \(!player.disableWindowAnimation)")
       if player.disableWindowAnimation {
         window.setFrame(rect, display: true, animate: false)
       } else {
         // animated `setFrame` can be inaccurate!
         window.setFrame(rect, display: true, animate: true)
-        window.setFrame(rect, display: true)
+//        window.setFrame(rect, display: true)
       }
       updateWindowParametersForMPV(withFrame: rect)
     }
@@ -2503,6 +2515,7 @@ class MainWindowController: PlayerWindowController {
     guard let window = self.window else { return }
     if let videoWidth = player.info.videoWidth {
       let windowScale = Double((frame ?? window.frame).width) / Double(videoWidth)
+      Logger.log("Updating mpv windowScale to: \(windowScale) (prev: \(player.info.cachedWindowScale))")
       player.info.cachedWindowScale = windowScale
       player.mpv.setDouble(MPVProperty.windowScale, windowScale)
     }
