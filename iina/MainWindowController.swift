@@ -2483,7 +2483,7 @@ class MainWindowController: PlayerWindowController {
       } else {
         // animated `setFrame` can be inaccurate!
         window.setFrame(rect, display: true, animate: true)
-//        window.setFrame(rect, display: true)
+        window.setFrame(rect, display: true)
       }
       updateWindowParametersForMPV(withFrame: rect)
     }
