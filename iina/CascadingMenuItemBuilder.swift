@@ -344,7 +344,7 @@ class CascadingMenuItemBuilder {
         item = NSMenuItem(title: title, action: action, keyEquivalent: key)
       }
 
-      if Logger.Level.preferred >= .verbose {
+      if Logger.isEnabled(.verbose) {
         Logger.log("Built menuItem \"\(item.title)\" from attrs: \(attrsDebugDescription)", level: .verbose)
       }
 

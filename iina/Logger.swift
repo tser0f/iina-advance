@@ -55,6 +55,10 @@ struct Logger {
 
   static let enabled = Preference.bool(for: .enableAdvancedSettings) && Preference.bool(for: .enableLogging)
 
+  static func isEnabled(_ level: Logger.Level) -> Bool {
+    return Logger.enabled && Logger.Level.preferred >= level
+  }
+
   static let logDirectory: URL = {
     // get path
     let libraryPaths = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)
