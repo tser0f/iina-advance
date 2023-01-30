@@ -240,8 +240,8 @@ struct Preference {
     static let rightClickAction = Key("rightClickAction")
     static let middleClickAction = Key("middleClickAction")
     static let pinchAction = Key("pinchAction")
+    static let rotateAction = Key("rotateAction")
     static let forceTouchAction = Key("forceTouchAction")
-    static let enableTrackpadVideoRotation = Key("enableTrackpadVideoRotation")
 
     static let showRemainingTime = Key("showRemainingTime")
     static let timeDisplayPrecision = Key("timeDisplayPrecision")
@@ -466,6 +466,17 @@ struct Preference {
     case none
 
     static var defaultValue = PinchAction.windowSize
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum RotateAction: Int, InitializingFromKey {
+    case none = 0
+    case rotateVideoByQuarters
+
+    static var defaultValue = RotateAction.rotateVideoByQuarters
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -901,8 +912,8 @@ struct Preference {
     .rightClickAction: MouseClickAction.pause.rawValue,
     .middleClickAction: MouseClickAction.none.rawValue,
     .pinchAction: PinchAction.windowSize.rawValue,
+    .rotateAction: RotateAction.defaultValue.rawValue,
     .forceTouchAction: MouseClickAction.none.rawValue,
-    .enableTrackpadVideoRotation: true,
 
     .screenshotSaveToFile: true,
     .screenshotCopyToClipboard: false,

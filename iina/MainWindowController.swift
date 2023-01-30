@@ -311,7 +311,7 @@ class MainWindowController: PlayerWindowController {
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
   private lazy var pinchAction: Preference.PinchAction = Preference.enum(for: .pinchAction)
-  private lazy var rotationGesturesEnabled = Preference.bool(for: .enableTrackpadVideoRotation)
+  private lazy var rotateAction: Preference.RotateAction = Preference.enum(for: .rotateAction)
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
   private let localObservedPrefKeys: [Preference.Key] = [
@@ -320,7 +320,7 @@ class MainWindowController: PlayerWindowController {
     .showChapterPos,
     .arrowButtonAction,
     .pinchAction,
-    .enableTrackpadVideoRotation,
+    .rotateAction,
     .blackOutMonitor,
     .useLegacyFullScreen,
     .displayTimeAndBatteryInFullScreen,
@@ -369,10 +369,10 @@ class MainWindowController: PlayerWindowController {
       if let newValue = change[.newKey] as? Int {
         pinchAction = Preference.PinchAction(rawValue: newValue)!
       }
-      case PK.enableTrackpadVideoRotation.rawValue:
-        if let newValue = change[.newKey] as? Bool {
-          rotationGesturesEnabled = newValue
-        }
+    case PK.rotateAction.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        rotateAction = Preference.RotateAction(rawValue: newValue)!
+      }
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
         if fsState.isFullscreen {
@@ -1070,8 +1070,13 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  func degToRad(_ degrees: CGFloat) -> CGFloat {
+  private func degToRad(_ degrees: CGFloat) -> CGFloat {
     return degrees * CGFloat.pi / 180
+  }
+
+  // Returns the total degrees in the given rotation which are due to complete 360° rotations
+  private func completeCircleDegrees(of rotationDegrees: CGFloat) -> CGFloat{
+    CGFloat(Int(rotationDegrees / 360) * 360)
   }
 
   // `newRotationDegrees` is the goal; `videoView` may already be rotated
@@ -1117,7 +1122,7 @@ class MainWindowController: PlayerWindowController {
   private var lastRotation: CGFloat = 0
 
   @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
-    guard rotationGesturesEnabled else { return }
+    guard rotateAction == .rotateVideoByQuarters else { return }
 
     switch recognizer.state {
       case .began, .changed:
@@ -1136,24 +1141,25 @@ class MainWindowController: PlayerWindowController {
           // Snap to one of the 4 quarter circle rotations
           let newRotation = (self.rotation + mpvClosestQuarterCircleRotation) %% 360
           Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterCircleRotation)°: changing video rotation from \(rotation)° to \(newRotation)°")
-          let completeRotationsTotalDegrees = CGFloat(Int(recognizer.rotationInDegrees / 360) * 360)
+          let completeCirclesTotalDegrees = completeCircleDegrees(of: recognizer.rotationInDegrees)
           let closestQuarterCircleRotation = CGFloat(normalizeRotation(-mpvClosestQuarterCircleRotation))
-          let lessThanWholeRotation = recognizer.rotationInDegrees - completeRotationsTotalDegrees
+          let lessThanWholeRotation = recognizer.rotationInDegrees - completeCirclesTotalDegrees
           let snapRotation: CGFloat
           if lessThanWholeRotation > 0 {
             // positive direction:
-            snapRotation = completeRotationsTotalDegrees + closestQuarterCircleRotation
+            snapRotation = completeCirclesTotalDegrees + closestQuarterCircleRotation
           } else {
             // negative direction:
-            snapRotation = completeRotationsTotalDegrees + (closestQuarterCircleRotation - 360)
+            snapRotation = completeCirclesTotalDegrees + (closestQuarterCircleRotation - 360)
           }
-          Logger.log("completeRotationsTotalDegrees: \(completeRotationsTotalDegrees) lessThanWholeRotation: \(lessThanWholeRotation); closestQuarterCircleRotationMPV: \(closestQuarterCircleRotation) -> snap to \(snapRotation)")
+          Logger.log("completeCirclesTotalDegrees: \(completeCirclesTotalDegrees) lessThanWholeRotation: \(lessThanWholeRotation); closestQuarterCircleRotationMPV: \(closestQuarterCircleRotation) -> snap to \(snapRotation)")
           updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: snapRotation, animate: true)
           lastRotation = 0
           player.setVideoRotate(newRotation)
           return
         }
-        Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation")
+        lastRotation -= completeCircleDegrees(of: lastRotation) // don't "unwind" if wound up; just use shortest arc back to origin
+        Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(lastRotation)°")
         updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: 0, animate: true)
         lastRotation = 0
 
