@@ -728,6 +728,22 @@ extension NSWindow {
     }
     return NSScreen.screens[0]
   }
+
+  func isOnlyOpenWindow() -> Bool {
+    for window in NSApp.windows {
+      if window != self {
+        if window.isVisible {
+          Logger.log("Found another window which is still open: \(window.title.quoted)", level: .verbose)
+          return false
+        } else if let mainWindow = window.windowController as? MainWindowController, mainWindow.isOpen {
+          Logger.log("Found a player window which is still open: \(window.title.quoted)", level: .verbose)
+          return false
+        }
+      }
+    }
+    Logger.log("Window is the only window currently open: \(self.title.quoted)", level: .verbose)
+    return true
+  }
 }
 
 extension Process {
