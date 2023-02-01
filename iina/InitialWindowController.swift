@@ -138,7 +138,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
   lazy var recentDocuments: [URL] = {
     makeRecentDocumentsList()
   }()
-  private var lastPlaybackURL: URL?
+  fileprivate var lastPlaybackURL: URL?
 
   init() {
     super.init(window: nil)
@@ -216,6 +216,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
 
   private func openRecentItemFromTable(_ rowIndex: Int) {
     if let url = recentDocuments[at: rowIndex] {
+      Logger.log("Opening recentDocuments[\(rowIndex)] in new player window", level: .verbose)
       openInNewPlayer(url)
     }
   }
@@ -352,6 +353,7 @@ extension InitialWindowController: NSTableViewDelegate, NSTableViewDataSource {
           openRecentItemFromTable(recentFilesTableView.selectedRow)
         } else if let lastURL = lastPlaybackURL {
           // If no row selected in table, most recent file button is selected. Use that if it exists
+          Logger.log("Opening lastPlaybackURL new player window", level: .verbose)
           openInNewPlayer(lastURL)
         } else if recentFilesTableView.numberOfRows > 0 {
           // Most recent file no longer exists? Try to load next one
@@ -454,12 +456,19 @@ class InitialWindowViewActionButton: NSView {
   override func mouseDown(with event: NSEvent) {
     self.layer?.backgroundColor = pressedBackground.cgColor
     if self.identifier == .openFile {
+      Logger.log("User clicked the Open File button", level: .verbose)
       (NSApp.delegate as! AppDelegate).openFile(self)
     } else if self.identifier == .openURL {
+      Logger.log("User clicked the Open URL button", level: .verbose)
       (NSApp.delegate as! AppDelegate).openURL(self)
     } else {
-      if let lastFile = Preference.url(for: .iinaLastPlayedFilePath) {
-        PlayerCore.newPlayerCore.openURL(lastFile)
+
+      // Make sure to load the same file which is displayed: get from window controller.
+      // Do not load from prefs because that may have changed since the window was opened (by another IINA instance, most likely)
+      if let windowController = window?.windowController as? InitialWindowController,
+         let lastURL = windowController.lastPlaybackURL {
+        Logger.log("Opening lastPlaybackURL by default for mouse click", level: .verbose)
+        PlayerCore.newPlayerCore.openURL(lastURL)
       }
     }
   }

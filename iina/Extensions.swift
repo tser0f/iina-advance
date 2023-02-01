@@ -736,7 +736,7 @@ extension NSWindow {
           Logger.log("Found another window which is still open: \(window.title.quoted)", level: .verbose)
           return false
         } else if let mainWindow = window.windowController as? MainWindowController, mainWindow.isOpen {
-          Logger.log("Found a player window which is still open: \(window.title.quoted)", level: .verbose)
+          Logger.log("Window for player\(mainWindow.player.label.quoted) is still open", level: .verbose)
           return false
         }
       }

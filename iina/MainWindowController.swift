@@ -121,6 +121,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   var isOpen: Bool {
+    if !self.isWindowLoaded {
+      return false
+    }
     guard let window = self.window else { return false }
     // Also check if hidden due to PIP
     return window.isVisible || isWindowHidden

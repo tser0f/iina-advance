@@ -346,7 +346,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     // Certain events (like when PIP is enabled) can result in this being called when it shouldn't.
-    guard PlayerCore.active.mainWindow.loaded || initialWindow.isWindowLoaded else { return false }
     guard !PlayerCore.active.mainWindow.isOpen else { return false }
 
     if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {
