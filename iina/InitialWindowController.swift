@@ -222,12 +222,9 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func loadLastPlaybackInfo() {
-    if Preference.bool(for: .recordRecentFiles),
-      Preference.bool(for: .resumeLastPosition),
-      let lastFile = Preference.url(for: .iinaLastPlayedFilePath),
-      FileManager.default.fileExists(atPath: lastFile.path) {
+    let lastFile = getLastPlaybackIfValid()
+    if let lastFile = lastFile {
       // if last file exists
-      lastPlaybackURL = lastFile
       lastFileContainerView.isHidden = false
       lastFileContainerView.normalBackground = NSColor.initialWindowLastFileBackground
       lastFileContainerView.hoverBackground = NSColor.initialWindowLastFileBackgroundHover
@@ -238,23 +235,36 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
       lastPositionLabel.stringValue = VideoTime(lastPosition).stringRepresentation
       recentFilesTableTopConstraint.constant = 42
     } else {
-      lastPlaybackURL = nil
       lastFileContainerView.isHidden = true
       recentFilesTableTopConstraint.constant = 24
     }
+    lastPlaybackURL = lastFile
+  }
+
+  private func getLastPlaybackIfValid() -> URL? {
+    if Preference.bool(for: .recordRecentFiles) && Preference.bool(for: .resumeLastPosition),
+       let lastFile = Preference.url(for: .iinaLastPlayedFilePath) {
+
+      guard FileManager.default.fileExists(atPath: lastFile.path) else {
+        Logger.log("File does not exist at lastPlaybackURL: \(lastFile.path.quoted)")
+        return nil
+      }
+      return lastFile
+    }
+    return nil
   }
 
   func reloadData() {
     guard isWindowLoaded else { return }
 
     loadLastPlaybackInfo()
-    recentDocuments = makeRecentDocumentsList()
     recentFilesTableView.reloadData()
 
     if Logger.isEnabled(.verbose) {
-      let last = lastPlaybackURL.flatMap { $0.resolvingSymlinksInPath().path } ?? "<none>"
+      let last = lastPlaybackURL.flatMap { $0.resolvingSymlinksInPath().path.quoted } ?? "nil"
       Logger.log("InitialWindow.reloadData(): LastPlaybackURL: \(last)", level: .verbose)
 
+      Logger.log("RecentDocuments_Unfiltered count: \(NSDocumentController.shared.recentDocumentURLs.count)", level: .verbose)
       for (index, url) in NSDocumentController.shared.recentDocumentURLs.enumerated() {
         Logger.log("InitialWindow.reloadData(): RecentDocuments_Unfiltered[\(index)]: \(url.resolvingSymlinksInPath().path)", level: .verbose)
       }
