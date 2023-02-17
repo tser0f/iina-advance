@@ -764,7 +764,7 @@ struct Preference {
     .oscPosition: OSCPosition.floating.rawValue,
     .playlistWidth: 270,
     .prefetchPlaylistVideoDuration: true,
-    .themeMaterial: Theme.dark.rawValue,
+    .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(20),
