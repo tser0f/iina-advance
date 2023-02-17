@@ -243,10 +243,6 @@ class MenuController: NSObject, NSMenuDelegate {
     jumpTo.action = #selector(PlayerWindowController.menuJumpTo(_:))
 
     // -- speed
-    (speedUp.representedObject,
-     speedUpSlightly.representedObject,
-     speedDown.representedObject,
-     speedDownSlightly.representedObject) = (2.0, 1.1, 0.5, 0.9)
     [speedUp, speedDown, speedUpSlightly, speedDownSlightly, speedReset].forEach { item in
       item?.action = #selector(PlayerWindowController.menuChangeSpeed(_:))
     }
@@ -349,20 +345,12 @@ class MenuController: NSObject, NSMenuDelegate {
     audioTrackMenu.delegate = self
 
     // - volume
-    (increaseVolume.representedObject,
-     decreaseVolume.representedObject,
-     increaseVolumeSlightly.representedObject,
-     decreaseVolumeSlightly.representedObject) = (5, -5, 1, -1)
     [increaseVolume, decreaseVolume, increaseVolumeSlightly, decreaseVolumeSlightly].forEach { item in
       item?.action = #selector(PlayerWindowController.menuChangeVolume(_:))
     }
     mute.action = #selector(PlayerWindowController.menuToggleMute(_:))
 
     // - audio delay
-    (increaseAudioDelay.representedObject,
-     increaseAudioDelaySlightly.representedObject,
-     decreaseAudioDelay.representedObject,
-     decreaseAudioDelaySlightly.representedObject) = (0.5, 0.1, -0.5, -0.1)
     [increaseAudioDelay, decreaseAudioDelay, increaseAudioDelaySlightly, decreaseAudioDelaySlightly].forEach { item in
       item?.action = #selector(PlayerWindowController.menuChangeAudioDelay(_:))
     }
@@ -397,10 +385,6 @@ class MenuController: NSObject, NSMenuDelegate {
     }
 
     // - delay
-    (increaseSubDelay.representedObject,
-     increaseSubDelaySlightly.representedObject,
-     decreaseSubDelay.representedObject,
-     decreaseSubDelaySlightly.representedObject) = (0.5, 0.1, -0.5, -0.1)
     [increaseSubDelay, decreaseSubDelay, increaseSubDelaySlightly, decreaseSubDelaySlightly].forEach { item in
       item?.action = #selector(PlayerWindowController.menuChangeSubDelay(_:))
     }
@@ -580,7 +564,7 @@ class MenuController: NSObject, NSMenuDelegate {
   }
 
   func updatePluginMenu() {
-    Logger.log("Updating Plugin menu")
+    Logger.log("Updating Plugin menu", level: .verbose)
     pluginMenu.removeAllItems()
     pluginMenu.addItem(pluginErrorNotice)
     pluginErrorNotice.isHidden = true
@@ -881,8 +865,8 @@ class MenuController: NSObject, NSMenuDelegate {
       }
   }
 
-  private func matchKeyEquivalents(with mpvBindings: [InputBinding]) {
-    var settings: [(NSMenuItem, Bool, [String], Bool, ClosedRange<Double>?, String?)] = [
+  private func matchKeyEquivalents(with userBindings: [InputBinding]) {
+    var bindableMenuItems: [(NSMenuItem, Bool, [String], Bool, ClosedRange<Double>?, String?)] = [
       (deleteCurrentFile, true, ["delete-current-file"], false, nil, nil),
       (savePlaylist, true, ["save-playlist"], false, nil, nil),
       (quickSettingsVideo, true, ["video-panel"], false, nil, nil),
@@ -945,36 +929,49 @@ class MenuController: NSObject, NSMenuDelegate {
     ]
 
     if #available(macOS 10.12, *) {
-      settings.append((pictureInPicture, true, ["toggle-pip"], false, nil, nil))
+      bindableMenuItems.append((pictureInPicture, true, ["toggle-pip"], false, nil, nil))
     }
 
-    settings.forEach { (menuItem, isIINACmd, actions, normalizeLastNum, numRange, l10nKey) in
-      var bound = false
-      for binding in mpvBindings {
+    bindableMenuItems.forEach { (menuItem, isIINACmd, actionForMenuItem, normalizeLastNum, numRange, l10nKey) in
+      var didBindMenuItem = false
+      for binding in userBindings {
         guard binding.isEnabled else { continue }
         let kb = binding.keyMapping
         guard kb.isIINACommand == isIINACmd else { continue }
-        let (sameAction, value, extraData) = sameKeyAction(kb.action, actions, normalizeLastNum, numRange)
+        let (sameAction, value, extraData) = sameKeyAction(kb.action, actionForMenuItem, normalizeLastNum, numRange)
         if sameAction, let (kEqv, kMdf) = KeyCodeHelper.macOSKeyEquivalent(from: kb.normalizedMpvKey) {
-          menuItem.keyEquivalent = kEqv
-          menuItem.keyEquivalentModifierMask = kMdf
-          if let value = value, let l10nKey = l10nKey {
-            menuItem.title = String(format: NSLocalizedString("menu." + l10nKey, comment: ""), abs(value))
-            if let extraData = extraData {
-              menuItem.representedObject = (value, extraData)
-            } else {
-              menuItem.representedObject = value
-            }
-          }
-          bound = true
+          didBindMenuItem = true
           binding.associatedMenuItem = menuItem  // so we can indicate it in UI
           binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
+
+          updateMenuItem(menuItem, kEqv: kEqv, kMdf: kMdf, l10nKey: l10nKey, value: value, extraData: extraData)
           break
         }
       }
-      if !bound {
-        menuItem.keyEquivalent = ""
-        menuItem.keyEquivalentModifierMask = []
+
+      if !didBindMenuItem {
+        // Need to regenerate `title` and `representedObject` from their default values.
+        // This is needed for the case where the menu item previously matched to a key binding, but now there is no match.
+        // Obviously this is a little kludgey, but it avoids having to do a big refactor and/or writing a bunch of new code.
+        let (_, value, extraData) = sameKeyAction(actionForMenuItem, actionForMenuItem, normalizeLastNum, numRange)
+
+        updateMenuItem(menuItem, kEqv: "", kMdf: [], l10nKey: l10nKey, value: value, extraData: extraData)
+      }
+    }
+  }
+
+  // Updates the key equivalent of the given menu item.
+  // May also change its title and representedObject, for items which can change based on some param value(s).
+  private func updateMenuItem(_ menuItem: NSMenuItem, kEqv: String, kMdf: NSEvent.ModifierFlags, l10nKey: String?, value: Double?, extraData: Any?) {
+    menuItem.keyEquivalent = kEqv
+    menuItem.keyEquivalentModifierMask = kMdf
+
+    if let value = value, let l10nKey = l10nKey {
+      menuItem.title = String(format: NSLocalizedString("menu." + l10nKey, comment: ""), abs(value))
+      if let extraData = extraData {
+        menuItem.representedObject = (value, extraData)
+      } else {
+        menuItem.representedObject = value
       }
     }
   }
