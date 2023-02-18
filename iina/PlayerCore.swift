@@ -568,10 +568,12 @@ class PlayerCore: NSObject {
     }
     let useExact = forceExact ? true : Preference.bool(for: .useExactSeek)
     let seekMode = useExact ? "absolute-percent+exact" : "absolute-percent"
+    Logger.log("Seek \(percent) % (forceExact: \(forceExact), useExact: \(useExact) -> \(seekMode))", level: .verbose, subsystem: subsystem)
     mpv.command(.seek, args: ["\(percent)", seekMode], checkError: false)
   }
 
   func seek(relativeSecond: Double, option: Preference.SeekOption) {
+    Logger.log("Seek \(relativeSecond)s (\(option.rawValue))", level: .verbose, subsystem: subsystem)
     switch option {
 
     case .relative:
@@ -597,10 +599,12 @@ class PlayerCore: NSObject {
   }
 
   func seek(absoluteSecond: Double) {
+    Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
     mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
   }
 
   func frameStep(backwards: Bool) {
+    Logger.log("FrameStep (\(backwards ? "-" : "+"))", level: .verbose, subsystem: subsystem)
     if backwards {
       mpv.command(.frameBackStep)
     } else {
