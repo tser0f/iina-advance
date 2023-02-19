@@ -93,7 +93,6 @@ class PlaybackInfo {
     }
   }
 
-  var justLaunched: Bool = true  // FIXME: find a better way to determine whether window was just opened
   var justStartedFile: Bool = false
   var justOpenedFile: Bool = false
   var shouldAutoLoadFiles: Bool = false

@@ -1463,13 +1463,9 @@ class PlayerCore: NSObject {
         miniPlayer.defaultAlbumArt.isHidden = self.info.vid != 0
       }
     }
-    // set initial properties for the first file
-    if info.justLaunched {
-      if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
+    if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
         Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
-        DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
-      }
-      info.justLaunched = false
+      DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
     }
     // add to history
     if let url = info.currentURL {
