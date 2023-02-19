@@ -110,7 +110,14 @@ class MainWindowController: PlayerWindowController {
   // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` (can only be one of 0, 90, 180, 270)
   lazy var rotation: Int = {
     return player.mpv.getInt(MPVProperty.videoParamsRotate)
-  }()
+  }() {
+    didSet {
+      // FIXME: this isn't perfect - a bad frame briefly appears during transition
+      Logger.log("Resetting videoView")
+      rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: 0, animate: false)
+      cgCurrentRotationDegrees = 0
+    }
+  }
 
   // MARK: - Status
 
@@ -1088,98 +1095,9 @@ class MainWindowController: PlayerWindowController {
     CGFloat(Int(rotationDegrees / 360) * 360)
   }
 
-  // `newRotationDegrees` is the goal; `videoView` may already be rotated
-  private func updateRotationOfVideoView(fromDegrees: CGFloat, toDegrees: CGFloat, animate: Bool = true) {
-    let rotationWithFudge = toDegrees - 0.1
-    let rotationRadians = degToRad(rotationWithFudge)
-
-    // Animation is enabled by default for this view.
-    // We only want to animate some rotations and not others, and never want to animate
-    // position change. So put these in an explicitly disabled transaction block:
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    // Rotate about center point. Also need to change position because.
-    let centerPoint = CGPointMake(NSMidX(videoView.frame), NSMidY(videoView.frame))
-    videoView.layer?.position = centerPoint
-    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-    CATransaction.commit()
-
-    if animate {
-      Logger.log("Animating rotation from \(fromDegrees)° to \(rotationWithFudge)°")
-      let lastRotationInRadians = degToRad(fromDegrees)
-
-      CATransaction.begin()
-      // This will show an animation but doesn't change its permanent state.
-      // Still need the rotation call down below to do that.
-      let rotateAnimation = CABasicAnimation(keyPath: "transform")
-      rotateAnimation.valueFunction = CAValueFunction(name: .rotateZ)
-      rotateAnimation.fromValue = lastRotationInRadians
-      rotateAnimation.toValue = rotationRadians
-      rotateAnimation.duration = 0.2
-      videoView.layer?.add(rotateAnimation, forKey: "transform")
-      CATransaction.commit()
-    }
-
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    // This updates the view's permanent position, but won't animate.
-    // Need to call this even if running the animation above, or else layer will revert to its prev appearance
-    videoView.layer?.transform = CATransform3DMakeRotation(rotationRadians, 0, 0, 1)
-    CATransaction.commit()
-  }
-
-  private var lastRotation: CGFloat = 0
-
-  @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
-    guard rotateAction == .rotateVideoByQuarters else { return }
-
-    switch recognizer.state {
-      case .began, .changed:
-        let newRotationDegrees = recognizer.rotationInDegrees
-        updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: newRotationDegrees, animate: false)
-        lastRotation = newRotationDegrees
-        break
-      case .failed, .cancelled:
-        lastRotation = 0
-        break
-      case .ended:
-        // mpv and CoreGraphics rotate in opposite directions
-        let mpvNormalizedRotationDegrees = normalizeRotation(Int(-recognizer.rotationInDegrees))
-        let mpvClosestQuarterCircleRotation = findClosestQuarterCircleRotation(mpvNormalizedRotationDegrees)
-        if mpvClosestQuarterCircleRotation != AppData.rotations[0] {  // discard zero rotation
-          // Snap to one of the 4 quarter circle rotations
-          let newRotation = (self.rotation + mpvClosestQuarterCircleRotation) %% 360
-          Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterCircleRotation)°: changing video rotation from \(rotation)° to \(newRotation)°")
-          let completeCirclesTotalDegrees = completeCircleDegrees(of: recognizer.rotationInDegrees)
-          let closestQuarterCircleRotation = CGFloat(normalizeRotation(-mpvClosestQuarterCircleRotation))
-          let lessThanWholeRotation = recognizer.rotationInDegrees - completeCirclesTotalDegrees
-          let snapRotation: CGFloat
-          if lessThanWholeRotation > 0 {
-            // positive direction:
-            snapRotation = completeCirclesTotalDegrees + closestQuarterCircleRotation
-          } else {
-            // negative direction:
-            snapRotation = completeCirclesTotalDegrees + (closestQuarterCircleRotation - 360)
-          }
-          Logger.log("completeCirclesTotalDegrees: \(completeCirclesTotalDegrees) lessThanWholeRotation: \(lessThanWholeRotation); closestQuarterCircleRotationMPV: \(closestQuarterCircleRotation) -> snap to \(snapRotation)")
-          updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: snapRotation, animate: true)
-          lastRotation = 0
-          player.setVideoRotate(newRotation)
-          return
-        }
-        lastRotation -= completeCircleDegrees(of: lastRotation) // don't "unwind" if wound up; just use shortest arc back to origin
-        Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(lastRotation)°")
-        updateRotationOfVideoView(fromDegrees: lastRotation, toDegrees: 0, animate: true)
-        lastRotation = 0
-
-      default:
-        return
-    }
-  }
-
   // Reduces the given rotation to one which is a positive number between 0 and 360 degrees and has the same resulting orientation.
   private func normalizeRotation(_ rotationDegrees: Int) -> Int {
-    // Take out all full rotations so we end up with between -360 and 360
+    // Take out all full rotations so we end up with number between -360 and 360
     let simplifiedRotation = rotationDegrees %% 360
     // Remove direction and return a number from 0..<360
     return simplifiedRotation < 0 ? simplifiedRotation + 360 : simplifiedRotation
@@ -1194,6 +1112,102 @@ class MainWindowController: PlayerWindowController {
       }
     }
     return AppData.rotations[0]
+  }
+
+  // Side effect: sets `cgCurrentRotationDegrees` to `toDegrees` before returning
+  private func rotateVideoView(fromDegrees: CGFloat, toDegrees: CGFloat, animate: Bool = true) {
+    let toDegreesWithFudge = toDegrees - 0.1
+    let toRadians = degToRad(toDegreesWithFudge)
+
+    // Animation is enabled by default for this view.
+    // We only want to animate some rotations and not others, and never want to animate
+    // position change. So put these in an explicitly disabled transaction block:
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    // Rotate about center point. Also need to change position because.
+    let centerPoint = CGPointMake(NSMidX(videoView.frame), NSMidY(videoView.frame))
+    videoView.layer?.position = centerPoint
+    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+    CATransaction.commit()
+
+    if animate {
+      Logger.log("Animating rotation from \(fromDegrees)° to \(toDegreesWithFudge)°")
+
+      CATransaction.begin()
+      // This will show an animation but doesn't change its permanent state.
+      // Still need the rotation call down below to do that.
+      let rotateAnimation = CABasicAnimation(keyPath: "transform")
+      rotateAnimation.valueFunction = CAValueFunction(name: .rotateZ)
+      rotateAnimation.fromValue = degToRad(fromDegrees)
+      rotateAnimation.toValue = toRadians
+      rotateAnimation.duration = 0.2
+      videoView.layer?.add(rotateAnimation, forKey: "transform")
+      CATransaction.commit()
+    }
+
+    // This block updates the view's permanent position, but won't animate.
+    // Need to call this even if running the animation above, or else layer will revert to its prev appearance after
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    videoView.layer?.transform = CATransform3DMakeRotation(toRadians, 0, 0, 1)
+    CATransaction.commit()
+
+    cgCurrentRotationDegrees = toDegrees
+  }
+
+  private var cgCurrentRotationDegrees: CGFloat = 0
+
+  private func findNearestCGQuarterRotation(forCGRotation cgRotationInDegrees: CGFloat, equalToMpvRotation mpvQuarterRotation: Int) -> CGFloat {
+    let cgCompleteCirclesTotalDegrees = completeCircleDegrees(of: cgRotationInDegrees)
+    let cgClosestQuarterCircleRotation = CGFloat(normalizeRotation(-mpvQuarterRotation))
+    let cgLessThanWholeRotation = cgRotationInDegrees - cgCompleteCirclesTotalDegrees
+    let cgSnapToDegrees: CGFloat
+    if cgLessThanWholeRotation > 0 {
+      // positive direction:
+      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + cgClosestQuarterCircleRotation
+    } else {
+      // negative direction:
+      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + (cgClosestQuarterCircleRotation - 360)
+    }
+    Logger.log("cgCompleteCirclesTotalDegrees: \(cgCompleteCirclesTotalDegrees)° cgLessThanWholeRotation: \(cgLessThanWholeRotation); cgClosestQuarterCircleRotation: \(cgClosestQuarterCircleRotation)° -> cgSnapToDegrees: \(cgSnapToDegrees)°")
+    return cgSnapToDegrees
+  }
+
+  @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
+    guard rotateAction == .rotateVideoByQuarters else { return }
+
+    switch recognizer.state {
+      case .began, .changed:
+        let cgNewRotationDegrees = recognizer.rotationInDegrees
+        rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: cgNewRotationDegrees, animate: false)
+        break
+      case .failed, .cancelled:
+        cgCurrentRotationDegrees = 0
+        break
+      case .ended:
+        // mpv and CoreGraphics rotate in opposite directions
+        let mpvNormalizedRotationDegrees = normalizeRotation(Int(-recognizer.rotationInDegrees))
+        let mpvClosestQuarterCircleRotation = findClosestQuarterCircleRotation(mpvNormalizedRotationDegrees)
+        if mpvClosestQuarterCircleRotation != AppData.rotations[0] {  // discard zero degree rotation
+          // Snap to one of the 4 quarter circle rotations
+          let mpvNewRotation = (self.rotation + mpvClosestQuarterCircleRotation) %% 360
+          Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterCircleRotation)°: changing video rotation from \(rotation)° to \(mpvNewRotation)°")
+          // Need to convert snap-to location back to CG, to feed to animation
+          let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
+                                                             equalToMpvRotation: mpvClosestQuarterCircleRotation)
+          rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: cgSnapToDegrees, animate: true)
+          // FIXME: something's wrong here. Need to account for videos which are pre-rotated
+//          let mpvCurrentVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
+          player.setVideoRotate(mpvNewRotation)
+          return
+        }
+        cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees) // don't "unwind" if wound up; just use shortest arc back to origin
+        Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
+        rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: 0, animate: true)
+
+      default:
+        return
+    }
   }
 
   // MARK: - Window delegate: Open / Close
@@ -2349,8 +2363,11 @@ class MainWindowController: PlayerWindowController {
 
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
   func windowFrameFromGeometry(newSize: NSSize? = nil, screen: NSScreen? = nil) -> NSRect? {
-    guard let geometry = cachedGeometry ?? player.getGeometry(),
-      let screenFrame = (screen ?? window?.screen)?.visibleFrame else { return nil }
+    guard let geometry = cachedGeometry ?? player.getGeometry(), let screenFrame = (screen ?? window?.screen)?.visibleFrame else {
+      Logger.log("windowFrameFromGeometry: missing something; returning nil")
+      return nil
+    }
+    Logger.log("windowFrameFromGeometry: using \(geometry), screenFrame: \(screenFrame)", level: .verbose)
 
     cachedGeometry = geometry
     var winFrame = window!.frame
@@ -2420,6 +2437,7 @@ class MainWindowController: PlayerWindowController {
     winFrame.origin.x += screenFrame.origin.x
     winFrame.origin.y += screenFrame.origin.y
 
+    Logger.log("windowFrameFromGeometry: returning \(winFrame)", level: .verbose)
     return winFrame
   }
 
@@ -2429,7 +2447,7 @@ class MainWindowController: PlayerWindowController {
 
     let (width, height) = player.videoSizeForDisplay
     if width != player.info.displayWidth || height != player.info.displayHeight {
-      Logger.log("videoSizeForDisplay (width: \(width), height: \(height)) does not match PlayerInfo (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .error)
+      Logger.log("adjustFrameByVideoSize: videoSizeForDisplay (W: \(width), H: \(height)) does not match PlayerInfo (W: \(player.info.displayWidth!), H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .error)
     }
 
     // set aspect ratio
@@ -2439,7 +2457,7 @@ class MainWindowController: PlayerWindowController {
       pip.aspectRatio = originalVideoSize
     }
 
-    Logger.log("videoView.frame: \(videoView.frame)")
+    Logger.log("adjustFrameByVideoSize() entered (videoView.frame: \(videoView.frame))", level: .verbose)
     let newSize = window.convertToBacking(videoView.frame).size
     videoView.videoSize = newSize
 
@@ -2465,7 +2483,7 @@ class MainWindowController: PlayerWindowController {
       needResizeWindow = true
     }
 
-    Logger.log("Setting videoSize from \(width)x\(height) resulted in: \(newSize); willResizeWindow: \(needResizeWindow)")
+    Logger.log("From videoSizeForDisplay (\(width)x\(height)), setting frameSize: \(newSize.width)x\(newSize.height); willResizeWindow: \(needResizeWindow)", level: .verbose)
 
     if needResizeWindow {
       let resizeRatio = (Preference.enum(for: .resizeWindowOption) as Preference.ResizeWindowOption).ratio
@@ -2476,6 +2494,7 @@ class MainWindowController: PlayerWindowController {
       if Preference.bool(for: .usePhysicalResolution) {
         videoSize = window.convertFromBacking(
           NSMakeRect(window.frame.origin.x, window.frame.origin.y, CGFloat(width), CGFloat(height))).size
+        Logger.log("Converted to physical resolution, result: \(videoSize)", level: .verbose)
       }
       if player.info.justStartedFile {
         if resizeRatio < 0 {
@@ -2485,22 +2504,28 @@ class MainWindowController: PlayerWindowController {
         } else {
           videoSize = videoSize.multiply(CGFloat(resizeRatio))
         }
+        Logger.log("Applied resizeRatio (\(resizeRatio)), result: \(videoSize)", level: .verbose)
       }
       // check screen size
       if let screenSize = screenRect?.size {
         videoSize = videoSize.satisfyMaxSizeWithSameAspectRatio(screenSize)
+        Logger.log("Constrained max size to screenSize (\(screenSize)), result: \(videoSize)", level: .verbose)
       }
       // guard min size
       // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
       videoSize = videoSize.satisfyMinSizeWithSameAspectRatio(minSize)
+      Logger.log("Constrained min size (\(minSize)). Final result for videoSize: \(videoSize)", level: .verbose)
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: videoSize) {
+        Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
         rect = wfg
       } else {
         if player.info.justStartedFile, resizeRatio < 0, let screenRect = screenRect {
           rect = screenRect.centeredResize(to: videoSize)
+          Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(rect)", level: .verbose)
         } else {
           rect = frame.centeredResize(to: videoSize)
+          Logger.log("Did a centered resize using prior frame \(frame); resulting windowFrame: \(rect)", level: .verbose)
         }
       }
 
@@ -2509,6 +2534,7 @@ class MainWindowController: PlayerWindowController {
       let newHeight = frame.width / CGFloat(width) * CGFloat(height)
       let newSize = NSSize(width: frame.width, height: newHeight).satisfyMinSizeWithSameAspectRatio(minSize)
       rect = NSRect(origin: frame.origin, size: newSize)
+      Logger.log("Using same width, with new height (\(newHeight)) \(frame); resulting windowFrame: \(rect)", level: .verbose)
     }
 
     // maybe not a good position, consider putting these at playback-restart
@@ -2578,6 +2604,7 @@ class MainWindowController: PlayerWindowController {
       // otherwise, resize the window normally
       newFrame = window.frame.centeredResize(to: finalSize.satisfyMinSizeWithSameAspectRatio(minSize)).constrain(in: screenFrame)
     }
+    Logger.log("Setting windowScale to: \(scale) -> newFrame: \(newFrame)")
     window.setFrame(newFrame, display: true, animate: true)
   }
 

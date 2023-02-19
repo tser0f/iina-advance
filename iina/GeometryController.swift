@@ -1,5 +1,5 @@
 //
-//  GeometryManager.swift
+//  GeometryController.swift
 //  iina
 //
 //  Created by Matt Svoboda on 2023-01-31.

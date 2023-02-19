@@ -20,7 +20,13 @@ class VideoView: NSView {
     return layer
   }()
 
-  var videoSize: NSSize?
+  var videoSize: NSSize? {
+    didSet {
+      let oldStr = oldValue != nil ? "\(oldValue!)" : "nil"
+      let newStr = videoSize != nil ? "\(videoSize!)" : "nil"
+      Logger.log("VideoView.videoSize changed from \(oldStr) to: \(newStr)")
+    }
+  }
 
   var isUninited = false
 

@@ -843,7 +843,7 @@ class MPVController: NSObject {
             args.append(String(cString: (bufferPointer[i])!))
           }
         }
-        Logger.log("mpv \(eventId): \(numArgs >= 0 ? "\(args)": "numArgs=\(numArgs)")", level: .verbose)
+        Logger.log("Got mpv '\(eventId)': \(numArgs >= 0 ? "\(args)": "numArgs=\(numArgs)")", level: .verbose, subsystem: player.subsystem)
 
     case MPV_EVENT_SHUTDOWN:
       let quitByMPV = !player.isShuttingDown
@@ -929,7 +929,7 @@ class MPVController: NSObject {
       let osdText = (player.info.videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder) + " / " +
         (player.info.videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder)
       let percentage = (player.info.videoPosition / player.info.videoDuration) ?? 1
-        Logger.log("Got seek; sending to OSD: \(osdText.quoted), \(percentage)%", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Got mpv '\(eventId)'; sending to OSD: \(osdText.quoted), \(percentage)%", level: .verbose, subsystem: player.subsystem)
       player.sendOSD(.seek(osdText, percentage))
 
     case MPV_EVENT_PLAYBACK_RESTART:
@@ -1032,7 +1032,7 @@ class MPVController: NSObject {
     if player.info.rotation == 90 || player.info.rotation == 270 {
       swap(&dwidth, &dheight)
     }
-    Logger.log("Got 'video-reconfig' msg. mpv = (width: \(dwidth), height: \(dheight)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)")
+    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .verbose, subsystem: player.subsystem)
     if dwidth != player.info.displayWidth! || dheight != player.info.displayHeight! {
       // filter the last video-reconfig event before quit
       if dwidth == 0 && dheight == 0 && getFlag(MPVProperty.coreIdle) { return }
@@ -1060,6 +1060,7 @@ class MPVController: NSObject {
 
     case MPVProperty.videoParamsRotate:
       if let rotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
+        Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate) ≔ \(rotation)", level: .verbose, subsystem: player.subsystem)
         player.mainWindow.rotation = rotation
       }
 
@@ -1157,7 +1158,8 @@ class MPVController: NSObject {
 
     case MPVOption.Video.videoRotate:
       if let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee {
-      let intData = Int(data)
+        let intData = Int(data)
+        Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(intData)", level: .verbose, subsystem: player.subsystem)
         player.info.rotation = intData
       }
 
@@ -1278,6 +1280,7 @@ class MPVController: NSObject {
     case MPVOption.Window.windowScale:
       guard player.mainWindow.loaded else { break }
       let windowScale = getDouble(MPVOption.Window.windowScale)
+      Logger.log("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale)", level: .verbose, subsystem: player.subsystem)
       if fabs(windowScale - player.info.cachedWindowScale) > 10e-10 {
         DispatchQueue.main.async {
           self.player.mainWindow.setWindowScale(windowScale)
@@ -1313,13 +1316,13 @@ class MPVController: NSObject {
           return "\t\(String(format: "%03d", index))   \(mapping.confFileFormat)"
         }.joined(separator: "\n")
 
-        Logger.log("mpv property changed: \(MPVProperty.inputBindings):\n\(mappingListStr)")
+        Logger.log("Got mpv prop: \(MPVProperty.inputBindings.quoted)≔\n\(mappingListStr)", level: .verbose, subsystem: player.subsystem)
       } catch {
-        Logger.log("Failed to parse!", level: .error)
+        Logger.log("Failed to parse property data for \(MPVProperty.inputBindings.quoted)!", level: .error, subsystem: player.subsystem)
       }
 
     default:
-      Logger.log("mpv property changed (unhandled): \(name)", level: .verbose)
+      Logger.log("Unhandled mpv prop: \(name.quoted)", level: .verbose, subsystem: player.subsystem)
       break
 
     }

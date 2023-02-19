@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct GeometryDef {
+struct GeometryDef: CustomStringConvertible {
   var x: String?, y: String?, w: String?, h: String?, xSign: String?, ySign: String?
 
   static func parse(_ geometryString: String) -> GeometryDef? {
@@ -27,4 +27,13 @@ struct GeometryDef {
                        ySign: captures[8])
   }
 
+  var description: String {
+    let x0 = x == nil ? "nil" : String(x!)
+    let y0 = y == nil ? "nil" : String(y!)
+    let w0 = w == nil ? "nil" : String(w!)
+    let h0 = h == nil ? "nil" : String(h!)
+    let xSign0 = xSign == nil ? "nil" : String(ySign!)
+    let ySign0 = ySign == nil ? "nil" : String(ySign!)
+    return "Geometry(x: \(x0), y: \(y0), W: \(w0), H: \(h0), xSign=\(xSign0), ySign=\(ySign0))"
+  }
 }
