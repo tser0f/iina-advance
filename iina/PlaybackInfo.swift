@@ -42,7 +42,8 @@ class PlaybackInfo {
   var displayWidth: Int?
   var displayHeight: Int?
 
-  // Is refreshed as property change events arrive for `MPVOption.Video.videoRotate`:
+  // Is refreshed as property change events arrive for `MPVOption.Video.videoRotate` ("video-rotate").
+  // Not to be confused with the `MPVProperty.videoParamsRotate` ("video-params/rotate")
   var rotation: Int = 0
 
   var videoPosition: VideoTime?

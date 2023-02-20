@@ -109,17 +109,14 @@ class MainWindowController: PlayerWindowController {
   var cachedScreenCount = 0
   var blackWindows: [NSWindow] = []
 
-  // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` (can only be one of 0, 90, 180, 270)
+  // Current rotation of videoView
+  private var cgCurrentRotationDegrees: CGFloat = 0
+
+  // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
+  // IINA only supports one of [0, 90, 180, 270]
   lazy var rotation: Int = {
     return player.mpv.getInt(MPVProperty.videoParamsRotate)
-  }() {
-    didSet {
-      // FIXME: this isn't perfect - a bad frame briefly appears during transition
-      Logger.log("Resetting videoView")
-      rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: 0, animate: false)
-      cgCurrentRotationDegrees = 0
-    }
-  }
+  }()
 
   // MARK: - Status
 
@@ -1131,7 +1128,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   // Find which 90° rotation the given rotation is closest to (within 45° of it).
-  private func findClosestQuarterCircleRotation(_ mpvNormalizedRotationDegrees: Int) -> Int {
+  private func findClosestQuarterRotation(_ mpvNormalizedRotationDegrees: Int) -> Int {
     assert(mpvNormalizedRotationDegrees >= 0 && mpvNormalizedRotationDegrees < 360)
     for quarterCircleRotation in AppData.rotations {
       if mpvNormalizedRotationDegrees < quarterCircleRotation + 45 {
@@ -1142,9 +1139,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   // Side effect: sets `cgCurrentRotationDegrees` to `toDegrees` before returning
-  private func rotateVideoView(fromDegrees: CGFloat, toDegrees: CGFloat, animate: Bool = true) {
-    let toDegreesWithFudge = toDegrees - 0.1
-    let toRadians = degToRad(toDegreesWithFudge)
+  func rotateVideoView(toDegrees: CGFloat, animate: Bool = true) {
+    let fromDegrees = cgCurrentRotationDegrees
+    let toRadians = degToRad(toDegrees)
 
     // Animation is enabled by default for this view.
     // We only want to animate some rotations and not others, and never want to animate
@@ -1158,7 +1155,7 @@ class MainWindowController: PlayerWindowController {
     CATransaction.commit()
 
     if animate {
-      Logger.log("Animating rotation from \(fromDegrees)° to \(toDegreesWithFudge)°")
+      Logger.log("Animating rotation from \(fromDegrees)° to \(toDegrees)°")
 
       CATransaction.begin()
       // This will show an animation but doesn't change its permanent state.
@@ -1182,21 +1179,19 @@ class MainWindowController: PlayerWindowController {
     cgCurrentRotationDegrees = toDegrees
   }
 
-  private var cgCurrentRotationDegrees: CGFloat = 0
-
   private func findNearestCGQuarterRotation(forCGRotation cgRotationInDegrees: CGFloat, equalToMpvRotation mpvQuarterRotation: Int) -> CGFloat {
     let cgCompleteCirclesTotalDegrees = completeCircleDegrees(of: cgRotationInDegrees)
-    let cgClosestQuarterCircleRotation = CGFloat(normalizeRotation(-mpvQuarterRotation))
+    let cgClosestQuarterRotation = CGFloat(normalizeRotation(-mpvQuarterRotation))
     let cgLessThanWholeRotation = cgRotationInDegrees - cgCompleteCirclesTotalDegrees
     let cgSnapToDegrees: CGFloat
     if cgLessThanWholeRotation > 0 {
       // positive direction:
-      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + cgClosestQuarterCircleRotation
+      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + cgClosestQuarterRotation
     } else {
       // negative direction:
-      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + (cgClosestQuarterCircleRotation - 360)
+      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + (cgClosestQuarterRotation - 360)
     }
-    Logger.log("cgCompleteCirclesTotalDegrees: \(cgCompleteCirclesTotalDegrees)° cgLessThanWholeRotation: \(cgLessThanWholeRotation); cgClosestQuarterCircleRotation: \(cgClosestQuarterCircleRotation)° -> cgSnapToDegrees: \(cgSnapToDegrees)°")
+    Logger.log("mpvQuarterRotation: \(mpvQuarterRotation) cgCompleteCirclesTotalDegrees: \(cgCompleteCirclesTotalDegrees)° cgLessThanWholeRotation: \(cgLessThanWholeRotation); cgClosestQuarterRotation: \(cgClosestQuarterRotation)° -> cgSnapToDegrees: \(cgSnapToDegrees)°")
     return cgSnapToDegrees
   }
 
@@ -1206,31 +1201,32 @@ class MainWindowController: PlayerWindowController {
     switch recognizer.state {
       case .began, .changed:
         let cgNewRotationDegrees = recognizer.rotationInDegrees
-        rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: cgNewRotationDegrees, animate: false)
+        rotateVideoView(toDegrees: cgNewRotationDegrees, animate: false)
         break
       case .failed, .cancelled:
-        cgCurrentRotationDegrees = 0
+        rotateVideoView(toDegrees: 0, animate: false)
         break
       case .ended:
         // mpv and CoreGraphics rotate in opposite directions
         let mpvNormalizedRotationDegrees = normalizeRotation(Int(-recognizer.rotationInDegrees))
-        let mpvClosestQuarterCircleRotation = findClosestQuarterCircleRotation(mpvNormalizedRotationDegrees)
-        if mpvClosestQuarterCircleRotation != AppData.rotations[0] {  // discard zero degree rotation
-          // Snap to one of the 4 quarter circle rotations
-          let mpvNewRotation = (self.rotation + mpvClosestQuarterCircleRotation) %% 360
-          Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterCircleRotation)°: changing video rotation from \(rotation)° to \(mpvNewRotation)°")
-          // Need to convert snap-to location back to CG, to feed to animation
-          let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
-                                                             equalToMpvRotation: mpvClosestQuarterCircleRotation)
-          rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: cgSnapToDegrees, animate: true)
-          // FIXME: something's wrong here. Need to account for videos which are pre-rotated
-//          let mpvCurrentVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
-          player.setVideoRotate(mpvNewRotation)
+        let mpvClosestQuarterRotation = findClosestQuarterRotation(mpvNormalizedRotationDegrees)
+        guard mpvClosestQuarterRotation != 0 else {
+          // Zero degree rotation: no change.
+          // Don't "unwind" if more than 360° rotated; just take shortest partial circle back to origin
+          cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees)
+          Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
+          rotateVideoView(toDegrees: 0, animate: true)
           return
         }
-        cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees) // don't "unwind" if wound up; just use shortest arc back to origin
-        Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
-        rotateVideoView(fromDegrees: cgCurrentRotationDegrees, toDegrees: 0, animate: true)
+
+        // Snap to one of the 4 quarter circle rotations
+        let mpvNewRotation = (player.info.rotation + mpvClosestQuarterRotation) %% 360
+        Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(player.info.rotation)°) → new rotation will be \(mpvNewRotation)°")
+        // Need to convert snap-to location back to CG, to feed to animation
+        let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
+                                                           equalToMpvRotation: mpvClosestQuarterRotation)
+        rotateVideoView(toDegrees: cgSnapToDegrees, animate: true)
+        player.setVideoRotate(mpvNewRotation)
 
       default:
         return
