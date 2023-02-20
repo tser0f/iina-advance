@@ -274,7 +274,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Mouse / Trackpad events
 
   override func mouseUp(with event: NSEvent) {
-    guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
+    Logger.log("PlayerWindow mouseUp!", level: .verbose, subsystem: player.subsystem)
+    guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else {
+      Logger.log("Click occurred in a disabled view; ignoring", level: .verbose, subsystem: player.subsystem)
+      return
+    }
     if event.clickCount == 1 {
       if doubleClickAction == .none {
         performMouseAction(singleClickAction)
@@ -292,11 +296,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func rightMouseUp(with event: NSEvent) {
+    Logger.log("PlayerWindow rightMouseUp!", level: .verbose, subsystem: player.subsystem)
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
     performMouseAction(Preference.enum(for: .rightClickAction))
   }
 
   override func otherMouseUp(with event: NSEvent) {
+    Logger.log("PlayerWindow otherMouseUp!", level: .verbose, subsystem: player.subsystem)
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
     if event.type == .otherMouseUp {
       performMouseAction(Preference.enum(for: .middleClickAction))

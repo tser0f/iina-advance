@@ -888,7 +888,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseDown(with event: NSEvent) {
-    if Logger.enabled && Logger.Level.preferred >= .verbose {
+    if Logger.isEnabled(.verbose) {
       Logger.log("MainWindow mouseDown \(event.locationInWindow)", level: .verbose, subsystem: player.subsystem)
     }
     // do nothing if it's related to floating OSC
@@ -905,7 +905,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseDragged(with event: NSEvent) {
-    if Logger.enabled && Logger.Level.preferred >= .verbose {
+    if Logger.isEnabled(.verbose) {
       Logger.log("MainWindow mouseDrag \(event.locationInWindow)", level: .verbose, subsystem: player.subsystem)
     }
     if isResizingSidebar {
@@ -937,7 +937,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseUp(with event: NSEvent) {
-    if Logger.enabled && Logger.Level.preferred >= .verbose {
+    if Logger.isEnabled(.verbose) {
       Logger.log("MainWindow mouseUp! isDragging: \(isDragging), isResizingSidebar: \(isResizingSidebar), clickCount: \(event.clickCount)", level: .verbose, subsystem: player.subsystem)
     }
 
