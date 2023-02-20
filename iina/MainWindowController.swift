@@ -1314,6 +1314,7 @@ class MainWindowController: PlayerWindowController {
   func windowWillOpen() {
     Logger.log("WindowWillOpen", level: .verbose, subsystem: player.subsystem)
     isClosing = false
+
     if #available(macOS 12, *) {
       // Apparently Apple fixed AppKit for Monterey so the workaround below is only needed for
       // previous versions of macOS. Support for #unavailable is coming in Swift 5.6. The version of
