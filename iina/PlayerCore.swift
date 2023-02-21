@@ -732,9 +732,11 @@ class PlayerCore: NSObject {
 
   func setVideoAspect(_ aspect: String) {
     if Regex.aspect.matches(aspect) {
+      Logger.log("Setting aspectRatio to: \(aspect.quoted)", level: .verbose, subsystem: subsystem)
       mpv.setString(MPVProperty.videoAspect, aspect)
       info.unsureAspect = aspect
     } else {
+      Logger.log("Setting aspectRatio to \("Default".quoted) (did not recognize value: \(aspect.quoted))", level: .verbose, subsystem: subsystem)
       mpv.setString(MPVProperty.videoAspect, "-1")
       // if not a aspect string, set aspect to default, and also the info string.
       info.unsureAspect = "Default"
@@ -742,42 +744,56 @@ class PlayerCore: NSObject {
   }
 
   func setVideoRotate(_ degree: Int) {
-    if AppData.rotations.firstIndex(of: degree)! >= 0 {
-      mpv.setInt(MPVOption.Video.videoRotate, degree)
+    guard AppData.rotations.firstIndex(of: degree)! >= 0 else {
+      Logger.log("Invalid value for videoRotate, ignoring: \(degree)", level: .error, subsystem: subsystem)
+      return
     }
+
+    Logger.log("Setting videoRotate to: \(degree)°", level: .verbose, subsystem: subsystem)
+    mpv.setInt(MPVOption.Video.videoRotate, degree)
   }
 
   func setFlip(_ enable: Bool) {
+    Logger.log("Setting flip to: \(enable)°", level: .verbose, subsystem: subsystem)
     if enable {
-      if info.flipFilter == nil {
-        let vf = MPVFilter.flip()
-        vf.label = Constants.FilterName.flip
-        if addVideoFilter(vf) {
-          info.flipFilter = vf
-        }
+      guard info.flipFilter == nil else {
+        Logger.log("Cannot enable flip: there is already a filter present", level: .error, subsystem: subsystem)
+        return
+      }
+      let vf = MPVFilter.flip()
+      vf.label = Constants.FilterName.flip
+      if addVideoFilter(vf) {
+        info.flipFilter = vf
       }
     } else {
-      if let vf = info.flipFilter {
-        let _ = removeVideoFilter(vf)
-        info.flipFilter = nil
+      guard let vf = info.flipFilter else {
+        Logger.log("Cannot disable flip: no filter is present", level: .error, subsystem: subsystem)
+        return
       }
+      let _ = removeVideoFilter(vf)
+      info.flipFilter = nil
     }
   }
 
   func setMirror(_ enable: Bool) {
+    Logger.log("Setting mirror to: \(enable)°", level: .verbose, subsystem: subsystem)
     if enable {
-      if info.mirrorFilter == nil {
-        let vf = MPVFilter.mirror()
-        vf.label = Constants.FilterName.mirror
-        if addVideoFilter(vf) {
-          info.mirrorFilter = vf
-        }
+      guard info.mirrorFilter == nil else {
+        Logger.log("Cannot enable mirror: there is already a mirror filter present", level: .error, subsystem: subsystem)
+        return
+      }
+      let vf = MPVFilter.mirror()
+      vf.label = Constants.FilterName.mirror
+      if addVideoFilter(vf) {
+        info.mirrorFilter = vf
       }
     } else {
-      if let vf = info.mirrorFilter {
-        let _ = removeVideoFilter(vf)
-        info.mirrorFilter = nil
+      guard let vf = info.mirrorFilter else {
+        Logger.log("Cannot disable mirror: no mirror filter is present", level: .error, subsystem: subsystem)
+        return
       }
+      let _ = removeVideoFilter(vf)
+      info.mirrorFilter = nil
     }
   }
 
@@ -969,14 +985,15 @@ class PlayerCore: NSObject {
     let vheight = info.videoHeight!
     if let aspect = Aspect(string: str) {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
+      Logger.log("Setting crop to: \(cropped.width)x\(cropped.width) (orig videoSize: \(vwidth)x\(vheight), requested string: \(str.quoted))", level: .verbose, subsystem: subsystem)
       let vf = MPVFilter.crop(w: Int(cropped.width), h: Int(cropped.height), x: nil, y: nil)
       vf.label = Constants.FilterName.crop
       setCrop(fromFilter: vf)
-      // warning! may should not update it here
       info.unsureCrop = str
-      info.cropFilter = vf
     } else {
+      Logger.log("Requested crop is invalid: \(str.quoted)", level: .error, subsystem: subsystem)
       if let filter = info.cropFilter {
+        Logger.log("Setting crop to \("None".quoted) and removing crop filter", level: .verbose, subsystem: subsystem)
         let _ = removeVideoFilter(filter)
         info.unsureCrop = "None"
       }
