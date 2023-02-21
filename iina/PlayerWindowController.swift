@@ -152,6 +152,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   override func windowDidLoad() {
     super.windowDidLoad()
+    Logger.log("PlayerWindow loaded", level: .verbose, subsystem: player.subsystem)
     loaded = true
     
     guard let window = window else { return }

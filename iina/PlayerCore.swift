@@ -1372,10 +1372,11 @@ class PlayerCore: NSObject {
     info.fileLoading = false
     info.haveDownloadedSub = false
     isStopped = false
+
     checkUnsyncedWindowOptions()
     // generate thumbnails if window has loaded video
     if mainWindow.isVideoLoaded {
-      generateThumbnails()
+      refreshThumbnailsForPlayer()
     }
     // call `trackListChanged` to load tracks and check whether need to switch to music mode
     trackListChanged()
@@ -1713,7 +1714,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  func generateThumbnails() {
+  func refreshThumbnailsForPlayer() {
     Logger.log("Getting thumbnails", subsystem: subsystem)
     info.thumbnailsReady = false
     info.thumbnails.removeAll(keepingCapacity: true)
@@ -1734,13 +1735,14 @@ class PlayerCore: NSObject {
       }
     }
     guard Preference.bool(for: .enableThumbnailPreview) else {
+      Logger.log("...stopped because thumbnails are disabled by user", level: .verbose, subsystem: subsystem)
       return
     }
     
     let width = Preference.integer(for: .thumbnailWidth)
     info.thumbnailWidth = width
     if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: width) {
-      Logger.log("Found thumbnail cache named \(cacheName.quoted), width: \(width)px", subsystem: subsystem)
+      Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(width)px", subsystem: subsystem)
       thumbnailQueue.async {
         if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: width) {
           self.info.thumbnails = thumbnails
@@ -1748,7 +1750,7 @@ class PlayerCore: NSObject {
           self.info.thumbnailsProgress = 1
           self.refreshTouchBarSlider()
         } else {
-          Logger.log("Cannot read thumbnail from cache \(cacheName.quoted), width \(width)px", level: .error, subsystem: self.subsystem)
+          Logger.log("Cannot read thumbnails from cache \(cacheName.quoted), width \(width)px", level: .error, subsystem: self.subsystem)
         }
       }
     } else {

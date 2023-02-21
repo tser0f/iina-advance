@@ -536,6 +536,7 @@ class MPVController: NSObject {
 
   // Set property
   func setFlag(_ name: String, _ flag: Bool) {
+    Logger.log("Setting flag: \(name) := \(flag)", level: .verbose, subsystem: player.subsystem)
     var data: Int = flag ? 1 : 0
     mpv_set_property(mpv, name, MPV_FORMAT_FLAG, &data)
   }
@@ -914,10 +915,12 @@ class MPVController: NSObject {
       guard let path = getString(MPVProperty.path) else { break }
       player.fileStarted(path: path)
       let url = player.info.currentURL
-      let message = player.info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent
-      player.sendOSD(.fileStart(message ?? "-"))
+      let message = (player.info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
+      Logger.log("Got mpv '\(eventId)'. Sending to OSD: \(message)", level: .verbose, subsystem: player.subsystem)
+      player.sendOSD(.fileStart(message))
 
     case MPV_EVENT_FILE_LOADED:
+      Logger.log("Got mpv '\(eventId)'", level: .verbose, subsystem: player.subsystem)
       onFileLoaded()
 
     case MPV_EVENT_SEEK:
@@ -1003,7 +1006,8 @@ class MPVController: NSObject {
     let width = getInt(MPVProperty.width)
     let height = getInt(MPVProperty.height)
     let duration = getDouble(MPVProperty.duration)
-    let pos = getDouble(MPVProperty.timePos)
+    let position = getDouble(MPVProperty.timePos)
+    Logger.log("Got info for opened file. VideoHeight: \(height), VideoWidth: \(width), Duration: \(duration), Position: \(position)")
     player.info.videoHeight = height
     player.info.videoWidth = width
     player.info.displayWidth = 0
@@ -1012,7 +1016,7 @@ class MPVController: NSObject {
     if let filename = getString(MPVProperty.path) {
       self.player.info.setCachedVideoDuration(filename, duration)
     }
-    player.info.videoPosition = VideoTime(pos)
+    player.info.videoPosition = VideoTime(position)
     player.fileLoaded()
     fileLoaded = true
     // mpvResume()
@@ -1060,7 +1064,7 @@ class MPVController: NSObject {
 
     case MPVProperty.videoParamsRotate:
       if let rotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
-        Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate) ≔ \(rotation)", level: .verbose, subsystem: player.subsystem)
+        Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(rotation)", level: .verbose, subsystem: player.subsystem)
         player.mainWindow.rotation = rotation
       }
 
@@ -1079,6 +1083,8 @@ class MPVController: NSObject {
 
     case MPVOption.TrackSelection.aid:
       player.info.aid = Int(getInt(MPVOption.TrackSelection.aid))
+      let aidStr = player.info.aid != nil ? "\(player.info.aid!)" : "nil"
+      Logger.log("Got mpv prop: \(MPVOption.TrackSelection.aid.quoted). AID: \(aidStr)", level: .verbose, subsystem: player.subsystem)
       guard player.mainWindow.loaded else { break }
       DispatchQueue.main.sync {
         player.mainWindow?.muteButton.isEnabled = (player.info.aid != 0)

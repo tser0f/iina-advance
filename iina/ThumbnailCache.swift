@@ -156,7 +156,7 @@ class ThumbnailCache {
       Logger.log("Cannot open thumbnail cache file: \(pathURL.path)", level: .error, subsystem: subsystem)
       return nil
     }
-    Logger.log("Reading thumbnail cache: \(pathURL.path)", subsystem: subsystem)
+    Logger.log("Reading thumbnail cache from \(pathURL.path.quoted)", subsystem: subsystem)
 
     var result: [FFThumbnail] = []
 

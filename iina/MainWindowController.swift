@@ -331,6 +331,8 @@ class MainWindowController: PlayerWindowController {
 
   private let localObservedPrefKeys: [Preference.Key] = [
     .oscPosition,
+    .enableThumbnailPreview,
+    .enableThumbnailForRemoteFiles,
     .thumbnailWidth,
     .showChapterPos,
     .arrowButtonAction,
@@ -359,10 +361,14 @@ class MainWindowController: PlayerWindowController {
           if newValue == Preference.integer(for: .thumbnailWidth) && newValue != self.player.info.thumbnailWidth {
             Logger.log("Pref \(Preference.Key.thumbnailWidth.rawValue.quoted) changed to \(newValue)px: requesting thumbs regen",
                        subsystem: self.player.subsystem)
-            self.player.generateThumbnails()
+            self.player.refreshThumbnailsForPlayer()
           }
         }
       }
+    case PK.enableThumbnailPreview.rawValue, PK.enableThumbnailForRemoteFiles.rawValue:
+      // May need to remove thumbs or generate new ones: let method below figure it out:
+      self.player.refreshThumbnailsForPlayer()
+        
     case PK.showChapterPos.rawValue:
       if let newValue = change[.newKey] as? Bool {
         (playSlider.cell as! PlaySliderCell).drawChapters = newValue
@@ -1262,7 +1268,7 @@ class MainWindowController: PlayerWindowController {
       window!.title = "Window"
     }
 
-    var currentScreen = window!.selectDefaultScreen()
+    let currentScreen = window!.selectDefaultScreen()
     NSScreen.screens.enumerated().forEach { (screenIndex, screen) in
       let currentString = (screen == currentScreen) ? " (current)" : ""
       NSScreen.log("Screen\(screenIndex)\(currentString)" , screen)
@@ -2518,7 +2524,7 @@ class MainWindowController: PlayerWindowController {
       var videoSize = originalVideoSize
       let screenRect = window.screen?.visibleFrame
 
-      Logger.log("Startig resizeWindow calculations. OriginalVideoSize: \(videoSize)", level: .verbose)
+      Logger.log("Starting resizeWindow calculations. OriginalVideoSize: \(videoSize)", level: .verbose)
 
       if Preference.bool(for: .usePhysicalResolution) {
         videoSize = window.convertFromBacking(
@@ -2573,12 +2579,13 @@ class MainWindowController: PlayerWindowController {
     shouldApplyInitialWindowSize = false
 
     if fsState.isFullscreen {
+      Logger.log("Window is in fullscreen; setting priorWindowedFrame to: \(rect)", level: .verbose)
       fsState.priorWindowedFrame = rect
     } else {
       if let screenFrame = window.screen?.frame {
         rect = rect.constrain(in: screenFrame)
       }
-      Logger.log("Setting windowFrame to: \(rect). animate: \(!player.disableWindowAnimation)", level: .verbose)
+      Logger.log("Updating windowFrame to: \(rect). animate: \(!player.disableWindowAnimation)", level: .verbose)
       if player.disableWindowAnimation {
         window.setFrame(rect, display: true, animate: false)
       } else {
@@ -2592,7 +2599,7 @@ class MainWindowController: PlayerWindowController {
 
     // generate thumbnails after video loaded if it's the first time
     if !isVideoLoaded {
-      player.generateThumbnails()
+      player.refreshThumbnailsForPlayer()
       isVideoLoaded = true
     }
 
