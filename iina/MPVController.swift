@@ -493,7 +493,7 @@ class MPVController: NSObject {
   // Send arbitrary mpv command.
   func command(_ command: MPVCommand, args: [String?] = [], checkError: Bool = true, returnValueCallback: ((Int32) -> Void)? = nil) {
     guard mpv != nil else { return }
-    Logger.log("Sending mpv cmd: \(command.rawValue.quoted), args: \(args.compactMap{$0})", subsystem: player.subsystem)
+    Logger.log("Sending mpv cmd: \(command.rawValue.quoted), args: \(args.compactMap{$0})", level: .verbose, subsystem: player.subsystem)
     var cargs = makeCArgs(command, args).map { $0.flatMap { UnsafePointer<CChar>(strdup($0)) } }
     defer {
       for ptr in cargs {
@@ -929,7 +929,7 @@ class MPVController: NSObject {
       let osdText = (player.info.videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder) + " / " +
         (player.info.videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder)
       let percentage = (player.info.videoPosition / player.info.videoDuration) ?? 1
-      Logger.log("Got mpv '\(eventId)'; sending to OSD: \(osdText.quoted), \(percentage)%", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Got mpv '\(eventId)'. Sending to OSD: \(osdText.quoted), \(percentage)%", level: .verbose, subsystem: player.subsystem)
       player.sendOSD(.seek(osdText, percentage))
 
     case MPV_EVENT_PLAYBACK_RESTART:
@@ -1161,6 +1161,13 @@ class MPVController: NSObject {
         let intData = Int(data)
         Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(intData)", level: .verbose, subsystem: player.subsystem)
         player.info.rotation = intData
+        if self.player.mainWindow.loaded {
+          DispatchQueue.main.async {
+            // FIXME: this isn't perfect - a bad frame briefly appears during transition
+            Logger.log("Resetting videoView")
+            self.player.mainWindow.rotateVideoView(toDegrees: 0, animate: false)
+          }
+        }
       }
 
     case MPVOption.Audio.mute:
@@ -1255,10 +1262,12 @@ class MPVController: NSObject {
       player.postNotification(.iinaTracklistChanged)
 
     case MPVProperty.vf:
+      Logger.log("Got mpv prop: \(MPVProperty.vf.quoted)", level: .verbose, subsystem: player.subsystem)
       needReloadQuickSettingsView = true
       player.postNotification(.iinaVFChanged)
 
     case MPVProperty.af:
+      Logger.log("Got mpv prop: \(MPVProperty.af.quoted)", level: .verbose, subsystem: player.subsystem)
       player.postNotification(.iinaAFChanged)
 
     case MPVOption.Window.fullscreen:

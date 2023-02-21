@@ -1930,9 +1930,12 @@ class PlayerCore: NSObject {
     // vf
     let videoFilters = mpv.getFilters(MPVProperty.vf)
     for filter in videoFilters {
+      Logger.log("Got mpv vf, name: \(filter.name.quoted), label: \(filter.label?.quoted ?? "nil"), params: \(filter.params ?? [:])",
+                 level: .verbose, subsystem: subsystem)
       guard let label = filter.label else { continue }
       switch label {
       case Constants.FilterName.crop:
+        // FIXME: should call setCrop()? Also need to update selection in the Quick Settings `cropSegment` control.
         info.cropFilter = filter
         info.unsureCrop = ""
       case Constants.FilterName.flip:
@@ -1948,6 +1951,8 @@ class PlayerCore: NSObject {
     // af
     let audioFilters = mpv.getFilters(MPVProperty.af)
     for filter in audioFilters {
+      Logger.log("Got mpv af, name: \(filter.name.quoted), label: \(filter.label?.quoted ?? "nil"), params: \(filter.params ?? [:])",
+                 level: .verbose, subsystem: subsystem)
       guard let label = filter.label else { continue }
       if label.hasPrefix(Constants.FilterName.audioEq) {
         if info.audioEqFilters == nil {
@@ -1958,6 +1963,7 @@ class PlayerCore: NSObject {
         }
       }
     }
+    Logger.log("Total filters from mpv: \(videoFilters.count) vf, \(audioFilters.count) af", level: .verbose, subsystem: subsystem)
   }
 
   /**

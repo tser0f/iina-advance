@@ -339,7 +339,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func showWelcomeWindow() {
-    Logger.log("Showing welcome window", level: .verbose)
+    Logger.log("Showing WelcomeWindow", level: .verbose)
     initialWindow.reloadData()
     initialWindow.showWindow(nil)
   }

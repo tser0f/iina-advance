@@ -735,7 +735,10 @@ extension NSScreen {
     if #available(macOS 10.15, *) {
       let maxPossibleEDR = screen.maximumPotentialExtendedDynamicRangeColorComponentValue
       let canEnableEDR = maxPossibleEDR > 1.0
-      Logger.log("\(label): \"\(screen.localizedName)\" visible frame \(screen.visibleFrame) EDR: {supports=\(canEnableEDR) maxPotential=\(maxPossibleEDR) maxCurrent=\(screen.maximumExtendedDynamicRangeColorComponentValue)}")
+      // Screen frame coordinates have their origin at the lower left of the primary display.
+      // So any display to the left of primary will be in negative X, and any below primary will have negative Y.
+      // `visibleFrame` is what we most care about.
+      Logger.log("\(label): \"\(screen.localizedName)\" visibleFrame: \(screen.visibleFrame), scaleFactor: \(screen.backingScaleFactor), EDR: {supports=\(canEnableEDR) maxPotential=\(maxPossibleEDR) maxCurrent=\(screen.maximumExtendedDynamicRangeColorComponentValue)}")
     } else {
       Logger.log("\(label): visible frame \(screen.visibleFrame)")
     }

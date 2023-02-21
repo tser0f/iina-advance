@@ -410,7 +410,11 @@ class MainWindowController: PlayerWindowController {
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
     case PK.showTitleBarWhenShowingOSC.rawValue:
-        // TODO
+        // TODO: group title bar & OSC in Prefs
+        // TODO: change to enum: "titleBarStyle": { "aboveVideo", "overlayVideoOnHover" } - "cover top of video"
+        // TODO: add new checkbox: "Minimal Title Bar"; "useMinimalTitleBar" which is only used when showing inside video
+        // TODO: add checkbox for auto-hide for both title bar & OSC
+        // TODO: oscPosition values: "Outside video, bottom", "Overlay video, bottom", "Overlay video, floating", "Overlay top of video", "Outside video, top"
 
 
 
@@ -1236,6 +1240,7 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Window delegate: Open / Close
 
   func windowWillOpen() {
+    Logger.log("WindowWillOpen", level: .verbose, subsystem: player.subsystem)
     if #available(macOS 12, *) {
       // Apparently Apple fixed AppKit for Monterey so the workaround below is only needed for
       // previous versions of macOS. Support for #unavailable is coming in Swift 5.6. The version of
@@ -1257,31 +1262,20 @@ class MainWindowController: PlayerWindowController {
       window!.title = "Window"
     }
 
-    // As there have been issues in this area, log details about the screen selection process.
-    NSScreen.log("window!.screen", window!.screen)
-    NSScreen.log("NSScreen.main", NSScreen.main)
-    NSScreen.screens.enumerated().forEach { screen in
-      NSScreen.log("NSScreen.screens[\(screen.offset)]" , screen.element)
-    }
-
-    var screen = window!.selectDefaultScreen()
-
-    if let rectString = UserDefaults.standard.value(forKey: "MainWindowLastPosition") as? String {
-      let rect = NSRectFromString(rectString)
-      if let lastScreen = NSScreen.screens.first(where: { NSPointInRect(rect.origin, $0.visibleFrame) }) {
-        screen = lastScreen
-        NSScreen.log("MainWindowLastPosition \(rect.origin) matched", screen)
-      }
+    var currentScreen = window!.selectDefaultScreen()
+    NSScreen.screens.enumerated().forEach { (screenIndex, screen) in
+      let currentString = (screen == currentScreen) ? " (current)" : ""
+      NSScreen.log("Screen\(screenIndex)\(currentString)" , screen)
     }
 
     let useAnimation = !AccessibilityPreferences.motionReductionEnabled
-    if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: screen) {
-      Logger.log("WindowWillOpen: setting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
+    if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: currentScreen) {
+      Logger.log("WindowWillOpen using initial geometry; setting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
       window!.setFrame(windowFrame, display: true, animate: useAnimation)
     } else {
-      let screenFrame = screen.visibleFrame
+      let screenFrame = currentScreen.visibleFrame
       let windowFrame = AppData.sizeWhenNoVideo.centeredRect(in: screenFrame)
-      Logger.log("WindowWillOpen: centering in screen (\(screenFrame)) stting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("WindowWillOpen centering in screen \(screenFrame); setting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
       window!.setFrame(screenFrame, display: true, animate: useAnimation)
     }
 
@@ -1356,7 +1350,8 @@ class MainWindowController: PlayerWindowController {
     guard let w = self.window, let cv = w.contentView else { return }
     cv.trackingAreas.forEach(cv.removeTrackingArea)
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
-    UserDefaults.standard.set(NSStringFromRect(window!.frame), forKey: "MainWindowLastPosition")
+
+    // TODO: save window position & state here
     
     player.events.emit(.windowWillClose)
   }
@@ -2395,10 +2390,10 @@ class MainWindowController: PlayerWindowController {
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
   func windowFrameFromGeometry(newSize: NSSize? = nil, screen: NSScreen? = nil) -> NSRect? {
     guard let geometry = cachedGeometry ?? player.getGeometry(), let screenFrame = (screen ?? window?.screen)?.visibleFrame else {
-      Logger.log("windowFrameFromGeometry: missing something; returning nil")
+      Logger.log("WindowFrameFromGeometry: returning nil", level: .verbose, subsystem: player.subsystem)
       return nil
     }
-    Logger.log("windowFrameFromGeometry: using \(geometry), screenFrame: \(screenFrame)", level: .verbose)
+    Logger.log("WindowFrameFromGeometry: using \(geometry), screenFrame: \(screenFrame)", level: .verbose, subsystem: player.subsystem)
 
     cachedGeometry = geometry
     var winFrame = window!.frame
@@ -2468,7 +2463,7 @@ class MainWindowController: PlayerWindowController {
     winFrame.origin.x += screenFrame.origin.x
     winFrame.origin.y += screenFrame.origin.y
 
-    Logger.log("windowFrameFromGeometry: returning \(winFrame)", level: .verbose)
+    Logger.log("WindowFrameFromGeometry: result: \(winFrame)", level: .verbose, subsystem: player.subsystem)
     return winFrame
   }
 
@@ -2489,8 +2484,8 @@ class MainWindowController: PlayerWindowController {
       pip.aspectRatio = originalVideoSize
     }
 
-    Logger.log("AdjustFrameByVideoSize: videoView.frame = \(videoView.frame)", level: .verbose)
     let newSize = window.convertToBacking(videoView.frame).size
+    Logger.log("AdjustFrameByVideoSize: videoView.frame: \(videoView.frame) -> backingVideoSize: \(newSize)", level: .verbose)
     videoView.videoSize = newSize
 
     var rect: NSRect
