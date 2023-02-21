@@ -1274,10 +1274,15 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: screen) {
-      window!.setFrame(wfg, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+    let useAnimation = !AccessibilityPreferences.motionReductionEnabled
+    if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: screen) {
+      Logger.log("WindowWillOpen: setting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
+      window!.setFrame(windowFrame, display: true, animate: useAnimation)
     } else {
-      window!.setFrame(AppData.sizeWhenNoVideo.centeredRect(in: screen.visibleFrame), display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+      let screenFrame = screen.visibleFrame
+      let windowFrame = AppData.sizeWhenNoVideo.centeredRect(in: screenFrame)
+      Logger.log("WindowWillOpen: centering in screen (\(screenFrame)) stting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
+      window!.setFrame(screenFrame, display: true, animate: useAnimation)
     }
 
     videoView.videoLayer.draw(forced: true)
@@ -1752,11 +1757,13 @@ class MainWindowController: PlayerWindowController {
 
   // resize framebuffer in videoView after resizing.
   func windowDidEndLiveResize(_ notification: Notification) {
+    Logger.log("windowDidEndLiveResize()", level: .verbose)
     videoView.videoSize = window!.convertToBacking(videoView.bounds).size
     updateWindowParametersForMPV()
   }
 
   func windowDidChangeBackingProperties(_ notification: Notification) {
+    Logger.log("windowDidEndLiveResize()", level: .verbose)
     if let oldScale = (notification.userInfo?[NSWindow.oldScaleFactorUserInfoKey] as? NSNumber)?.doubleValue,
       oldScale != Double(window!.backingScaleFactor) {
       videoView.videoLayer.contentsScale = window!.backingScaleFactor
@@ -1764,6 +1771,7 @@ class MainWindowController: PlayerWindowController {
   }
   
   override func windowDidChangeScreen(_ notification: Notification) {
+    Logger.log("windowDidChangeScreen()", level: .verbose)
     super.windowDidChangeScreen(notification)
 
     player.events.emit(.windowScreenChanged)
@@ -2467,6 +2475,7 @@ class MainWindowController: PlayerWindowController {
   /** Set window size when info available, or video size changed. Called in response to receiving 'video-reconfig' msg  */
   func adjustFrameByVideoSize() {
     guard let window = window else { return }
+    Logger.log("AdjustFrameByVideoSize() entered", level: .verbose)
 
     let (width, height) = player.videoSizeForDisplay
     if width != player.info.displayWidth || height != player.info.displayHeight {
@@ -2480,7 +2489,7 @@ class MainWindowController: PlayerWindowController {
       pip.aspectRatio = originalVideoSize
     }
 
-    Logger.log("adjustFrameByVideoSize() entered (videoView.frame: \(videoView.frame))", level: .verbose)
+    Logger.log("AdjustFrameByVideoSize: videoView.frame = \(videoView.frame)", level: .verbose)
     let newSize = window.convertToBacking(videoView.frame).size
     videoView.videoSize = newSize
 
@@ -2514,6 +2523,8 @@ class MainWindowController: PlayerWindowController {
       var videoSize = originalVideoSize
       let screenRect = window.screen?.visibleFrame
 
+      Logger.log("Startig resizeWindow calculations. OriginalVideoSize: \(videoSize)", level: .verbose)
+
       if Preference.bool(for: .usePhysicalResolution) {
         videoSize = window.convertFromBacking(
           NSMakeRect(window.frame.origin.x, window.frame.origin.y, CGFloat(width), CGFloat(height))).size
@@ -2523,21 +2534,22 @@ class MainWindowController: PlayerWindowController {
         if resizeRatio < 0 {
           if let screenSize = screenRect?.size {
             videoSize = videoSize.shrink(toSize: screenSize)
+            Logger.log("Shrinking videoSize to fit in screenSize: \(screenSize), result: \(videoSize)", level: .verbose)
           }
         } else {
           videoSize = videoSize.multiply(CGFloat(resizeRatio))
         }
-        Logger.log("Applied resizeRatio (\(resizeRatio)), result: \(videoSize)", level: .verbose)
+        Logger.log("Applied resizeRatio: (\(resizeRatio)), result: \(videoSize)", level: .verbose)
       }
       // check screen size
       if let screenSize = screenRect?.size {
         videoSize = videoSize.satisfyMaxSizeWithSameAspectRatio(screenSize)
-        Logger.log("Constrained max size to screenSize (\(screenSize)), result: \(videoSize)", level: .verbose)
+        Logger.log("Constrained max size to screenSize: \(screenSize), result: \(videoSize)", level: .verbose)
       }
       // guard min size
       // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
       videoSize = videoSize.satisfyMinSizeWithSameAspectRatio(minSize)
-      Logger.log("Constrained min size (\(minSize)). Final result for videoSize: \(videoSize)", level: .verbose)
+      Logger.log("Constrained min size: \(minSize). Final result for videoSize: \(videoSize)", level: .verbose)
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: videoSize) {
         Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
@@ -2571,7 +2583,7 @@ class MainWindowController: PlayerWindowController {
       if let screenFrame = window.screen?.frame {
         rect = rect.constrain(in: screenFrame)
       }
-      Logger.log("Setting frame to: \(rect). animate: \(!player.disableWindowAnimation)")
+      Logger.log("Setting windowFrame to: \(rect). animate: \(!player.disableWindowAnimation)", level: .verbose)
       if player.disableWindowAnimation {
         window.setFrame(rect, display: true, animate: false)
       } else {
@@ -2581,6 +2593,7 @@ class MainWindowController: PlayerWindowController {
       }
       updateWindowParametersForMPV(withFrame: rect)
     }
+    Logger.log("AdjustFrameByVideoSize done; resulting windowFrame: \(rect)", level: .verbose)
 
     // generate thumbnails after video loaded if it's the first time
     if !isVideoLoaded {

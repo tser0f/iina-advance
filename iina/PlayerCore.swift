@@ -211,7 +211,7 @@ class PlayerCore: NSObject {
       Logger.log("empty file path or url", level: .error, subsystem: subsystem)
       return
     }
-    Logger.log("Open URL: \(url.absoluteString)", subsystem: subsystem)
+    Logger.log("Open URL: \(url.absoluteString.quoted)", subsystem: subsystem)
     let isNetwork = !url.isFileURL
     if shouldAutoLoad {
       info.shouldAutoLoadFiles = true
