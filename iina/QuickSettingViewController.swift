@@ -188,7 +188,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   private func refreshDownshiftFromTop() {
     let downShift: CGFloat
     if Preference.bool(for: .showTitleBarWhenShowingOSC) {
-      downShift = TitleBarHeightNormal - 14
+      downShift = MainWindowController.sidebarDownShift
     } else {
       downShift = 0
     }

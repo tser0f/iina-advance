@@ -911,13 +911,13 @@ class MPVController: NSObject {
       onVideoReconfig()
 
     case MPV_EVENT_START_FILE:
+      Logger.log("Got mpv '\(eventId)'", level: .verbose, subsystem: player.subsystem)
       player.info.isIdle = false
-      guard let path = getString(MPVProperty.path) else { break }
+      guard let path = getString(MPVProperty.path) else {
+        Logger.log("File started, but no path!", level: .warning, subsystem: player.subsystem)
+        break
+      }
       player.fileStarted(path: path)
-      let url = player.info.currentURL
-      let message = (player.info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
-      Logger.log("Got mpv '\(eventId)'. Sending to OSD: \(message)", level: .verbose, subsystem: player.subsystem)
-      player.sendOSD(.fileStart(message))
 
     case MPV_EVENT_FILE_LOADED:
       Logger.log("Got mpv '\(eventId)'", level: .verbose, subsystem: player.subsystem)
@@ -1007,7 +1007,9 @@ class MPVController: NSObject {
     let height = getInt(MPVProperty.height)
     let duration = getDouble(MPVProperty.duration)
     let position = getDouble(MPVProperty.timePos)
-    Logger.log("Got info for opened file. VideoHeight: \(height), VideoWidth: \(width), Duration: \(duration), Position: \(position)")
+    let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
+    let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
+    Logger.log("Got info for opened file. Video:{ size: \(width)x\(height), rot: \(mpvParamRotate) + \(mpvVideoRotate) }, Loc(sec): \(position) / \(duration)")
     player.info.videoHeight = height
     player.info.videoWidth = width
     player.info.displayWidth = 0
@@ -1033,10 +1035,12 @@ class MPVController: NSObject {
     }
     var dwidth = getInt(MPVProperty.dwidth)
     var dheight = getInt(MPVProperty.dheight)
+    let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
+    let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
     if player.info.rotation == 90 || player.info.rotation == 270 {
       swap(&dwidth, &dheight)
     }
-    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) + \(mpvVideoRotate)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .verbose, subsystem: player.subsystem)
     if dwidth != player.info.displayWidth! || dheight != player.info.displayHeight! {
       // filter the last video-reconfig event before quit
       if dwidth == 0 && dheight == 0 && getFlag(MPVProperty.coreIdle) { return }
@@ -1059,6 +1063,7 @@ class MPVController: NSObject {
     switch name {
 
     case MPVProperty.videoParams:
+      Logger.log("Got mpv prop: \(MPVProperty.videoParams.quoted)", level: .verbose, subsystem: player.subsystem)
       needReloadQuickSettingsView = true
       onVideoParamsChange(UnsafePointer<mpv_node_list>(OpaquePointer(property.data)))
 
@@ -1083,8 +1088,8 @@ class MPVController: NSObject {
 
     case MPVOption.TrackSelection.aid:
       player.info.aid = Int(getInt(MPVOption.TrackSelection.aid))
-      let aidStr = player.info.aid != nil ? "\(player.info.aid!)" : "nil"
-      Logger.log("Got mpv prop: \(MPVOption.TrackSelection.aid.quoted). AID: \(aidStr)", level: .verbose, subsystem: player.subsystem)
+        let aidStr = player.info.aid != nil ? "\(player.info.aid!)" : "nil"
+      Logger.log("Got mpv prop: \(MPVOption.TrackSelection.aid.quoted) = \(aidStr)", level: .verbose, subsystem: player.subsystem)
       guard player.mainWindow.loaded else { break }
       DispatchQueue.main.sync {
         player.mainWindow?.muteButton.isEnabled = (player.info.aid != 0)
@@ -1103,27 +1108,31 @@ class MPVController: NSObject {
       player.postNotification(.iinaSIDChanged)
 
     case MPVOption.PlaybackControl.pause:
-      if let paused = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee {
-        if player.info.isPaused != paused {
-          player.sendOSD(paused ? .pause : .resume)
-          DispatchQueue.main.sync {
-            player.info.isPaused = paused
-            // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
-            // video is paused to avoid wasting energy with needless processing. If paused shutdown
-            // the timer that synchronizes the UI and the high priority display link thread.
-            if paused {
-              player.invalidateTimer()
-              player.mainWindow.videoView.stopDisplayLink()
-            } else {
-              player.mainWindow.videoView.startDisplayLink()
-              player.createSyncUITimer()
-            }
+      guard let paused = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
+        Logger.log("Failed to parse pause mpv pause!", level: .error, subsystem: player.subsystem)
+        break
+      }
+
+      Logger.log("Got mpv prop: \(MPVOption.PlaybackControl.pause.quoted) = \(paused)", level: .verbose, subsystem: player.subsystem)
+      if player.info.isPaused != paused {
+        player.sendOSD(paused ? .pause : .resume)
+        DispatchQueue.main.sync {
+          player.info.isPaused = paused
+          // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
+          // video is paused to avoid wasting energy with needless processing. If paused shutdown
+          // the timer that synchronizes the UI and the high priority display link thread.
+          if paused {
+            player.invalidateTimer()
+            player.mainWindow.videoView.stopDisplayLink()
+          } else {
+            player.mainWindow.videoView.startDisplayLink()
+            player.createSyncUITimer()
           }
         }
-        if player.mainWindow.loaded && Preference.bool(for: .alwaysFloatOnTop) {
-          DispatchQueue.main.async {
-            self.player.mainWindow.setWindowFloatingOnTop(!paused)
-          }
+      }
+      if player.mainWindow.loaded && Preference.bool(for: .alwaysFloatOnTop) {
+        DispatchQueue.main.async {
+          self.player.mainWindow.setWindowFloatingOnTop(!paused)
         }
       }
       player.syncUI(.playButton)
@@ -1163,16 +1172,17 @@ class MPVController: NSObject {
       }
 
     case MPVOption.Video.videoRotate:
-      if let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee {
-        let intData = Int(data)
-        Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(intData)", level: .verbose, subsystem: player.subsystem)
-        player.info.rotation = intData
-        if self.player.mainWindow.loaded {
-          DispatchQueue.main.async {
-            // FIXME: this isn't perfect - a bad frame briefly appears during transition
-            Logger.log("Resetting videoView")
-            self.player.mainWindow.rotateVideoView(toDegrees: 0, animate: false)
-          }
+      guard let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee else {
+        break
+      }
+      let rotation = Int(data)
+      Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(rotation)", level: .verbose, subsystem: player.subsystem)
+      player.info.rotation = rotation
+      if self.player.mainWindow.loaded {
+        DispatchQueue.main.async {
+          // FIXME: this isn't perfect - a bad frame briefly appears during transition
+          Logger.log("Resetting videoView")
+          self.player.mainWindow.rotateVideoView(toDegrees: 0, animate: false)
         }
       }
 
@@ -1277,6 +1287,7 @@ class MPVController: NSObject {
       player.postNotification(.iinaAFChanged)
 
     case MPVOption.Window.fullscreen:
+      Logger.log("Got mpv prop: \(MPVOption.Window.fullscreen.quoted)", level: .verbose, subsystem: player.subsystem)
       guard player.mainWindow.loaded else { break }
       let fs = getFlag(MPVOption.Window.fullscreen)
       if fs != player.mainWindow.fsState.isFullscreen {
@@ -1284,8 +1295,9 @@ class MPVController: NSObject {
       }
 
     case MPVOption.Window.ontop:
-      guard player.mainWindow.loaded else { break }
       let ontop = getFlag(MPVOption.Window.ontop)
+      Logger.log("Got mpv prop: \(MPVOption.Window.ontop.quoted) = \(ontop)", level: .verbose, subsystem: player.subsystem)
+      guard player.mainWindow.loaded else { break }
       if ontop != player.mainWindow.isOntop {
         DispatchQueue.main.async {
           self.player.mainWindow.setWindowFloatingOnTop(ontop)
@@ -1293,9 +1305,9 @@ class MPVController: NSObject {
       }
 
     case MPVOption.Window.windowScale:
-      guard player.mainWindow.loaded else { break }
       let windowScale = getDouble(MPVOption.Window.windowScale)
       Logger.log("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale)", level: .verbose, subsystem: player.subsystem)
+      guard player.mainWindow.loaded else { break }
       if fabs(windowScale - player.info.cachedWindowScale) > 10e-10 {
         DispatchQueue.main.async {
           self.player.mainWindow.setWindowScale(windowScale)
@@ -1306,6 +1318,7 @@ class MPVController: NSObject {
       player.postNotification(.iinaMediaTitleChanged)
 
     case MPVProperty.idleActive:
+      Logger.log("Got mpv prop: \(MPVProperty.idleActive.quoted))", level: .verbose, subsystem: player.subsystem)
       if getFlag(MPVProperty.idleActive) {
         if receivedEndFileWhileLoading && player.info.fileLoading {
           player.errorOpeningFileAndCloseMainWindow()

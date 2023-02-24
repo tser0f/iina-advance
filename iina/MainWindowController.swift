@@ -19,17 +19,25 @@ fileprivate let isMacOS11: Bool = {
   return false
 }()
 
-let TitleBarHeightNormal: CGFloat = {
-  if #available(macOS 10.16, *) {
-    return 28
-  } else {
-    return 22
-  }
+/**
+ `NSWindow` doesn't provide title bar height directly, but we can derive it by asking `NSWindow` for
+ the dimensions of a prototypical window with titlebar, then subtracting the height of its `contentView`.
+ Note that we can't use this trick to get it from our window instance directly, because our window has the
+ `fullSizeContentView` style and so its `frameRect` does not include any extra space for its title bar.
+ */
+fileprivate let TitleBarHeightNormal: CGFloat = {
+  // Probably doesn't matter what dimensions we pick for the dummy contentRect, but to be safe let's make them nonzero.
+  let dummyContentRect = NSRect(x: 0, y: 0, width: 10, height: 10)
+  let dummyFrameRect = NSWindow.frameRect(forContentRect: dummyContentRect, styleMask: .titled)
+  let titleBarHeight = dummyFrameRect.height - dummyContentRect.height
+  return titleBarHeight
 }()
-fileprivate let TitleBarHeightWithOSCInFullScreen: CGFloat = 24 + 10  // OSC only
-fileprivate let TitleBarHeightWithOSC: CGFloat = TitleBarHeightNormal + TitleBarHeightWithOSCInFullScreen
-fileprivate let OSCTopMainViewMarginTopInFullScreen: CGFloat = 6  // No title bar
-fileprivate let OSCTopMainViewMarginTop: CGFloat = 26
+fileprivate let OSCTopHeightInFullScreen: CGFloat = 40
+// When putting titlebar & OSC together, subtract 8 pts to reduce excess gap between the two:
+fileprivate let OSCTopHeightWithTitleBar: CGFloat = TitleBarHeightNormal + OSCTopHeightInFullScreen - 8
+// Manual adjustment needed to vertically center the top OSC. Larger numbers == controls are placed farther down
+fileprivate let OSCTopMainViewMarginTop: CGFloat = 28
+fileprivate let OSCTopMainViewMarginTopInFullScreen: CGFloat = 8
 
 fileprivate let SettingsWidth: CGFloat = 360
 fileprivate let PlaylistMinWidth: CGFloat = 240
@@ -50,9 +58,12 @@ fileprivate extension NSStackView.VisibilityPriority {
 }
 
 // The minimum distance that the user must drag before their click or tap gesture is interpreted as a drag gesture:
-fileprivate let minimumInitialDragDistance: CGFloat = 2.0
+fileprivate let minimumInitialDragDistance: CGFloat = 5.0
 
 class MainWindowController: PlayerWindowController {
+  /** Adjust vertical offset so that when sidebar is open & "top" OSC is shown, the separator
+   under the sidebar tab buttons aligns with bottom of OSC. */
+  static let sidebarDownShift: CGFloat = TitleBarHeightNormal - 17
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MainWindowController")
@@ -149,7 +160,6 @@ class MainWindowController: PlayerWindowController {
 
   var pipStatus = PIPStatus.notInPIP
   var isInInteractiveMode: Bool = false
-  var isVideoLoaded: Bool = false
 
   var shouldApplyInitialWindowSize = true
   var isWindowHidden: Bool = false
@@ -417,10 +427,11 @@ class MainWindowController: PlayerWindowController {
       updateOnTopIcon()
     case PK.showTitleBarWhenShowingOSC.rawValue:
         // TODO: group title bar & OSC in Prefs
-        // TODO: change to enum: "titleBarStyle": { "aboveVideo", "overlayVideoOnHover" } - "cover top of video"
-        // TODO: add new checkbox: "Minimal Title Bar"; "useMinimalTitleBar" which is only used when showing inside video
-        // TODO: add checkbox for auto-hide for both title bar & OSC
-        // TODO: oscPosition values: "Outside video, bottom", "Overlay video, bottom", "Overlay video, floating", "Overlay top of video", "Outside video, top"
+        // TODO: change to enum: "titleBarPosition": { "none", “outsideVideo", “insideVideo" } - "cover top of video"
+        // TODO: for titlebar insideVideo, "titleBarStyle": "normal", "minimal" (minimal + OSC top = combine the two)
+        // TODO: easter egg: for title bars type "none" or "minimal", hold Option to show menubar
+        // TODO: add checkbox: "Always hide title bar & OSC when mouse is outside window" // checked==current behavior; unchecked==show OSC & titlebar* & start auto-hide timer when mouse moves at all in app.
+        // TODO: oscPosition values: “Bottom, outside video”, “Bottom, inside video”, “Floating, inside video”, “Top, outside video”, “Top, inside video”
 
 
 
@@ -666,6 +677,7 @@ class MainWindowController: PlayerWindowController {
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
       // This observer handles a situation that the user connected a new screen or removed a screen
       let screenCount = NSScreen.screens.count
+      Logger.log("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screen count was: \(self.cachedScreenCount), is now: \(screenCount)", subsystem: player.subsystem)
       if self.fsState.isFullscreen && Preference.bool(for: .blackOutMonitor) && self.cachedScreenCount != screenCount {
         self.removeBlackWindow()
         self.blackOutOtherMonitors()
@@ -781,14 +793,15 @@ class MainWindowController: PlayerWindowController {
       }
       if isInFullScreen || !showTitleBar {
         oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTopInFullScreen
-        titleBarHeightConstraint.constant = TitleBarHeightWithOSCInFullScreen
+        titleBarHeightConstraint.constant = OSCTopHeightInFullScreen
       } else {
         oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTop
-        titleBarHeightConstraint.constant = TitleBarHeightWithOSC
+        titleBarHeightConstraint.constant = OSCTopHeightWithTitleBar
       }
-      titleBarBottomBorder.isHidden = true
+      // Remove this if it's acceptable in 10.13-
+      // titleBarBottomBorder.isHidden = true
     } else {
-       titleBarBottomBorder.isHidden = false
+      // titleBarBottomBorder.isHidden = false
     }
 
     if isSwitchingFromTop {
@@ -938,7 +951,9 @@ class MainWindowController: PlayerWindowController {
           }
           isDragging = true
         }
-        window?.performDrag(with: event)
+        if isDragging {
+          window?.performDrag(with: event)
+        }
       }
     }
   }
@@ -1413,7 +1428,7 @@ class MainWindowController: PlayerWindowController {
     // show titlebar
     if oscPosition == .top {
       oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTopInFullScreen
-      titleBarHeightConstraint.constant = TitleBarHeightWithOSCInFullScreen
+      titleBarHeightConstraint.constant = OSCTopHeightInFullScreen
     } else {
       // stop animation and hide titleBarView
       removeTitlebarViewFromFadeableViews()
@@ -1476,6 +1491,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowWillExitFullScreen(_ notification: Notification) {
+    Logger.log("Exiting fullscreen", subsystem: player.subsystem)
     if isInInteractiveMode {
       exitInteractiveMode(immediately: true)
     }
@@ -1483,7 +1499,7 @@ class MainWindowController: PlayerWindowController {
     // show titleBarView
     if oscPosition == .top {
       oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTop
-      titleBarHeightConstraint.constant = TitleBarHeightWithOSC
+      titleBarHeightConstraint.constant = OSCTopHeightWithTitleBar
     }
 
     thumbnailPeekView.isHidden = true
@@ -1650,10 +1666,12 @@ class MainWindowController: PlayerWindowController {
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
       return window.aspectRatio.grow(toSize: minSize)
     }
+    Logger.log("windowWillResize: requested: \(frameSize)", level: .verbose, subsystem: player.subsystem)
     return frameSize
   }
 
   func windowDidResize(_ notification: Notification) {
+    Logger.log("windowDidResize()", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
 
     // The `videoView` is not updated during full screen animation (unless using a custom one, however it could be
@@ -1684,6 +1702,7 @@ class MainWindowController: PlayerWindowController {
       cropSettingsView?.cropBoxView.resized(with: videoView.frame)
     }
 
+    // TODO: pull out this logic & do OSC resize when panel opens!
     // update control bar position
     if oscPosition == .floating {
       let cph = Preference.float(for: .controlBarPositionHorizontal)
@@ -1758,13 +1777,13 @@ class MainWindowController: PlayerWindowController {
 
   // resize framebuffer in videoView after resizing.
   func windowDidEndLiveResize(_ notification: Notification) {
-    Logger.log("windowDidEndLiveResize()", level: .verbose)
+    Logger.log("windowDidEndLiveResize()", level: .verbose, subsystem: player.subsystem)
     videoView.videoSize = window!.convertToBacking(videoView.bounds).size
     updateWindowParametersForMPV()
   }
 
   func windowDidChangeBackingProperties(_ notification: Notification) {
-    Logger.log("windowDidEndLiveResize()", level: .verbose)
+    Logger.log("windowDidChangeBackingProperties()", level: .verbose, subsystem: player.subsystem)
     if let oldScale = (notification.userInfo?[NSWindow.oldScaleFactorUserInfoKey] as? NSNumber)?.doubleValue,
       oldScale != Double(window!.backingScaleFactor) {
       videoView.videoLayer.contentsScale = window!.backingScaleFactor
@@ -1772,7 +1791,7 @@ class MainWindowController: PlayerWindowController {
   }
   
   override func windowDidChangeScreen(_ notification: Notification) {
-    Logger.log("windowDidChangeScreen()", level: .verbose)
+    Logger.log("windowDidChangeScreen()", level: .verbose, subsystem: player.subsystem)
     super.windowDidChangeScreen(notification)
 
     player.events.emit(.windowScreenChanged)
@@ -1780,6 +1799,7 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Window delegate: Activeness status
   func windowDidMove(_ notification: Notification) {
+    Logger.log("windowDidMove()", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
     player.events.emit(.windowMoved, data: window.frame)
   }
@@ -1839,6 +1859,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowDidDeminiaturize(_ notification: Notification) {
+    Logger.log("windowDidDeminiaturize()", level: .verbose, subsystem: player.subsystem)
     if Preference.bool(for: .pauseWhenMinimized) && isPausedDueToMiniaturization {
       player.resume()
       isPausedDueToMiniaturization = false
@@ -2596,12 +2617,6 @@ class MainWindowController: PlayerWindowController {
       updateWindowParametersForMPV(withFrame: rect)
     }
     Logger.log("AdjustFrameByVideoSize done; resulting windowFrame: \(rect)", level: .verbose)
-
-    // generate thumbnails after video loaded if it's the first time
-    if !isVideoLoaded {
-      player.refreshThumbnailsForPlayer()
-      isVideoLoaded = true
-    }
 
     // UI and slider
     updatePlayTime(withDuration: true, andProgressBar: true)

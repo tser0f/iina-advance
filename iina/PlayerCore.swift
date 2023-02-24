@@ -1362,6 +1362,10 @@ class PlayerCore: NSObject {
       self.autoSearchOnlineSub()
     }
     events.emit(.fileStarted)
+
+    let url = info.currentURL
+    let message = (info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
+    sendOSD(.fileStart(message))
   }
 
   /** This function is called right after file loaded. Should load all meta info here. */
@@ -1373,11 +1377,10 @@ class PlayerCore: NSObject {
     info.haveDownloadedSub = false
     isStopped = false
 
+    // Kick off thumbnails load/gen - it can happen in background
+    refreshThumbnailsForPlayer()
+
     checkUnsyncedWindowOptions()
-    // generate thumbnails if window has loaded video
-    if mainWindow.isVideoLoaded {
-      refreshThumbnailsForPlayer()
-    }
     // call `trackListChanged` to load tracks and check whether need to switch to music mode
     trackListChanged()
     // main thread stuff
@@ -1390,25 +1393,14 @@ class PlayerCore: NSObject {
         touchBarSupport.setupTouchBarUI()
       }
 
-      if info.aid == 0 {
-        mainWindow.muteButton.isEnabled = false
-        mainWindow.volumeSlider.isEnabled = false
-      }
-
-      if info.vid == 0 {
-        notifyMainWindowVideoSizeChanged()
-      }
-
       if self.isInMiniPlayer {
         miniPlayer.defaultAlbumArt.isHidden = self.info.vid != 0
       }
     }
     // set initial properties for the first file
-    if info.justLaunched {
-      if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
-        DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
-      }
-      info.justLaunched = false
+    if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
+      Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
+      DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
     }
     // add to history
     if let url = info.currentURL {
@@ -1754,7 +1746,7 @@ class PlayerCore: NSObject {
         }
       }
     } else {
-      Logger.log("Generating new thumbnails, width=\(width)", subsystem: subsystem)
+      Logger.log("Generating new thumbnails for file \(url.path.quoted), width=\(width)", subsystem: subsystem)
       ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(width))
     }
   }

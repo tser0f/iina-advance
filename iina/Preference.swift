@@ -129,6 +129,7 @@ struct Preference {
     static let resizeWindowOption = Key("resizeWindowOption")
 
     static let enableOSC = Key("enableOSC")
+    // FIXME: change this to "showTitleBarWhen" enum
     static let showTitleBarWhenShowingOSC = Key("showTitleBarWhenShowingOSC")
     static let oscPosition = Key("oscPosition")
 
