@@ -172,6 +172,9 @@ class PlaybackInfo {
   var vid: Int?
   var secondSid: Int?
 
+  var isSubVisible = true
+  var isSecondSubVisible = true
+
   // -- PERSISTENT PROPERTIES END --
 
   var chapters: [MPVChapter] = []
