@@ -52,7 +52,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet var sectionPictureInPictureView: NSView!
     
   @IBOutlet weak var themeMenu: NSMenu!
-  @IBOutlet weak var oscPreviewImageView: NSImageView!
+  @IBOutlet weak var windowPreviewImageView: NSImageView!
   @IBOutlet weak var oscPositionPopupButton: NSPopUpButton!
   @IBOutlet weak var oscToolbarStackView: NSStackView!
 
@@ -80,7 +80,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    oscPositionPopupBtnAction(oscPositionPopupButton)
+    updateWindowPreviewImage(oscPositionPopupButton)
     oscToolbarStackView.wantsLayer = true
     updateOSCToolbarButtons()
     setupGeometryRelatedControls()
@@ -100,34 +100,23 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     }
   }
 
-  @IBAction func titleBarLayoutPopupBtnAction(_ sender: NSPopUpButton) {
+  @IBAction func updateWindowPreviewImage(_ sender: AnyObject) {
+    let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
+    let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
     var name: NSImage.Name
-    switch sender.selectedTag() {
-      case 0:
+    switch oscPosition {
+      case .floating:
         name = "osc_float"
-      case 1:
+      case .insideTop:
         name = "osc_top"
-      case 2:
+      case .insideBottom:
         name = "osc_bottom"
-      default:
-        name = "osc_float"
+      case .outsideTop:
+        name = "osc_bottom"
+      case .outsideBottom:
+        name = "osc_bottom"
     }
-    oscPreviewImageView.image = NSImage(named: name)
-  }
-
-  @IBAction func oscPositionPopupBtnAction(_ sender: NSPopUpButton) {
-    var name: NSImage.Name
-    switch sender.selectedTag() {
-    case 0:
-      name = "osc_float"
-    case 1:
-      name = "osc_top"
-    case 2:
-      name = "osc_bottom"
-    default:
-      name = "osc_float"
-    }
-    oscPreviewImageView.image = NSImage(named: name)
+    windowPreviewImageView.image = NSImage(named: name)
   }
 
   @IBAction func updateGeometryValue(_ sender: AnyObject) {
