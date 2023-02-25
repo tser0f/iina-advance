@@ -100,6 +100,21 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     }
   }
 
+  @IBAction func titleBarLayoutPopupBtnAction(_ sender: NSPopUpButton) {
+    var name: NSImage.Name
+    switch sender.selectedTag() {
+      case 0:
+        name = "osc_float"
+      case 1:
+        name = "osc_top"
+      case 2:
+        name = "osc_bottom"
+      default:
+        name = "osc_float"
+    }
+    oscPreviewImageView.image = NSImage(named: name)
+  }
+
   @IBAction func oscPositionPopupBtnAction(_ sender: NSPopUpButton) {
     var name: NSImage.Name
     switch sender.selectedTag() {

@@ -333,6 +333,8 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Observed user defaults
 
   // Cached user default values
+  private lazy var titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
+  private lazy var enableOSC: Bool = Preference.bool(for: .enableOSC)
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
   private lazy var pinchAction: Preference.PinchAction = Preference.enum(for: .pinchAction)
@@ -340,6 +342,8 @@ class MainWindowController: PlayerWindowController {
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
   private let localObservedPrefKeys: [Preference.Key] = [
+    .titleBarLayout,
+    .enableOSC,
     .oscPosition,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
@@ -353,7 +357,6 @@ class MainWindowController: PlayerWindowController {
     .displayTimeAndBatteryInFullScreen,
     .controlBarToolbarButtons,
     .alwaysShowOnTopIcon,
-    .showTitleBarWhenShowingOSC,
   ]
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -361,10 +364,8 @@ class MainWindowController: PlayerWindowController {
     super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 
     switch keyPath {
-    case PK.oscPosition.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        setupOnScreenController(withPosition: Preference.OSCPosition(rawValue: newValue) ?? .floating)
-      }
+    case PK.enableOSC.rawValue, PK.oscPosition.rawValue, PK.titleBarLayout.rawValue:
+      setupTitleBarAndOSC()
     case PK.thumbnailWidth.rawValue:
       if let newValue = change[.newKey] as? Int {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) {
@@ -425,19 +426,6 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
-    case PK.showTitleBarWhenShowingOSC.rawValue:
-        // TODO: group title bar & OSC in Prefs
-        // TODO: change to enum: "titleBarPosition": { "none", “outsideVideo", “insideVideo" } - "cover top of video"
-        // TODO: for titlebar insideVideo, "titleBarStyle": "normal", "minimal" (minimal + OSC top = combine the two)
-        // TODO: easter egg: for title bars type "none" or "minimal", hold Option to show menubar
-        // TODO: add checkbox: "Always hide title bar & OSC when mouse is outside window" // checked==current behavior; unchecked==show OSC & titlebar* & start auto-hide timer when mouse moves at all in app.
-        // TODO: oscPosition values: “Bottom, outside video”, “Bottom, inside video”, “Floating, inside video”, “Top, outside video”, “Top, inside video”
-
-
-
-        if let oscPosition = Preference.OSCPosition(key: .oscPosition) {
-        setupOnScreenController(withPosition: oscPosition)
-      }
     default:
       return
     }
@@ -594,7 +582,7 @@ class MainWindowController: PlayerWindowController {
     fragControlView.addView(fragControlViewLeftView, in: .center)
     fragControlView.addView(fragControlViewMiddleView, in: .center)
     fragControlView.addView(fragControlViewRightView, in: .center)
-    setupOnScreenController(withPosition: oscPosition)
+    setupTitleBarAndOSC()
     let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
     setupOSCToolbarButtons(buttons)
 
@@ -745,12 +733,14 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func setupOnScreenController(withPosition newPosition: Preference.OSCPosition) {
+  private func setupTitleBarAndOSC() {
+    let oscPositionNew: Preference.OSCPosition = Preference.enum(for: .oscPosition)
+    let oscEnabledNew = Preference.bool(for: .enableOSC)
+    let titleBarLayoutNew: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
 
-    let isSwitchingToTop = newPosition == .top
-    let isSwitchingFromTop = oscPosition == .top
-    let isFloating = newPosition == .floating
-    let showTitleBar = Preference.bool(for: .showTitleBarWhenShowingOSC)
+    let isSwitchingToTop = oscPositionNew == .insideTop
+    let isSwitchingFromTop = oscPosition == .insideTop
+    let isFloating = oscPositionNew == .floating
 
     if let cb = currentControlBar {
       // remove current osc view from fadeable views
@@ -760,6 +750,7 @@ class MainWindowController: PlayerWindowController {
     // reset
     ([controlBarFloating, controlBarBottom, oscTopMainView] as [NSView]).forEach { $0.isHidden = true }
 
+    let showTitleBar = titleBarLayoutNew != .none
     if showTitleBar { // SHOW title bar
       titleBarHeightConstraint.constant = TitleBarHeightNormal
       if let window = self.window as? MainWindow {
@@ -811,10 +802,10 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    oscPosition = newPosition
+    oscPosition = oscPositionNew
 
     // add fragment views
-    switch newPosition {
+    switch oscPositionNew {
     case .floating:
       currentControlBar = controlBarFloating
       fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewLeftView)
@@ -838,7 +829,7 @@ class MainWindowController: PlayerWindowController {
       let cpv = Preference.float(for: .controlBarPositionVertical)
       controlBarFloating.xConstraint.constant = window!.frame.width * CGFloat(cph)
       controlBarFloating.yConstraint.constant = window!.frame.height * CGFloat(cpv)
-    case .top:
+    case .insideTop:
       oscTopMainView.isHidden = false
       currentControlBar = nil
       fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
@@ -851,7 +842,7 @@ class MainWindowController: PlayerWindowController {
       oscTopMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
       oscTopMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
       oscTopMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
-    case .bottom:
+    case .insideBottom:
       currentControlBar = controlBarBottom
       fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
       fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
@@ -863,6 +854,12 @@ class MainWindowController: PlayerWindowController {
       oscBottomMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
       oscBottomMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
       oscBottomMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
+      case .outsideTop:
+        // TODO!
+        break
+      case .outsideBottom:
+        // TODO!
+        break
     }
 
     if currentControlBar != nil {
@@ -1426,7 +1423,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // show titlebar
-    if oscPosition == .top {
+    if oscPosition == .insideTop {
       oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTopInFullScreen
       titleBarHeightConstraint.constant = OSCTopHeightInFullScreen
     } else {
@@ -1497,7 +1494,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // show titleBarView
-    if oscPosition == .top {
+    if oscPosition == .insideTop {
       oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTop
       titleBarHeightConstraint.constant = OSCTopHeightWithTitleBar
     }
@@ -1523,7 +1520,7 @@ class MainWindowController: PlayerWindowController {
       // window. Restore it now.
       window!.setFrame(fsState.priorWindowedFrame!, display: true, animate: false)
     }
-    if oscPosition != .top {
+    if oscPosition != .insideTop {
       addBackTitlebarViewToFadeableViews()
     }
     addBackStandardButtonsToFadeableViews()
@@ -2354,8 +2351,8 @@ class MainWindowController: PlayerWindowController {
   ///   - thumbnailHeight: The height of the thumbnail.
   /// - Returns: `true` if the thumbnail can be shown above the slider, `false` otherwise.
   private func canShowThumbnailAbove(timnePreviewYPos: Double, thumbnailHeight: Double) -> Bool {
-    guard oscPosition != .bottom else { return true }
-    guard oscPosition != .top else { return false }
+    guard oscPosition != .insideBottom else { return true }
+    guard oscPosition != .insideTop else { return false }
     // The layout preference for the on screen controller is set to the default floating layout.
     // Must insure the top of the thumbnail would be below the top of the window.
     let topOfThumbnail = timnePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight

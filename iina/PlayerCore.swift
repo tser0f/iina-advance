@@ -1398,9 +1398,12 @@ class PlayerCore: NSObject {
       }
     }
     // set initial properties for the first file
-    if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
-      Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
-      DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
+    if info.justLaunched {
+      if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
+        Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
+        DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
+      }
+      info.justLaunched = false
     }
     // add to history
     if let url = info.currentURL {

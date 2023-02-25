@@ -84,14 +84,14 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   }
 
   internal var observedPrefKeys: [Preference.Key] = [
-    .showTitleBarWhenShowingOSC
+    .titleBarLayout
   ]
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath else { return }
 
     switch keyPath {
-      case PK.showTitleBarWhenShowingOSC.rawValue:
+      case PK.titleBarLayout.rawValue:
         refreshDownshiftFromTop()
       default:
         return
@@ -100,7 +100,9 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   private func refreshDownshiftFromTop() {
     let downShift: CGFloat
-    if Preference.bool(for: .showTitleBarWhenShowingOSC) {
+    let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
+    let showTitleBar = titleBarLayout != .none
+    if showTitleBar {
       downShift = MainWindowController.sidebarDownShift
     } else {
       downShift = 0

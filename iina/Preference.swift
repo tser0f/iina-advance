@@ -128,10 +128,10 @@ struct Preference {
     static let resizeWindowTiming = Key("resizeWindowTiming")
     static let resizeWindowOption = Key("resizeWindowOption")
 
+    static let titleBarLayout = Key("titleBarLayout")
     static let enableOSC = Key("enableOSC")
-    // FIXME: change this to "showTitleBarWhen" enum
-    static let showTitleBarWhenShowingOSC = Key("showTitleBarWhenShowingOSC")
     static let oscPosition = Key("oscPosition")
+    static let hideOverlaysWhenOutsideWindow = Key("hideOverlaysWhenOutsideWindow")
 
     static let playlistWidth = Key("playlistWidth")
     static let prefetchPlaylistVideoDuration = Key("prefetchPlaylistVideoDuration")
@@ -410,10 +410,25 @@ struct Preference {
     }
   }
 
+  enum TitleBarLayout: Int, InitializingFromKey {
+    case none = 0
+    case outsideVideo
+    case insideVideoFull
+    case insideVideoMinimal
+
+    static var defaultValue = TitleBarLayout.insideVideoFull
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
   enum OSCPosition: Int, InitializingFromKey {
     case floating = 0
-    case top
-    case bottom
+    case insideTop
+    case insideBottom
+    case outsideTop
+    case outsideBottom
 
     static var defaultValue = OSCPosition.floating
 
@@ -761,8 +776,9 @@ struct Preference {
     .controlBarAutoHideTimeout: Float(2.5),
     .controlBarToolbarButtons: [ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
     .enableOSC: true,
-    .showTitleBarWhenShowingOSC: true,
+    .titleBarLayout: TitleBarLayout.insideVideoFull.rawValue,
     .oscPosition: OSCPosition.floating.rawValue,
+    .hideOverlaysWhenOutsideWindow: true,
     .playlistWidth: 270,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
