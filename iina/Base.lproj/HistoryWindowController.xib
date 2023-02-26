@@ -20,12 +20,12 @@
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="563" height="342"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
-            <view key="contentView" wantsLayer="YES" misplaced="YES" id="se5-gp-TjO">
-                <rect key="frame" x="0.0" y="0.0" width="565" height="342"/>
-                <autoresizingMask key="autoresizingMask"/>
+            <value key="minSize" type="size" width="400" height="400"/>
+            <view key="contentView" wantsLayer="YES" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="se5-gp-TjO">
+                <rect key="frame" x="0.0" y="0.0" width="565" height="328"/>
                 <subviews>
                     <searchField wantsLayer="YES" textCompletion="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nfA-G1-DVj">
-                        <rect key="frame" x="357" y="290" width="200" height="24"/>
+                        <rect key="frame" x="357" y="300" width="200" height="24"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="200" id="8T5-1l-PW8"/>
                             <constraint firstAttribute="height" constant="24" id="i1e-zn-ahj"/>
@@ -40,14 +40,14 @@
                             <outlet property="searchMenuTemplate" destination="u6g-IF-TSS" id="y2i-UM-V7o"/>
                         </connections>
                     </searchField>
-                    <scrollView verticalHuggingPriority="249" autohidesScrollers="YES" horizontalLineScroll="26" horizontalPageScroll="10" verticalLineScroll="26" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="II4-dF-AGa">
-                        <rect key="frame" x="0.0" y="0.0" width="565" height="286"/>
+                    <scrollView verticalHuggingPriority="100" verticalCompressionResistancePriority="250" autohidesScrollers="YES" horizontalLineScroll="24" horizontalPageScroll="10" verticalLineScroll="24" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="II4-dF-AGa">
+                        <rect key="frame" x="0.0" y="0.0" width="565" height="296"/>
                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="IB5-0J-8sn">
-                            <rect key="frame" x="1" y="1" width="563" height="284"/>
+                            <rect key="frame" x="1" y="1" width="563" height="294"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
-                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" tableStyle="fullWidth" autosaveName="PlaybackHistoryTable" rowHeight="24" headerView="MiB-ow-W6T" viewBased="YES" indentationPerLevel="12" autosaveExpandedItems="YES" autoresizesOutlineColumn="YES" outlineTableColumn="DIC-tR-R2F" id="6jR-CS-fgx">
-                                    <rect key="frame" x="0.0" y="0.0" width="563" height="261"/>
+                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" tableStyle="fullWidth" autosaveName="PlaybackHistoryTable" rowHeight="22" headerView="MiB-ow-W6T" viewBased="YES" floatsGroupRows="NO" indentationPerLevel="12" autosaveExpandedItems="YES" autoresizesOutlineColumn="YES" outlineTableColumn="DIC-tR-R2F" id="6jR-CS-fgx">
+                                    <rect key="frame" x="0.0" y="0.0" width="563" height="271"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <size key="intercellSpacing" width="4" height="2"/>
                                     <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
@@ -232,8 +232,8 @@
                             <autoresizingMask key="autoresizingMask"/>
                         </tableHeaderView>
                     </scrollView>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ob0-Up-S1q">
-                        <rect key="frame" x="6" y="293" width="64" height="16"/>
+                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ob0-Up-S1q">
+                        <rect key="frame" x="6" y="304" width="64" height="16"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Group by:" id="z6c-c4-dgd">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -241,7 +241,10 @@
                         </textFieldCell>
                     </textField>
                     <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dcE-VR-Vxk">
-                        <rect key="frame" x="74" y="290" width="78" height="21"/>
+                        <rect key="frame" x="73" y="296" width="78" height="29"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="24" id="Xmm-F8-gsu"/>
+                        </constraints>
                         <popUpButtonCell key="cell" type="push" title="Date" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="QBO-JS-dNV" id="geF-qk-cXT">
                             <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
@@ -259,16 +262,16 @@
                 </subviews>
                 <constraints>
                     <constraint firstAttribute="trailing" secondItem="II4-dF-AGa" secondAttribute="trailing" id="2el-lQ-ebS"/>
-                    <constraint firstItem="dcE-VR-Vxk" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" constant="8" id="5nM-zm-MVx"/>
-                    <constraint firstItem="dcE-VR-Vxk" firstAttribute="leading" secondItem="ob0-Up-S1q" secondAttribute="trailing" constant="9" id="7dv-Eh-lkU"/>
+                    <constraint firstItem="dcE-VR-Vxk" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" constant="4" id="5nM-zm-MVx"/>
+                    <constraint firstItem="dcE-VR-Vxk" firstAttribute="leading" secondItem="ob0-Up-S1q" secondAttribute="trailing" constant="8" id="7dv-Eh-lkU"/>
                     <constraint firstItem="II4-dF-AGa" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" id="He6-cF-muG"/>
                     <constraint firstAttribute="trailing" secondItem="nfA-G1-DVj" secondAttribute="trailing" constant="8" id="SpX-3c-5W7"/>
                     <constraint firstItem="nfA-G1-DVj" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="dcE-VR-Vxk" secondAttribute="trailing" constant="8" id="Srg-PF-efH"/>
-                    <constraint firstItem="dcE-VR-Vxk" firstAttribute="firstBaseline" secondItem="ob0-Up-S1q" secondAttribute="firstBaseline" id="ZRj-0I-lre"/>
-                    <constraint firstItem="II4-dF-AGa" firstAttribute="top" secondItem="nfA-G1-DVj" secondAttribute="bottom" constant="4" id="gs2-8g-scW"/>
+                    <constraint firstItem="II4-dF-AGa" firstAttribute="top" secondItem="ob0-Up-S1q" secondAttribute="bottom" constant="8" id="al3-Mg-c7d"/>
                     <constraint firstItem="nfA-G1-DVj" firstAttribute="centerY" secondItem="dcE-VR-Vxk" secondAttribute="centerY" id="ics-FR-Esx"/>
+                    <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="200" id="kHe-Bg-XFd"/>
                     <constraint firstItem="ob0-Up-S1q" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" constant="8" id="oAG-A0-JZA"/>
-                    <constraint firstItem="II4-dF-AGa" firstAttribute="top" secondItem="dcE-VR-Vxk" secondAttribute="bottom" constant="8" id="snY-Md-K5b"/>
+                    <constraint firstItem="II4-dF-AGa" firstAttribute="top" secondItem="dcE-VR-Vxk" secondAttribute="bottom" constant="4" id="snY-Md-K5b"/>
                     <constraint firstItem="II4-dF-AGa" firstAttribute="bottom" secondItem="se5-gp-TjO" secondAttribute="bottom" id="yDA-3c-2eZ"/>
                 </constraints>
             </view>
