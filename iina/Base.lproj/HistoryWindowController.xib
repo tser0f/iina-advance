@@ -46,7 +46,7 @@
                             <rect key="frame" x="1" y="1" width="555" height="174"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
-                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" tableStyle="fullWidth" autosaveName="PlaybackHistoryTable" rowHeight="22" headerView="MiB-ow-W6T" viewBased="YES" floatsGroupRows="NO" indentationPerLevel="12" autosaveExpandedItems="YES" autoresizesOutlineColumn="YES" outlineTableColumn="DIC-tR-R2F" id="6jR-CS-fgx">
+                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" tableStyle="fullWidth" autosaveName="PlaybackHistoryTable" rowHeight="22" headerView="MiB-ow-W6T" viewBased="YES" floatsGroupRows="NO" indentationPerLevel="12" autosaveExpandedItems="NO" autoresizesOutlineColumn="YES" outlineTableColumn="DIC-tR-R2F" id="6jR-CS-fgx">
                                     <rect key="frame" x="0.0" y="0.0" width="555" height="151"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <size key="intercellSpacing" width="4" height="2"/>
