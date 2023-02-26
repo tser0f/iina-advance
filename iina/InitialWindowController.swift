@@ -140,6 +140,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
 
   init() {
     super.init(window: nil)
+    self.windowFrameAutosaveName = Constants.WindowAutosaveName.welcome
   }
 
   required init?(coder: NSCoder) {
@@ -293,12 +294,13 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowWillClose(_ notification: Notification) {
-    guard !expectingAnotherWindowToOpen else { return }
-    guard let window = self.window, window.isOnlyOpenWindow() else { return }
-
-    if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .welcomeWindow {
-      Logger.log("Configured to show Welcome window when all windows closed, but user closed the Welcome window. Will quit instead of re-opening it.")
-      (NSApp.delegate as! AppDelegate).terminateSafely()
+    removeFromOpenWindowsToRestore()
+    
+    if let window = self.window, window.isOnlyOpenWindow(), !expectingAnotherWindowToOpen {
+      if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .welcomeWindow {
+        Logger.log("Configured to show Welcome window when all windows closed, but user closed the Welcome window. Will quit instead of re-opening it.")
+        (NSApp.delegate as! AppDelegate).terminateSafely()
+      }
     }
   }
 }

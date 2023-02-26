@@ -53,6 +53,15 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   private var historyData: [String: [PlaybackHistory]] = [:]
   private var historyDataKeys: [String] = []
 
+  init() {
+    super.init(window: nil)
+    self.windowFrameAutosaveName = Constants.WindowAutosaveName.playbackHistory
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
   override func windowDidLoad() {
     super.windowDidLoad()
 
@@ -117,11 +126,13 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   // MARK: NSWindowDelegate
   
   func windowWillClose(_ notification: Notification) {
-    guard let window = self.window, window.isOnlyOpenWindow() else { return }
+    removeFromOpenWindowsToRestore()
 
-    if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .historyWindow {
-      Logger.log("Configured to show Playback History window when all windows closed, but user closed the Playback History window. Will quit instead of re-opening it.")
-      (NSApp.delegate as! AppDelegate).terminateSafely()
+    if let window = self.window, window.isOnlyOpenWindow() {
+      if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .historyWindow {
+        Logger.log("Configured to show Playback History window when all windows closed, but user closed the Playback History window. Will quit instead of re-opening it.")
+        (NSApp.delegate as! AppDelegate).terminateSafely()
+      }
     }
   }
 

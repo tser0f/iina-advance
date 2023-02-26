@@ -39,7 +39,7 @@ extension PreferenceWindowEmbeddable {
   }
 }
 
-class PreferenceWindowController: NSWindowController {
+class PreferenceWindowController: NSWindowController, NSWindowDelegate {
   static unowned var undoManager: UndoManager? = nil
 
   class Trie {
@@ -147,6 +147,7 @@ class PreferenceWindowController: NSWindowController {
   init(viewControllers: [NSViewController & PreferenceWindowEmbeddable]) {
     self.viewControllers = viewControllers
     super.init(window: nil)
+    self.windowFrameAutosaveName = Constants.WindowAutosaveName.preference
   }
 
   required init?(coder: NSCoder) {
@@ -215,6 +216,10 @@ class PreferenceWindowController: NSWindowController {
     tableView.allowsEmptySelection = false
 
     prefDetailScrollView.contentView.scroll(to: NSPoint(x: 0, y: savedScrollOffsetY))
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    removeFromOpenWindowsToRestore()
   }
 
   @objc func contentViewDidChangeBounds(_ notification: Notification) {

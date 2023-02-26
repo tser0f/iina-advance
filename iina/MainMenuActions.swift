@@ -11,9 +11,7 @@ import Cocoa
 extension PlayerWindowController {
 
   @objc func menuShowInspector(_ sender: AnyObject) {
-    let inspector = (NSApp.delegate as! AppDelegate).inspector
-    inspector.showWindow(self)
-    inspector.updateInfo()
+    (NSApp.delegate as! AppDelegate).showInspectorWindow()
   }
 
   @objc func menuSavePlaylist(_ sender: NSMenuItem) {

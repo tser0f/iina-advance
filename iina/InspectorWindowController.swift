@@ -8,7 +8,7 @@
 
 import Cocoa
 
-class InspectorWindowController: NSWindowController, NSTableViewDelegate, NSTableViewDataSource {
+class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableViewDelegate, NSTableViewDataSource {
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("InspectorWindowController")
@@ -70,6 +70,15 @@ class InspectorWindowController: NSWindowController, NSTableViewDelegate, NSTabl
   @IBOutlet weak var watchTableView: NSTableView!
   @IBOutlet weak var deleteButton: NSButton!
 
+  init() {
+    super.init(window: nil)
+    self.windowFrameAutosaveName = Constants.WindowAutosaveName.inspector
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
   override func windowDidLoad() {
     super.windowDidLoad()
 
@@ -95,6 +104,10 @@ class InspectorWindowController: NSWindowController, NSTableViewDelegate, NSTabl
     ObjcUtils.silenced {
       NotificationCenter.default.removeObserver(self)
     }
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    removeFromOpenWindowsToRestore()
   }
 
   func updateInfo(dynamic: Bool = false) {

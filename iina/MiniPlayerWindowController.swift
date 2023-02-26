@@ -70,6 +70,16 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // MARK: - Initialization
 
+  override init(playerCore: PlayerCore) {
+    super.init(playerCore: playerCore)
+    self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.miniPlayer, playerCore.label)
+    Logger.log("MiniPlayerWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
   override func windowDidLoad() {
     super.windowDidLoad()
 

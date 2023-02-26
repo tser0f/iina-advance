@@ -24,7 +24,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var loaded = false
   
   init(playerCore: PlayerCore) {
-    Logger.log("PlayerWindow init", level: .verbose, subsystem: playerCore.subsystem)
     self.player = playerCore
     super.init(window: nil)
   }

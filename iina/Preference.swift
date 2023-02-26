@@ -338,6 +338,9 @@ struct Preference {
      so may want to just enable this always in the future). */
     static let writeUIStateImmediately = Key("writeUIStateImmediately")
 
+    // Comma-separated list of window names
+    static let uiOpenWindowList = Key("uiOpenWindowList")
+
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
     static let uiPrefDetailViewScrollOffsetY = Key("uiPrefDetailViewScrollOffsetY")
@@ -1089,6 +1092,38 @@ struct Preference {
       }
       Logger.log("Saved \(pendingWriteDict.count) UI elements", level: .verbose)
       pendingWriteDict.removeAll()
+    }
+
+    // Returns the autosave names of windows which have been saved in the set of open windows
+    static func getSavedOpenWindowNames() -> Set<String> {
+      let csv = Preference.string(for: Key.uiOpenWindowList)?.trimmingCharacters(in: .whitespaces) ?? ""
+      if csv.isEmpty {
+        return Set()
+      }
+      return Set(csv.components(separatedBy: ",").map{ $0.trimmingCharacters(in: .whitespaces)})
+    }
+
+    private static func saveOpenWindowNames(_ windowSet: Set<String>) {
+      let csv = windowSet.map{ $0 }.joined(separator: ",")
+      Preference.set(csv, for: Key.uiOpenWindowList)
+      Logger.log("Saved set of open windows: \(windowSet)", level: .verbose)
+    }
+
+    static func windowDidOpen(named windowName: String) {
+      var openWindows = getSavedOpenWindowNames()
+      openWindows.insert(windowName)
+      saveOpenWindowNames(openWindows)
+    }
+
+    // Set `deleteProperties==true` if they never need to be restored
+    static func windowWillClose(named windowName: String, deleteProperties: Bool = false) {
+      var openWindows = getSavedOpenWindowNames()
+      openWindows.remove(windowName)
+      saveOpenWindowNames(openWindows)
+
+      if deleteProperties {
+        // TODO: delete properties
+      }
     }
   }
 }

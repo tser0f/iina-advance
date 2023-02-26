@@ -125,6 +125,17 @@ struct Constants {
     static let audioEq = "iina_aeq"
     static let delogo = "iina_delogo"
   }
+  struct WindowAutosaveName {
+    static let preference = "IINAPreferenceWindow"
+    static let welcome = "IINAWelcomeWindow"
+    static let openURL = "OpenURLWindow"
+    static let about = "AboutWindow"
+    static let inspector = "InspectorWindow"
+    static let playbackHistory = "PlaybackHistoryWindow"
+    // TODO: what about Font Picker, Guide, Video Filter, Audio Filter?
+    static let mainPlayer = "MainPlayer%@Window"
+    static let miniPlayer = "MiniPlayer%@Window"
+  }
 }
 
 struct Unit {

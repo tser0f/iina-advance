@@ -546,6 +546,16 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Initialization
 
+  override init(playerCore: PlayerCore) {
+    super.init(playerCore: playerCore)
+    self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
+    Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
   override func windowDidLoad() {
     super.windowDidLoad()
 
@@ -2857,6 +2867,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  // TODO: fix typo
   @IBAction func ontopButtonnAction(_ sender: NSButton) {
     setWindowFloatingOnTop(!isOntop)
   }

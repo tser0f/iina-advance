@@ -8,7 +8,7 @@
 
 import Cocoa
 
-class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSControlTextEditingDelegate {
+class OpenURLWindowController: NSWindowController, NSWindowDelegate, NSTextFieldDelegate, NSControlTextEditingDelegate {
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("OpenURLWindowController")
@@ -25,6 +25,15 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
 
   var isAlternativeAction = false
 
+  init() {
+    super.init(window: nil)
+    self.windowFrameAutosaveName = Constants.WindowAutosaveName.openURL
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
   override func windowDidLoad() {
     super.windowDidLoad()
     window?.isMovableByWindowBackground = true
@@ -35,6 +44,10 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).forEach {
       window?.standardWindowButton($0)?.isHidden = true
     }
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    removeFromOpenWindowsToRestore()
   }
 
   override func cancelOperation(_ sender: Any?) {

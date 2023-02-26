@@ -310,15 +310,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
   }
 
+  // MARK: Opening/restoring windows
+
   /** Show welcome window if `application(_:openFile:)` wasn't called, i.e. launched normally. */
   @objc
   func checkForShowingInitialWindow() {
     if !openFileCalled {
-      showWindowAfterLaunch()
+      showWindowsAfterLaunch()
     }
   }
 
-  private func showWindowAfterLaunch() {
+  private func showWindowsAfterLaunch() {
+    let windowNamesToRestore = Preference.UIState.getSavedOpenWindowNames()
+    if !windowNamesToRestore.isEmpty {
+      restoreWindowsFromPreviousLaunch(windowNamesToRestore)
+    } else {
+      showPreferredWindowAfterLaunch()
+    }
+  }
+
+  private func showPreferredWindowAfterLaunch() {
     let actionRawValue = Preference.integer(for: .actionAfterLaunch)
     let action: Preference.ActionAfterLaunch = Preference.ActionAfterLaunch(rawValue: actionRawValue) ?? .welcomeWindow
     switch action {
@@ -327,9 +338,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     case .openPanel:
       openFile(self)
     case .historyWindow:
-      historyWindow.showWindow(self)
+      showHistoryWindow(self)
     default:
       break
+    }
+  }
+
+  private func restoreWindowsFromPreviousLaunch(_ windowNamesToRestore: Set<String>) {
+    for autosaveName in windowNamesToRestore {
+      switch autosaveName {
+        case Constants.WindowAutosaveName.playbackHistory:
+          showHistoryWindow(self)
+        case Constants.WindowAutosaveName.welcome:
+          showWelcomeWindow()
+        case Constants.WindowAutosaveName.preference:
+          showPreferences(self)
+        case Constants.WindowAutosaveName.about:
+          showAboutWindow(self)
+        case Constants.WindowAutosaveName.openURL:
+          showOpenURLWindow(isAlternativeAction: false)
+        case Constants.WindowAutosaveName.inspector:
+          showInspectorWindow()
+        default:
+          break
+      }
     }
   }
 
@@ -342,6 +374,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     Logger.log("Showing WelcomeWindow", level: .verbose)
     initialWindow.reloadData()
     initialWindow.showWindow(nil)
+    initialWindow.addToOpenWindowsToRestore()
+  }
+
+  func showOpenURLWindow(isAlternativeAction: Bool) {
+    Logger.log("Showing OpenURLWindow (alterativeAction: \(isAlternativeAction))", level: .verbose)
+    openURLWindow.isAlternativeAction = isAlternativeAction
+    openURLWindow.showWindow(nil)
+    openURLWindow.addToOpenWindowsToRestore()
+    openURLWindow.resetFields()
+  }
+
+  func showInspectorWindow() {
+    Logger.log("Showing Inspector window", level: .verbose)
+    inspector.showWindow(self)
+    inspector.addToOpenWindowsToRestore()
+    inspector.updateInfo()
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -356,13 +404,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         case .welcomeWindow:
           showWelcomeWindow()
         case .historyWindow:
-          historyWindow.showWindow(self)
+          showHistoryWindow(self)
         default:
           break
       }
     }
     return false
   }
+
+  // MARK: Application termination
 
   func terminateSafely() {
     // Prevent infinite loop
@@ -534,7 +584,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard !isTerminating else { return false }
     guard !flag else { return true }
     Logger.log("Handle reopen")
-    showWindowAfterLaunch()
+    showWindowsAfterLaunch()
     return true
   }
 
@@ -728,13 +778,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   @IBAction func openURL(_ sender: AnyObject) {
     Logger.log("Menu - Open URL")
-    openURLWindow.isAlternativeAction = sender.tag == AlternativeMenuItemTag
-    openURLWindow.showWindow(nil)
-    openURLWindow.resetFields()
+    showOpenURLWindow(isAlternativeAction: sender.tag == AlternativeMenuItemTag)
   }
 
   @IBAction func menuNewWindow(_ sender: Any) {
-    initialWindow.showWindow(nil)
+    showWindowsAfterLaunch()
   }
 
   @IBAction func menuOpenScreenshotFolder(_ sender: NSMenuItem) {
@@ -752,6 +800,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   @IBAction func showPreferences(_ sender: AnyObject) {
     preferenceWindowController.showWindow(self)
+    preferenceWindowController.addToOpenWindowsToRestore()
   }
 
   @IBAction func showVideoFilterWindow(_ sender: AnyObject) {
@@ -764,10 +813,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   @IBAction func showAboutWindow(_ sender: AnyObject) {
     aboutWindow.showWindow(self)
+    aboutWindow.addToOpenWindowsToRestore()
   }
 
   @IBAction func showHistoryWindow(_ sender: AnyObject) {
     historyWindow.showWindow(self)
+    historyWindow.addToOpenWindowsToRestore()
   }
 
   @IBAction func showHighlights(_ sender: AnyObject) {

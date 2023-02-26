@@ -23,7 +23,7 @@ struct Contributor: Decodable {
   }
 }
 
-class AboutWindowController: NSWindowController {
+class AboutWindowController: NSWindowController, NSWindowDelegate {
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("AboutWindowController")
@@ -53,6 +53,15 @@ class AboutWindowController: NSWindowController {
 
   private lazy var contributors = getContributors()
   private lazy var translators = loadTraslators()
+
+  init() {
+    super.init(window: nil)
+    self.windowFrameAutosaveName = Constants.WindowAutosaveName.about
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
 
   override func windowDidLoad() {
     super.windowDidLoad()
@@ -104,6 +113,10 @@ class AboutWindowController: NSWindowController {
 
     translatorsTableView.dataSource = self
     translatorsTableView.delegate = self
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    removeFromOpenWindowsToRestore()
   }
 
   @IBAction func sectionBtnAction(_ sender: NSButton) {
