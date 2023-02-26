@@ -332,7 +332,11 @@ struct Preference {
 
     // Internal UI State
 
-    static let keepStateOfUIBetweenLaunches = Key("keepStateOfUIBetweenLaunches")
+    static let keepLastUIState = Key("keepLastUIState")
+    /** If true, write UI changes as soon as they are reported. This will defend against loss of UI state
+     in case of crash or force-quit. (There also seems to be almost no performance penalty for waiting,
+     so may want to just enable this always in the future). */
+    static let writeUIStateImmediately = Key("writeUIStateImmediately")
 
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
@@ -903,7 +907,8 @@ struct Preference {
     .acceptRawTextAsKeyBindings: false,
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
-    .keepStateOfUIBetweenLaunches: true,
+    .keepLastUIState: true,
+    .writeUIStateImmediately: true,
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
     .uiCollapseViewMediaIsOpened: true,
@@ -1059,7 +1064,7 @@ struct Preference {
 
     // For restoring UI state from prev launch (if enabled)
     static func get<T>(_ key: Key) -> T {
-      if Preference.bool(for: .keepStateOfUIBetweenLaunches) {
+      if Preference.bool(for: .keepLastUIState) {
         return Preference.typedValue(for: key)
       }
       return Preference.typedDefault(for: key)
@@ -1069,10 +1074,16 @@ struct Preference {
       if let existing = Preference.object(for: key) as? T, existing == value {
         return
       }
-      pendingWriteDict[key] = value
+      if Preference.bool(for: .writeUIStateImmediately) {
+        Preference.set(value, for: key)
+      } else {
+        pendingWriteDict[key] = value
+      }
     }
 
     static func saveAll() {
+      guard !pendingWriteDict.isEmpty else { return }
+      
       for (key, value) in pendingWriteDict {
         Preference.set(value, for: key)
       }
