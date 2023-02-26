@@ -24,6 +24,33 @@
             <view key="contentView" wantsLayer="YES" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="se5-gp-TjO">
                 <rect key="frame" x="0.0" y="0.0" width="557" height="208"/>
                 <subviews>
+                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ob0-Up-S1q">
+                        <rect key="frame" x="6" y="184" width="64" height="16"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Group by:" id="z6c-c4-dgd">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dcE-VR-Vxk">
+                        <rect key="frame" x="73" y="176" width="78" height="29"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="24" id="Xmm-F8-gsu"/>
+                        </constraints>
+                        <popUpButtonCell key="cell" type="push" title="Date" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="QBO-JS-dNV" id="geF-qk-cXT">
+                            <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="menu"/>
+                            <menu key="menu" id="IlO-8S-UTZ">
+                                <items>
+                                    <menuItem title="Date" state="on" id="QBO-JS-dNV"/>
+                                    <menuItem title="Folder" tag="1" id="VH5-en-8FR"/>
+                                </items>
+                            </menu>
+                        </popUpButtonCell>
+                        <connections>
+                            <action selector="groupByChangedAction:" target="-2" id="YOC-15-2CZ"/>
+                        </connections>
+                    </popUpButton>
                     <searchField wantsLayer="YES" textCompletion="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nfA-G1-DVj">
                         <rect key="frame" x="349" y="180" width="200" height="24"/>
                         <constraints>
@@ -46,7 +73,7 @@
                             <rect key="frame" x="1" y="1" width="555" height="174"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
-                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" tableStyle="fullWidth" autosaveName="PlaybackHistoryTable" rowHeight="22" headerView="MiB-ow-W6T" viewBased="YES" floatsGroupRows="NO" indentationPerLevel="12" autosaveExpandedItems="NO" autoresizesOutlineColumn="YES" outlineTableColumn="DIC-tR-R2F" id="6jR-CS-fgx">
+                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" tableStyle="fullWidth" autosaveName="PlaybackHistoryTable" rowHeight="22" headerView="MiB-ow-W6T" viewBased="YES" indentationPerLevel="12" autoresizesOutlineColumn="YES" outlineTableColumn="DIC-tR-R2F" id="6jR-CS-fgx">
                                     <rect key="frame" x="0.0" y="0.0" width="555" height="151"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <size key="intercellSpacing" width="4" height="2"/>
@@ -170,7 +197,7 @@
                                                 </tableCellView>
                                             </prototypeCellViews>
                                         </tableColumn>
-                                        <tableColumn identifier="Time" editable="NO" width="60" minWidth="50" maxWidth="400" id="M7K-6H-OPw">
+                                        <tableColumn identifier="Time" editable="NO" width="60" minWidth="60" maxWidth="400" id="M7K-6H-OPw">
                                             <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="Played at">
                                                 <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                 <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
@@ -232,33 +259,6 @@
                             <autoresizingMask key="autoresizingMask"/>
                         </tableHeaderView>
                     </scrollView>
-                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ob0-Up-S1q">
-                        <rect key="frame" x="6" y="184" width="64" height="16"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Group by:" id="z6c-c4-dgd">
-                            <font key="font" metaFont="system"/>
-                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
-                    <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dcE-VR-Vxk">
-                        <rect key="frame" x="73" y="176" width="78" height="29"/>
-                        <constraints>
-                            <constraint firstAttribute="height" constant="24" id="Xmm-F8-gsu"/>
-                        </constraints>
-                        <popUpButtonCell key="cell" type="push" title="Date" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="QBO-JS-dNV" id="geF-qk-cXT">
-                            <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="menu"/>
-                            <menu key="menu" id="IlO-8S-UTZ">
-                                <items>
-                                    <menuItem title="Date" state="on" id="QBO-JS-dNV"/>
-                                    <menuItem title="Folder" tag="1" id="VH5-en-8FR"/>
-                                </items>
-                            </menu>
-                        </popUpButtonCell>
-                        <connections>
-                            <action selector="groupByChangedAction:" target="-2" id="YOC-15-2CZ"/>
-                        </connections>
-                    </popUpButton>
                 </subviews>
                 <constraints>
                     <constraint firstAttribute="trailing" secondItem="II4-dF-AGa" secondAttribute="trailing" id="2el-lQ-ebS"/>
