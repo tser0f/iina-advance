@@ -55,6 +55,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var windowPreviewImageView: NSImageView!
   @IBOutlet weak var oscPositionPopupButton: NSPopUpButton!
   @IBOutlet weak var oscToolbarStackView: NSStackView!
+  @IBOutlet weak var oscAutoHideTimeoutTextField: NSTextField!
+  @IBOutlet weak var hideOverlaysOutsideWindowCheckBox: NSButton!
 
   @IBOutlet weak var windowSizeCheckBox: NSButton!
   @IBOutlet weak var windowSizeTypePopUpButton: NSPopUpButton!
@@ -101,22 +103,84 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 
   @IBAction func updateWindowPreviewImage(_ sender: AnyObject) {
+    let oscEnabled = Preference.bool(for: .enableOSC)
     let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
     let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
-    var name: NSImage.Name
+    var osc: String
     switch oscPosition {
       case .floating:
-        name = "osc_float"
+        osc = "osc_float"
       case .insideTop:
-        name = "osc_top"
+        osc = "osc_top"
       case .insideBottom:
-        name = "osc_bottom"
+        osc = "osc_bottom"
       case .outsideTop:
-        name = "osc_bottom"
+        osc = "osc_outside_top"
       case .outsideBottom:
-        name = "osc_bottom"
+        osc = "osc_outside_bottom"
     }
-    windowPreviewImageView.image = NSImage(named: name)
+    var tb: String
+    switch titleBarLayout {
+      case .none:
+        tb = "tb_none"
+      case .outsideVideo:
+        tb = "tb_outside"
+      case .insideVideoMinimal:
+        tb = "tb_inside_min"
+      case .insideVideoFull:
+        tb = "tb_inside_full"
+    }
+    // TODO: create every different kind of image
+    windowPreviewImageView.image = NSImage(named: "\(osc)_\(tb)")
+
+//    let renderer = NSGraphicsImageRenderer(size: CGSize(width: 512, height: 512))
+/*
+    let rep = NSBitmapImageRep(
+      bitmapDataPlanes: nil,
+      pixelsWide: Int(480),
+      pixelsHigh: Int(270),
+      bitsPerSample: 8,
+      samplesPerPixel: 4,
+      hasAlpha: true,
+      isPlanar: false,
+      colorSpaceName: NSCalibratedRGBColorSpace,
+      bytesPerRow: 0,
+      bitsPerPixel: 0)
+
+
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.setCurrentContext(context)
+
+    drawFunc()
+
+    NSGraphicsContext.restoreGraphicsState()
+
+    let image = NSImage(size: size)
+    image.addRepresentation(rep!)
+
+//    let context = NSGraphicsContext(bitmapImageRep: rep!)
+
+//    let img = renderer.image { ctx in
+//      // awesome drawing code
+//    }
+
+    /*
+     NSImage *blackImage = [[NSImage alloc]initWithSize:NSMakeSize(22, 12)];
+     [blackImage lockFocus];
+     NSColor *blackColor=[[NSColor blackColor]autorelease];
+     [blackColor set];
+     NSRectFill(NSMakeRect(0, 0, 22, 12));
+     [blackImage unlockFocus];
+     [item setImage:[blackImage autorelease]];//now  you can get the black image hear item is imageView this is without ARC code u can remove autorelease if u want
+
+     */
+    imageView.image = img
+*/
+    let titleBarIsOverlay = titleBarLayout == .insideVideoFull || titleBarLayout == .insideVideoMinimal
+    let oscIsOverlay = oscEnabled && (oscPosition == .insideTop || oscPosition == .insideBottom || oscPosition == .floating)
+    let hasOverlay = titleBarIsOverlay || oscIsOverlay
+    oscAutoHideTimeoutTextField.isEnabled = hasOverlay
+    hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
   }
 
   @IBAction func updateGeometryValue(_ sender: AnyObject) {

@@ -149,7 +149,7 @@
 "fsj-YE-OB7.title" = "Use physical resolution on Retina displays";
 
 /* Class = "NSTextFieldCell"; title = "On Screen Controller:"; ObjectID = "g06-Ja-Ot8"; */
-"g06-Ja-Ot8.title" = "Window Controls:";
+"g06-Ja-Ot8.title" = "Title Bar and Controller:";
 
 /* Class = "NSTextFieldCell"; title = "of the screen"; ObjectID = "iRn-3s-oQH"; */
 "iRn-3s-oQH.title" = "of the screen";
@@ -161,7 +161,7 @@
 "kYu-0l-jQQ.title" = "Thumbnail Preview:";
 
 /* Class = "NSTextFieldCell"; title = "Layout:"; ObjectID = "l54-63-V6n"; */
-"l54-63-V6n.title" = "OSC Layout:";
+"l54-63-V6n.title" = "Controller style:";
 
 /* Class = "NSMenuItem"; title = "Light"; ObjectID = "lZc-Dl-3cQ"; */
 "lZc-Dl-3cQ.title" = "Light";
@@ -206,7 +206,7 @@
 "xMh-SP-nkc.title" = "Enable OSD";
 
 /* Class = "NSTextFieldCell"; title = "Toolbar:"; ObjectID = "xP1-Vh-27X"; */
-"xP1-Vh-27X.title" = "Toolbar:";
+"xP1-Vh-27X.title" = "Toolbar items:";
 
 /* Class = "NSMenuItem"; title = "% of screen"; ObjectID = "xrJ-Um-BrJ"; */
 "xrJ-Um-BrJ.title" = "% of screen";

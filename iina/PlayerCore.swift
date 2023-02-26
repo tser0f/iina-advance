@@ -1275,7 +1275,9 @@ class PlayerCore: NSObject {
 
     // If the player is stopped then the file has been unloaded and it is too late to save the
     // watch later configuration.
-    if !isStopped {
+    if isStopped {
+      Logger.log("Player is stopped; too late to write water later config", level: .verbose, subsystem: subsystem)
+    } else {
       Logger.log("Write watch later config", subsystem: subsystem)
       mpv.command(.writeWatchLaterConfig)
     }
@@ -1286,6 +1288,7 @@ class PlayerCore: NSObject {
       info.setCachedVideoDurationAndProgress(url.path, (duration: info.videoDuration?.second, progress: info.videoPosition?.second))
     }
     if let position = info.videoPosition?.second {
+      Logger.log("Saving iinaLastPlayedFilePosition: \(position)s", level: .verbose, subsystem: subsystem)
       Preference.set(position, for: .iinaLastPlayedFilePosition)
     }
   }
@@ -1294,7 +1297,7 @@ class PlayerCore: NSObject {
     let geometry = mpv.getString(MPVOption.Window.geometry) ?? ""
     let parsed = GeometryDef.parse(geometry)
     if let parsed = parsed {
-      Logger.log("Retrieved geometry: \(parsed)", level: .verbose)
+      Logger.log("Got mpv geometry: \(parsed)", level: .verbose)
     } else {
       Logger.log("Got nil for mpv geometry!")
     }
