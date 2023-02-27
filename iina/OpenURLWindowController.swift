@@ -46,10 +46,6 @@ class OpenURLWindowController: NSWindowController, NSWindowDelegate, NSTextField
     }
   }
 
-  func windowWillClose(_ notification: Notification) {
-    removeFromOpenWindowsToRestore()
-  }
-
   override func cancelOperation(_ sender: Any?) {
     window?.close()
   }

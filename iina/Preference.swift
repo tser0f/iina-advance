@@ -339,7 +339,7 @@ struct Preference {
     static let writeUIStateImmediately = Key("writeUIStateImmediately")
 
     // Comma-separated list of window names
-    static let uiOpenWindowList = Key("uiOpenWindowList")
+    static let uiOpenWindowsBackToFront = Key("uiOpenWindowsBackToFront")
 
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
@@ -912,6 +912,7 @@ struct Preference {
     .tableEditKeyNavContinuesBetweenRows: false,
     .keepLastUIState: true,
     .writeUIStateImmediately: true,
+    .uiOpenWindowsBackToFront: "",
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
     .uiCollapseViewMediaIsOpened: true,
@@ -1086,7 +1087,7 @@ struct Preference {
 
     static func saveAll() {
       guard !pendingWriteDict.isEmpty else { return }
-      
+
       for (key, value) in pendingWriteDict {
         Preference.set(value, for: key)
       }
@@ -1095,35 +1096,22 @@ struct Preference {
     }
 
     // Returns the autosave names of windows which have been saved in the set of open windows
-    static func getSavedOpenWindowNames() -> Set<String> {
-      let csv = Preference.string(for: Key.uiOpenWindowList)?.trimmingCharacters(in: .whitespaces) ?? ""
+    static func getSavedOpenWindowsBackToFront() -> [String] {
+      let csv = Preference.string(for: Key.uiOpenWindowsBackToFront)?.trimmingCharacters(in: .whitespaces) ?? ""
       if csv.isEmpty {
-        return Set()
+        return []
       }
-      return Set(csv.components(separatedBy: ",").map{ $0.trimmingCharacters(in: .whitespaces)})
+      return csv.components(separatedBy: ",").map{ $0.trimmingCharacters(in: .whitespaces)}
     }
 
-    private static func saveOpenWindowNames(_ windowSet: Set<String>) {
-      let csv = windowSet.map{ $0 }.joined(separator: ",")
-      Preference.set(csv, for: Key.uiOpenWindowList)
-      Logger.log("Saved set of open windows: \(windowSet)", level: .verbose)
+    static func saveOpenWindowList(windowNamesBackToFront windowList: [String]) {
+      let csv = windowList.map{ $0 }.joined(separator: ",")
+      Preference.set(csv, for: Key.uiOpenWindowsBackToFront)
+      Logger.log("OpenWindowsBackToFront was saved: \(windowList)", level: .verbose)
     }
 
-    static func windowDidOpen(named windowName: String) {
-      var openWindows = getSavedOpenWindowNames()
-      openWindows.insert(windowName)
-      saveOpenWindowNames(openWindows)
-    }
-
-    // Set `deleteProperties==true` if they never need to be restored
-    static func windowWillClose(named windowName: String, deleteProperties: Bool = false) {
-      var openWindows = getSavedOpenWindowNames()
-      openWindows.remove(windowName)
-      saveOpenWindowNames(openWindows)
-
-      if deleteProperties {
-        // TODO: delete properties
-      }
+    static func clearOpenWindowList() {
+      saveOpenWindowList(windowNamesBackToFront: [])
     }
   }
 }

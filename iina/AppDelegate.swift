@@ -43,6 +43,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   private(set) var isTerminating = false
 
+  private var observers: [NSObjectProtocol] = []
+
   // Windows
 
   lazy var initialWindow: InitialWindowController = InitialWindowController()
@@ -270,6 +272,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     if !commandLineStatus.isCommandLine {
       // check whether showing the welcome window after 0.1s
       Timer.scheduledTimer(timeInterval: TimeInterval(0.1), target: self, selector: #selector(self.checkForShowingInitialWindow), userInfo: nil, repeats: false)
+
+      let observer = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
+        // This notification can sometimes happen if the app had multiple windows at shutdown.
+        // We will ignore it in this case, because this is exactly the case that we want to save!
+        guard !self.isTerminating else {
+          return
+        }
+        // Query for the list of open windows and save it.
+        // Don't do this too soon, or their orderIndexes may not yet be up to date.
+        DispatchQueue.main.async {
+          Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
+        }
+      }
+      self.observers.append(observer)
+
     } else {
       var lastPlayerCore: PlayerCore? = nil
       let getNewPlayerCore = { () -> PlayerCore in
@@ -302,12 +319,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         pc.mainWindow.enterPIP()
       }
     }
-
     NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
 
     NSApplication.shared.servicesProvider = self
 
     (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
+  }
+
+  func applicationShouldAutomaticallyLocalizeKeyEquivalents(_ application: NSApplication) -> Bool {
+    // Do not re-map keyboard shortcuts based on keyboard position in different locales
+    return false
   }
 
   // MARK: Opening/restoring windows
@@ -321,17 +342,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   private func showWindowsAfterLaunch() {
-    let windowNamesToRestore = Preference.UIState.getSavedOpenWindowNames()
+    let windowNamesToRestore = Preference.UIState.getSavedOpenWindowsBackToFront()
     if !windowNamesToRestore.isEmpty {
       restoreWindowsFromPreviousLaunch(windowNamesToRestore)
     } else {
-      showPreferredWindowAfterLaunch()
+      doConfiguredActionAfterLaunch()
     }
   }
 
-  private func showPreferredWindowAfterLaunch() {
-    let actionRawValue = Preference.integer(for: .actionAfterLaunch)
-    let action: Preference.ActionAfterLaunch = Preference.ActionAfterLaunch(rawValue: actionRawValue) ?? .welcomeWindow
+  private func doConfiguredActionAfterLaunch() {
+    let action: Preference.ActionAfterLaunch = Preference.enum(for: .actionAfterLaunch)
     switch action {
     case .welcomeWindow:
       showWelcomeWindow()
@@ -339,13 +359,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       openFile(self)
     case .historyWindow:
       showHistoryWindow(self)
-    default:
+    case .none:
       break
     }
   }
 
-  private func restoreWindowsFromPreviousLaunch(_ windowNamesToRestore: Set<String>) {
-    for autosaveName in windowNamesToRestore {
+  private func restoreWindowsFromPreviousLaunch(_ windowNamesBackToFront: [String]) {
+    Logger.log("Restoring open windows: \(windowNamesBackToFront)")
+    // Show windows one by one, starting at back and iterating to front:
+    for autosaveName in windowNamesBackToFront {
       switch autosaveName {
         case Constants.WindowAutosaveName.playbackHistory:
           showHistoryWindow(self)
@@ -365,30 +387,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
   }
 
-  func applicationShouldAutomaticallyLocalizeKeyEquivalents(_ application: NSApplication) -> Bool {
-    // Do not re-map keyboard shortcuts based on keyboard position in different locales
-    return false
+  private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {
+    var orderNamePairs: [(Int, String)] = []
+    for window in NSApp.windows {
+      let name = window.frameAutosaveName
+      if !name.isEmpty && window.isVisible {
+        if let nameToExclude = nameToExclude, nameToExclude == name {
+          continue
+        }
+        orderNamePairs.append((window.orderedIndex, name))
+      }
+    }
+    Logger.log("OrderNamePairs: \(orderNamePairs)", level: .verbose)
+    return orderNamePairs.sorted(by: { (left, right) in left.0 > right.0}).map{ $0.1 }
   }
 
   func showWelcomeWindow() {
     Logger.log("Showing WelcomeWindow", level: .verbose)
     initialWindow.reloadData()
     initialWindow.showWindow(nil)
-    initialWindow.addToOpenWindowsToRestore()
   }
 
   func showOpenURLWindow(isAlternativeAction: Bool) {
     Logger.log("Showing OpenURLWindow (alterativeAction: \(isAlternativeAction))", level: .verbose)
     openURLWindow.isAlternativeAction = isAlternativeAction
     openURLWindow.showWindow(nil)
-    openURLWindow.addToOpenWindowsToRestore()
     openURLWindow.resetFields()
   }
 
   func showInspectorWindow() {
     Logger.log("Showing Inspector window", level: .verbose)
     inspector.showWindow(self)
-    inspector.addToOpenWindowsToRestore()
     inspector.updateInfo()
   }
 
@@ -400,6 +429,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       Logger.log("Last window closed; whatToDo: \(whatToDo)", level: .verbose)
       switch whatToDo {
         case .quit:
+          Preference.UIState.clearOpenWindowList()
           return true
         case .welcomeWindow:
           showWelcomeWindow()
@@ -414,10 +444,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   // MARK: Application termination
 
-  func terminateSafely() {
+  func terminateAfterAllWindowsClosed() {
     // Prevent infinite loop
     guard !isTerminating else { return }
 
+    Preference.UIState.clearOpenWindowList()
     NSApp.terminate(nil)
   }
 
@@ -591,6 +622,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   func applicationWillTerminate(_ notification: Notification) {
     Logger.log("App will terminate")
     Logger.closeLogFile()
+
+    ObjcUtils.silenced {
+      self.observers.forEach {
+        NotificationCenter.default.removeObserver($0)
+      }
+    }
   }
 
   /**
@@ -782,7 +819,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   @IBAction func menuNewWindow(_ sender: Any) {
-    showWindowsAfterLaunch()
+    showWelcomeWindow()
   }
 
   @IBAction func menuOpenScreenshotFolder(_ sender: NSMenuItem) {
@@ -800,7 +837,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   @IBAction func showPreferences(_ sender: AnyObject) {
     preferenceWindowController.showWindow(self)
-    preferenceWindowController.addToOpenWindowsToRestore()
   }
 
   @IBAction func showVideoFilterWindow(_ sender: AnyObject) {
@@ -813,12 +849,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   @IBAction func showAboutWindow(_ sender: AnyObject) {
     aboutWindow.showWindow(self)
-    aboutWindow.addToOpenWindowsToRestore()
   }
 
   @IBAction func showHistoryWindow(_ sender: AnyObject) {
     historyWindow.showWindow(self)
-    historyWindow.addToOpenWindowsToRestore()
   }
 
   @IBAction func showHighlights(_ sender: AnyObject) {

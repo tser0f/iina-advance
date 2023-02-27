@@ -218,10 +218,6 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
     prefDetailScrollView.contentView.scroll(to: NSPoint(x: 0, y: savedScrollOffsetY))
   }
 
-  func windowWillClose(_ notification: Notification) {
-    removeFromOpenWindowsToRestore()
-  }
-
   @objc func contentViewDidChangeBounds(_ notification: Notification) {
     let scrollOffsetY = prefDetailScrollView.contentView.bounds.origin.y
     if scrollOffsetY >= 0 {  // Because scroll is bouncy, it can briefly be negative. Ignore those values.

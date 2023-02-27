@@ -297,7 +297,7 @@ extension FilterWindowController: NSTableViewDelegate, NSTableViewDataSource {
     updateButtonStatus()
   }
 
-  func windowDidBecomeKey(_ notification: Notification) {
+  func windowDidBecomeKey() {
     updateButtonStatus()
   }
 

@@ -115,10 +115,6 @@ class AboutWindowController: NSWindowController, NSWindowDelegate {
     translatorsTableView.delegate = self
   }
 
-  func windowWillClose(_ notification: Notification) {
-    removeFromOpenWindowsToRestore()
-  }
-
   @IBAction func sectionBtnAction(_ sender: NSButton) {
     tabView.selectTabViewItem(at: sender.tag)
     [licenseButton, contributorsButton, creditsButton].forEach {

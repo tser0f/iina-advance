@@ -786,31 +786,6 @@ extension NSWindow {
   }
 }
 
-extension NSWindowController {
-  func addToOpenWindowsToRestore() {
-    guard let window = window else { return }
-    let windowName = window.frameAutosaveName
-    guard !windowName.isEmpty else {
-      Logger.log("Cannot save state of opened window: its autosave name is not set!", level: .error)
-      return
-    }
-    Preference.UIState.windowDidOpen(named: windowName)
-  }
-
-  func removeFromOpenWindowsToRestore() {
-    guard !(NSApp.delegate as! AppDelegate).isTerminating else { return }
-    guard let window = window else { return }
-
-    let windowName = window.frameAutosaveName
-    guard !windowName.isEmpty else {
-      Logger.log("Cannot save state of closed window: its autosave name is not set!", level: .error)
-      return
-    }
-    
-    Preference.UIState.windowWillClose(named: windowName)
-  }
-}
-
 extension Process {
   @discardableResult
   static func run(_ cmd: [String], at currentDir: URL? = nil) -> (process: Process, stdout: Pipe, stderr: Pipe) {

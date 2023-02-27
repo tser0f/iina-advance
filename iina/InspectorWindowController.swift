@@ -106,10 +106,6 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     }
   }
 
-  func windowWillClose(_ notification: Notification) {
-    removeFromOpenWindowsToRestore()
-  }
-
   func updateInfo(dynamic: Bool = false) {
     let controller = PlayerCore.lastActive.mpv!
     let info = PlayerCore.lastActive.info

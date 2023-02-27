@@ -294,12 +294,11 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowWillClose(_ notification: Notification) {
-    removeFromOpenWindowsToRestore()
-    
-    if let window = self.window, window.isOnlyOpenWindow(), !expectingAnotherWindowToOpen {
+    let appDelegate = NSApp.delegate as! AppDelegate
+    if let window = self.window, !appDelegate.isTerminating, window.isOnlyOpenWindow(), !expectingAnotherWindowToOpen {
       if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .welcomeWindow {
         Logger.log("Configured to show Welcome window when all windows closed, but user closed the Welcome window. Will quit instead of re-opening it.")
-        (NSApp.delegate as! AppDelegate).terminateSafely()
+        appDelegate.terminateAfterAllWindowsClosed()
       }
     }
   }
