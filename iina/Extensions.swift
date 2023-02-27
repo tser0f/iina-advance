@@ -786,6 +786,28 @@ extension NSWindow {
   }
 }
 
+extension NSScrollView {
+  func restoreAndObserveVerticalScroll(key: Preference.Key) -> NSObjectProtocol {
+    let observer = NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification,
+                                           object: self.contentView, queue: .main) { note in
+      if let view = note.object as? NSView {
+        let scrollOffsetY = view.bounds.origin.y
+        if scrollOffsetY >= 0 {  // Because scroll is bouncy, it can briefly be negative. Ignore those values.
+          Preference.UIState.set(scrollOffsetY, for: key)
+        }
+      }
+    }
+
+    // Restore scroll (if configured)
+    if Preference.bool(for: .keepLastUIState) {
+      let offsetY: Double = Preference.UIState.get(key)
+      self.contentView.scroll(to: NSPoint(x: 0, y: offsetY))
+    }
+
+    return observer
+  }
+}
+
 extension Process {
   @discardableResult
   static func run(_ cmd: [String], at currentDir: URL? = nil) -> (process: Process, stdout: Pipe, stderr: Pipe) {

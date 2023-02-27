@@ -204,25 +204,13 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
       self.isIndexing = false
     }
 
-    prefDetailScrollView.contentView.postsBoundsChangedNotifications = true
-    NotificationCenter.default.addObserver(self, selector: #selector(contentViewDidChangeBounds), name: NSView.boundsDidChangeNotification, object: nil)
-
-    let savedScrollOffsetY: Double = Preference.UIState.get(.uiPrefDetailViewScrollOffsetY)
-
     // To restore selection properly, must set table to allow empty selection initially (in XIB).
     // Otherwise, it will automatically select the first value and trigger the selection notification.
     // Much safer to disable empty selection after selecting a row.
     loadTab(at: Preference.UIState.get(.uiPrefWindowNavTableSelectionIndex))
     tableView.allowsEmptySelection = false
 
-    prefDetailScrollView.contentView.scroll(to: NSPoint(x: 0, y: savedScrollOffsetY))
-  }
-
-  @objc func contentViewDidChangeBounds(_ notification: Notification) {
-    let scrollOffsetY = prefDetailScrollView.contentView.bounds.origin.y
-    if scrollOffsetY >= 0 {  // Because scroll is bouncy, it can briefly be negative. Ignore those values.
-      Preference.UIState.set(scrollOffsetY, for: .uiPrefDetailViewScrollOffsetY)
-    }
+    let _ = prefDetailScrollView.restoreAndObserveVerticalScroll(key: .uiPrefDetailViewScrollOffsetY)
   }
 
   override func mouseDown(with event: NSEvent) {

@@ -351,6 +351,8 @@ struct Preference {
     static let uiCollapseViewSubAutoLoadAdvanced = Key("uiCollapseViewSubAutoLoadAdvanced")
     static let uiCollapseViewSubTextSubsAdvanced = Key("uiCollapseViewSubTextSubsAdvanced")
 
+    static let uiHistoryTableGroupBy = Key("uiHistoryTableGroupBy")
+    static let uiHistoryTableScrollOffsetY = Key("uiHistoryTableScrollOffsetY")
   }
 
   // MARK: - Enums
@@ -919,6 +921,8 @@ struct Preference {
     .uiCollapseViewPauseResume: true,
     .uiCollapseViewSubAutoLoadAdvanced: false,
     .uiCollapseViewSubTextSubsAdvanced: false,
+    .uiHistoryTableGroupBy: 0,
+    .uiHistoryTableScrollOffsetY: 0,
     .userOptions: [],
     .useUserDefinedConfDir: false,
     .userDefinedConfDir: "~/.config/mpv/",
@@ -1107,7 +1111,6 @@ struct Preference {
     static func saveOpenWindowList(windowNamesBackToFront windowList: [String]) {
       let csv = windowList.map{ $0 }.joined(separator: ",")
       Preference.set(csv, for: Key.uiOpenWindowsBackToFront)
-      Logger.log("OpenWindowsBackToFront was saved: \(windowList)", level: .verbose)
     }
 
     static func clearOpenWindowList() {

@@ -398,7 +398,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         orderNamePairs.append((window.orderedIndex, name))
       }
     }
-    Logger.log("OrderNamePairs: \(orderNamePairs)", level: .verbose)
     return orderNamePairs.sorted(by: { (left, right) in left.0 > right.0}).map{ $0.1 }
   }
 
