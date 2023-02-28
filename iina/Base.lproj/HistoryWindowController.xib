@@ -22,10 +22,10 @@
             <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
             <value key="minSize" type="size" width="400" height="350"/>
             <view key="contentView" wantsLayer="YES" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="se5-gp-TjO" userLabel="PlaybackHistoryWindow Content View">
-                <rect key="frame" x="0.0" y="0.0" width="557" height="176"/>
+                <rect key="frame" x="0.0" y="0.0" width="557" height="128"/>
                 <subviews>
                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ob0-Up-S1q" userLabel="GroupBy Label">
-                        <rect key="frame" x="6" y="152" width="64" height="16"/>
+                        <rect key="frame" x="6" y="104" width="64" height="16"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Group by:" id="z6c-c4-dgd">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -33,7 +33,7 @@
                         </textFieldCell>
                     </textField>
                     <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dcE-VR-Vxk" userLabel="GroupBy Popup">
-                        <rect key="frame" x="73" y="144" width="78" height="29"/>
+                        <rect key="frame" x="73" y="96" width="78" height="29"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="24" id="Xmm-F8-gsu"/>
                         </constraints>
@@ -52,7 +52,7 @@
                         </connections>
                     </popUpButton>
                     <searchField wantsLayer="YES" textCompletion="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nfA-G1-DVj">
-                        <rect key="frame" x="349" y="148" width="200" height="24"/>
+                        <rect key="frame" x="349" y="100" width="200" height="24"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="200" id="8T5-1l-PW8"/>
                             <constraint firstAttribute="height" constant="24" id="i1e-zn-ahj"/>
@@ -68,13 +68,13 @@
                         </connections>
                     </searchField>
                     <scrollView horizontalHuggingPriority="249" verticalHuggingPriority="249" horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="751" autohidesScrollers="YES" horizontalLineScroll="24" horizontalPageScroll="10" verticalLineScroll="24" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="II4-dF-AGa" userLabel="PlaybackHistoryTable Scroll View">
-                        <rect key="frame" x="0.0" y="0.0" width="557" height="144"/>
+                        <rect key="frame" x="0.0" y="0.0" width="557" height="96"/>
                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="IB5-0J-8sn" userLabel="PlaybackHistoryTable Clip View">
-                            <rect key="frame" x="1" y="1" width="555" height="142"/>
+                            <rect key="frame" x="1" y="1" width="555" height="94"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
                                 <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" tableStyle="fullWidth" autosaveName="PlaybackHistoryTable" rowHeight="22" headerView="MiB-ow-W6T" viewBased="YES" indentationPerLevel="12" autoresizesOutlineColumn="YES" outlineTableColumn="DIC-tR-R2F" id="6jR-CS-fgx" userLabel="PlaybackHistoryTable Outline View">
-                                    <rect key="frame" x="0.0" y="0.0" width="555" height="119"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="555" height="71"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <size key="intercellSpacing" width="4" height="2"/>
                                     <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
@@ -243,9 +243,6 @@
                                 </outlineView>
                             </subviews>
                         </clipView>
-                        <constraints>
-                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="100" id="VAL-bx-J0y"/>
-                        </constraints>
                         <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="Hfw-fb-gd5">
                             <rect key="frame" x="1" y="159" width="398" height="16"/>
                             <autoresizingMask key="autoresizingMask"/>
