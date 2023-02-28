@@ -47,21 +47,42 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   @IBOutlet weak var outlineView: NSOutlineView!
   @IBOutlet weak var historySearchField: NSSearchField!
 
-  var groupBy: SortOption = .lastPlayed
+  var groupBy: SortOption = HistoryWindowController.getGroupByFromPrefs()
   var searchOption: SearchOption = .fullPath
 
   private var historyData: [String: [PlaybackHistory]] = [:]
   private var historyDataKeys: [String] = []
 
+  internal var observedPrefKeys: [Preference.Key] = [
+    .uiHistoryTableGroupBy,
+  ]
+
   init() {
     super.init(window: nil)
     self.windowFrameAutosaveName = Constants.WindowAutosaveName.playbackHistory
+
+    observedPrefKeys.forEach { key in
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
+
   }
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
 
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    guard let keyPath = keyPath, change != nil else { return }
+
+    switch keyPath {
+      case PK.uiHistoryTableGroupBy.rawValue:
+        groupBy = HistoryWindowController.getGroupByFromPrefs()
+        reloadData()
+      default:
+        break
+    }
+  }
+  
   override func windowDidLoad() {
     super.windowDidLoad()
 
@@ -69,22 +90,29 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
       self.reloadData()
     }
 
-    prepareData()
     outlineView.delegate = self
     outlineView.dataSource = self
     outlineView.menu?.delegate = self
     outlineView.target = self
     outlineView.doubleAction = #selector(doubleAction)
-    outlineView.expandItem(nil, expandChildren: true)
+    reloadData()
+
+    // FIXME: this is not reliable at all. Maybe try enabling after fixing the XIB problems
+//    if let historyTableScrollView = outlineView.enclosingScrollView {
+//      let _ = historyTableScrollView.restoreAndObserveVerticalScroll(key: .uiHistoryTableScrollOffsetY)
+//    }
   }
 
-  func reloadData() {
-    prepareData()
-    outlineView.reloadData()
-    outlineView.expandItem(nil, expandChildren: true)
+  private static func getGroupByFromPrefs() -> SortOption {
+    if Preference.bool(for: .keepLastUIState) {
+      if let savedOption = SortOption(rawValue: Preference.integer(for: .uiHistoryTableGroupBy)) {
+        return savedOption
+      }
+    }
+    return .lastPlayed
   }
 
-  private func prepareData(fromHistory historyList: [PlaybackHistory]? = nil) {
+  private func reloadData(fromHistory historyList: [PlaybackHistory]? = nil) {
     // reconstruct data
     historyData.removeAll()
     historyDataKeys.removeAll()
@@ -94,6 +122,9 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     for entry in historyList {
       addToData(entry, forKey: getKey[groupBy]!(entry))
     }
+
+    outlineView.reloadData()
+    outlineView.expandItem(nil, expandChildren: true)
   }
 
   private func addToData(_ entry: PlaybackHistory, forKey key: String) {
@@ -224,9 +255,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
       // Do a locale-aware, case and diacritic insensitive search:
       return string.localizedStandardContains(searchString)
     }
-    prepareData(fromHistory: newObjects)
-    outlineView.reloadData()
-    outlineView.expandItem(nil, expandChildren: true)
+    reloadData(fromHistory: newObjects)
   }
 
   // MARK: - Menu
@@ -278,11 +307,6 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     PlayerCore.newPlayerCore.openURL(firstEntry.url)
   }
 
-  @IBAction func groupByChangedAction(_ sender: NSPopUpButton) {
-    groupBy = SortOption(rawValue: sender.selectedTag()) ?? .lastPlayed
-    reloadData()
-  }
-
   @IBAction func showInFinderAction(_ sender: AnyObject) {
     let urls = selectedEntries.compactMap { FileManager.default.fileExists(atPath: $0.url.path) ? $0.url: nil }
     NSWorkspace.shared.activateFileViewerSelecting(urls)
@@ -297,10 +321,12 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   @IBAction func searchOptionFilenameAction(_ sender: AnyObject) {
     searchOption = .filename
+    reloadData()
   }
 
   @IBAction func searchOptionFullPathAction(_ sender: AnyObject) {
     searchOption = .fullPath
+    reloadData()
   }
 
 }

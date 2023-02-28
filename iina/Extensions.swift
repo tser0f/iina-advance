@@ -791,16 +791,20 @@ extension NSScrollView {
     let observer = NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification,
                                            object: self.contentView, queue: .main) { note in
       if let view = note.object as? NSView {
-        let scrollOffsetY = view.bounds.origin.y
-        if scrollOffsetY >= 0 {  // Because scroll is bouncy, it can briefly be negative. Ignore those values.
-          Preference.UIState.set(scrollOffsetY, for: key)
+        var scrollOffsetY = view.bounds.origin.y
+        if scrollOffsetY < 0 {
+          // Because scroll is bouncy, it can briefly be negative.
+          // But the exact 0 offset may not be reported. Clamp to 0.
+          scrollOffsetY = 0
         }
+        Preference.UIState.set(scrollOffsetY, for: key)
       }
     }
 
     // Restore scroll (if configured)
     if Preference.bool(for: .keepLastUIState) {
       let offsetY: Double = Preference.UIState.get(key)
+      Logger.log("Restoring vertical scroll to: \(offsetY)", level: .verbose)
       self.contentView.scroll(to: NSPoint(x: 0, y: offsetY))
     }
 
