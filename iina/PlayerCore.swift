@@ -1288,7 +1288,7 @@ class PlayerCore: NSObject {
       info.setCachedVideoDurationAndProgress(url.path, (duration: info.videoDuration?.second, progress: info.videoPosition?.second))
     }
     if let position = info.videoPosition?.second {
-      Logger.log("Saving iinaLastPlayedFilePosition: \(position)s", level: .verbose, subsystem: subsystem)
+      Logger.log("Saving iinaLastPlayedFilePosition: \(position) sec", level: .verbose, subsystem: subsystem)
       Preference.set(position, for: .iinaLastPlayedFilePosition)
     }
   }

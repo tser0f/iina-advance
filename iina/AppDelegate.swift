@@ -239,6 +239,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     Logger.log("App launched")
 
+    // FIXME: this actually causes a window to opened in the background. Should delay this until intending to show it
     // show alpha in color panels
     NSColorPanel.shared.showsAlpha = true
 
@@ -384,6 +385,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         default:
           break
       }
+    }
+
+    // Count only "important windows" (IINA startup can open other windows which are hidden, such as color picker)
+    let openWindowCount = NSApp.windows.reduce(0, {count, win in (win.isImportant() && win.isOpen()) ? count + 1 : count})
+    if openWindowCount == 0 {
+      Logger.log("Looks like none of the windows was restored successfully. Falling back to user launch preference")
+      doConfiguredActionAfterLaunch()
     }
   }
 

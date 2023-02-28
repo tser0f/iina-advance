@@ -771,18 +771,27 @@ extension NSWindow {
 
   func isOnlyOpenWindow() -> Bool {
     for window in NSApp.windows {
-      if window != self {
-        if window.isVisible {
-          Logger.log("Found another window which is still open: \(window.title.quoted)", level: .verbose)
-          return false
-        } else if let mainWindow = window.windowController as? MainWindowController, mainWindow.isOpen {
-          Logger.log("Window for player\(mainWindow.player.label.quoted) is still open", level: .verbose)
-          return false
-        }
+      if window != self && window.isVisible {
+        Logger.log("Found another window which is still open: \(window.title.quoted)", level: .verbose)
+        return false
       }
     }
     Logger.log("Window is the only window currently open: \(self.title.quoted)", level: .verbose)
     return true
+  }
+
+  func isImportant() -> Bool {
+    // All the windows we care about have autosave names
+    return !self.frameAutosaveName.isEmpty
+  }
+
+  func isOpen() -> Bool {
+    if let mainWindow = self.windowController as? MainWindowController, mainWindow.isOpen {
+      return true
+    } else if self.isVisible {
+      return true
+    }
+    return false
   }
 }
 

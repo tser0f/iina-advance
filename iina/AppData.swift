@@ -133,8 +133,8 @@ struct Constants {
     static let inspector = "InspectorWindow"
     static let playbackHistory = "PlaybackHistoryWindow"
     // TODO: what about Font Picker, Guide, Video Filter, Audio Filter?
-    static let mainPlayer = "MainPlayer%@Window"
-    static let miniPlayer = "MiniPlayer%@Window"
+    static let mainPlayer = "PlayerWindow-%@"
+    static let miniPlayer = "MiniPlayerWindow-%@"
   }
 }
 

@@ -130,57 +130,102 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       case .insideVideoFull:
         tb = "tb_inside_full"
     }
-    // TODO: create every different kind of image
-    windowPreviewImageView.image = NSImage(named: "\(osc)_\(tb)")
 
-//    let renderer = NSGraphicsImageRenderer(size: CGSize(width: 512, height: 512))
-/*
-    let rep = NSBitmapImageRep(
-      bitmapDataPlanes: nil,
-      pixelsWide: Int(480),
-      pixelsHigh: Int(270),
-      bitsPerSample: 8,
-      samplesPerPixel: 4,
-      hasAlpha: true,
-      isPlanar: false,
-      colorSpaceName: NSCalibratedRGBColorSpace,
-      bytesPerRow: 0,
-      bitsPerPixel: 0)
+    // "preview_videoview" is 480x270
+    // preview_titlebar is 480x46
 
+    let compositeWidth: Int = 480
+    let compositeHeight: Int = 371
+    let titleBarHeight: Int = 46
 
-    NSGraphicsContext.saveGraphicsState()
-    NSGraphicsContext.setCurrentContext(context)
+    windowPreviewImageView.image = drawImageInBitmapImageContext(width: compositeWidth, height: compositeHeight, roundedCornerRadius: 100, drawingCalls: { cgContext in
 
-    drawFunc()
+      guard let videoViewImg = loadImage(named: "preview-videoview", cgContext) else { return }
+      guard let oscFullImg = loadImage(named: "preview-osc-full", cgContext) else { return }
+//      guard let oscFloatingImg = loadImage(named: "preview-osc-floating", cgContext) else { return }
+      guard let titleBarButtonsImg = loadImage(named: "preview-titlebar-buttons", cgContext) else { return }
 
-    NSGraphicsContext.restoreGraphicsState()
+      drawImage(oscFullImg, x: 0, y: 0, cgContext)
+      drawImage(videoViewImg, x: 0, y: oscFullImg.height, cgContext)
 
-    let image = NSImage(size: size)
-    image.addRepresentation(rep!)
+      cgContext.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.5))
+      cgContext.fill([CGRect(x: 0, y: 100, width: compositeWidth, height: titleBarHeight)])
+    })
 
-//    let context = NSGraphicsContext(bitmapImageRep: rep!)
-
-//    let img = renderer.image { ctx in
-//      // awesome drawing code
-//    }
-
-    /*
-     NSImage *blackImage = [[NSImage alloc]initWithSize:NSMakeSize(22, 12)];
-     [blackImage lockFocus];
-     NSColor *blackColor=[[NSColor blackColor]autorelease];
-     [blackColor set];
-     NSRectFill(NSMakeRect(0, 0, 22, 12));
-     [blackImage unlockFocus];
-     [item setImage:[blackImage autorelease]];//now  you can get the black image hear item is imageView this is without ARC code u can remove autorelease if u want
-
-     */
-    imageView.image = img
-*/
     let titleBarIsOverlay = titleBarLayout == .insideVideoFull || titleBarLayout == .insideVideoMinimal
     let oscIsOverlay = oscEnabled && (oscPosition == .insideTop || oscPosition == .insideBottom || oscPosition == .floating)
     let hasOverlay = titleBarIsOverlay || oscIsOverlay
     oscAutoHideTimeoutTextField.isEnabled = hasOverlay
     hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
+  }
+
+  func loadImage(named name: String, _ cgContext: CGContext) -> CGImage? {
+    guard let image = NSImage(named: name) else {
+      Logger.log("DrawImage: Failed to load image \(name.quoted)!", level: .error)
+      return nil
+    }
+    guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+      Logger.log("DrawImage: Failed to get CGImage for \(name.quoted)!", level: .error)
+      return nil
+    }
+    return cgImage
+  }
+
+  func drawImage(_ cgImage: CGImage, x: Int, y: Int, _ cgContext: CGContext) {
+    cgContext.draw(cgImage, in: CGRect(x: x, y: y, width: cgImage.width, height: cgImage.height))
+  }
+
+  func drawImageInBitmapImageContext(width: Int, height: Int, roundedCornerRadius: CGFloat? = nil, drawingCalls: (CGContext) -> Void) -> NSImage? {
+
+    // Create image with alpha channel
+    guard let compositeImageRep = NSBitmapImageRep(
+      bitmapDataPlanes: nil,
+      pixelsWide: width,
+      pixelsHigh: height,
+      bitsPerSample: 8,
+      samplesPerPixel: 4,
+      hasAlpha: true,
+      isPlanar: false,
+      colorSpaceName: NSColorSpaceName.calibratedRGB,
+      bytesPerRow: 0,
+      bitsPerPixel: 0) else {
+      Logger.log("DrawImageInBitmapImageContext: Failed to create NSBitmapImageRep!", level: .error)
+      return nil
+    }
+
+    guard let context = NSGraphicsContext(bitmapImageRep: compositeImageRep) else {
+      Logger.log("DrawImageInBitmapImageContext: Failed to create NSGraphicsContext!", level: .error)
+      return nil
+    }
+
+    let outputImage = NSImage(size: CGSize(width: width, height: height))
+
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = context
+    let cgContext = context.cgContext
+
+    drawingCalls(cgContext)
+
+
+    if let radius = roundedCornerRadius, radius > 0.0 {
+      Logger.log("Rounding image corners to: \(radius)", level: .verbose)
+      outputImage.lockFocus()
+
+      let rect = CGRect(x: 0, y: 0, width: width, height: height)
+//      let path = NSBezierPath(roundedRect: rect, xRadius: 0.5 * radius, yRadius: 0.5 * radius)
+      let path = CGPath(roundedRect: rect, cornerWidth: 0.5 * radius, cornerHeight: 0.5 * radius, transform: nil)
+      cgContext.addPath(path)
+      cgContext.clip()
+
+      outputImage.unlockFocus()
+    }
+
+    // Create the CGImage from the contents of the bitmap context.
+    outputImage.addRepresentation(compositeImageRep)
+
+    NSGraphicsContext.restoreGraphicsState()
+
+    return outputImage
   }
 
   @IBAction func updateGeometryValue(_ sender: AnyObject) {

@@ -577,6 +577,7 @@ class MainWindowController: PlayerWindowController {
     window.addTitlebarAccessoryViewController(titlebarAccesoryViewController)
     updateOnTopIcon()
 
+    // FIXME: do not do this here
     // size
     window.minSize = minSize
     if let wf = windowFrameFromGeometry() {
@@ -592,9 +593,6 @@ class MainWindowController: PlayerWindowController {
     fragControlView.addView(fragControlViewLeftView, in: .center)
     fragControlView.addView(fragControlViewMiddleView, in: .center)
     fragControlView.addView(fragControlViewRightView, in: .center)
-    setupTitleBarAndOSC()
-    let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
-    setupOSCToolbarButtons(buttons)
 
     updateArrowButtonImage()
 
@@ -602,6 +600,10 @@ class MainWindowController: PlayerWindowController {
     fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
     fadeableViews.append(titleBarView)
     fadeableViews.append(titlebarAccessoryView)
+
+    setupTitleBarAndOSC()
+    let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
+    setupOSCToolbarButtons(buttons)
 
     // video view
     guard let cv = window.contentView else { return }
@@ -764,14 +766,19 @@ class MainWindowController: PlayerWindowController {
     if showTitleBar { // SHOW title bar
       titleBarHeightConstraint.constant = TitleBarHeightNormal
       if let window = self.window as? MainWindow {
+        window.standardWindowButton(.documentIconButton)!.alphaValue = 1
+//        titleBarView.isHidden = false
         window.titleVisibility = .visible
 //        addBackTitlebarViewToFadeableViews()
       }
     } else { // HIDE title bar
       titleBarHeightConstraint.constant = 0
       if let window = self.window as? MainWindow {
+//        window.standardWindowButton(.documentIconButton)!.alphaValue = 1e-100
         window.titleVisibility = .hidden
       }
+//      titleBarView.isHidden = true
+//      removeTitlebarViewFromFadeableViews()
     }
 
     controlBarFloating.isDragging = false
@@ -932,9 +939,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseDragged(with event: NSEvent) {
-    if Logger.isEnabled(.verbose) {
-      Logger.log("MainWindow mouseDrag \(event.locationInWindow)", level: .verbose, subsystem: player.subsystem)
-    }
     if isResizingSidebar {
       // resize sidebar
       let currentLocation = event.locationInWindow
@@ -1131,6 +1135,8 @@ class MainWindowController: PlayerWindowController {
 
         //Check against max & min threshold
         if newHeight < screenFrame.height && newHeight > minSize.height && newWidth > minSize.width {
+          Logger.log("Magnifying window to \(recognizer.magnification)x; new size will be: \(Int(newWidth))x\(Int(newHeight))",
+                     level: .verbose, subsystem: player.subsystem)
           let newSize = NSSize(width: newWidth, height: newHeight);
           window.setFrame(window.frame.centeredResize(to: newSize), display: true)
         }
