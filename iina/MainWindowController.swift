@@ -766,7 +766,7 @@ class MainWindowController: PlayerWindowController {
     if showTitleBar { // SHOW title bar
       titleBarHeightConstraint.constant = TitleBarHeightNormal
       if let window = self.window as? MainWindow {
-        window.standardWindowButton(.documentIconButton)!.alphaValue = 1
+//        window.standardWindowButton(.documentIconButton)!.alphaValue = 1
 //        titleBarView.isHidden = false
         window.titleVisibility = .visible
 //        addBackTitlebarViewToFadeableViews()
@@ -871,9 +871,6 @@ class MainWindowController: PlayerWindowController {
       oscBottomMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
       oscBottomMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
       oscBottomMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
-      case .outsideTop:
-        // TODO!
-        break
       case .outsideBottom:
         // TODO!
         break

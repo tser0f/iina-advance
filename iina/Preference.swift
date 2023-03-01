@@ -436,7 +436,6 @@ struct Preference {
     case floating = 0
     case insideTop
     case insideBottom
-    case outsideTop
     case outsideBottom
 
     static var defaultValue = OSCPosition.floating

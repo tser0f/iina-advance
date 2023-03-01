@@ -79,10 +79,36 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var pipDoNothing: NSButton!
   @IBOutlet weak var pipHideWindow: NSButton!
   @IBOutlet weak var pipMinimizeWindow: NSButton!
-  
+
+  private let observedPrefKeys: [Preference.Key] = [
+    .titleBarLayout,
+    .enableOSC,
+    .oscPosition,
+  ]
+
+  override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
+    super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+
+    observedPrefKeys.forEach { key in
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  deinit {
+    ObjcUtils.silenced {
+      for key in self.observedPrefKeys {
+        UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
+      }
+    }
+  }
+
   override func viewDidLoad() {
     super.viewDidLoad()
-    updateWindowPreviewImage(oscPositionPopupButton)
+    updateWindowPreviewImage()
     oscToolbarStackView.wantsLayer = true
     updateOSCToolbarButtons()
     setupGeometryRelatedControls()
@@ -102,54 +128,113 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     }
   }
 
-  @IBAction func updateWindowPreviewImage(_ sender: AnyObject) {
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+    guard let keyPath = keyPath, let _ = change else { return }
+
+    switch keyPath {
+      case PK.titleBarLayout.rawValue, PK.enableOSC.rawValue, PK.oscPosition.rawValue:
+        updateWindowPreviewImage()
+      default:
+        break
+    }
+  }
+
+  func updateWindowPreviewImage() {
     let oscEnabled = Preference.bool(for: .enableOSC)
     let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
     let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
-    var osc: String
-    switch oscPosition {
-      case .floating:
-        osc = "osc_float"
-      case .insideTop:
-        osc = "osc_top"
-      case .insideBottom:
-        osc = "osc_bottom"
-      case .outsideTop:
-        osc = "osc_outside_top"
-      case .outsideBottom:
-        osc = "osc_outside_bottom"
-    }
-    var tb: String
-    switch titleBarLayout {
-      case .none:
-        tb = "tb_none"
-      case .outsideVideo:
-        tb = "tb_outside"
-      case .insideVideoMinimal:
-        tb = "tb_inside_min"
-      case .insideVideoFull:
-        tb = "tb_inside_full"
+
+    let isDarkMode = true
+    let overlayAlpha: CGFloat = 0.6
+    let opaqueControlAlpha: CGFloat = 0.9  // lighten it a bit
+
+    guard let videoViewImg = loadCGImage(named: "preview-videoview") else { return }
+    guard let oscFullImg = loadCGImage(named: "preview-osc-full") else { return }
+    guard let oscFloatingImg = loadCGImage(named: "preview-osc-floating") else { return }
+    guard let titleBarButtonsImg = loadCGImage(named: "preview-titlebar-buttons") else { return }
+
+    let oscFullHeight: Int = oscFullImg.height
+    let titleBarHeight: Int = titleBarButtonsImg.height
+
+    var videoViewOffsetY: Int = 0
+    if oscEnabled && oscPosition == .outsideBottom {
+      videoViewOffsetY += oscFullHeight
     }
 
-    // "preview_videoview" is 480x270
-    // preview_titlebar is 480x46
+    let titleBarOffsetY: Int
+    if titleBarLayout == .outsideVideo {
+      titleBarOffsetY = videoViewOffsetY + videoViewImg.height
+    } else if titleBarLayout == .insideVideoFull && oscEnabled && oscPosition == .insideTop {
+      titleBarOffsetY = videoViewOffsetY + videoViewImg.height - titleBarHeight
+    } else {
+      titleBarOffsetY = videoViewOffsetY + videoViewImg.height - titleBarHeight
+    }
 
-    let compositeWidth: Int = 480
-    let compositeHeight: Int = 371
-    let titleBarHeight: Int = 46
+    let outputWidth: Int = videoViewImg.width
+    let outputHeight: Int = titleBarOffsetY + titleBarHeight
 
-    windowPreviewImageView.image = drawImageInBitmapImageContext(width: compositeWidth, height: compositeHeight, roundedCornerRadius: 100, drawingCalls: { cgContext in
+    windowPreviewImageView.image = drawImageInBitmapImageContext(width: outputWidth, height: outputHeight, roundedCornerRadius: 100, drawingCalls: { cgContext in
+      // Draw background with opposite color as control color, so we can use alpha to lighten the controls
+      let bgColor: CGFloat = isDarkMode ? 1 : 0
+      cgContext.setFillColor(CGColor(red: bgColor, green: bgColor, blue: bgColor, alpha: 1))
+      cgContext.fill([CGRect(x: 0, y: 0, width: outputWidth, height: outputHeight)])
 
-      guard let videoViewImg = loadImage(named: "preview-videoview", cgContext) else { return }
-      guard let oscFullImg = loadImage(named: "preview-osc-full", cgContext) else { return }
-//      guard let oscFloatingImg = loadImage(named: "preview-osc-floating", cgContext) else { return }
-      guard let titleBarButtonsImg = loadImage(named: "preview-titlebar-buttons", cgContext) else { return }
+      // draw video
+      drawImage(videoViewImg, x: 0, y: videoViewOffsetY, cgContext)
 
-      drawImage(oscFullImg, x: 0, y: 0, cgContext)
-      drawImage(videoViewImg, x: 0, y: oscFullImg.height, cgContext)
+      // draw OSC bar
+      if oscEnabled {
+        switch oscPosition {
+          case .floating:
+            let offsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
+            let offsetY = (videoViewImg.height / 2) - oscFloatingImg.height
+            drawImage(oscFloatingImg, withAlpha: overlayAlpha, x: offsetX, y: offsetY, cgContext)
+          case .insideTop:
+            let oscOffsetY: Int
+            if titleBarLayout == .insideVideoMinimal {
+              // TODO: special osc
+              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
+            } else if titleBarLayout == .insideVideoFull {
+              let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
+              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight + adjustment - titleBarHeight
+              drawImage(oscFullImg, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, height: oscFullHeight - adjustment, cgContext)
+              break
+            } else {
+              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
+            }
+            drawImage(oscFullImg, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, cgContext)
+          case .insideBottom:
+            drawImage(oscFullImg, withAlpha: overlayAlpha, x: 0, y: 0, cgContext)
+          case .outsideBottom:
+            drawImage(oscFullImg, withAlpha: opaqueControlAlpha, x: 0, y: 0, cgContext)
+        }
+      }
 
-      cgContext.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.5))
-      cgContext.fill([CGRect(x: 0, y: 100, width: compositeWidth, height: titleBarHeight)])
+      // draw title bar
+      let drawTitleBarButtons = titleBarLayout != .none
+      let drawTitleBarBackground: Bool
+      var titleBarIsOverlay = true
+      switch titleBarLayout {
+        case .none:
+          drawTitleBarBackground = false
+          break
+        case .outsideVideo:
+          drawTitleBarBackground = true
+          titleBarIsOverlay = false
+        case .insideVideoMinimal:
+          drawTitleBarBackground = false
+        case .insideVideoFull:
+          drawTitleBarBackground = true
+      }
+      if drawTitleBarBackground {
+        let titleBarAlpha: CGFloat = titleBarIsOverlay ? overlayAlpha : opaqueControlAlpha
+        let color: CGFloat = isDarkMode ? 0 : 1
+        cgContext.setFillColor(CGColor(red: color, green: color, blue: color, alpha: titleBarAlpha))
+        cgContext.fill([CGRect(x: 0, y: titleBarOffsetY, width: outputWidth, height: titleBarHeight)])
+      }
+      if drawTitleBarButtons {
+        drawImage(titleBarButtonsImg, x: 0, y: titleBarOffsetY, cgContext)
+      }
     })
 
     let titleBarIsOverlay = titleBarLayout == .insideVideoFull || titleBarLayout == .insideVideoMinimal
@@ -159,7 +244,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
   }
 
-  func loadImage(named name: String, _ cgContext: CGContext) -> CGImage? {
+  func loadCGImage(named name: String) -> CGImage? {
     guard let image = NSImage(named: name) else {
       Logger.log("DrawImage: Failed to load image \(name.quoted)!", level: .error)
       return nil
@@ -171,8 +256,13 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     return cgImage
   }
 
-  func drawImage(_ cgImage: CGImage, x: Int, y: Int, _ cgContext: CGContext) {
-    cgContext.draw(cgImage, in: CGRect(x: x, y: y, width: cgImage.width, height: cgImage.height))
+  func drawImage(_ cgImage: CGImage, withAlpha alpha: CGFloat = 1, x: Int, y: Int, width widthOverride: Int? = nil, height heightOverride: Int? = nil, _ cgContext: CGContext) {
+
+    let width = widthOverride ?? cgImage.width
+    let height = heightOverride ?? cgImage.height
+    cgContext.setAlpha(alpha)
+    cgContext.draw(cgImage, in: CGRect(x: x, y: y, width: width, height: height))
+    cgContext.setAlpha(1)
   }
 
   func drawImageInBitmapImageContext(width: Int, height: Int, roundedCornerRadius: CGFloat? = nil, drawingCalls: (CGContext) -> Void) -> NSImage? {
