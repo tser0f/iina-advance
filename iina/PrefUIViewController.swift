@@ -84,6 +84,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .titleBarLayout,
     .enableOSC,
     .oscPosition,
+    .themeMaterial,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -132,24 +133,28 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
-      case PK.titleBarLayout.rawValue, PK.enableOSC.rawValue, PK.oscPosition.rawValue:
+      case PK.titleBarLayout.rawValue, PK.enableOSC.rawValue, PK.oscPosition.rawValue, PK.themeMaterial.rawValue:
         updateWindowPreviewImage()
       default:
         break
     }
   }
 
+  // TODO (1): draw border around window
+  // TODO (2): embed window preview into screen preview to make it prettier
   func updateWindowPreviewImage() {
     let oscEnabled = Preference.bool(for: .enableOSC)
     let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
     let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
-
-    let isDarkMode = true
+//    let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
+//    let isDarkTheme = !(theme == .light || theme == .mediumLight)  // default to dark
+    let isDarkTheme = true  // TODO fully support light preview. Need to find way to invert colors for OSC imgs
     let overlayAlpha: CGFloat = 0.6
-    let opaqueControlAlpha: CGFloat = 0.9  // lighten it a bit
+    let opaqueControlAlpha: CGFloat = 0.9  // don't be completely white or black
 
     guard let videoViewImg = loadCGImage(named: "preview-videoview") else { return }
     guard let oscFullImg = loadCGImage(named: "preview-osc-full") else { return }
+    guard let oscTitleImg = loadCGImage(named: "preview-osc-title") else { return }
     guard let oscFloatingImg = loadCGImage(named: "preview-osc-floating") else { return }
     guard let titleBarButtonsImg = loadCGImage(named: "preview-titlebar-buttons") else { return }
 
@@ -173,40 +178,43 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     let outputWidth: Int = videoViewImg.width
     let outputHeight: Int = titleBarOffsetY + titleBarHeight
 
-    windowPreviewImageView.image = drawImageInBitmapImageContext(width: outputWidth, height: outputHeight, roundedCornerRadius: 100, drawingCalls: { cgContext in
+    let previewImage = drawImageInBitmapImageContext(width: outputWidth, height: outputHeight, roundedCornerRadius: 20, drawingCalls: { cgContext in
       // Draw background with opposite color as control color, so we can use alpha to lighten the controls
-      let bgColor: CGFloat = isDarkMode ? 1 : 0
+      let bgColor: CGFloat = isDarkTheme ? 1 : 0
       cgContext.setFillColor(CGColor(red: bgColor, green: bgColor, blue: bgColor, alpha: 1))
       cgContext.fill([CGRect(x: 0, y: 0, width: outputWidth, height: outputHeight)])
 
       // draw video
-      drawImage(videoViewImg, x: 0, y: videoViewOffsetY, cgContext)
+      draw(image: videoViewImg, in: cgContext, x: 0, y: videoViewOffsetY)
 
       // draw OSC bar
       if oscEnabled {
         switch oscPosition {
           case .floating:
             let offsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
-            let offsetY = (videoViewImg.height / 2) - oscFloatingImg.height
-            drawImage(oscFloatingImg, withAlpha: overlayAlpha, x: offsetX, y: offsetY, cgContext)
+            let offsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
+            draw(image: oscFloatingImg, in: cgContext, withAlpha: overlayAlpha, x: offsetX, y: offsetY)
           case .insideTop:
             let oscOffsetY: Int
             if titleBarLayout == .insideVideoMinimal {
-              // TODO: special osc
-              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
+              // Special in-title accessory controller
+              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscTitleImg.height
+              draw(image: oscTitleImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
+              break
             } else if titleBarLayout == .insideVideoFull {
               let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
               oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight + adjustment - titleBarHeight
-              drawImage(oscFullImg, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, height: oscFullHeight - adjustment, cgContext)
+              draw(image: oscFullImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, height: oscFullHeight - adjustment)
               break
             } else {
               oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
             }
-            drawImage(oscFullImg, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, cgContext)
+            draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
           case .insideBottom:
-            drawImage(oscFullImg, withAlpha: overlayAlpha, x: 0, y: 0, cgContext)
+            draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: videoViewOffsetY)
+            cgContext.setBlendMode(.normal)
           case .outsideBottom:
-            drawImage(oscFullImg, withAlpha: opaqueControlAlpha, x: 0, y: 0, cgContext)
+            draw(image: oscFullImg, in: cgContext, withAlpha: opaqueControlAlpha, x: 0, y: 0)
         }
       }
 
@@ -228,14 +236,36 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       }
       if drawTitleBarBackground {
         let titleBarAlpha: CGFloat = titleBarIsOverlay ? overlayAlpha : opaqueControlAlpha
-        let color: CGFloat = isDarkMode ? 0 : 1
+        let color: CGFloat = isDarkTheme ? 0 : 1
         cgContext.setFillColor(CGColor(red: color, green: color, blue: color, alpha: titleBarAlpha))
         cgContext.fill([CGRect(x: 0, y: titleBarOffsetY, width: outputWidth, height: titleBarHeight)])
       }
       if drawTitleBarButtons {
-        drawImage(titleBarButtonsImg, x: 0, y: titleBarOffsetY, cgContext)
+        draw(image: titleBarButtonsImg, in: cgContext, x: 0, y: titleBarOffsetY)
       }
     })
+
+
+//    windowPreviewImageView.layer = CALayer()
+//    windowPreviewImageView.layer?.contentsGravity = CALayerContentsGravity.resizeAspect
+//    windowPreviewImageView.layer?.contents = previewImage
+//    windowPreviewImageView.wantsLayer = true
+//    windowPreviewImageView.layer?.cornerRadius = 8.0
+//    windowPreviewImageView.layer?.masksToBounds = true
+    windowPreviewImageView.image = previewImage
+
+
+//    let radius = 20.0
+//    let rect = CGRect(x: 0, y: 0, width: outputWidth, height: outputHeight)
+//    let path = NSBezierPath(roundedRect: rect, xRadius: 0.5 * radius, yRadius: 0.5 * radius)
+//    let mask = CAShapeLayer()
+//    windowPreviewImageView.wantsLayer = true
+//    windowPreviewImageView.layer!.maskedCorners = CACornerMask(rawValue: 20)
+//    windowPreviewImageView.layer!.cornerRadius = radius
+//    windowPreviewImageView.layer!.masksToBounds = true
+
+//    layer.mask = mask
+
 
     let titleBarIsOverlay = titleBarLayout == .insideVideoFull || titleBarLayout == .insideVideoMinimal
     let oscIsOverlay = oscEnabled && (oscPosition == .insideTop || oscPosition == .insideBottom || oscPosition == .floating)
@@ -256,8 +286,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     return cgImage
   }
 
-  func drawImage(_ cgImage: CGImage, withAlpha alpha: CGFloat = 1, x: Int, y: Int, width widthOverride: Int? = nil, height heightOverride: Int? = nil, _ cgContext: CGContext) {
-
+  func draw(image cgImage: CGImage, in cgContext: CGContext,
+            withAlpha alpha: CGFloat = 1,
+            x: Int, y: Int, width widthOverride: Int? = nil, height heightOverride: Int? = nil) {
     let width = widthOverride ?? cgImage.width
     let height = heightOverride ?? cgImage.height
     cgContext.setAlpha(alpha)
@@ -268,17 +299,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   func drawImageInBitmapImageContext(width: Int, height: Int, roundedCornerRadius: CGFloat? = nil, drawingCalls: (CGContext) -> Void) -> NSImage? {
 
     // Create image with alpha channel
-    guard let compositeImageRep = NSBitmapImageRep(
-      bitmapDataPlanes: nil,
-      pixelsWide: width,
-      pixelsHigh: height,
-      bitsPerSample: 8,
-      samplesPerPixel: 4,
-      hasAlpha: true,
-      isPlanar: false,
-      colorSpaceName: NSColorSpaceName.calibratedRGB,
-      bytesPerRow: 0,
-      bitsPerPixel: 0) else {
+    guard let compositeImageRep = makeNewImgRep(width: width, height: height) else {
       Logger.log("DrawImageInBitmapImageContext: Failed to create NSBitmapImageRep!", level: .error)
       return nil
     }
@@ -288,34 +309,38 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       return nil
     }
 
-    let outputImage = NSImage(size: CGSize(width: width, height: height))
-
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = context
     let cgContext = context.cgContext
 
     drawingCalls(cgContext)
 
-
-    if let radius = roundedCornerRadius, radius > 0.0 {
-      Logger.log("Rounding image corners to: \(radius)", level: .verbose)
-      outputImage.lockFocus()
-
-      let rect = CGRect(x: 0, y: 0, width: width, height: height)
-//      let path = NSBezierPath(roundedRect: rect, xRadius: 0.5 * radius, yRadius: 0.5 * radius)
-      let path = CGPath(roundedRect: rect, cornerWidth: 0.5 * radius, cornerHeight: 0.5 * radius, transform: nil)
-      cgContext.addPath(path)
-      cgContext.clip()
-
-      outputImage.unlockFocus()
+    defer {
+      NSGraphicsContext.restoreGraphicsState()
     }
 
+    var outputImage = NSImage(size: CGSize(width: width, height: height))
     // Create the CGImage from the contents of the bitmap context.
     outputImage.addRepresentation(compositeImageRep)
 
-    NSGraphicsContext.restoreGraphicsState()
-
+    if let radius = roundedCornerRadius, radius > 0.0 {
+      outputImage = outputImage.roundCorners(withRadius: radius)
+    }
     return outputImage
+  }
+
+  func makeNewImgRep(width: Int, height: Int) -> NSBitmapImageRep? {
+    return NSBitmapImageRep(
+      bitmapDataPlanes: nil,
+      pixelsWide: width,
+      pixelsHigh: height,
+      bitsPerSample: 8,
+      samplesPerPixel: 4,
+      hasAlpha: true,
+      isPlanar: false,
+      colorSpaceName: NSColorSpaceName.calibratedRGB,
+      bytesPerRow: 0,
+      bitsPerPixel: 0)
   }
 
   @IBAction func updateGeometryValue(_ sender: AnyObject) {

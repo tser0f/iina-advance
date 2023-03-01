@@ -106,7 +106,7 @@
                 <constraint firstItem="BMi-Ax-7wP" firstAttribute="height" secondItem="APB-Nm-aTA" secondAttribute="height" id="rQ0-JL-2aL"/>
                 <constraint firstAttribute="bottom" secondItem="BMi-Ax-7wP" secondAttribute="bottom" constant="8" id="wlh-tx-VdQ"/>
             </constraints>
-            <point key="canvasLocation" x="13" y="-339"/>
+            <point key="canvasLocation" x="14" y="-429"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="lH7-Vv-0M1"/>
         <customView misplaced="YES" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window">
@@ -606,14 +606,14 @@
                 <constraint firstItem="RRL-GG-R45" firstAttribute="top" secondItem="0kj-QC-B9P" secondAttribute="bottom" constant="16" id="y83-Np-mrT"/>
                 <constraint firstItem="RFk-nU-SGL" firstAttribute="leading" secondItem="D77-Iw-nrY" secondAttribute="leading" id="ypV-gE-Ld4"/>
             </constraints>
-            <point key="canvasLocation" x="14" y="-108"/>
+            <point key="canvasLocation" x="14" y="-152"/>
         </customView>
         <customView id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="486"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="421"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
-                    <rect key="frame" x="-2" y="446" width="124" height="32"/>
+                    <rect key="frame" x="-2" y="381" width="124" height="32"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Title Bar and Controller:" id="g06-Ja-Ot8">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -621,7 +621,7 @@
                     </textFieldCell>
                 </textField>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
-                    <rect key="frame" x="118" y="462" width="101" height="16"/>
+                    <rect key="frame" x="118" y="397" width="101" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Preview:" id="EvR-Ml-f7d">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -629,15 +629,15 @@
                     </textFieldCell>
                 </textField>
                 <imageView translatesAutoresizingMaskIntoConstraints="NO" id="yaR-pw-wfD" userLabel="Window-Layout-Preview Image View">
-                    <rect key="frame" x="225" y="328" width="200" height="150"/>
+                    <rect key="frame" x="225" y="278" width="240" height="135"/>
                     <constraints>
-                        <constraint firstAttribute="width" constant="200" id="AFx-J3-v8H"/>
-                        <constraint firstAttribute="height" constant="150" id="CoR-Tc-Je2"/>
+                        <constraint firstAttribute="width" constant="240" id="7kQ-ne-UX4"/>
+                        <constraint firstAttribute="width" secondItem="yaR-pw-wfD" secondAttribute="height" multiplier="16:9" id="CmZ-Cg-J64"/>
                     </constraints>
                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" id="20k-jg-08x"/>
                 </imageView>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5fw-7T-Axx">
-                    <rect key="frame" x="118" y="303" width="101" height="16"/>
+                    <rect key="frame" x="118" y="253" width="101" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Title bar style:" id="Hfu-Kw-wrU">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -645,15 +645,15 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" tag="3" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Title-Bar-Style-Popup">
-                    <rect key="frame" x="222" y="296" width="207" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Overlay" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="jwm-vt-kxK" id="uAv-5b-A4j" userLabel="Title-Bar-Style-Popup">
+                    <rect key="frame" x="222" y="246" width="247" height="25"/>
+                    <popUpButtonCell key="cell" type="push" title="Overlay video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="jwm-vt-kxK" id="uAv-5b-A4j" userLabel="Title-Bar-Style-Popup">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="CD9-hv-Dz3">
                             <items>
-                                <menuItem title="Traditional" tag="1" id="cDl-zI-S6p"/>
-                                <menuItem title="Overlay" state="on" tag="2" id="jwm-vt-kxK"/>
-                                <menuItem title="Overlay (minimal)" tag="3" id="p1n-hp-rkZ"/>
+                                <menuItem title="Outside video" tag="1" id="cDl-zI-S6p"/>
+                                <menuItem title="Overlay video" state="on" tag="2" id="jwm-vt-kxK"/>
+                                <menuItem title="Overlay video, buttons only" tag="3" id="p1n-hp-rkZ"/>
                                 <menuItem title="Hidden" id="1YG-yH-qky"/>
                             </items>
                         </menu>
@@ -663,7 +663,7 @@
                     </connections>
                 </popUpButton>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bVg-yv-fOx">
-                    <rect key="frame" x="118" y="270" width="131" height="18"/>
+                    <rect key="frame" x="118" y="220" width="131" height="18"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="16" id="hJ9-XQ-HlL"/>
                     </constraints>
@@ -676,7 +676,7 @@
                     </connections>
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="jbc-22-59W">
-                    <rect key="frame" x="118" y="247" width="101" height="16"/>
+                    <rect key="frame" x="118" y="197" width="101" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Controller style:" id="l54-63-V6n">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -684,16 +684,16 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="GbG-nw-ict" userLabel="Controller-Style-Popup">
-                    <rect key="frame" x="222" y="240" width="207" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Top overlay" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="se2-DE-pJk" id="XRT-QK-HPy">
+                    <rect key="frame" x="222" y="190" width="247" height="25"/>
+                    <popUpButtonCell key="cell" type="push" title="Overlay video, top" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="se2-DE-pJk" id="XRT-QK-HPy">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="pgN-77-bP2">
                             <items>
-                                <menuItem title="Top overlay" tag="1" id="se2-DE-pJk"/>
-                                <menuItem title="Floating overlay" state="on" id="7Dv-q2-5TV"/>
-                                <menuItem title="Bottom overlay" tag="2" id="0Gp-vj-UzY"/>
-                                <menuItem title="Bottom of window" tag="3" id="3XY-SH-UaH"/>
+                                <menuItem title="Overlay video, top" tag="1" id="se2-DE-pJk"/>
+                                <menuItem title="Overlay video, floating" state="on" id="7Dv-q2-5TV"/>
+                                <menuItem title="Overlay video, bottom" tag="2" id="0Gp-vj-UzY"/>
+                                <menuItem title="Always showing, below video" tag="3" id="3XY-SH-UaH"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -703,7 +703,7 @@
                     </connections>
                 </popUpButton>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="q8D-b2-H0y" userLabel="Toolbar items:">
-                    <rect key="frame" x="118" y="217" width="90" height="16"/>
+                    <rect key="frame" x="118" y="167" width="90" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Toolbar items:" id="xP1-Vh-27X">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -711,7 +711,7 @@
                     </textFieldCell>
                 </textField>
                 <box horizontalCompressionResistancePriority="800" verticalCompressionResistancePriority="800" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="omS-tS-OVJ" userLabel="Toolbar-Preview Box">
-                    <rect key="frame" x="211" y="210" width="116" height="28"/>
+                    <rect key="frame" x="211" y="160" width="116" height="28"/>
                     <view key="contentView" id="pBh-nz-cS5" userLabel="Toolbar-Preview-Box View">
                         <rect key="frame" x="4" y="5" width="108" height="20"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -736,7 +736,7 @@
                     </constraints>
                 </box>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="gVR-so-xgt">
-                    <rect key="frame" x="325" y="207" width="110" height="32"/>
+                    <rect key="frame" x="325" y="157" width="110" height="32"/>
                     <buttonCell key="cell" type="push" title="Customize…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="1nM-AX-Ozm">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -747,7 +747,7 @@
                     </connections>
                 </button>
                 <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="vC3-U1-cHH" userLabel="RW Image View">
-                    <rect key="frame" x="68" y="188" width="18" height="18"/>
+                    <rect key="frame" x="68" y="138" width="18" height="18"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="18" id="UHp-Gz-eS6"/>
                         <constraint firstAttribute="width" secondItem="vC3-U1-cHH" secondAttribute="height" multiplier="1:1" id="nEM-Dj-gt1"/>
@@ -755,7 +755,7 @@
                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="speedl" id="TUe-P9-sQf"/>
                 </imageView>
                 <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="2Fc-2d-hIJ" userLabel="FF Image View">
-                    <rect key="frame" x="94" y="188" width="18" height="18"/>
+                    <rect key="frame" x="94" y="138" width="18" height="18"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="18" id="DIC-cT-8P0"/>
                         <constraint firstAttribute="width" secondItem="2Fc-2d-hIJ" secondAttribute="height" multiplier="1:1" id="IBQ-ee-CQV"/>
@@ -763,7 +763,7 @@
                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="speed" id="PCr-gs-9Yc"/>
                 </imageView>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="HgG-px-UUt">
-                    <rect key="frame" x="118" y="189" width="151" height="16"/>
+                    <rect key="frame" x="118" y="139" width="151" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Use left/right button for:" id="3CY-YS-rG6">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -771,7 +771,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="SyB-0R-TLF" userLabel="Arrow-Button-Action-Popup">
-                    <rect key="frame" x="272" y="182" width="173" height="25"/>
+                    <rect key="frame" x="272" y="132" width="173" height="25"/>
                     <constraints>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="160" id="gG1-yn-dZD"/>
                     </constraints>
@@ -792,7 +792,7 @@
                     </connections>
                 </popUpButton>
                 <button verticalHuggingPriority="252" translatesAutoresizingMaskIntoConstraints="NO" id="nDu-Yq-tPI">
-                    <rect key="frame" x="118" y="161" width="209" height="18"/>
+                    <rect key="frame" x="118" y="111" width="209" height="18"/>
                     <buttonCell key="cell" type="check" title="Snap to center when dragging" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="mdD-if-Wqw">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -803,7 +803,7 @@
                     </connections>
                 </button>
                 <button verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="OMM-mG-Uts">
-                    <rect key="frame" x="118" y="137" width="256" height="18"/>
+                    <rect key="frame" x="118" y="87" width="256" height="18"/>
                     <buttonCell key="cell" type="check" title="Show chapter position in progress bar" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="BVV-Z3-LHR">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -814,7 +814,7 @@
                     </connections>
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="rft-T0-lds">
-                    <rect key="frame" x="118" y="113" width="301" height="18"/>
+                    <rect key="frame" x="118" y="63" width="301" height="18"/>
                     <buttonCell key="cell" type="check" title="Show remaining time instead of total duration" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="EAa-gN-8dL">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -825,7 +825,7 @@
                     </connections>
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6ml-Xj-nVX">
-                    <rect key="frame" x="118" y="82" width="151" height="16"/>
+                    <rect key="frame" x="118" y="32" width="151" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Auto hide overlays after:" id="82A-XQ-BvS">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -833,7 +833,7 @@
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Abq-vA-BcZ" userLabel="Overlay-Auto-Hide-Timeout Text Field">
-                    <rect key="frame" x="275" y="79" width="58" height="21"/>
+                    <rect key="frame" x="275" y="29" width="58" height="21"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="58" id="asW-La-UC2"/>
                     </constraints>
@@ -854,7 +854,7 @@
                     </connections>
                 </textField>
                 <textField identifier="AccessoryLabelOSCAutoHide" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hkU-0W-pJb">
-                    <rect key="frame" x="339" y="82" width="11" height="16"/>
+                    <rect key="frame" x="339" y="32" width="11" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="s" id="S8H-Xr-uVa">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -862,7 +862,7 @@
                     </textFieldCell>
                 </textField>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="kw0-f3-qrz">
-                    <rect key="frame" x="118" y="7" width="354" height="68"/>
+                    <rect key="frame" x="118" y="7" width="354" height="18"/>
                     <buttonCell key="cell" type="check" title="Hide overlays immediately when cursor leaves window" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="ZJL-Jz-cNh">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -884,9 +884,9 @@
                 <constraint firstItem="BTX-tO-uhL" firstAttribute="firstBaseline" secondItem="4XH-GU-VhV" secondAttribute="firstBaseline" id="6m8-dq-YyE"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="nDu-Yq-tPI" secondAttribute="trailing" id="6zN-Xx-pSS"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="SyB-0R-TLF" secondAttribute="trailing" id="8ox-SI-Bqn"/>
+                <constraint firstItem="f7b-zH-WwI" firstAttribute="trailing" secondItem="yaR-pw-wfD" secondAttribute="trailing" id="9KV-1W-zcy"/>
                 <constraint firstItem="q8D-b2-H0y" firstAttribute="leading" secondItem="5fw-7T-Axx" secondAttribute="leading" id="9TH-Za-GeA"/>
                 <constraint firstItem="4XH-GU-VhV" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="gjB-It-iFS" secondAttribute="leading" constant="120" id="A6A-Wt-sRz"/>
-                <constraint firstItem="f7b-zH-WwI" firstAttribute="trailing" secondItem="yaR-pw-wfD" secondAttribute="trailing" id="AyQ-j1-BTZ"/>
                 <constraint firstAttribute="bottom" secondItem="kw0-f3-qrz" secondAttribute="bottom" constant="8" id="C2h-0b-MvW"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="GbG-nw-ict" secondAttribute="trailing" id="EZR-gN-Vng"/>
                 <constraint firstItem="rft-T0-lds" firstAttribute="top" secondItem="OMM-mG-Uts" secondAttribute="bottom" constant="8" id="GKq-oC-uGE"/>
@@ -940,6 +940,7 @@
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="baseline" secondItem="HgG-px-UUt" secondAttribute="baseline" id="mcc-vX-Jfk"/>
                 <constraint firstItem="jbc-22-59W" firstAttribute="height" secondItem="5fw-7T-Axx" secondAttribute="height" id="obR-0W-T4X"/>
                 <constraint firstItem="GbG-nw-ict" firstAttribute="leading" relation="lessThanOrEqual" secondItem="jbc-22-59W" secondAttribute="trailing" priority="499" constant="8" id="pGI-b9-K1H"/>
+                <constraint firstItem="kw0-f3-qrz" firstAttribute="height" secondItem="rft-T0-lds" secondAttribute="height" id="pO4-yz-ZWq"/>
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="height" secondItem="jbc-22-59W" secondAttribute="height" id="pdr-tn-lxV"/>
                 <constraint firstItem="kw0-f3-qrz" firstAttribute="leading" secondItem="rft-T0-lds" secondAttribute="leading" id="q2h-vk-MqU"/>
                 <constraint firstItem="HgG-px-UUt" firstAttribute="leading" secondItem="2Fc-2d-hIJ" secondAttribute="trailing" constant="8" id="qRb-M3-igm"/>
@@ -949,7 +950,7 @@
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="leading" secondItem="HgG-px-UUt" secondAttribute="trailing" constant="8" id="z4E-Tj-yG1"/>
                 <constraint firstItem="f7b-zH-WwI" firstAttribute="baseline" secondItem="5fw-7T-Axx" secondAttribute="firstBaseline" id="z7M-52-VVF"/>
             </constraints>
-            <point key="canvasLocation" x="14" y="352"/>
+            <point key="canvasLocation" x="14" y="318"/>
         </customView>
         <customView id="c8m-G4-or8" userLabel="Prefs &gt; UI &gt; OSD">
             <rect key="frame" x="0.0" y="0.0" width="480" height="120"/>
@@ -1353,7 +1354,7 @@ Picture:</string>
                 <constraint firstItem="ghC-br-cK9" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="1fz-oP-RhZ" secondAttribute="leading" constant="120" id="pTG-PR-Adh"/>
                 <constraint firstItem="eTQ-fy-fNJ" firstAttribute="leading" secondItem="l21-mq-zWd" secondAttribute="leading" id="xog-r6-yIL"/>
             </constraints>
-            <point key="canvasLocation" x="14" y="907"/>
+            <point key="canvasLocation" x="14" y="925"/>
         </customView>
     </objects>
     <resources>
