@@ -67,7 +67,7 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingMode="disallowed" id="F0z-JX-Cv5" userLabel="Main Window" customClass="MainWindow" customModule="IINA" customModuleProvider="target">
+        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingMode="disallowed" id="F0z-JX-Cv5" userLabel="Main Player Window" customClass="MainWindow" customModule="IINA" customModuleProvider="target">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
             <rect key="screenRect" x="0.0" y="0.0" width="3440" height="1415"/>
@@ -398,7 +398,7 @@
             </connections>
             <point key="canvasLocation" x="207" y="109.5"/>
         </window>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="N3B-DL-XOA">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="N3B-DL-XOA" userLabel="OSC Fragment: Volume">
             <rect key="frame" x="0.0" y="0.0" width="104" height="24"/>
             <subviews>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="2py-h1-0km">
@@ -436,10 +436,10 @@
             </constraints>
             <point key="canvasLocation" x="318" y="584"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="BE1-yC-oJL" customClass="TimeLabelOverflowedView" customModule="IINA" customModuleProvider="target">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="BE1-yC-oJL" userLabel="OSC Fragment: Playback Position Slider" customClass="TimeLabelOverflowedView" customModule="IINA" customModuleProvider="target">
             <rect key="frame" x="0.0" y="0.0" width="500" height="32"/>
             <subviews>
-                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT">
+                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback-Position Horizontal Slider">
                     <rect key="frame" x="48" y="0.0" width="404" height="28"/>
                     <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
@@ -498,7 +498,7 @@
             </constraints>
             <point key="canvasLocation" x="236" y="506"/>
         </customView>
-        <customView placeholderIntrinsicWidth="18" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="8Ej-eH-OR9">
+        <customView placeholderIntrinsicWidth="18" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="8Ej-eH-OR9" userLabel="OSC Fragment: Playback Control - Left">
             <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
             <subviews>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Button Label">
@@ -519,7 +519,7 @@
             </constraints>
             <point key="canvasLocation" x="-55" y="713"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Xts-Pc-T8d">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Xts-Pc-T8d" userLabel="OSC Fragment: Playback Control - Right">
             <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
             <subviews>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Button Label">
@@ -540,7 +540,7 @@
             </constraints>
             <point key="canvasLocation" x="-143" y="713"/>
         </customView>
-        <customView placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4" userLabel="Playback Movement Buttons">
+        <customView placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4" userLabel="OSC Fragment: Playback Control - Mddle">
             <rect key="frame" x="0.0" y="0.0" width="148" height="24"/>
             <subviews>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="10x-bg-xlj" userLabel="Left Button">
@@ -599,7 +599,7 @@
             </constraints>
             <point key="canvasLocation" x="377" y="703"/>
         </customView>
-        <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" horizontalClippingResistancePriority="500" translatesAutoresizingMaskIntoConstraints="NO" id="hDm-KI-3o4" userLabel="Fragment: Control View">
+        <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" horizontalClippingResistancePriority="500" translatesAutoresizingMaskIntoConstraints="NO" id="hDm-KI-3o4" userLabel="OSC Fragment: Control View">
             <rect key="frame" x="0.0" y="0.0" width="200" height="24"/>
             <point key="canvasLocation" x="133" y="703"/>
         </stackView>
@@ -626,12 +626,12 @@
             </connections>
             <point key="canvasLocation" x="40" y="549"/>
         </customView>
-        <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" id="KfP-G9-8pD">
+        <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" id="KfP-G9-8pD" userLabel="OSC Fragment: Toolbar">
             <rect key="frame" x="0.0" y="0.0" width="106" height="24"/>
             <autoresizingMask key="autoresizingMask"/>
             <point key="canvasLocation" x="591" y="676"/>
         </stackView>
-        <customView id="maF-Zr-K8w">
+        <customView id="maF-Zr-K8w" userLabel="Titlebar Accessory View">
             <rect key="frame" x="0.0" y="0.0" width="26" height="20"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
@@ -653,11 +653,6 @@
                 <constraint firstAttribute="bottom" secondItem="Ztc-Kn-fxI" secondAttribute="bottom" constant="1" id="ms6-RQ-I8s"/>
             </constraints>
             <point key="canvasLocation" x="713" y="-57"/>
-        </customView>
-        <customView id="A4M-zT-NFs">
-            <rect key="frame" x="0.0" y="0.0" width="163" height="96"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-            <point key="canvasLocation" x="355" y="437"/>
         </customView>
     </objects>
     <resources>
