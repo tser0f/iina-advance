@@ -382,6 +382,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           showOpenURLWindow(isAlternativeAction: false)
         case Constants.WindowAutosaveName.inspector:
           showInspectorWindow()
+        // TODO: Player
         default:
           break
       }

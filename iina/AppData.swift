@@ -137,7 +137,7 @@ struct Constants {
     static let miniPlayer = "MiniPlayerWindow-%@"
   }
   struct Distance {
-    // TODO: change to % of screen width1
+    // TODO: change to % of screen width
     static let floatingControllerSnapToCenterThreshold = 20.0
     // The minimum distance that the user must drag before their click or tap gesture is interpreted as a drag gesture:
     static let mainWindowMinInitialDragThreshold: CGFloat = 5.0

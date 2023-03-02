@@ -34,7 +34,8 @@ class BindingTableStateManager {
   }
 
   static func initialState() -> BindingTableState {
-    BindingTableState(AppInputConfig.current, filterString: "", inputConfFile: ConfTableState.manager.loadConfFile())
+    let filterString = Preference.bool(for: .keepLastUIState) ? Preference.string(for: .uiPrefBindingsTableSearchString) ?? "" : ""
+    return BindingTableState(AppInputConfig.current, filterString: filterString, inputConfFile: ConfTableState.manager.loadConfFile())
   }
 
   /*
@@ -128,8 +129,9 @@ class BindingTableStateManager {
     }
   }
 
-  // Not an undoable action; just a UI change
+  // Not an undoable action; just a UI change (but possibly saved in UI state prefs)
   func applyFilter(newFilterString: String) {
+    Preference.set(newFilterString, for: .uiPrefBindingsTableSearchString)
     applyStateUpdate(AppInputConfig.current, newFilterString: newFilterString)
   }
 

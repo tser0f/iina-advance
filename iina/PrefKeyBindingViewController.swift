@@ -68,6 +68,8 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
     self.bindingTableController = bindingTableController
     confTableController = ConfTableViewController(confTableView, bindingTableController)
 
+    bindingSearchField.stringValue = bindingTableState.filterString
+
     if #available(macOS 10.13, *) {
       useMediaKeysButton.title = NSLocalizedString("preference.system_media_control", comment: "Use system media control")
     }
@@ -86,6 +88,17 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
 
     confTableController?.selectCurrentConfRow()
     self.updateEditEnabledStatus()
+
+    // Set initial scroll, and set up to save scroll value across launches
+    if let scrollView = bindingTableView.enclosingScrollView {
+      let observer = scrollView.restoreAndObserveVerticalScroll(key: .uiPrefBindingsTableScrollOffsetY, defaultScrollAction: {
+        bindingTableView.scrollRowToVisible(0)
+      })
+      // Change vertical scroll elastisticity of tables in Key Bindings prefs from "yes" to "allowed"
+      if let observer = observer {
+        observers.append(observer)
+      }
+    }
   }
 
   // MARK: - IBActions

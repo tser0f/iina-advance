@@ -79,8 +79,6 @@ class BindingTableViewController: NSObject {
       Logger.log("Binding table is out of date. Requesting rebuild")
       AppInputConfig.rebuildCurrent()
     }
-
-    tableView.scrollRowToVisible(0)
   }
 
   deinit {

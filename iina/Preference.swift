@@ -350,6 +350,8 @@ struct Preference {
     static let uiCollapseViewPauseResume = Key("uiCollapseViewPauseResume")
     static let uiCollapseViewSubAutoLoadAdvanced = Key("uiCollapseViewSubAutoLoadAdvanced")
     static let uiCollapseViewSubTextSubsAdvanced = Key("uiCollapseViewSubTextSubsAdvanced")
+    static let uiPrefBindingsTableSearchString = Key("uiPrefBindingsTableSearchString")
+    static let uiPrefBindingsTableScrollOffsetY = Key("uiPrefBindingsTableScrollOffsetY")
 
     static let uiHistoryTableGroupBy = Key("uiHistoryTableGroupBy")
     static let uiHistoryTableSearchType = Key("uiHistoryTableSearchType")
@@ -944,6 +946,8 @@ struct Preference {
     .uiCollapseViewPauseResume: true,
     .uiCollapseViewSubAutoLoadAdvanced: false,
     .uiCollapseViewSubTextSubsAdvanced: false,
+    .uiPrefBindingsTableSearchString: "",
+    .uiPrefBindingsTableScrollOffsetY: 0,
     .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayed.rawValue,
     .uiHistoryTableSearchType: HistorySearchType.fullPath.rawValue,
     .uiHistoryTableSearchString: "",

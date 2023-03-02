@@ -209,8 +209,9 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
     // Much safer to disable empty selection after selecting a row.
     loadTab(at: Preference.UIState.get(.uiPrefWindowNavTableSelectionIndex))
     tableView.allowsEmptySelection = false
-
-    let _ = prefDetailScrollView.restoreAndObserveVerticalScroll(key: .uiPrefDetailViewScrollOffsetY)
+    let _ = prefDetailScrollView.restoreAndObserveVerticalScroll(key: .uiPrefDetailViewScrollOffsetY, defaultScrollAction: {
+      prefDetailScrollView.scroll(NSPoint())
+    })
   }
 
   override func mouseDown(with event: NSEvent) {

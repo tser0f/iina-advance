@@ -830,28 +830,40 @@ extension NSWindow {
 }
 
 extension NSScrollView {
-  func restoreAndObserveVerticalScroll(key: Preference.Key) -> NSObjectProtocol {
+  // Note: if false is returned, no scroll occurred, and the caller should pick a suitable default.
+  // This is because NSScrollViews containing NSTableViews can be screwy and
+  // have some arbitrary negative value as their "no scroll".
+  func restoreVerticalScroll(key: Preference.Key) -> Bool {
+    if Preference.bool(for: .keepLastUIState) {
+      if let offsetY: Double = Preference.value(for: key) as? Double {
+        Logger.log("Restoring vertical scroll to: \(offsetY)", level: .verbose)
+        self.contentView.scroll(NSPoint(x: 0, y: offsetY))
+        return true
+      }
+    }
+    return false
+  }
+
+  // Adds a listener to record scroll position for next launch
+  func addVerticalScrollObserver(key: Preference.Key) -> NSObjectProtocol? {
     let observer = NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification,
-                                           object: self.contentView, queue: .main) { note in
-      if let view = note.object as? NSView {
-        var scrollOffsetY = view.bounds.origin.y
-        if scrollOffsetY < 0 {
-          // Because scroll is bouncy, it can briefly be negative.
-          // But the exact 0 offset may not be reported. Clamp to 0.
-          scrollOffsetY = 0
-        }
+                                                          object: self.contentView, queue: .main) { note in
+      if let clipView = note.object as? NSClipView {
+        let scrollOffsetY = clipView.bounds.origin.y
+        Logger.log("Scroll offset: \(scrollOffsetY)", level: .verbose)
         Preference.UIState.set(scrollOffsetY, for: key)
       }
     }
-
-    // Restore scroll (if configured)
-    if Preference.bool(for: .keepLastUIState) {
-      let offsetY: Double = Preference.UIState.get(key)
-      Logger.log("Restoring vertical scroll to: \(offsetY)", level: .verbose)
-      self.contentView.scroll(to: NSPoint(x: 0, y: offsetY))
-    }
-
     return observer
+  }
+  
+  // Combines the previous 2 functions into one
+  func restoreAndObserveVerticalScroll(key: Preference.Key, defaultScrollAction: () -> Void) -> NSObjectProtocol? {
+    if !restoreVerticalScroll(key: key) {
+      Logger.log("Could not find stored value for key \(key.rawValue.quoted); will use default scroll action", level: .verbose)
+      defaultScrollAction()
+    }
+    return addVerticalScrollObserver(key: key)
   }
 }
 

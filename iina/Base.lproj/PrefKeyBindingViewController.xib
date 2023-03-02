@@ -432,7 +432,7 @@
                                 <rect key="frame" x="163" y="0.0" width="5" height="20"/>
                             </box>
                             <button toolTip="Show the raw mpv key code and command." translatesAutoresizingMaskIntoConstraints="NO" id="l2M-TH-eCt" userLabel="Display raw values Button">
-                                <rect key="frame" x="174" y="4" width="100" height="12"/>
+                                <rect key="frame" x="174" y="5" width="100" height="11"/>
                                 <buttonCell key="cell" type="check" title="Display raw values" bezelStyle="regularSquare" imagePosition="left" controlSize="mini" inset="2" id="3RK-1k-otl">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="label" size="9"/>
