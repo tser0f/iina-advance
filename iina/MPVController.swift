@@ -1308,7 +1308,10 @@ class MPVController: NSObject {
       let windowScale = getDouble(MPVOption.Window.windowScale)
       Logger.log("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale)", level: .verbose, subsystem: player.subsystem)
       guard player.mainWindow.loaded else { break }
-      if fabs(windowScale - player.info.cachedWindowScale) > 10e-10 {
+      let needsUpdate = fabs(windowScale - player.info.cachedWindowScale) > 10e-10
+      Logger.log("Scale(IINA): \(player.info.cachedWindowScale), Scale(mpv): \(windowScale) -> changed: \(needsUpdate)",
+                 level: .verbose, subsystem: player.subsystem)
+      if needsUpdate {
         DispatchQueue.main.async {
           self.player.mainWindow.setWindowScale(windowScale)
         }

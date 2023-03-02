@@ -315,13 +315,13 @@
                 <menuItem title="Filename" tag="200" indentationLevel="1" id="Wkp-Vn-JoJ">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
-                        <action selector="searchOptionFilenameAction:" target="-2" id="ojh-2T-Drj"/>
+                        <action selector="searchTypeFilenameAction:" target="-2" id="9VP-rB-pIg"/>
                     </connections>
                 </menuItem>
                 <menuItem title="Full path" tag="201" indentationLevel="1" id="AZL-gY-Tob">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
-                        <action selector="searchOptionFullPathAction:" target="-2" id="51W-C3-T6u"/>
+                        <action selector="searchTypeFullPathAction:" target="-2" id="M6n-38-1py"/>
                     </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="Uvl-9Y-Q1e"/>

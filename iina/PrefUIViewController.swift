@@ -109,7 +109,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    updateWindowPreviewImage()
+    refreshTitleBarAndOSCSection()
     oscToolbarStackView.wantsLayer = true
     updateOSCToolbarButtons()
     setupGeometryRelatedControls()
@@ -134,213 +134,21 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
     switch keyPath {
       case PK.titleBarLayout.rawValue, PK.enableOSC.rawValue, PK.oscPosition.rawValue, PK.themeMaterial.rawValue:
-        updateWindowPreviewImage()
+        refreshTitleBarAndOSCSection()
       default:
         break
     }
   }
 
-  // TODO (1): draw border around window
-  // TODO (2): embed window preview into screen preview to make it prettier
-  func updateWindowPreviewImage() {
-    let oscEnabled = Preference.bool(for: .enableOSC)
-    let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
-    let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
-//    let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
-//    let isDarkTheme = !(theme == .light || theme == .mediumLight)  // default to dark
-    let isDarkTheme = true  // TODO fully support light preview. Need to find way to invert colors for OSC imgs
-    let overlayAlpha: CGFloat = 0.6
-    let opaqueControlAlpha: CGFloat = 0.9  // don't be completely white or black
+  private func refreshTitleBarAndOSCSection() {
+    let ib = PlayerWindowPreviewImageBuilder()
+    windowPreviewImageView.image = ib.updateWindowPreviewImage()
 
-    guard let videoViewImg = loadCGImage(named: "preview-videoview") else { return }
-    guard let oscFullImg = loadCGImage(named: "preview-osc-full") else { return }
-    guard let oscTitleImg = loadCGImage(named: "preview-osc-title") else { return }
-    guard let oscFloatingImg = loadCGImage(named: "preview-osc-floating") else { return }
-    guard let titleBarButtonsImg = loadCGImage(named: "preview-titlebar-buttons") else { return }
-
-    let oscFullHeight: Int = oscFullImg.height
-    let titleBarHeight: Int = titleBarButtonsImg.height
-
-    var videoViewOffsetY: Int = 0
-    if oscEnabled && oscPosition == .outsideBottom {
-      videoViewOffsetY += oscFullHeight
-    }
-
-    let titleBarOffsetY: Int
-    if titleBarLayout == .outsideVideo {
-      titleBarOffsetY = videoViewOffsetY + videoViewImg.height
-    } else if titleBarLayout == .insideVideoFull && oscEnabled && oscPosition == .insideTop {
-      titleBarOffsetY = videoViewOffsetY + videoViewImg.height - titleBarHeight
-    } else {
-      titleBarOffsetY = videoViewOffsetY + videoViewImg.height - titleBarHeight
-    }
-
-    let outputWidth: Int = videoViewImg.width
-    let outputHeight: Int = titleBarOffsetY + titleBarHeight
-
-    let previewImage = drawImageInBitmapImageContext(width: outputWidth, height: outputHeight, roundedCornerRadius: 20, drawingCalls: { cgContext in
-      // Draw background with opposite color as control color, so we can use alpha to lighten the controls
-      let bgColor: CGFloat = isDarkTheme ? 1 : 0
-      cgContext.setFillColor(CGColor(red: bgColor, green: bgColor, blue: bgColor, alpha: 1))
-      cgContext.fill([CGRect(x: 0, y: 0, width: outputWidth, height: outputHeight)])
-
-      // draw video
-      draw(image: videoViewImg, in: cgContext, x: 0, y: videoViewOffsetY)
-
-      // draw OSC bar
-      if oscEnabled {
-        switch oscPosition {
-          case .floating:
-            let offsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
-            let offsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
-            draw(image: oscFloatingImg, in: cgContext, withAlpha: overlayAlpha, x: offsetX, y: offsetY)
-          case .insideTop:
-            let oscOffsetY: Int
-            if titleBarLayout == .insideVideoMinimal {
-              // Special in-title accessory controller
-              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscTitleImg.height
-              draw(image: oscTitleImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
-              break
-            } else if titleBarLayout == .insideVideoFull {
-              let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
-              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight + adjustment - titleBarHeight
-              draw(image: oscFullImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, height: oscFullHeight - adjustment)
-              break
-            } else {
-              oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
-            }
-            draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
-          case .insideBottom:
-            draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: videoViewOffsetY)
-            cgContext.setBlendMode(.normal)
-          case .outsideBottom:
-            draw(image: oscFullImg, in: cgContext, withAlpha: opaqueControlAlpha, x: 0, y: 0)
-        }
-      }
-
-      // draw title bar
-      let drawTitleBarButtons = titleBarLayout != .none
-      let drawTitleBarBackground: Bool
-      var titleBarIsOverlay = true
-      switch titleBarLayout {
-        case .none:
-          drawTitleBarBackground = false
-          break
-        case .outsideVideo:
-          drawTitleBarBackground = true
-          titleBarIsOverlay = false
-        case .insideVideoMinimal:
-          drawTitleBarBackground = false
-        case .insideVideoFull:
-          drawTitleBarBackground = true
-      }
-      if drawTitleBarBackground {
-        let titleBarAlpha: CGFloat = titleBarIsOverlay ? overlayAlpha : opaqueControlAlpha
-        let color: CGFloat = isDarkTheme ? 0 : 1
-        cgContext.setFillColor(CGColor(red: color, green: color, blue: color, alpha: titleBarAlpha))
-        cgContext.fill([CGRect(x: 0, y: titleBarOffsetY, width: outputWidth, height: titleBarHeight)])
-      }
-      if drawTitleBarButtons {
-        draw(image: titleBarButtonsImg, in: cgContext, x: 0, y: titleBarOffsetY)
-      }
-    })
-
-
-//    windowPreviewImageView.layer = CALayer()
-//    windowPreviewImageView.layer?.contentsGravity = CALayerContentsGravity.resizeAspect
-//    windowPreviewImageView.layer?.contents = previewImage
-//    windowPreviewImageView.wantsLayer = true
-//    windowPreviewImageView.layer?.cornerRadius = 8.0
-//    windowPreviewImageView.layer?.masksToBounds = true
-    windowPreviewImageView.image = previewImage
-
-
-//    let radius = 20.0
-//    let rect = CGRect(x: 0, y: 0, width: outputWidth, height: outputHeight)
-//    let path = NSBezierPath(roundedRect: rect, xRadius: 0.5 * radius, yRadius: 0.5 * radius)
-//    let mask = CAShapeLayer()
-//    windowPreviewImageView.wantsLayer = true
-//    windowPreviewImageView.layer!.maskedCorners = CACornerMask(rawValue: 20)
-//    windowPreviewImageView.layer!.cornerRadius = radius
-//    windowPreviewImageView.layer!.masksToBounds = true
-
-//    layer.mask = mask
-
-
-    let titleBarIsOverlay = titleBarLayout == .insideVideoFull || titleBarLayout == .insideVideoMinimal
-    let oscIsOverlay = oscEnabled && (oscPosition == .insideTop || oscPosition == .insideBottom || oscPosition == .floating)
+    let titleBarIsOverlay = ib.titleBarLayout == .insideVideoFull || ib.titleBarLayout == .insideVideoMinimal
+    let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .insideTop || ib.oscPosition == .insideBottom || ib.oscPosition == .floating)
     let hasOverlay = titleBarIsOverlay || oscIsOverlay
     oscAutoHideTimeoutTextField.isEnabled = hasOverlay
     hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
-  }
-
-  func loadCGImage(named name: String) -> CGImage? {
-    guard let image = NSImage(named: name) else {
-      Logger.log("DrawImage: Failed to load image \(name.quoted)!", level: .error)
-      return nil
-    }
-    guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-      Logger.log("DrawImage: Failed to get CGImage for \(name.quoted)!", level: .error)
-      return nil
-    }
-    return cgImage
-  }
-
-  func draw(image cgImage: CGImage, in cgContext: CGContext,
-            withAlpha alpha: CGFloat = 1,
-            x: Int, y: Int, width widthOverride: Int? = nil, height heightOverride: Int? = nil) {
-    let width = widthOverride ?? cgImage.width
-    let height = heightOverride ?? cgImage.height
-    cgContext.setAlpha(alpha)
-    cgContext.draw(cgImage, in: CGRect(x: x, y: y, width: width, height: height))
-    cgContext.setAlpha(1)
-  }
-
-  func drawImageInBitmapImageContext(width: Int, height: Int, roundedCornerRadius: CGFloat? = nil, drawingCalls: (CGContext) -> Void) -> NSImage? {
-
-    // Create image with alpha channel
-    guard let compositeImageRep = makeNewImgRep(width: width, height: height) else {
-      Logger.log("DrawImageInBitmapImageContext: Failed to create NSBitmapImageRep!", level: .error)
-      return nil
-    }
-
-    guard let context = NSGraphicsContext(bitmapImageRep: compositeImageRep) else {
-      Logger.log("DrawImageInBitmapImageContext: Failed to create NSGraphicsContext!", level: .error)
-      return nil
-    }
-
-    NSGraphicsContext.saveGraphicsState()
-    NSGraphicsContext.current = context
-    let cgContext = context.cgContext
-
-    drawingCalls(cgContext)
-
-    defer {
-      NSGraphicsContext.restoreGraphicsState()
-    }
-
-    var outputImage = NSImage(size: CGSize(width: width, height: height))
-    // Create the CGImage from the contents of the bitmap context.
-    outputImage.addRepresentation(compositeImageRep)
-
-    if let radius = roundedCornerRadius, radius > 0.0 {
-      outputImage = outputImage.roundCorners(withRadius: radius)
-    }
-    return outputImage
-  }
-
-  func makeNewImgRep(width: Int, height: Int) -> NSBitmapImageRep? {
-    return NSBitmapImageRep(
-      bitmapDataPlanes: nil,
-      pixelsWide: width,
-      pixelsHigh: height,
-      bitsPerSample: 8,
-      samplesPerPixel: 4,
-      hasAlpha: true,
-      isPlanar: false,
-      colorSpaceName: NSColorSpaceName.calibratedRGB,
-      bytesPerRow: 0,
-      bitsPerPixel: 0)
   }
 
   @IBAction func updateGeometryValue(_ sender: AnyObject) {

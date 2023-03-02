@@ -42,7 +42,7 @@ class ControlBarView: NSVisualEffectView {
     // stick to center
     if Preference.bool(for: .controlBarStickToCenter) {
       let xPosWhenCenter = (windowFrame.width - frame.width) / 2
-      if abs(newOrigin.x - xPosWhenCenter) <= 5 {
+      if abs(newOrigin.x - xPosWhenCenter) <= Constants.Distance.floatingControllerSnapToCenterThreshold {
         newOrigin.x = xPosWhenCenter
         if !isAlignFeedbackSent {
           NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)

@@ -352,6 +352,8 @@ struct Preference {
     static let uiCollapseViewSubTextSubsAdvanced = Key("uiCollapseViewSubTextSubsAdvanced")
 
     static let uiHistoryTableGroupBy = Key("uiHistoryTableGroupBy")
+    static let uiHistoryTableSearchType = Key("uiHistoryTableSearchType")
+    static let uiHistoryTableSearchString = Key("uiHistoryTableSearchString")
     static let uiHistoryTableScrollOffsetY = Key("uiHistoryTableScrollOffsetY")
   }
 
@@ -768,6 +770,28 @@ struct Preference {
 
   }
 
+  enum HistoryGroupBy: Int, InitializingFromKey {
+    case lastPlayed = 0
+    case fileLocation
+
+    static var defaultValue = HistoryGroupBy.lastPlayed
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum HistorySearchType: Int, InitializingFromKey {
+    case fullPath = 0
+    case filename
+
+    static var defaultValue = HistorySearchType.fullPath
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
   // MARK: - Defaults
 
   static let defaultPreference: [Preference.Key: Any] = [
@@ -920,7 +944,9 @@ struct Preference {
     .uiCollapseViewPauseResume: true,
     .uiCollapseViewSubAutoLoadAdvanced: false,
     .uiCollapseViewSubTextSubsAdvanced: false,
-    .uiHistoryTableGroupBy: 0,
+    .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayed.rawValue,
+    .uiHistoryTableSearchType: HistorySearchType.fullPath.rawValue,
+    .uiHistoryTableSearchString: "",
     .uiHistoryTableScrollOffsetY: 0,
     .userOptions: [],
     .useUserDefinedConfDir: false,

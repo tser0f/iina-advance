@@ -57,9 +57,6 @@ fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarliest = NSStackView.VisibilityPriority(rawValue: 750)
 }
 
-// The minimum distance that the user must drag before their click or tap gesture is interpreted as a drag gesture:
-fileprivate let minimumInitialDragDistance: CGFloat = 5.0
-
 class MainWindowController: PlayerWindowController {
   /** Adjust vertical offset so that when sidebar is open & "top" OSC is shown, the separator
    under the sidebar tab buttons aligns with bottom of OSC. */
@@ -950,7 +947,7 @@ class MainWindowController: PlayerWindowController {
           // The user's action will only be counted as a click if `isDragging==false` when `mouseUp` is called.
           // (Apple's trackpad in particular is very sensitive and tends to call `mouseDragged()` if there is even the slightest
           // roll of the finger during a click, and the distance of the "drag" may be less than 1 pixel)
-          if mousePosRelatedToWindow.isWithinRadius(radius: minimumInitialDragDistance,
+          if mousePosRelatedToWindow.isWithinRadius(radius: Constants.Distance.mainWindowMinInitialDragThreshold,
                                                     ofPoint: event.locationInWindow) {
             return
           }
@@ -1673,19 +1670,20 @@ class MainWindowController: PlayerWindowController {
 
   func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
     guard let window = window else { return frameSize }
+    Logger.log("WindowWillResize requested with desired size: \(frameSize)", level: .verbose, subsystem: player.subsystem)
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
+      Logger.log("WindowWillResize: requested size is too small; will change to minimum (\(minSize))", level: .verbose, subsystem: player.subsystem)
       return window.aspectRatio.grow(toSize: minSize)
     }
-    Logger.log("windowWillResize: requested: \(frameSize)", level: .verbose, subsystem: player.subsystem)
     return frameSize
   }
 
   func windowDidResize(_ notification: Notification) {
-    Logger.log("windowDidResize()", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
 
     // The `videoView` is not updated during full screen animation (unless using a custom one, however it could be
-    // unbearably laggy under current render meahcanism). Thus when entering full screen, we should keep `videoView`'s
+    // unbearably laggy under current render mechanism). Thus when entering full screen, we should keep `videoView`'s
     // aspect ratio. Otherwise, when entered full screen, there will be an awkward animation that looks like
     // `videoView` "resized" to screen size suddenly when mpv redraws the video content in correct aspect ratio.
     if case let .animating(toFullScreen, _, _) = fsState {
@@ -1787,16 +1785,22 @@ class MainWindowController: PlayerWindowController {
 
   // resize framebuffer in videoView after resizing.
   func windowDidEndLiveResize(_ notification: Notification) {
-    Logger.log("windowDidEndLiveResize()", level: .verbose, subsystem: player.subsystem)
-    videoView.videoSize = window!.convertToBacking(videoView.bounds).size
+    let newSize = window!.convertToBacking(videoView.bounds).size
+    let videoSizeStr = videoView.videoSize != nil ? "\(videoView.videoSize!)" : "nil"
+    Logger.log("WindowDidEndLiveResize(): videoView.videoSize: \(videoSizeStr) -> backingVideoSize: \(newSize)",
+               level: .verbose, subsystem: player.subsystem)
+    videoView.videoSize = newSize
     updateWindowParametersForMPV()
   }
 
   func windowDidChangeBackingProperties(_ notification: Notification) {
-    Logger.log("windowDidChangeBackingProperties()", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowDidChangeBackingProperties()", level: .verbose, subsystem: player.subsystem)
     if let oldScale = (notification.userInfo?[NSWindow.oldScaleFactorUserInfoKey] as? NSNumber)?.doubleValue,
-      oldScale != Double(window!.backingScaleFactor) {
-      videoView.videoLayer.contentsScale = window!.backingScaleFactor
+       let window = window, oldScale != Double(window.backingScaleFactor) {
+      Logger.log("WindowDidChangeBackingProperties: scale factor changed from \(oldScale) to \(Double(window.backingScaleFactor))",
+                 level: .verbose, subsystem: player.subsystem)
+      // FIXME: more needs to be changed than just this
+      videoView.videoLayer.contentsScale = window.backingScaleFactor
     }
   }
   

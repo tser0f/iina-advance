@@ -26,16 +26,7 @@ fileprivate extension NSUserInterfaceItemIdentifier {
 
 class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutlineViewDataSource, NSMenuDelegate, NSMenuItemValidation, NSWindowDelegate {
 
-  enum SortOption: Int {
-    case lastPlayed = 0
-    case fileLocation
-  }
-
-  enum SearchOption {
-    case filename, fullPath
-  }
-
-  private let getKey: [SortOption: (PlaybackHistory) -> String] = [
+  private let getKey: [Preference.HistoryGroupBy: (PlaybackHistory) -> String] = [
     .lastPlayed: { DateFormatter.localizedString(from: $0.addedDate, dateStyle: .medium, timeStyle: .none) },
     .fileLocation: { $0.url.deletingLastPathComponent().path }
   ]
@@ -47,14 +38,17 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   @IBOutlet weak var outlineView: NSOutlineView!
   @IBOutlet weak var historySearchField: NSSearchField!
 
-  var groupBy: SortOption = HistoryWindowController.getGroupByFromPrefs()
-  var searchOption: SearchOption = .fullPath
+  var groupBy: Preference.HistoryGroupBy = HistoryWindowController.getGroupByFromPrefs() ?? Preference.HistoryGroupBy.defaultValue
+  var searchType: Preference.HistorySearchType = HistoryWindowController.getHistorySearchTypeFromPrefs() ?? Preference.HistorySearchType.defaultValue
+  var searchString: String = HistoryWindowController.getSearchStringFromPrefs() ?? ""
 
   private var historyData: [String: [PlaybackHistory]] = [:]
   private var historyDataKeys: [String] = []
 
   private var observedPrefKeys: [Preference.Key] = [
     .uiHistoryTableGroupBy,
+    .uiHistoryTableSearchType,
+    .uiHistoryTableSearchString
   ]
 
   init() {
@@ -83,11 +77,16 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
     switch keyPath {
       case PK.uiHistoryTableGroupBy.rawValue:
-        groupBy = HistoryWindowController.getGroupByFromPrefs()
-        reloadData()
+        groupBy = HistoryWindowController.getGroupByFromPrefs() ?? groupBy
+      case PK.uiHistoryTableSearchType.rawValue:
+        searchType = HistoryWindowController.getHistorySearchTypeFromPrefs() ?? searchType
+      case PK.uiHistoryTableSearchString.rawValue:
+        searchString = Preference.string(for: .uiHistoryTableSearchString) ?? searchString
+        historySearchField.stringValue = searchString
       default:
         break
     }
+    reloadData()
   }
   
   override func windowDidLoad() {
@@ -96,6 +95,8 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     NotificationCenter.default.addObserver(forName: .iinaHistoryUpdated, object: nil, queue: .main) { [unowned self] _ in
       self.reloadData()
     }
+
+    historySearchField.stringValue = searchString
 
     outlineView.delegate = self
     outlineView.dataSource = self
@@ -110,21 +111,34 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 //    }
   }
 
-  private static func getGroupByFromPrefs() -> SortOption {
-    if Preference.bool(for: .keepLastUIState) {
-      if let savedOption = SortOption(rawValue: Preference.integer(for: .uiHistoryTableGroupBy)) {
-        return savedOption
-      }
-    }
-    return .lastPlayed
+  private static func getGroupByFromPrefs() -> Preference.HistoryGroupBy? {
+    return Preference.bool(for: .keepLastUIState) ? Preference.enum(for: .uiHistoryTableGroupBy) : nil
   }
 
-  private func reloadData(fromHistory historyList: [PlaybackHistory]? = nil) {
+  private static func getHistorySearchTypeFromPrefs() -> Preference.HistorySearchType? {
+    return Preference.bool(for: .keepLastUIState) ? Preference.enum(for: .uiHistoryTableSearchType) : nil
+  }
+
+  private static func getSearchStringFromPrefs() -> String? {
+    return Preference.bool(for: .keepLastUIState) ? Preference.string(for: .uiHistoryTableSearchString) : nil
+  }
+
+  private func reloadData() {
     // reconstruct data
     historyData.removeAll()
     historyDataKeys.removeAll()
 
-    let historyList = historyList ?? HistoryController.shared.history
+    Logger.log("Relaoding history (searchString: \(searchString.quoted))", level: .verbose)
+    let historyList: [PlaybackHistory]
+    if searchString.isEmpty {
+      historyList = HistoryController.shared.history
+    } else {
+      historyList = HistoryController.shared.history.filter { entry in
+        let string = searchType == .filename ? entry.name : entry.url.path
+        // Do a locale-aware, case and diacritic insensitive search:
+        return string.localizedStandardContains(searchString)
+      }
+    }
 
     for entry in historyList {
       addToData(entry, forKey: getKey[groupBy]!(entry))
@@ -252,17 +266,8 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   // MARK: - Searching
 
   @IBAction func searchFieldAction(_ sender: NSSearchField) {
-    let searchString = sender.stringValue
-    guard !searchString.isEmpty else {
-      reloadData()
-      return
-    }
-    let newObjects = HistoryController.shared.history.filter { entry in
-      let string = searchOption == .filename ? entry.name : entry.url.path
-      // Do a locale-aware, case and diacritic insensitive search:
-      return string.localizedStandardContains(searchString)
-    }
-    reloadData(fromHistory: newObjects)
+    self.searchString = sender.stringValue
+    Preference.set(sender.stringValue, for: .uiHistoryTableSearchString)
   }
 
   // MARK: - Menu
@@ -293,9 +298,9 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     case MenuItemTagDelete, MenuItemTagPlay, MenuItemTagPlayInNewWindow:
       return !selectedEntries.isEmpty
     case MenuItemTagSearchFilename:
-      menuItem.state = searchOption == .filename ? .on : .off
+      menuItem.state = searchType == .filename ? .on : .off
     case MenuItemTagSearchFullPath:
-      menuItem.state = searchOption == .fullPath ? .on : .off
+      menuItem.state = searchType == .fullPath ? .on : .off
     default:
       break
     }
@@ -326,14 +331,14 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     }
   }
 
-  @IBAction func searchOptionFilenameAction(_ sender: AnyObject) {
-    searchOption = .filename
-    reloadData()
+  @IBAction func searchTypeFilenameAction(_ sender: AnyObject) {
+    searchType = .filename
+    Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
   }
 
-  @IBAction func searchOptionFullPathAction(_ sender: AnyObject) {
-    searchOption = .fullPath
-    reloadData()
+  @IBAction func searchTypeFullPathAction(_ sender: AnyObject) {
+    searchType = .fullPath
+    Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
   }
 
 }
