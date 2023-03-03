@@ -70,7 +70,7 @@
         <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingMode="disallowed" id="F0z-JX-Cv5" userLabel="Main Player Window" customClass="MainWindow" customModule="IINA" customModuleProvider="target">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="3440" height="1415"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
             <view key="contentView" id="se5-gp-TjO" userLabel="Window-Content View">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -338,24 +338,24 @@
                         <rect key="frame" x="110" y="50" width="440" height="67"/>
                         <subviews>
                             <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Unr-Y6-JoM" userLabel="OSC-Floating-TopHalf View">
-                                <rect key="frame" x="12" y="25" width="416" height="38"/>
+                                <rect key="frame" x="10" y="25" width="420" height="38"/>
                             </stackView>
                             <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="hb6-oe-rHm" userLabel="OSC-Floating-BottomHalf View">
-                                <rect key="frame" x="4" y="-3" width="432" height="38"/>
+                                <rect key="frame" x="10" y="-3" width="420" height="38"/>
                             </stackView>
                         </subviews>
                         <constraints>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="200" id="3yd-Pv-Hhe"/>
                             <constraint firstAttribute="bottom" secondItem="hb6-oe-rHm" secondAttribute="bottom" constant="-3" id="BX8-BF-zpJ"/>
-                            <constraint firstAttribute="trailing" secondItem="hb6-oe-rHm" secondAttribute="trailing" constant="4" id="Fdb-QI-Ew7"/>
-                            <constraint firstItem="Unr-Y6-JoM" firstAttribute="leading" secondItem="OiF-pA-8Sd" secondAttribute="leading" constant="12" id="PoI-cy-R6t"/>
+                            <constraint firstAttribute="trailing" secondItem="hb6-oe-rHm" secondAttribute="trailing" constant="10" id="Fdb-QI-Ew7"/>
+                            <constraint firstItem="Unr-Y6-JoM" firstAttribute="leading" secondItem="OiF-pA-8Sd" secondAttribute="leading" constant="10" id="PoI-cy-R6t"/>
                             <constraint firstItem="hb6-oe-rHm" firstAttribute="height" secondItem="Unr-Y6-JoM" secondAttribute="height" id="QJj-eQ-u9z"/>
                             <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="67" id="Y9z-bG-qQd"/>
                             <constraint firstItem="Unr-Y6-JoM" firstAttribute="top" secondItem="OiF-pA-8Sd" secondAttribute="top" constant="4" id="YVl-fg-zzl"/>
-                            <constraint firstAttribute="trailing" secondItem="Unr-Y6-JoM" secondAttribute="trailing" constant="12" id="c0X-tF-D2k"/>
+                            <constraint firstAttribute="trailing" secondItem="Unr-Y6-JoM" secondAttribute="trailing" constant="10" id="c0X-tF-D2k"/>
                             <constraint firstAttribute="width" priority="500" constant="440" id="g1S-BA-95v"/>
                             <constraint firstAttribute="height" priority="250" constant="67" id="g84-xP-093"/>
-                            <constraint firstItem="hb6-oe-rHm" firstAttribute="leading" secondItem="OiF-pA-8Sd" secondAttribute="leading" constant="4" id="h8j-ny-dSf"/>
+                            <constraint firstItem="hb6-oe-rHm" firstAttribute="leading" secondItem="OiF-pA-8Sd" secondAttribute="leading" constant="10" id="h8j-ny-dSf"/>
                             <constraint firstItem="hb6-oe-rHm" firstAttribute="top" secondItem="Unr-Y6-JoM" secondAttribute="bottom" constant="-10" id="hmP-6A-a3W"/>
                         </constraints>
                         <connections>
@@ -453,18 +453,18 @@
             </constraints>
             <point key="canvasLocation" x="318" y="584"/>
         </customView>
-        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="BE1-yC-oJL" userLabel="OSC Fragment: Playback Position Slider">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="BE1-yC-oJL" userLabel="OSC Fragment: Playback Position Slider">
             <rect key="frame" x="0.0" y="0.0" width="500" height="42"/>
             <subviews>
                 <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback-Position Horizontal Slider">
-                    <rect key="frame" x="54" y="5" width="392" height="28"/>
+                    <rect key="frame" x="46" y="5" width="408" height="28"/>
                     <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
                         <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>
                     </connections>
                 </slider>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NBD-MV-OuG" userLabel="Left Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="6" y="16" width="50" height="11"/>
+                    <rect key="frame" x="-2" y="16" width="50" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="11" id="BzO-eZ-2m8"/>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="46" id="CMl-dC-PCr"/>
@@ -479,7 +479,7 @@
                     </connections>
                 </textField>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GgV-Cc-sk0" userLabel="Right Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="444" y="16" width="50" height="11"/>
+                    <rect key="frame" x="452" y="16" width="50" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="11" id="elM-ER-FAc"/>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="46" id="sDf-om-KlV"/>
@@ -514,8 +514,8 @@
                 <constraint firstItem="qOq-6a-7j7" firstAttribute="top" secondItem="BE1-yC-oJL" secondAttribute="top" id="ZlC-qT-aez"/>
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="centerY" secondItem="NBD-MV-OuG" secondAttribute="centerY" id="dX4-4l-aJM"/>
                 <constraint firstItem="qOq-6a-7j7" firstAttribute="leading" secondItem="BE1-yC-oJL" secondAttribute="leading" constant="200" placeholder="YES" id="ekV-Sh-cEZ"/>
-                <constraint firstItem="NBD-MV-OuG" firstAttribute="leading" secondItem="BE1-yC-oJL" secondAttribute="leading" constant="8" id="fcm-ao-T7h"/>
-                <constraint firstAttribute="trailing" secondItem="GgV-Cc-sk0" secondAttribute="trailing" constant="8" id="plE-qU-XZt"/>
+                <constraint firstItem="NBD-MV-OuG" firstAttribute="leading" secondItem="BE1-yC-oJL" secondAttribute="leading" id="fcm-ao-T7h"/>
+                <constraint firstAttribute="trailing" secondItem="GgV-Cc-sk0" secondAttribute="trailing" id="plE-qU-XZt"/>
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="leading" secondItem="NBD-MV-OuG" secondAttribute="trailing" constant="2" id="uHE-D2-HgP"/>
                 <constraint firstItem="GgV-Cc-sk0" firstAttribute="leading" secondItem="eBP-6g-bAT" secondAttribute="trailing" constant="2" id="vzW-0s-yR6"/>
             </constraints>
