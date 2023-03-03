@@ -25,19 +25,13 @@ fileprivate let isMacOS11: Bool = {
  Note that we can't use this trick to get it from our window instance directly, because our window has the
  `fullSizeContentView` style and so its `frameRect` does not include any extra space for its title bar.
  */
-fileprivate let TitleBarHeightNormal: CGFloat = {
+fileprivate let TitleBarHeight: CGFloat = {
   // Probably doesn't matter what dimensions we pick for the dummy contentRect, but to be safe let's make them nonzero.
   let dummyContentRect = NSRect(x: 0, y: 0, width: 10, height: 10)
   let dummyFrameRect = NSWindow.frameRect(forContentRect: dummyContentRect, styleMask: .titled)
   let titleBarHeight = dummyFrameRect.height - dummyContentRect.height
   return titleBarHeight
 }()
-fileprivate let OSCTopHeightInFullScreen: CGFloat = 40
-// When putting titlebar & OSC together, subtract 8 pts to reduce excess gap between the two:
-fileprivate let OSCTopHeightWithTitleBar: CGFloat = TitleBarHeightNormal + OSCTopHeightInFullScreen - 8
-// Manual adjustment needed to vertically center the top OSC. Larger numbers == controls are placed farther down
-fileprivate let OSCTopMainViewMarginTop: CGFloat = 28
-fileprivate let OSCTopMainViewMarginTopInFullScreen: CGFloat = 8
 
 fileprivate let SettingsWidth: CGFloat = 360
 fileprivate let PlaylistMinWidth: CGFloat = 240
@@ -60,7 +54,7 @@ fileprivate extension NSStackView.VisibilityPriority {
 class MainWindowController: PlayerWindowController {
   /** Adjust vertical offset so that when sidebar is open & "top" OSC is shown, the separator
    under the sidebar tab buttons aligns with bottom of OSC. */
-  static let sidebarDownShift: CGFloat = TitleBarHeightNormal - 17
+  static let sidebarDownShift: CGFloat = TitleBarHeight - 17
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MainWindowController")
@@ -455,11 +449,11 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var sideBarWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
-  @IBOutlet weak var oscTopMainViewTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var fragControlViewMiddleButtons1Constraint: NSLayoutConstraint!
   @IBOutlet weak var fragControlViewMiddleButtons2Constraint: NSLayoutConstraint!
 
-  @IBOutlet weak var titleBarView: NSVisualEffectView!
+  @IBOutlet weak var topOverlayView: NSVisualEffectView!
+  @IBOutlet weak var titleBarReservedSpaceView: NSView!
   @IBOutlet weak var titleBarBottomBorder: NSBox!
   @IBOutlet weak var titlebarOnTopButton: NSButton!
 
@@ -522,7 +516,7 @@ class MainWindowController: PlayerWindowController {
   var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
-  override var mouseActionDisabledViews: [NSView?] {[sideBarView, currentControlBar, titleBarView, subPopoverView]}
+  override var mouseActionDisabledViews: [NSView?] {[sideBarView, currentControlBar, topOverlayView, subPopoverView]}
 
   // MARK: - PIP
 
@@ -566,7 +560,8 @@ class MainWindowController: PlayerWindowController {
     // set background color to black
     window.backgroundColor = .black
 
-    titleBarView.layerContentsRedrawPolicy = .onSetNeedsDisplay
+    topOverlayView.layerContentsRedrawPolicy = .onSetNeedsDisplay
+    titleBarHeightConstraint.constant = TitleBarHeight
 
     titlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     titlebarAccesoryViewController.view = titlebarAccessoryView
@@ -595,7 +590,7 @@ class MainWindowController: PlayerWindowController {
 
     // fade-able views
     fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
-    fadeableViews.append(titleBarView)
+    fadeableViews.append(topOverlayView)
     fadeableViews.append(titlebarAccessoryView)
 
     setupTitleBarAndOSC()
@@ -644,7 +639,7 @@ class MainWindowController: PlayerWindowController {
       titleBarBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     }
     cachedScreenCount = NSScreen.screens.count
-    [titleBarView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView, osdVisualEffectView, pipOverlayView].forEach {
+    [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView, osdVisualEffectView, pipOverlayView].forEach {
       $0?.state = .active
     }
     // hide other views
@@ -705,7 +700,7 @@ class MainWindowController: PlayerWindowController {
     let isDarkTheme = appearance?.isDark ?? true
     (playSlider.cell as? PlaySliderCell)?.isInDarkTheme = isDarkTheme
 
-    [titleBarView, controlBarFloating, controlBarBottom, osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView].forEach {
+    [topOverlayView, controlBarFloating, controlBarBottom, osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView].forEach {
       $0?.material = material
       $0?.appearance = appearance
     }
@@ -761,21 +756,21 @@ class MainWindowController: PlayerWindowController {
 
     let showTitleBar = titleBarLayoutNew != .none
     if showTitleBar { // SHOW title bar
-      titleBarHeightConstraint.constant = TitleBarHeightNormal
       if let window = self.window as? MainWindow {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1
-//        titleBarView.isHidden = false
+//        topOverlayView.isHidden = false
+        titleBarReservedSpaceView.isHidden = false
         window.titleVisibility = .visible
 //        addBackTitlebarViewToFadeableViews()
       }
     } else { // HIDE title bar
-      titleBarHeightConstraint.constant = 0
+      titleBarReservedSpaceView.isHidden = true
       if let window = self.window as? MainWindow {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1e-100
         window.titleVisibility = .hidden
       }
-//      titleBarView.isHidden = true
-//      removeTitlebarViewFromFadeableViews()
+//      topOverlayView.isHidden = true
+//      removeTopOverlayViewFromFadeableViews()
     }
 
     controlBarFloating.isDragging = false
@@ -797,11 +792,9 @@ class MainWindowController: PlayerWindowController {
         addBackTitlebarViewToFadeableViews()
       }
       if isInFullScreen || !showTitleBar {
-        oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTopInFullScreen
-        titleBarHeightConstraint.constant = OSCTopHeightInFullScreen
+        titleBarReservedSpaceView.isHidden = true
       } else {
-        oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTop
-        titleBarHeightConstraint.constant = OSCTopHeightWithTitleBar
+        titleBarReservedSpaceView.isHidden = false
       }
       // Remove this if it's acceptable in 10.13-
       // titleBarBottomBorder.isHidden = true
@@ -811,8 +804,8 @@ class MainWindowController: PlayerWindowController {
 
     if isSwitchingFromTop {
       if isInFullScreen {
-        titleBarView.isHidden = true
-        removeTitlebarViewFromFadeableViews()
+        topOverlayView.isHidden = true
+        removeTopOverlayViewFromFadeableViews()
       }
     }
 
@@ -892,6 +885,9 @@ class MainWindowController: PlayerWindowController {
         oscFloatingLeadingTrailingConstraint = nil
       }
     }
+
+    Logger.log("topOverlayView: \(topOverlayView.frame.height), oscTopMainView: \(oscTopMainView.superview!.frame.height), fragControlView: \(fragControlView.frame.height), titleBarReservedSpaceView: \(titleBarReservedSpaceView.frame.height)")
+
   }
 
   // MARK: - Mouse / Trackpad events
@@ -985,7 +981,7 @@ class MainWindowController: PlayerWindowController {
         hideSideBar()
         return
       }
-      if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarView]) {
+      if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [topOverlayView]) {
         let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
         if userDefault == "Minimize" {
           window?.performMiniaturize(nil)
@@ -1017,7 +1013,7 @@ class MainWindowController: PlayerWindowController {
 
   override func scrollWheel(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
-    guard !isMouseEvent(event, inAnyOf: [sideBarView, titleBarView, subPopoverView]) else { return }
+    guard !isMouseEvent(event, inAnyOf: [sideBarView, topOverlayView, subPopoverView]) else { return }
 
     if isMouseEvent(event, inAnyOf: [fragSliderView]) && playSlider.isEnabled {
       seekOverride = true
@@ -1091,7 +1087,7 @@ class MainWindowController: PlayerWindowController {
       showUI()
     }
     // check whether mouse is in osc
-    if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
+    if isMouseEvent(event, inAnyOf: [currentControlBar, topOverlayView]) {
       destroyTimer()
     } else {
       updateTimer()
@@ -1434,13 +1430,13 @@ class MainWindowController: PlayerWindowController {
 
     // show titlebar
     if oscPosition == .insideTop {
-      oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTopInFullScreen
-      titleBarHeightConstraint.constant = OSCTopHeightInFullScreen
+      topOverlayView.isHidden = false
     } else {
-      // stop animation and hide titleBarView
-      removeTitlebarViewFromFadeableViews()
-      titleBarView.isHidden = true
+      // stop animation and hide topOverlayView
+      removeTopOverlayViewFromFadeableViews()
+      topOverlayView.isHidden = true
     }
+    titleBarReservedSpaceView.isHidden = false
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
     
@@ -1503,10 +1499,9 @@ class MainWindowController: PlayerWindowController {
       exitInteractiveMode(immediately: true)
     }
 
-    // show titleBarView
+    // show topOverlayView
     if oscPosition == .insideTop {
-      oscTopMainViewTopConstraint.constant = OSCTopMainViewMarginTop
-      titleBarHeightConstraint.constant = OSCTopHeightWithTitleBar
+      titleBarReservedSpaceView.isHidden = false
     }
 
     thumbnailPeekView.isHidden = true
@@ -1534,7 +1529,7 @@ class MainWindowController: PlayerWindowController {
       addBackTitlebarViewToFadeableViews()
     }
     addBackStandardButtonsToFadeableViews()
-    titleBarView.isHidden = false
+    topOverlayView.isHidden = false
     showUI()
     updateTimer()
 
@@ -2203,8 +2198,8 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func removeTitlebarViewFromFadeableViews() {
-    if let index = (self.fadeableViews.firstIndex { $0 === titleBarView }) {
+  private func removeTopOverlayViewFromFadeableViews() {
+    if let index = (self.fadeableViews.firstIndex { $0 === topOverlayView }) {
       self.fadeableViews.remove(at: index)
     }
   }
@@ -2214,7 +2209,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func addBackTitlebarViewToFadeableViews() {
-    fadeableViews.append(titleBarView)
+    fadeableViews.append(topOverlayView)
   }
 
   // Sometimes the doc icon may not be available, eg. when opened an online video.
@@ -2364,15 +2359,15 @@ class MainWindowController: PlayerWindowController {
   /// in the thumbnail extending outside of the window resulting in clipping. This method checks if there is room for the
   /// thumbnail to fully fit in the window. Otherwise the thumbnail must be displayed below the OSC's progress bar.
   /// - Parameters:
-  ///   - timnePreviewYPos: The y-coordinate of the time preview `TextField`.
+  ///   - timePreviewYPos: The y-coordinate of the time preview `TextField`.
   ///   - thumbnailHeight: The height of the thumbnail.
   /// - Returns: `true` if the thumbnail can be shown above the slider, `false` otherwise.
-  private func canShowThumbnailAbove(timnePreviewYPos: Double, thumbnailHeight: Double) -> Bool {
+  private func canShowThumbnailAbove(timePreviewYPos: Double, thumbnailHeight: Double) -> Bool {
     guard oscPosition != .insideBottom else { return true }
     guard oscPosition != .insideTop else { return false }
     // The layout preference for the on screen controller is set to the default floating layout.
     // Must ensure the top of the thumbnail will be below the top of the window.
-    let topOfThumbnail = timnePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
+    let topOfThumbnail = timePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
     // Normally the height of the usable area of the window can be obtained from the content
     // layout. But when the legacy full screen preference is enabled the layout height may be
     // larger than the content view if the display contains a camera housing. Use the lower of
@@ -2388,36 +2383,38 @@ class MainWindowController: PlayerWindowController {
     let timeLabelXPos = round(mouseXPos + playSlider.frame.origin.x - timePreviewWhenSeek.frame.width / 2)
     let timeLabelYPos = playSlider.frame.origin.y + playSlider.frame.height
     timePreviewWhenSeek.frame.origin = NSPoint(x: timeLabelXPos, y: timeLabelYPos)
-    let sliderFrame = playSlider.bounds
     let sliderFrameInWindow = playSlider.superview!.convert(playSlider.frame.origin, to: nil)
-    var percentage = Double((mouseXPos - 3) / (sliderFrame.width - 6))
+    var percentage = Double((mouseXPos - 3) / (playSlider.frame.width - 6))
     if percentage < 0 {
       percentage = 0
     }
 
-    if let duration = player.info.videoDuration {
-      let previewTime = duration * percentage
-      Logger.log("Setting time indicator to: \(previewTime.stringRepresentation)")
-      timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
+    guard let duration = player.info.videoDuration else { return }
+    let previewTime = duration * percentage
+    Logger.log("Setting seek time indicator to: \(previewTime.stringRepresentation)")
+    timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
-      if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image {
-        thumbnailPeekView.imageView.image = image.rotate(rotation)
-        thumbnailPeekView.isHidden = false
-        let thumbWidth = CGFloat(player.info.thumbnailWidth)
-        let thumbHeight = round(thumbWidth / thumbnailPeekView.imageView.image!.size.aspect)
-        let timePreviewFrameInWindow = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil)
-        let showAbove = canShowThumbnailAbove(timnePreviewYPos: timePreviewFrameInWindow.y, thumbnailHeight: thumbHeight)
-        let yPos = showAbove ? timePreviewFrameInWindow.y + timePreviewWhenSeek.frame.height : sliderFrameInWindow.y - thumbHeight
-        thumbnailPeekView.frame.size = NSSize(width: thumbWidth, height: thumbHeight)
-        thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: yPos)
+    if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image {
+      thumbnailPeekView.imageView.image = image.rotate(rotation)
+      thumbnailPeekView.isHidden = false
+
+      let thumbWidth = CGFloat(player.info.thumbnailWidth)
+      let thumbHeight = round(thumbWidth / thumbnailPeekView.imageView.image!.size.aspect)
+      thumbnailPeekView.frame.size = NSSize(width: thumbWidth, height: thumbHeight)
+
+      let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
+      let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
+      let thumbOriginY: CGFloat
+      if showAbove {
+        // Show thumbnail above seek time, which is above slider
+        thumbOriginY = timePreviewOriginY + timePreviewWhenSeek.frame.height
       } else {
-        thumbnailPeekView.isHidden = true
+        // Show thumbnail below slider
+        thumbOriginY = sliderFrameInWindow.y - thumbHeight
       }
-      Logger.log("Time indicator is: \(timePreviewWhenSeek.stringValue)")
-      timePreviewWhenSeek.needsLayout = true
-      timePreviewWhenSeek.needsDisplay = true
+      thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: thumbOriginY)
     } else {
-      assert (false)
+      thumbnailPeekView.isHidden = true
     }
   }
 
