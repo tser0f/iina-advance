@@ -81,7 +81,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
       case PK.uiHistoryTableSearchType.rawValue:
         searchType = HistoryWindowController.getHistorySearchTypeFromPrefs() ?? searchType
       case PK.uiHistoryTableSearchString.rawValue:
-        searchString = Preference.string(for: .uiHistoryTableSearchString) ?? searchString
+        searchString = HistoryWindowController.getSearchStringFromPrefs() ?? searchString
         historySearchField.stringValue = searchString
       default:
         break

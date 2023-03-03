@@ -2371,16 +2371,18 @@ class MainWindowController: PlayerWindowController {
     guard oscPosition != .insideBottom else { return true }
     guard oscPosition != .insideTop else { return false }
     // The layout preference for the on screen controller is set to the default floating layout.
-    // Must insure the top of the thumbnail would be below the top of the window.
+    // Must ensure the top of the thumbnail will be below the top of the window.
     let topOfThumbnail = timnePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
     // Normally the height of the usable area of the window can be obtained from the content
     // layout. But when the legacy full screen preference is enabled the layout height may be
     // larger than the content view if the display contains a camera housing. Use the lower of
     // the two heights.
     let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
+    Logger.log("ContentViewLayoutRectHeight: \(window!.contentLayoutRect.height), \(window!.contentView!.frame.height), TopOfThumbnail: \(topOfThumbnail) -> result: \(topOfThumbnail <= windowContentHeight)", level: .verbose)
     return topOfThumbnail <= windowContentHeight
   }
 
+  // MARK: WIP -------------------------------------------------------------------------
   /** Display time label when mouse over slider */
   private func updateTimeLabel(_ mouseXPos: CGFloat, originalPos: NSPoint) {
     let timeLabelXPos = round(mouseXPos + playSlider.frame.origin.x - timePreviewWhenSeek.frame.width / 2)
@@ -2395,21 +2397,27 @@ class MainWindowController: PlayerWindowController {
 
     if let duration = player.info.videoDuration {
       let previewTime = duration * percentage
+      Logger.log("Setting time indicator to: \(previewTime.stringRepresentation)")
       timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
       if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image {
         thumbnailPeekView.imageView.image = image.rotate(rotation)
         thumbnailPeekView.isHidden = false
-        let width = CGFloat(player.info.thumbnailWidth)
-        let height = round(width / thumbnailPeekView.imageView.image!.size.aspect)
+        let thumbWidth = CGFloat(player.info.thumbnailWidth)
+        let thumbHeight = round(thumbWidth / thumbnailPeekView.imageView.image!.size.aspect)
         let timePreviewFrameInWindow = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil)
-        let showAbove = canShowThumbnailAbove(timnePreviewYPos: timePreviewFrameInWindow.y, thumbnailHeight: height)
-        let yPos = showAbove ? timePreviewFrameInWindow.y + timePreviewWhenSeek.frame.height : sliderFrameInWindow.y - height
-        thumbnailPeekView.frame.size = NSSize(width: width, height: height)
+        let showAbove = canShowThumbnailAbove(timnePreviewYPos: timePreviewFrameInWindow.y, thumbnailHeight: thumbHeight)
+        let yPos = showAbove ? timePreviewFrameInWindow.y + timePreviewWhenSeek.frame.height : sliderFrameInWindow.y - thumbHeight
+        thumbnailPeekView.frame.size = NSSize(width: thumbWidth, height: thumbHeight)
         thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: yPos)
       } else {
         thumbnailPeekView.isHidden = true
       }
+      Logger.log("Time indicator is: \(timePreviewWhenSeek.stringValue)")
+      timePreviewWhenSeek.needsLayout = true
+      timePreviewWhenSeek.needsDisplay = true
+    } else {
+      assert (false)
     }
   }
 
@@ -2950,7 +2958,9 @@ class MainWindowController: PlayerWindowController {
     timePreviewWhenSeek.frame.origin = CGPoint(
       x: round(sender.knobPointPosition() - timePreviewWhenSeek.frame.width / 2),
       y: playSlider.frame.origin.y + playSlider.frame.height)
-    timePreviewWhenSeek.stringValue = (player.info.videoDuration! * percentage * 0.01).stringRepresentation
+    let seekTime = player.info.videoDuration! * percentage * 0.01
+    Logger.log("PlaySliderChanged: setting time indicator to: \(seekTime.stringRepresentation)")
+    timePreviewWhenSeek.stringValue = seekTime.stringRepresentation
   }
 
   @objc func toolBarButtonAction(_ sender: NSButton) {

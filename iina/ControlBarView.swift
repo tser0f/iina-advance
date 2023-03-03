@@ -65,6 +65,7 @@ class ControlBarView: NSVisualEffectView {
     isDragging = false
     guard let windowFrame = window?.frame else { return }
     // save final position
+    // FIXME: change this to work for multiple windows
     Preference.set(xConstraint.constant / windowFrame.width, for: .controlBarPositionHorizontal)
     Preference.set(yConstraint.constant / windowFrame.height, for: .controlBarPositionVertical)
   }
