@@ -103,7 +103,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
     let showTitleBar = titleBarLayout != .none
     if showTitleBar {
-      downShift = MainWindowController.sidebarDownShift
+      downShift = mainWindow.sidebarDownShift
     } else {
       downShift = 0
     }

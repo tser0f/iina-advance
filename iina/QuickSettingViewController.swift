@@ -190,7 +190,8 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
     let showTitleBar = titleBarLayout != .none
     if showTitleBar {
-      downShift = MainWindowController.sidebarDownShift
+      downShift = mainWindow.sidebarDownShift
+      Logger.log("Set downShift to: \(downShift)", level: .verbose)
     } else {
       downShift = 0
     }

@@ -52,9 +52,6 @@ fileprivate extension NSStackView.VisibilityPriority {
 }
 
 class MainWindowController: PlayerWindowController {
-  /** Adjust vertical offset so that when sidebar is open & "top" OSC is shown, the separator
-   under the sidebar tab buttons aligns with bottom of OSC. */
-  static let sidebarDownShift: CGFloat = TitleBarHeight - 17
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MainWindowController")
@@ -72,6 +69,19 @@ class MainWindowController: PlayerWindowController {
 
   /** For Force Touch. */
   let minimumPressDuration: TimeInterval = 0.5
+
+  lazy var titleBarWithTopOSCHeight: CGFloat = {
+    if let heightOfCloseButton = window?.standardWindowButton(.closeButton)?.frame.height {
+      // add 2 because button's bounds seems to be a bit larger than its visible size
+      return TitleBarHeight - ((TitleBarHeight - heightOfCloseButton) / 2 + 2)
+    }
+    Logger.log("titleBarWithTopOSCHeight may be incorrect (could not get close button)", level: .error)
+    return TitleBarHeight
+  }()
+
+  /** Adjust vertical offset of sidebars so that when a sidebar is open while "top" OSC is shown,
+   the horizontal line under the sidebar tab buttons aligns with bottom of the OSC. */
+  lazy var sidebarDownShift: CGFloat = titleBarWithTopOSCHeight - 11
 
   // MARK: - Objects, Views
 
@@ -448,12 +458,12 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var sideBarRightConstraint: NSLayoutConstraint!
   @IBOutlet weak var sideBarWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var titleBarOverlayHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var fragControlViewMiddleButtons1Constraint: NSLayoutConstraint!
   @IBOutlet weak var fragControlViewMiddleButtons2Constraint: NSLayoutConstraint!
 
   @IBOutlet weak var topOverlayView: NSVisualEffectView!
-  @IBOutlet weak var titleBarReservedSpaceView: NSView!
+  @IBOutlet weak var titleBarOverlayView: NSView!
   @IBOutlet weak var titleBarBottomBorder: NSBox!
   @IBOutlet weak var titlebarOnTopButton: NSButton!
 
@@ -470,7 +480,7 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var bufferProgressLabel: NSTextField!
   @IBOutlet weak var bufferSpin: NSProgressIndicator!
   @IBOutlet weak var bufferDetailLabel: NSTextField!
-  @IBOutlet var thumbnailPeekView: ThumbnailPeekView!
+  @IBOutlet weak var thumbnailPeekView: ThumbnailPeekView!
   @IBOutlet weak var additionalInfoView: NSVisualEffectView!
   @IBOutlet weak var additionalInfoLabel: NSTextField!
   @IBOutlet weak var additionalInfoStackView: NSStackView!
@@ -483,13 +493,13 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var oscBottomMainView: NSStackView!
   @IBOutlet weak var oscTopMainView: NSStackView!
 
-  @IBOutlet var fragControlView: NSStackView!
-  @IBOutlet var fragToolbarView: NSStackView!
-  @IBOutlet var fragVolumeView: NSView!
-  @IBOutlet var fragSliderView: NSView!
-  @IBOutlet var fragControlViewMiddleView: NSView!
-  @IBOutlet var fragControlViewLeftView: NSView!
-  @IBOutlet var fragControlViewRightView: NSView!
+  @IBOutlet weak var fragControlView: NSStackView!
+  @IBOutlet weak var fragToolbarView: NSStackView!
+  @IBOutlet weak var fragVolumeView: NSView!
+  @IBOutlet weak var fragSliderView: NSView!
+  @IBOutlet weak var fragControlViewMiddleView: NSView!
+  @IBOutlet weak var fragControlViewLeftView: NSView!
+  @IBOutlet weak var fragControlViewRightView: NSView!
 
   @IBOutlet weak var leftArrowLabel: NSTextField!
   @IBOutlet weak var rightArrowLabel: NSTextField!
@@ -561,7 +571,6 @@ class MainWindowController: PlayerWindowController {
     window.backgroundColor = .black
 
     topOverlayView.layerContentsRedrawPolicy = .onSetNeedsDisplay
-    titleBarHeightConstraint.constant = TitleBarHeight
 
     titlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     titlebarAccesoryViewController.view = titlebarAccessoryView
@@ -751,6 +760,13 @@ class MainWindowController: PlayerWindowController {
       fadeableViews = fadeableViews.filter { $0 != cb }
     }
 
+    if isSwitchingToTop {
+      titleBarOverlayHeightConstraint.constant = titleBarWithTopOSCHeight
+    } else {
+      // Leave space only for title bar
+      titleBarOverlayHeightConstraint.constant = TitleBarHeight
+    }
+
     // reset
     ([controlBarFloating, controlBarBottom, oscTopMainView] as [NSView]).forEach { $0.isHidden = true }
 
@@ -759,12 +775,12 @@ class MainWindowController: PlayerWindowController {
       if let window = self.window as? MainWindow {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1
 //        topOverlayView.isHidden = false
-        titleBarReservedSpaceView.isHidden = false
+        titleBarOverlayView.isHidden = false
         window.titleVisibility = .visible
 //        addBackTitlebarViewToFadeableViews()
       }
     } else { // HIDE title bar
-      titleBarReservedSpaceView.isHidden = true
+      titleBarOverlayView.isHidden = true
       if let window = self.window as? MainWindow {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1e-100
         window.titleVisibility = .hidden
@@ -792,9 +808,9 @@ class MainWindowController: PlayerWindowController {
         addBackTitlebarViewToFadeableViews()
       }
       if isInFullScreen || !showTitleBar {
-        titleBarReservedSpaceView.isHidden = true
+        titleBarOverlayView.isHidden = true
       } else {
-        titleBarReservedSpaceView.isHidden = false
+        titleBarOverlayView.isHidden = false
       }
       // Remove this if it's acceptable in 10.13-
       // titleBarBottomBorder.isHidden = true
@@ -885,9 +901,6 @@ class MainWindowController: PlayerWindowController {
         oscFloatingLeadingTrailingConstraint = nil
       }
     }
-
-    Logger.log("topOverlayView: \(topOverlayView.frame.height), oscTopMainView: \(oscTopMainView.superview!.frame.height), fragControlView: \(fragControlView.frame.height), titleBarReservedSpaceView: \(titleBarReservedSpaceView.frame.height)")
-
   }
 
   // MARK: - Mouse / Trackpad events
@@ -1436,7 +1449,7 @@ class MainWindowController: PlayerWindowController {
       removeTopOverlayViewFromFadeableViews()
       topOverlayView.isHidden = true
     }
-    titleBarReservedSpaceView.isHidden = false
+    titleBarOverlayView.isHidden = false
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
     
@@ -1501,7 +1514,7 @@ class MainWindowController: PlayerWindowController {
 
     // show topOverlayView
     if oscPosition == .insideTop {
-      titleBarReservedSpaceView.isHidden = false
+      titleBarOverlayView.isHidden = false
     }
 
     thumbnailPeekView.isHidden = true
