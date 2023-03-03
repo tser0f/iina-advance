@@ -25,7 +25,7 @@ fileprivate let isMacOS11: Bool = {
  Note that we can't use this trick to get it from our window instance directly, because our window has the
  `fullSizeContentView` style and so its `frameRect` does not include any extra space for its title bar.
  */
-fileprivate let TitleBarHeight: CGFloat = {
+fileprivate let StandardTitleBarHeight: CGFloat = {
   // Probably doesn't matter what dimensions we pick for the dummy contentRect, but to be safe let's make them nonzero.
   let dummyContentRect = NSRect(x: 0, y: 0, width: 10, height: 10)
   let dummyFrameRect = NSWindow.frameRect(forContentRect: dummyContentRect, styleMask: .titled)
@@ -70,18 +70,18 @@ class MainWindowController: PlayerWindowController {
   /** For Force Touch. */
   let minimumPressDuration: TimeInterval = 0.5
 
-  lazy var titleBarWithTopOSCHeight: CGFloat = {
+  lazy var reducedTitleBarHeight: CGFloat = {
     if let heightOfCloseButton = window?.standardWindowButton(.closeButton)?.frame.height {
       // add 2 because button's bounds seems to be a bit larger than its visible size
-      return TitleBarHeight - ((TitleBarHeight - heightOfCloseButton) / 2 + 2)
+      return StandardTitleBarHeight - ((StandardTitleBarHeight - heightOfCloseButton) / 2 + 2)
     }
-    Logger.log("titleBarWithTopOSCHeight may be incorrect (could not get close button)", level: .error)
-    return TitleBarHeight
+    Logger.log("reducedTitleBarHeight may be incorrect (could not get close button)", level: .error)
+    return StandardTitleBarHeight
   }()
 
   /** Adjust vertical offset of sidebars so that when a sidebar is open while "top" OSC is shown,
    the horizontal line under the sidebar tab buttons aligns with bottom of the OSC. */
-  lazy var sidebarDownShift: CGFloat = titleBarWithTopOSCHeight - 11
+  lazy var sidebarDownShift: CGFloat = reducedTitleBarHeight - 11
 
   // MARK: - Objects, Views
 
@@ -452,18 +452,24 @@ class MainWindowController: PlayerWindowController {
   var titlebarAccesoryViewController: NSTitlebarAccessoryViewController!
   @IBOutlet var titlebarAccessoryView: NSView!
 
-  /** Current OSC view. */
+  /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
   var currentControlBar: NSView?
 
   @IBOutlet weak var sideBarRightConstraint: NSLayoutConstraint!
   @IBOutlet weak var sideBarWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
+  // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarOverlayHeightConstraint: NSLayoutConstraint!
-  @IBOutlet weak var fragControlViewMiddleButtons1Constraint: NSLayoutConstraint!
-  @IBOutlet weak var fragControlViewMiddleButtons2Constraint: NSLayoutConstraint!
+  // Size of each side of the square 3 playback buttons ⏪⏯️⏩ (Left Arrow, Play/Pause, Right Arrow):
+  @IBOutlet weak var playbackButtonSizeConstraint: NSLayoutConstraint!
+  // Scale of spacing around & between playback buttons:
+  // (1) 1x margin above and below buttons,
+  // (2) 2x margin to left and right of button group,
+  // (3) 4x spacing betwen buttons
+  @IBOutlet weak var playbackButtonMarginSizeConstraint: NSLayoutConstraint!
 
+  // Top-of-video overlay, may contain title bar and/or top OSC if configured:
   @IBOutlet weak var topOverlayView: NSVisualEffectView!
-  @IBOutlet weak var titleBarOverlayView: NSView!
   @IBOutlet weak var titleBarBottomBorder: NSBox!
   @IBOutlet weak var titlebarOnTopButton: NSButton!
 
@@ -760,13 +766,6 @@ class MainWindowController: PlayerWindowController {
       fadeableViews = fadeableViews.filter { $0 != cb }
     }
 
-    if isSwitchingToTop {
-      titleBarOverlayHeightConstraint.constant = titleBarWithTopOSCHeight
-    } else {
-      // Leave space only for title bar
-      titleBarOverlayHeightConstraint.constant = TitleBarHeight
-    }
-
     // reset
     ([controlBarFloating, controlBarBottom, oscTopMainView] as [NSView]).forEach { $0.isHidden = true }
 
@@ -775,12 +774,10 @@ class MainWindowController: PlayerWindowController {
       if let window = self.window as? MainWindow {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1
 //        topOverlayView.isHidden = false
-        titleBarOverlayView.isHidden = false
         window.titleVisibility = .visible
-//        addBackTitlebarViewToFadeableViews()
+//        addBackTopOverlayViewToFadeableViews()
       }
     } else { // HIDE title bar
-      titleBarOverlayView.isHidden = true
       if let window = self.window as? MainWindow {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1e-100
         window.titleVisibility = .hidden
@@ -805,17 +802,19 @@ class MainWindowController: PlayerWindowController {
 
     if isSwitchingToTop {
       if isInFullScreen {
-        addBackTitlebarViewToFadeableViews()
+        topOverlayView.isHidden = false
+        addBackTopOverlayViewToFadeableViews()
       }
       if isInFullScreen || !showTitleBar {
-        titleBarOverlayView.isHidden = true
+        titleBarOverlayHeightConstraint.constant = 0
       } else {
-        titleBarOverlayView.isHidden = false
+        titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
       }
       // Remove this if it's acceptable in 10.13-
       // titleBarBottomBorder.isHidden = true
     } else {
       // titleBarBottomBorder.isHidden = false
+      titleBarOverlayHeightConstraint.constant = StandardTitleBarHeight
     }
 
     if isSwitchingFromTop {
@@ -888,14 +887,12 @@ class MainWindowController: PlayerWindowController {
     showUI()
 
     if isFloating {
-      fragControlViewMiddleButtons1Constraint.constant = 24
-      fragControlViewMiddleButtons2Constraint.constant = 24
+      playbackButtonMarginSizeConstraint.constant = 6
       oscFloatingLeadingTrailingConstraint = NSLayoutConstraint.constraints(withVisualFormat: "H:|-(>=10)-[v]-(>=10)-|",
                                                                             options: [], metrics: nil, views: ["v": controlBarFloating as Any])
       NSLayoutConstraint.activate(oscFloatingLeadingTrailingConstraint!)
     } else {
-      fragControlViewMiddleButtons1Constraint.constant = 16
-      fragControlViewMiddleButtons2Constraint.constant = 16
+      playbackButtonMarginSizeConstraint.constant = 4
       if let constraints = oscFloatingLeadingTrailingConstraint {
         controlBarFloating.superview?.removeConstraints(constraints)
         oscFloatingLeadingTrailingConstraint = nil
@@ -1449,7 +1446,7 @@ class MainWindowController: PlayerWindowController {
       removeTopOverlayViewFromFadeableViews()
       topOverlayView.isHidden = true
     }
-    titleBarOverlayView.isHidden = false
+    titleBarOverlayHeightConstraint.constant = 0
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
     
@@ -1512,9 +1509,10 @@ class MainWindowController: PlayerWindowController {
       exitInteractiveMode(immediately: true)
     }
 
-    // show topOverlayView
     if oscPosition == .insideTop {
-      titleBarOverlayView.isHidden = false
+      titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
+    } else {
+      titleBarOverlayHeightConstraint.constant = StandardTitleBarHeight
     }
 
     thumbnailPeekView.isHidden = true
@@ -1538,9 +1536,7 @@ class MainWindowController: PlayerWindowController {
       // window. Restore it now.
       window!.setFrame(fsState.priorWindowedFrame!, display: true, animate: false)
     }
-    if oscPosition != .insideTop {
-      addBackTitlebarViewToFadeableViews()
-    }
+    addBackTopOverlayViewToFadeableViews()
     addBackStandardButtonsToFadeableViews()
     topOverlayView.isHidden = false
     showUI()
@@ -2221,7 +2217,7 @@ class MainWindowController: PlayerWindowController {
     fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
   }
 
-  private func addBackTitlebarViewToFadeableViews() {
+  private func addBackTopOverlayViewToFadeableViews() {
     fadeableViews.append(topOverlayView)
   }
 
@@ -2386,7 +2382,6 @@ class MainWindowController: PlayerWindowController {
     // larger than the content view if the display contains a camera housing. Use the lower of
     // the two heights.
     let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
-    Logger.log("ContentViewLayoutRectHeight: \(window!.contentLayoutRect.height), \(window!.contentView!.frame.height), TopOfThumbnail: \(topOfThumbnail) -> result: \(topOfThumbnail <= windowContentHeight)", level: .verbose)
     return topOfThumbnail <= windowContentHeight
   }
 

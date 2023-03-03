@@ -14,14 +14,14 @@ class ThumbnailPeekView: NSView {
 
   override func awakeFromNib() {
     self.wantsLayer = true
-    self.layer?.cornerRadius = 4
+    self.layer?.cornerRadius = 8
     self.layer?.masksToBounds = true
     // shadow is set in xib  // FIXME: shadow is broken
-    self.layer?.shadowRadius = 2
+    self.layer?.shadowRadius = 4
     self.layer?.borderWidth = 2
     self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
     self.imageView.wantsLayer = true
-    self.imageView.layer?.cornerRadius = 4
+    self.imageView.layer?.cornerRadius = 8
     self.imageView.layer?.masksToBounds = true
   }
 
