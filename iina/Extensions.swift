@@ -850,7 +850,7 @@ extension NSScrollView {
                                                           object: self.contentView, queue: .main) { note in
       if let clipView = note.object as? NSClipView {
         let scrollOffsetY = clipView.bounds.origin.y
-        Logger.log("Scroll offset: \(scrollOffsetY)", level: .verbose)
+//        Logger.log("Saving Y scroll offset \(key.rawValue.quoted): \(scrollOffsetY)", level: .verbose)
         Preference.UIState.set(scrollOffsetY, for: key)
       }
     }

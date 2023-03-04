@@ -2446,7 +2446,6 @@ class MainWindowController: PlayerWindowController {
     return topOfThumbnail <= windowContentHeight
   }
 
-  // MARK: WIP -------------------------------------------------------------------------
   /** Display time label when mouse over slider */
   private func updateTimeLabel(_ mouseXPos: CGFloat, originalPos: NSPoint) {
     let timeLabelXPos = round(mouseXPos + playSlider.frame.origin.x - timePreviewWhenSeek.frame.width / 2)
