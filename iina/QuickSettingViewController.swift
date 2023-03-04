@@ -91,8 +91,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   var observers: [NSObjectProtocol] = []
 
-  @IBOutlet weak var videoTabScrollView: NSScrollView!
-  @IBOutlet weak var videoTabContentViewWidthConstraint: NSLayoutConstraint!
+  @IBOutlet weak var tabHeightConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var videoTabBtn: NSButton!
   @IBOutlet weak var audioTabBtn: NSButton!
@@ -171,43 +170,27 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   private var pluginTabs: [String: SidebarTabView] = [:]
 
   internal var observedPrefKeys: [Preference.Key] = [
-    .titleBarLayout
   ]
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath else { return }
 
     switch keyPath {
-      case PK.titleBarLayout.rawValue:
-        refreshDownshiftFromTop()
       default:
         return
     }
   }
 
-  private func refreshDownshiftFromTop() {
-    let downShift: CGFloat
-    let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
-    let showTitleBar = titleBarLayout != .none
-    if showTitleBar {
-      downShift = mainWindow.sidebarDownShift
-      Logger.log("Set downShift to: \(downShift)", level: .verbose)
-    } else {
-      downShift = 0
-    }
-    buttonTopConstraint.constant = downShift
-  }
-
   override func viewDidLoad() {
     super.viewDidLoad()
-
-    refreshDownshiftFromTop()
 
     withAllTableViews { (view, _) in
       view.delegate = self
       view.dataSource = self
       view.superview?.superview?.layer?.cornerRadius = 4
     }
+
+    buttonTopConstraint.constant = mainWindow.sidebarSeparatorOffsetFromTop - tabHeightConstraint.constant
 
     // colors
     if #available(macOS 10.14, *) {

@@ -77,48 +77,38 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   private var playlistTotalLengthIsReady = false
   private var playlistTotalLength: Double? = nil
 
-  var useCompactTabHeight = false {
-    didSet {
-      tabHeightConstraint.constant = useCompactTabHeight ? 32 : 48
-    }
-  }
-
   internal var observedPrefKeys: [Preference.Key] = [
-    .titleBarLayout
   ]
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath else { return }
 
     switch keyPath {
-      case PK.titleBarLayout.rawValue:
-        refreshDownshiftFromTop()
       default:
         return
     }
   }
 
-  private func refreshDownshiftFromTop() {
-    let downShift: CGFloat
-    let titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
-    let showTitleBar = titleBarLayout != .none
-    if showTitleBar {
-      downShift = mainWindow.sidebarDownShift
-    } else {
-      downShift = 0
+  var useCompactTabHeight = false {
+    didSet {
+      updateTabHeightAndDownshift()
     }
-    buttonTopConstraint.constant = downShift
+  }
+
+  private func updateTabHeightAndDownshift() {
+    tabHeightConstraint.constant = useCompactTabHeight ? 32 : 48
+    buttonTopConstraint.constant = mainWindow.sidebarSeparatorOffsetFromTop - tabHeightConstraint.constant
   }
 
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    refreshDownshiftFromTop()
-
     withAllTableViews { (view) in
       view.dataSource = self
     }
     playlistTableView.menu?.delegate = self
+
+    updateTabHeightAndDownshift()
 
     [deleteBtn, loopBtn, shuffleBtn].forEach {
       $0?.image?.isTemplate = true

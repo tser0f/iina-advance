@@ -65,6 +65,7 @@
                 <outlet property="subTextSizePopUp" destination="xtF-tn-m9W" id="62h-S6-9gV"/>
                 <outlet property="switchHorizontalLine" destination="PyM-xa-vx9" id="LX2-Xa-lH4"/>
                 <outlet property="switchHorizontalLine2" destination="qYi-uQ-6qo" id="doE-zM-QU3"/>
+                <outlet property="tabHeightConstraint" destination="OsF-5u-ZcS" id="gdb-Hr-17C"/>
                 <outlet property="tabView" destination="udA-m2-eJb" id="zL4-73-AVP"/>
                 <outlet property="videoTabBtn" destination="Ma8-6g-tVw" id="d0g-Fi-gzz"/>
                 <outlet property="videoTableView" destination="rsV-qL-l7b" id="A8k-AU-noQ"/>

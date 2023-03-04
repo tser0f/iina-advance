@@ -79,9 +79,24 @@ class MainWindowController: PlayerWindowController {
     return StandardTitleBarHeight
   }()
 
+  // Preferred height for "full-width" OSCs (i.e. top and bottom, not floating)
+  let fullWidthOSCPreferredHeight: CGFloat = 44
+
+  // Size of playback button icon (W = H):
+  let playbackButtonSize: CGFloat = 24
+
+  /** Scale of spacing around & between playback buttons (for floating OSC):
+   (1) 1x margin above and below buttons,
+   (2) 2x margin to left and right of button group,
+   (3) 4x spacing betwen buttons
+   */
+  let playbackButtonMarginForFloatingOSC: CGFloat = 4
+  /** Scale of spacing around & between playback buttons (for top / bottom OSCs) */
+  let playbackButtonMarginForFullWidthOSC: CGFloat = 6
+
   /** Adjust vertical offset of sidebars so that when a sidebar is open while "top" OSC is shown,
    the horizontal line under the sidebar tab buttons aligns with bottom of the OSC. */
-  lazy var sidebarDownShift: CGFloat = reducedTitleBarHeight - 11
+  lazy var sidebarSeparatorOffsetFromTop: CGFloat = fullWidthOSCPreferredHeight + reducedTitleBarHeight
 
   // MARK: - Objects, Views
 
@@ -462,11 +477,9 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var titleBarOverlayHeightConstraint: NSLayoutConstraint!
   // Size of each side of the square 3 playback buttons ⏪⏯️⏩ (Left Arrow, Play/Pause, Right Arrow):
   @IBOutlet weak var playbackButtonSizeConstraint: NSLayoutConstraint!
-  // Scale of spacing around & between playback buttons:
-  // (1) 1x margin above and below buttons,
-  // (2) 2x margin to left and right of button group,
-  // (3) 4x spacing betwen buttons
   @IBOutlet weak var playbackButtonMarginSizeConstraint: NSLayoutConstraint!
+  @IBOutlet weak var topOSCPreferredHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var bottomOSCPreferredHeightConstraint: NSLayoutConstraint!
 
   // Top-of-video overlay, may contain title bar and/or top OSC if configured:
   @IBOutlet weak var topOverlayView: NSVisualEffectView!
@@ -607,6 +620,8 @@ class MainWindowController: PlayerWindowController {
     fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
     fadeableViews.append(topOverlayView)
     fadeableViews.append(titlebarAccessoryView)
+
+    playbackButtonSizeConstraint.constant = playbackButtonSize
 
     setupTitleBarAndOSC()
     let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
@@ -773,7 +788,6 @@ class MainWindowController: PlayerWindowController {
     if showTitleBar { // SHOW title bar
       if let window = self.window as? MainWindow {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1
-//        topOverlayView.isHidden = false
         window.titleVisibility = .visible
 //        addBackTopOverlayViewToFadeableViews()
       }
@@ -782,7 +796,6 @@ class MainWindowController: PlayerWindowController {
 //        window.standardWindowButton(.documentIconButton)!.alphaValue = 1e-100
         window.titleVisibility = .hidden
       }
-//      topOverlayView.isHidden = true
 //      removeTopOverlayViewFromFadeableViews()
     }
 
@@ -801,11 +814,11 @@ class MainWindowController: PlayerWindowController {
     let isInFullScreen = fsState.isFullscreen
 
     if isSwitchingToTop {
+      topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
+      bottomOSCPreferredHeightConstraint.constant = 0
       if isInFullScreen {
         topOverlayView.isHidden = false
         addBackTopOverlayViewToFadeableViews()
-      }
-      if isInFullScreen || !showTitleBar {
         titleBarOverlayHeightConstraint.constant = 0
       } else {
         titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
@@ -815,6 +828,8 @@ class MainWindowController: PlayerWindowController {
     } else {
       // titleBarBottomBorder.isHidden = false
       titleBarOverlayHeightConstraint.constant = StandardTitleBarHeight
+      topOSCPreferredHeightConstraint.constant = 0
+      bottomOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
     }
 
     if isSwitchingFromTop {
@@ -887,12 +902,12 @@ class MainWindowController: PlayerWindowController {
     showUI()
 
     if isFloating {
-      playbackButtonMarginSizeConstraint.constant = 6
+      playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFloatingOSC
       oscFloatingLeadingTrailingConstraint = NSLayoutConstraint.constraints(withVisualFormat: "H:|-(>=10)-[v]-(>=10)-|",
                                                                             options: [], metrics: nil, views: ["v": controlBarFloating as Any])
       NSLayoutConstraint.activate(oscFloatingLeadingTrailingConstraint!)
     } else {
-      playbackButtonMarginSizeConstraint.constant = 4
+      playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFullWidthOSC
       if let constraints = oscFloatingLeadingTrailingConstraint {
         controlBarFloating.superview?.removeConstraints(constraints)
         oscFloatingLeadingTrailingConstraint = nil
@@ -991,6 +1006,7 @@ class MainWindowController: PlayerWindowController {
         hideSideBar()
         return
       }
+
       if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [topOverlayView]) {
         let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
         if userDefault == "Minimize" {
@@ -1445,7 +1461,11 @@ class MainWindowController: PlayerWindowController {
       // stop animation and hide topOverlayView
       removeTopOverlayViewFromFadeableViews()
       topOverlayView.isHidden = true
+      // stop animation and hide topOverlayView
+      removeTopOverlayViewFromFadeableViews()
+      topOverlayView.isHidden = true
     }
+    titleBarOverlayHeightConstraint.constant = 0
     titleBarOverlayHeightConstraint.constant = 0
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
@@ -2361,6 +2381,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  // TODO: fix typo: 'timnePreviewYPos'
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..
   ///
   /// Normally the OSC's thumbnail preview is shown above the time preview. This is the preferred location. However the
