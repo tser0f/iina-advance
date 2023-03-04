@@ -660,7 +660,6 @@ class MainWindowController: PlayerWindowController {
     updateBufferIndicatorView()
 
     // thumbnail peek view
-    window.contentView?.addSubview(thumbnailPeekView)
     thumbnailPeekView.isHidden = true
 
     // other initialization
