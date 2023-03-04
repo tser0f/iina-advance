@@ -163,6 +163,15 @@ class PlayerCore: NSObject {
     isInMiniPlayer ? miniPlayer.isPlaylistVisible : mainWindow.sideBarStatus == .playlist
   }
 
+  var isOnlyOpenPlayer: Bool {
+    for player in PlayerCore.playerCores {
+      if player != self && player.mainWindow.isOpen {
+        return false
+      }
+    }
+    return true
+  }
+
   /// The A loop point established by the [mpv](https://mpv.io/manual/stable/) A-B loop command.
   var abLoopA: Double {
     /// Returns the value of the A loop point, a timestamp in seconds if set, otherwise returns zero.
@@ -266,7 +275,7 @@ class PlayerCore: NSObject {
     }
     info.hdrEnabled = Preference.bool(for: .enableHdrSupport)
     let path = isNetwork ? url.absoluteString : url.path
-    openMainWindow(path: path, url: url, isNetwork: isNetwork)
+    openMainWindow(path: path, url: url)
   }
 
   /**
@@ -325,7 +334,7 @@ class PlayerCore: NSObject {
 
   func openURLString(_ str: String) {
     if str == "-" {
-      openMainWindow(path: str, url: URL(string: "stdin")!, isNetwork: false)
+      openMainWindow(path: str, url: URL(string: "stdin")!)
       return
     }
     if str.first == "/" {
@@ -339,21 +348,11 @@ class PlayerCore: NSObject {
     }
   }
 
-  func isOnlyOpenPlayer() -> Bool {
-    for player in PlayerCore.playerCores {
-      if player != self && player.mainWindow.isOpen {
-        return false
-      }
-    }
-    return true
-  }
-
-  private func openMainWindow(path: String, url: URL, isNetwork: Bool) {
+  private func openMainWindow(path: String, url: URL) {
     Logger.log("Opening in main window: \(path.quoted)", subsystem: subsystem)
     info.currentURL = url
     // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
     info.currentFolder = nil
-    info.isNetworkResource = isNetwork
 
     let isFirstLoad = !mainWindow.loaded
     let _ = mainWindow.window
@@ -785,7 +784,7 @@ class PlayerCore: NSObject {
       name = MPVOption.Subtitles.secondarySid
     }
     mpv.setInt(name, index)
-    getSelectedTracks()
+    reloadSelectedTracks()
   }
 
   /** Set speed. */
@@ -944,7 +943,7 @@ class PlayerCore: NSObject {
         }
       }
     }
-    getTrackInfo()
+    reloadTrackInfo()
     if let currentSub = info.subTracks.first(where: {$0.externalFilename == currentSubName}) {
       setTrack(currentSub.id, forType: .sub)
     }
@@ -980,7 +979,7 @@ class PlayerCore: NSObject {
   }
 
   func addToPlaylist(paths: [String], at index: Int = -1) {
-    getPlaylist()
+    reloadPlaylist()
     for path in paths {
       _addToPlaylist(path)
     }
@@ -1023,12 +1022,12 @@ class PlayerCore: NSObject {
     info.justOpenedFile = true
     info.shouldAutoLoadFiles = true
     mpv.command(.loadfile, args: [path, "replace"])
-    getPlaylist()
+    reloadPlaylist()
   }
 
   func playFileInPlaylist(_ pos: Int) {
     mpv.setInt(MPVProperty.playlistPos, pos)
-    getPlaylist()
+    reloadPlaylist()
   }
 
   func navigateInPlaylist(nextMedia: Bool) {
@@ -1379,7 +1378,6 @@ class PlayerCore: NSObject {
     info.currentURL = path.contains("://") ?
       URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
       URL(fileURLWithPath: path)
-    info.isNetworkResource = !info.currentURL!.isFileURL
 
     // set "date last opened" attribute
     if let url = info.currentURL, url.isFileURL {
@@ -1444,15 +1442,15 @@ class PlayerCore: NSObject {
     isStopped = false
 
     // Kick off thumbnails load/gen - it can happen in background
-    refreshThumbnailsForPlayer()
+    reloadThumbnails()
 
     checkUnsyncedWindowOptions()
     // call `trackListChanged` to load tracks and check whether need to switch to music mode
     trackListChanged()
     // main thread stuff
     DispatchQueue.main.sync {
-      getPlaylist()
-      getChapters()
+      reloadPlaylist()
+      reloadChapters()
       syncAbLoop()
       createSyncUITimer()
       if #available(macOS 10.12.2, *) {
@@ -1501,8 +1499,8 @@ class PlayerCore: NSObject {
     // Must not process track list changes if mpv is terminating.
     guard !isShuttingDown else { return }
     Logger.log("Track list changed", subsystem: subsystem)
-    getTrackInfo()
-    getSelectedTracks()
+    reloadTrackInfo()
+    reloadSelectedTracks()
     let audioStatusWasUnkownBefore = currentMediaIsAudio == .unknown
     currentMediaIsAudio = checkCurrentMediaIsAudio()
     let audioStatusIsAvailableNow = currentMediaIsAudio != .unknown && audioStatusWasUnkownBefore
@@ -1771,7 +1769,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  func refreshThumbnailsForPlayer() {
+  func reloadThumbnails() {
     Logger.log("Getting thumbnails", subsystem: subsystem)
     info.thumbnailsReady = false
     info.thumbnails.removeAll(keepingCapacity: true)
@@ -1826,7 +1824,7 @@ class PlayerCore: NSObject {
 
   // MARK: - Getting info
 
-  func getTrackInfo() {
+  func reloadTrackInfo() {
     info.audioTracks.removeAll(keepingCapacity: true)
     info.videoTracks.removeAll(keepingCapacity: true)
     info.subTracks.removeAll(keepingCapacity: true)
@@ -1868,14 +1866,14 @@ class PlayerCore: NSObject {
     }
   }
 
-  func getSelectedTracks() {
+  private func reloadSelectedTracks() {
     info.aid = mpv.getInt(MPVOption.TrackSelection.aid)
     info.vid = mpv.getInt(MPVOption.TrackSelection.vid)
     info.sid = mpv.getInt(MPVOption.TrackSelection.sid)
     info.secondSid = mpv.getInt(MPVOption.Subtitles.secondarySid)
   }
 
-  func getPlaylist() {
+  func reloadPlaylist() {
     info.playlist.removeAll()
     let playlistCount = mpv.getInt(MPVProperty.playlistCount)
     for index in 0..<playlistCount {
@@ -1887,7 +1885,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  func getChapters() {
+  func reloadChapters() {
     info.chapters.removeAll()
     let chapterCount = mpv.getInt(MPVProperty.chapterListCount)
     if chapterCount == 0 {
@@ -2098,6 +2096,7 @@ extension PlayerCore: FFmpegControllerDelegate {
     }
     Logger.log("Got \(thumbnails?.count ?? 0) more \(width)px thumbs (\(info.thumbnails.count) so far), progress: \(progress) / \(targetCount)", subsystem: subsystem)
     info.thumbnailsProgress = Double(progress) / Double(targetCount)
+    // TODO: this call is currently unnecessary. But should add code to make thumbnails displayable as they come in.
     refreshTouchBarSlider()
   }
 

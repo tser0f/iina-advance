@@ -20,7 +20,7 @@ import JavaScriptCore
   func seek(_ seconds: Double, _ exact: Bool)
   func seekTo(_ seconds: Double)
   func setSpeed(_ speed: Double)
-  func getChapters() -> [[String: Any]]
+  func reloadChapters() -> [[String: Any]]
   func playChapter(index: Int)
   func setUIVisibility(_ visible: Bool)
   func getHistory() -> Any
@@ -89,8 +89,8 @@ class JavascriptAPICore: JavascriptAPI, JavascriptAPICoreExportable {
     player!.setSpeed(speed)
   }
 
-  func getChapters() -> [[String: Any]] {
-    player!.getChapters()
+  func reloadChapters() -> [[String: Any]] {
+    player!.reloadChapters()
     return player!.info.chapters.map{
       ["title": $0.title, "start": $0.time.second]
     }

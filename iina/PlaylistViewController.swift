@@ -176,11 +176,11 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   func reloadData(playlist: Bool, chapters: Bool) {
     if playlist {
-      player.getPlaylist()
+      player.reloadPlaylist()
       playlistTableView.reloadData()
     }
     if chapters {
-      player.getChapters()
+      player.reloadChapters()
       chapterTableView.reloadData()
     }
   }

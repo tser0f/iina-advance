@@ -22,6 +22,7 @@ class PlaybackInfo {
     case bSet
   }
 
+  // FIXME: get this out of here
   unowned let player: PlayerCore
 
   init(_ pc: PlayerCore) {
@@ -39,11 +40,15 @@ class PlaybackInfo {
     didSet {
       if let url = currentURL {
         mpvMd5 = Utility.mpvWatchLaterMd5(url.path)
+        isNetworkResource = !url.isFileURL
       } else {
         mpvMd5 = nil
+        isNetworkResource = false
       }
     }
   }
+
+  // Derived from currentURL:
   var currentFolder: URL?
   var isNetworkResource: Bool = false
   var mpvMd5: String?
@@ -72,6 +77,7 @@ class PlaybackInfo {
   var isSeeking: Bool = false
 
   var isPaused: Bool = false {
+    // FIXME: get this out of here
     didSet {
       PlayerCore.checkStatusForSleep()
       if player == PlayerCore.lastActive {

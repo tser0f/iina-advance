@@ -388,13 +388,13 @@ class MainWindowController: PlayerWindowController {
           if newValue == Preference.integer(for: .thumbnailWidth) && newValue != self.player.info.thumbnailWidth {
             Logger.log("Pref \(Preference.Key.thumbnailWidth.rawValue.quoted) changed to \(newValue)px: requesting thumbs regen",
                        subsystem: self.player.subsystem)
-            self.player.refreshThumbnailsForPlayer()
+            self.player.reloadThumbnails()
           }
         }
       }
     case PK.enableThumbnailPreview.rawValue, PK.enableThumbnailForRemoteFiles.rawValue:
       // May need to remove thumbs or generate new ones: let method below figure it out:
-      self.player.refreshThumbnailsForPlayer()
+      self.player.reloadThumbnails()
         
     case PK.showChapterPos.rawValue:
       if let newValue = change[.newKey] as? Bool {
@@ -1409,7 +1409,7 @@ class MainWindowController: PlayerWindowController {
 
     // Check whether this is the last player closed; show welcome or history window if configured.
     // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
-    if let app = (NSApp.delegate as? AppDelegate), !app.isTerminating && player.isOnlyOpenPlayer() {
+    if let app = (NSApp.delegate as? AppDelegate), !app.isTerminating && player.isOnlyOpenPlayer {
       Logger.log("Window was last player window open", level: .verbose, subsystem: player.subsystem)
       if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {
 

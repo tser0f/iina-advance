@@ -1327,7 +1327,6 @@ class MPVController: NSObject {
           player.errorOpeningFileAndCloseMainWindow()
           player.info.fileLoading = false
           player.info.currentURL = nil
-          player.info.isNetworkResource = false
         }
         player.info.isIdle = true
         if fileLoaded {
