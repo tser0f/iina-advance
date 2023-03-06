@@ -263,6 +263,10 @@ class PlayerCore: NSObject {
 
   // MARK: - Control
 
+  func restoreSavedWindowState() {
+
+  }
+
   private func open(_ url: URL?, shouldAutoLoad: Bool = false) {
     guard let url = url else {
       Logger.log("empty file path or url", level: .error, subsystem: subsystem)
@@ -1794,23 +1798,23 @@ class PlayerCore: NSObject {
       return
     }
     
-    let width = Preference.integer(for: .thumbnailWidth)
-    info.thumbnailWidth = width
-    if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: width) {
-      Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(width)px", subsystem: subsystem)
+    let thumbWidth = Preference.integer(for: .thumbnailWidth)
+    info.thumbnailWidth = thumbWidth
+    if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
+      Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
       thumbnailQueue.async {
-        if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: width) {
+        if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: thumbWidth) {
           self.info.thumbnails = thumbnails
           self.info.thumbnailsReady = true
           self.info.thumbnailsProgress = 1
           self.refreshTouchBarSlider()
         } else {
-          Logger.log("Cannot read thumbnails from cache \(cacheName.quoted), width \(width)px", level: .error, subsystem: self.subsystem)
+          Logger.log("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px", level: .error, subsystem: self.subsystem)
         }
       }
     } else {
-      Logger.log("Generating new thumbnails for file \(url.path.quoted), width=\(width)", subsystem: subsystem)
-      ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(width))
+      Logger.log("Generating new thumbnails for file \(url.path.quoted), width=\(thumbWidth)", subsystem: subsystem)
+      ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
     }
   }
 

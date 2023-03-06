@@ -61,7 +61,13 @@ class PlaybackInfo {
 
   // Is refreshed as property change events arrive for `MPVOption.Video.videoRotate` ("video-rotate").
   // Not to be confused with the `MPVProperty.videoParamsRotate` ("video-params/rotate")
-  var rotation: Int = 0
+  var userRotation: Int = 0
+
+  // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
+  // IINA only supports one of [0, 90, 180, 270]
+  lazy var intendedRotation: Int = {
+    return player.mpv.getInt(MPVProperty.videoParamsRotate)
+  }()
 
   var videoPosition: VideoTime?
   var videoDuration: VideoTime?

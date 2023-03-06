@@ -55,10 +55,6 @@ class VideoView: NSView {
     return true
   }
 
-  override var isOpaque: Bool {
-    return true
-  }
-
   // MARK: - Init
 
   override init(frame: CGRect) {
@@ -110,9 +106,9 @@ class VideoView: NSView {
     }
   }
 
-  override func draw(_ dirtyRect: NSRect) {
-    // do nothing
-  }
+//  override func draw(_ dirtyRect: NSRect) {
+//    // do nothing
+//  }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
     return Preference.bool(for: .videoViewAcceptsFirstMouse)
@@ -228,7 +224,11 @@ class VideoView: NSView {
     let displayId = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
 
     // Do nothing if on the same display
-    if (currentDisplay == displayId) { return }
+    if (currentDisplay == displayId) {
+      Logger.log("No need to update DisplayLink; currentDisplayID (\(displayId)) is unchanged", level: .verbose)
+      return
+    }
+    Logger.log("Updating DisplayLink for display: \(displayId)", level: .verbose)
     currentDisplay = displayId
 
     CVDisplayLinkSetCurrentCGDisplay(link, displayId)
@@ -312,6 +312,8 @@ extension VideoView {
     guard let displayId = currentDisplay else { return };
     if let screen = self.window?.screen {
       NSScreen.log("Refreshing HDR for \(player.subsystem.rawValue) @ display\(displayId)", screen)
+    } else {
+      Logger.log("Refreshing HDR for \(player.subsystem.rawValue)", level: .verbose)
     }
     let edrEnabled = requestEdrMode()
     let edrAvailable = edrEnabled != false

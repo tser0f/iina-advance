@@ -994,11 +994,6 @@ class MPVController: NSObject {
     }
   }
 
-  private func onVideoParamsChange(_ data: UnsafePointer<mpv_node_list>) {
-    //let params = data.pointee
-    //params.keys.
-  }
-
   private func onFileLoaded() {
     // mpvSuspend()
     setFlag(MPVOption.PlaybackControl.pause, true)
@@ -1010,6 +1005,8 @@ class MPVController: NSObject {
     let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
     let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
     Logger.log("Got info for opened file. Video:{ size: \(width)x\(height), rot: \(mpvParamRotate) + \(mpvVideoRotate) }, Loc(sec): \(position) / \(duration)")
+    player.info.intendedRotation = mpvParamRotate
+    player.info.userRotation = mpvVideoRotate
     player.info.videoHeight = height
     player.info.videoWidth = width
     player.info.displayWidth = 0
@@ -1037,10 +1034,10 @@ class MPVController: NSObject {
     var dheight = getInt(MPVProperty.dheight)
     let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
     let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
-    if player.info.rotation == 90 || player.info.rotation == 270 {
+    if player.info.userRotation == 90 || player.info.userRotation == 270 {
       swap(&dwidth, &dheight)
     }
-    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) + \(mpvVideoRotate)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) + \(mpvVideoRotate)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.userRotation)°)", level: .verbose, subsystem: player.subsystem)
     if dwidth != player.info.displayWidth! || dheight != player.info.displayHeight! {
       // filter the last video-reconfig event before quit
       if dwidth == 0 && dheight == 0 && getFlag(MPVProperty.coreIdle) { return }
@@ -1065,12 +1062,13 @@ class MPVController: NSObject {
     case MPVProperty.videoParams:
       Logger.log("Got mpv prop: \(MPVProperty.videoParams.quoted)", level: .verbose, subsystem: player.subsystem)
       needReloadQuickSettingsView = true
-      onVideoParamsChange(UnsafePointer<mpv_node_list>(OpaquePointer(property.data)))
 
     case MPVProperty.videoParamsRotate:
-      if let rotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
-        Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(rotation)", level: .verbose, subsystem: player.subsystem)
-        player.mainWindow.rotation = rotation
+        /** `video-params/rotate: Intended display rotation in degrees (clockwise).` - mpv manual
+         Do not confuse with the user-configured `video-params` (above) */
+      if let intendedRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
+        Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(intendedRotation)", level: .verbose, subsystem: player.subsystem)
+        player.info.intendedRotation = intendedRotation
       }
 
     case MPVProperty.videoParamsPrimaries:
@@ -1175,9 +1173,9 @@ class MPVController: NSObject {
       guard let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee else {
         break
       }
-      let rotation = Int(data)
-      Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(rotation)", level: .verbose, subsystem: player.subsystem)
-      player.info.rotation = rotation
+      let userRotation = Int(data)
+      Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)", level: .verbose, subsystem: player.subsystem)
+      player.info.userRotation = userRotation
       if self.player.mainWindow.loaded {
         DispatchQueue.main.async {
           // FIXME: this isn't perfect - a bad frame briefly appears during transition

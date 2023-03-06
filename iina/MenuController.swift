@@ -317,7 +317,7 @@ class MenuController: NSObject, NSMenuDelegate {
     // -- rotation
     let rotationTitles = AppData.rotations.map { "\($0)\(Constants.String.degree)" }
     bind(menu: rotationMenu, withOptions: rotationTitles, objects: AppData.rotations, objectMap: nil, action: #selector(PlayerWindowController.menuChangeRotation(_:))) {
-      PlayerCore.active.info.rotation == $0.representedObject as? Int
+      PlayerCore.active.info.userRotation == $0.representedObject as? Int
     }
 
     // -- flip and mirror

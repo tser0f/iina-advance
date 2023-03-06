@@ -139,12 +139,6 @@ class MainWindowController: PlayerWindowController {
   // Current rotation of videoView
   private var cgCurrentRotationDegrees: CGFloat = 0
 
-  // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
-  // IINA only supports one of [0, 90, 180, 270]
-  lazy var rotation: Int = {
-    return player.mpv.getInt(MPVProperty.videoParamsRotate)
-  }()
-
   // MARK: - Status
 
   override var isOntop: Bool {
@@ -424,7 +418,7 @@ class MainWindowController: PlayerWindowController {
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
         if fsState.isFullscreen {
-          newValue ? blackOutOtherMonitors() : removeBlackWindow()
+          newValue ? blackOutOtherMonitors() : removeBlackWindows()
         }
       }
     case PK.useLegacyFullScreen.rawValue:
@@ -697,10 +691,15 @@ class MainWindowController: PlayerWindowController {
 
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
       // This observer handles a situation that the user connected a new screen or removed a screen
+
+      // FIXME: this also handles the case where existing screen was resized, including if the Dock was shown/hidden!
+      // Need to update window sizes accordingly
+
+      // FIXME: Change to use displayIDs as VideoView does. Scren count alone should not be relied upon
       let screenCount = NSScreen.screens.count
       Logger.log("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screen count was: \(self.cachedScreenCount), is now: \(screenCount)", subsystem: player.subsystem)
       if self.fsState.isFullscreen && Preference.bool(for: .blackOutMonitor) && self.cachedScreenCount != screenCount {
-        self.removeBlackWindow()
+        self.removeBlackWindows()
         self.blackOutOtherMonitors()
       }
       // Update the cached value
@@ -1305,8 +1304,8 @@ class MainWindowController: PlayerWindowController {
         }
 
         // Snap to one of the 4 quarter circle rotations
-        let mpvNewRotation = (player.info.rotation + mpvClosestQuarterRotation) %% 360
-        Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(player.info.rotation)°) → new rotation will be \(mpvNewRotation)°")
+        let mpvNewRotation = (player.info.userRotation + mpvClosestQuarterRotation) %% 360
+        Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(player.info.userRotation)°) → new rotation will be \(mpvNewRotation)°")
         // Need to convert snap-to location back to CG, to feed to animation
         let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
                                                            equalToMpvRotation: mpvClosestQuarterRotation)
@@ -1609,7 +1608,7 @@ class MainWindowController: PlayerWindowController {
     fsState.finishAnimating()
 
     if Preference.bool(for: .blackOutMonitor) {
-      removeBlackWindow()
+      removeBlackWindows()
     }
 
     if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
@@ -1868,7 +1867,6 @@ class MainWindowController: PlayerWindowController {
   }
   
   override func windowDidChangeScreen(_ notification: Notification) {
-    Logger.log("windowDidChangeScreen()", level: .verbose, subsystem: player.subsystem)
     super.windowDidChangeScreen(notification)
 
     player.events.emit(.windowScreenChanged)
@@ -1914,7 +1912,7 @@ class MainWindowController: PlayerWindowController {
   override func windowDidResignMain(_ notification: Notification) {
     super.windowDidResignMain(notification)
     if Preference.bool(for: .blackOutMonitor) {
-      removeBlackWindow()
+      removeBlackWindows()
     }
     player.events.emit(.windowMainStatusChanged, data: false)
   }
@@ -2458,17 +2456,20 @@ class MainWindowController: PlayerWindowController {
 
     guard let duration = player.info.videoDuration else { return }
     let previewTime = duration * percentage
-    Logger.log("Setting seek time indicator to: \(previewTime.stringRepresentation)")
+    guard timePreviewWhenSeek.stringValue != previewTime.stringRepresentation else { return }
+
+    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
     if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image {
-      thumbnailPeekView.imageView.image = image.rotate(rotation)
+      let imageToDisplay = image.rotate(player.info.intendedRotation)
+      thumbnailPeekView.imageView.image = imageToDisplay
       thumbnailPeekView.isHidden = false
 
-      let thumbWidth = CGFloat(player.info.thumbnailWidth)
-      let thumbHeight = round(thumbWidth / thumbnailPeekView.imageView.image!.size.aspect)
-      thumbnailPeekView.frame.size = NSSize(width: thumbWidth, height: thumbHeight)
-
+      let thumbWidth = imageToDisplay.size.width
+      let thumbHeight = imageToDisplay.size.height
+      thumbnailPeekView.frame.size = imageToDisplay.size
+      Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
       let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
       let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
       let thumbOriginY: CGFloat
@@ -2587,7 +2588,7 @@ class MainWindowController: PlayerWindowController {
 
     let (width, height) = player.videoSizeForDisplay
     if width != player.info.displayWidth || height != player.info.displayHeight {
-      Logger.log("adjustFrameByVideoSize: videoSizeForDisplay (W: \(width), H: \(height)) does not match PlayerInfo (W: \(player.info.displayWidth!), H: \(player.info.displayHeight!) Rot: \(player.info.rotation)°)", level: .error)
+      Logger.log("adjustFrameByVideoSize: videoSizeForDisplay (W: \(width), H: \(height)) does not match PlayerInfo (W: \(player.info.displayWidth!), H: \(player.info.displayHeight!) Rot: \(player.info.userRotation)°)", level: .error)
     }
 
     // set aspect ratio
@@ -2764,13 +2765,15 @@ class MainWindowController: PlayerWindowController {
       blackWindows.append(blackWindow)
       blackWindow.makeKeyAndOrderFront(nil)
     }
+    Logger.log("Added black windows for \(screens.count); total is now: \(blackWindows.count)", level: .verbose)
   }
 
-  private func removeBlackWindow() {
+  private func removeBlackWindows() {
     for window in blackWindows {
       window.orderOut(self)
     }
     blackWindows = []
+    Logger.log("Removed all black windows", level: .verbose)
   }
 
   override func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {

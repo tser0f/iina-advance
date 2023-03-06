@@ -382,8 +382,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           showOpenURLWindow(isAlternativeAction: false)
         case Constants.WindowAutosaveName.inspector:
           showInspectorWindow()
-        // TODO: Player
         default:
+          if let playerNumber = parseNumberFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
+
+          }
           break
       }
     }
@@ -394,6 +396,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       Logger.log("Looks like none of the windows was restored successfully. Falling back to user launch preference")
       doConfiguredActionAfterLaunch()
     }
+  }
+
+  private func parseNumberFromMatchingWindowName(autosaveName: String, mustStartWith prefix: String) -> String? {
+    if autosaveName.starts(with: prefix) {
+      let splitted = autosaveName.split(separator: "-")
+      if splitted.count == 2 {
+        return String(splitted[1])
+      }
+    }
+    return nil
   }
 
   private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {

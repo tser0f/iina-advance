@@ -266,7 +266,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       // Select last segment ("Custom...")
       cropSegment.selectedSegment = cropSegment.segmentCount - 1
     }
-    rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.rotation) ?? -1)
+    rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.userRotation) ?? -1)
 
     deinterlaceSwitch.checked = player.info.deinterlace
     deinterlaceSwitch.action = {
