@@ -1805,12 +1805,25 @@ class PlayerCore: NSObject {
       Logger.log("Failed to generate thumbnails: video height and/or width not present in playback info", level: .error, subsystem: subsystem)
       return
     }
+    // We want requested size to correspond to the larger video dimension
     let thumbWidth: Int
     if videoHeight > videoWidth {
-      thumbWidth = Int(Float(requestedWidth) * (Float(videoHeight) / Float(videoWidth)))
+      // Match requested size to video height
+      if requestedWidth > videoHeight {
+        // Do not go bigger than video's native width
+        thumbWidth = videoWidth
+      } else {
+        thumbWidth = Int(Float(requestedWidth) * (Float(videoHeight) / Float(videoWidth)))
+      }
       Logger.log("Video's height is greater than its width: adjusting thumbnail width from \(requestedWidth) to \(thumbWidth)", subsystem: subsystem)
     } else {
-      thumbWidth = requestedWidth
+      // Match requested size to video width
+      if requestedWidth > videoWidth {
+        // Do not go bigger than video's native width
+        thumbWidth = videoWidth
+      } else {
+        thumbWidth = requestedWidth
+      }
     }
     info.thumbnailWidth = thumbWidth
     if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
