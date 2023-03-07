@@ -78,7 +78,7 @@
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
-                    <visualEffectView hidden="YES" blendingMode="behindWindow" material="headerView" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="Nrz-jZ-Luf" userLabel="PIP-Overlay View">
+                    <visualEffectView hidden="YES" blendingMode="behindWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Nrz-jZ-Luf" userLabel="PIP-Overlay View">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                         <subviews>
                             <imageView wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="YkI-ii-zaW">
@@ -101,7 +101,7 @@
                             <constraint firstItem="YkI-ii-zaW" firstAttribute="centerY" secondItem="Nrz-jZ-Luf" secondAttribute="centerY" id="hhc-1u-xpc"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView hidden="YES" wantsLayer="YES" horizontalCompressionResistancePriority="250" blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="Qbi-jx-9pO" userLabel="Additional-Info View">
+                    <visualEffectView hidden="YES" wantsLayer="YES" horizontalCompressionResistancePriority="250" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Qbi-jx-9pO" userLabel="Additional-Info View">
                         <rect key="frame" x="477" y="253" width="155" height="67"/>
                         <subviews>
                             <stackView distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="HJv-RK-JT8">
@@ -190,7 +190,7 @@
                             <constraint firstItem="HJv-RK-JT8" firstAttribute="trailing" secondItem="3uh-OF-zy6" secondAttribute="trailing" id="m0K-bE-aKW"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="oX4-0N-but" userLabel="Buffer-Indicator View">
+                    <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="oX4-0N-but" userLabel="Buffer-Indicator View">
                         <rect key="frame" x="240" y="152" width="160" height="96"/>
                         <subviews>
                             <progressIndicator wantsLayer="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" maxValue="100" bezeled="NO" indeterminate="YES" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="uZe-PA-1Id">
@@ -230,7 +230,7 @@
                             <constraint firstItem="2gH-wF-EpI" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="oX4-0N-but" secondAttribute="leading" id="ufO-Jb-vdH"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="g0O-v5-RQj" userLabel="OSD View">
+                    <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="g0O-v5-RQj" userLabel="OSD View">
                         <rect key="frame" x="8" y="250" width="193" height="70"/>
                         <subviews>
                             <stackView orientation="vertical" alignment="leading" spacing="2" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="g0j-zS-jKv">
@@ -275,7 +275,7 @@
                             <constraint firstAttribute="trailing" secondItem="g0j-zS-jKv" secondAttribute="trailing" constant="16" id="WKr-7v-aYn"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="headerView" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-of-video Overlay View">
+                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-of-video Overlay View">
                         <rect key="frame" x="0.0" y="328" width="640" height="72"/>
                         <subviews>
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="TitleBar Overlay View">
@@ -323,7 +323,7 @@
                             <constraint firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="bottom" id="xMQ-WC-fps"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView blendingMode="withinWindow" material="underWindowBackground" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="Bottom-of-video Overlay View">
+                    <visualEffectView blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="Bottom-of-video Overlay View">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="44"/>
                         <subviews>
                             <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Qmi-hb-0aM" userLabel="Bottom OSC Stack View">
@@ -367,7 +367,7 @@
                             <outlet property="yConstraint" destination="cRP-R4-zYY" id="kxT-61-1SZ"/>
                         </connections>
                     </visualEffectView>
-                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="epo-S6-QVB" userLabel="Sidebar View">
+                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="epo-S6-QVB" userLabel="Sidebar View">
                         <rect key="frame" x="640" y="0.0" width="240" height="400"/>
                         <constraints>
                             <constraint firstAttribute="width" constant="240" id="1BL-aP-tHS"/>

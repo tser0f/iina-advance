@@ -666,7 +666,9 @@ class MainWindowController: PlayerWindowController {
       topOverlayBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     }
     cachedScreenCount = NSScreen.screens.count
-    [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView, osdVisualEffectView, pipOverlayView].forEach {
+    // Do not make visual effects views opaque when window loses focus
+    [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView,
+     osdVisualEffectView, pipOverlayView, bufferIndicatorView].forEach {
       $0?.state = .active
     }
     // hide other views
