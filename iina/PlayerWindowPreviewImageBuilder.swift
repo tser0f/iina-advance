@@ -178,7 +178,7 @@ class PlayerWindowPreviewImageBuilder {
       NSGraphicsContext.restoreGraphicsState()
     }
 
-    var outputImage = NSImage(size: CGSize(width: width, height: height))
+    let outputImage = NSImage(size: CGSize(width: width, height: height))
     // Create the CGImage from the contents of the bitmap context.
     outputImage.addRepresentation(compositeImageRep)
 

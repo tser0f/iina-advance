@@ -837,7 +837,8 @@ extension NSScrollView {
     if Preference.bool(for: .keepLastUIState) {
       if let offsetY: Double = Preference.value(for: key) as? Double {
         Logger.log("Restoring vertical scroll to: \(offsetY)", level: .verbose)
-        self.contentView.scroll(NSPoint(x: 0, y: offsetY))
+        // Note: *MUST* use scroll(to:), not scroll(_)! Weird that the latter doesn't always work
+        self.contentView.scroll(to: NSPoint(x: 0, y: offsetY))
         return true
       }
     }
@@ -850,7 +851,7 @@ extension NSScrollView {
                                                           object: self.contentView, queue: .main) { note in
       if let clipView = note.object as? NSClipView {
         let scrollOffsetY = clipView.bounds.origin.y
-//        Logger.log("Saving Y scroll offset \(key.rawValue.quoted): \(scrollOffsetY)", level: .verbose)
+        Logger.log("Saving Y scroll offset \(key.rawValue.quoted): \(scrollOffsetY)", level: .verbose)
         Preference.UIState.set(scrollOffsetY, for: key)
       }
     }
