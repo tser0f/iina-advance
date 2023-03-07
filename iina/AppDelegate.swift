@@ -271,8 +271,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     if !commandLineStatus.isCommandLine {
-      // check whether showing the welcome window after 0.1s
-      Timer.scheduledTimer(timeInterval: TimeInterval(0.1), target: self, selector: #selector(self.checkForShowingInitialWindow), userInfo: nil, repeats: false)
+      /** After 0.1s show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. launched normally. */
+      DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) {
+        if !self.openFileCalled {
+          self.showWindowsAfterLaunch()
+        }
+      }
 
       let observer = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
         // This notification can sometimes happen if the app had multiple windows at shutdown.
@@ -334,24 +338,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   // MARK: Opening/restoring windows
 
-  /** Show welcome window if `application(_:openFile:)` wasn't called, i.e. launched normally. */
-  @objc
-  func checkForShowingInitialWindow() {
-    if !openFileCalled {
-      showWindowsAfterLaunch()
-    }
-  }
-
   private func showWindowsAfterLaunch() {
     let windowNamesToRestore = Preference.UIState.getSavedOpenWindowsBackToFront()
     if !windowNamesToRestore.isEmpty {
       restoreWindowsFromPreviousLaunch(windowNamesToRestore)
     } else {
-      doConfiguredActionAfterLaunch()
+      doLaunchOrReopenAction()
     }
   }
 
-  private func doConfiguredActionAfterLaunch() {
+  private func doLaunchOrReopenAction() {
     let action: Preference.ActionAfterLaunch = Preference.enum(for: .actionAfterLaunch)
     switch action {
     case .welcomeWindow:
@@ -394,7 +390,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let openWindowCount = NSApp.windows.reduce(0, {count, win in (win.isImportant() && win.isOpen()) ? count + 1 : count})
     if openWindowCount == 0 {
       Logger.log("Looks like none of the windows was restored successfully. Falling back to user launch preference")
-      doConfiguredActionAfterLaunch()
+      doLaunchOrReopenAction()
     }
   }
 
@@ -445,12 +441,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Certain events (like when PIP is enabled) can result in this being called when it shouldn't.
     guard !PlayerCore.active.mainWindow.isOpen else { return false }
 
+    if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .quit {
+      Preference.UIState.clearOpenWindowList()
+      Logger.log("Will quit on last window closed", level: .verbose)
+      return true
+    } else {
+      self.doActionWhenLastWindowWillClose()
+      return false
+    }
+  }
+
+  func doActionWhenLastWindowWillClose(quitFor quitAction: Preference.ActionWhenNoOpenedWindow? = nil) {
+    guard !isTerminating else { return }
+
     if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {
-      Logger.log("Last window closed; whatToDo: \(whatToDo)", level: .verbose)
+      Logger.log("ActionWhenNoOpenedWindow: \(whatToDo)", level: .verbose)
+      if whatToDo == quitAction {
+        Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
+        Preference.UIState.clearOpenWindowList()
+        return
+      }
+
       switch whatToDo {
-        case .quit:
-          Preference.UIState.clearOpenWindowList()
-          return true
         case .welcomeWindow:
           showWelcomeWindow()
         case .historyWindow:
@@ -459,18 +471,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           break
       }
     }
-    return false
   }
 
   // MARK: Application termination
-
-  func terminateAfterAllWindowsClosed() {
-    // Prevent infinite loop
-    guard !isTerminating else { return }
-
-    Preference.UIState.clearOpenWindowList()
-    NSApp.terminate(nil)
-  }
 
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     Logger.log("App should terminate")
@@ -635,7 +638,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard !isTerminating else { return false }
     guard !flag else { return true }
     Logger.log("Handle reopen")
-    showWindowsAfterLaunch()
+    doLaunchOrReopenAction()
     return true
   }
 

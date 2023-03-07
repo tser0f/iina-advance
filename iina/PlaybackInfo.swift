@@ -53,6 +53,9 @@ class PlaybackInfo {
   var isNetworkResource: Bool = false
   var mpvMd5: String?
 
+  // MARK: Video settings
+  // TODO: place in GeometryManager
+
   var videoWidth: Int?
   var videoHeight: Int?
 
@@ -69,16 +72,20 @@ class PlaybackInfo {
     return player.mpv.getInt(MPVProperty.videoParamsRotate)
   }()
 
+  var cachedWindowScale: Double = 1.0
+
+
   var videoPosition: VideoTime?
   var videoDuration: VideoTime?
-
-  var cachedWindowScale: Double = 1.0
 
   func constrainVideoPosition() {
     guard let duration = videoDuration, let position = videoPosition else { return }
     if position.second < 0 { position.second = 0 }
     if position.second > duration.second { position.second = duration.second }
   }
+
+  // MARK: Playback state
+  // TODO: turn into enum
 
   var isSeeking: Bool = false
 

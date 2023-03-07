@@ -178,12 +178,8 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   // MARK: NSWindowDelegate
   
   func windowWillClose(_ notification: Notification) {
-    let appDelegate = NSApp.delegate as! AppDelegate
-    if let window = self.window, !appDelegate.isTerminating, window.isOnlyOpenWindow() {
-      if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .historyWindow {
-        Logger.log("Configured to show Playback History window when all windows closed, but user closed the Playback History window. Will quit instead of re-opening it.")
-        appDelegate.terminateAfterAllWindowsClosed()
-      }
+    if let window = self.window, window.isOnlyOpenWindow() {
+      (NSApp.delegate as! AppDelegate).doActionWhenLastWindowWillClose(quitFor: .historyWindow)
     }
   }
 

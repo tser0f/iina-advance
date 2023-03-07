@@ -148,7 +148,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   var isOpen: Bool {
-    if !self.isWindowLoaded {
+    if !self.loaded {
       return false
     }
     guard let window = self.window else { return false }
@@ -1402,19 +1402,9 @@ class MainWindowController: PlayerWindowController {
 
     // Check whether this is the last player closed; show welcome or history window if configured.
     // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
-    if let app = (NSApp.delegate as? AppDelegate), !app.isTerminating && player.isOnlyOpenPlayer {
+    if player.isOnlyOpenPlayer {
       Logger.log("Window was last player window open", level: .verbose, subsystem: player.subsystem)
-      if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {
-
-        switch whatToDo {
-          case .welcomeWindow:
-            app.showWelcomeWindow()
-          case .historyWindow:
-            app.historyWindow.showWindow(self)
-          default:
-            break
-        }
-      }
+      (NSApp.delegate as? AppDelegate)?.doActionWhenLastWindowWillClose()
     }
 
     isClosing = true
