@@ -357,7 +357,7 @@ class MainWindowController: PlayerWindowController {
     .oscPosition,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
-    .thumbnailWidth,
+    .thumbnailLength,
     .showChapterPos,
     .arrowButtonAction,
     .pinchAction,
@@ -376,11 +376,11 @@ class MainWindowController: PlayerWindowController {
     switch keyPath {
     case PK.enableOSC.rawValue, PK.oscPosition.rawValue, PK.titleBarLayout.rawValue:
       setupTitleBarAndOSC()
-    case PK.thumbnailWidth.rawValue:
+    case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) {
-          if newValue == Preference.integer(for: .thumbnailWidth) && newValue != self.player.info.thumbnailWidth {
-            Logger.log("Pref \(Preference.Key.thumbnailWidth.rawValue.quoted) changed to \(newValue)px: requesting thumbs regen",
+          if newValue == Preference.integer(for: .thumbnailLength) && newValue != self.player.info.thumbnailLength {
+            Logger.log("Pref \(Preference.Key.thumbnailLength.rawValue.quoted) changed to \(newValue)px: requesting thumbs regen",
                        subsystem: self.player.subsystem)
             self.player.reloadThumbnails()
           }
@@ -2452,14 +2452,14 @@ class MainWindowController: PlayerWindowController {
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
     if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image {
-      let imageToDisplay = image.rotate(player.info.intendedRotation)
+      let imageToDisplay = image.rotate(player.info.totalRotation)
       thumbnailPeekView.imageView.image = imageToDisplay
       thumbnailPeekView.isHidden = false
 
-      let thumbWidth = imageToDisplay.size.width
+      let thumbLength = imageToDisplay.size.width
       let thumbHeight = imageToDisplay.size.height
       thumbnailPeekView.frame.size = imageToDisplay.size
-      Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Displaying thumbnail: \(thumbLength) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
       let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
       let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
       let thumbOriginY: CGFloat

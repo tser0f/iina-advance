@@ -1005,7 +1005,7 @@ class MPVController: NSObject {
     let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
     let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
     Logger.log("Got info for opened file. Video:{ size: \(width)x\(height), rot: \(mpvParamRotate) + \(mpvVideoRotate) }, Loc(sec): \(position) / \(duration)")
-    player.info.intendedRotation = mpvParamRotate
+    player.info.totalRotation = mpvParamRotate
     player.info.userRotation = mpvVideoRotate
     player.info.videoHeight = height
     player.info.videoWidth = width
@@ -1037,7 +1037,7 @@ class MPVController: NSObject {
     if player.info.userRotation == 90 || player.info.userRotation == 270 {
       swap(&dwidth, &dheight)
     }
-    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) + \(mpvVideoRotate)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.userRotation)°)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) - \(mpvVideoRotate)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.userRotation)°)", level: .verbose, subsystem: player.subsystem)
     if dwidth != player.info.displayWidth! || dheight != player.info.displayHeight! {
       // filter the last video-reconfig event before quit
       if dwidth == 0 && dheight == 0 && getFlag(MPVProperty.coreIdle) { return }
@@ -1066,9 +1066,9 @@ class MPVController: NSObject {
     case MPVProperty.videoParamsRotate:
         /** `video-params/rotate: Intended display rotation in degrees (clockwise).` - mpv manual
          Do not confuse with the user-configured `video-params` (above) */
-      if let intendedRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
-        Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(intendedRotation)", level: .verbose, subsystem: player.subsystem)
-        player.info.intendedRotation = intendedRotation
+      if let totalRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
+        Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(totalRotation)", level: .verbose, subsystem: player.subsystem)
+        player.info.totalRotation = totalRotation
       }
 
     case MPVProperty.videoParamsPrimaries:

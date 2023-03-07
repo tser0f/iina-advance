@@ -1797,35 +1797,12 @@ class PlayerCore: NSObject {
       Logger.log("...stopped because thumbnails are disabled by user", level: .verbose, subsystem: subsystem)
       return
     }
-    
-    let requestedWidth = Preference.integer(for: .thumbnailWidth)
-    let intendedRotation = info.intendedRotation
 
-    guard let videoHeight = info.videoHeight, let videoWidth = info.videoWidth, videoHeight > 0, videoWidth > 0 else {
-      Logger.log("Failed to generate thumbnails: video height and/or width not present in playback info", level: .error, subsystem: subsystem)
-      return
-    }
-    // We want requested size to correspond to the larger video dimension
-    let thumbWidth: Int
-    if videoHeight > videoWidth {
-      // Match requested size to video height
-      if requestedWidth > videoHeight {
-        // Do not go bigger than video's native width
-        thumbWidth = videoWidth
-      } else {
-        thumbWidth = Int(Float(requestedWidth) * (Float(videoHeight) / Float(videoWidth)))
-      }
-      Logger.log("Video's height is greater than its width: adjusting thumbnail width from \(requestedWidth) to \(thumbWidth)", subsystem: subsystem)
-    } else {
-      // Match requested size to video width
-      if requestedWidth > videoWidth {
-        // Do not go bigger than video's native width
-        thumbWidth = videoWidth
-      } else {
-        thumbWidth = requestedWidth
-      }
-    }
+    let requestedLength = Preference.integer(for: .thumbnailLength)
+    guard let thumbWidth = determineWidthOfThumbnail(from: requestedLength) else { return }
+    info.thumbnailLength = requestedLength
     info.thumbnailWidth = thumbWidth
+
     if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
       Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
       thumbnailQueue.async {
@@ -1850,6 +1827,36 @@ class PlayerCore: NSObject {
         self.touchBarSupport.touchBarPlaySlider?.needsDisplay = true
       }
     }
+  }
+
+  /** We want the requested size of thumbnail to correspond to whichever video dimension is longer.
+   Example: if video's native size is 600 W x 800 H and requested thumbnail size is 100, then `thumbWidth` should be 75. */
+  private func determineWidthOfThumbnail(from requestedLength: Int) -> Int? {
+    guard let videoHeight = info.videoHeight, let videoWidth = info.videoWidth, videoHeight > 0, videoWidth > 0 else {
+      Logger.log("Failed to generate thumbnails: video height and/or width not present in playback info", level: .error, subsystem: subsystem)
+      return nil
+    }
+    let thumbWidth: Int
+    if videoHeight > videoWidth {
+      // Match requested size to video height
+      if requestedLength > videoHeight {
+        // Do not go bigger than video's native width
+        thumbWidth = videoWidth
+        Logger.log("Video's height is longer than its width, and thumbLength (\(requestedLength)) is larger than video's native height (\(videoHeight)); clamping thumbWidth to \(videoWidth)", subsystem: subsystem)
+      } else {
+        thumbWidth = Int(Float(requestedLength) * (Float(videoWidth) / Float(videoHeight)))
+        Logger.log("Video's height (\(videoHeight)) is longer than its width (\(videoWidth)); scaling down thumbWidth to \(thumbWidth)", subsystem: subsystem)
+      }
+    } else {
+      // Match requested size to video width
+      if requestedLength > videoWidth {
+        Logger.log("Requested thumblLength (\(requestedLength)) is larger than video's native width; clamping thumbWidth to \(videoWidth)", subsystem: subsystem)
+        thumbWidth = videoWidth
+      } else {
+        thumbWidth = requestedLength
+      }
+    }
+    return thumbWidth
   }
 
   // MARK: - Getting info

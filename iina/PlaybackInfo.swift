@@ -65,7 +65,7 @@ class PlaybackInfo {
 
   // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
   // IINA only supports one of [0, 90, 180, 270]
-  lazy var intendedRotation: Int = {
+  lazy var totalRotation: Int = {
     return player.mpv.getInt(MPVProperty.videoParamsRotate)
   }()
 
@@ -283,6 +283,7 @@ class PlaybackInfo {
   var thumbnailsProgress: Double = 0
   var thumbnails: [FFThumbnail] = []
   var thumbnailWidth: Int = 0
+  var thumbnailLength: Int = 0
 
   func getThumbnail(forSecond sec: Double) -> FFThumbnail? {
     guard !thumbnails.isEmpty else { return nil }
