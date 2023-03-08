@@ -268,9 +268,8 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     self.searchString = sender.stringValue
     if Preference.bool(for: .enableSaveUIState) {
       Preference.set(sender.stringValue, for: .uiHistoryTableSearchString)
-    } else {
-      reloadData()
     }
+    reloadData()
   }
 
   // MARK: - Menu

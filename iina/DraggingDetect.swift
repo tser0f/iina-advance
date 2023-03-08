@@ -168,6 +168,7 @@ extension PlayerCore {
     if types.contains(.nsFilenames) {
       guard var paths = pb.propertyList(forType: .nsFilenames) as? [String] else { return false }
       paths = Utility.resolvePaths(paths)
+      Logger.log("Received drop of file paths: \(paths)", level: .verbose)
       // check 3d lut files
       if paths.count == 1 && Utility.lut3dExt.contains(paths[0].lowercasedPathExtension) {
         let result = addVideoFilter(MPVFilter(lavfiName: "lut3d", label: "iina_quickl3d", paramDict: [
@@ -204,9 +205,11 @@ extension PlayerCore {
       }
     } else if types.contains(.nsURL) {
       guard let url = pb.propertyList(forType: .nsURL) as? [String] else { return false }
+      Logger.log("Received drop of url(s), will open first: \(url)", level: .verbose)
       openURLString(url[0])
       return true
     } else if let droppedString = pb.string(forType: .string) {
+      Logger.log("Received drop of string: \(droppedString.quoted)", level: .verbose)
       if Regex.url.matches(droppedString) || Regex.filePath.matches(droppedString) {
         openURLString(droppedString)
         return true

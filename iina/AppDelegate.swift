@@ -12,8 +12,6 @@ import Sparkle
 
 let IINA_ENABLE_PLUGIN_SYSTEM = Preference.bool(for: .iinaEnablePluginSystem)
 
-/** Max time interval for repeated `application(_:openFile:)` calls. */
-fileprivate let OpenFileRepeatTime = TimeInterval(0.2)
 /** Tags for "Open File/URL" menu item when "Always open file in new windows" is off. Vice versa. */
 fileprivate let NormalMenuItemTag = 0
 /** Tags for "Open File/URL in New Window" when "Always open URL" when "Open file in new windows" is off. Vice versa. */
@@ -239,7 +237,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     JavascriptPlugin.loadGlobalInstances()
-    let activePlayer = PlayerCore.active
+    let activePlayer = PlayerCore.active  // loads first player
     Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
 
     if #available(macOS 10.13, *) {
@@ -266,8 +264,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         }
         // Query for the list of open windows and save it.
         // Don't do this too soon, or their orderIndexes may not yet be up to date.
-        DispatchQueue.main.async {
-          Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
+        if Preference.bool(for: .enableSaveUIState) {
+          DispatchQueue.main.async {
+            Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
+          }
         }
       }
       self.observers.append(observer)
@@ -355,7 +355,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         case Constants.WindowAutosaveName.about:
           showAboutWindow(self)
         case Constants.WindowAutosaveName.openURL:
-          showOpenURLWindow(isAlternativeAction: false)
+          // TODO: persist isAlternativeAction too
+          showOpenURLWindow(isAlternativeAction: true)
         case Constants.WindowAutosaveName.inspector:
           showInspectorWindow()
         default:
@@ -405,7 +406,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func showOpenURLWindow(isAlternativeAction: Bool) {
-    Logger.log("Showing OpenURLWindow (alterativeAction: \(isAlternativeAction))", level: .verbose)
+    Logger.log("Showing OpenURLWindow (isAlternativeAction: \(isAlternativeAction))", level: .verbose)
     openURLWindow.isAlternativeAction = isAlternativeAction
     openURLWindow.showWindow(nil)
     openURLWindow.resetFields()
@@ -650,7 +651,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   @objc
   func droppedText(_ pboard: NSPasteboard, userData:String, error: NSErrorPointer) {
-    Logger.log("Text dropped called", level: .verbose)
+    Logger.log("Text dropped on app's Dock icon", level: .verbose)
     if let url = pboard.string(forType: .string) {
       PlayerCore.active.openURLString(url)
     }

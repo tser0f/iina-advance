@@ -1098,15 +1098,20 @@ struct Preference {
    data-intensive, writes to the .plist should be trivial by comparison. */
   class UIState {
 
-    // For restoring UI state from prev launch (if enabled)
+    // Convenience method. If restoring UI state is enabled, returns the saved value; otherwise returns the saved value.
+    // Note: doesn't work for enums.
     static func get<T>(_ key: Key) -> T {
       if Preference.bool(for: .enableRestoreUIState) {
-        return Preference.typedValue(for: key)
+        if let val = Preference.value(for: key) as? T {
+          return val
+        }
       }
       return Preference.typedDefault(for: key)
     }
 
+    // Convenience method. If saving UI state is enabled, saves the given value. Otherwise does nothing.
     static func set<T: Equatable>(_ value: T, for key: Key) {
+      guard Preference.bool(for: .enableSaveUIState) else { return }
       if let existing = Preference.object(for: key) as? T, existing == value {
         return
       }
@@ -1122,8 +1127,9 @@ struct Preference {
       return csv.components(separatedBy: ",").map{ $0.trimmingCharacters(in: .whitespaces)}
     }
 
-    static func saveOpenWindowList(windowNamesBackToFront windowList: [String]) {
-      let csv = windowList.map{ $0 }.joined(separator: ",")
+    static func saveOpenWindowList(windowNamesBackToFront: [String]) {
+      Logger.log("Saving open windows: \(windowNamesBackToFront)")
+      let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")
       Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
     }
 

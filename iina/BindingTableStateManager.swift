@@ -131,9 +131,7 @@ class BindingTableStateManager {
 
   // Not an undoable action; just a UI change (but possibly saved in UI state prefs)
   func applyFilter(newFilterString: String) {
-    if Preference.bool(for: .enableSaveUIState) {
-      Preference.set(newFilterString, for: .uiPrefBindingsTableSearchString)
-    }
+    Preference.UIState.set(newFilterString, for: .uiPrefBindingsTableSearchString)
     applyStateUpdate(AppInputConfig.current, newFilterString: newFilterString)
   }
 
