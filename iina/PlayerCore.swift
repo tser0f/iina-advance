@@ -21,7 +21,7 @@ class PlayerCore: NSObject {
 
   // MARK: - Multiple instances
 
-  static let first: PlayerCore = createPlayerCore()
+  static private let first: PlayerCore = createPlayerCore()
 
   static private weak var _lastActive: PlayerCore?
 
@@ -292,6 +292,7 @@ class PlayerCore: NSObject {
   @discardableResult
   func openURLs(_ urls: [URL], shouldAutoLoad autoLoad: Bool = true) -> Int? {
     guard !urls.isEmpty else { return 0 }
+    Logger.log("OpenURLs: \(urls)")
     let urls = Utility.resolveURLs(urls)
 
     // handle BD folders and m3u / m3u8 files first

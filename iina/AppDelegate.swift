@@ -23,21 +23,12 @@ fileprivate let AlternativeMenuItemTag = 1
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
-  /** Whether performed some basic initialization, like bind menu items. */
-  var isReady = false
   /**
    Becomes true once `application(_:openFile:)` or `droppedText()` is called.
    Mainly used to distinguish normal launches from others triggered by drag-and-dropping files.
    */
   var openFileCalled = false
   var shouldIgnoreOpenFile = false
-  /** Cached URL when launching from URL scheme. */
-  var pendingURL: String?
-
-  /** Cached file paths received in `application(_:openFile:)`. */
-  private var pendingFilesForOpenFile: [String] = []
-  /** The timer for `OpenFileRepeatTime` and `application(_:openFile:)`. */
-  private var openFileTimer: Timer?
 
   private var commandLineStatus = CommandLineStatus()
 
@@ -97,12 +88,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   @IBOutlet weak var menuController: MenuController!
 
   @IBOutlet weak var dockMenu: NSMenu!
-
-  private func getReady() {
-    confTableStateManager.startUp()
-    menuController.bindMenuItems()
-    isReady = true
-  }
 
   // MARK: - SPUUpdaterDelegate
 
@@ -175,6 +160,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     logBuildDetails()
 
     Logger.log("App will launch")
+
+    // Call this *before* registering for url events, to guarantee that menu is init'd
+    confTableStateManager.startUp()
+    menuController.bindMenuItems()
 
     // register for url event
     NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(self.handleURLEvent(event:withReplyEvent:)), forEventClass: AEEventClass(kInternetEventClass), andEventID: AEEventID(kAEGetURL))
@@ -250,8 +239,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     JavascriptPlugin.loadGlobalInstances()
-    let _ = PlayerCore.first
-    Logger.log("Using \(PlayerCore.active.mpv.mpvVersion!)")
+    let activePlayer = PlayerCore.active
+    Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
 
     if #available(macOS 10.13, *) {
       if RemoteCommandController.useSystemMediaControl {
@@ -259,15 +248,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         RemoteCommandController.setup()
         NowPlayingInfoManager.updateInfo(state: .unknown)
       }
-    }
-
-    if !isReady {
-      getReady()
-    }
-
-    // if have pending open request
-    if let url = pendingURL {
-      parsePendingURL(url)
     }
 
     if !commandLineStatus.isCommandLine {
@@ -650,44 +630,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
   }
 
-  /**
-   When dragging multiple files to App icon, cocoa will simply call this method repeatedly.
-   Therefore we must cache all possible calls and handle them together.
-   */
-  func application(_ sender: NSApplication, openFile filename: String) -> Bool {
+  func application(_ sender: NSApplication, openFiles filePaths: [String]) {
+    Logger.log("application(openFiles:) called with: \(filePaths)")
     openFileCalled = true
-    openFileTimer?.invalidate()
-    pendingFilesForOpenFile.append(filename)
-    openFileTimer = Timer.scheduledTimer(timeInterval: OpenFileRepeatTime, target: self, selector: #selector(handleOpenFile), userInfo: nil, repeats: false)
-    return true
-  }
-
-  /** Handle pending file paths if `application(_:openFile:)` not being called again in `OpenFileRepeatTime`. */
-  @objc
-  func handleOpenFile() {
-    if !isReady {
-      getReady()
-    }
     // if launched from command line, should ignore openFile once
     if shouldIgnoreOpenFile {
       shouldIgnoreOpenFile = false
       return
     }
     // open pending files
-    let urls = pendingFilesForOpenFile.map { URL(fileURLWithPath: $0) }
+    let urls = filePaths.map { URL(fileURLWithPath: $0) }
 
-    pendingFilesForOpenFile.removeAll()
     if PlayerCore.activeOrNew.openURLs(urls) == 0 {
       Utility.showAlert("nothing_to_open")
     }
   }
 
-  // MARK: - Accept dropped string and URL
+  // MARK: - Accept dropped string and URL on Dock icon
 
   @objc
   func droppedText(_ pboard: NSPasteboard, userData:String, error: NSErrorPointer) {
+    Logger.log("Text dropped called", level: .verbose)
     if let url = pboard.string(forType: .string) {
-      openFileCalled = true
       PlayerCore.active.openURLString(url)
     }
   }
@@ -716,14 +680,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   @objc func handleURLEvent(event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
     openFileCalled = true
     guard let url = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue else { return }
-    Logger.log("URL event: \(url)")
-    if isReady {
-      parsePendingURL(url)
-    } else {
-      pendingURL = url
-    }
+    Logger.log("Handling URL event: \(url)")
+    parsePendingURL(url)
   }
-
 
   /**
    Parses the pending iina:// url.
