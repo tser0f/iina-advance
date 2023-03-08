@@ -144,6 +144,8 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
 
   private var viewControllers: [NSViewController & PreferenceWindowEmbeddable]
 
+  private var observers: [NSObjectProtocol] = []
+
   init(viewControllers: [NSViewController & PreferenceWindowEmbeddable]) {
     self.viewControllers = viewControllers
     super.init(window: nil)
@@ -152,6 +154,13 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+
+  deinit {
+    for observer in observers {
+      NotificationCenter.default.removeObserver(observer)
+    }
+    observers = []
   }
 
   override func windowDidLoad() {
@@ -209,9 +218,10 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
     // Much safer to disable empty selection after selecting a row.
     loadTab(at: Preference.UIState.get(.uiPrefWindowNavTableSelectionIndex))
     tableView.allowsEmptySelection = false
-    let _ = prefDetailScrollView.restoreAndObserveVerticalScroll(key: .uiPrefDetailViewScrollOffsetY, defaultScrollAction: {
+    let observer = prefDetailScrollView.restoreAndObserveVerticalScroll(key: .uiPrefDetailViewScrollOffsetY, defaultScrollAction: {
       prefDetailScrollView.scroll(NSPoint())
     })
+    self.observers.append(observer)
   }
 
   override func mouseDown(with event: NSEvent) {

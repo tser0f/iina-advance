@@ -95,9 +95,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
         bindingTableView.scrollRowToVisible(0)
       })
       // Change vertical scroll elastisticity of tables in Key Bindings prefs from "yes" to "allowed"
-      if let observer = observer {
-        observers.append(observer)
-      }
+      observers.append(observer)
     }
   }
 

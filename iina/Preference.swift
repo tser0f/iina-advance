@@ -332,14 +332,19 @@ struct Preference {
 
     // Internal UI State
 
-    static let keepLastUIState = Key("keepLastUIState")
+    /** If true, saves the state of UI components as they change. This includes things like open windows &
+     their sizes & positions, current scroll offsets, search entries, and more. */
+    static let enableSaveUIState = Key("enableSaveUIState")
+    /** If true, initializes the state of UI components to their previous values (presumably from the previous launch).
+     Note that a saved state must exist for these components (see `enableSaveUIState`). */
+    static let enableRestoreUIState = Key("enableRestoreUIState")
     /** If true, write UI changes as soon as they are reported. This will defend against loss of UI state
      in case of crash or force-quit. (There also seems to be almost no performance penalty for waiting,
      so may want to just enable this always in the future). */
     static let writeUIStateImmediately = Key("writeUIStateImmediately")
 
     // Comma-separated list of window names
-    static let uiOpenWindowsBackToFront = Key("uiOpenWindowsBackToFront")
+    static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFrontList")
 
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
@@ -937,9 +942,10 @@ struct Preference {
     .acceptRawTextAsKeyBindings: false,
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
-    .keepLastUIState: true,
+    .enableSaveUIState: true,
+    .enableRestoreUIState: true,
     .writeUIStateImmediately: true,
-    .uiOpenWindowsBackToFront: "",
+    .uiOpenWindowsBackToFrontList: "",
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
     .uiCollapseViewMediaIsOpened: true,
@@ -1101,7 +1107,7 @@ struct Preference {
 
     // For restoring UI state from prev launch (if enabled)
     static func get<T>(_ key: Key) -> T {
-      if Preference.bool(for: .keepLastUIState) {
+      if Preference.bool(for: .enableRestoreUIState) {
         return Preference.typedValue(for: key)
       }
       return Preference.typedDefault(for: key)
@@ -1130,7 +1136,7 @@ struct Preference {
 
     // Returns the autosave names of windows which have been saved in the set of open windows
     static func getSavedOpenWindowsBackToFront() -> [String] {
-      let csv = Preference.string(for: Key.uiOpenWindowsBackToFront)?.trimmingCharacters(in: .whitespaces) ?? ""
+      let csv = Preference.string(for: Key.uiOpenWindowsBackToFrontList)?.trimmingCharacters(in: .whitespaces) ?? ""
       if csv.isEmpty {
         return []
       }
@@ -1139,7 +1145,7 @@ struct Preference {
 
     static func saveOpenWindowList(windowNamesBackToFront windowList: [String]) {
       let csv = windowList.map{ $0 }.joined(separator: ",")
-      Preference.set(csv, for: Key.uiOpenWindowsBackToFront)
+      Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
     }
 
     static func clearOpenWindowList() {

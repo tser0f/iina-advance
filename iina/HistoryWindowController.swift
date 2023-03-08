@@ -77,11 +77,14 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
     switch keyPath {
       case PK.uiHistoryTableGroupBy.rawValue:
-        groupBy = HistoryWindowController.getGroupByFromPrefs() ?? groupBy
+        guard let groupByNew = HistoryWindowController.getGroupByFromPrefs(), groupByNew != groupBy else { return }
+        groupBy = groupByNew
       case PK.uiHistoryTableSearchType.rawValue:
-        searchType = HistoryWindowController.getHistorySearchTypeFromPrefs() ?? searchType
+        guard let searchTypeNew = HistoryWindowController.getHistorySearchTypeFromPrefs(), searchTypeNew != searchType else { return }
+        searchType = searchTypeNew
       case PK.uiHistoryTableSearchString.rawValue:
-        searchString = HistoryWindowController.getSearchStringFromPrefs() ?? searchString
+        guard let searchStringNew = HistoryWindowController.getSearchStringFromPrefs(), searchStringNew != searchString else { return }
+        searchString = searchStringNew
         historySearchField.stringValue = searchString
       default:
         break
@@ -112,15 +115,15 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   }
 
   private static func getGroupByFromPrefs() -> Preference.HistoryGroupBy? {
-    return Preference.bool(for: .keepLastUIState) ? Preference.enum(for: .uiHistoryTableGroupBy) : nil
+    return Preference.bool(for: .enableRestoreUIState) ? Preference.enum(for: .uiHistoryTableGroupBy) : nil
   }
 
   private static func getHistorySearchTypeFromPrefs() -> Preference.HistorySearchType? {
-    return Preference.bool(for: .keepLastUIState) ? Preference.enum(for: .uiHistoryTableSearchType) : nil
+    return Preference.bool(for: .enableRestoreUIState) ? Preference.enum(for: .uiHistoryTableSearchType) : nil
   }
 
   private static func getSearchStringFromPrefs() -> String? {
-    return Preference.bool(for: .keepLastUIState) ? Preference.string(for: .uiHistoryTableSearchString) : nil
+    return Preference.bool(for: .enableRestoreUIState) ? Preference.string(for: .uiHistoryTableSearchString) : nil
   }
 
   private func reloadData() {
@@ -263,7 +266,11 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   @IBAction func searchFieldAction(_ sender: NSSearchField) {
     self.searchString = sender.stringValue
-    Preference.set(sender.stringValue, for: .uiHistoryTableSearchString)
+    if Preference.bool(for: .enableSaveUIState) {
+      Preference.set(sender.stringValue, for: .uiHistoryTableSearchString)
+    } else {
+      reloadData()
+    }
   }
 
   // MARK: - Menu
@@ -329,12 +336,20 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   @IBAction func searchTypeFilenameAction(_ sender: AnyObject) {
     searchType = .filename
-    Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
+    if Preference.bool(for: .enableSaveUIState) {
+      Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
+    } else {
+      reloadData()
+    }
   }
 
   @IBAction func searchTypeFullPathAction(_ sender: AnyObject) {
     searchType = .fullPath
-    Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
+    if Preference.bool(for: .enableSaveUIState) {
+      Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
+    } else {
+      reloadData()
+    }
   }
 
 }
