@@ -102,7 +102,7 @@ struct Preference {
     static let playlistShowMetadata = Key("playlistShowMetadata")
     static let playlistShowMetadataInMusicMode = Key("playlistShowMetadataInMusicMode")
 
-    // UI
+    // MARK: - Keys: UI
 
     /** Horizontal position of control bar. (float, 0 - 1) */
     static let controlBarPositionHorizontal = Key("controlBarPositionHorizontal")
@@ -151,7 +151,7 @@ struct Preference {
     static let pauseWhenPip = Key("pauseWhenPip")
     static let togglePipByMinimizingWindow = Key("togglePipByMinimizingWindow")
 
-    // Codec
+    // MARK: - Keys: Codec
 
     static let videoThreads = Key("videoThreads")
     static let hardwareDecoder = Key("hardwareDecoder")
@@ -173,7 +173,7 @@ struct Preference {
     static let enableInitialVolume = Key("enableInitialVolume")
     static let initialVolume = Key("initialVolume")
 
-    // Subtitle
+    // MARK: - Keys: Subtitle
 
     static let subAutoLoadIINA = Key("subAutoLoadIINA")
     static let subAutoLoadPriorityString = Key("subAutoLoadPriorityString")
@@ -208,7 +208,7 @@ struct Preference {
     static let autoSearchOnlineSub = Key("autoSearchOnlineSub")
     static let autoSearchThreshold = Key("autoSearchThreshold")
 
-    // Network
+    // MARK: - Keys: Network
 
     static let enableCache = Key("enableCache")
     static let defaultCacheSize = Key("defaultCacheSize")
@@ -221,7 +221,7 @@ struct Preference {
     static let ytdlRawOptions = Key("ytdlRawOptions")
     static let httpProxy = Key("httpProxy")
 
-    // Control
+    // MARK: - Keys: Control
 
     /** Seek option */
     static let useExactSeek = Key("useExactSeek")
@@ -250,7 +250,7 @@ struct Preference {
 
     static let followGlobalSeekTypeWhenAdjustSlider = Key("followGlobalSeekTypeWhenAdjustSlider")
 
-    // Input
+    // MARK: - Keys: Input
 
     /** Whether catch media keys event (bool) */
     static let useMediaKeys = Key("useMediaKeys")
@@ -262,7 +262,7 @@ struct Preference {
     /** Current input config name */
     static let currentInputConfigName = Key("currentInputConfigName")
 
-    // Advanced
+    // MARK: - Keys: Advanced
 
     /** Enable advanced settings */
     static let enableAdvancedSettings = Key("enableAdvancedSettings")
@@ -330,7 +330,7 @@ struct Preference {
 
     static let iinaEnablePluginSystem = Key("iinaEnablePluginSystem")
 
-    // Internal UI State
+    // MARK: - Keys: Internal UI State
 
     /** If true, saves the state of UI components as they change. This includes things like open windows &
      their sizes & positions, current scroll offsets, search entries, and more. */
@@ -338,10 +338,6 @@ struct Preference {
     /** If true, initializes the state of UI components to their previous values (presumably from the previous launch).
      Note that a saved state must exist for these components (see `enableSaveUIState`). */
     static let enableRestoreUIState = Key("enableRestoreUIState")
-    /** If true, write UI changes as soon as they are reported. This will defend against loss of UI state
-     in case of crash or force-quit. (There also seems to be almost no performance penalty for waiting,
-     so may want to just enable this always in the future). */
-    static let writeUIStateImmediately = Key("writeUIStateImmediately")
 
     // Comma-separated list of window names
     static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFrontList")
@@ -944,7 +940,6 @@ struct Preference {
     .tableEditKeyNavContinuesBetweenRows: false,
     .enableSaveUIState: true,
     .enableRestoreUIState: true,
-    .writeUIStateImmediately: true,
     .uiOpenWindowsBackToFrontList: "",
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
@@ -1096,14 +1091,12 @@ struct Preference {
     return T.init(key: key) ?? T.defaultValue
   }
 
-  // NSUserDefaults uses an in-memory cache which periodically saves "dirty" values to disk
-  // (although the interval between writes is unclear).
-  // This means that "get" operations should be very cheap, while "set" operations *probably* won't be too bad.
-  // Also, IINA is a very data-intensive app which may put a heavy load on the disk while playing some videos.
-  // However, it mikght still be prudent to avoid any unnecessary writes while it is not playing. So some extra effort is made here
-  // to hold UI state in memory and only save it at key times.
+  /** Notes on performance:
+   Apple's NSUserDefaults, when getting & saving preference values, utilizes an in-memory cache which is very fast.
+   And although it periodically saves "dirty" values to disk, and the interval between writes is unclear, this doesn't appear to cause
+   a significant performance penalty, and certainly can't be much improved upon by IINA. Also, as playing video is by its nature very
+   data-intensive, writes to the .plist should be trivial by comparison. */
   class UIState {
-    static fileprivate var pendingWriteDict: [Key: Any] = [:]
 
     // For restoring UI state from prev launch (if enabled)
     static func get<T>(_ key: Key) -> T {
@@ -1117,21 +1110,7 @@ struct Preference {
       if let existing = Preference.object(for: key) as? T, existing == value {
         return
       }
-      if Preference.bool(for: .writeUIStateImmediately) {
-        Preference.set(value, for: key)
-      } else {
-        pendingWriteDict[key] = value
-      }
-    }
-
-    static func saveAll() {
-      guard !pendingWriteDict.isEmpty else { return }
-
-      for (key, value) in pendingWriteDict {
-        Preference.set(value, for: key)
-      }
-      Logger.log("Saved \(pendingWriteDict.count) UI elements", level: .verbose)
-      pendingWriteDict.removeAll()
+      Preference.set(value, for: key)
     }
 
     // Returns the autosave names of windows which have been saved in the set of open windows

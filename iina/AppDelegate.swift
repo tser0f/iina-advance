@@ -497,9 +497,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    // Save state of UI elements for next launch
-    Preference.UIState.saveAll()
-
     // Close all windows. When a player window is closed it will send a stop command to mpv to stop
     // playback and unload the file.
     Logger.log("Closing all windows")
