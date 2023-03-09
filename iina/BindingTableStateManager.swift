@@ -34,7 +34,7 @@ class BindingTableStateManager {
   }
 
   static func initialState() -> BindingTableState {
-    let filterString = Preference.bool(for: .enableRestoreUIState) ? Preference.string(for: .uiPrefBindingsTableSearchString) ?? "" : ""
+    let filterString = Preference.UIState.isRestoreEnabled ? Preference.string(for: .uiPrefBindingsTableSearchString) ?? "" : ""
     return BindingTableState(AppInputConfig.current, filterString: filterString, inputConfFile: ConfTableState.manager.loadConfFile())
   }
 

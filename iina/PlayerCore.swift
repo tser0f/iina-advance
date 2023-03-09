@@ -21,7 +21,7 @@ class PlayerCore: NSObject {
 
   // MARK: - Multiple instances
 
-  static private let first: PlayerCore = createPlayerCore()
+  static private let first: PlayerCore = createAndStartPlayerCore()
 
   static private weak var _lastActive: PlayerCore?
 
@@ -43,7 +43,7 @@ class PlayerCore: NSObject {
   }
 
   static var newPlayerCore: PlayerCore {
-    return findIdlePlayerCore() ?? createPlayerCore()
+    return findIdlePlayerCore() ?? createAndStartPlayerCore()
   }
 
   static var activeOrNew: PlayerCore {
@@ -68,13 +68,38 @@ class PlayerCore: NSObject {
     return playerCores.first { $0.info.isIdle && !$0.info.fileLoading }
   }
 
-  static private func createPlayerCore() -> PlayerCore {
-    let pc = PlayerCore("\(playerCoreCounter)")
+  static private func createPlayerCore(label: String? = nil) -> PlayerCore {
+    let pc: PlayerCore
+    if let label = label {
+      if playerExists(withLabel: label) {
+        Logger.fatal("Cannot create new PlayerCore: a player already exists with label \(label.quoted)")
+      }
+      pc = PlayerCore(label)
+    } else {
+      while playerExists(withLabel: "\(playerCoreCounter)") {
+        playerCoreCounter += 1
+      }
+      pc = PlayerCore("\(playerCoreCounter)")
+      playerCoreCounter += 1
+    }
     playerCores.append(pc)
+    return pc
+  }
+
+  static private func playerExists(withLabel label: String) -> Bool {
+    return playerCores.first(where: { $0.label == label }) != nil
+  }
+
+  static private func createAndStartPlayerCore() -> PlayerCore {
+    let pc = createPlayerCore()
     pc.startMPV()
     pc.loadPlugins()
-    playerCoreCounter += 1
     return pc
+  }
+
+  static func restoreSavedState(forPlayerUID uid: String) {
+    let playerCore = createPlayerCore(label: uid)
+    playerCore.restoreSavedState()
   }
 
   static func activeOrNewForMenuAction(isAlternative: Bool) -> PlayerCore {
@@ -263,8 +288,10 @@ class PlayerCore: NSObject {
 
   // MARK: - Control
 
-  func restoreSavedWindowState() {
+  func restoreSavedState() {
+    // TODO: much, much more
 
+    startMPV()
   }
 
   private func open(_ url: URL?, shouldAutoLoad: Bool = false) {

@@ -237,7 +237,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     JavascriptPlugin.loadGlobalInstances()
-    let activePlayer = PlayerCore.active  // loads first player
+
+    /** In case we are restoring windows from a previous launch, we must do it early, before any `PlayerCore` is referenced.
+        This is because `PlayerCore.active` immediately creates the first `PlayerCore`, which creates its `MainWindowController`
+        in its contructor, and we need to supply the window's autosave name to its constructor. */
+    if !commandLineStatus.isCommandLine {
+      /** Show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. app was launched on its own. */
+      var useLaunchDefaultAction = true
+      if !self.openFileCalled {
+        useLaunchDefaultAction = !restoreWindowsFromPreviousLaunch()
+      }
+
+      // Start saving window state *after* restoring previous state:
+      let observer = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
+                                                            queue: .main, using: self.keyWindowDidChange)
+      self.observers.append(observer)
+
+      if useLaunchDefaultAction {
+        doLaunchOrReopenAction()
+      }
+    }
+
+    let activePlayer = PlayerCore.active  // will load the first PlayerCore if not already loaded
     Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
 
     if #available(macOS 10.13, *) {
@@ -248,31 +269,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    if !commandLineStatus.isCommandLine {
-      /** After 0.1s show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. launched normally. */
-      DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) {
-        if !self.openFileCalled {
-          self.showWindowsAfterLaunch()
-        }
-      }
-
-      let observer = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
-        // This notification can sometimes happen if the app had multiple windows at shutdown.
-        // We will ignore it in this case, because this is exactly the case that we want to save!
-        guard !self.isTerminating else {
-          return
-        }
-        // Query for the list of open windows and save it.
-        // Don't do this too soon, or their orderIndexes may not yet be up to date.
-        if Preference.bool(for: .enableSaveUIState) {
-          DispatchQueue.main.async {
-            Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
-          }
-        }
-      }
-      self.observers.append(observer)
-
-    } else {
+    if commandLineStatus.isCommandLine {
       var lastPlayerCore: PlayerCore? = nil
       let getNewPlayerCore = { () -> PlayerCore in
         let pc = PlayerCore.newPlayerCore
@@ -318,17 +315,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   // MARK: Opening/restoring windows
 
-  private func showWindowsAfterLaunch() {
-    let windowNamesToRestore = Preference.UIState.getSavedOpenWindowsBackToFront()
-    if !windowNamesToRestore.isEmpty {
-      restoreWindowsFromPreviousLaunch(windowNamesToRestore)
-    } else {
-      doLaunchOrReopenAction()
+  // Saves an ordered list of current open windows (if configured) each time *any* window becomes the key window.
+  private func keyWindowDidChange(_ notification: Notification) {
+    // This notification can sometimes happen if the app had multiple windows at shutdown.
+    // We will ignore it in this case, because this is exactly the case that we want to save!
+    guard !self.isTerminating else {
+      return
+    }
+    // Query for the list of open windows and save it.
+    // Don't do this too soon, or their orderIndexes may not yet be up to date.
+    if Preference.UIState.isSaveEnabled {
+      DispatchQueue.main.async {
+        Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
+      }
     }
   }
 
   private func doLaunchOrReopenAction() {
     let action: Preference.ActionAfterLaunch = Preference.enum(for: .actionAfterLaunch)
+    Logger.log("Doing actionAfterLaunch: \(action)", level: .verbose)
+
     switch action {
     case .welcomeWindow:
       showWelcomeWindow()
@@ -341,7 +347,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
   }
 
-  private func restoreWindowsFromPreviousLaunch(_ windowNamesBackToFront: [String]) {
+  private func restoreWindowsFromPreviousLaunch() -> Bool {
+    let windowNamesBackToFront = Preference.UIState.getSavedOpenWindowsBackToFront()
+    guard !windowNamesBackToFront.isEmpty else {
+      return false
+    }
+
     Logger.log("Restoring open windows: \(windowNamesBackToFront)")
     // Show windows one by one, starting at back and iterating to front:
     for autosaveName in windowNamesBackToFront {
@@ -360,8 +371,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         case Constants.WindowAutosaveName.inspector:
           showInspectorWindow()
         default:
-          if let playerNumber = parseNumberFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
-
+          if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
+            PlayerCore.restoreSavedState(forPlayerUID: uniqueID)
           }
           break
       }
@@ -371,11 +382,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let openWindowCount = NSApp.windows.reduce(0, {count, win in (win.isImportant() && win.isOpen()) ? count + 1 : count})
     if openWindowCount == 0 {
       Logger.log("Looks like none of the windows was restored successfully. Falling back to user launch preference")
-      doLaunchOrReopenAction()
+      return false
     }
+    return true
   }
 
-  private func parseNumberFromMatchingWindowName(autosaveName: String, mustStartWith prefix: String) -> String? {
+  private func parseIdentifierFromMatchingWindowName(autosaveName: String, mustStartWith prefix: String) -> String? {
     if autosaveName.starts(with: prefix) {
       let splitted = autosaveName.split(separator: "-")
       if splitted.count == 2 {
@@ -642,8 +654,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // open pending files
     let urls = filePaths.map { URL(fileURLWithPath: $0) }
 
-    if PlayerCore.activeOrNew.openURLs(urls) == 0 {
+    let playableFileCount = PlayerCore.activeOrNew.openURLs(urls)
+    if playableFileCount == 0 {
       Utility.showAlert("nothing_to_open")
+      NSApp.reply(toOpenOrPrint: .failure)
+    } else {
+      NSApp.reply(toOpenOrPrint: .success)
     }
   }
 

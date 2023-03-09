@@ -834,7 +834,7 @@ extension NSScrollView {
   // This is because NSScrollViews containing NSTableViews can be screwy and
   // have some arbitrary negative value as their "no scroll".
   func restoreVerticalScroll(key: Preference.Key) -> Bool {
-    if Preference.bool(for: .enableRestoreUIState) {
+    if Preference.UIState.isRestoreEnabled {
       if let offsetY: Double = Preference.value(for: key) as? Double {
         Logger.log("Restoring vertical scroll to: \(offsetY)", level: .verbose)
         // Note: *MUST* use scroll(to:), not scroll(_)! Weird that the latter doesn't always work
@@ -849,7 +849,7 @@ extension NSScrollView {
   func addVerticalScrollObserver(key: Preference.Key) -> NSObjectProtocol {
     let observer = NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification,
                                                           object: self.contentView, queue: .main) { note in
-      guard Preference.bool(for: .enableSaveUIState) else { return }
+      guard Preference.UIState.isSaveEnabled else { return }
       if let clipView = note.object as? NSClipView {
         let scrollOffsetY = clipView.bounds.origin.y
 //        Logger.log("Saving Y scroll offset \(key.rawValue.quoted): \(scrollOffsetY)", level: .verbose)

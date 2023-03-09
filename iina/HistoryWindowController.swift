@@ -115,15 +115,15 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   }
 
   private static func getGroupByFromPrefs() -> Preference.HistoryGroupBy? {
-    return Preference.bool(for: .enableRestoreUIState) ? Preference.enum(for: .uiHistoryTableGroupBy) : nil
+    return Preference.UIState.isRestoreEnabled ? Preference.enum(for: .uiHistoryTableGroupBy) : nil
   }
 
   private static func getHistorySearchTypeFromPrefs() -> Preference.HistorySearchType? {
-    return Preference.bool(for: .enableRestoreUIState) ? Preference.enum(for: .uiHistoryTableSearchType) : nil
+    return Preference.UIState.isRestoreEnabled ? Preference.enum(for: .uiHistoryTableSearchType) : nil
   }
 
   private static func getSearchStringFromPrefs() -> String? {
-    return Preference.bool(for: .enableRestoreUIState) ? Preference.string(for: .uiHistoryTableSearchString) : nil
+    return Preference.UIState.isRestoreEnabled ? Preference.string(for: .uiHistoryTableSearchString) : nil
   }
 
   private func reloadData() {
@@ -266,7 +266,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   @IBAction func searchFieldAction(_ sender: NSSearchField) {
     self.searchString = sender.stringValue
-    if Preference.bool(for: .enableSaveUIState) {
+    if Preference.UIState.isSaveEnabled {
       Preference.set(sender.stringValue, for: .uiHistoryTableSearchString)
     }
     reloadData()
@@ -335,7 +335,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   @IBAction func searchTypeFilenameAction(_ sender: AnyObject) {
     searchType = .filename
-    if Preference.bool(for: .enableSaveUIState) {
+    if Preference.UIState.isSaveEnabled {
       Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
     } else {
       reloadData()
@@ -344,7 +344,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   @IBAction func searchTypeFullPathAction(_ sender: AnyObject) {
     searchType = .fullPath
-    if Preference.bool(for: .enableSaveUIState) {
+    if Preference.UIState.isSaveEnabled {
       Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
     } else {
       reloadData()

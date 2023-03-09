@@ -334,10 +334,10 @@ struct Preference {
 
     /** If true, saves the state of UI components as they change. This includes things like open windows &
      their sizes & positions, current scroll offsets, search entries, and more. */
-    static let enableSaveUIState = Key("enableSaveUIState")
+    fileprivate static let enableSaveUIState = Key("enableSaveUIState")
     /** If true, initializes the state of UI components to their previous values (presumably from the previous launch).
      Note that a saved state must exist for these components (see `enableSaveUIState`). */
-    static let enableRestoreUIState = Key("enableRestoreUIState")
+    fileprivate static let enableRestoreUIState = Key("enableRestoreUIState")
 
     // Comma-separated list of window names
     static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFrontList")
@@ -1097,11 +1097,18 @@ struct Preference {
    a significant performance penalty, and certainly can't be much improved upon by IINA. Also, as playing video is by its nature very
    data-intensive, writes to the .plist should be trivial by comparison. */
   class UIState {
+    static var isSaveEnabled: Bool {
+      return Preference.bool(for: .enableSaveUIState)
+    }
+
+    static var isRestoreEnabled: Bool {
+      return Preference.bool(for: .enableRestoreUIState)
+    }
 
     // Convenience method. If restoring UI state is enabled, returns the saved value; otherwise returns the saved value.
     // Note: doesn't work for enums.
     static func get<T>(_ key: Key) -> T {
-      if Preference.bool(for: .enableRestoreUIState) {
+      if isRestoreEnabled {
         if let val = Preference.value(for: key) as? T {
           return val
         }
@@ -1111,7 +1118,7 @@ struct Preference {
 
     // Convenience method. If saving UI state is enabled, saves the given value. Otherwise does nothing.
     static func set<T: Equatable>(_ value: T, for key: Key) {
-      guard Preference.bool(for: .enableSaveUIState) else { return }
+      guard isSaveEnabled else { return }
       if let existing = Preference.object(for: key) as? T, existing == value {
         return
       }
@@ -1120,6 +1127,10 @@ struct Preference {
 
     // Returns the autosave names of windows which have been saved in the set of open windows
     static func getSavedOpenWindowsBackToFront() -> [String] {
+      guard isRestoreEnabled else {
+        return []
+      }
+
       let csv = Preference.string(for: Key.uiOpenWindowsBackToFrontList)?.trimmingCharacters(in: .whitespaces) ?? ""
       if csv.isEmpty {
         return []
@@ -1128,7 +1139,8 @@ struct Preference {
     }
 
     static func saveOpenWindowList(windowNamesBackToFront: [String]) {
-      Logger.log("Saving open windows: \(windowNamesBackToFront)")
+      guard isSaveEnabled else { return }
+      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
       let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")
       Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
     }
