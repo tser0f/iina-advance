@@ -179,9 +179,12 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
       default:
         break
       }
-    } else if flags.rawValue == 0 && event.charactersIgnoringModifiers == "\u{7f}" {
-      let entries = outlineView.selectedRowIndexes.compactMap { outlineView.item(atRow: $0) as? PlaybackHistory }
-      removeAfterConfirmation(entries)
+    } else {
+      let key = KeyCodeHelper.mpvKeyCode(from: event)
+      if key == "DEL" || key == "BS" {
+        let entries = outlineView.selectedRowIndexes.compactMap { outlineView.item(atRow: $0) as? PlaybackHistory }
+        removeAfterConfirmation(entries)
+      }
     }
   }
 
