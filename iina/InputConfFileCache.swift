@@ -35,7 +35,7 @@ class InputConfFileCache {
   @discardableResult
   func getOrLoadConfFile(at filePath: String, isReadOnly: Bool = true, confName: String) -> InputConfFile {
     if let cachedConfFile = self.getConfFile(confName: confName) {
-      Logger.log("Found \(confName.quoted) in memory cache", level: .verbose)
+      Logger.log("Found \(confName.pii.quoted) in memory cache", level: .verbose)
       return cachedConfFile
     }
 
@@ -46,7 +46,7 @@ class InputConfFileCache {
       storage[confName] = confFile
     }
 
-    Logger.log("Updating memory cache entry for \(confName.quoted) (loadedOK: \(!confFile.failedToLoad))", level: .verbose)
+    Logger.log("Updating memory cache entry for \(confName.pii.quoted) (loadedOK: \(!confFile.failedToLoad))", level: .verbose)
     return confFile
   }
 
@@ -55,27 +55,27 @@ class InputConfFileCache {
   fileprivate func saveFile(_ inputConfFile: InputConfFile) throws {
     switch inputConfFile.status {
       case .readOnly:
-        Logger.log("Aborting saveFile() for \(inputConfFile.filePath.quoted): isReadOnly==true!", level: .error)
+        Logger.log("Aborting saveFile() for \(inputConfFile.filePath.pii.quoted): isReadOnly==true!", level: .error)
         throw IINAError.confFileIsReadOnly
       case .failedToLoad:
-        Logger.log("Aborting saveFile() for \(inputConfFile.filePath.quoted): invalid operation: file never loaded properly!", level: .error)
+        Logger.log("Aborting saveFile() for \(inputConfFile.filePath.pii.quoted): invalid operation: file never loaded properly!", level: .error)
         throw IINAError.confFileIsReadOnly
       case .normal:
         break
     }
 
     storageLock.withLock {
-      Logger.log("Updating memory cache entry for conf file: \(inputConfFile.confName.quoted)", level: .verbose)
+      Logger.log("Updating memory cache entry for conf file: \(inputConfFile.confName.pii.quoted)", level: .verbose)
       InputConfFile.cache.storage[inputConfFile.confName] = inputConfFile
     }
 
     InputConfFileCache.writeQueue.async {
-      Logger.log("Saving conf \(inputConfFile.confName.quoted) to file path \(inputConfFile.filePath.quoted)", level: .verbose)
+      Logger.log("Saving conf \(inputConfFile.confName.pii.quoted) to file path \(inputConfFile.filePath.pii.quoted)", level: .verbose)
       do {
         let newFileContent: String = inputConfFile.lines.joined(separator: "\n")
         try newFileContent.write(toFile: inputConfFile.filePath, atomically: true, encoding: .utf8)
       } catch {
-        Logger.log("Write to disk failed for file \(inputConfFile.filePath.quoted): \(error)", level: .error)
+        Logger.log("Write to disk failed for file \(inputConfFile.filePath.pii.quoted): \(error)", level: .error)
         // TODO: more appropriate message, with file name
         sendErrorAlert(key: "config.cannot_create", args: ["config"])
       }
@@ -88,9 +88,9 @@ class InputConfFileCache {
     let newFilePath = Utility.buildConfFilePath(for: newConfName)
 
     storageLock.withLock {
-      Logger.log("Updating memory cache: moving \(oldConfName.quoted) -> \(newConfName.quoted)", level: .verbose)
+      Logger.log("Updating memory cache: moving \(oldConfName.pii.quoted) -> \(newConfName.pii.quoted)", level: .verbose)
       guard let inputConfFile = storage.removeValue(forKey: oldConfName) else {
-        Logger.log("Cannot move conf file: no entry in cache for \(oldConfName.quoted) (this should never happen)", level: .error)
+        Logger.log("Cannot move conf file: no entry in cache for \(oldConfName.pii.quoted) (this should never happen)", level: .error)
         sendErrorAlert(key: "error_finding_file", args: ["config"])
         return
       }
@@ -103,19 +103,19 @@ class InputConfFileCache {
       let newExists = FileManager.default.fileExists(atPath: newFilePath)
 
       if !oldExists && newExists {
-        Logger.log("Looks like file has already moved: \(oldFilePath.quoted)")
+        Logger.log("Looks like file has already moved: \(oldFilePath.pii.quoted)")
       } else {
         if !oldExists {
-          Logger.log("Can't rename config: could not find file: \(oldFilePath.quoted)", level: .error)
+          Logger.log("Can't rename config: could not find file: \(oldFilePath.pii.quoted)", level: .error)
           sendErrorAlert(key: "error_finding_file", args: ["config"])
         } else if newExists {
-          Logger.log("Can't rename config: a file already exists at the destination: \(newFilePath.quoted)", level: .error)
+          Logger.log("Can't rename config: a file already exists at the destination: \(newFilePath.pii.quoted)", level: .error)
           // TODO: more appropriate message
           sendErrorAlert(key: "config.cannot_create", args: ["config"])
         } else {
           // - Move file on disk
           do {
-            Logger.log("Attempting to move InputConf file \(oldFilePath.quoted) to \(newFilePath.quoted)")
+            Logger.log("Attempting to move InputConf file \(oldFilePath.pii.quoted) to \(newFilePath.pii.quoted)")
             try FileManager.default.moveItem(atPath: oldFilePath, toPath: newFilePath)
           } catch let error {
             Logger.log("Failed to rename file: \(error)", level: .error)
@@ -137,7 +137,7 @@ class InputConfFileCache {
 
     for confName in confNamesToRemove {
       guard let removedConfFile = removeFromCache(confName: confName) else {
-        Logger.log("Cannot remove conf file: no entry in cache for \(confName.quoted) (this should never happen)", level: .error)
+        Logger.log("Cannot remove conf file: no entry in cache for \(confName.pii.quoted) (this should never happen)", level: .error)
         sendErrorAlert(key: "error_finding_file", args: ["config"])
         continue
       }
@@ -149,11 +149,11 @@ class InputConfFileCache {
           try FileManager.default.removeItem(atPath: filePath)
         } catch {
           if FileManager.default.fileExists(atPath: filePath) {
-            Logger.log("File exists but could not be deleted: \(filePath.quoted)", level: .error)
+            Logger.log("File exists but could not be deleted: \(filePath.pii.quoted)", level: .error)
             let fileName = URL(fileURLWithPath: filePath).lastPathComponent
             sendErrorAlert(key: "error_deleting_file", args: [fileName])
           } else {
-            Logger.log("Looks like file was already removed: \(filePath.quoted)")
+            Logger.log("Looks like file was already removed: \(filePath.pii.quoted)")
           }
         }
       }
@@ -165,7 +165,7 @@ class InputConfFileCache {
   private func removeFromCache(confName: String) -> InputConfFile? {
     // Move file contents out of memory cache and into undo data:
     storageLock.withLock {
-      Logger.log("Removing from cache: \(confName.quoted)", level: .verbose)
+      Logger.log("Removing from cache: \(confName.pii.quoted)", level: .verbose)
       return storage.removeValue(forKey: confName)
     }
   }
@@ -177,14 +177,14 @@ class InputConfFileCache {
   func restoreRemovedConfFiles(_ confNames: Set<String>, _ filesRemovedByLastAction: [String:InputConfFile]) {
     storageLock.withLock {
       for (confName, inputConfFile) in filesRemovedByLastAction {
-        Logger.log("Restoring file to cache: \(confName.quoted)", level: .verbose)
+        Logger.log("Restoring file to cache: \(confName.pii.quoted)", level: .verbose)
         storage[confName] = inputConfFile
       }
     }
 
     for confName in confNames {
       guard let inputConfFile = filesRemovedByLastAction[confName] else {
-        Logger.log("Cannot restore deleted conf \(confName.quoted): file's content is missing from undo data (this should never happen)", level: .error)
+        Logger.log("Cannot restore deleted conf \(confName.pii.quoted): file's content is missing from undo data (this should never happen)", level: .error)
         sendErrorAlert(key: "config.cannot_create", args: [Utility.buildConfFilePath(for: confName)])
         continue
       }
@@ -193,13 +193,13 @@ class InputConfFileCache {
         let filePath = inputConfFile.filePath
         do {
           if FileManager.default.fileExists(atPath: filePath) {
-            Logger.log("Cannot restore deleted conf: a file aleady exists at \(filePath.quoted)", level: .error)
+            Logger.log("Cannot restore deleted conf: a file aleady exists at \(filePath.pii.quoted)", level: .error)
             // TODO: more appropriate message
             sendErrorAlert(key: "config.cannot_create", args: [filePath])
           }
           try InputConfFile.cache.saveFile(inputConfFile)
         } catch {
-          Logger.log("Failed to restore deleted conf at path \(filePath.quoted): \(error)", level: .error)
+          Logger.log("Failed to restore deleted conf at path \(filePath.pii.quoted): \(error)", level: .error)
           sendErrorAlert(key: "config.cannot_create", args: [filePath])
         }
       }
@@ -213,7 +213,7 @@ fileprivate func loadFile(at filePath: String, isReadOnly: Bool = true, confName
 
   guard let reader = StreamReader(path: filePath) else {
     // on error
-    Logger.log("Error loading key bindings from path: \(filePath.quoted)", level: .error)
+    Logger.log("Error loading key bindings from path: \(filePath.pii.quoted)", level: .error)
     let fileName = URL(fileURLWithPath: filePath).lastPathComponent
     let alertInfo = Utility.AlertInfo(key: "keybinding_config.error", args: [fileName])
     NotificationCenter.default.post(Notification(name: .iinaKeyBindingErrorOccurred, object: alertInfo))
@@ -223,7 +223,7 @@ fileprivate func loadFile(at filePath: String, isReadOnly: Bool = true, confName
   var lines: [String] = []
   while let rawLine: String = reader.nextLine() {
     guard lines.count < AppData.maxConfFileLinesAccepted else {
-      Logger.log("Maximum number of lines (\(AppData.maxConfFileLinesAccepted)) exceeded: stopping load of file: \(filePath.quoted)")
+      Logger.log("Maximum number of lines (\(AppData.maxConfFileLinesAccepted)) exceeded: stopping load of file: \(filePath.pii.quoted)")
 
       // TODO: more appropriate error msg
       let alertInfo = Utility.AlertInfo(key: "keybinding_config.error", args: [filePath])
@@ -300,7 +300,7 @@ struct InputConfFile {
     do {
       try InputConfFile.cache.saveFile(updatedConfFile)
     } catch {
-      Logger.log("Failed to overwrite conf file at \(self.filePath.quoted): \(error)", level: .error)
+      Logger.log("Failed to overwrite conf file at \(self.filePath.pii.quoted): \(error)", level: .error)
       let alertInfo = Utility.AlertInfo(key: "config.cannot_write", args: [updatedConfFile.filePath])
       NotificationCenter.default.post(Notification(name: .iinaKeyBindingErrorOccurred, object: alertInfo))
     }

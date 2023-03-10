@@ -238,7 +238,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
     }
 
     guard FileManager.default.fileExists(atPath: lastFile.path) else {
-      Logger.log("File does not exist at lastPlaybackURL: \(lastFile.path.quoted)")
+      Logger.log("File does not exist at lastPlaybackURL: \(lastFile.path.pii.quoted)")
       return nil
     }
     return lastFile
@@ -271,12 +271,12 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
 
     // Debug logging:
     if Logger.isEnabled(.verbose) {
-      let last = lastPlaybackURL.flatMap { $0.resolvingSymlinksInPath().path.quoted } ?? "nil"
+      let last = lastPlaybackURL.flatMap { $0.resolvingSymlinksInPath().path.pii.quoted } ?? "nil"
       let didFilter = recentsUnfiltered.count > recentDocuments.count
       Logger.log("Reloading WelcomeWindow. LastPlaybackURL: \(last), UnfilteredRecents: \(recentsUnfiltered.count), DidFilter: \(didFilter)", level: .verbose)
 
       for (index, url) in recentDocuments.enumerated() {
-        Logger.log("Recents[\(index)]: \(url.resolvingSymlinksInPath().path.quoted)", level: .verbose)
+        Logger.log("Recents[\(index)]: \(url.resolvingSymlinksInPath().path.pii.quoted)", level: .verbose)
       }
     }
   }

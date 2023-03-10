@@ -84,11 +84,11 @@ class ThumbnailCache {
 
     let path = pathURL.path
     guard FileManager.default.createFile(atPath: pathURL.path, contents: nil, attributes: nil) else {
-      Logger.log("Cannot create thumbnail cache file: \(path)", level: .error, subsystem: subsystem)
+      Logger.log("Cannot create thumbnail cache file: \(path.pii.quoted)", level: .error, subsystem: subsystem)
       return
     }
     guard let file = try? FileHandle(forWritingTo: pathURL) else {
-      Logger.log("Cannot write to thumbnail cache file: \(path)", level: .error, subsystem: subsystem)
+      Logger.log("Cannot write to thumbnail cache file: \(path.pii.quoted)", level: .error, subsystem: subsystem)
       return
     }
 
@@ -97,7 +97,7 @@ class ThumbnailCache {
     file.write(versionData)
 
     guard let fileAttr = try? FileManager.default.attributesOfItem(atPath: videoPath!.path) else {
-      Logger.log("Cannot get video file attributes (path: \(videoPath!.path))", level: .error, subsystem: subsystem)
+      Logger.log("Cannot get video file attributes (path: \(videoPath!.path.pii.quoted))", level: .error, subsystem: subsystem)
       return
     }
 
@@ -140,12 +140,12 @@ class ThumbnailCache {
       do {
         try file.close()
       } catch {
-        Logger.log("Failed to close file: \(path)", level: .error, subsystem: subsystem)
+        Logger.log("Failed to close file: \(path.pii.quoted)", level: .error, subsystem: subsystem)
       }
     }
 
     CacheManager.shared.needsRefresh = true
-    Logger.log("Finished writing thumbnail cache: \(path)", subsystem: subsystem)
+    Logger.log("Finished writing thumbnail cache: \(path.pii.quoted)", subsystem: subsystem)
   }
 
   /// Read thumbnail cache to file.
@@ -153,10 +153,10 @@ class ThumbnailCache {
   static func read(forName name: String, forWidth width: Int) -> [FFThumbnail]? {
     let pathURL = urlFor(name, width: width)
     guard let file = try? FileHandle(forReadingFrom: pathURL) else {
-      Logger.log("Cannot open thumbnail cache file: \(pathURL.path)", level: .error, subsystem: subsystem)
+      Logger.log("Cannot open thumbnail cache file: \(pathURL.path.pii.quoted)", level: .error, subsystem: subsystem)
       return nil
     }
-    Logger.log("Reading thumbnail cache from \(pathURL.path.quoted)", subsystem: subsystem)
+    Logger.log("Reading thumbnail cache from \(pathURL.path.pii.quoted)", subsystem: subsystem)
 
     var result: [FFThumbnail] = []
 
@@ -172,7 +172,8 @@ class ThumbnailCache {
       // length and timestamp
       guard let blockLength = file.read(type: Int64.self),
             let timestamp = file.read(type: Double.self) else {
-        Logger.log("Cannot read image header. Cache file will be deleted: \(pathURL)", level: .warning, subsystem: subsystem)
+        Logger.log("Cannot read image header. Cache file will be deleted: \(pathURL.absoluteString.pii.quoted)",
+                   level: .warning, subsystem: subsystem)
         file.closeFile()
         deleteCacheFile(at: pathURL)
         return nil
@@ -180,7 +181,7 @@ class ThumbnailCache {
       // jpeg
       let jpegData = file.readData(ofLength: Int(blockLength) - MemoryLayout.size(ofValue: timestamp))
       guard let image = NSImage(data: jpegData) else {
-        Logger.log("Cannot read image. Cache file will be deleted: \(pathURL)", level: .warning, subsystem: subsystem)
+        Logger.log("Cannot read image. Cache file will be deleted: \(pathURL.absoluteString.pii.quoted)", level: .warning, subsystem: subsystem)
         file.closeFile()
         deleteCacheFile(at: pathURL)
         return nil
@@ -202,7 +203,7 @@ class ThumbnailCache {
     do {
       try FileManager.default.removeItem(at: pathURL)
     } catch {
-      Logger.log("Cannot delete corrupted cache: \(pathURL)", level: .error, subsystem: subsystem)
+      Logger.log("Cannot delete corrupted cache: \(pathURL.absoluteString.pii.quoted)", level: .error, subsystem: subsystem)
     }
   }
 

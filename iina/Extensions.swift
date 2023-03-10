@@ -464,6 +464,12 @@ extension String {
     }
   }
 
+  // Returns a lookup token for the given string, which can be used in its place to privatize the log.
+  // The pii.txt file is required to match the lookup token with the privateString.
+  var pii: String {
+    Logger.getOrCreatePII(for: self)
+  }
+
   var isDirectoryAsPath: Bool {
     get {
       var re = ObjCBool(false)

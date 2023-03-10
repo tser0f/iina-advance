@@ -197,6 +197,7 @@ class PlayerCore: NSObject {
     return true
   }
 
+  // TODO: move to MPVController
   /// The A loop point established by the [mpv](https://mpv.io/manual/stable/) A-B loop command.
   var abLoopA: Double {
     /// Returns the value of the A loop point, a timestamp in seconds if set, otherwise returns zero.
@@ -217,6 +218,7 @@ class PlayerCore: NSObject {
     }
   }
 
+  // TODO: move to MPVController
   /// The B loop point established by the [mpv](https://mpv.io/manual/stable/) A-B loop command.
   var abLoopB: Double {
     /// Returns the value of the B loop point, a timestamp in seconds if set, otherwise returns zero.
@@ -321,7 +323,7 @@ class PlayerCore: NSObject {
   @discardableResult
   func openURLs(_ urls: [URL], shouldAutoLoad autoLoad: Bool = true) -> Int? {
     guard !urls.isEmpty else { return 0 }
-    Logger.log("OpenURLs: \(urls)")
+    Logger.log("OpenURLs: \(urls.map{$0.absoluteString.pii})")
     let urls = Utility.resolveURLs(urls)
 
     // handle BD folders and m3u / m3u8 files first
@@ -383,7 +385,7 @@ class PlayerCore: NSObject {
   }
 
   private func openMainWindow(path: String, url: URL) {
-    Logger.log("Opening in main window: \(path.quoted)", subsystem: subsystem)
+    Logger.log("Opening in main window: \(path.pii.quoted)", subsystem: subsystem)
     info.currentURL = url
     // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
     info.currentFolder = nil
@@ -420,12 +422,12 @@ class PlayerCore: NSObject {
       path = customYtdlPath + ":" + path
     }
     setenv("PATH", path, 1)
-    Logger.log("Set path to \(path)", subsystem: subsystem)
+    Logger.log("Set path to \(path.pii)", subsystem: subsystem)
 
     // set http proxy
     if let proxy = Preference.string(for: .httpProxy), !proxy.isEmpty {
       setenv("http_proxy", "http://" + proxy, 1)
-      Logger.log("Set http_proxy to \(proxy)", subsystem: subsystem)
+      Logger.log("Set http_proxy to \(proxy.pii)", subsystem: subsystem)
     }
 
     mpv.mpvInit()
@@ -1850,7 +1852,7 @@ class PlayerCore: NSObject {
         }
       }
     } else {
-      Logger.log("Generating new thumbnails for file \(url.path.quoted), width=\(thumbWidth)", subsystem: subsystem)
+      Logger.log("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)", subsystem: subsystem)
       ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
     }
   }
