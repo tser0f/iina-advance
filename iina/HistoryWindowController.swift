@@ -341,23 +341,23 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   }
 
   @IBAction func searchTypeFilenameAction(_ sender: AnyObject) {
-    searchType = .filename
-    if Preference.UIState.isSaveEnabled {
-      Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
-    } else {
-      reloadData()
-    }
+    setSearchType(.filename)
   }
 
   @IBAction func searchTypeFullPathAction(_ sender: AnyObject) {
-    searchType = .fullPath
+    setSearchType(.fullPath)
+  }
+
+  private func setSearchType(_ newValue: Preference.HistorySearchType) {
+    // avoid reload if no change:
+    guard searchType != newValue else { return }
+    searchType = newValue
     if Preference.UIState.isSaveEnabled {
-      Preference.set(searchType.rawValue, for: .uiHistoryTableSearchType)
+      Preference.set(newValue.rawValue, for: .uiHistoryTableSearchType)
     } else {
       reloadData()
     }
   }
-
 }
 
 
