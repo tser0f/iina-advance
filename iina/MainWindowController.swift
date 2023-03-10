@@ -2462,8 +2462,9 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
-    if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image {
-      let imageToDisplay = image.rotate(player.info.totalRotation)
+    if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image,
+        let totalRotation = player.info.totalRotation {
+      let imageToDisplay = image.rotate(totalRotation)
       thumbnailPeekView.imageView.image = imageToDisplay
       thumbnailPeekView.isHidden = false
 

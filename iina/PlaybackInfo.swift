@@ -22,19 +22,32 @@ class PlaybackInfo {
     case bSet
   }
 
-  // FIXME: get this out of here
-  unowned let player: PlayerCore
-
-  init(_ pc: PlayerCore) {
-    player = pc
-  }
+  // - MARK: Playback lifecycle state
+  // TODO: turn into enum?
 
   var isIdle: Bool = true {
     didSet {
       PlayerCore.checkStatusForSleep()
     }
   }
+
   var fileLoading: Bool = false
+
+  var justStartedFile: Bool = false
+  var justOpenedFile: Bool = false
+
+  var shouldAutoLoadFiles: Bool = false
+  var isMatchingSubtitles = false
+  var disableOSDForFileLoading: Bool = false
+
+  var isSeeking: Bool = false
+
+  // -- PERSISTENT PROPERTIES BEGIN --
+
+  var isPaused: Bool = false
+  var isPlaying: Bool {
+    return !isPaused
+  }
 
   var currentURL: URL? {
     didSet {
@@ -48,14 +61,14 @@ class PlaybackInfo {
     }
   }
 
-  // Derived from currentURL:
+  // Derived from currentURL (no need to persist):
   var currentFolder: URL?
   var isNetworkResource: Bool = false
   var mpvMd5: String?
 
-  // MARK: Video settings
-  // TODO: place in GeometryManager
+  // MARK: Audio/Video
 
+  // TODO: place in GeometryManager
   var videoWidth: Int?
   var videoHeight: Int?
 
@@ -68,55 +81,9 @@ class PlaybackInfo {
 
   // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
   // IINA only supports one of [0, 90, 180, 270]
-  lazy var totalRotation: Int = {
-    return player.mpv.getInt(MPVProperty.videoParamsRotate)
-  }()
+  var totalRotation: Int?
 
   var cachedWindowScale: Double = 1.0
-
-
-  var videoPosition: VideoTime?
-  var videoDuration: VideoTime?
-
-  func constrainVideoPosition() {
-    guard let duration = videoDuration, let position = videoPosition else { return }
-    if position.second < 0 { position.second = 0 }
-    if position.second > duration.second { position.second = duration.second }
-  }
-
-  // MARK: Playback state
-  // TODO: turn into enum
-
-  var isSeeking: Bool = false
-
-  var isPaused: Bool = false {
-    // FIXME: get this out of here
-    didSet {
-      PlayerCore.checkStatusForSleep()
-      if player == PlayerCore.lastActive {
-        if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-          NowPlayingInfoManager.updateInfo(state: isPaused ? .paused : .playing)
-        }
-        if #available(macOS 10.12, *), player.mainWindow.pipStatus == .inPIP {
-          player.mainWindow.pip.playing = isPlaying
-        }
-      }
-    }
-  }
-  var isPlaying: Bool {
-    get {
-      return !isPaused
-    }
-    set {
-      isPaused = !newValue
-    }
-  }
-
-  var justStartedFile: Bool = false
-  var justOpenedFile: Bool = false
-  var shouldAutoLoadFiles: Bool = false
-  var isMatchingSubtitles = false
-  var disableOSDForFileLoading: Bool = false
 
   /** The current applied aspect, used for find current aspect in menu, etc. Maybe not a good approach. */
   var unsureAspect: String = "Default"
@@ -142,27 +109,29 @@ class PlaybackInfo {
   var gamma: Int = 0
   var hue: Int = 0
 
+  var playSpeed: Double = 1.0
+
   var volume: Double = 50
 
   var isMuted: Bool = false
 
-  var playSpeed: Double = 1
-
   var audioDelay: Double = 0
   var subDelay: Double = 0
 
-  // cache related
-  var pausedForCache: Bool = false
-  var cacheUsed: Int = 0
-  var cacheSpeed: Int = 0
-  var cacheTime: Int = 0
-  var bufferingState: Int = 0
-
-  var audioTracks: [MPVTrack] = []
-  var videoTracks: [MPVTrack] = []
-  var subTracks: [MPVTrack] = []
-
   var abLoopStatus: LoopStatus = .cleared
+
+  var playlist: [MPVPlaylistItem] = []
+
+  var videoPosition: VideoTime?
+  var videoDuration: VideoTime?
+
+  func constrainVideoPosition() {
+    guard let duration = videoDuration, let position = videoPosition else { return }
+    if position.second < 0 { position.second = 0 }
+    if position.second > duration.second { position.second = duration.second }
+  }
+
+  var chapter = 0
 
   /** Selected track IDs. Use these (instead of `isSelected` of a track) to check if selected */
   var aid: Int?
@@ -170,9 +139,12 @@ class PlaybackInfo {
   var vid: Int?
   var secondSid: Int?
 
-  var subEncoding: String?
+  // -- PERSISTENT PROPERTIES END --
 
-  var haveDownloadedSub: Bool = false
+  var chapters: [MPVChapter] = []
+  var audioTracks: [MPVTrack] = []
+  var videoTracks: [MPVTrack] = []
+  var subTracks: [MPVTrack] = []
 
   func trackList(_ type: MPVTrack.TrackType) -> [MPVTrack] {
     switch type {
@@ -214,13 +186,23 @@ class PlaybackInfo {
     }
   }
 
-  var playlist: [MPVPlaylistItem] = []
-  var chapters: [MPVChapter] = []
-  var chapter = 0
+  // - MARK: Subtitles
+
+  var subEncoding: String?
+
+  var haveDownloadedSub: Bool = false
 
   var matchedSubs: [String: [URL]] = [:]
   var currentSubsInfo: [FileInfo] = []
   var currentVideosInfo: [FileInfo] = []
+
+  // - MARK: Cache
+
+  var pausedForCache: Bool = false
+  var cacheUsed: Int = 0
+  var cacheSpeed: Int = 0
+  var cacheTime: Int = 0
+  var bufferingState: Int = 0
 
   // The cache is read by the main thread and updated by a background thread therefore all use
   // must be through the class methods that properly coordinate thread access.
@@ -285,6 +267,8 @@ class PlaybackInfo {
       cachedMetadata[file] = value
     }
   }
+
+  // - MARK: Thumbnails
 
   var thumbnailsReady = false
   var thumbnailsProgress: Double = 0

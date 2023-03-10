@@ -1120,6 +1120,16 @@ class MPVController: NSObject {
         player.sendOSD(paused ? .pause : .resume)
         DispatchQueue.main.sync {
           player.info.isPaused = paused
+
+          PlayerCore.checkStatusForSleep()
+          if player == PlayerCore.lastActive {
+            if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
+              NowPlayingInfoManager.updateInfo(state: paused ? .paused : .playing)
+            }
+            if #available(macOS 10.12, *), player.mainWindow.pipStatus == .inPIP {
+              player.mainWindow.pip.playing = !paused
+            }
+          }
           // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
           // video is paused to avoid wasting energy with needless processing. If paused shutdown
           // the timer that synchronizes the UI and the high priority display link thread.

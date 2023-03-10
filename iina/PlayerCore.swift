@@ -159,7 +159,7 @@ class PlayerCore: NSObject {
     return controller
   }()
 
-  lazy var info: PlaybackInfo = PlaybackInfo(self)
+  lazy var info: PlaybackInfo = PlaybackInfo()
 
   var syncPlayTimeTimer: Timer?
 
@@ -291,6 +291,8 @@ class PlayerCore: NSObject {
   func restoreSavedState() {
     // TODO: much, much more
 
+
+
     startMPV()
   }
 
@@ -389,6 +391,8 @@ class PlayerCore: NSObject {
     let isFirstLoad = !mainWindow.loaded
     let _ = mainWindow.window
     (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningMainWindow()
+
+    // FIXME: delay until after fileLoaded. We don't know the video dimensions yet!
     if isInMiniPlayer {
       miniPlayer.showWindow(nil)
     } else {
@@ -1676,10 +1680,6 @@ class PlayerCore: NSObject {
     switch option {
 
     case .time:
-      info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
-      if info.isNetworkResource {
-        info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
-      }
       // When the end of a video file is reached mpv does not update the value of the property
       // time-pos, leaving it reflecting the position of the last frame of the video. This is
       // especially noticeable if the onscreen controller time labels are configured to show
@@ -1687,6 +1687,11 @@ class PlayerCore: NSObject {
       let eofReached = mpv.getFlag(MPVProperty.eofReached)
       if eofReached, let duration = info.videoDuration?.second {
         info.videoPosition?.second = duration
+      } else {
+        info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
+        if info.isNetworkResource {
+          info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
+        }
       }
       info.constrainVideoPosition()
       DispatchQueue.main.async {
@@ -1698,7 +1703,6 @@ class PlayerCore: NSObject {
       }
 
     case .timeAndCache:
-      info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
       info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
       // When the end of a video file is reached mpv does not update the value of the property
       // time-pos, leaving it reflecting the position of the last frame of the video. This is
@@ -1707,6 +1711,8 @@ class PlayerCore: NSObject {
       let eofReached = mpv.getFlag(MPVProperty.eofReached)
       if eofReached, let duration = info.videoDuration?.second {
         info.videoPosition?.second = duration
+      } else {
+        info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
       }
       info.constrainVideoPosition()
       info.pausedForCache = mpv.getFlag(MPVProperty.pausedForCache)
