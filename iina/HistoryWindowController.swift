@@ -109,8 +109,10 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     reloadData()
 
     // FIXME: this is not reliable at all. Maybe try enabling after fixing the XIB problems
-//    if let historyTableScrollView = outlineView.enclosingScrollView {
-//      let _ = historyTableScrollView.restoreAndObserveVerticalScroll(key: .uiHistoryTableScrollOffsetY)
+//    if let historyTableScrollView = self.outlineView.enclosingScrollView {
+//      let _ = historyTableScrollView.restoreAndObserveVerticalScroll(key: .uiHistoryTableScrollOffsetY, defaultScrollAction: {
+//        self.outlineView.scrollRowToVisible(0)
+//      })
 //    }
   }
 
