@@ -97,14 +97,14 @@ class ConfTableViewController: NSObject {
   func selectCurrentConfRow() {
     let confName = self.confTableState.selectedConfName
     guard let index = confTableState.confTableRows.firstIndex(of: confName) else {
-      Logger.log("selectCurrentConfRow(): Failed to find '\(confName)' in table; falling back to default", level: .error)
+      Logger.log("selectCurrentConfRow(): Failed to find \(confName.pii.quoted) in table; falling back to default", level: .error)
       confTableState.fallBackToDefaultConf()
       return
     }
 
     self.tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
     let printedIndexesMsg = "Selected index list is now: \(self.tableView.selectedRowIndexes.map{$0})"
-    Logger.log("Selected row: '\(confName)' (index \(index)). \(printedIndexesMsg)", level: .verbose)
+    Logger.log("Selected row: \(confName.pii.quoted) (index \(index)). \(printedIndexesMsg)", level: .verbose)
   }
 }
 
@@ -221,7 +221,7 @@ extension ConfTableViewController: EditableTableViewDelegate {
       return false
     }
 
-    Logger.log("User renamed current conf to \(newName.quoted) in editor", level: .verbose)
+    Logger.log("User renamed current conf to \(newName.pii.quoted) in editor", level: .verbose)
 
     guard !self.confTableState.isRow(newName) else {
       // Disallow overwriting another entry in list
@@ -300,7 +300,7 @@ extension ConfTableViewController: EditableTableViewDelegate {
 
     NSPasteboard.general.clearContents()
     NSPasteboard.general.writeObjects([url])
-    Logger.log("Copied to the clipboard: \(url.description.quoted)", level: .verbose)
+    Logger.log("Copied to the clipboard: \(url.description.pii.quoted)", level: .verbose)
   }
 
 }
@@ -358,7 +358,7 @@ extension ConfTableViewController: NSTableViewDataSource {
     guard userConfList.count == 1 else { return }
     let confName = userConfList[0]
 
-    Logger.log("User dragged to the trash: \(confName)", level: .verbose)
+    Logger.log("User dragged to the trash: \(confName.pii.quoted)", level: .verbose)
 
     // TODO: this is the wrong animation
     NSAnimationEffect.disappearingItemDefault.show(centeredAt: screenPoint, size: NSSize(width: 50.0, height: 50.0), completionHandler: {
@@ -433,7 +433,7 @@ extension ConfTableViewController: NSTableViewDataSource {
     // Option B: drop bindings into user conf file
     let bindingList = KeyMapping.deserializeList(from: info.draggingPasteboard)
     if !bindingList.isEmpty, dropOperation == .on, let targetConfName = confTableState.getUserConfName(at: row) {
-      Logger.log("User dropped \(bindingList.count) bindings into \(targetConfName.quoted) conf")
+      Logger.log("User dropped \(bindingList.count) bindings into \(targetConfName.pii.quoted) conf")
       info.numberOfValidItemsForDrop = bindingList.count
       // Try not to block UI. Failures should be rare here anyway
       DispatchQueue.main.async {
@@ -558,7 +558,7 @@ extension ConfTableViewController:  NSMenuDelegate {
     let mappingsToInsert = bindingTableViewController.readBindingsFromClipboard()
     if !mappingsToInsert.isEmpty {
       let destConfName = sender.confName
-      Logger.log("User chose to paste \(mappingsToInsert.count) bindings into \(destConfName.quoted)")
+      Logger.log("User chose to paste \(mappingsToInsert.count) bindings into \(destConfName.pii.quoted)")
       if destConfName == confTableState.selectedConfName {
         // If currently open conf file, this will paste under the current selection
         bindingTableViewController.doEditMenuPaste()
@@ -682,12 +682,12 @@ extension ConfTableViewController:  NSMenuDelegate {
     let (newConfName, newFilePath) = findNewNameForDuplicate(originalName: confName)
 
     do {
-      Logger.log("Duplicating file: \(origFilePath.quoted) -> \(newFilePath.quoted)")
+      Logger.log("Duplicating file: \(origFilePath.pii.quoted) -> \(newFilePath.pii.quoted)")
       try FileManager.default.copyItem(atPath: origFilePath, toPath: newFilePath)
       return (newConfName, newFilePath)
     } catch let error {
       DispatchQueue.main.async {
-        Logger.log("Failed to create duplicate: \(origFilePath.quoted) -> \(newFilePath.quoted): \(error.localizedDescription)", level: .error)
+        Logger.log("Failed to create duplicate: \(origFilePath.pii.quoted) -> \(newFilePath.pii.quoted): \(error.localizedDescription)", level: .error)
         Utility.showAlert("config.cannot_create", arguments: [error.localizedDescription], sheetWindow: self.tableView.window)
       }
       return nil
@@ -734,7 +734,7 @@ extension ConfTableViewController:  NSMenuDelegate {
 
         guard InputConfFile.tryLoadingFile(at: filePath) else {
           DispatchQueue.main.async {
-            Logger.log("Error reading conf file \(filePath.quoted); aborting import", level: .error)
+            Logger.log("Error reading conf file \(filePath.pii.quoted); aborting import", level: .error)
             Utility.showAlert("keybinding_config.error", arguments: [url.lastPathComponent], sheetWindow: self.tableView.window)
           }
           // Do not import any files if we can't parse one.
@@ -753,12 +753,12 @@ extension ConfTableViewController:  NSMenuDelegate {
 
           if filePath.equalsIgnoreCase(newFilePath) {
             // Edge case
-            Logger.log("File is already present in input_conf directory but was missing from conf list; adding it: \(filePath.quoted)")
+            Logger.log("File is already present in input_conf directory but was missing from conf list; adding it: \(filePath.pii.quoted)")
           } else {
             DispatchQueue.main.sync {  // block because we need user input to proceed
               guard self.handlePossibleExistingFile(filePath: newFilePath) else {
                 // Do not proceed if user does not want to delete.
-                Logger.log("Aborting conf file import: user did not delete file: \(newFilePath.quoted)")
+                Logger.log("Aborting conf file import: user did not delete file: \(newFilePath.pii.quoted)")
                 return
               }
             }
@@ -773,11 +773,11 @@ extension ConfTableViewController:  NSMenuDelegate {
       for (newName, (filePath, newFilePath)) in createdConfDict {
         if filePath != newFilePath {
           do {
-            Logger.log("Import: copying: \(filePath.quoted) -> \(newFilePath.quoted)")
+            Logger.log("Import: copying: \(filePath.pii.quoted) -> \(newFilePath.pii.quoted)")
             try FileManager.default.copyItem(atPath: filePath, toPath: newFilePath)
           } catch let error {
             DispatchQueue.main.async {
-              Logger.log("Import: failed to copy: \(filePath.quoted) -> \(newFilePath.quoted): \(error.localizedDescription)", level: .error)
+              Logger.log("Import: failed to copy: \(filePath.pii.quoted) -> \(newFilePath.quoted): \(error.localizedDescription)", level: .error)
               Utility.showAlert("config.cannot_create", arguments: [error.localizedDescription], sheetWindow: self.tableView.window)
             }
             failedNameSet.insert(newName)
@@ -802,23 +802,23 @@ extension ConfTableViewController:  NSMenuDelegate {
   private func handlePossibleExistingFile(filePath: String) -> Bool {
     let fm = FileManager.default
     if fm.fileExists(atPath: filePath) {
-      Logger.log("Blocked by existing file: \(filePath.quoted)'", level: .verbose)
+      Logger.log("Blocked by existing file: \(filePath.pii.quoted)'", level: .verbose)
       let fileName = URL(fileURLWithPath: filePath).lastPathComponent
       // TODO: show the filename in the dialog
-      if Utility.quickAskPanel("config.file_existing", messageComment: "\(fileName.quoted)") {
+      if Utility.quickAskPanel("config.file_existing", messageComment: "\(fileName.pii.quoted)") {
         // - delete file
         do {
           try fm.removeItem(atPath: filePath)
-          Logger.log("Successfully removed file: \(filePath.quoted)'")
+          Logger.log("Successfully removed file: \(filePath.pii.quoted)'")
           return true
         } catch  {
           Utility.showAlert("error_deleting_file", sheetWindow: self.tableView.window)
-          Logger.log("Failed to remove file: \(filePath.quoted)': \(error)")
+          Logger.log("Failed to remove file: \(filePath.pii.quoted)': \(error)")
           return false
         }
       } else {
         // - show file. cancel delete
-        Logger.log("User chose to show file in Finder: \(filePath.quoted)'", level: .verbose)
+        Logger.log("User chose to show file in Finder: \(filePath.pii.quoted)'", level: .verbose)
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: filePath)])
         return false
       }
@@ -835,7 +835,7 @@ extension ConfTableViewController:  NSMenuDelegate {
 
     while true {
       let nextName = incrementCopyName(confName: newConfName)
-      Logger.log("Checking potential new file name: \(nextName.quoted)", level: .verbose)
+      Logger.log("Checking potential new file name: \(nextName.pii.quoted)", level: .verbose)
       newConfName = nextName
 
       if let newFilePath = getFilePathIfValid(forConfName: newConfName) {
@@ -875,7 +875,7 @@ extension ConfTableViewController:  NSMenuDelegate {
         let baseName = String(name[baseNameRange])
         return (baseName, copyCount)
       }
-      Logger.log("Failed to parse name: \(name.quoted)", level: .error)
+      Logger.log("Failed to parse name: \(name.pii.quoted)", level: .error)
     }
     // No match
     return (name, 0)

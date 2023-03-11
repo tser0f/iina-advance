@@ -21,14 +21,25 @@ import Foundation
 ///     the logger uses its own similar method.
 struct Logger {
 
+  fileprivate static let sessionDirName: String = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd-HH-mm-ss"
+    let timeString  = formatter.string(from: Date())
+    let token = Utility.ShortCodeGenerator.getCode(length: 6)
+    return "\(timeString)_\(token)"
+  }()
+
   /// If true, strings which are indicated to contain personally identifiable information (PII) are replaced with a
   /// unique PII token (see `piiFormat` below) when they are logged to iina.log.
-  static let enablePiiMasking = true
+  static let enablePiiMaskingInLog = Preference.bool(for: .enablePiiMaskingInLog)
 
-  /// Is ignored unless `enablePiiMasking` is true. If `writeUnmaskedPiiToFile` is true, each PII token and its value is written to a separate file
+  /// Is ignored unless `enablePiiMaskingInLog` is true. If `writeUnmaskedPiiToFile` is true, each PII token and its value is written to a separate file
   /// which can be used to look up the PII tokens from the log; if it is false, then the values are not logged.
   static let writeUnmaskedPiiToFile = true
+
   fileprivate static let piiFormat: String = "{pii%@}"
+  fileprivate static let piiFileVersion: Int = 0
+  fileprivate static let piiFirstLineFormat = "# IINA_PII \(piiFileVersion) \(sessionDirName)\n"
 
   struct Subsystem: RawRepresentable {
     var rawValue: String
@@ -65,9 +76,10 @@ struct Logger {
   fileprivate static var piiDict: [String: Int] = [:]
 
   static func getOrCreatePII(for privateString: String) -> String {
-    guard enablePiiMasking else {
+    guard enablePiiMaskingInLog else {
       return privateString
     }
+
     var piiToken: String = ""
     lock.withLock {
       if let piiID = piiDict[privateString] {
@@ -79,12 +91,18 @@ struct Logger {
         piiToken = formatPIIToken(piiID)
 
         if writeUnmaskedPiiToFile {
+          if piiID == 0 {
+            if let data = piiFirstLineFormat.data(using: .utf8) {
+              writeToFile(piiFileHandle, data)
+            } else {
+              print(formatMessage("Could not encode pii header for writing!", .error, Logger.loggerSubsystem, false))
+            }
+          }
           let line = "\(piiToken)=\(escapedString)\n"
           if let data = line.data(using: .utf8) {
             writeToFile(piiFileHandle, data)
           } else {
-            print(formatMessage("Cannot encode log string!", .error, Logger.loggerSubsystem, false))
-            piiToken = formatPIIToken(-1)
+            print(formatMessage("Could not encode pii token (\(piiToken)) for writing!", .error, Logger.loggerSubsystem, false))
           }
         }
       }
@@ -117,11 +135,6 @@ struct Logger {
     // methods must not ever be called while the logger is still initializing.
     createDirIfNotExist(url: logsUrl)
 
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd-HH-mm-ss"
-    let timeString  = formatter.string(from: Date())
-    let token = Utility.ShortCodeGenerator.getCode(length: 6)
-    let sessionDirName = "\(timeString)_\(token)"
     let sessionDir = appLogsUrl.appendingPathComponent(sessionDirName, isDirectory: true)
 
     // MUST NOT use the similar method in Utilities. See above for reason.
