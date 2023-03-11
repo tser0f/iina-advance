@@ -182,16 +182,16 @@ struct Preference {
     static let subOverrideLevel = Key("subOverrideLevel")
     static let subTextFont = Key("subTextFont")
     static let subTextSize = Key("subTextSize")
-    static let subTextColor = Key("subTextColor")
-    static let subBgColor = Key("subBgColor")
+    static let subTextColor = Key("subTextColorString")
+    static let subBgColor = Key("subBgColorString")
     static let subBold = Key("subBold")
     static let subItalic = Key("subItalic")
     static let subBlur = Key("subBlur")
     static let subSpacing = Key("subSpacing")
     static let subBorderSize = Key("subBorderSize")
-    static let subBorderColor = Key("subBorderColor")
+    static let subBorderColor = Key("subBorderColorString")
     static let subShadowSize = Key("subShadowSize")
-    static let subShadowColor = Key("subShadowColor")
+    static let subShadowColor = Key("subShadowColorString")
     static let subAlignX = Key("subAlignX")
     static let subAlignY = Key("subAlignY")
     static let subMarginX = Key("subMarginX")
@@ -365,6 +365,14 @@ struct Preference {
     static let uiHistoryTableSearchType = Key("uiHistoryTableSearchType")
     static let uiHistoryTableSearchString = Key("uiHistoryTableSearchString")
     static let uiHistoryTableScrollOffsetY = Key("uiHistoryTableScrollOffsetY")
+
+    // Old deprecated keys. Do not reference outside this file.
+    fileprivate static let legacyColorKeys: [Key: Key] = [
+      Preference.Key.subTextColor: Key("subTextColor"),
+      Preference.Key.subBgColor: Key("subBgColor"),
+      Preference.Key.subBorderColor: Key("subBorderColor"),
+      Preference.Key.subShadowColor: Key("subShadowColor"),
+    ]
   }
 
   // MARK: - Enums
@@ -894,16 +902,16 @@ struct Preference {
     .subOverrideLevel: SubOverrideLevel.strip.rawValue,
     .subTextFont: "sans-serif",
     .subTextSize: Float(55),
-    .subTextColor: NSArchiver.archivedData(withRootObject: NSColor.white),
-    .subBgColor: NSArchiver.archivedData(withRootObject: NSColor.clear),
+    .subTextColor: convertFromLegacyColor(.subTextColor) ?? NSColor.white.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subBgColor: convertFromLegacyColor(.subBgColor) ?? NSColor.clear.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subBold: false,
     .subItalic: false,
     .subBlur: Float(0),
     .subSpacing: Float(0),
     .subBorderSize: Float(3),
-    .subBorderColor: NSArchiver.archivedData(withRootObject: NSColor.black),
+    .subBorderColor: convertFromLegacyColor(.subBorderColor) ?? NSColor.black.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subShadowSize: Float(0),
-    .subShadowColor: NSArchiver.archivedData(withRootObject: NSColor.clear),
+    .subShadowColor: convertFromLegacyColor(.subShadowColor) ?? NSColor.clear.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subAlignX: SubAlign.center.rawValue,
     .subAlignY: SubAlign.bottom.rawValue,
     .subMarginX: Float(25),
@@ -1064,8 +1072,23 @@ struct Preference {
     fatalError("Unexpected type or missing default for preference key \(key.rawValue.quoted)")
   }
 
-  static func mpvColor(for key: Key) -> String? {
-    return ud.mpvColor(forKey: key.rawValue)
+  /**
+   Older versions of IINA converted mpv color data into NSObject binary using the now-deprecated `NSUnarchiver` class.
+   This method will transition to the new format which consists of the color components written to a `String`.
+   To do this in a way which does not corrupt the data for older versions of IINA, we'll store the new format in a new `Preference.Key`,
+   and leave the legacy entry as-is.
+
+   This method will look for the legacy key corresponding to the given modern key. If it finds an entry for the legacy key, it will convert its value
+   to the modern format, store it into the entry for the new key, and then return it.
+   */
+  private static func convertFromLegacyColor(_ key: Key) -> String? {
+    guard let legacyKey = Preference.Key.legacyColorKeys[key] else { return nil }
+    guard let data = ud.data(forKey: legacyKey.rawValue) else { return nil }
+    guard let color = NSUnarchiver.unarchiveObject(with: data) as? NSColor else { return nil }
+    let mpvColorString = color.usingColorSpace(.deviceRGB)?.mpvColorString
+    // Store converted value in current format for future use:
+    set(mpvColorString, for: key)
+    return mpvColorString
   }
 
   static func set(_ value: Bool, for key: Key) {

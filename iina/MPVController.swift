@@ -1451,7 +1451,7 @@ class MPVController: NSObject {
       code = mpv_set_option_string(mpv, name, value)
 
     case .color:
-      let value = Preference.mpvColor(for: key)
+      let value = Preference.string(for: key)
       code = mpv_set_option_string(mpv, name, value)
       // Random error here (perhaps a Swift or mpv one), so set it twice
       // 「没有什么是 set 不了的；如果有，那就 set 两次」
@@ -1510,7 +1510,7 @@ class MPVController: NSObject {
         }
 
       case .color:
-        if let value = Preference.mpvColor(for: info.prefKey) {
+        if let value = Preference.string(for: info.prefKey) {
           setString(info.optionName, value)
         }
 
