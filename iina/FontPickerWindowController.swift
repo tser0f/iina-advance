@@ -36,6 +36,15 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
     }
   }
 
+  init() {
+    super.init(window: nil)
+    self.windowFrameAutosaveName = Constants.WindowAutosaveName.fontPicker
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
   override func windowDidLoad() {
     super.windowDidLoad()
 

@@ -249,7 +249,7 @@ extension PlayerWindowController {
         }
       }
     }
-    if let vfWindow = (NSApp.delegate as? AppDelegate)?.vfWindow, vfWindow.loaded {
+    if let vfWindow = (NSApp.delegate as? AppDelegate)?.vfWindow, vfWindow.isWindowLoaded {
       vfWindow.reloadTable()
     }
   }

@@ -44,17 +44,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   lazy var historyWindow: HistoryWindowController = HistoryWindowController()
   lazy var guideWindow: GuideWindowController = GuideWindowController()
 
-  lazy var vfWindow: FilterWindowController = {
-    let w = FilterWindowController()
-    w.filterType = MPVProperty.vf
-    return w
-  }()
+  lazy var vfWindow: FilterWindowController = FilterWindowController(filterType: MPVProperty.vf,
+                                                                     autosaveName: Constants.WindowAutosaveName.videoFilter)
 
-  lazy var afWindow: FilterWindowController = {
-    let w = FilterWindowController()
-    w.filterType = MPVProperty.af
-    return w
-  }()
+  lazy var afWindow: FilterWindowController = FilterWindowController(filterType: MPVProperty.af,
+                                                                     autosaveName: Constants.WindowAutosaveName.audioFilter)
 
   lazy var preferenceWindowController: NSWindowController = {
     var list: [NSViewController & PreferenceWindowEmbeddable] = [
@@ -370,9 +364,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           showOpenURLWindow(isAlternativeAction: true)
         case Constants.WindowAutosaveName.inspector:
           showInspectorWindow()
+        case Constants.WindowAutosaveName.videoFilter:
+          showVideoFilterWindow(self)
+        case Constants.WindowAutosaveName.audioFilter:
+          showAudioFilterWindow(self)
         default:
           if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
             PlayerCore.restoreSavedState(forPlayerUID: uniqueID)
+          } else {
+            Logger.log("Cannot restore window because it is not recognized: \(autosaveName)", level: .warning)
           }
           break
       }
@@ -836,18 +836,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   @IBAction func showVideoFilterWindow(_ sender: AnyObject) {
+    Logger.log("Showing Video Filter window", level: .verbose)
     vfWindow.showWindow(self)
   }
 
   @IBAction func showAudioFilterWindow(_ sender: AnyObject) {
+    Logger.log("Showing Audio Filter window", level: .verbose)
     afWindow.showWindow(self)
   }
 
   @IBAction func showAboutWindow(_ sender: AnyObject) {
+    Logger.log("Showing About window", level: .verbose)
     aboutWindow.showWindow(self)
   }
 
   @IBAction func showHistoryWindow(_ sender: AnyObject) {
+    Logger.log("Showing History window", level: .verbose)
     historyWindow.showWindow(self)
   }
 

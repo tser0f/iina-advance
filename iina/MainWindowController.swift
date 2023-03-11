@@ -355,7 +355,7 @@ class MainWindowController: PlayerWindowController {
   private lazy var rotateAction: Preference.RotateAction = Preference.enum(for: .rotateAction)
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
-  private let localObservedPrefKeys: [Preference.Key] = [
+  private static let mainWindowPrefKeys: [Preference.Key] = PlayerWindowController.playerWindowPrefKeys + [
     .titleBarLayout,
     .enableOSC,
     .oscPosition,
@@ -372,6 +372,10 @@ class MainWindowController: PlayerWindowController {
     .controlBarToolbarButtons,
     .alwaysShowOnTopIcon,
   ]
+
+  override var observedPrefKeys: [Preference.Key] {
+    MainWindowController.mainWindowPrefKeys
+  }
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath, let change = change else { return }
@@ -686,12 +690,6 @@ class MainWindowController: PlayerWindowController {
     pipOverlayView.isHidden = true
     
     if player.disableUI { hideUI() }
-
-    // add user default observers
-    observedPrefKeys.append(contentsOf: localObservedPrefKeys)
-    localObservedPrefKeys.forEach { key in
-      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
-    }
 
     // add notification observers
 

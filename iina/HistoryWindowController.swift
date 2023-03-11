@@ -131,7 +131,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     historyData.removeAll()
     historyDataKeys.removeAll()
 
-    Logger.log("Relaoding history (searchString: \(searchString.quoted))", level: .verbose)
+    Logger.log("Reloading history (isSearching: \(!searchString.isEmpty))", level: .verbose)
     let historyList: [PlaybackHistory]
     if searchString.isEmpty {
       historyList = HistoryController.shared.history

@@ -35,9 +35,7 @@ class FilterWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var editFilterKeyRecordViewLabel: NSTextField!
   @IBOutlet weak var removeButton: NSButton!
 
-  var loaded = false
-
-  var filterType: String!
+  let filterType: String
 
   var filters: [MPVFilter] = []
   var savedFilters: [SavedFilter] = []
@@ -46,9 +44,20 @@ class FilterWindowController: NSWindowController, NSWindowDelegate {
   private var currentFilter: MPVFilter?
   private var currentSavedFilter: SavedFilter?
 
+  init(filterType: String, autosaveName: String) {
+    self.filterType = filterType
+    super.init(window: nil)
+    self.windowFrameAutosaveName = autosaveName
+    Logger.log("Init \(windowFrameAutosaveName)", level: .verbose)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
   override func windowDidLoad() {
+    Logger.log("WindowDidLoad: \(windowFrameAutosaveName): \(window!.frame.origin)", level: .verbose)
     super.windowDidLoad()
-    loaded = true
     window?.delegate = self
 
     // title

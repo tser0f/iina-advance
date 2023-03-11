@@ -43,7 +43,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal lazy var horizontalScrollAction: Preference.ScrollAction = Preference.enum(for: .horizontalScrollAction)
   internal lazy var verticalScrollAction: Preference.ScrollAction = Preference.enum(for: .verticalScrollAction)
   
-  internal var observedPrefKeys: [Preference.Key] = [
+  static let playerWindowPrefKeys: [Preference.Key] = [
     .themeMaterial,
     .showRemainingTime,
     .alwaysFloatOnTop,
@@ -58,6 +58,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .playlistShowMetadata,
     .playlistShowMetadataInMusicMode,
   ]
+
+  var observedPrefKeys: [Preference.Key] {
+    PlayerWindowController.playerWindowPrefKeys
+  }
   
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath, let change = change else { return }

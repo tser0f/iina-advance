@@ -332,6 +332,12 @@ struct Preference {
 
     // MARK: - Keys: Internal UI State
 
+    /**
+     When saving and restoring the UI state is enabled, we need to first check if other instances of IINA are running so that they
+     don't overwrite each other's data. To do that, we can have each instance listen for changes to this counter and respond appropriately.
+     */
+    fileprivate static let iinaLaunchCount = Key("iinaLaunchCount")
+
     /** If true, saves the state of UI components as they change. This includes things like open windows &
      their sizes & positions, current scroll offsets, search entries, and more. */
     fileprivate static let enableSaveUIState = Key("enableSaveUIState")
@@ -938,6 +944,7 @@ struct Preference {
     .acceptRawTextAsKeyBindings: false,
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
+    .iinaLaunchCount: 0,
     .enableSaveUIState: true,
     .enableRestoreUIState: true,
     .uiOpenWindowsBackToFrontList: "",
