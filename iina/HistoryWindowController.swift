@@ -23,12 +23,16 @@ fileprivate extension NSUserInterfaceItemIdentifier {
   static let contextMenu = NSUserInterfaceItemIdentifier("ContextMenu")
 }
 
+fileprivate let timeColMinWidths: [Preference.HistoryGroupBy: CGFloat] = [
+  .lastPlayedDay: 60,
+  .parentFolder: 130
+]
 
 class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutlineViewDataSource, NSMenuDelegate, NSMenuItemValidation {
 
   private let getKey: [Preference.HistoryGroupBy: (PlaybackHistory) -> String] = [
-    .lastPlayed: { DateFormatter.localizedString(from: $0.addedDate, dateStyle: .medium, timeStyle: .none) },
-    .fileLocation: { $0.url.deletingLastPathComponent().path }
+    .lastPlayedDay: { DateFormatter.localizedString(from: $0.addedDate, dateStyle: .medium, timeStyle: .none) },
+    .parentFolder: { $0.url.deletingLastPathComponent().path }
   ]
 
   override var windowNibName: NSNib.Name {
@@ -89,7 +93,9 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
       default:
         break
     }
-    reloadData()
+    if isWindowLoaded {
+      reloadData()
+    }
   }
   
   override func windowDidLoad() {
@@ -128,10 +134,44 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     return Preference.UIState.isRestoreEnabled ? Preference.string(for: .uiHistoryTableSearchString) : nil
   }
 
+  private func donateColWidth(to targetColumn: NSTableColumn, targetWidth: CGFloat, from donorColumn: NSTableColumn) {
+    let extraWidthNeeded = targetWidth - targetColumn.width
+    // Don't take more than needed, or more than possible:
+    let widthToDonate = min(extraWidthNeeded, max(donorColumn.width - donorColumn.minWidth, 0))
+    if widthToDonate > 0 {
+      Logger.log("Donating \(widthToDonate) pts width to col \(targetColumn.identifier.rawValue.quoted) from \(donorColumn.identifier.rawValue.quoted) width (\(donorColumn.width))")
+      donorColumn.width -= widthToDonate
+      targetColumn.width += widthToDonate
+    }
+  }
+
   private func reloadData() {
     // reconstruct data
     historyData.removeAll()
     historyDataKeys.removeAll()
+
+    // Change min width of "Played at" column
+    if let timeColumn = outlineView.tableColumn(withIdentifier: .time) {
+      let newMinWidth = timeColMinWidths[groupBy]!
+      if newMinWidth != timeColumn.minWidth {
+        if timeColumn.width < newMinWidth {
+          Logger.log("TimeCol minWidth increased; need to widen by \(newMinWidth - timeColumn.width) pts")
+          if let filenameColumn = outlineView.tableColumn(withIdentifier: .filename) {
+            donateColWidth(to: timeColumn, targetWidth: newMinWidth, from: filenameColumn)
+          }
+          if timeColumn.width < timeColumn.minWidth {
+            if let progressColumn = outlineView.tableColumn(withIdentifier: .progress) {
+              donateColWidth(to: timeColumn, targetWidth: newMinWidth, from: progressColumn)
+            }
+          }
+        }
+        // Do not set this until after width has been adjusted! Otherwise AppKit will change its width property
+        // but will not actually resize it:
+        timeColumn.minWidth = newMinWidth
+        outlineView.layoutSubtreeIfNeeded()
+        Logger.log("Updated: TimeCol width: \(timeColumn.width), minWidth: \(timeColumn.minWidth)")
+      }
+    }
 
     let historyList: [PlaybackHistory]
     if searchString.isEmpty {
@@ -225,7 +265,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   func outlineView(_ outlineView: NSOutlineView, objectValueFor tableColumn: NSTableColumn?, byItem item: Any?) -> Any? {
     if let entry = item as? PlaybackHistory {
       if tableColumn?.identifier == .time {
-        return groupBy == .lastPlayed ?
+        return groupBy == .lastPlayedDay ?
           DateFormatter.localizedString(from: entry.addedDate, dateStyle: .none, timeStyle: .short) :
           DateFormatter.localizedString(from: entry.addedDate, dateStyle: .short, timeStyle: .short)
       } else if tableColumn?.identifier == .progress {
