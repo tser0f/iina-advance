@@ -807,8 +807,8 @@ class MainWindowController: PlayerWindowController {
 
   private func setupTitleBarAndOSC() {
     let oscPositionNew: Preference.OSCPosition = Preference.enum(for: .oscPosition)
-    let oscEnabledNew = Preference.bool(for: .enableOSC)
-    let titleBarLayoutNew: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
+//    let oscEnabledNew = Preference.bool(for: .enableOSC)
+//    let titleBarLayoutNew: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
 
     let isSwitchingToTop = oscPositionNew == .insideTop
     let isSwitchingFromTop = oscPosition == .insideTop
@@ -1227,7 +1227,7 @@ class MainWindowController: PlayerWindowController {
     // Rotate about center point. Also need to change position because.
     let centerPoint = CGPointMake(NSMidX(videoView.frame), NSMidY(videoView.frame))
     videoView.layer?.position = centerPoint
-    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+//    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     CATransaction.commit()
 
     if animate {
@@ -1397,13 +1397,6 @@ class MainWindowController: PlayerWindowController {
 
   func windowWillClose(_ notification: Notification) {
     Logger.log("Window closing", subsystem: player.subsystem)
-
-    // Check whether this is the last player closed; show welcome or history window if configured.
-    // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
-    if player.isOnlyOpenPlayer {
-      Logger.log("Window was last player window open", level: .verbose, subsystem: player.subsystem)
-      (NSApp.delegate as? AppDelegate)?.doActionWhenLastWindowWillClose()
-    }
 
     isClosing = true
     shouldApplyInitialWindowSize = true

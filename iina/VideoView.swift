@@ -63,6 +63,7 @@ class VideoView: NSView {
     // set up layer
     layer = videoLayer
     videoLayer.colorspace = VideoView.deviceRGBColorspace
+    // FIXME: parameterize this
     videoLayer.contentsScale = NSScreen.main!.backingScaleFactor
     wantsLayer = true
 

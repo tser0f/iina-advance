@@ -89,6 +89,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
     confTableController?.selectCurrentConfRow()
     self.updateEditEnabledStatus()
 
+    // FIXME: need to change this to *after* first data load
     // Set initial scroll, and set up to save scroll value across launches
     if let scrollView = bindingTableView.enclosingScrollView {
       let observer = scrollView.restoreAndObserveVerticalScroll(key: .uiPrefBindingsTableScrollOffsetY, defaultScrollAction: {

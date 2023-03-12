@@ -246,7 +246,7 @@ extension LanguageTokenField: NSTokenFieldDelegate {
     return descriptions
   }
 
-  // Called by AppKit. Token -> DisplayStringString. Returns the string to use when displaying as a token
+  // Called by AppKit. Token -> DisplayString. Returns the string to use when displaying as a token
   func tokenField(_ tokenField: NSTokenField, displayStringForRepresentedObject representedObject: Any) -> String? {
     guard let token = representedObject as? LangToken else { return nil }
 

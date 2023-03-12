@@ -102,7 +102,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
     return NSNib.Name("InitialWindowController")
   }
 
-  private var expectingAnotherWindowToOpen = false
+  var expectingAnotherWindowToOpen = false
 
   @IBOutlet weak var recentFilesTableView: NSTableView!
   @IBOutlet weak var appIcon: NSImageView!
@@ -291,12 +291,6 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
       expectingAnotherWindowToOpen = false
     }
     self.close()
-  }
-
-  func windowWillClose(_ notification: Notification) {
-    if let window = self.window, window.isOnlyOpenWindow(), !expectingAnotherWindowToOpen {
-      (NSApp.delegate as! AppDelegate).doActionWhenLastWindowWillClose(quitFor: .welcomeWindow)
-    }
   }
 }
 

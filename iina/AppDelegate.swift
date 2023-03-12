@@ -236,6 +236,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         This is because `PlayerCore.active` immediately creates the first `PlayerCore`, which creates its `MainWindowController`
         in its contructor, and we need to supply the window's autosave name to its constructor. */
     if !commandLineStatus.isCommandLine {
+
+      self.observers.append(NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil,
+                                                            queue: .main, using: self.windowWillClose))
+
       /** Show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. app was launched on its own. */
       var useLaunchDefaultAction = true
       if !self.openFileCalled {
@@ -243,9 +247,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
 
       // Start saving window state *after* restoring previous state:
-      let observer = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
-                                                            queue: .main, using: self.keyWindowDidChange)
-      self.observers.append(observer)
+      self.observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
+                                                            queue: .main, using: self.keyWindowDidChange))
 
       if useLaunchDefaultAction {
         doLaunchOrReopenAction()
@@ -444,12 +447,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
   }
 
-  func doActionWhenLastWindowWillClose(quitFor quitAction: Preference.ActionWhenNoOpenedWindow? = nil) {
+  private func windowWillClose(_ notification: Notification) {
+    guard let window = notification.object as? NSWindow else { return }
+
+    // Check whether this is the last player closed; show welcome or history window if configured.
+    // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
+    if let player = (window.windowController as? MainWindowController)?.player, player.isOnlyOpenPlayer {
+      Logger.log("Window was last player window open", level: .verbose, subsystem: player.subsystem)
+      doActionWhenLastWindowWillClose()
+    } else if window.isOnlyOpenWindow() {
+      let quitForAction: Preference.ActionWhenNoOpenedWindow?
+      switch window.frameAutosaveName {
+        case Constants.WindowAutosaveName.playbackHistory:
+          quitForAction = .historyWindow
+        case Constants.WindowAutosaveName.welcome:
+          guard !initialWindow.expectingAnotherWindowToOpen else {
+            return
+          }
+          quitForAction = .welcomeWindow
+        default:
+          quitForAction = nil
+      }
+      doActionWhenLastWindowWillClose(quitFor: quitForAction)
+    }
+  }
+
+
+  func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionWhenNoOpenedWindow? = nil) {
     guard !isTerminating else { return }
 
     if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {
       Logger.log("ActionWhenNoOpenedWindow: \(whatToDo)", level: .verbose)
-      if whatToDo == quitAction {
+      if whatToDo == quitForAction {
         Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
         Preference.UIState.clearOpenWindowList()
         return

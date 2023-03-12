@@ -24,7 +24,7 @@ fileprivate extension NSUserInterfaceItemIdentifier {
 }
 
 
-class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutlineViewDataSource, NSMenuDelegate, NSMenuItemValidation, NSWindowDelegate {
+class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutlineViewDataSource, NSMenuDelegate, NSMenuItemValidation {
 
   private let getKey: [Preference.HistoryGroupBy: (PlaybackHistory) -> String] = [
     .lastPlayed: { DateFormatter.localizedString(from: $0.addedDate, dateStyle: .medium, timeStyle: .none) },
@@ -133,7 +133,6 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     historyData.removeAll()
     historyDataKeys.removeAll()
 
-    Logger.log("Reloading history (isSearching: \(!searchString.isEmpty))", level: .verbose)
     let historyList: [PlaybackHistory]
     if searchString.isEmpty {
       historyList = HistoryController.shared.history
@@ -144,6 +143,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
         return string.localizedStandardContains(searchString)
       }
     }
+    Logger.log("Reloading history table with \(historyList.count) entries (filtered: \(!searchString.isEmpty))", level: .verbose)
 
     for entry in historyList {
       addToData(entry, forKey: getKey[groupBy]!(entry))
@@ -187,14 +187,6 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
         let entries = outlineView.selectedRowIndexes.compactMap { outlineView.item(atRow: $0) as? PlaybackHistory }
         removeAfterConfirmation(entries)
       }
-    }
-  }
-
-  // MARK: NSWindowDelegate
-  
-  func windowWillClose(_ notification: Notification) {
-    if let window = self.window, window.isOnlyOpenWindow() {
-      (NSApp.delegate as! AppDelegate).doActionWhenLastWindowWillClose(quitFor: .historyWindow)
     }
   }
 
@@ -256,6 +248,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
         filenameView.docImage.image = NSWorkspace.shared.icon(forFileType: entry.url.pathExtension)
       } else if identifier == .progress {
         // Progress cell
+        // FIXME: turn animation off ??
         let entry = item as! PlaybackHistory
         let filenameView = (view as! HistoryProgressCellView)
         if let progress = entry.mpvProgress {
