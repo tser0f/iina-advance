@@ -789,10 +789,10 @@ struct Preference {
   }
 
   enum HistoryGroupBy: Int, InitializingFromKey {
-    case lastPlayed = 0
-    case fileLocation
+    case lastPlayedDay = 0
+    case parentFolder
 
-    static var defaultValue = HistoryGroupBy.lastPlayed
+    static var defaultValue = HistoryGroupBy.lastPlayedDay
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -966,7 +966,7 @@ struct Preference {
     .uiCollapseViewSubTextSubsAdvanced: false,
     .uiPrefBindingsTableSearchString: "",
     .uiPrefBindingsTableScrollOffsetY: 0,
-    .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayed.rawValue,
+    .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayedDay.rawValue,
     .uiHistoryTableSearchType: HistorySearchType.fullPath.rawValue,
     .uiHistoryTableSearchString: "",
     .uiHistoryTableScrollOffsetY: 0,
@@ -1072,6 +1072,38 @@ struct Preference {
     fatalError("Unexpected type or missing default for preference key \(key.rawValue.quoted)")
   }
 
+  static func set(_ value: Bool, for key: Key) {
+    ud.set(value, forKey: key.rawValue)
+  }
+
+  static func set(_ value: Int, for key: Key) {
+    ud.set(value, forKey: key.rawValue)
+  }
+
+  static func set(_ value: String, for key: Key) {
+    ud.set(value, forKey: key.rawValue)
+  }
+
+  static func set(_ value: Float, for key: Key) {
+    ud.set(value, forKey: key.rawValue)
+  }
+
+  static func set(_ value: Double, for key: Key) {
+    ud.set(value, forKey: key.rawValue)
+  }
+
+  static func set(_ value: URL, for key: Key) {
+    ud.set(value, forKey: key.rawValue)
+  }
+
+  static func set(_ value: Any?, for key: Key) {
+    ud.set(value, forKey: key.rawValue)
+  }
+
+  static func `enum`<T: InitializingFromKey>(for key: Key) -> T {
+    return T.init(key: key) ?? T.defaultValue
+  }
+
   /**
    Older versions of IINA converted mpv color data into NSObject binary using the now-deprecated `NSUnarchiver` class.
    This method will transition to the new format which consists of the color components written to a `String`.
@@ -1104,38 +1136,6 @@ struct Preference {
     set(mpvColorString, for: key)
     Logger.log("Converted color value from legacyKey \(legacyKey.rawValue) and stored in key \(key.rawValue)")
     return mpvColorString
-  }
-
-  static func set(_ value: Bool, for key: Key) {
-    ud.set(value, forKey: key.rawValue)
-  }
-
-  static func set(_ value: Int, for key: Key) {
-    ud.set(value, forKey: key.rawValue)
-  }
-
-  static func set(_ value: String, for key: Key) {
-    ud.set(value, forKey: key.rawValue)
-  }
-
-  static func set(_ value: Float, for key: Key) {
-    ud.set(value, forKey: key.rawValue)
-  }
-
-  static func set(_ value: Double, for key: Key) {
-    ud.set(value, forKey: key.rawValue)
-  }
-
-  static func set(_ value: URL, for key: Key) {
-    ud.set(value, forKey: key.rawValue)
-  }
-
-  static func set(_ value: Any?, for key: Key) {
-    ud.set(value, forKey: key.rawValue)
-  }
-
-  static func `enum`<T: InitializingFromKey>(for key: Key) -> T {
-    return T.init(key: key) ?? T.defaultValue
   }
 
   /** Notes on performance:

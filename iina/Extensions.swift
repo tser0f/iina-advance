@@ -802,7 +802,6 @@ extension NSWindow {
   func isOnlyOpenWindow() -> Bool {
     for window in NSApp.windows {
       if window != self && window.isVisible {
-        Logger.log("Found another window which is still open: \(window.title.quoted)", level: .verbose)
         return false
       }
     }
