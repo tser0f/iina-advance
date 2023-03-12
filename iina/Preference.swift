@@ -182,16 +182,16 @@ struct Preference {
     static let subOverrideLevel = Key("subOverrideLevel")
     static let subTextFont = Key("subTextFont")
     static let subTextSize = Key("subTextSize")
-    static let subTextColor = Key("subTextColorString")
-    static let subBgColor = Key("subBgColorString")
+    static let subTextColorString = Key("subTextColorString")
+    static let subBgColorString = Key("subBgColorString")
     static let subBold = Key("subBold")
     static let subItalic = Key("subItalic")
     static let subBlur = Key("subBlur")
     static let subSpacing = Key("subSpacing")
     static let subBorderSize = Key("subBorderSize")
-    static let subBorderColor = Key("subBorderColorString")
+    static let subBorderColorString = Key("subBorderColorString")
     static let subShadowSize = Key("subShadowSize")
-    static let subShadowColor = Key("subShadowColorString")
+    static let subShadowColorString = Key("subShadowColorString")
     static let subAlignX = Key("subAlignX")
     static let subAlignY = Key("subAlignY")
     static let subMarginX = Key("subMarginX")
@@ -366,12 +366,12 @@ struct Preference {
     static let uiHistoryTableSearchString = Key("uiHistoryTableSearchString")
     static let uiHistoryTableScrollOffsetY = Key("uiHistoryTableScrollOffsetY")
 
-    // Old deprecated keys. Do not reference outside this file.
+    // Map of modern keys to deprecated keys. Do not reference outside this file.
     fileprivate static let legacyColorKeys: [Key: Key] = [
-      Preference.Key.subTextColor: Key("subTextColor"),
-      Preference.Key.subBgColor: Key("subBgColor"),
-      Preference.Key.subBorderColor: Key("subBorderColor"),
-      Preference.Key.subShadowColor: Key("subShadowColor"),
+      Preference.Key.subTextColorString: Key("subTextColor"),
+      Preference.Key.subBgColorString: Key("subBgColor"),
+      Preference.Key.subBorderColorString: Key("subBorderColor"),
+      Preference.Key.subShadowColorString: Key("subShadowColor"),
     ]
   }
 
@@ -902,16 +902,16 @@ struct Preference {
     .subOverrideLevel: SubOverrideLevel.strip.rawValue,
     .subTextFont: "sans-serif",
     .subTextSize: Float(55),
-    .subTextColor: convertFromLegacyColor(.subTextColor) ?? NSColor.white.usingColorSpace(.deviceRGB)!.mpvColorString,
-    .subBgColor: convertFromLegacyColor(.subBgColor) ?? NSColor.clear.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subTextColorString: convertFromLegacyColor(.subTextColorString) ?? NSColor.white.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subBgColorString: convertFromLegacyColor(.subBgColorString) ?? NSColor.clear.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subBold: false,
     .subItalic: false,
     .subBlur: Float(0),
     .subSpacing: Float(0),
     .subBorderSize: Float(3),
-    .subBorderColor: convertFromLegacyColor(.subBorderColor) ?? NSColor.black.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subBorderColorString: convertFromLegacyColor(.subBorderColorString) ?? NSColor.black.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subShadowSize: Float(0),
-    .subShadowColor: convertFromLegacyColor(.subShadowColor) ?? NSColor.clear.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subShadowColorString: convertFromLegacyColor(.subShadowColorString) ?? NSColor.clear.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subAlignX: SubAlign.center.rawValue,
     .subAlignY: SubAlign.bottom.rawValue,
     .subMarginX: Float(25),
@@ -1075,19 +1075,34 @@ struct Preference {
   /**
    Older versions of IINA converted mpv color data into NSObject binary using the now-deprecated `NSUnarchiver` class.
    This method will transition to the new format which consists of the color components written to a `String`.
-   To do this in a way which does not corrupt the data for older versions of IINA, we'll store the new format in a new `Preference.Key`,
-   and leave the legacy entry as-is.
+   To do this in a way which does not corrupt the values for older versions of IINA, we'll store the new format under a new `Preference.Key`,
+   and leave the legacy pref entry as-is.
 
-   This method will look for the legacy key corresponding to the given modern key. If it finds an entry for the legacy key, it will convert its value
-   to the modern format, store it into the entry for the new key, and then return it.
+   This method will be executed on each of the affected prefs when IINA starts up. It will first check if there is already an entry for the new
+   pref key. If it finds one, then it will assume that the migration has already occurred, and will just return that.
+   Otherwise it will look for an entry for the legacy pref key. If it finds that, if will convert its value into the new format and store it under
+   the new pref key, and then return that.
+
+   This wil have the effect of automatically migrating older versions of IINA into the new format with no loss of data.
+   However, it is worth noting that this migration will only happen once, and afterwards newer versions of IINA will not look at the old pref entry.
+   And since older verions of IINA will only use the old pref entry, users who mix old and new versions of IINA may experience different values
+   for these keys.
    */
   private static func convertFromLegacyColor(_ key: Key) -> String? {
+    if let newValue = Preference.object(for: key) as? String {
+      return newValue
+    }
     guard let legacyKey = Preference.Key.legacyColorKeys[key] else { return nil }
+    // Look for legacy pref:
     guard let data = ud.data(forKey: legacyKey.rawValue) else { return nil }
     guard let color = NSUnarchiver.unarchiveObject(with: data) as? NSColor else { return nil }
-    let mpvColorString = color.usingColorSpace(.deviceRGB)?.mpvColorString
+    guard let mpvColorString = color.usingColorSpace(.deviceRGB)?.mpvColorString else {
+      Logger.log("Failed to convert color value from legacy key \(legacyKey.rawValue)", level: .error)
+      return nil
+    }
     // Store converted value in current format for future use:
     set(mpvColorString, for: key)
+    Logger.log("Converted color value from legacyKey \(legacyKey.rawValue) and stored in key \(key.rawValue)")
     return mpvColorString
   }
 

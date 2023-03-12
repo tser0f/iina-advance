@@ -261,8 +261,8 @@ class MPVController: NSObject {
     setUserOption(PK.subTextFont, type: .string, forName: MPVOption.Subtitles.subFont)
     setUserOption(PK.subTextSize, type: .int, forName: MPVOption.Subtitles.subFontSize)
 
-    setUserOption(PK.subTextColor, type: .color, forName: MPVOption.Subtitles.subColor)
-    setUserOption(PK.subBgColor, type: .color, forName: MPVOption.Subtitles.subBackColor)
+    setUserOption(PK.subTextColorString, type: .color, forName: MPVOption.Subtitles.subColor)
+    setUserOption(PK.subBgColorString, type: .color, forName: MPVOption.Subtitles.subBackColor)
 
     setUserOption(PK.subBold, type: .bool, forName: MPVOption.Subtitles.subBold)
     setUserOption(PK.subItalic, type: .bool, forName: MPVOption.Subtitles.subItalic)
@@ -271,10 +271,10 @@ class MPVController: NSObject {
     setUserOption(PK.subSpacing, type: .float, forName: MPVOption.Subtitles.subSpacing)
 
     setUserOption(PK.subBorderSize, type: .int, forName: MPVOption.Subtitles.subBorderSize)
-    setUserOption(PK.subBorderColor, type: .color, forName: MPVOption.Subtitles.subBorderColor)
+    setUserOption(PK.subBorderColorString, type: .color, forName: MPVOption.Subtitles.subBorderColor)
 
     setUserOption(PK.subShadowSize, type: .int, forName: MPVOption.Subtitles.subShadowOffset)
-    setUserOption(PK.subShadowColor, type: .color, forName: MPVOption.Subtitles.subShadowColor)
+    setUserOption(PK.subShadowColorString, type: .color, forName: MPVOption.Subtitles.subShadowColor)
 
     setUserOption(PK.subAlignX, type: .other, forName: MPVOption.Subtitles.subAlignX) { key in
       let v = Preference.integer(for: key)
