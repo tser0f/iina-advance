@@ -145,33 +145,34 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     }
   }
 
+  // Change min width of "Played at" column
+  private func adjustTimeColumnMinWidth() {
+    guard let timeColumn = outlineView.tableColumn(withIdentifier: .time) else { return }
+    let newMinWidth = timeColMinWidths[groupBy]!
+    guard newMinWidth != timeColumn.minWidth else { return }
+    if timeColumn.width < newMinWidth {
+      if let filenameColumn = outlineView.tableColumn(withIdentifier: .filename) {
+        donateColWidth(to: timeColumn, targetWidth: newMinWidth, from: filenameColumn)
+      }
+      if timeColumn.width < timeColumn.minWidth {
+        if let progressColumn = outlineView.tableColumn(withIdentifier: .progress) {
+          donateColWidth(to: timeColumn, targetWidth: newMinWidth, from: progressColumn)
+        }
+      }
+    }
+    // Do not set this until after width has been adjusted! Otherwise AppKit will change its width property
+    // but will not actually resize it:
+    timeColumn.minWidth = newMinWidth
+    outlineView.layoutSubtreeIfNeeded()
+    Logger.log("Updated \(timeColumn.identifier.rawValue.quoted) col width: \(timeColumn.width), minWidth: \(timeColumn.minWidth)", level: .verbose)
+  }
+
   private func reloadData() {
     // reconstruct data
     historyData.removeAll()
     historyDataKeys.removeAll()
 
-    // Change min width of "Played at" column
-    if let timeColumn = outlineView.tableColumn(withIdentifier: .time) {
-      let newMinWidth = timeColMinWidths[groupBy]!
-      if newMinWidth != timeColumn.minWidth {
-        if timeColumn.width < newMinWidth {
-          Logger.log("TimeCol minWidth increased; need to widen by \(newMinWidth - timeColumn.width) pts")
-          if let filenameColumn = outlineView.tableColumn(withIdentifier: .filename) {
-            donateColWidth(to: timeColumn, targetWidth: newMinWidth, from: filenameColumn)
-          }
-          if timeColumn.width < timeColumn.minWidth {
-            if let progressColumn = outlineView.tableColumn(withIdentifier: .progress) {
-              donateColWidth(to: timeColumn, targetWidth: newMinWidth, from: progressColumn)
-            }
-          }
-        }
-        // Do not set this until after width has been adjusted! Otherwise AppKit will change its width property
-        // but will not actually resize it:
-        timeColumn.minWidth = newMinWidth
-        outlineView.layoutSubtreeIfNeeded()
-        Logger.log("Updated: TimeCol width: \(timeColumn.width), minWidth: \(timeColumn.minWidth)")
-      }
-    }
+    adjustTimeColumnMinWidth()
 
     let historyList: [PlaybackHistory]
     if searchString.isEmpty {
@@ -288,16 +289,17 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
         filenameView.docImage.image = NSWorkspace.shared.icon(forFileType: entry.url.pathExtension)
       } else if identifier == .progress {
         // Progress cell
-        // FIXME: turn animation off ??
         let entry = item as! PlaybackHistory
-        let filenameView = (view as! HistoryProgressCellView)
+        let progressView = (view as! HistoryProgressCellView)
+        // Do not animate! Causes unneeded slowdown
+        progressView.indicator.usesThreadedAnimation = false
         if let progress = entry.mpvProgress {
-          filenameView.textField?.stringValue = progress.stringRepresentation
-          filenameView.indicator.isHidden = false
-          filenameView.indicator.doubleValue = (progress / entry.duration) ?? 0
+          progressView.textField?.stringValue = progress.stringRepresentation
+          progressView.indicator.isHidden = false
+          progressView.indicator.doubleValue = (progress / entry.duration) ?? 0
         } else {
-          filenameView.textField?.stringValue = ""
-          filenameView.indicator.isHidden = true
+          progressView.textField?.stringValue = ""
+          progressView.indicator.isHidden = true
         }
       }
       return view
