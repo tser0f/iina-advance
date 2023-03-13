@@ -1268,7 +1268,7 @@ class MainWindowController: PlayerWindowController {
     // Rotate about center point. Also need to change position because.
     let centerPoint = CGPointMake(NSMidX(videoView.frame), NSMidY(videoView.frame))
     videoView.layer?.position = centerPoint
-//    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     CATransaction.commit()
 
     if animate {
