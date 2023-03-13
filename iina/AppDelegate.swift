@@ -473,7 +473,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
 
-  func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionWhenNoOpenedWindow? = nil) {
+  private func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionWhenNoOpenedWindow? = nil) {
     guard !isTerminating else { return }
 
     if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {

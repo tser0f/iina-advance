@@ -24,7 +24,10 @@ class HistoryController: NSObject {
   }
 
   private func read() {
+    Logger.log("Reading playback history from \(plistURL.path.pii.quoted)")
+    let sw = Utility.Stopwatch()
     history = (NSKeyedUnarchiver.unarchiveObject(withFile: plistURL.path) as? [PlaybackHistory]) ?? []
+    Logger.log("Finished reading playback history in \(sw) ms")
   }
 
   func save() {

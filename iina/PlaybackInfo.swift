@@ -16,8 +16,8 @@ class PlaybackInfo {
   /// - Cleared (looping disabled)
   /// - A loop point set
   /// - B loop point set (looping enabled)
-  enum LoopStatus {
-    case cleared
+  enum LoopStatus: Int {
+    case cleared = 0
     case aSet
     case bSet
   }
@@ -43,6 +43,40 @@ class PlaybackInfo {
   var isSeeking: Bool = false
 
   // -- PERSISTENT PROPERTIES BEGIN --
+
+  var persistedProperties: [String: Any] = [:]
+
+  func getPropDict() -> [String: Any] {
+    var dict: [String: Any] = [:]
+    
+    dict["videoURL"] = currentURL
+    dict["playPosition"] = videoPosition?.second
+    dict["videoDuration"] = videoDuration?.second
+    dict["isPaused"] = isPaused
+    dict["deinterlace"] = deinterlace
+    dict["hwdec"] = hwdec
+    dict["hdrEnabled"] = hdrEnabled
+
+    dict["aid"] = aid
+    dict["sid"] = sid
+    dict["sid2"] = secondSid
+    dict["vid"] = vid
+
+    dict["brightness"] = brightness
+    dict["contrast"] = contrast
+    dict["saturation"] = saturation
+    dict["gamma"] = gamma
+    dict["hue"] = hue
+    dict["playSpeed"] = playSpeed
+    dict["volume"] = volume
+    dict["isMuted"] = isMuted
+    dict["audioDelay"] = audioDelay
+    dict["subDelay"] = subDelay
+    dict["abLoopStatus"] = abLoopStatus.rawValue
+    dict["userRotationDeg"] = userRotation
+
+    return dict
+  }
 
   var isPaused: Bool = false
   var isPlaying: Bool {
@@ -109,21 +143,20 @@ class PlaybackInfo {
   var gamma: Int = 0
   var hue: Int = 0
 
-  var playSpeed: Double = 1.0
-
   var volume: Double = 50
-
   var isMuted: Bool = false
 
+  // time
   var audioDelay: Double = 0
   var subDelay: Double = 0
 
   var abLoopStatus: LoopStatus = .cleared
 
-  var playlist: [MPVPlaylistItem] = []
-
+  var playSpeed: Double = 1.0
   var videoPosition: VideoTime?
   var videoDuration: VideoTime?
+
+  var playlist: [MPVPlaylistItem] = []
 
   func constrainVideoPosition() {
     guard let duration = videoDuration, let position = videoPosition else { return }

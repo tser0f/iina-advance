@@ -523,6 +523,21 @@ class Utility {
 
   // MARK: - Util classes
 
+  class Stopwatch: CustomStringConvertible {
+    let startTime: CFAbsoluteTime
+    init() {
+      startTime = CFAbsoluteTimeGetCurrent()
+    }
+
+    var msElapsed: Float {
+      return Float((Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000 * 100))) / 100.0
+    }
+
+    var description: String {
+      return "\(msElapsed)"
+    }
+  }
+
   class AlertInfo {
     let key: String
     let comment: String?
