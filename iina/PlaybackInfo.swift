@@ -78,7 +78,11 @@ class PlaybackInfo {
     return dict
   }
 
-  var isPaused: Bool = false
+  var isPaused: Bool = false {
+    didSet {
+      Logger.log("Player mode changed to \(isPaused ? "PAUSED" : "PLAYING")", level: .verbose)
+    }
+  }
   var isPlaying: Bool {
     return !isPaused
   }

@@ -179,7 +179,7 @@ extension PlayerWindowController {
   @objc func menuChangeCrop(_ sender: NSMenuItem) {
     if let cropStr = sender.representedObject as? String {
       if cropStr == "Custom" {
-        player.mainWindow.hideSideBar {
+        player.mainWindow.hideSidebars {
           self.player.mainWindow.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
         }
         return

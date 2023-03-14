@@ -11,23 +11,23 @@ import Cocoa
 extension MainWindowController {
 
   @objc func menuShowPlaylistPanel(_ sender: NSMenuItem) {
-    showPlaylistSidebar(tab: .playlist)
+    showSidebar(tab: .playlist)
   }
 
   @objc func menuShowChaptersPanel(_ sender: NSMenuItem) {
-    showPlaylistSidebar(tab: .chapters)
+    showSidebar(tab: .chapters)
   }
 
   @objc func menuShowVideoQuickSettings(_ sender: NSMenuItem) {
-    showSettingsSidebar(tab: .video)
+    showSidebar(tab: .video)
   }
 
   @objc func menuShowAudioQuickSettings(_ sender: NSMenuItem) {
-    showSettingsSidebar(tab: .audio)
+    showSidebar(tab: .audio)
   }
 
   @objc func menuShowSubQuickSettings(_ sender: NSMenuItem) {
-    showSettingsSidebar(tab: .sub)
+    showSidebar(tab: .sub)
   }
 
   @objc func menuChangeWindowSize(_ sender: NSMenuItem) {
@@ -98,7 +98,7 @@ extension MainWindowController {
         player.info.delogoFilter = nil
       }
     } else {
-      self.hideSideBar {
+      self.hideSidebars {
         self.enterInteractiveMode(.freeSelecting)
       }
     }

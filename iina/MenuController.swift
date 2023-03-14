@@ -472,11 +472,9 @@ class MenuController: NSObject, NSMenuDelegate {
 
   private func updatePlaybackMenu() {
     let player = PlayerCore.active
-    let isDisplayingPlaylist = player.mainWindow.sideBarStatus == .playlist &&
-          player.mainWindow.playlistView.currentTab == .playlist
+    let isDisplayingPlaylist = player.mainWindow.isShowing(sidebarTab: .playlist)
     playlistPanel?.title = isDisplayingPlaylist ? Constants.String.hidePlaylistPanel : Constants.String.playlistPanel
-    let isDisplayingChapters = player.mainWindow.sideBarStatus == .playlist &&
-          player.mainWindow.playlistView.currentTab == .chapters
+    let isDisplayingChapters = player.mainWindow.isShowing(sidebarTab: .chapters)
     chapterPanel?.title = isDisplayingChapters ? Constants.String.hideChaptersPanel : Constants.String.chaptersPanel
     pause.title = player.info.isPaused ? Constants.String.resume : Constants.String.pause
     let isLoop = player.mpv.getString(MPVOption.PlaybackControl.loopFile) == "inf"
@@ -488,8 +486,7 @@ class MenuController: NSObject, NSMenuDelegate {
 
   private func updateVideoMenu() {
     let player = PlayerCore.active
-    let isDisplayingSettings = player.mainWindow.sideBarStatus == .settings &&
-          player.mainWindow.quickSettingView.currentTab == .video
+    let isDisplayingSettings = player.mainWindow.isShowing(sidebarTab: .video)
     quickSettingsVideo?.title = isDisplayingSettings ? Constants.String.hideVideoPanel :
         Constants.String.videoPanel
     let isInFullScreen = player.mainWindow.fsState.isFullscreen
@@ -505,8 +502,7 @@ class MenuController: NSObject, NSMenuDelegate {
 
   private func updateAudioMenu() {
     let player = PlayerCore.active
-    let isDisplayingSettings = player.mainWindow.sideBarStatus == .settings &&
-          player.mainWindow.quickSettingView.currentTab == .audio
+    let isDisplayingSettings = player.mainWindow.isShowing(sidebarTab: .audio)
     quickSettingsAudio?.title = isDisplayingSettings ? Constants.String.hideAudioPanel :
         Constants.String.audioPanel
     let volFmtString: String
@@ -540,8 +536,7 @@ class MenuController: NSObject, NSMenuDelegate {
 
   private func updateSubMenu() {
     let player = PlayerCore.active
-    let isDisplayingSettings = player.mainWindow.sideBarStatus == .settings &&
-          player.mainWindow.quickSettingView.currentTab == .sub
+    let isDisplayingSettings = player.mainWindow.isShowing(sidebarTab: .sub)
     quickSettingsSub?.title = isDisplayingSettings ? Constants.String.hideSubtitlesPanel :
         Constants.String.subtitlesPanel
     hideSubtitles.title = player.info.isSubVisible ? Constants.String.hideSubtitles :

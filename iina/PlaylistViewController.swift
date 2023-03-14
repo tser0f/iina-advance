@@ -40,8 +40,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   var playlistChangeObserver: NSObjectProtocol?
 
   /** Enum for tab switching */
-  enum TabViewType: Int {
-    case playlist = 0
+  enum TabViewType: String {
+    case playlist
     case chapters
 
     init?(name: String) {

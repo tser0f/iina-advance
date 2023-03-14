@@ -35,15 +35,17 @@ fileprivate let StandardTitleBarHeight: CGFloat = {
 
 fileprivate let SettingsWidth: CGFloat = 360
 fileprivate let PlaylistMinWidth: CGFloat = 240
-fileprivate let PlaylistMaxWidth: CGFloat = 400
+fileprivate let PlaylistMaxWidth: CGFloat = 500
 
 fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
 
 fileprivate let UIAnimationDuration = 0.25
 fileprivate let OSDAnimationDuration = 0.5
-fileprivate let SideBarAnimationDuration = 0.2
+fileprivate let SidebarAnimationDuration = 0.2
 fileprivate let CropAnimationDuration = 0.2
 
+// How close the cursor has to be horizontally to the edge of the sidebar in order to trigger its resize:
+fileprivate let sidebarResizeActivationRadius = 4.0
 
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
@@ -166,7 +168,8 @@ class MainWindowController: PlayerWindowController {
 
   var mousePosRelatedToWindow: CGPoint?
   var isDragging: Bool = false
-  var isResizingSidebar: Bool = false
+  private var isResizingLeftSidebar: Bool = false
+  private var isResizingRightSidebar: Bool = false
 
   var pipStatus = PIPStatus.notInPIP
   var isInInteractiveMode: Bool = false
@@ -295,32 +298,112 @@ class MainWindowController: PlayerWindowController {
   /// Animation state of he hide/show part
   enum UIAnimationState {
     case shown, hidden, willShow, willHide
+
+    var isInTransition: Bool {
+      return self == .willShow || self == .willHide
+    }
   }
 
   var animationState: UIAnimationState = .shown
   var osdAnimationState: UIAnimationState = .hidden
-  var sidebarAnimationState: UIAnimationState = .hidden
 
   // Sidebar
 
   /** Type of the view embedded in sidebar. */
-  enum SideBarViewType {
-    case hidden // indicating that sidebar is hidden. Should only be used by `sideBarStatus`
+  enum SideBarTabGroup: String {
     case settings
     case playlist
+
     func width() -> CGFloat {
       switch self {
       case .settings:
         return SettingsWidth
       case .playlist:
         return CGFloat(Preference.integer(for: .playlistWidth)).clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      default:
-        Logger.fatal("SideBarViewType.width shouldn't be called here")
       }
     }
   }
 
-  var sideBarStatus: SideBarViewType = .hidden
+  enum SidebarTab: Equatable {
+    case playlist
+    case chapters
+
+    case video
+    case audio
+    case sub
+    case plugin(id: String)
+
+    var group: SideBarTabGroup {
+      switch self {
+        case .playlist, .chapters:
+          return .playlist
+        case .video, .audio, .sub, .plugin(id: _):
+          return .settings
+      }
+    }
+
+    init?(name: String) {
+      switch name {
+        case "playlist":
+          self = .playlist
+        case "chapters":
+          self = .chapters
+        case "video":
+          self = .video
+        case "audio":
+          self = .audio
+        case "sub":
+          self = .sub
+        default:
+          if name.hasPrefix("plugin:") {
+            self = .plugin(id: String(name.dropFirst(7)))
+          } else {
+            return nil
+          }
+      }
+    }
+
+    var name: String {
+      switch self {
+        case .playlist: return "playlist"
+        case .chapters: return "chapters"
+        case .video: return "video"
+        case .audio: return "audio"
+        case .sub: return "sub"
+        case .plugin(let id): return "plugin:\(id)"
+      }
+    }
+  }
+
+  private class Sidebar {
+    let id: Preference.SidebarID
+
+    init(_ id: Preference.SidebarID) {
+      self.id = id
+    }
+
+    // user configured:
+    var layoutStyle: Preference.SidebarLayoutStyle = Preference.SidebarLayoutStyle.defaultValue
+    var tabGroups: Set<SideBarTabGroup> = Set()
+
+    // state:
+
+    var animationState: UIAnimationState = .hidden
+
+    // nil means none/hidden:
+    var visibleTab: SidebarTab? = nil
+
+    var visibleTabGroup: SideBarTabGroup? {
+      return visibleTab?.group
+    }
+
+    var isVisible: Bool {
+      return visibleTab != nil
+    }
+  }
+
+  private var leftSidebar = Sidebar(.left)
+  private var rightSidebar = Sidebar(.right)
 
   enum PIPStatus {
     case notInPIP
@@ -371,6 +454,10 @@ class MainWindowController: PlayerWindowController {
     .displayTimeAndBatteryInFullScreen,
     .controlBarToolbarButtons,
     .alwaysShowOnTopIcon,
+    .leftSidebarLayoutStyle,
+    .rightSidebarLayoutStyle,
+    .settingsParentSidebarID,
+    .playlistParentSidebarID,
   ]
 
   override var observedPrefKeys: [Preference.Key] {
@@ -444,6 +531,11 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
+      // TODO
+//    case PK.leftSidebarLayoutStyle:
+//    case PK.rightSidebarLayoutStyle:
+//    case PK.settingsParentSidebarID:
+//    case PK.playlistParentSidebarID:
     default:
       return
     }
@@ -472,8 +564,10 @@ class MainWindowController: PlayerWindowController {
   /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
   var currentControlBar: NSView?
 
-  @IBOutlet weak var sideBarRightConstraint: NSLayoutConstraint!
-  @IBOutlet weak var sideBarWidthConstraint: NSLayoutConstraint!
+  @IBOutlet weak var leftSidebarLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var rightSidebarTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var leftSidebarWidthConstraint: NSLayoutConstraint!
+  @IBOutlet weak var rightSidebarWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarOverlayHeightConstraint: NSLayoutConstraint!
@@ -499,7 +593,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var rightArrowButton: NSButton!
   @IBOutlet weak var settingsButton: NSButton!
   @IBOutlet weak var playlistButton: NSButton!
-  @IBOutlet weak var sideBarView: NSVisualEffectView!
+  @IBOutlet weak var leftSidebarView: NSVisualEffectView!
+  @IBOutlet weak var rightSidebarView: NSVisualEffectView!
   @IBOutlet weak var bottomView: NSView!
   @IBOutlet weak var bufferIndicatorView: NSVisualEffectView!
   @IBOutlet weak var bufferProgressLabel: NSTextField!
@@ -536,6 +631,7 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var osdAccessoryProgress: NSProgressIndicator!
 
   @IBOutlet weak var pipOverlayView: NSVisualEffectView!
+  @IBOutlet weak var videoContainerView: NSView!
 
   lazy var pluginOverlayViewContainer: NSView! = {
     guard let window = window, let cv = window.contentView else { return nil }
@@ -551,7 +647,7 @@ class MainWindowController: PlayerWindowController {
   var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
-  override var mouseActionDisabledViews: [NSView?] {[sideBarView, currentControlBar, topOverlayView, subPopoverView]}
+  override var mouseActionDisabledViews: [NSView?] {[leftSidebarView, rightSidebarView, currentControlBar, topOverlayView, subPopoverView]}
 
   // MARK: - PIP
 
@@ -576,6 +672,25 @@ class MainWindowController: PlayerWindowController {
     super.init(playerCore: playerCore)
     self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
+
+    leftSidebar.layoutStyle = Preference.enum(for: .leftSidebarLayoutStyle)
+    rightSidebar.layoutStyle = Preference.enum(for: .rightSidebarLayoutStyle)
+
+    if leftSidebar.id == Preference.enum(for: .settingsParentSidebarID) {
+      leftSidebar.tabGroups.insert(.settings)
+      rightSidebar.tabGroups.remove(.settings)
+    } else {
+      rightSidebar.tabGroups.insert(.settings)
+      leftSidebar.tabGroups.remove(.settings)
+    }
+
+    if rightSidebar.id == Preference.enum(for: .playlistParentSidebarID) {
+      rightSidebar.tabGroups.insert(.playlist)
+      leftSidebar.tabGroups.remove(.playlist)
+    } else {
+      leftSidebar.tabGroups.insert(.playlist)
+      rightSidebar.tabGroups.remove(.playlist)
+    }
   }
 
   required init?(coder: NSCoder) {
@@ -613,7 +728,8 @@ class MainWindowController: PlayerWindowController {
     window.aspectRatio = AppData.sizeWhenNoVideo
 
     // sidebar views
-    sideBarView.isHidden = true
+    leftSidebarView.isHidden = true
+    rightSidebarView.isHidden = true
 
     // osc views
     fragControlView.addView(fragControlViewLeftView, in: .center)
@@ -674,10 +790,10 @@ class MainWindowController: PlayerWindowController {
       topOverlayBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     }
     cachedScreenCount = NSScreen.screens.count
-    // Do not make visual effects views opaque when window loses focus
-    [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView,
-     osdVisualEffectView, pipOverlayView, bufferIndicatorView].forEach {
-      $0?.state = .active
+    // Do not make visual effects views opaque when window is not in focus
+    for view in [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating, leftSidebarView, rightSidebarView,
+     osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
+      view?.state = .active
     }
     // hide other views
     osdVisualEffectView.isHidden = true
@@ -773,8 +889,10 @@ class MainWindowController: PlayerWindowController {
       $0?.appearance = appearance
     }
 
-    sideBarView.material = .dark
-    sideBarView.appearance = NSAppearance(named: .vibrantDark)
+    for sidebar in [leftSidebarView, rightSidebarView] {
+      sidebar?.material = .dark
+      sidebar?.appearance = NSAppearance(named: .vibrantDark)
+    }
 
     window.appearance = appearance
   }
@@ -782,7 +900,7 @@ class MainWindowController: PlayerWindowController {
 
   private func addVideoViewToWindow() {
     guard let cv = window?.contentView else { return }
-    cv.addSubview(videoView, positioned: .below, relativeTo: nil)
+    videoContainerView.addSubview(videoView, positioned: .above, relativeTo: nil)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
     ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
@@ -982,20 +1100,63 @@ class MainWindowController: PlayerWindowController {
     // record current mouse pos
     mousePosRelatedToWindow = event.locationInWindow
     // playlist resizing
-    if sideBarStatus == .playlist {
-      let sf = sideBarView.frame
-      if NSPointInRect(mousePosRelatedToWindow!, NSMakeRect(sf.origin.x - 4, sf.origin.y, 4, sf.height)) {
-        isResizingSidebar = true
+    if leftSidebar.visibleTab == .playlist {
+      let sf = leftSidebarView.frame
+      let dragRectCenterX: CGFloat
+      switch leftSidebar.layoutStyle {
+        case .insideVideo:
+          dragRectCenterX = sf.origin.x + sf.width
+        case .outsideVideo:
+          dragRectCenterX = sf.origin.x
+      }
+
+      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
+      if NSPointInRect(mousePosRelatedToWindow!, activationRect) {
+        Logger.log("User started resize of left sidebar", level: .verbose)
+        isResizingLeftSidebar = true
+      }
+    } else if rightSidebar.visibleTab == .playlist {
+      let sf = rightSidebarView.frame
+      let dragRectCenterX: CGFloat
+      switch leftSidebar.layoutStyle {
+        case .insideVideo:
+          dragRectCenterX = sf.origin.x
+        case .outsideVideo:
+          dragRectCenterX = sf.origin.x + sf.width
+      }
+
+      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
+      if NSPointInRect(mousePosRelatedToWindow!, activationRect) {
+        Logger.log("User started resize of right sidebar", level: .verbose)
+        isResizingRightSidebar = true
       }
     }
   }
 
   override func mouseDragged(with event: NSEvent) {
-    if isResizingSidebar {
-      // resize sidebar
+    if isResizingLeftSidebar {
       let currentLocation = event.locationInWindow
-      let newWidth = window!.frame.width - currentLocation.x - 2
-      sideBarWidthConstraint.constant = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      let newWidth: CGFloat
+      switch leftSidebar.layoutStyle {
+        case .insideVideo:
+          newWidth = currentLocation.x + 2
+        case .outsideVideo:
+          newWidth = leftSidebarView.frame.width + currentLocation.x + 2
+      }
+      leftSidebarWidthConstraint.constant = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      Logger.log("New width of left sidebar playlist is \(leftSidebarWidthConstraint.constant)", level: .verbose)
+    } else if isResizingRightSidebar {
+      let currentLocation = event.locationInWindow
+      // resize sidebar
+      let newWidth: CGFloat
+      switch rightSidebar.layoutStyle {
+        case .insideVideo:
+          newWidth = window!.frame.width - currentLocation.x - 2
+        case .outsideVideo:
+          newWidth = window!.frame.width - currentLocation.x + rightSidebarView.frame.width - 2
+      }
+      rightSidebarWidthConstraint.constant = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      Logger.log("New width of right sidebar playlist is \(rightSidebarWidthConstraint.constant)", level: .verbose)
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -1023,7 +1184,8 @@ class MainWindowController: PlayerWindowController {
 
   override func mouseUp(with event: NSEvent) {
     if Logger.isEnabled(.verbose) {
-      Logger.log("MainWindow mouseUp! isDragging: \(isDragging), isResizingSidebar: \(isResizingSidebar), clickCount: \(event.clickCount)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("MainWindow mouseUp. isDragging: \(isDragging), isResizingRightSidebar: \(isResizingRightSidebar), clickCount: \(event.clickCount)",
+                 level: .verbose, subsystem: player.subsystem)
     }
 
     workaroundCursorDefect()
@@ -1031,17 +1193,21 @@ class MainWindowController: PlayerWindowController {
     if isDragging {
       // if it's a mouseup after dragging window
       isDragging = false
-    } else if isResizingSidebar {
+    } else if isResizingLeftSidebar {
       // if it's a mouseup after resizing sidebar
-      isResizingSidebar = false
-      Preference.set(Int(sideBarWidthConstraint.constant), for: .playlistWidth)
+      isResizingLeftSidebar = false
+      Preference.set(Int(leftSidebarWidthConstraint.constant), for: .playlistWidth)
+    } else if isResizingRightSidebar {
+      // if it's a mouseup after resizing sidebar
+      isResizingRightSidebar = false
+      Preference.set(Int(rightSidebarWidthConstraint.constant), for: .playlistWidth)
     } else {
       // if it's a mouseup after clicking
 
       // Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
       // but we will only count it as a drag if `isDragging==true`
-      if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [sideBarView, subPopoverView]) && sideBarStatus != .hidden {
-        hideSideBar()
+      if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leftSidebarView, rightSidebarView, subPopoverView]) {
+        hideSidebars()
         return
       }
 
@@ -1102,7 +1268,7 @@ class MainWindowController: PlayerWindowController {
 
   override func scrollWheel(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
-    guard !isMouseEvent(event, inAnyOf: [sideBarView, titleBarOverlayView, subPopoverView]) else { return }
+    guard !isMouseEvent(event, inAnyOf: [leftSidebarView, rightSidebarView, titleBarOverlayView, subPopoverView]) else { return }
 
     if isMouseEvent(event, inAnyOf: [fragSliderView]) && playSlider.isEnabled {
       seekOverride = true
@@ -1772,7 +1938,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowDidResize(_ notification: Notification) {
-    Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
+//    Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
 
     // The `videoView` is not updated during full screen animation (unless using a custom one, however it could be
@@ -1908,7 +2074,6 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Window delegate: Activeness status
   func windowDidMove(_ notification: Notification) {
-    Logger.log("windowDidMove()", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
     player.events.emit(.windowMoved, data: window.frame)
   }
@@ -2231,56 +2396,177 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Side bar
 
-  private func showSideBar(viewController: SidebarViewController, type: SideBarViewType) {
-    guard !isInInteractiveMode else { return }
-
-    // adjust sidebar width
-    guard let view = (viewController as? NSViewController)?.view else {
-        Logger.fatal("viewController is not a NSViewController")
-    }
-    sidebarAnimationState = .willShow
-    let width = type.width()
-    sideBarWidthConstraint.constant = width
-    sideBarRightConstraint.constant = -width
-    sideBarView.isHidden = false
-    // add view and constraints
-    sideBarView.addSubview(view)
-    let constraintsH = NSLayoutConstraint.constraints(withVisualFormat: "H:|[v]|", options: [], metrics: nil, views: ["v": view])
-    let constraintsV = NSLayoutConstraint.constraints(withVisualFormat: "V:|[v]|", options: [], metrics: nil, views: ["v": view])
-    NSLayoutConstraint.activate(constraintsH)
-    NSLayoutConstraint.activate(constraintsV)
-    // show sidebar
-    NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = AccessibilityPreferences.adjustedDuration(SideBarAnimationDuration)
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      sideBarRightConstraint.animator().constant = 0
-    }) {
-      self.sidebarAnimationState = .shown
-      self.sideBarStatus = type
-    }
+  // For JavascriptAPICore:
+  func isShowingSettingsSidebar() -> Bool {
+    return leftSidebar.visibleTabGroup == .settings || rightSidebar.visibleTabGroup == .settings
   }
 
-  func hideSideBar(animate: Bool = true, after: @escaping () -> Void = { }) {
-    sidebarAnimationState = .willHide
-    let currWidth = sideBarWidthConstraint.constant
-    NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = animate ? AccessibilityPreferences.adjustedDuration(SideBarAnimationDuration) : 0
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      sideBarRightConstraint.animator().constant = -currWidth
-    }) {
-      if self.sidebarAnimationState == .willHide {
-        self.sideBarStatus = .hidden
-        self.sideBarView.subviews.removeAll()
-        self.sideBarView.isHidden = true
-        self.sidebarAnimationState = .hidden
-        after()
+  func isShowing(sidebarTab tab: SidebarTab) -> Bool {
+    return leftSidebar.visibleTab == tab || rightSidebar.visibleTab == tab
+  }
+
+  private func getConfiguredSidebar(forTabGroup tabGroup: SideBarTabGroup) -> Sidebar? {
+    for sidebar in [leftSidebar, rightSidebar] {
+      if sidebar.tabGroups.contains(tabGroup) {
+        return sidebar
       }
     }
+    Logger.log("No sidebar found for tab group \(tabGroup.rawValue.quoted)!", level: .error)
+    return nil
   }
 
-  private func setConstraintsForVideoView(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
+  func showSidebar(forTabGroup tabGroup: SideBarTabGroup, force: Bool = false, hideIfAlreadyShown: Bool = true) {
+    Logger.log("ShowSidebar for tabGroup: \(tabGroup.rawValue.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
+    switch tabGroup {
+      case .playlist:
+        if let tab = SidebarTab(name: playlistView.currentTab.rawValue) {
+          showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
+        }
+      case .settings:
+        if let tab = SidebarTab(name: quickSettingView.currentTab.name) {
+          showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
+        }
+    }
+  }
+
+  func showSidebar(tab: SidebarTab, force: Bool = false, hideIfAlreadyShown: Bool = true) {
+    Logger.log("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
+    if !force && (leftSidebar.animationState.isInTransition || rightSidebar.animationState.isInTransition) {
+      return  // do not interrput other actions while it is animating
+    }
+
+    guard let destinationSidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
+
+    if destinationSidebar.visibleTab == tab && hideIfAlreadyShown {
+      changeVisibility(forTab: tab, to: false)
+      return
+    }
+
+    // This will change the sidebar to the displayed tab group if needed:
+    changeVisibility(forTab: tab, to: true)
+  }
+
+  // hides both sidebars (if visible)
+  func hideSidebars(animate: Bool = true, then: (() -> Void)? = nil) {
+    Logger.log("Hiding all sidebars", level: .verbose)
+    // Need to make sure that completionHandler (1) runs at all, and (2) runs after animations
+    var completionHandler: (() -> Void)? = then
+    if let visibleTab = leftSidebar.visibleTab {
+      changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
+      completionHandler = nil
+    }
+    if let visibleTab = rightSidebar.visibleTab {
+      changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
+      completionHandler = nil
+    }
+    if let completionHandler = completionHandler {
+      completionHandler()
+    }
+  }
+
+  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, animate: Bool = true, then: (() -> Void)? = nil) {
+    guard !isInInteractiveMode else { return }
+    Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show)", level: .verbose)
+
+    let group = tab.group
+    let viewController = (group == .playlist) ? playlistView : quickSettingView
+    guard let sidebar = getConfiguredSidebar(forTabGroup: group) else { return }
+    let currentWidth = group.width()
+
+    if sidebar.isVisible == show {
+      if !sidebar.isVisible || sidebar.visibleTab == tab {
+        // Nothing to do
+        if let thenDo = then {
+          thenDo()
+        }
+        return
+      }
+
+      if sidebar.visibleTabGroup != group {
+        // If tab is open but with wrong tab group, hide it, then change it, then show again
+        changeVisibility(forTab: tab, to: false, then: {
+          self.changeVisibility(forTab: tab, to: true)
+        })
+        return
+      }
+    }
+
+    let sidebarView: NSVisualEffectView
+    let widthConstraint: NSLayoutConstraint
+    let edgeConstraint: NSLayoutConstraint
+    switch sidebar.id {
+      case .left:
+        sidebarView = leftSidebarView
+        widthConstraint = leftSidebarWidthConstraint
+        edgeConstraint = leftSidebarLeadingConstraint
+      case .right:
+        sidebarView = rightSidebarView
+        widthConstraint = rightSidebarWidthConstraint
+        edgeConstraint = rightSidebarTrailingConstraint
+    }
+
+    sidebar.animationState = show ? .willShow : .willHide
+
+    if show {
+      // Make it the active tab in its parent tab group (can do this whether or not it's shown):
+      switch tab.group {
+        case .playlist:
+          guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
+            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!", level: .error)
+            return
+          }
+          self.playlistView.pleaseSwitchToTab(tabType)
+        case .settings:
+          guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
+            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!", level: .error)
+            return
+          }
+          self.quickSettingView.pleaseSwitchToTab(tabType)
+      }
+
+      // adjust sidebar width before showing in case it's not up to date
+      widthConstraint.constant = currentWidth
+      sidebarView.isHidden = false
+
+      // add view and constraints
+      let view = viewController.view
+      sidebarView.addSubview(view)
+      let constraintsH = NSLayoutConstraint.constraints(withVisualFormat: "H:|[v]|", options: [], metrics: nil, views: ["v": view])
+      let constraintsV = NSLayoutConstraint.constraints(withVisualFormat: "V:|[v]|", options: [], metrics: nil, views: ["v": view])
+      NSLayoutConstraint.activate(constraintsH)
+      NSLayoutConstraint.activate(constraintsV)
+    }
+
+    NSAnimationContext.runAnimationGroup({ context in
+      context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
+      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+      edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
+    }, completionHandler: {
+      if show {
+        sidebar.animationState = .shown
+        sidebar.visibleTab = tab
+      } else {
+        sidebar.visibleTab = nil
+        sidebarView.subviews.removeAll()
+        sidebarView.isHidden = true
+        sidebar.animationState = .hidden
+      }
+      Logger.log("Sidebar animation state is now: \(sidebar.animationState)")
+      if let thenDo = then {
+        thenDo()
+      }
+    })
+  }
+
+  private func setConstraintsForVideoView(_ constraints: [NSLayoutConstraint.Attribute: CGFloat], animate: Bool = false) {
     for (attr, value) in constraints {
-      videoViewConstraints[attr]?.constant = value
+      if let constraint = videoViewConstraints[attr] {
+        if animate {
+          constraint.animator().constant = value
+        } else {
+          constraint.constant = value
+        }
+      }
     }
   }
 
@@ -2404,9 +2690,7 @@ class MainWindowController: PlayerWindowController {
       context.duration = CropAnimationDuration
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomBarBottomConstraint.animator().constant = 0
-      ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-        videoViewConstraints[attr]!.animator().constant = newConstants[attr]!
-      }
+      setConstraintsForVideoView(newConstants, animate: true)
     }) {
       self.cropSettingsView?.cropBoxView.isHidden = false
       self.videoView.layer?.shadowColor = .black
@@ -2432,7 +2716,7 @@ class MainWindowController: PlayerWindowController {
         videoViewConstraints[attr]!.constant = 0
       }
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
-      self.sideBarStatus = .hidden
+      self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       return
@@ -2448,7 +2732,7 @@ class MainWindowController: PlayerWindowController {
       }
     }) {
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
-      self.sideBarStatus = .hidden
+      self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       self.showUI()
@@ -2993,65 +3277,6 @@ class MainWindowController: PlayerWindowController {
     setWindowFloatingOnTop(!isOntop)
   }
 
-  func showSettingsSidebar(tab: QuickSettingViewController.TabViewType? = nil, force: Bool = false, hideIfAlreadyShown: Bool = true) {
-    Logger.log("showSettingsSidebar(): tab=\(tab?.name ?? "nil"), force=\(force), hideIfAlreadyShown=\(hideIfAlreadyShown)")
-    if !force && sidebarAnimationState == .willShow || sidebarAnimationState == .willHide {
-      return  // do not interrput other actions while it is animating
-    }
-    let view = quickSettingView
-    switch sideBarStatus {
-    case .hidden:
-      if let tab = tab {
-        view.pleaseSwitchToTab(tab)
-      }
-      showSideBar(viewController: view, type: .settings)
-    case .playlist:
-      if let tab = tab {
-        view.pleaseSwitchToTab(tab)
-      }
-      hideSideBar {
-        self.showSideBar(viewController: view, type: .settings)
-      }
-    case .settings:
-      if view.currentTab == tab || tab == nil {
-        if hideIfAlreadyShown {
-          hideSideBar()
-        }
-      } else if let tab = tab {
-        view.pleaseSwitchToTab(tab)
-      }
-    }
-  }
-
-  func showPlaylistSidebar(tab: PlaylistViewController.TabViewType? = nil, force: Bool = false, hideIfAlreadyShown: Bool = true) {
-    if !force && sidebarAnimationState == .willShow || sidebarAnimationState == .willHide {
-      return  // do not interrput other actions while it is animating
-    }
-    let view = playlistView
-    switch sideBarStatus {
-    case .hidden:
-      if let tab = tab {
-        view.pleaseSwitchToTab(tab)
-      }
-      showSideBar(viewController: view, type: .playlist)
-    case .settings:
-      if let tab = tab {
-        view.pleaseSwitchToTab(tab)
-      }
-      hideSideBar {
-        self.showSideBar(viewController: view, type: .playlist)
-      }
-    case .playlist:
-      if view.currentTab == tab || tab == nil {
-        if hideIfAlreadyShown {
-          hideSideBar()
-        }
-      } else if let tab = tab {
-        view.pleaseSwitchToTab(tab)
-      }
-    }
-  }
-
   /** When slider changes */
   @IBAction override func playSliderChanges(_ sender: NSSlider) {
     // guard let event = NSApp.currentEvent else { return }
@@ -3085,9 +3310,9 @@ class MainWindowController: PlayerWindowController {
         }
       }
     case .playlist:
-      showPlaylistSidebar()
+      showSidebar(forTabGroup: .playlist)
     case .settings:
-      showSettingsSidebar()
+      showSidebar(forTabGroup: .settings)
     case .subTrack:
       quickSettingView.showSubChooseMenu(forView: sender, showLoadedSubs: true)
     }

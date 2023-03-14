@@ -185,7 +185,7 @@ class PlayerCore: NSObject {
   var useExactSeekForCurrentFile: Bool = true
 
   var isPlaylistVisible: Bool {
-    isInMiniPlayer ? miniPlayer.isPlaylistVisible : mainWindow.sideBarStatus == .playlist
+    isInMiniPlayer ? miniPlayer.isPlaylistVisible : mainWindow.isShowing(sidebarTab: .playlist)
   }
 
   var isOnlyOpenPlayer: Bool {
@@ -513,10 +513,8 @@ class PlayerCore: NSObject {
     syncUITime()
     let playlistView = mainWindow.playlistView.view
     let videoView = mainWindow.videoView
-    // hide sidebar
-    if mainWindow.sideBarStatus != .hidden {
-      mainWindow.hideSideBar(animate: false)
-    }
+    // hide sidebars
+    mainWindow.hideSidebars(animate: false)
 
     // move playist view
     playlistView.removeFromSuperview()
@@ -1764,7 +1762,7 @@ class PlayerCore: NSObject {
     case .chapterList:
       DispatchQueue.main.async {
         // this should avoid sending reload when table view is not ready
-        if self.isInMiniPlayer ? self.miniPlayer.isPlaylistVisible : self.mainWindow.sideBarStatus == .playlist {
+        if self.isInMiniPlayer ? self.miniPlayer.isPlaylistVisible : self.mainWindow.isShowing(sidebarTab: .playlist) {
           self.mainWindow.playlistView.chapterTableView.reloadData()
         }
       }

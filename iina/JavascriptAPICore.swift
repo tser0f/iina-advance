@@ -236,7 +236,7 @@ fileprivate class WindowAPI: JavascriptAPI, CoreSubAPIExportable {
     case "visible":
       return window.window!.occlusionState == .visible
     case "sidebar":
-      return window.sideBarStatus == .settings ? window.quickSettingView.currentTab.name : NSNull()
+      return window.isShowingSettingsSidebar() ? window.quickSettingView.currentTab.name : NSNull()
     case "screens":
       let current = window.window!.screen!
       let main = NSScreen.main
@@ -285,15 +285,13 @@ fileprivate class WindowAPI: JavascriptAPI, CoreSubAPIExportable {
       window.setWindowFloatingOnTop(val)
     case "sidebar":
       if let name = value as? String {
-        if let tabType = QuickSettingViewController.TabViewType(name: name) {
-          window.showSettingsSidebar(tab: tabType, force: true, hideIfAlreadyShown: false)
-        } else if let tabType = PlaylistViewController.TabViewType(name: name) {
-          window.showPlaylistSidebar(tab: tabType, force: true, hideIfAlreadyShown: false)
+        if let tab = MainWindowController.SidebarTab(name: name) {
+          window.showSidebar(tab: tab, force: true, hideIfAlreadyShown: false)
         } else {
           log("core.window.sidebar: Unknown sidebar name \"\(name)\"", level: .error)
         }
       } else {
-        window.hideSideBar(animate: true)
+        window.hideSidebars(animate: true)
       }
     default:
       log("core.window: \(prop) is not accessible", level: .warning)

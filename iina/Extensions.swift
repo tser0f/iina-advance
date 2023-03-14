@@ -891,3 +891,25 @@ extension Process {
     return (process, stdout, stderr)
   }
 }
+
+extension NSView {
+
+  func snapshotImage() -> NSImage? {
+
+    guard let window = window,
+          let screen = window.screen,
+          let contentView = window.contentView else { return nil }
+
+    let originRect = self.convert(self.bounds, to:contentView)
+    var rect = originRect
+    rect.origin.x += window.frame.origin.x
+    rect.origin.y = 0
+    rect.origin.y += screen.frame.size.height - window.frame.origin.y - window.frame.size.height
+    rect.origin.y += window.frame.size.height - originRect.origin.y - originRect.size.height
+    guard window.windowNumber > 0 else { return nil }
+    guard let cgImage = CGWindowListCreateImage(rect, .optionIncludingWindow, CGWindowID(window.windowNumber), CGWindowImageOption.bestResolution) else { return nil }
+
+    return NSImage(cgImage: cgImage, size: self.bounds.size)
+  }
+
+}

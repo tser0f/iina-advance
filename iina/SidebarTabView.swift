@@ -8,6 +8,7 @@
 
 import Cocoa
 
+// This is only used for IINA plugins
 class SidebarTabView: NSViewController {
   var name: String!
   var pluginID: String!

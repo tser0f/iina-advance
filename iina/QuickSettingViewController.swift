@@ -564,7 +564,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func cropChangedAction(_ sender: NSSegmentedControl) {
     if sender.selectedSegment == sender.segmentCount - 1 {
       // User clicked on "Custom...": show custom crop UI
-      mainWindow.hideSideBar {
+      mainWindow.hideSidebars {
         self.mainWindow.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
       }
     } else {

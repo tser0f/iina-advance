@@ -133,6 +133,12 @@ struct Preference {
     static let oscPosition = Key("oscPosition")
     static let hideOverlaysWhenOutsideWindow = Key("hideOverlaysWhenOutsideWindow")
 
+    static let leftSidebarLayoutStyle = Key("leftSidebarLayoutStyle")
+    static let rightSidebarLayoutStyle = Key("rightSidebarLayoutStyle")
+    /// `Settings` tab group
+    static let settingsParentSidebarID = Key("settingsParentSidebarID")
+    /// `Playlist` tab group
+    static let playlistParentSidebarID = Key("playlistParentSidebarID")
     static let playlistWidth = Key("playlistWidth")
     static let prefetchPlaylistVideoDuration = Key("prefetchPlaylistVideoDuration")
 
@@ -438,6 +444,28 @@ struct Preference {
           return nil
         }
       }
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum SidebarID: Int, InitializingFromKey {
+    case left = 1
+    case right
+
+    static var defaultValue = SidebarID.right
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum SidebarLayoutStyle: Int, InitializingFromKey {
+    case insideVideo = 0
+    case outsideVideo
+
+    static var defaultValue = SidebarLayoutStyle.insideVideo
+
+    init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
     }
   }
@@ -833,6 +861,10 @@ struct Preference {
     .oscPosition: OSCPosition.floating.rawValue,
     .hideOverlaysWhenOutsideWindow: true,
     .playlistWidth: 270,
+    .settingsParentSidebarID: SidebarID.right.rawValue,
+    .playlistParentSidebarID: SidebarID.right.rawValue,
+    .leftSidebarLayoutStyle: SidebarLayoutStyle.insideVideo.rawValue,
+    .rightSidebarLayoutStyle: SidebarLayoutStyle.insideVideo.rawValue,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
