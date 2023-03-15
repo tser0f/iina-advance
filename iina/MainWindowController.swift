@@ -310,7 +310,7 @@ class MainWindowController: PlayerWindowController {
   // Sidebar
 
   /** Type of the view embedded in sidebar. */
-  enum SideBarTabGroup: String {
+  enum SidebarTabGroup: String {
     case settings
     case playlist
 
@@ -333,7 +333,7 @@ class MainWindowController: PlayerWindowController {
     case sub
     case plugin(id: String)
 
-    var group: SideBarTabGroup {
+    var group: SidebarTabGroup {
       switch self {
         case .playlist, .chapters:
           return .playlist
@@ -384,7 +384,7 @@ class MainWindowController: PlayerWindowController {
 
     // user configured:
     var layoutStyle: Preference.SidebarLayoutStyle = Preference.SidebarLayoutStyle.defaultValue
-    var tabGroups: Set<SideBarTabGroup> = Set()
+    var tabGroups: Set<SidebarTabGroup> = Set()
 
     // state:
 
@@ -393,7 +393,7 @@ class MainWindowController: PlayerWindowController {
     // nil means none/hidden:
     var visibleTab: SidebarTab? = nil
 
-    var visibleTabGroup: SideBarTabGroup? {
+    var visibleTabGroup: SidebarTabGroup? {
       return visibleTab?.group
     }
 
@@ -404,6 +404,7 @@ class MainWindowController: PlayerWindowController {
 
   private var leftSidebar = Sidebar(.left)
   private var rightSidebar = Sidebar(.right)
+  private lazy var sidebarsByID: [Preference.SidebarID: Sidebar] = [ .left: self.leftSidebar, .right: self.rightSidebar]
 
   enum PIPStatus {
     case notInPIP
@@ -531,11 +532,20 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
-      // TODO
-//    case PK.leftSidebarLayoutStyle:
-//    case PK.rightSidebarLayoutStyle:
-//    case PK.settingsParentSidebarID:
-//    case PK.playlistParentSidebarID:
+      case PK.leftSidebarLayoutStyle.rawValue:
+        // TODO
+        break
+      case PK.rightSidebarLayoutStyle.rawValue:
+        // TODO
+        break
+      case PK.settingsParentSidebarID.rawValue:
+        if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
+          self.moveSidebarIfNeeded(forTabGroup: .settings, toNewSidebarID: newID)
+        }
+      case PK.playlistParentSidebarID.rawValue:
+        if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
+          self.moveSidebarIfNeeded(forTabGroup: .playlist, toNewSidebarID: newID)
+        }
     default:
       return
     }
@@ -676,21 +686,11 @@ class MainWindowController: PlayerWindowController {
     leftSidebar.layoutStyle = Preference.enum(for: .leftSidebarLayoutStyle)
     rightSidebar.layoutStyle = Preference.enum(for: .rightSidebarLayoutStyle)
 
-    if leftSidebar.id == Preference.enum(for: .settingsParentSidebarID) {
-      leftSidebar.tabGroups.insert(.settings)
-      rightSidebar.tabGroups.remove(.settings)
-    } else {
-      rightSidebar.tabGroups.insert(.settings)
-      leftSidebar.tabGroups.remove(.settings)
-    }
+    let settingsSidebarID: Preference.SidebarID = Preference.enum(for: .settingsParentSidebarID)
+    setSidebar(id: settingsSidebarID, forTabGroup: .settings)
 
-    if rightSidebar.id == Preference.enum(for: .playlistParentSidebarID) {
-      rightSidebar.tabGroups.insert(.playlist)
-      leftSidebar.tabGroups.remove(.playlist)
-    } else {
-      leftSidebar.tabGroups.insert(.playlist)
-      rightSidebar.tabGroups.remove(.playlist)
-    }
+    let playlistSidebarID: Preference.SidebarID = Preference.enum(for: .playlistParentSidebarID)
+    setSidebar(id: playlistSidebarID, forTabGroup: .playlist)
   }
 
   required init?(coder: NSCoder) {
@@ -2405,7 +2405,21 @@ class MainWindowController: PlayerWindowController {
     return leftSidebar.visibleTab == tab || rightSidebar.visibleTab == tab
   }
 
-  private func getConfiguredSidebar(forTabGroup tabGroup: SideBarTabGroup) -> Sidebar? {
+  private func setSidebar(id sidebarID: Preference.SidebarID, forTabGroup tabGroup: SidebarTabGroup) {
+    let addToSidebar: Sidebar
+    let removeFromSidebar: Sidebar
+    if sidebarID == leftSidebar.id {
+      addToSidebar = leftSidebar
+      removeFromSidebar = rightSidebar
+    } else {
+      addToSidebar = rightSidebar
+      removeFromSidebar = leftSidebar
+    }
+    addToSidebar.tabGroups.insert(tabGroup)
+    removeFromSidebar.tabGroups.remove(tabGroup)
+  }
+
+  private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
     for sidebar in [leftSidebar, rightSidebar] {
       if sidebar.tabGroups.contains(tabGroup) {
         return sidebar
@@ -2415,7 +2429,20 @@ class MainWindowController: PlayerWindowController {
     return nil
   }
 
-  func showSidebar(forTabGroup tabGroup: SideBarTabGroup, force: Bool = false, hideIfAlreadyShown: Bool = true) {
+  // If location of tab group changed to another sidebar (in user prefs), check if it is showing, and if so, hide it & show it on the other side
+  private func moveSidebarIfNeeded(forTabGroup tabGroup: SidebarTabGroup, toNewSidebarID newID: Preference.SidebarID) {
+    guard let currentID = getConfiguredSidebar(forTabGroup: tabGroup)?.id else { return }
+    guard currentID != newID else { return }
+
+    if let prevSidebar = sidebarsByID[currentID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
+      changeVisibility(forTab: curentVisibleTab, to: false, then: {
+        self.setSidebar(id: newID, forTabGroup: .settings)
+        self.changeVisibility(forTab: curentVisibleTab, to: true)
+      })
+    }
+  }
+
+  func showSidebar(forTabGroup tabGroup: SidebarTabGroup, force: Bool = false, hideIfAlreadyShown: Bool = true) {
     Logger.log("ShowSidebar for tabGroup: \(tabGroup.rawValue.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
     switch tabGroup {
       case .playlist:
