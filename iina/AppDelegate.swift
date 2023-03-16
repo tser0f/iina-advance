@@ -32,7 +32,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   private(set) var isTerminating = false
 
+  private var launchID: Int!
+
   private var observers: [NSObjectProtocol] = []
+  var observedPrefKeys: [Preference.Key] = [
+    .iinaLaunchCount,
+    .iinaPing
+  ]
 
   // Windows
 
@@ -80,6 +86,40 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   @IBOutlet weak var menuController: MenuController!
 
   @IBOutlet weak var dockMenu: NSMenu!
+
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    guard let keyPath = keyPath, let change = change else { return }
+
+    switch keyPath {
+      /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1.
+      /// It uses it this value as its launchID, and stores the new value back to the prefs, which will notify anyone listening to pref changes.
+      /// So this acts like a sort of registration mechanism. Each instance listens to see if the pref is updated by other instances.
+      /// If an older launch sees a newer launch register itself, it will set an `.iinaPing`, which the newer instance will receive, and
+      /// assuming it is well-behaved, disable its usage of shared UI state for the remainder of its run, so that multiple instances don't
+      /// corrupt each other's shared state or create echo-like behavior.
+      case PK.iinaLaunchCount.rawValue:
+        if let newLaunchID = change[.newKey] as? Int {
+          guard newLaunchID != self.launchID else { return }
+          if newLaunchID < self.launchID {
+            Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which looks invalid because it is below the current value! Will disable UI state load/save functionality to be safe.", level: .warning)
+            Preference.UIState.disablePersistentStateUntilNextLaunch()
+          } else {
+            Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(self.launchID!)).")
+            Logger.log("Will assume a newer instance of IINA has started; sending a ping to notify it.")
+            let (version, build) = InfoDictionary.shared.version
+            let buildString = "IINA \(version) Build \(build)"
+            Preference.set(buildString, for: .iinaPing)
+          }
+        }
+      case PK.iinaPing.rawValue:
+        if let info = change[.newKey] as? String {
+          Logger.log("Got a ping. Will assume an instance of IINA is already running, and disable loading/saving UI state. [PingInfo: \(info)]")
+          Preference.UIState.disablePersistentStateUntilNextLaunch()
+        }
+      default:
+        break
+    }
+  }
 
   // MARK: - SPUUpdaterDelegate
 
@@ -139,6 +179,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     logBuildDetails()
 
     Logger.log("App will launch")
+
+    Logger.log("Checking for other running instances of IINA...", level: .verbose)
+    self.launchID = Preference.integer(for: .iinaLaunchCount) + 1
+    for key in self.observedPrefKeys {
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
+    Preference.set(self.launchID, for: .iinaLaunchCount)
 
     // Call this *before* registering for url events, to guarantee that menu is init'd
     confTableStateManager.startUp()
@@ -224,16 +271,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         in its contructor, and we need to supply the window's autosave name to its constructor. */
     if !commandLineStatus.isCommandLine {
 
+      // The "action on last window closed" action will vary slightly depending on which type of window was closed.
+      // Here we add a listener which fires when *any* window is closed, in order to handle that logic all in one place.
       self.observers.append(NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil,
                                                             queue: .main, using: self.windowWillClose))
 
       /** Show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. app was launched on its own. */
       var useLaunchDefaultAction = true
       if !self.openFileCalled {
+        // Restore window state *before* hooking up the listener which saves state
         useLaunchDefaultAction = !restoreWindowsFromPreviousLaunch()
       }
 
-      // Start saving window state *after* restoring previous state:
+      // Save ordered list of open windows each time the order of windows changed.
       self.observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
                                                             queue: .main, using: self.keyWindowDidChange))
 
@@ -487,6 +537,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     Logger.log("App should terminate")
     isTerminating = true
+
+    // Remove observers for IINA preferences.
+    ObjcUtils.silenced {
+      for key in self.observedPrefKeys {
+        UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
+      }
+    }
 
     // Normally termination happens fast enough that the user does not have time to initiate
     // additional actions, however to be sure shutdown further input from the user.

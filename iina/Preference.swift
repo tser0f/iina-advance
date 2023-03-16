@@ -346,13 +346,16 @@ struct Preference {
      When saving and restoring the UI state is enabled, we need to first check if other instances of IINA are running so that they
      don't overwrite each other's data. To do that, we can have each instance listen for changes to this counter and respond appropriately.
      */
-    fileprivate static let iinaLaunchCount = Key("iinaLaunchCount")
+    static let iinaLaunchCount = Key("iinaLaunchCount")
+    static let iinaPing = Key("iinaPing")
 
     /** If true, saves the state of UI components as they change. This includes things like open windows &
-     their sizes & positions, current scroll offsets, search entries, and more. */
+     their sizes & positions, current scroll offsets, search entries, and more.
+     NOTE: Do not use this directly. Use `Preference.UIState.isSaveEnabled()` so that runtime overrides can work. */
     fileprivate static let enableSaveUIState = Key("enableSaveUIState")
     /** If true, initializes the state of UI components to their previous values (presumably from the previous launch).
-     Note that a saved state must exist for these components (see `enableSaveUIState`). */
+     Note that a saved state must exist for these components (see `enableSaveUIState`).
+     NOTE: Do not use this directly. Use `Preference.UIState.isRestoreEnabled()` so that runtime overrides work. */
     fileprivate static let enableRestoreUIState = Key("enableRestoreUIState")
 
     // Comma-separated list of window names
@@ -992,6 +995,7 @@ struct Preference {
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
     .iinaLaunchCount: 0,
+    .iinaPing: "",
     .enableSaveUIState: true,
     .enableRestoreUIState: true,
     .uiOpenWindowsBackToFrontList: "",
@@ -1176,17 +1180,26 @@ struct Preference {
   }
 
   /** Notes on performance:
-   Apple's NSUserDefaults, when getting & saving preference values, utilizes an in-memory cache which is very fast.
+   Apple's `NSUserDefaults`, when getting & saving preference values, utilizes an in-memory cache which is very fast.
    And although it periodically saves "dirty" values to disk, and the interval between writes is unclear, this doesn't appear to cause
    a significant performance penalty, and certainly can't be much improved upon by IINA. Also, as playing video is by its nature very
    data-intensive, writes to the .plist should be trivial by comparison. */
   class UIState {
+    /// This value, when set to true, disables state loading & saving for the remaining lifetime of this instance of IINA
+    /// (overriding any user settings); calls to `set()` will not be saved for the next launch, and any new get() requests
+    /// will return the default values.
+    private static var disableForThisInstance = false
+
     static var isSaveEnabled: Bool {
-      return Preference.bool(for: .enableSaveUIState)
+      return !disableForThisInstance && Preference.bool(for: .enableSaveUIState)
     }
 
     static var isRestoreEnabled: Bool {
-      return Preference.bool(for: .enableRestoreUIState)
+      return !disableForThisInstance && Preference.bool(for: .enableRestoreUIState)
+    }
+
+    static func disablePersistentStateUntilNextLaunch() {
+      disableForThisInstance = true
     }
 
     // Convenience method. If restoring UI state is enabled, returns the saved value; otherwise returns the saved value.
