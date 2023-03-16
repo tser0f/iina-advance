@@ -16,10 +16,16 @@ fileprivate let MenuItemTagCopy = 602
 fileprivate let MenuItemTagPaste = 603
 fileprivate let MenuItemTagDelete = 604
 
-class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, SidebarViewController, NSMenuItemValidation {
+class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, SidebarTabGroupViewController, NSMenuItemValidation {
 
   override var nibName: NSNib.Name {
     return NSNib.Name("PlaylistViewController")
+  }
+
+  var downShift: CGFloat = 0 {
+    didSet {
+      buttonTopConstraint.constant = downShift
+    }
   }
 
   weak var mainWindow: MainWindowController! {

@@ -14,12 +14,18 @@ fileprivate extension NSColor {
   static let sidebarTabTintActive: NSColor = NSColor(named: .sidebarTabTintActive)!
 }
 
-class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, SidebarViewController {
+class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, SidebarTabGroupViewController {
   override var nibName: NSNib.Name {
     return NSNib.Name("QuickSettingViewController")
   }
 
   let sliderSteps = 24.0
+
+  var downShift: CGFloat = 0 {
+    didSet {
+      buttonTopConstraint.constant = downShift
+    }
+  }
 
   enum TabViewType: Equatable {
     case video

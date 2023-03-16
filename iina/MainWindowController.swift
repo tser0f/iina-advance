@@ -589,9 +589,9 @@ class MainWindowController: PlayerWindowController {
 
   /** Top-of-video overlay, may contain `titleBarOverlayView` and/or top OSC if configured. */
   @IBOutlet weak var topOverlayView: NSVisualEffectView!
+  /** Border below `titleBarOverlayView`, or top OSC if configured. */
   @IBOutlet weak var topOverlayBottomBorder: NSBox!
-  /** This exists primarily to as a height-adjustable spacer inside the `topOverlayView`. Does not contain any child views.
-      Reserves space for the title bar components */
+  /** Reserves space for the title bar components. Does not contain any child views. */
   @IBOutlet weak var titleBarOverlayView: NSView!
   @IBOutlet weak var titlebarOnTopButton: NSButton!
 
@@ -657,7 +657,7 @@ class MainWindowController: PlayerWindowController {
   var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
-  override var mouseActionDisabledViews: [NSView?] {[leftSidebarView, rightSidebarView, currentControlBar, topOverlayView, subPopoverView]}
+  override var mouseActionDisabledViews: [NSView?] {[leftSidebarView, rightSidebarView, currentControlBar, titleBarOverlayView, oscTopMainView, subPopoverView]}
 
   // MARK: - PIP
 
@@ -710,6 +710,7 @@ class MainWindowController: PlayerWindowController {
     // set background color to black
     window.backgroundColor = .black
 
+    // TODO: why?
     topOverlayView.layerContentsRedrawPolicy = .onSetNeedsDisplay
 
     titlebarAccesoryViewController = NSTitlebarAccessoryViewController()
@@ -791,8 +792,8 @@ class MainWindowController: PlayerWindowController {
     }
     cachedScreenCount = NSScreen.screens.count
     // Do not make visual effects views opaque when window is not in focus
-    for view in [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating, leftSidebarView, rightSidebarView,
-     osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
+    for view in [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating,
+                 leftSidebarView, rightSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
       view?.state = .active
     }
     // hide other views
@@ -884,9 +885,10 @@ class MainWindowController: PlayerWindowController {
     let isDarkTheme = appearance?.isDark ?? true
     (playSlider.cell as? PlaySliderCell)?.isInDarkTheme = isDarkTheme
 
-    [topOverlayView, controlBarFloating, controlBarBottom, osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView].forEach {
-      $0?.material = material
-      $0?.appearance = appearance
+    for view in [topOverlayView, controlBarFloating, controlBarBottom,
+                 osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView] {
+      view?.material = material
+      view?.appearance = appearance
     }
 
     for sidebar in [leftSidebarView, rightSidebarView] {
@@ -964,10 +966,7 @@ class MainWindowController: PlayerWindowController {
       } else {
         titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
       }
-      // Remove this if it's acceptable in 10.13-
-      // topOverlayBottomBorder.isHidden = true
     } else {
-      // topOverlayBottomBorder.isHidden = false
       titleBarOverlayHeightConstraint.constant = StandardTitleBarHeight
       topOSCPreferredHeightConstraint.constant = 0
       bottomOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
@@ -1144,7 +1143,6 @@ class MainWindowController: PlayerWindowController {
           newWidth = leftSidebarView.frame.width + currentLocation.x + 2
       }
       leftSidebarWidthConstraint.constant = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      Logger.log("New width of left sidebar playlist is \(leftSidebarWidthConstraint.constant)", level: .verbose)
     } else if isResizingRightSidebar {
       let currentLocation = event.locationInWindow
       // resize sidebar
@@ -1156,7 +1154,6 @@ class MainWindowController: PlayerWindowController {
           newWidth = window!.frame.width - currentLocation.x + rightSidebarView.frame.width - 2
       }
       rightSidebarWidthConstraint.constant = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      Logger.log("New width of right sidebar playlist is \(rightSidebarWidthConstraint.constant)", level: .verbose)
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -1196,10 +1193,12 @@ class MainWindowController: PlayerWindowController {
     } else if isResizingLeftSidebar {
       // if it's a mouseup after resizing sidebar
       isResizingLeftSidebar = false
+      Logger.log("New width of left sidebar playlist is \(leftSidebarWidthConstraint.constant)", level: .verbose)
       Preference.set(Int(leftSidebarWidthConstraint.constant), for: .playlistWidth)
     } else if isResizingRightSidebar {
       // if it's a mouseup after resizing sidebar
       isResizingRightSidebar = false
+      Logger.log("New width of right sidebar playlist is \(rightSidebarWidthConstraint.constant)", level: .verbose)
       Preference.set(Int(rightSidebarWidthConstraint.constant), for: .playlistWidth)
     } else {
       // if it's a mouseup after clicking
@@ -1211,7 +1210,7 @@ class MainWindowController: PlayerWindowController {
         return
       }
 
-      if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [topOverlayView]) {
+      if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarOverlayView]) {
         let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
         if userDefault == "Minimize" {
           window?.performMiniaturize(nil)
@@ -1498,7 +1497,7 @@ class MainWindowController: PlayerWindowController {
           // Don't "unwind" if more than 360° rotated; just take shortest partial circle back to origin
           cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees)
           Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
-          rotateVideoView(toDegrees: 0, animate: true)
+          rotateVideoView(toDegrees: 0, animate: !AccessibilityPreferences.motionReductionEnabled)
           return
         }
 
@@ -1508,7 +1507,7 @@ class MainWindowController: PlayerWindowController {
         // Need to convert snap-to location back to CG, to feed to animation
         let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
                                                            equalToMpvRotation: mpvClosestQuarterRotation)
-        rotateVideoView(toDegrees: cgSnapToDegrees, animate: true)
+        rotateVideoView(toDegrees: cgSnapToDegrees, animate: !AccessibilityPreferences.motionReductionEnabled)
         player.setVideoRotate(mpvNewRotation)
 
       default:
@@ -1641,7 +1640,7 @@ class MainWindowController: PlayerWindowController {
 
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = duration
+      context.duration = AccessibilityPreferences.adjustedDuration(duration)
       window.animator().setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     }, completionHandler: nil)
 
@@ -1654,7 +1653,7 @@ class MainWindowController: PlayerWindowController {
     let priorWindowedFrame = fsState.priorWindowedFrame!
 
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = duration
+      context.duration = AccessibilityPreferences.adjustedDuration(duration)
       window.animator().setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     }, completionHandler: nil)
 
@@ -1677,18 +1676,14 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    // show titlebar
     if oscPosition == .insideTop {
+      // need top overlay for OSC, but hide title bar
       topOverlayView.isHidden = false
     } else {
       // stop animation and hide topOverlayView
       removeTopOverlayViewFromFadeableViews()
       topOverlayView.isHidden = true
-      // stop animation and hide topOverlayView
-      removeTopOverlayViewFromFadeableViews()
-      topOverlayView.isHidden = true
     }
-    titleBarOverlayHeightConstraint.constant = 0
     titleBarOverlayHeightConstraint.constant = 0
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
@@ -2164,11 +2159,8 @@ class MainWindowController: PlayerWindowController {
     // Follow energy efficiency best practices and stop the timer that updates the OSC.
     player.invalidateTimer()
     animationState = .willHide
-    fadeableViews.forEach { (v) in
-      v.isHidden = false
-    }
     NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = UIAnimationDuration
+      context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 0
       }
@@ -2193,15 +2185,11 @@ class MainWindowController: PlayerWindowController {
   private func showUI() {
     if player.disableUI { return }
     animationState = .willShow
-    fadeableViews.forEach { (v) in
-      v.isHidden = false
-    }
     // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
     player.syncUITime()
     player.createSyncUITimer()
-    standardWindowButtons.forEach { $0.isEnabled = true }
     NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = UIAnimationDuration
+      context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 1
       }
@@ -2212,6 +2200,10 @@ class MainWindowController: PlayerWindowController {
       // if no interrupt then hide animation
       if self.animationState == .willShow {
         self.animationState = .shown
+        for v in self.fadeableViews {
+          v.isHidden = false
+        }
+        self.standardWindowButtons.forEach { $0.isEnabled = true }
       }
     }
   }
@@ -3536,5 +3528,6 @@ extension MainWindowController: PIPViewControllerDelegate {
   }
 }
 
-protocol SidebarViewController {
+protocol SidebarTabGroupViewController {
+  var downShift: CGFloat { get set }
 }
