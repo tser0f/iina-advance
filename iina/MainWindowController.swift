@@ -532,20 +532,20 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
-      case PK.leftSidebarLayoutStyle.rawValue:
-        // TODO
-        break
-      case PK.rightSidebarLayoutStyle.rawValue:
-        // TODO
-        break
-      case PK.settingsParentSidebarID.rawValue:
-        if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
-          self.moveSidebarIfNeeded(forTabGroup: .settings, toNewSidebarID: newID)
-        }
-      case PK.playlistParentSidebarID.rawValue:
-        if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
-          self.moveSidebarIfNeeded(forTabGroup: .playlist, toNewSidebarID: newID)
-        }
+    case PK.leftSidebarLayoutStyle.rawValue:
+      // TODO
+      break
+    case PK.rightSidebarLayoutStyle.rawValue:
+      // TODO
+      break
+    case PK.settingsParentSidebarID.rawValue:
+      if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
+        self.moveSidebarIfNeeded(forTabGroup: .settings, toNewSidebarID: newID)
+      }
+    case PK.playlistParentSidebarID.rawValue:
+      if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
+        self.moveSidebarIfNeeded(forTabGroup: .playlist, toNewSidebarID: newID)
+      }
     default:
       return
     }
@@ -569,11 +569,12 @@ class MainWindowController: PlayerWindowController {
   }
 
   var titlebarAccesoryViewController: NSTitlebarAccessoryViewController!
-  @IBOutlet var titlebarAccessoryView: NSView!
+  @IBOutlet var rightTitlebarAccessoryView: NSView!
 
   /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
   var currentControlBar: NSView?
 
+  @IBOutlet weak var rightTitlebarAccessoryViewTrailingConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var leftSidebarLeadingConstraint: NSLayoutConstraint!
@@ -595,7 +596,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var topOverlayBottomBorder: NSBox!
   /** Reserves space for the title bar components. Does not contain any child views. */
   @IBOutlet weak var titleBarOverlayView: NSView!
-  @IBOutlet weak var titlebarOnTopButton: NSButton!
+  /** "Pin to Top" button in titlebar, if configured to  be shown */
+  @IBOutlet weak var pinToTopButton: NSButton!
 
   @IBOutlet weak var controlBarTop: NSView!
   @IBOutlet weak var controlBarFloating: ControlBarView!
@@ -715,10 +717,15 @@ class MainWindowController: PlayerWindowController {
     // TODO: why?
     topOverlayView.layerContentsRedrawPolicy = .onSetNeedsDisplay
 
+    // Titlebar accessories
     titlebarAccesoryViewController = NSTitlebarAccessoryViewController()
-    titlebarAccesoryViewController.view = titlebarAccessoryView
+    titlebarAccesoryViewController.view = rightTitlebarAccessoryView
     titlebarAccesoryViewController.layoutAttribute = .right
     window.addTitlebarAccessoryViewController(titlebarAccesoryViewController)
+    rightTitlebarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
+    let buttonSizeConstraint = pinToTopButton.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight)
+    buttonSizeConstraint.isActive = true
+    pinToTopButton.addConstraint(buttonSizeConstraint)
     updateOnTopIcon()
 
     // FIXME: do not do this here
@@ -745,7 +752,7 @@ class MainWindowController: PlayerWindowController {
     // fade-able views
     fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
     fadeableViews.append(topOverlayView)
-    fadeableViews.append(titlebarAccessoryView)
+    fadeableViews.append(rightTitlebarAccessoryView)
 
     playbackButtonSizeConstraint.constant = playbackButtonSize
 
@@ -1163,7 +1170,9 @@ class MainWindowController: PlayerWindowController {
         case .outsideVideo:
           newWidth = window!.frame.width - currentLocation.x + rightSidebarView.frame.width - 2
       }
-      rightSidebarWidthConstraint.constant = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      var newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      rightSidebarWidthConstraint.constant = newPlaylistWidth
+      updateOnTopIcon()
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -2283,8 +2292,19 @@ class MainWindowController: PlayerWindowController {
   }
 
   func updateOnTopIcon() {
-    titlebarOnTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
-    titlebarOnTopButton.state = isOntop ? .on : .off
+    pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
+    pinToTopButton.state = isOntop ? .on : .off
+
+    updateRightTitlebarTrailingSpace(toWidth: rightSidebar.isVisible ? rightSidebarWidthConstraint.constant : 0)
+  }
+
+  func updateRightTitlebarTrailingSpace(toWidth newWidth: CGFloat, animate: Bool = false) {
+    Logger.log("Setting space to: \(newWidth)")
+    if animate {
+      rightTitlebarAccessoryViewTrailingConstraint.animator().constant = newWidth
+    } else {
+      rightTitlebarAccessoryViewTrailingConstraint.constant = newWidth
+    }
   }
 
   // MARK: - UI: OSD
@@ -2577,6 +2597,9 @@ class MainWindowController: PlayerWindowController {
     NSAnimationContext.runAnimationGroup({ context in
       context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+      if sidebar.id == .right {
+        updateRightTitlebarTrailingSpace(toWidth: show ? currentWidth : 0, animate: animate)
+      }
       edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }, completionHandler: {
       if show {
