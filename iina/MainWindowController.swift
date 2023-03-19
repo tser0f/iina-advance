@@ -561,6 +561,8 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  var trafficLightButtonsWidth: CGFloat = 0.0
+
   /** Get the `NSTextField` of widow's title. */
   var titleTextField: NSTextField? {
     get {
@@ -568,13 +570,16 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  var titlebarAccesoryViewController: NSTitlebarAccessoryViewController!
-  @IBOutlet var rightTitlebarAccessoryView: NSView!
+  var leftTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
+  var rightTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
+  @IBOutlet var leftTitleBarAccessoryView: NSView!
+  @IBOutlet var rightTitleBarAccessoryView: NSView!
 
   /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
   var currentControlBar: NSView?
 
-  @IBOutlet weak var rightTitlebarAccessoryViewTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var leftTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var rightTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var leftSidebarLeadingConstraint: NSLayoutConstraint!
@@ -718,11 +723,20 @@ class MainWindowController: PlayerWindowController {
     topOverlayView.layerContentsRedrawPolicy = .onSetNeedsDisplay
 
     // Titlebar accessories
-    titlebarAccesoryViewController = NSTitlebarAccessoryViewController()
-    titlebarAccesoryViewController.view = rightTitlebarAccessoryView
-    titlebarAccesoryViewController.layoutAttribute = .right
-    window.addTitlebarAccessoryViewController(titlebarAccesoryViewController)
-    rightTitlebarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
+
+    trafficLightButtonsWidth = calculateWidthOfTrafficLightButtons()
+
+    leftTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
+    leftTitlebarAccesoryViewController.view = leftTitleBarAccessoryView
+    leftTitlebarAccesoryViewController.layoutAttribute = .left
+    window.addTitlebarAccessoryViewController(leftTitlebarAccesoryViewController)
+    leftTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
+
+    rightTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
+    rightTitlebarAccesoryViewController.view = rightTitleBarAccessoryView
+    rightTitlebarAccesoryViewController.layoutAttribute = .right
+    window.addTitlebarAccessoryViewController(rightTitlebarAccesoryViewController)
+    rightTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
     let buttonSizeConstraint = pinToTopButton.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight)
     buttonSizeConstraint.isActive = true
     pinToTopButton.addConstraint(buttonSizeConstraint)
@@ -752,7 +766,7 @@ class MainWindowController: PlayerWindowController {
     // fade-able views
     fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
     fadeableViews.append(topOverlayView)
-    fadeableViews.append(rightTitlebarAccessoryView)
+    fadeableViews.append(rightTitleBarAccessoryView)
 
     playbackButtonSizeConstraint.constant = playbackButtonSize
 
@@ -916,6 +930,15 @@ class MainWindowController: PlayerWindowController {
     window.appearance = appearance
   }
 
+  private func calculateWidthOfTrafficLightButtons() -> CGFloat {
+    var maxX: CGFloat = 0
+    for buttonType in [NSWindow.ButtonType.closeButton, NSWindow.ButtonType.miniaturizeButton, NSWindow.ButtonType.zoomButton] {
+      if let button = window?.standardWindowButton(buttonType) {
+        maxX = max(maxX, button.frame.origin.x + button.frame.width)
+      }
+    }
+    return maxX
+  }
 
   private func addVideoViewToWindow() {
     guard let cv = window?.contentView else { return }
@@ -1159,7 +1182,9 @@ class MainWindowController: PlayerWindowController {
         case .outsideVideo:
           newWidth = leftSidebarView.frame.width + currentLocation.x + 2
       }
-      leftSidebarWidthConstraint.constant = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      leftSidebarWidthConstraint.constant = newPlaylistWidth
+      updateLeftTitleBarLeadingSpace(toWidth: newPlaylistWidth)
     } else if isResizingRightSidebar {
       let currentLocation = event.locationInWindow
       // resize sidebar
@@ -1170,9 +1195,9 @@ class MainWindowController: PlayerWindowController {
         case .outsideVideo:
           newWidth = window!.frame.width - currentLocation.x + rightSidebarView.frame.width - 2
       }
-      var newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       rightSidebarWidthConstraint.constant = newPlaylistWidth
-      updateOnTopIcon()
+      updateRightTitleBarTrailingSpace(toWidth: newPlaylistWidth)
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -1707,8 +1732,12 @@ class MainWindowController: PlayerWindowController {
     titleBarOverlayHeightConstraint.constant = 0
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
-    
-    window!.removeTitlebarAccessoryViewController(at: 0)
+
+    if let accessories = window?.titlebarAccessoryViewControllers, !accessories.isEmpty {
+      for index in (0 ..< accessories.count).reversed() {
+        window!.removeTitlebarAccessoryViewController(at: index)
+      }
+    }
     setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
     thumbnailPeekView.isHidden = true
@@ -1815,7 +1844,8 @@ class MainWindowController: PlayerWindowController {
       player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
     }
 
-    window!.addTitlebarAccessoryViewController(titlebarAccesoryViewController)
+    window!.addTitlebarAccessoryViewController(leftTitlebarAccesoryViewController)
+    window!.addTitlebarAccessoryViewController(rightTitlebarAccesoryViewController)
 
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
@@ -2295,15 +2325,27 @@ class MainWindowController: PlayerWindowController {
     pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
     pinToTopButton.state = isOntop ? .on : .off
 
-    updateRightTitlebarTrailingSpace(toWidth: rightSidebar.isVisible ? rightSidebarWidthConstraint.constant : 0)
+    updateRightTitleBarTrailingSpace(toWidth: rightSidebar.isVisible ? rightSidebarWidthConstraint.constant : 0)
   }
 
-  func updateRightTitlebarTrailingSpace(toWidth newWidth: CGFloat, animate: Bool = false) {
-    Logger.log("Setting space to: \(newWidth)")
+  private func updateLeftTitleBarLeadingSpace(toWidth newWidth: CGFloat, animate: Bool = false) {
+    // Subtract space taken by the 3 standard buttons
+    let width = max(0, newWidth - trafficLightButtonsWidth)
+    Logger.log("Setting left title bar space to: \(width)")
     if animate {
-      rightTitlebarAccessoryViewTrailingConstraint.animator().constant = newWidth
+      leftTitleBarLeadingSpaceConstraint.animator().constant = width
     } else {
-      rightTitlebarAccessoryViewTrailingConstraint.constant = newWidth
+      leftTitleBarLeadingSpaceConstraint.constant = width
+    }
+  }
+
+  // Sets the horizontal space needed to push the titlebar & "on top" button leftward, so that they don't overlap on the right sidebar
+  private func updateRightTitleBarTrailingSpace(toWidth newWidth: CGFloat, animate: Bool = false) {
+    Logger.log("Setting right title bar space to: \(newWidth)")
+    if animate {
+      rightTitleBarTrailingSpaceConstraint.animator().constant = newWidth
+    } else {
+      rightTitleBarTrailingSpaceConstraint.constant = newWidth
     }
   }
 
@@ -2598,7 +2640,9 @@ class MainWindowController: PlayerWindowController {
       context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       if sidebar.id == .right {
-        updateRightTitlebarTrailingSpace(toWidth: show ? currentWidth : 0, animate: animate)
+        updateRightTitleBarTrailingSpace(toWidth: show ? currentWidth : 0, animate: animate)
+      } else if sidebar.id == .left {
+        updateLeftTitleBarLeadingSpace(toWidth: show ? currentWidth : 0, animate: animate)
       }
       edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }, completionHandler: {

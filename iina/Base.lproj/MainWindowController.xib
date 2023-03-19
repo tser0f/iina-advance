@@ -37,6 +37,8 @@
                 <outlet property="leftSidebarLeadingConstraint" destination="9tP-D1-Ms9" id="bdf-Gw-1m8"/>
                 <outlet property="leftSidebarView" destination="XBs-34-TIm" id="Jqt-cB-r2i"/>
                 <outlet property="leftSidebarWidthConstraint" destination="Cuc-0z-ItB" id="kY3-w2-J9f"/>
+                <outlet property="leftTitleBarAccessoryView" destination="LFL-4a-93B" id="2gm-1u-SgO"/>
+                <outlet property="leftTitleBarLeadingSpaceConstraint" destination="ckY-Xn-Az9" id="isR-3E-XKz"/>
                 <outlet property="muteButton" destination="2py-h1-0km" id="baB-6t-gO7"/>
                 <outlet property="oscBottomMainView" destination="Qmi-hb-0aM" id="PM5-Ic-nvt"/>
                 <outlet property="oscFloatingBottomView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
@@ -59,8 +61,8 @@
                 <outlet property="rightSidebarTrailingConstraint" destination="PAj-s6-32e" id="UEo-Zg-pJq"/>
                 <outlet property="rightSidebarView" destination="epo-S6-QVB" id="efz-TR-rAa"/>
                 <outlet property="rightSidebarWidthConstraint" destination="1BL-aP-tHS" id="3UA-1M-dju"/>
-                <outlet property="rightTitlebarAccessoryView" destination="maF-Zr-K8w" id="nvF-H7-z8G"/>
-                <outlet property="rightTitlebarAccessoryViewTrailingConstraint" destination="Tf8-XK-IVw" id="mvq-3W-LQe"/>
+                <outlet property="rightTitleBarAccessoryView" destination="maF-Zr-K8w" id="H6b-g2-qRx"/>
+                <outlet property="rightTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePreviewWhenSeek" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
                 <outlet property="titleBarOverlayHeightConstraint" destination="1CI-Wl-F8h" id="K0U-G8-X9f"/>
@@ -342,7 +344,7 @@
                                     <constraint firstItem="fDY-vk-Ylv" firstAttribute="top" secondItem="pgt-r3-Vbf" secondAttribute="top" id="xOA-fC-WYr"/>
                                 </constraints>
                             </customView>
-                            <box verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="Top-Overlay-Bottom-Border Box">
+                            <box verticalHuggingPriority="750" boxType="custom" borderType="line" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="Top-Overlay-Bottom-Border Box">
                                 <rect key="frame" x="0.0" y="0.0" width="640" height="1"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="0.5" id="YtK-mf-czn"/>
@@ -730,7 +732,26 @@
             <autoresizingMask key="autoresizingMask"/>
             <point key="canvasLocation" x="591" y="676"/>
         </stackView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Titlebar Accessory View Right">
+        <customView id="LFL-4a-93B" userLabel="Left Title Bar Accessory View">
+            <rect key="frame" x="0.0" y="0.0" width="0.0" height="28"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <customView translatesAutoresizingMaskIntoConstraints="NO" id="7ck-d3-1hv" userLabel="Left Spacer">
+                    <rect key="frame" x="0.0" y="0.0" width="0.0" height="28"/>
+                    <constraints>
+                        <constraint firstAttribute="width" id="ckY-Xn-Az9"/>
+                    </constraints>
+                </customView>
+            </subviews>
+            <constraints>
+                <constraint firstItem="7ck-d3-1hv" firstAttribute="top" secondItem="LFL-4a-93B" secondAttribute="top" id="Zpo-MJ-hdt"/>
+                <constraint firstAttribute="trailing" secondItem="7ck-d3-1hv" secondAttribute="trailing" id="ZwK-NB-WIt"/>
+                <constraint firstItem="7ck-d3-1hv" firstAttribute="leading" secondItem="LFL-4a-93B" secondAttribute="leading" id="d5X-N1-SPJ"/>
+                <constraint firstAttribute="bottom" secondItem="7ck-d3-1hv" secondAttribute="bottom" id="rcn-Vs-VdR"/>
+            </constraints>
+            <point key="canvasLocation" x="482" y="-133"/>
+        </customView>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Right Title Bar Accessory View">
             <rect key="frame" x="0.0" y="0.0" width="36" height="28"/>
             <subviews>
                 <button hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI" userLabel="PinToTop Square Button">
@@ -746,7 +767,7 @@
                         <action selector="ontopButtonnAction:" target="-2" id="4pa-eu-aT5"/>
                     </connections>
                 </button>
-                <customView translatesAutoresizingMaskIntoConstraints="NO" id="Pu6-TO-IhT" userLabel="Spacer">
+                <customView translatesAutoresizingMaskIntoConstraints="NO" id="Pu6-TO-IhT" userLabel="Right Spacer">
                     <rect key="frame" x="28" y="0.0" width="0.0" height="28"/>
                     <constraints>
                         <constraint firstAttribute="width" id="Tf8-XK-IVw"/>
