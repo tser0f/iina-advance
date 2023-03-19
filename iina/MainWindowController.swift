@@ -1905,6 +1905,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowWillEnterFullScreen(_ notification: Notification) {
+    // When playback is paused the display link is stopped in order to avoid wasting energy on
+    // needless processing. It must be running while transitioning to full screen mode.
+    videoView.displayActive()
     if isInInteractiveMode {
       exitInteractiveMode(immediately: true)
     }
@@ -1961,8 +1964,15 @@ class MainWindowController: PlayerWindowController {
       fadeableViews.insert(additionalInfoView)
     }
 
-    if Preference.bool(for: .playWhenEnteringFullScreen) && player.info.isPaused {
-      player.resume()
+    if player.info.isPaused {
+      if Preference.bool(for: .playWhenEnteringFullScreen) {
+        player.resume()
+      } else {
+        // When playback is paused the display link is stopped in order to avoid wasting energy on
+        // needless processing. It must be running while transitioning to full screen mode. Now that
+        // the transition has completed it can be stopped.
+        videoView.displayIdle()
+      }
     }
 
     if #available(macOS 10.12.2, *) {
@@ -1982,6 +1992,9 @@ class MainWindowController: PlayerWindowController {
 
   func windowWillExitFullScreen(_ notification: Notification) {
     Logger.log("Exiting fullscreen", subsystem: player.subsystem)
+    // When playback is paused the display link is stopped in order to avoid wasting energy on
+    // needless processing. It must be running while transitioning from full screen mode.
+    videoView.displayActive()
     if isInInteractiveMode {
       exitInteractiveMode(immediately: true)
     }
@@ -2027,6 +2040,13 @@ class MainWindowController: PlayerWindowController {
 
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()
+    }
+
+    if player.info.isPaused {
+      // When playback is paused the display link is stopped in order to avoid wasting energy on
+      // needless processing. It must be running while transitioning from full screen mode. Now that
+      // the transition has completed it can be stopped.
+      videoView.displayIdle()
     }
 
     if #available(macOS 10.12.2, *) {

@@ -943,6 +943,12 @@ class MPVController: NSObject {
 
     case MPV_EVENT_SEEK:
       player.info.isSeeking = true
+      DispatchQueue.main.sync {
+        // When playback is paused the display link may be shutdown in order to not waste energy.
+        // It must be running when seeking to avoid slowdowns caused by mpv waiting for IINA to call
+        // mpv_render_report_swap.
+        player.mainWindow.videoView.displayActive()
+      }
       if needRecordSeekTime {
         recordedSeekStartTime = CACurrentMediaTime()
       }
@@ -956,6 +962,14 @@ class MPVController: NSObject {
     case MPV_EVENT_PLAYBACK_RESTART:
       player.info.isIdle = false
       player.info.isSeeking = false
+      DispatchQueue.main.sync {
+        // When playback is paused the display link may be shutdown in order to not waste energy.
+        // The display link will be restarted while seeking. If playback is paused shut it down
+        // again.
+        if player.info.isPaused {
+          player.mainWindow.videoView.displayIdle()
+        }
+      }
       if needRecordSeekTime {
         recordedSeekTimeListener?(CACurrentMediaTime() - recordedSeekStartTime)
         recordedSeekTimeListener = nil
@@ -1138,26 +1152,29 @@ class MPVController: NSObject {
         player.sendOSD(paused ? .pause : .resume)
         DispatchQueue.main.sync {
           player.info.isPaused = paused
-
-          PlayerCore.checkStatusForSleep()
-          if player == PlayerCore.lastActive {
-            if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-              NowPlayingInfoManager.updateInfo(state: paused ? .paused : .playing)
-            }
-            if #available(macOS 10.12, *), player.mainWindow.pipStatus == .inPIP {
-              player.mainWindow.pip.playing = !paused
-            }
-          }
           // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
           // video is paused to avoid wasting energy with needless processing. If paused shutdown
           // the timer that synchronizes the UI and the high priority display link thread.
           if paused {
             player.invalidateTimer()
-            player.mainWindow.videoView.stopDisplayLink()
+            player.mainWindow.videoView.displayIdle()
           } else {
-            player.mainWindow.videoView.startDisplayLink()
+            player.mainWindow.videoView.displayActive()
             player.createSyncUITimer()
           }
+          if #available(macOS 10.12, *), player.mainWindow.pipStatus == .inPIP {
+            player.mainWindow.pip.playing = !paused
+          }
+        }
+        // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
+        // video is paused to avoid wasting energy with needless processing. If paused shutdown
+        // the timer that synchronizes the UI and the high priority display link thread.
+        if paused {
+          player.invalidateTimer()
+          player.mainWindow.videoView.stopDisplayLink()
+        } else {
+          player.mainWindow.videoView.startDisplayLink()
+          player.createSyncUITimer()
         }
       }
       if player.mainWindow.loaded && Preference.bool(for: .alwaysFloatOnTop) {
