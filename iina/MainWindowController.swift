@@ -581,6 +581,10 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var leftTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var rightTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
+  @IBOutlet weak var bottomOSCBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var topOverlayViewTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerBottomWindowConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerTopConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var leftSidebarLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var rightSidebarTrailingConstraint: NSLayoutConstraint!
@@ -879,8 +883,56 @@ class MainWindowController: PlayerWindowController {
     player.events.emit(.windowLoaded)
   }
 
+  /**
+      "Outside"               "Inside"
+   ┌─────────────┐◄─ A    ┌─────────────┐◄─ A, B
+   │  Title Bar  │        │  Title Bar V│
+   ├─────────────┤        ├────────────I│
+   │   Top OSC   │        │   Top OSC  D│
+   ├─────────────┤◄─ B    ├────────────E│
+   │            V│        │  VIDEO     O│
+   │            I│        └─────────────┘
+   │            D│
+   │            E│
+   │  VIDEO     O│
+   └─────────────┘
+   */
+  private func updateTopPanelPosition(outsideVideo: Bool) {
+    let windowContentView = topOverlayView.superview!
+    if outsideVideo {
+      windowContentView.removeConstraint(topOverlayViewTopConstraint)
+      windowContentView.removeConstraint(videoContainerTopConstraint)
+
+      // A: top of top panel constraint
+      topOverlayViewTopConstraint = topOverlayView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
+      topOverlayViewTopConstraint.isActive = true
+      topOverlayViewTopConstraint.priority = .required
+
+      // B: top of video contraint
+      videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topOverlayView.bottomAnchor, constant: 0)
+      videoContainerTopConstraint.isActive = true
+      videoContainerTopConstraint.priority = .required
+
+    } else {  // inside video
+      windowContentView.removeConstraint(topOverlayViewTopConstraint)
+      windowContentView.removeConstraint(videoContainerTopConstraint)
+
+      // A
+      topOverlayViewTopConstraint = topOverlayView.topAnchor.constraint(equalTo: videoContainerView.topAnchor, constant: 0)
+      topOverlayViewTopConstraint.isActive = true
+      topOverlayViewTopConstraint.priority = .required
+
+      // B
+      videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
+      videoContainerTopConstraint?.isActive = true
+      videoContainerTopConstraint?.priority = .required
+    }
+  }
+
   private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
-    videoContainerView.removeConstraint(videoAspectRatioConstraint)
+    if videoAspectRatioConstraint != nil {
+      videoContainerView.removeConstraint(videoAspectRatioConstraint)
+    }
     videoAspectRatioConstraint = videoContainerView.heightAnchor.constraint(equalTo: videoContainerView.widthAnchor, multiplier: height / width)
     videoAspectRatioConstraint.isActive = true
     videoContainerView.addConstraint(videoAspectRatioConstraint)
@@ -941,12 +993,12 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func addVideoViewToWindow() {
-    guard let cv = window?.contentView else { return }
     videoContainerView.addSubview(videoView, positioned: .above, relativeTo: nil)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
     ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-      videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: cv, attribute: attr, multiplier: 1, constant: 0)
+      videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
+                                                      attribute: attr, multiplier: 1, constant: 0)
       videoViewConstraints[attr]!.isActive = true
     }
   }
@@ -968,7 +1020,11 @@ class MainWindowController: PlayerWindowController {
   private func setupTitleBarAndOSC() {
     let oscPositionNew: Preference.OSCPosition = Preference.enum(for: .oscPosition)
 //    let oscEnabledNew = Preference.bool(for: .enableOSC)
-//    let titleBarLayoutNew: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
+    let titleBarLayoutNew: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
+
+    let topPanelIsOutside = titleBarLayoutNew == Preference.TitleBarLayout.outsideVideo
+    updateTopPanelPosition(outsideVideo: topPanelIsOutside)
+
 
     let isSwitchingToTop = oscPositionNew == .insideTop
     let isSwitchingFromTop = oscPosition == .insideTop
