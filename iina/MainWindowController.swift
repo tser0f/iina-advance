@@ -191,7 +191,7 @@ class MainWindowController: PlayerWindowController {
   var lastMagnification: CGFloat = 0.0
 
   /** Views that will show/hide when cursor moving in/out the window. */
-  var fadeableViews: [NSView] = []
+  var fadeableViews = Set<NSView>()
 
   // Left and right arrow buttons
 
@@ -1020,15 +1020,16 @@ class MainWindowController: PlayerWindowController {
 
     if let cb = currentControlBar {
       // remove current osc view from fadeable views
-      fadeableViews = fadeableViews.filter { $0 != cb }
+      fadeableViews.remove(cb)
     }
 
     if topPanelIsOutside {
-      removeTopPanelViewFromFadeableViews()
+      fadeableViews.remove(topPanelView)
+      topPanelView.isHidden = false
+      topPanelView.alphaValue = 1
     } else {
       // fade-able views
-      fadeableViews.append(rightTitleBarAccessoryView)
-      addBackTopPanelViewToFadeableViews()
+      fadeableViews.insert(topPanelView)
     }
 
     // reset
@@ -1053,7 +1054,7 @@ class MainWindowController: PlayerWindowController {
       bottomOSCPreferredHeightConstraint.constant = 0
       if isInFullScreen {
         topPanelView.isHidden = false
-        addBackTopPanelViewToFadeableViews()
+        fadeableViews.insert(topPanelView)
         titleBarOverlayHeightConstraint.constant = 0
       } else {
         titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
@@ -1067,7 +1068,7 @@ class MainWindowController: PlayerWindowController {
     if isSwitchingFromTop {
       if isInFullScreen {
         topPanelView.isHidden = true
-        removeTopPanelViewFromFadeableViews()
+        fadeableViews.remove(topPanelView)
       }
     }
 
@@ -1077,7 +1078,7 @@ class MainWindowController: PlayerWindowController {
     switch oscPositionNew {
     case .floating:
       currentControlBar = controlBarFloating
-      fadeableViews.append(controlBarFloating)
+      fadeableViews.insert(controlBarFloating)
       fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewLeftView)
       fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewRightView)
       oscFloatingTopView.addView(fragVolumeView, in: .leading)
@@ -1114,7 +1115,7 @@ class MainWindowController: PlayerWindowController {
       oscTopMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
     case .insideBottom:
       currentControlBar = controlBarBottom
-      fadeableViews.append(controlBarBottom)
+      fadeableViews.insert(controlBarBottom)
       fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
       fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
       oscBottomMainView.addView(fragVolumeView, in: .trailing)
@@ -1148,7 +1149,7 @@ class MainWindowController: PlayerWindowController {
 
   private func hideTitleBar() {
     titleBarOverlayHeightConstraint.constant = 0
-    fadeTitleBarControls(hide: true)
+    setTitleBarControlsVisible(to: false)
 
     if let accessories = window?.titlebarAccessoryViewControllers, !accessories.isEmpty {
       for index in (0 ..< accessories.count).reversed() {
@@ -1157,17 +1158,18 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func fadeTitleBarControls(hide: Bool) {
-    if hide {
-      let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
-      guard !topPanelIsOutside else { return }
-
-      standardWindowButtons.forEach { $0.animator().alphaValue = 0; $0.isHidden = true }
-      titleTextField?.animator().alphaValue = 0
+  private func setTitleBarControlsVisible(to visible: Bool) {
+    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
+    if visible {
+      guard !fsState.isFullscreen else { return }
     } else {
-      standardWindowButtons.forEach { $0.animator().alphaValue = 1; $0.isHidden = false }
-      titleTextField?.animator().alphaValue = 1
+      guard !topPanelIsOutside else { return }
     }
+
+    let newAlpha: CGFloat = visible ? 1 : 0
+    standardWindowButtons.forEach { $0.animator().alphaValue = newAlpha }
+    titleTextField?.animator().alphaValue = newAlpha
+    rightTitleBarAccessoryView.animator().alphaValue = newAlpha
   }
 
   // MARK: - Mouse / Trackpad events
@@ -1801,7 +1803,7 @@ class MainWindowController: PlayerWindowController {
       topPanelView.isHidden = false
     } else {
       // stop animation and hide topPanelView
-      removeTopPanelViewFromFadeableViews()
+      fadeableViews.remove(topPanelView)
       topPanelView.isHidden = true
     }
 
@@ -1823,8 +1825,7 @@ class MainWindowController: PlayerWindowController {
   func windowDidEnterFullScreen(_ notification: Notification) {
     fsState.finishAnimating()
 
-    titleTextField?.alphaValue = 1
-    removeStandardButtonsFromFadeableViews()
+    setTitleBarControlsVisible(to: true)
 
     videoViewConstraints.values.forEach { $0.constant = 0 }
     videoView.needsLayout = true
@@ -1836,7 +1837,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
-      fadeableViews.append(additionalInfoView)
+      fadeableViews.insert(additionalInfoView)
     }
 
     if Preference.bool(for: .playWhenEnteringFullScreen) && player.info.isPaused {
@@ -1875,9 +1876,7 @@ class MainWindowController: PlayerWindowController {
     additionalInfoView.isHidden = true
     isMouseInSlider = false
 
-    if let index = fadeableViews.firstIndex(of: additionalInfoView) {
-      fadeableViews.remove(at: index)
-    }
+    fadeableViews.remove(additionalInfoView)
 
     fsState.startAnimatingToWindow()
 
@@ -1899,8 +1898,9 @@ class MainWindowController: PlayerWindowController {
       // window. Restore it now.
       window!.setFrame(fsState.priorWindowedFrame!, display: true, animate: false)
     }
-    addBackTopPanelViewToFadeableViews()
-    addBackStandardButtonsToFadeableViews()
+    if titleBarLayout != .outsideVideo {
+      fadeableViews.insert(topPanelView)
+    }
     topPanelView.isHidden = false
     fsState.finishAnimating()
 
@@ -2089,7 +2089,7 @@ class MainWindowController: PlayerWindowController {
       cropSettingsView?.cropBoxView.resized(with: videoView.frame)
     }
 
-    // TODO: pull out this logic & do OSC resize when panel opens!
+    // TODO: pull out this logic into separate func
     // update control bar position
     if oscPosition == .floating {
       let cph = Preference.float(for: .controlBarPositionHorizontal)
@@ -2289,24 +2289,21 @@ class MainWindowController: PlayerWindowController {
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 0
       }
-      fadeTitleBarControls(hide: true)
+      setTitleBarControlsVisible(to: false)
     }) {
       // if no interrupt then hide animation
       if self.animationState == .willHide {
-        self.fadeableViews.forEach { (v) in
-          if let btn = v as? NSButton, self.standardWindowButtons.contains(btn) {
-            v.alphaValue = 1e-100
-          } else {
-            v.isHidden = true
-          }
-        }
         self.animationState = .hidden
+        for v in self.fadeableViews {
+          v.isHidden = true
+        }
       }
     }
   }
 
   private func showUI() {
     if player.disableUI { return }
+
     animationState = .willShow
     // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
     player.syncUITime()
@@ -2316,9 +2313,7 @@ class MainWindowController: PlayerWindowController {
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 1
       }
-      if !fsState.isFullscreen {
-        fadeTitleBarControls(hide: false)
-      }
+      setTitleBarControlsVisible(to: true)
     }) {
       // if no interrupt then hide animation
       if self.animationState == .willShow {
@@ -2383,7 +2378,6 @@ class MainWindowController: PlayerWindowController {
         window?.setTitleWithRepresentedFilename(player.info.currentURL?.path ?? "")
       }
     }
-    addDocIconToFadeableViews()
   }
 
   func updateOnTopIcon() {
@@ -2736,47 +2730,6 @@ class MainWindowController: PlayerWindowController {
           constraint.constant = value
         }
       }
-    }
-  }
-
-  // MARK: - UI: "Fadeable" views
-
-  private func removeStandardButtonsFromFadeableViews() {
-    fadeableViews = fadeableViews.filter { view in
-      !standardWindowButtons.contains {
-        $0 == view
-      }
-    }
-    fadeTitleBarControls(hide: false)
-  }
-
-  private func removeTopPanelViewFromFadeableViews() {
-    if let index = (self.fadeableViews.firstIndex { $0 === topPanelView }) {
-      self.fadeableViews.remove(at: index)
-    }
-  }
-
-  private func addBackStandardButtonsToFadeableViews() {
-    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
-    if !topPanelIsOutside {
-      fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
-    } else {
-      fadeTitleBarControls(hide: false)
-    }
-  }
-
-  private func addBackTopPanelViewToFadeableViews() {
-    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
-    if !topPanelIsOutside {
-      fadeableViews.append(topPanelView)
-    }
-  }
-
-  // Sometimes the doc icon may not be available, eg. when opened an online video.
-  // We should try to add it every time when window title changed.
-  private func addDocIconToFadeableViews() {
-    if let docIcon = window?.standardWindowButton(.documentIconButton), !fadeableViews.contains(docIcon) {
-      fadeableViews.append(docIcon)
     }
   }
 
