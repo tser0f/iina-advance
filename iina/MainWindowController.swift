@@ -582,7 +582,7 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var rightTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomOSCBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var topOverlayViewTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var topPanelViewTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerBottomWindowConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerTopConstraint: NSLayoutConstraint!
 
@@ -599,13 +599,13 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var topOSCPreferredHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomOSCPreferredHeightConstraint: NSLayoutConstraint!
 
-  /** Top-of-video overlay, may contain `titleBarOverlayView` and/or top OSC if configured. */
-  @IBOutlet weak var topOverlayView: NSVisualEffectView!
-  /** Border below `titleBarOverlayView`, or top OSC if configured. */
-  @IBOutlet weak var topOverlayBottomBorder: NSBox!
+  /** Top-of-video overlay, may contain `titleBarView` and/or top OSC if configured. */
+  @IBOutlet weak var topPanelView: NSVisualEffectView!
+  /** Border below `titleBarView`, or top OSC if configured. */
+  @IBOutlet weak var topPanelBottomBorder: NSBox!
   /** Reserves space for the title bar components. Does not contain any child views. */
-  @IBOutlet weak var titleBarOverlayView: NSView!
-  /** "Pin to Top" button in titlebar, if configured to  be shown */
+  @IBOutlet weak var titleBarView: NSView!
+  /** "Pin to Top" button in title bar, if configured to  be shown */
   @IBOutlet weak var pinToTopButton: NSButton!
 
   @IBOutlet weak var controlBarTop: NSView!
@@ -670,7 +670,7 @@ class MainWindowController: PlayerWindowController {
   var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
-  override var mouseActionDisabledViews: [NSView?] {[leftSidebarView, rightSidebarView, currentControlBar, titleBarOverlayView, oscTopMainView, subPopoverView]}
+  override var mouseActionDisabledViews: [NSView?] {[leftSidebarView, rightSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
 
   // MARK: - PIP
 
@@ -724,7 +724,7 @@ class MainWindowController: PlayerWindowController {
     window.backgroundColor = .black
 
     // TODO: why?
-    topOverlayView.layerContentsRedrawPolicy = .onSetNeedsDisplay
+    topPanelView.layerContentsRedrawPolicy = .onSetNeedsDisplay
 
     // Titlebar accessories
 
@@ -766,11 +766,6 @@ class MainWindowController: PlayerWindowController {
     fragControlView.addView(fragControlViewRightView, in: .center)
 
     updateArrowButtonImage()
-
-    // fade-able views
-    fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
-    fadeableViews.append(topOverlayView)
-    fadeableViews.append(rightTitleBarAccessoryView)
 
     playbackButtonSizeConstraint.constant = playbackButtonSize
 
@@ -816,11 +811,11 @@ class MainWindowController: PlayerWindowController {
     // other initialization
     osdAccessoryProgress.usesThreadedAnimation = false
     if #available(macOS 10.14, *) {
-      topOverlayBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
+      topPanelBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     }
     cachedScreenCount = NSScreen.screens.count
     // Do not make visual effects views opaque when window is not in focus
-    for view in [topOverlayView, osdVisualEffectView, controlBarBottom, controlBarFloating,
+    for view in [topPanelView, osdVisualEffectView, controlBarBottom, controlBarFloating,
                  leftSidebarView, rightSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
       view?.state = .active
     }
@@ -898,35 +893,28 @@ class MainWindowController: PlayerWindowController {
    └─────────────┘
    */
   private func updateTopPanelPosition(outsideVideo: Bool) {
-    let windowContentView = topOverlayView.superview!
+    let windowContentView = topPanelView.superview!
+    windowContentView.animator().removeConstraint(topPanelViewTopConstraint)
+    windowContentView.animator().removeConstraint(videoContainerTopConstraint)
+
     if outsideVideo {
-      windowContentView.removeConstraint(topOverlayViewTopConstraint)
-      windowContentView.removeConstraint(videoContainerTopConstraint)
-
       // A: top of top panel constraint
-      topOverlayViewTopConstraint = topOverlayView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
-      topOverlayViewTopConstraint.isActive = true
-      topOverlayViewTopConstraint.priority = .required
-
+      topPanelViewTopConstraint = topPanelView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
       // B: top of video contraint
-      videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topOverlayView.bottomAnchor, constant: 0)
-      videoContainerTopConstraint.isActive = true
-      videoContainerTopConstraint.priority = .required
+      videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.bottomAnchor, constant: 0)
+
+      topPanelView.blendingMode = .behindWindow
 
     } else {  // inside video
-      windowContentView.removeConstraint(topOverlayViewTopConstraint)
-      windowContentView.removeConstraint(videoContainerTopConstraint)
-
-      // A
-      topOverlayViewTopConstraint = topOverlayView.topAnchor.constraint(equalTo: videoContainerView.topAnchor, constant: 0)
-      topOverlayViewTopConstraint.isActive = true
-      topOverlayViewTopConstraint.priority = .required
-
-      // B
+      // A: top of top panel constraint
+      topPanelViewTopConstraint = topPanelView.topAnchor.constraint(equalTo: videoContainerView.topAnchor, constant: 0)
+      // B: top of video contraint
       videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
-      videoContainerTopConstraint?.isActive = true
-      videoContainerTopConstraint?.priority = .required
+
+      topPanelView.blendingMode = .withinWindow
     }
+    topPanelViewTopConstraint.isActive = true
+    videoContainerTopConstraint.isActive = true
   }
 
   private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
@@ -968,7 +956,7 @@ class MainWindowController: PlayerWindowController {
     let isDarkTheme = appearance?.isDark ?? true
     (playSlider.cell as? PlaySliderCell)?.isInDarkTheme = isDarkTheme
 
-    for view in [topOverlayView, controlBarFloating, controlBarBottom,
+    for view in [topPanelView, controlBarFloating, controlBarBottom,
                  osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView] {
       view?.material = material
       view?.appearance = appearance
@@ -1020,9 +1008,9 @@ class MainWindowController: PlayerWindowController {
   private func setupTitleBarAndOSC() {
     let oscPositionNew: Preference.OSCPosition = Preference.enum(for: .oscPosition)
 //    let oscEnabledNew = Preference.bool(for: .enableOSC)
-    let titleBarLayoutNew: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
+    titleBarLayout = Preference.enum(for: .titleBarLayout)
 
-    let topPanelIsOutside = titleBarLayoutNew == Preference.TitleBarLayout.outsideVideo
+    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
     updateTopPanelPosition(outsideVideo: topPanelIsOutside)
 
 
@@ -1033,6 +1021,14 @@ class MainWindowController: PlayerWindowController {
     if let cb = currentControlBar {
       // remove current osc view from fadeable views
       fadeableViews = fadeableViews.filter { $0 != cb }
+    }
+
+    if topPanelIsOutside {
+      removeTopPanelViewFromFadeableViews()
+    } else {
+      // fade-able views
+      fadeableViews.append(rightTitleBarAccessoryView)
+      addBackTopPanelViewToFadeableViews()
     }
 
     // reset
@@ -1056,8 +1052,8 @@ class MainWindowController: PlayerWindowController {
       topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
       bottomOSCPreferredHeightConstraint.constant = 0
       if isInFullScreen {
-        topOverlayView.isHidden = false
-        addBackTopOverlayViewToFadeableViews()
+        topPanelView.isHidden = false
+        addBackTopPanelViewToFadeableViews()
         titleBarOverlayHeightConstraint.constant = 0
       } else {
         titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
@@ -1070,8 +1066,8 @@ class MainWindowController: PlayerWindowController {
 
     if isSwitchingFromTop {
       if isInFullScreen {
-        topOverlayView.isHidden = true
-        removeTopOverlayViewFromFadeableViews()
+        topPanelView.isHidden = true
+        removeTopPanelViewFromFadeableViews()
       }
     }
 
@@ -1147,6 +1143,30 @@ class MainWindowController: PlayerWindowController {
         controlBarFloating.superview?.removeConstraints(constraints)
         oscFloatingLeadingTrailingConstraint = nil
       }
+    }
+  }
+
+  private func hideTitleBar() {
+    titleBarOverlayHeightConstraint.constant = 0
+    fadeTitleBarControls(hide: true)
+
+    if let accessories = window?.titlebarAccessoryViewControllers, !accessories.isEmpty {
+      for index in (0 ..< accessories.count).reversed() {
+        window!.removeTitlebarAccessoryViewController(at: index)
+      }
+    }
+  }
+
+  private func fadeTitleBarControls(hide: Bool) {
+    if hide {
+      let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
+      guard !topPanelIsOutside else { return }
+
+      standardWindowButtons.forEach { $0.animator().alphaValue = 0; $0.isHidden = true }
+      titleTextField?.animator().alphaValue = 0
+    } else {
+      standardWindowButtons.forEach { $0.animator().alphaValue = 1; $0.isHidden = false }
+      titleTextField?.animator().alphaValue = 1
     }
   }
 
@@ -1310,7 +1330,7 @@ class MainWindowController: PlayerWindowController {
         return
       }
 
-      if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarOverlayView]) {
+      if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarView]) {
         let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
         if userDefault == "Minimize" {
           window?.performMiniaturize(nil)
@@ -1367,7 +1387,7 @@ class MainWindowController: PlayerWindowController {
 
   override func scrollWheel(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
-    guard !isMouseEvent(event, inAnyOf: [leftSidebarView, rightSidebarView, titleBarOverlayView, subPopoverView]) else { return }
+    guard !isMouseEvent(event, inAnyOf: [leftSidebarView, rightSidebarView, titleBarView, subPopoverView]) else { return }
 
     if isMouseEvent(event, inAnyOf: [fragSliderView]) && playSlider.isEnabled {
       seekOverride = true
@@ -1441,7 +1461,7 @@ class MainWindowController: PlayerWindowController {
       showUI()
     }
     // check whether mouse is in osc
-    if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarOverlayView]) {
+    if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
       destroyTimer()
     } else {
       updateTimer()
@@ -1766,7 +1786,7 @@ class MainWindowController: PlayerWindowController {
       exitInteractiveMode(immediately: true)
     }
 
-    // Set the appearance to match the theme so the titlebar matches the theme
+    // Set the appearance to match the theme so the title bar matches the theme
     let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
     if #available(macOS 10.14, *) {
       window?.appearance = NSAppearance(iinaTheme: iinaTheme)
@@ -1776,24 +1796,16 @@ class MainWindowController: PlayerWindowController {
       default: window!.appearance = NSAppearance(named: .vibrantLight)
       }
     }
-
     if oscPosition == .insideTop {
       // need top overlay for OSC, but hide title bar
-      topOverlayView.isHidden = false
+      topPanelView.isHidden = false
     } else {
-      // stop animation and hide topOverlayView
-      removeTopOverlayViewFromFadeableViews()
-      topOverlayView.isHidden = true
+      // stop animation and hide topPanelView
+      removeTopPanelViewFromFadeableViews()
+      topPanelView.isHidden = true
     }
-    titleBarOverlayHeightConstraint.constant = 0
-    standardWindowButtons.forEach { $0.alphaValue = 0 }
-    titleTextField?.alphaValue = 0
 
-    if let accessories = window?.titlebarAccessoryViewControllers, !accessories.isEmpty {
-      for index in (0 ..< accessories.count).reversed() {
-        window!.removeTitlebarAccessoryViewController(at: index)
-      }
-    }
+    hideTitleBar()
     setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
     thumbnailPeekView.isHidden = true
@@ -1887,9 +1899,9 @@ class MainWindowController: PlayerWindowController {
       // window. Restore it now.
       window!.setFrame(fsState.priorWindowedFrame!, display: true, animate: false)
     }
-    addBackTopOverlayViewToFadeableViews()
+    addBackTopPanelViewToFadeableViews()
     addBackStandardButtonsToFadeableViews()
-    topOverlayView.isHidden = false
+    topPanelView.isHidden = false
     fsState.finishAnimating()
 
     if Preference.bool(for: .blackOutMonitor) {
@@ -2277,9 +2289,7 @@ class MainWindowController: PlayerWindowController {
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 0
       }
-      if !self.fsState.isFullscreen {
-        titleTextField?.animator().alphaValue = 0
-      }
+      fadeTitleBarControls(hide: true)
     }) {
       // if no interrupt then hide animation
       if self.animationState == .willHide {
@@ -2307,7 +2317,7 @@ class MainWindowController: PlayerWindowController {
         v.animator().alphaValue = 1
       }
       if !fsState.isFullscreen {
-        titleTextField?.animator().alphaValue = 1
+        fadeTitleBarControls(hide: false)
       }
     }) {
       // if no interrupt then hide animation
@@ -2316,7 +2326,6 @@ class MainWindowController: PlayerWindowController {
         for v in self.fadeableViews {
           v.isHidden = false
         }
-        self.standardWindowButtons.forEach { $0.isEnabled = true }
       }
     }
   }
@@ -2738,24 +2747,29 @@ class MainWindowController: PlayerWindowController {
         $0 == view
       }
     }
-    for view in standardWindowButtons {
-      view.alphaValue = 1
-      view.isHidden = false
-    }
+    fadeTitleBarControls(hide: false)
   }
 
-  private func removeTopOverlayViewFromFadeableViews() {
-    if let index = (self.fadeableViews.firstIndex { $0 === topOverlayView }) {
+  private func removeTopPanelViewFromFadeableViews() {
+    if let index = (self.fadeableViews.firstIndex { $0 === topPanelView }) {
       self.fadeableViews.remove(at: index)
     }
   }
 
   private func addBackStandardButtonsToFadeableViews() {
-    fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
+    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
+    if !topPanelIsOutside {
+      fadeableViews.append(contentsOf: standardWindowButtons as [NSView])
+    } else {
+      fadeTitleBarControls(hide: false)
+    }
   }
 
-  private func addBackTopOverlayViewToFadeableViews() {
-    fadeableViews.append(topOverlayView)
+  private func addBackTopPanelViewToFadeableViews() {
+    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
+    if !topPanelIsOutside {
+      fadeableViews.append(topPanelView)
+    }
   }
 
   // Sometimes the doc icon may not be available, eg. when opened an online video.

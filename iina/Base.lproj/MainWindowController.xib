@@ -67,11 +67,11 @@
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePreviewWhenSeek" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
                 <outlet property="titleBarOverlayHeightConstraint" destination="1CI-Wl-F8h" id="K0U-G8-X9f"/>
-                <outlet property="titleBarOverlayView" destination="WaC-08-utU" id="Ahh-93-k7q"/>
+                <outlet property="titleBarView" destination="WaC-08-utU" id="Ahh-93-k7q"/>
                 <outlet property="topOSCPreferredHeightConstraint" destination="DXc-2g-UvP" id="3vj-Gl-4aQ"/>
-                <outlet property="topOverlayBottomBorder" destination="iA3-pt-6Jm" id="RD4-8v-bHB"/>
-                <outlet property="topOverlayView" destination="TRx-2V-Gr3" id="4CG-pA-rHP"/>
-                <outlet property="topOverlayViewTopConstraint" destination="wGB-mn-a6f" id="tCa-37-0jh"/>
+                <outlet property="topPanelBottomBorder" destination="iA3-pt-6Jm" id="RD4-8v-bHB"/>
+                <outlet property="topPanelView" destination="TRx-2V-Gr3" id="4CG-pA-rHP"/>
+                <outlet property="topPanelViewTopConstraint" destination="wGB-mn-a6f" id="tCa-37-0jh"/>
                 <outlet property="videoAspectRatioConstraint" destination="wHS-TJ-sRI" id="6Y8-3g-mLP"/>
                 <outlet property="videoContainerBottomWindowConstraint" destination="68T-mq-A30" id="XlO-wb-YF7"/>
                 <outlet property="videoContainerTopConstraint" destination="1Ut-pz-GFg" id="5zH-Ug-voe"/>
@@ -114,7 +114,7 @@
                             <constraint firstItem="YkI-ii-zaW" firstAttribute="centerY" secondItem="Nrz-jZ-Luf" secondAttribute="centerY" id="hhc-1u-xpc"/>
                         </constraints>
                     </visualEffectView>
-                    <customView wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3nL-Ky-Hfa" userLabel="Video-Container View">
+                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="3nL-Ky-Hfa" userLabel="Video-Container View">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                         <constraints>
                             <constraint firstAttribute="width" secondItem="3nL-Ky-Hfa" secondAttribute="height" multiplier="16:9" priority="100" id="wHS-TJ-sRI"/>
@@ -322,10 +322,10 @@
                             <outlet property="yConstraint" destination="cRP-R4-zYY" id="kxT-61-1SZ"/>
                         </connections>
                     </visualEffectView>
-                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-Overlay View">
+                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-Panel View">
                         <rect key="frame" x="0.0" y="328" width="640" height="72"/>
                         <subviews>
-                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="TitleBar-Overlay View">
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="Title-Bar View">
                                 <rect key="frame" x="0.0" y="44" width="640" height="28"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="28" id="1CI-Wl-F8h"/>
@@ -348,8 +348,8 @@
                                     <constraint firstItem="fDY-vk-Ylv" firstAttribute="top" secondItem="pgt-r3-Vbf" secondAttribute="top" id="xOA-fC-WYr"/>
                                 </constraints>
                             </customView>
-                            <box verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="Top-Overlay-Bottom-Border Box">
-                                <rect key="frame" x="0.0" y="0.0" width="640" height="0.0"/>
+                            <box verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="Top-Panel-Bottom-Border Box">
+                                <rect key="frame" x="0.0" y="0.0" width="640" height="1"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="0.5" id="YtK-mf-czn"/>
                                 </constraints>
@@ -363,7 +363,7 @@
                             <constraint firstItem="iA3-pt-6Jm" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="jIX-sE-wsj"/>
                             <constraint firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="bottom" id="uaA-I8-wPW"/>
                             <constraint firstItem="pgt-r3-Vbf" firstAttribute="top" secondItem="WaC-08-utU" secondAttribute="bottom" id="wwB-Bd-YpC"/>
-                            <constraint firstItem="pgt-r3-Vbf" firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="top" id="xMQ-WC-fps"/>
+                            <constraint firstItem="pgt-r3-Vbf" firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="bottom" id="xMQ-WC-fps"/>
                         </constraints>
                     </visualEffectView>
                     <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="OSC-Bottom View">
