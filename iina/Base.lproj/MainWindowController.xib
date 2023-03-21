@@ -8,15 +8,17 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="MainWindowController" customModule="IINA" customModuleProvider="target">
             <connections>
-                <outlet property="additionalInfoBattery" destination="1XY-X2-FcE" id="FA8-zH-CvA"/>
                 <outlet property="additionalInfoBatteryView" destination="Ybl-06-ksj" id="NdR-gs-P1p"/>
                 <outlet property="additionalInfoLabel" destination="4mb-jy-Y1w" id="rgV-hQ-MH2"/>
                 <outlet property="additionalInfoStackView" destination="HJv-RK-JT8" id="T3L-fd-A60"/>
                 <outlet property="additionalInfoTitle" destination="3uh-OF-zy6" id="N6w-Hh-fQ1"/>
+                <outlet property="additionalInfoToOSDSpaceConstraint" destination="RUl-l8-s3i" id="Bq2-Vt-7D0"/>
+                <outlet property="additionalInfoTrailingConstraint" destination="zbm-D9-epN" id="oQX-uU-gtv"/>
                 <outlet property="additionalInfoView" destination="Qbi-jx-9pO" id="bdV-ZH-SkC"/>
                 <outlet property="bottomBarBottomConstraint" destination="vP1-IE-sbB" id="G77-vL-Wf8"/>
-                <outlet property="bottomOSCBottomConstraint" destination="eLf-C3-GlT" id="YkE-3Q-19k"/>
                 <outlet property="bottomOSCPreferredHeightConstraint" destination="Kcz-RI-CQp" id="3Gt-QN-wYJ"/>
+                <outlet property="bottomPanelLeadingSpaceConstraint" destination="Wkx-hm-sJ4" id="EyE-ox-wzo"/>
+                <outlet property="bottomPanelTrailingSpaceConstraint" destination="3qV-vK-qlg" id="Gpt-6V-BMV"/>
                 <outlet property="bottomView" destination="Tdb-EA-alw" id="5Xv-Ja-j4G"/>
                 <outlet property="bufferDetailLabel" destination="hlZ-5D-Wag" id="3Ld-2C-wGO"/>
                 <outlet property="bufferIndicatorView" destination="oX4-0N-but" id="fXY-gn-jfQ"/>
@@ -48,6 +50,7 @@
                 <outlet property="osdAccessoryProgress" destination="i10-rt-9cb" id="ZdR-ZV-uoQ"/>
                 <outlet property="osdAccessoryText" destination="lb1-5R-hR3" id="A7o-3l-NYe"/>
                 <outlet property="osdLabel" destination="Ofw-1d-N4T" id="9ei-8o-aYw"/>
+                <outlet property="osdLeadingConstraint" destination="LBY-By-mfi" id="S51-2q-bQe"/>
                 <outlet property="osdStackView" destination="g0j-zS-jKv" id="aoo-Tm-yhj"/>
                 <outlet property="osdVisualEffectView" destination="g0O-v5-RQj" id="V4X-8K-6O1"/>
                 <outlet property="pinToTopButton" destination="Ztc-Kn-fxI" id="xCA-hX-VpW"/>
@@ -66,14 +69,15 @@
                 <outlet property="rightTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePreviewWhenSeek" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
-                <outlet property="titleBarOverlayHeightConstraint" destination="1CI-Wl-F8h" id="K0U-G8-X9f"/>
+                <outlet property="titleBarHeightConstraint" destination="1CI-Wl-F8h" id="K0U-G8-X9f"/>
                 <outlet property="titleBarView" destination="WaC-08-utU" id="Ahh-93-k7q"/>
                 <outlet property="topOSCPreferredHeightConstraint" destination="DXc-2g-UvP" id="3vj-Gl-4aQ"/>
                 <outlet property="topPanelBottomBorder" destination="iA3-pt-6Jm" id="RD4-8v-bHB"/>
+                <outlet property="topPanelLeadingSpaceConstraint" destination="ofB-WP-9dW" id="6hD-K8-P5n"/>
+                <outlet property="topPanelTrailingSpaceConstraint" destination="te1-wi-BbH" id="sfe-UH-ki8"/>
                 <outlet property="topPanelView" destination="TRx-2V-Gr3" id="4CG-pA-rHP"/>
-                <outlet property="topPanelViewTopConstraint" destination="wGB-mn-a6f" id="tCa-37-0jh"/>
                 <outlet property="videoAspectRatioConstraint" destination="wHS-TJ-sRI" id="6Y8-3g-mLP"/>
-                <outlet property="videoContainerBottomWindowConstraint" destination="68T-mq-A30" id="XlO-wb-YF7"/>
+                <outlet property="videoContainerBottomConstraint" destination="68T-mq-A30" id="F8b-US-YWg"/>
                 <outlet property="videoContainerTopConstraint" destination="1Ut-pz-GFg" id="5zH-Ug-voe"/>
                 <outlet property="videoContainerView" destination="3nL-Ky-Hfa" id="6AP-iX-kPv"/>
                 <outlet property="volumeSlider" destination="SAG-kc-FAt" id="zM0-Gg-vfy"/>
@@ -337,7 +341,7 @@
                                     <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="fDY-vk-Ylv" userLabel="OSC-Top Stack View">
                                         <rect key="frame" x="8" y="0.0" width="624" height="44"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="44" id="DXc-2g-UvP"/>
+                                            <constraint firstAttribute="height" constant="44" identifier="topOSCPreferredHeightConstraint" id="DXc-2g-UvP"/>
                                         </constraints>
                                     </stackView>
                                 </subviews>
@@ -351,16 +355,20 @@
                             <box verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="Top-Panel-Bottom-Border Box">
                                 <rect key="frame" x="0.0" y="0.0" width="640" height="1"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="0.5" id="YtK-mf-czn"/>
+                                    <constraint firstAttribute="height" constant="1" id="YtK-mf-czn"/>
                                 </constraints>
                                 <color key="borderColor" red="0.48627450980392156" green="0.48627450980392156" blue="0.48627450980392156" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
                                 <color key="fillColor" name="quaternaryLabelColor" catalog="System" colorSpace="catalog"/>
                             </box>
                         </subviews>
                         <constraints>
+                            <constraint firstItem="WaC-08-utU" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="A1u-FZ-Pxw"/>
                             <constraint firstItem="WaC-08-utU" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" id="HhT-1Z-HEk"/>
+                            <constraint firstItem="pgt-r3-Vbf" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="OHy-Ue-y7h"/>
+                            <constraint firstAttribute="trailing" secondItem="pgt-r3-Vbf" secondAttribute="trailing" id="UeQ-hc-umE"/>
                             <constraint firstAttribute="trailing" secondItem="iA3-pt-6Jm" secondAttribute="trailing" id="e9D-au-sdb"/>
                             <constraint firstItem="iA3-pt-6Jm" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="jIX-sE-wsj"/>
+                            <constraint firstAttribute="trailing" secondItem="WaC-08-utU" secondAttribute="trailing" id="oz7-qR-Dzc"/>
                             <constraint firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="bottom" id="uaA-I8-wPW"/>
                             <constraint firstItem="pgt-r3-Vbf" firstAttribute="top" secondItem="WaC-08-utU" secondAttribute="bottom" id="wwB-Bd-YpC"/>
                             <constraint firstItem="pgt-r3-Vbf" firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="bottom" id="xMQ-WC-fps"/>
@@ -376,15 +384,15 @@
                         <constraints>
                             <constraint firstAttribute="bottom" secondItem="Qmi-hb-0aM" secondAttribute="bottom" id="84H-65-Ego"/>
                             <constraint firstItem="Qmi-hb-0aM" firstAttribute="top" secondItem="DFb-1L-U9o" secondAttribute="top" id="ANy-8g-kkb"/>
-                            <constraint firstAttribute="height" priority="900" constant="44" id="Kcz-RI-CQp"/>
-                            <constraint firstAttribute="trailing" secondItem="Qmi-hb-0aM" secondAttribute="trailing" constant="8" id="bOW-iG-HNY"/>
+                            <constraint firstAttribute="height" constant="44" identifier="bottomOSCPreferredHeightConstraint" id="Kcz-RI-CQp"/>
+                            <constraint firstAttribute="trailing" secondItem="Qmi-hb-0aM" secondAttribute="trailing" constant="8" identifier="bottomPanelTrailingSpaceConstraint" id="bOW-iG-HNY"/>
                             <constraint firstItem="Qmi-hb-0aM" firstAttribute="leading" secondItem="DFb-1L-U9o" secondAttribute="leading" constant="8" id="c3E-rA-tSH"/>
                         </constraints>
                     </visualEffectView>
                     <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="XBs-34-TIm" userLabel="Left-Sidebar View">
                         <rect key="frame" x="-240" y="0.0" width="240" height="400"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="240" id="Cuc-0z-ItB"/>
+                            <constraint firstAttribute="width" constant="240" identifier="leftSidebarWidthConstraint" id="Cuc-0z-ItB"/>
                         </constraints>
                         <shadow key="shadow" blurRadius="12">
                             <color key="color" white="0.0" alpha="0.5" colorSpace="calibratedWhite"/>
@@ -393,7 +401,7 @@
                     <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="epo-S6-QVB" userLabel="Right-Sidebar View">
                         <rect key="frame" x="640" y="0.0" width="240" height="400"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="240" id="1BL-aP-tHS"/>
+                            <constraint firstAttribute="width" constant="240" identifier="rightSidebarWidthConstraint" id="1BL-aP-tHS"/>
                         </constraints>
                         <shadow key="shadow" blurRadius="12">
                             <color key="color" white="0.0" alpha="0.5" colorSpace="calibratedWhite"/>
@@ -427,45 +435,41 @@
                 </subviews>
                 <constraints>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="g0O-v5-RQj" secondAttribute="bottom" constant="210" id="0pt-vB-Ycm"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" identifier="videoContainerTopConstraint" id="1Ut-pz-GFg"/>
-                    <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" id="3qV-vK-qlg"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="se5-gp-TjO" secondAttribute="bottom" identifier="videoContainerBottomWindowConstraint" id="68T-mq-A30"/>
-                    <constraint firstItem="epo-S6-QVB" firstAttribute="leading" secondItem="pgt-r3-Vbf" secondAttribute="trailing" id="70g-bg-CzH"/>
-                    <constraint firstItem="XBs-34-TIm" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" constant="-240" id="9tP-D1-Ms9"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" identifier="videoContainerTopConstraint" id="1Ut-pz-GFg"/>
+                    <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="bottomPanelTrailingSpaceConstraint" id="3qV-vK-qlg"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="bottom" identifier="videoContainerBottomConstraint" id="68T-mq-A30"/>
+                    <constraint firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="bottom" id="9hV-Fc-eHK"/>
+                    <constraint firstItem="XBs-34-TIm" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" constant="-240" identifier="leftSidebarLeadingConstraint" id="9tP-D1-Ms9"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="leading" priority="249" constant="330" id="9z2-rX-b7C"/>
-                    <constraint firstItem="WaC-08-utU" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" id="G2e-1d-aqE"/>
                     <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="bottom" constant="8" id="Ham-QL-hBU"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="HfB-0k-fyF"/>
-                    <constraint firstItem="g0O-v5-RQj" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="LBY-By-mfi"/>
+                    <constraint firstItem="g0O-v5-RQj" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" identifier="osdLeadingConstraint" id="LBY-By-mfi"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Tdb-EA-alw" secondAttribute="trailing" id="Mqd-Wb-vqq"/>
-                    <constraint firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="trailing" constant="-240" id="PAj-s6-32e"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="trailing" constant="-240" identifier="rightSidebarTrailingConstraint" id="PAj-s6-32e"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" id="RFd-ZJ-29u"/>
-                    <constraint firstItem="Qbi-jx-9pO" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="g0O-v5-RQj" secondAttribute="trailing" constant="8" id="RUl-l8-s3i"/>
+                    <constraint firstItem="Qbi-jx-9pO" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="g0O-v5-RQj" secondAttribute="trailing" constant="8" identifier="additionalInfoToOSDSpaceConstraint" id="RUl-l8-s3i"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="Vtd-0f-x7p"/>
-                    <constraint firstItem="DFb-1L-U9o" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" id="Wkx-hm-sJ4"/>
+                    <constraint firstItem="DFb-1L-U9o" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="bottomPanelLeadingSpaceConstraint" id="Wkx-hm-sJ4"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerY" secondItem="3nL-Ky-Hfa" secondAttribute="centerY" id="XlV-7n-jPb"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="OiF-pA-8Sd" secondAttribute="bottom" priority="750" constant="60" id="cRP-R4-zYY"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="trailing" constant="8" id="cln-MW-RoF"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="bottom" id="eLf-C3-GlT"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="bottom" secondItem="XBs-34-TIm" secondAttribute="bottom" id="f5L-Kv-wdv"/>
-                    <constraint firstItem="XBs-34-TIm" firstAttribute="trailing" secondItem="pgt-r3-Vbf" secondAttribute="leading" id="giT-gf-2zt"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="bottom" constant="8" id="hAe-Tn-76i"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="Nrz-jZ-Luf" secondAttribute="bottom" id="kHE-py-RY5"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="centerX" id="kfR-hG-8ee"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Nrz-jZ-Luf" secondAttribute="trailing" id="mJs-PF-Ex5"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="n2d-ys-qVW"/>
-                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" id="ofB-WP-9dW"/>
-                    <constraint firstAttribute="trailing" secondItem="WaC-08-utU" secondAttribute="trailing" id="pac-4k-L0H"/>
+                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="topPanelLeadingSpaceConstraint" id="ofB-WP-9dW"/>
                     <constraint firstItem="Qbi-jx-9pO" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="bottom" constant="8" id="r5V-EL-YbE"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="XBs-34-TIm" secondAttribute="top" id="tWp-dA-I4y"/>
-                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" id="te1-wi-BbH"/>
-                    <constraint firstAttribute="trailing" secondItem="3nL-Ky-Hfa" secondAttribute="trailing" id="v5S-lZ-agU"/>
+                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="topPanelTrailingSpaceConstraint" id="te1-wi-BbH"/>
+                    <constraint firstAttribute="trailing" secondItem="3nL-Ky-Hfa" secondAttribute="trailing" identifier="windowContentViewTrailingConstraint" id="v5S-lZ-agU"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="Tdb-EA-alw" secondAttribute="bottom" constant="-60" id="vP1-IE-sbB"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" id="vZs-ut-z4j"/>
-                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="wGB-mn-a6f"/>
+                    <constraint firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" identifier="windowContentViewLeadingConstraint" id="vZs-ut-z4j"/>
+                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" identifier="topPanelViewTopConstraint" id="wGB-mn-a6f"/>
                     <constraint firstItem="Tdb-EA-alw" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" id="wYH-h6-46f"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="epo-S6-QVB" secondAttribute="bottom" id="zBx-AY-VlK"/>
-                    <constraint firstItem="epo-S6-QVB" firstAttribute="leading" secondItem="Qbi-jx-9pO" secondAttribute="trailing" constant="8" id="zbm-D9-epN"/>
+                    <constraint firstItem="Qbi-jx-9pO" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" constant="-8" identifier="additionalInfoTrailingConstraint" id="zbm-D9-epN"/>
                 </constraints>
             </view>
             <connections>

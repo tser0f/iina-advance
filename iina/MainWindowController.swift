@@ -130,7 +130,7 @@ class MainWindowController: PlayerWindowController {
   }()
 
   /** For auto hiding UI after a timeout. */
-  var hideControlTimer: Timer?
+  var hideOverlaysTimer: Timer?
   var hideOSDTimer: Timer?
 
   /** For blacking out other screens. */
@@ -578,13 +578,29 @@ class MainWindowController: PlayerWindowController {
   /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
   var currentControlBar: NSView?
 
+  // Spacer in left title bar accessory view:
   @IBOutlet weak var leftTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
+  // Spacer in right title bar accessory view:
   @IBOutlet weak var rightTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
+  // Needs to be changed to align with either sidepanel or left of screen:
+  @IBOutlet weak var topPanelLeadingSpaceConstraint: NSLayoutConstraint!
+  // Needs to be changed to align with either sidepanel or right of screen:
+  @IBOutlet weak var topPanelTrailingSpaceConstraint: NSLayoutConstraint!
+
+  // Needs to be changed to align with either sidepanel or left of screen:
+  @IBOutlet weak var bottomPanelLeadingSpaceConstraint: NSLayoutConstraint!
+  // Needs to be changed to align with either sidepanel or right of screen:
+  @IBOutlet weak var bottomPanelTrailingSpaceConstraint: NSLayoutConstraint!
+
   @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
-  @IBOutlet weak var bottomOSCBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var topPanelViewTopConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerBottomWindowConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var windowContentViewLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var windowContentViewTrailingConstraint: NSLayoutConstraint!
+
+  @IBOutlet weak var osdLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var additionalInfoToOSDSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var additionalInfoTrailingConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var leftSidebarLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var rightSidebarTrailingConstraint: NSLayoutConstraint!
@@ -592,7 +608,7 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var rightSidebarWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
-  @IBOutlet weak var titleBarOverlayHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
   // Size of each side of the square 3 playback buttons ⏪⏯️⏩ (Left Arrow, Play/Pause, Right Arrow):
   @IBOutlet weak var playbackButtonSizeConstraint: NSLayoutConstraint!
   @IBOutlet weak var playbackButtonMarginSizeConstraint: NSLayoutConstraint!
@@ -829,7 +845,7 @@ class MainWindowController: PlayerWindowController {
     bottomView.isHidden = true
     pipOverlayView.isHidden = true
     
-    if player.disableUI { hideUI() }
+    if player.disableUI { hideOverlays() }
 
     // add notification observers
 
@@ -879,42 +895,52 @@ class MainWindowController: PlayerWindowController {
   }
 
   /**
-      "Outside"               "Inside"
-   ┌─────────────┐◄─ A    ┌─────────────┐◄─ A, B
-   │  Title Bar  │        │  Title Bar V│
-   ├─────────────┤        ├────────────I│
-   │   Top OSC   │        │   Top OSC  D│
-   ├─────────────┤◄─ B    ├────────────E│
-   │            V│        │  VIDEO     O│
-   │            I│        └─────────────┘
-   │            D│
-   │            E│
-   │  VIDEO     O│
-   └─────────────┘
+           "Outside"
+         ┌─────────────┐
+         │  Title Bar  │   Top of    Top of
+         ├─────────────┤    Video    Video
+         │   Top OSC   │        │    │            "Inside"
+   ┌─────┼─────────────┼─────┐◄─┘    └─►┌─────┬─────────────┬─────┐
+   │     │            V│     │          │     │  Title Bar V│     │
+   │ Left│            I│Right│          │ Left├────────────I│Right│
+   │ Side│            D│Side │          │ Side│   Top OSC  D│Side │
+   │  bar│            E│bar  │          │  bar├────────────E│bar  │
+   │     │  VIDEO     O│     │          │     │  VIDEO     O│     │
+   └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
   private func updateTopPanelPosition(outsideVideo: Bool) {
-    let windowContentView = topPanelView.superview!
-    windowContentView.animator().removeConstraint(topPanelViewTopConstraint)
-    windowContentView.animator().removeConstraint(videoContainerTopConstraint)
+    NSAnimationContext.runAnimationGroup({context in
+      context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
+      context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
 
-    if outsideVideo {
-      // A: top of top panel constraint
-      topPanelViewTopConstraint = topPanelView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
-      // B: top of video contraint
-      videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.bottomAnchor, constant: 0)
+      let windowContentView = topPanelView.superview!
+      windowContentView.removeConstraint(videoContainerTopConstraint)
+      windowContentView.removeConstraint(topPanelLeadingSpaceConstraint)
+      windowContentView.removeConstraint(topPanelTrailingSpaceConstraint)
 
-      topPanelView.blendingMode = .behindWindow
+      if outsideVideo {
+        videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.bottomAnchor, constant: -2)
+        topPanelView.blendingMode = .behindWindow
 
-    } else {  // inside video
-      // A: top of top panel constraint
-      topPanelViewTopConstraint = topPanelView.topAnchor.constraint(equalTo: videoContainerView.topAnchor, constant: 0)
-      // B: top of video contraint
-      videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
+        // Align left & right sides with window (sidebars go below top panel)
+        topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: windowContentView.leadingAnchor, constant: 0)
+        topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: windowContentView.trailingAnchor, constant: 0)
+      } else {  // inside video
+        videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: -2)
+        topPanelView.blendingMode = .withinWindow
 
-      topPanelView.blendingMode = .withinWindow
-    }
-    topPanelViewTopConstraint.isActive = true
-    videoContainerTopConstraint.isActive = true
+        // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
+        topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leftSidebarView.trailingAnchor, constant: 0)
+        topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: rightSidebarView.leadingAnchor, constant: 0)
+      }
+      updateLeftTitleBarLeadingSpace()
+      updateRightTitleBarTrailingSpace()
+      videoContainerTopConstraint.isActive = true
+      topPanelLeadingSpaceConstraint.animator().isActive = true
+      topPanelTrailingSpaceConstraint.animator().isActive = true
+
+      windowContentView.layoutSubtreeIfNeeded()
+    })
   }
 
   private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
@@ -981,7 +1007,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func addVideoViewToWindow() {
-    videoContainerView.addSubview(videoView, positioned: .above, relativeTo: nil)
+    videoContainerView.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
     ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
@@ -1055,12 +1081,12 @@ class MainWindowController: PlayerWindowController {
       if isInFullScreen {
         topPanelView.isHidden = false
         fadeableViews.insert(topPanelView)
-        titleBarOverlayHeightConstraint.constant = 0
+        titleBarHeightConstraint.constant = 0
       } else {
-        titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
+        titleBarHeightConstraint.constant = reducedTitleBarHeight
       }
     } else {
-      titleBarOverlayHeightConstraint.constant = StandardTitleBarHeight
+      titleBarHeightConstraint.constant = StandardTitleBarHeight
       topOSCPreferredHeightConstraint.constant = 0
       bottomOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
     }
@@ -1131,7 +1157,7 @@ class MainWindowController: PlayerWindowController {
         break
     }
 
-    showUI()
+    showOverlays()
 
     if isFloating {
       playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFloatingOSC
@@ -1148,8 +1174,8 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func hideTitleBar() {
-    titleBarOverlayHeightConstraint.constant = 0
-    setTitleBarControlsVisible(to: false)
+    titleBarHeightConstraint.constant = 0
+    changeTitleBarVisibility(to: false)
 
     if let accessories = window?.titlebarAccessoryViewControllers, !accessories.isEmpty {
       for index in (0 ..< accessories.count).reversed() {
@@ -1158,7 +1184,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func setTitleBarControlsVisible(to visible: Bool) {
+  private func changeTitleBarVisibility(to visible: Bool, animate: Bool = true) {
     let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
     if visible {
       guard !fsState.isFullscreen else { return }
@@ -1167,9 +1193,13 @@ class MainWindowController: PlayerWindowController {
     }
 
     let newAlpha: CGFloat = visible ? 1 : 0
-    standardWindowButtons.forEach { $0.animator().alphaValue = newAlpha }
-    titleTextField?.animator().alphaValue = newAlpha
-    rightTitleBarAccessoryView.animator().alphaValue = newAlpha
+    for view in standardWindowButtons + [titleTextField, rightTitleBarAccessoryView] {
+      if animate {
+        view?.animator().alphaValue = newAlpha
+      } else {
+        view?.alphaValue = newAlpha
+      }
+    }
   }
 
   // MARK: - Mouse / Trackpad events
@@ -1262,7 +1292,7 @@ class MainWindowController: PlayerWindowController {
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       leftSidebarWidthConstraint.constant = newPlaylistWidth
-      updateLeftTitleBarLeadingSpace(toWidth: newPlaylistWidth)
+      updateLeftTitleBarLeadingSpace()
     } else if isResizingRightSidebar {
       let currentLocation = event.locationInWindow
       // resize sidebar
@@ -1275,7 +1305,7 @@ class MainWindowController: PlayerWindowController {
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       rightSidebarWidthConstraint.constant = newPlaylistWidth
-      updateRightTitleBarTrailingSpace(toWidth: newPlaylistWidth)
+      updateRightTitleBarTrailingSpace()
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -1377,7 +1407,7 @@ class MainWindowController: PlayerWindowController {
     case .fullscreen:
       toggleWindowFullScreen()
     case .hideOSC:
-      hideUI()
+      hideOverlays()
     case .togglePIP:
       if #available(macOS 10.12, *) {
         menuTogglePIP(.dummy)
@@ -1415,8 +1445,7 @@ class MainWindowController: PlayerWindowController {
     if obj == 0 {
       // main window
       isMouseInWindow = true
-      showUI()
-      updateTimer()
+      showOverlays()
     } else if obj == 1 {
       // slider
       if controlBarFloating.isDragging { return }
@@ -1441,8 +1470,8 @@ class MainWindowController: PlayerWindowController {
       // main window
       isMouseInWindow = false
       if controlBarFloating.isDragging { return }
-      destroyTimer()
-      hideUI()
+      destroyOverlaysTimer()
+      hideOverlays()
     } else if obj == 1 {
       // slider
       isMouseInSlider = false
@@ -1460,13 +1489,13 @@ class MainWindowController: PlayerWindowController {
       updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
     }
     if isMouseInWindow {
-      showUI()
+      showOverlays()
     }
     // check whether mouse is in osc
     if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
-      destroyTimer()
+      destroyOverlaysTimer()
     } else {
-      updateTimer()
+      resetOverlaysTimer()
     }
   }
 
@@ -1688,14 +1717,14 @@ class MainWindowController: PlayerWindowController {
   /** A method being called when window open. Pretend to be a window delegate. */
   override func windowDidOpen() {
     super.windowDidOpen()
+    guard let window = self.window, let cv = window.contentView else { return }
 
-    window!.makeMain()
-    window!.makeKeyAndOrderFront(nil)
+    window.makeMain()
+    window.makeKeyAndOrderFront(nil)
     resetCollectionBehavior()
     // update buffer indicator view
     updateBufferIndicatorView()
     // start tracking mouse event
-    guard let w = self.window, let cv = w.contentView else { return }
     if cv.trackingAreas.isEmpty {
       cv.addTrackingArea(NSTrackingArea(rect: cv.bounds,
                                         options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
@@ -1716,7 +1745,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // update timer
-    updateTimer()
+    resetOverlaysTimer()
     // truncate middle for title
     if let attrTitle = titleTextField?.attributedStringValue.mutableCopy() as? NSMutableAttributedString, attrTitle.length > 0 {
       let p = attrTitle.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as! NSMutableParagraphStyle
@@ -1825,7 +1854,7 @@ class MainWindowController: PlayerWindowController {
   func windowDidEnterFullScreen(_ notification: Notification) {
     fsState.finishAnimating()
 
-    setTitleBarControlsVisible(to: true)
+    changeTitleBarVisibility(to: true)
 
     videoViewConstraints.values.forEach { $0.constant = 0 }
     videoView.needsLayout = true
@@ -1866,9 +1895,9 @@ class MainWindowController: PlayerWindowController {
     }
 
     if oscPosition == .insideTop {
-      titleBarOverlayHeightConstraint.constant = reducedTitleBarHeight
+      titleBarHeightConstraint.constant = reducedTitleBarHeight
     } else {
-      titleBarOverlayHeightConstraint.constant = StandardTitleBarHeight
+      titleBarHeightConstraint.constant = StandardTitleBarHeight
     }
 
     thumbnailPeekView.isHidden = true
@@ -1918,8 +1947,7 @@ class MainWindowController: PlayerWindowController {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
-    showUI()
-    updateTimer()
+    showOverlays()
 
     videoViewConstraints.values.forEach { $0.constant = 0 }
     videoView.needsLayout = true
@@ -2268,15 +2296,15 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Show / Hide
 
-  @objc func hideUIAndCursor() {
+  @objc func hideOverlaysAndCursor() {
     // don't hide UI when dragging control bar
     if controlBarFloating.isDragging { return }
-    hideUI()
+    hideOverlays()
     NSCursor.setHiddenUntilMouseMoves(true)
   }
 
-  private func hideUI() {
-    // Don't hide UI when in PIP
+  private func hideOverlays() {
+    // Don't hide overlays when in PIP
     guard pipStatus == .notInPIP || animationState == .hidden else {
       return
     }
@@ -2289,7 +2317,7 @@ class MainWindowController: PlayerWindowController {
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 0
       }
-      setTitleBarControlsVisible(to: false)
+      changeTitleBarVisibility(to: false)
     }) {
       // if no interrupt then hide animation
       if self.animationState == .willHide {
@@ -2301,7 +2329,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func showUI() {
+  private func showOverlays() {
     if player.disableUI { return }
 
     animationState = .willShow
@@ -2313,7 +2341,7 @@ class MainWindowController: PlayerWindowController {
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 1
       }
-      setTitleBarControlsVisible(to: true)
+      changeTitleBarVisibility(to: true)
     }) {
       // if no interrupt then hide animation
       if self.animationState == .willShow {
@@ -2321,29 +2349,27 @@ class MainWindowController: PlayerWindowController {
         for v in self.fadeableViews {
           v.isHidden = false
         }
+        self.resetOverlaysTimer()
       }
     }
   }
 
   // MARK: - UI: Show / Hide Timer
 
-  private func updateTimer() {
-    destroyTimer()
-    createTimer()
-  }
+  private func resetOverlaysTimer() {
+    destroyOverlaysTimer()
 
-  private func destroyTimer() {
-    // if timer exist, destroy first
-    if hideControlTimer != nil {
-      hideControlTimer!.invalidate()
-      hideControlTimer = nil
-    }
-  }
-
-  private func createTimer() {
     // create new timer
     let timeout = Preference.float(for: .controlBarAutoHideTimeout)
-    hideControlTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideUIAndCursor), userInfo: nil, repeats: false)
+    hideOverlaysTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOverlaysAndCursor), userInfo: nil, repeats: false)
+  }
+
+  private func destroyOverlaysTimer() {
+    // if timer exist, destroy first
+    if let hideOverlaysTimer = hideOverlaysTimer {
+      hideOverlaysTimer.invalidate()
+      self.hideOverlaysTimer = nil
+    }
   }
 
   // MARK: - UI: Title
@@ -2384,28 +2410,33 @@ class MainWindowController: PlayerWindowController {
     pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
     pinToTopButton.state = isOntop ? .on : .off
 
-    updateRightTitleBarTrailingSpace(toWidth: rightSidebar.isVisible ? rightSidebarWidthConstraint.constant : 0)
+    updateRightTitleBarTrailingSpace()
   }
 
-  private func updateLeftTitleBarLeadingSpace(toWidth newWidth: CGFloat, animate: Bool = false) {
-    // Subtract space taken by the 3 standard buttons
-    let width = max(0, newWidth - trafficLightButtonsWidth)
-    Logger.log("Setting left title bar space to: \(width)")
-    if animate {
-      leftTitleBarLeadingSpaceConstraint.animator().constant = width
+  private func updateLeftTitleBarLeadingSpace() {
+    let expandedSidebar = leftSidebar.animationState == .willShow || leftSidebar.animationState == .shown
+    let width: CGFloat
+    if expandedSidebar && (titleBarLayout != .outsideVideo) {
+      // Subtract space taken by the 3 standard buttons
+      width = max(0, leftSidebarWidthConstraint.constant - trafficLightButtonsWidth)
     } else {
-      leftTitleBarLeadingSpaceConstraint.constant = width
+      width = 0
     }
+    Logger.log("Setting left title bar space to: \(width)")
+    leftTitleBarLeadingSpaceConstraint.constant = width
   }
 
   // Sets the horizontal space needed to push the titlebar & "on top" button leftward, so that they don't overlap on the right sidebar
-  private func updateRightTitleBarTrailingSpace(toWidth newWidth: CGFloat, animate: Bool = false) {
-    Logger.log("Setting right title bar space to: \(newWidth)")
-    if animate {
-      rightTitleBarTrailingSpaceConstraint.animator().constant = newWidth
+  private func updateRightTitleBarTrailingSpace() {
+    let expandedSidebar = rightSidebar.animationState == .willShow || rightSidebar.animationState == .shown
+    let width: CGFloat
+    if expandedSidebar && (titleBarLayout != .outsideVideo) {
+      width = rightSidebarWidthConstraint.constant
     } else {
-      rightTitleBarTrailingSpaceConstraint.constant = newWidth
+      width = 0
     }
+    Logger.log("Setting right title bar space to: \(width)")
+    rightTitleBarTrailingSpaceConstraint.constant = width
   }
 
   // MARK: - UI: OSD
@@ -2699,9 +2730,9 @@ class MainWindowController: PlayerWindowController {
       context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       if sidebar.id == .right {
-        updateRightTitleBarTrailingSpace(toWidth: show ? currentWidth : 0, animate: animate)
+        updateRightTitleBarTrailingSpace()
       } else if sidebar.id == .left {
-        updateLeftTitleBarLeadingSpace(toWidth: show ? currentWidth : 0, animate: animate)
+        updateLeftTitleBarLeadingSpace()
       }
       edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }, completionHandler: {
@@ -2754,7 +2785,7 @@ class MainWindowController: PlayerWindowController {
     isPausedPriorToInteractiveMode = player.info.isPaused
     player.pause()
     isInInteractiveMode = true
-    hideUI()
+    hideOverlays()
 
     if fsState.isFullscreen {
       let aspect: NSSize
@@ -2862,7 +2893,7 @@ class MainWindowController: PlayerWindowController {
       self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
-      self.showUI()
+      self.showOverlays()
       then()
     }
   }
@@ -3505,7 +3536,7 @@ extension MainWindowController: PIPViewControllerDelegate {
   func enterPIP() {
     guard pipStatus != .inPIP else { return }
     pipStatus = .inPIP
-    showUI()
+    showOverlays()
 
     pipVideo = NSViewController()
     pipVideo.view = videoView
@@ -3579,7 +3610,7 @@ extension MainWindowController: PIPViewControllerDelegate {
       videoView.videoLayer.draw(forced: true)
     }
 
-    updateTimer()
+    resetOverlaysTimer()
 
     isWindowMiniaturizedDueToPip = false
     isWindowHidden = false
