@@ -1,5 +1,5 @@
 /* Class = "NSMenuItem"; title = "Bottom"; ObjectID = "0Gp-vj-UzY"; */
-"0Gp-vj-UzY.title" = "Bottom overlay";
+"0Gp-vj-UzY.title" = "Bottom";
 
 /* Class = "NSMenuItem"; title = "0.5x video size"; ObjectID = "0eK-kv-btH"; */
 "0eK-kv-btH.title" = "0.5x video size";
@@ -17,13 +17,13 @@
 "3jK-z5-NDH.title" = "MB";
 
 /* Class = "NSMenuItem"; title = "Floating"; ObjectID = "7Dv-q2-5TV"; */
-"7Dv-q2-5TV.title" = "Floating overlay";
+"7Dv-q2-5TV.title" = "Floating";
 
 /* Class = "NSTextFieldCell"; title = "Resize window to:"; ObjectID = "7td-lH-8aK"; */
 "7td-lH-8aK.title" = "Resize window to:";
 
 /* Class = "NSTextFieldCell"; title = "Auto hide after:"; ObjectID = "82A-XQ-BvS"; */
-"82A-XQ-BvS.title" = "Auto hide overlays after:";
+"82A-XQ-BvS.title" = "Auto hide \"inside video\" controls after:";
 
 /* Class = "NSMenuItem"; title = "bottom"; ObjectID = "92n-Uq-o4G"; */
 "92n-Uq-o4G.title" = "bottom";
@@ -161,7 +161,7 @@
 "kYu-0l-jQQ.title" = "Thumbnail Preview:";
 
 /* Class = "NSTextFieldCell"; title = "Layout:"; ObjectID = "l54-63-V6n"; */
-"l54-63-V6n.title" = "Controller style:";
+"l54-63-V6n.title" = "Position:";
 
 /* Class = "NSMenuItem"; title = "Light"; ObjectID = "lZc-Dl-3cQ"; */
 "lZc-Dl-3cQ.title" = "Light";
@@ -194,7 +194,7 @@
 "sJe-bK-eHi.title" = "left";
 
 /* Class = "NSMenuItem"; title = "Top"; ObjectID = "se2-DE-pJk"; */
-"se2-DE-pJk.title" = "Top overlay";
+"se2-DE-pJk.title" = "Top";
 
 /* Class = "NSTextFieldCell"; title = "Text size:"; ObjectID = "suy-e8-j4i"; */
 "suy-e8-j4i.title" = "Text size:";

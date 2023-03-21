@@ -128,17 +128,20 @@ struct Preference {
     static let resizeWindowTiming = Key("resizeWindowTiming")
     static let resizeWindowOption = Key("resizeWindowOption")
 
-    static let titleBarLayout = Key("titleBarLayout")
+    static let titleBarStyle = Key("titleBarStyle")
+    static let topPanelPlacementType = Key("topPanelPlacementType")
+    static let bottomPanelPlacementType = Key("bottomPanelPlacementType")
     static let enableOSC = Key("enableOSC")
     static let oscPosition = Key("oscPosition")
     static let hideOverlaysWhenOutsideWindow = Key("hideOverlaysWhenOutsideWindow")
 
-    static let leftSidebarLayoutStyle = Key("leftSidebarLayoutStyle")
-    static let rightSidebarLayoutStyle = Key("rightSidebarLayoutStyle")
+    // Sidebars:
+    static let leftSidebarPlacementType = Key("leftSidebarPlacementType")
+    static let rightSidebarPlacementType = Key("rightSidebarPlacementType")
     /// `Settings` tab group
-    static let settingsParentSidebarID = Key("settingsParentSidebarID")
+    static let settingsTabGroupLocation = Key("settingsTabGroupLocation")
     /// `Playlist` tab group
-    static let playlistParentSidebarID = Key("playlistParentSidebarID")
+    static let playlistTabGroupLocation = Key("playlistTabGroupLocation")
     static let playlistWidth = Key("playlistWidth")
     static let prefetchPlaylistVideoDuration = Key("prefetchPlaylistVideoDuration")
 
@@ -451,35 +454,34 @@ struct Preference {
     }
   }
 
-  enum SidebarID: Int, InitializingFromKey {
-    case left = 1
-    case right
+  enum SidebarLocation: Int, InitializingFromKey {
+    case leftSidebar = 1
+    case rightSidebar
 
-    static var defaultValue = SidebarID.right
+    static var defaultValue = SidebarLocation.rightSidebar
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
     }
   }
 
-  enum SidebarLayoutStyle: Int, InitializingFromKey {
-    case insideVideo = 0
+  enum PanelPlacementType: Int, InitializingFromKey {
+    case insideVideo = 1
     case outsideVideo
 
-    static var defaultValue = SidebarLayoutStyle.insideVideo
+    static var defaultValue = PanelPlacementType.insideVideo
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
     }
   }
 
-  enum TitleBarLayout: Int, InitializingFromKey {
+  enum TitleBarStyle: Int, InitializingFromKey {
     case none = 0
-    case outsideVideo
-    case insideVideoFull
-    case insideVideoMinimal
+    case full
+    case minimal
 
-    static var defaultValue = TitleBarLayout.insideVideoFull
+    static var defaultValue = TitleBarStyle.full
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -488,9 +490,8 @@ struct Preference {
 
   enum OSCPosition: Int, InitializingFromKey {
     case floating = 0
-    case insideTop
-    case insideBottom
-    case outsideBottom
+    case top
+    case bottom
 
     static var defaultValue = OSCPosition.floating
 
@@ -860,14 +861,16 @@ struct Preference {
     .controlBarAutoHideTimeout: Float(2.5),
     .controlBarToolbarButtons: [ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
     .enableOSC: true,
-    .titleBarLayout: TitleBarLayout.insideVideoFull.rawValue,
+    .titleBarStyle: TitleBarStyle.full.rawValue,
+    .topPanelPlacementType: PanelPlacementType.insideVideo.rawValue,
+    .bottomPanelPlacementType: PanelPlacementType.insideVideo.rawValue,
     .oscPosition: OSCPosition.floating.rawValue,
     .hideOverlaysWhenOutsideWindow: true,
     .playlistWidth: 270,
-    .settingsParentSidebarID: SidebarID.right.rawValue,
-    .playlistParentSidebarID: SidebarID.right.rawValue,
-    .leftSidebarLayoutStyle: SidebarLayoutStyle.insideVideo.rawValue,
-    .rightSidebarLayoutStyle: SidebarLayoutStyle.insideVideo.rawValue,
+    .settingsTabGroupLocation: SidebarLocation.rightSidebar.rawValue,
+    .playlistTabGroupLocation: SidebarLocation.rightSidebar.rawValue,
+    .leftSidebarPlacementType: PanelPlacementType.insideVideo.rawValue,
+    .rightSidebarPlacementType: PanelPlacementType.insideVideo.rawValue,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,

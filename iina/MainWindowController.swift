@@ -376,14 +376,14 @@ class MainWindowController: PlayerWindowController {
   }
 
   private class Sidebar {
-    let id: Preference.SidebarID
+    let locationID: Preference.SidebarLocation
 
-    init(_ id: Preference.SidebarID) {
-      self.id = id
+    init(_ locationID: Preference.SidebarLocation) {
+      self.locationID = locationID
     }
 
     // user configured:
-    var layoutStyle: Preference.SidebarLayoutStyle = Preference.SidebarLayoutStyle.defaultValue
+    var placement = Preference.PanelPlacementType.defaultValue
     var tabGroups: Set<SidebarTabGroup> = Set()
 
     // state:
@@ -402,9 +402,9 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private var leftSidebar = Sidebar(.left)
-  private var rightSidebar = Sidebar(.right)
-  private lazy var sidebarsByID: [Preference.SidebarID: Sidebar] = [ .left: self.leftSidebar, .right: self.rightSidebar]
+  private var leftSidebar = Sidebar(.leftSidebar)
+  private var rightSidebar = Sidebar(.rightSidebar)
+  private lazy var sidebarsByID: [Preference.SidebarLocation: Sidebar] = [ leftSidebar.locationID: self.leftSidebar, rightSidebar.locationID: self.rightSidebar]
 
   enum PIPStatus {
     case notInPIP
@@ -431,7 +431,9 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Observed user defaults
 
   // Cached user default values
-  private lazy var titleBarLayout: Preference.TitleBarLayout = Preference.enum(for: .titleBarLayout)
+  private lazy var titleBarStyle: Preference.TitleBarStyle = Preference.enum(for: .titleBarStyle)
+  private lazy var topPanelPlacement: Preference.PanelPlacementType = Preference.enum(for: .topPanelPlacementType)
+  private lazy var bottomPanelPlacement: Preference.PanelPlacementType = Preference.enum(for: .topPanelPlacementType)
   private lazy var enableOSC: Bool = Preference.bool(for: .enableOSC)
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
@@ -440,9 +442,11 @@ class MainWindowController: PlayerWindowController {
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
   private static let mainWindowPrefKeys: [Preference.Key] = PlayerWindowController.playerWindowPrefKeys + [
-    .titleBarLayout,
+    .titleBarStyle,
     .enableOSC,
     .oscPosition,
+    .topPanelPlacementType,
+    .bottomPanelPlacementType,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -455,10 +459,10 @@ class MainWindowController: PlayerWindowController {
     .displayTimeAndBatteryInFullScreen,
     .controlBarToolbarButtons,
     .alwaysShowOnTopIcon,
-    .leftSidebarLayoutStyle,
-    .rightSidebarLayoutStyle,
-    .settingsParentSidebarID,
-    .playlistParentSidebarID,
+    .leftSidebarPlacementType,
+    .rightSidebarPlacementType,
+    .settingsTabGroupLocation,
+    .playlistTabGroupLocation,
   ]
 
   override var observedPrefKeys: [Preference.Key] {
@@ -470,7 +474,11 @@ class MainWindowController: PlayerWindowController {
     super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 
     switch keyPath {
-    case PK.enableOSC.rawValue, PK.oscPosition.rawValue, PK.titleBarLayout.rawValue:
+      case PK.enableOSC.rawValue,
+        PK.oscPosition.rawValue,
+        PK.titleBarStyle.rawValue,
+        PK.topPanelPlacementType.rawValue,
+        PK.bottomPanelPlacementType.rawValue:
       setupTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -532,19 +540,19 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
-    case PK.leftSidebarLayoutStyle.rawValue:
+    case PK.leftSidebarPlacementType.rawValue:
       // TODO
       break
-    case PK.rightSidebarLayoutStyle.rawValue:
+    case PK.rightSidebarPlacementType.rawValue:
       // TODO
       break
-    case PK.settingsParentSidebarID.rawValue:
-      if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
-        self.moveSidebarIfNeeded(forTabGroup: .settings, toNewSidebarID: newID)
+    case PK.settingsTabGroupLocation.rawValue:
+      if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarLocation(rawValue: newRawValue) {
+        self.moveSidebarIfNeeded(forTabGroup: .settings, toNewSidebarLocation: newID)
       }
-    case PK.playlistParentSidebarID.rawValue:
-      if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarID(rawValue: newRawValue) {
-        self.moveSidebarIfNeeded(forTabGroup: .playlist, toNewSidebarID: newID)
+    case PK.playlistTabGroupLocation.rawValue:
+      if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarLocation(rawValue: newRawValue) {
+        self.moveSidebarIfNeeded(forTabGroup: .playlist, toNewSidebarLocation: newID)
       }
     default:
       return
@@ -712,14 +720,14 @@ class MainWindowController: PlayerWindowController {
     self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
 
-    leftSidebar.layoutStyle = Preference.enum(for: .leftSidebarLayoutStyle)
-    rightSidebar.layoutStyle = Preference.enum(for: .rightSidebarLayoutStyle)
+    leftSidebar.placement = Preference.enum(for: .leftSidebarPlacementType)
+    rightSidebar.placement = Preference.enum(for: .rightSidebarPlacementType)
 
-    let settingsSidebarID: Preference.SidebarID = Preference.enum(for: .settingsParentSidebarID)
-    setSidebar(id: settingsSidebarID, forTabGroup: .settings)
+    let settingsSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
+    setSidebar(locationID: settingsSidebarLocation, forTabGroup: .settings)
 
-    let playlistSidebarID: Preference.SidebarID = Preference.enum(for: .playlistParentSidebarID)
-    setSidebar(id: playlistSidebarID, forTabGroup: .playlist)
+    let playlistSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .playlistTabGroupLocation)
+    setSidebar(locationID: playlistSidebarLocation, forTabGroup: .playlist)
   }
 
   required init?(coder: NSCoder) {
@@ -908,7 +916,8 @@ class MainWindowController: PlayerWindowController {
    │     │  VIDEO     O│     │          │     │  VIDEO     O│     │
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
-  private func updateTopPanelPosition(outsideVideo: Bool) {
+  private func updateTopPanelPosition() {
+    let isOutsideVideo = topPanelPlacement == .outsideVideo
     NSAnimationContext.runAnimationGroup({context in
       context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
       context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
@@ -918,15 +927,15 @@ class MainWindowController: PlayerWindowController {
       windowContentView.removeConstraint(topPanelLeadingSpaceConstraint)
       windowContentView.removeConstraint(topPanelTrailingSpaceConstraint)
 
-      if outsideVideo {
-        videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.bottomAnchor, constant: -2)
+      if isOutsideVideo {
+        videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.bottomAnchor, constant: 0)
         topPanelView.blendingMode = .behindWindow
 
         // Align left & right sides with window (sidebars go below top panel)
         topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: windowContentView.leadingAnchor, constant: 0)
         topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: windowContentView.trailingAnchor, constant: 0)
       } else {  // inside video
-        videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: -2)
+        videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: windowContentView.topAnchor, constant: 0)
         topPanelView.blendingMode = .withinWindow
 
         // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
@@ -1011,8 +1020,10 @@ class MainWindowController: PlayerWindowController {
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
     ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
+      // FIXME: figure out why this 2px adjustment is necessary
+      let constantAdustment: CGFloat = attr == .top || attr == .left ? -2 : 0
       videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
-                                                      attribute: attr, multiplier: 1, constant: 0)
+                                                      attribute: attr, multiplier: 1, constant: constantAdustment)
       videoViewConstraints[attr]!.isActive = true
     }
   }
@@ -1034,14 +1045,14 @@ class MainWindowController: PlayerWindowController {
   private func setupTitleBarAndOSC() {
     let oscPositionNew: Preference.OSCPosition = Preference.enum(for: .oscPosition)
 //    let oscEnabledNew = Preference.bool(for: .enableOSC)
-    titleBarLayout = Preference.enum(for: .titleBarLayout)
+    titleBarStyle = Preference.enum(for: .titleBarStyle)
+    topPanelPlacement = Preference.enum(for: .topPanelPlacementType)
+    bottomPanelPlacement = Preference.enum(for: .topPanelPlacementType)
 
-    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
-    updateTopPanelPosition(outsideVideo: topPanelIsOutside)
+    updateTopPanelPosition()
 
-
-    let isSwitchingToTop = oscPositionNew == .insideTop
-    let isSwitchingFromTop = oscPosition == .insideTop
+    let isSwitchingToTop = oscPositionNew == .top
+    let isSwitchingFromTop = oscPosition == .top
     let isFloating = oscPositionNew == .floating
 
     if let cb = currentControlBar {
@@ -1049,7 +1060,7 @@ class MainWindowController: PlayerWindowController {
       fadeableViews.remove(cb)
     }
 
-    if topPanelIsOutside {
+    if topPanelPlacement == .outsideVideo {
       fadeableViews.remove(topPanelView)
       topPanelView.isHidden = false
       topPanelView.alphaValue = 1
@@ -1126,7 +1137,7 @@ class MainWindowController: PlayerWindowController {
       let cpv = Preference.float(for: .controlBarPositionVertical)
       controlBarFloating.xConstraint.constant = window!.frame.width * CGFloat(cph)
       controlBarFloating.yConstraint.constant = window!.frame.height * CGFloat(cpv)
-    case .insideTop:
+    case .top:
       currentControlBar = controlBarTop
       controlBarTop.isHidden = false
       fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
@@ -1139,7 +1150,7 @@ class MainWindowController: PlayerWindowController {
       oscTopMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
       oscTopMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
       oscTopMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
-    case .insideBottom:
+    case .bottom:
       currentControlBar = controlBarBottom
       fadeableViews.insert(controlBarBottom)
       fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
@@ -1152,9 +1163,6 @@ class MainWindowController: PlayerWindowController {
       oscBottomMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
       oscBottomMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
       oscBottomMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
-      case .outsideBottom:
-        // TODO!
-        break
     }
 
     showOverlays()
@@ -1185,7 +1193,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func changeTitleBarVisibility(to visible: Bool, animate: Bool = true) {
-    let topPanelIsOutside = titleBarLayout == Preference.TitleBarLayout.outsideVideo
+    let topPanelIsOutside = topPanelPlacement == Preference.PanelPlacementType.outsideVideo
     if visible {
       guard !fsState.isFullscreen else { return }
     } else {
@@ -1250,7 +1258,7 @@ class MainWindowController: PlayerWindowController {
     if leftSidebar.visibleTab == .playlist {
       let sf = leftSidebarView.frame
       let dragRectCenterX: CGFloat
-      switch leftSidebar.layoutStyle {
+      switch leftSidebar.placement {
         case .insideVideo:
           dragRectCenterX = sf.origin.x + sf.width
         case .outsideVideo:
@@ -1265,7 +1273,7 @@ class MainWindowController: PlayerWindowController {
     } else if rightSidebar.visibleTab == .playlist {
       let sf = rightSidebarView.frame
       let dragRectCenterX: CGFloat
-      switch leftSidebar.layoutStyle {
+      switch leftSidebar.placement {
         case .insideVideo:
           dragRectCenterX = sf.origin.x
         case .outsideVideo:
@@ -1284,7 +1292,7 @@ class MainWindowController: PlayerWindowController {
     if isResizingLeftSidebar {
       let currentLocation = event.locationInWindow
       let newWidth: CGFloat
-      switch leftSidebar.layoutStyle {
+      switch leftSidebar.placement {
         case .insideVideo:
           newWidth = currentLocation.x + 2
         case .outsideVideo:
@@ -1297,7 +1305,7 @@ class MainWindowController: PlayerWindowController {
       let currentLocation = event.locationInWindow
       // resize sidebar
       let newWidth: CGFloat
-      switch rightSidebar.layoutStyle {
+      switch rightSidebar.placement {
         case .insideVideo:
           newWidth = window!.frame.width - currentLocation.x - 2
         case .outsideVideo:
@@ -1827,7 +1835,7 @@ class MainWindowController: PlayerWindowController {
       default: window!.appearance = NSAppearance(named: .vibrantLight)
       }
     }
-    if oscPosition == .insideTop {
+    if oscPosition == .top {
       // need top overlay for OSC, but hide title bar
       topPanelView.isHidden = false
     } else {
@@ -1894,7 +1902,7 @@ class MainWindowController: PlayerWindowController {
       exitInteractiveMode(immediately: true)
     }
 
-    if oscPosition == .insideTop {
+    if oscPosition == .top {
       titleBarHeightConstraint.constant = reducedTitleBarHeight
     } else {
       titleBarHeightConstraint.constant = StandardTitleBarHeight
@@ -1927,7 +1935,7 @@ class MainWindowController: PlayerWindowController {
       // window. Restore it now.
       window!.setFrame(fsState.priorWindowedFrame!, display: true, animate: false)
     }
-    if titleBarLayout != .outsideVideo {
+    if topPanelPlacement == .insideVideo {
       fadeableViews.insert(topPanelView)
     }
     topPanelView.isHidden = false
@@ -2416,7 +2424,7 @@ class MainWindowController: PlayerWindowController {
   private func updateLeftTitleBarLeadingSpace() {
     let expandedSidebar = leftSidebar.animationState == .willShow || leftSidebar.animationState == .shown
     let width: CGFloat
-    if expandedSidebar && (titleBarLayout != .outsideVideo) {
+    if expandedSidebar && topPanelPlacement == .insideVideo {
       // Subtract space taken by the 3 standard buttons
       width = max(0, leftSidebarWidthConstraint.constant - trafficLightButtonsWidth)
     } else {
@@ -2430,7 +2438,7 @@ class MainWindowController: PlayerWindowController {
   private func updateRightTitleBarTrailingSpace() {
     let expandedSidebar = rightSidebar.animationState == .willShow || rightSidebar.animationState == .shown
     let width: CGFloat
-    if expandedSidebar && (titleBarLayout != .outsideVideo) {
+    if expandedSidebar && topPanelPlacement == .insideVideo {
       width = rightSidebarWidthConstraint.constant
     } else {
       width = 0
@@ -2567,10 +2575,10 @@ class MainWindowController: PlayerWindowController {
     return leftSidebar.visibleTab == tab || rightSidebar.visibleTab == tab
   }
 
-  private func setSidebar(id sidebarID: Preference.SidebarID, forTabGroup tabGroup: SidebarTabGroup) {
+  private func setSidebar(locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
     let addToSidebar: Sidebar
     let removeFromSidebar: Sidebar
-    if sidebarID == leftSidebar.id {
+    if locationID == leftSidebar.locationID {
       addToSidebar = leftSidebar
       removeFromSidebar = rightSidebar
     } else {
@@ -2592,13 +2600,13 @@ class MainWindowController: PlayerWindowController {
   }
 
   // If location of tab group changed to another sidebar (in user prefs), check if it is showing, and if so, hide it & show it on the other side
-  private func moveSidebarIfNeeded(forTabGroup tabGroup: SidebarTabGroup, toNewSidebarID newID: Preference.SidebarID) {
-    guard let currentID = getConfiguredSidebar(forTabGroup: tabGroup)?.id else { return }
-    guard currentID != newID else { return }
+  private func moveSidebarIfNeeded(forTabGroup tabGroup: SidebarTabGroup, toNewSidebarLocation newLocationID: Preference.SidebarLocation) {
+    guard let currentLocationID = getConfiguredSidebar(forTabGroup: tabGroup)?.locationID else { return }
+    guard currentLocationID != newLocationID else { return }
 
-    if let prevSidebar = sidebarsByID[currentID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
+    if let prevSidebar = sidebarsByID[currentLocationID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
       changeVisibility(forTab: curentVisibleTab, to: false, then: {
-        self.setSidebar(id: newID, forTabGroup: .settings)
+        self.setSidebar(locationID: newLocationID, forTabGroup: .settings)
         self.changeVisibility(forTab: curentVisibleTab, to: true)
       })
     }
@@ -2683,12 +2691,12 @@ class MainWindowController: PlayerWindowController {
     let sidebarView: NSVisualEffectView
     let widthConstraint: NSLayoutConstraint
     let edgeConstraint: NSLayoutConstraint
-    switch sidebar.id {
-      case .left:
+    switch sidebar.locationID {
+      case .leftSidebar:
         sidebarView = leftSidebarView
         widthConstraint = leftSidebarWidthConstraint
         edgeConstraint = leftSidebarLeadingConstraint
-      case .right:
+      case .rightSidebar:
         sidebarView = rightSidebarView
         widthConstraint = rightSidebarWidthConstraint
         edgeConstraint = rightSidebarTrailingConstraint
@@ -2729,10 +2737,11 @@ class MainWindowController: PlayerWindowController {
     NSAnimationContext.runAnimationGroup({ context in
       context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      if sidebar.id == .right {
-        updateRightTitleBarTrailingSpace()
-      } else if sidebar.id == .left {
-        updateLeftTitleBarLeadingSpace()
+      switch sidebar.locationID {
+        case .rightSidebar:
+          updateRightTitleBarTrailingSpace()
+        case .leftSidebar:
+          updateLeftTitleBarLeadingSpace()
       }
       edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }, completionHandler: {
@@ -2910,17 +2919,22 @@ class MainWindowController: PlayerWindowController {
   ///   - thumbnailHeight: The height of the thumbnail.
   /// - Returns: `true` if the thumbnail can be shown above the slider, `false` otherwise.
   private func canShowThumbnailAbove(timePreviewYPos: Double, thumbnailHeight: Double) -> Bool {
-    guard oscPosition != .insideBottom else { return true }
-    guard oscPosition != .insideTop else { return false }
-    // The layout preference for the on screen controller is set to the default floating layout.
-    // Must ensure the top of the thumbnail will be below the top of the window.
-    let topOfThumbnail = timePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
-    // Normally the height of the usable area of the window can be obtained from the content
-    // layout. But when the legacy full screen preference is enabled the layout height may be
-    // larger than the content view if the display contains a camera housing. Use the lower of
-    // the two heights.
-    let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
-    return topOfThumbnail <= windowContentHeight
+    switch oscPosition {
+      case .top:
+        return false
+      case .bottom:
+        return true
+      case .floating:
+        // The layout preference for the on screen controller is set to the default floating layout.
+        // Must ensure the top of the thumbnail will be below the top of the window.
+        let topOfThumbnail = timePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
+        // Normally the height of the usable area of the window can be obtained from the content
+        // layout. But when the legacy full screen preference is enabled the layout height may be
+        // larger than the content view if the display contains a camera housing. Use the lower of
+        // the two heights.
+        let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
+        return topOfThumbnail <= windowContentHeight
+    }
   }
 
   /** Display time label when mouse over slider */

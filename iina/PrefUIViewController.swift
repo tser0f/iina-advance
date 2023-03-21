@@ -81,7 +81,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var pipMinimizeWindow: NSButton!
 
   private let observedPrefKeys: [Preference.Key] = [
-    .titleBarLayout,
+    .titleBarStyle,
+    .topPanelPlacementType,
+    .bottomPanelPlacementType,
     .enableOSC,
     .oscPosition,
     .themeMaterial,
@@ -109,8 +111,10 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    refreshTitleBarAndOSCSection()
+
     oscToolbarStackView.wantsLayer = true
+
+    refreshTitleBarAndOSCSection()
     updateOSCToolbarButtons()
     setupGeometryRelatedControls()
     setupResizingRelatedControls()
@@ -133,7 +137,12 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
-      case PK.titleBarLayout.rawValue, PK.enableOSC.rawValue, PK.oscPosition.rawValue, PK.themeMaterial.rawValue:
+      case PK.titleBarStyle.rawValue,
+           PK.enableOSC.rawValue,
+           PK.topPanelPlacementType.rawValue,
+           PK.bottomPanelPlacementType.rawValue,
+           PK.oscPosition.rawValue,
+           PK.themeMaterial.rawValue:
         refreshTitleBarAndOSCSection()
       default:
         break
@@ -144,8 +153,10 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     let ib = PlayerWindowPreviewImageBuilder()
     windowPreviewImageView.image = ib.updateWindowPreviewImage()
 
-    let titleBarIsOverlay = ib.titleBarLayout == .insideVideoFull || ib.titleBarLayout == .insideVideoMinimal
-    let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .insideTop || ib.oscPosition == .insideBottom || ib.oscPosition == .floating)
+    let titleBarIsOverlay = ib.titleBarStyle != .none && ib.topPanelPlacement == .insideVideo
+    let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .floating ||
+                                         (ib.oscPosition == .top && ib.topPanelPlacement == .insideVideo) ||
+                                         (ib.oscPosition == .bottom && ib.bottomPanelPlacement == .insideVideo))
     let hasOverlay = titleBarIsOverlay || oscIsOverlay
     oscAutoHideTimeoutTextField.isEnabled = hasOverlay
     hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
@@ -272,6 +283,31 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     view.contentView?.subviews.forEach { ($0 as? NSControl)?.isEnabled = enabled }
   }
 }
+
+@objc(IntEqualsZeroTransformer) class IntEqualsZeroTransformer: ValueTransformer {
+
+  static override func allowsReverseTransformation() -> Bool {
+    return false
+  }
+
+  static override func transformedValueClass() -> AnyClass {
+    return NSNumber.self
+  }
+
+  override func transformedValue(_ value: Any?) -> Any? {
+    guard let number = value as? NSNumber else { return nil }
+    return number == 0
+  }
+}
+
+@objc(IntEqualsTwoTransformer) class IntEqualsTwoTransformer: IntEqualsZeroTransformer {
+
+  override func transformedValue(_ value: Any?) -> Any? {
+    guard let number = value as? NSNumber else { return nil }
+    return number == 2
+  }
+}
+
 
 @objc(ResizeTimingTransformer) class ResizeTimingTransformer: ValueTransformer {
 
