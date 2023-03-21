@@ -953,7 +953,11 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
-    if videoAspectRatioConstraint != nil {
+    let newMultiplier: CGFloat = height / width
+    if let videoAspectRatioConstraint = videoAspectRatioConstraint {
+      guard videoAspectRatioConstraint.multiplier != newMultiplier else {
+        return
+      }
       videoContainerView.removeConstraint(videoAspectRatioConstraint)
     }
     videoAspectRatioConstraint = videoContainerView.heightAnchor.constraint(equalTo: videoContainerView.widthAnchor, multiplier: height / width)
@@ -2576,17 +2580,17 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func setSidebar(locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
-    let addToSidebar: Sidebar
-    let removeFromSidebar: Sidebar
+    let addingToSidebar: Sidebar
+    let removingFromSidebar: Sidebar
     if locationID == leftSidebar.locationID {
-      addToSidebar = leftSidebar
-      removeFromSidebar = rightSidebar
+      addingToSidebar = leftSidebar
+      removingFromSidebar = rightSidebar
     } else {
-      addToSidebar = rightSidebar
-      removeFromSidebar = leftSidebar
+      addingToSidebar = rightSidebar
+      removingFromSidebar = leftSidebar
     }
-    addToSidebar.tabGroups.insert(tabGroup)
-    removeFromSidebar.tabGroups.remove(tabGroup)
+    addingToSidebar.tabGroups.insert(tabGroup)
+    removingFromSidebar.tabGroups.remove(tabGroup)
   }
 
   private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
@@ -2605,10 +2609,14 @@ class MainWindowController: PlayerWindowController {
     guard currentLocationID != newLocationID else { return }
 
     if let prevSidebar = sidebarsByID[currentLocationID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
+      Logger.log("Moving visible tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
       changeVisibility(forTab: curentVisibleTab, to: false, then: {
-        self.setSidebar(locationID: newLocationID, forTabGroup: .settings)
+        self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
         self.changeVisibility(forTab: curentVisibleTab, to: true)
       })
+    } else {
+      Logger.log("Moving hidden tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
+      self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
     }
   }
 
@@ -2670,22 +2678,30 @@ class MainWindowController: PlayerWindowController {
     guard let sidebar = getConfiguredSidebar(forTabGroup: group) else { return }
     let currentWidth = group.width()
 
-    if sidebar.isVisible == show {
-      if !sidebar.isVisible || sidebar.visibleTab == tab {
-        // Nothing to do
-        if let thenDo = then {
-          thenDo()
-        }
-        return
-      }
-
+    var nothingToDo = false
+    if show && sidebar.isVisible {
       if sidebar.visibleTabGroup != group {
         // If tab is open but with wrong tab group, hide it, then change it, then show again
+        Logger.log("Need to change tab group for \(sidebar.locationID): will hide & reopen", level: .verbose)
         changeVisibility(forTab: tab, to: false, then: {
           self.changeVisibility(forTab: tab, to: true)
         })
         return
+      } else if let visibleTab = sidebar.visibleTab, visibleTab == tab {
+        Logger.log("Nothing to do; \(sidebar.locationID) is already showing tab \(visibleTab.name.quoted)", level: .verbose)
+        nothingToDo = true
       }
+      // Else just need to change tab in tab group. Fall through
+    } else if !show && !sidebar.isVisible {
+      Logger.log("Nothing to do; \(sidebar.locationID) (which contains tab \(tab.name.quoted)) is already hidden", level: .verbose)
+      nothingToDo = true
+    }
+
+    if nothingToDo {
+      if let thenDo = then {
+        thenDo()
+      }
+      return
     }
 
     let sidebarView: NSVisualEffectView
@@ -2703,6 +2719,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     sidebar.animationState = show ? .willShow : .willHide
+    Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose)
 
     if show {
       // Make it the active tab in its parent tab group (can do this whether or not it's shown):

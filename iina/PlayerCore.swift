@@ -98,6 +98,7 @@ class PlayerCore: NSObject {
   }
 
   static func restoreSavedState(forPlayerUID uid: String) {
+    Logger.log("Restoring saved state for player \(uid.quoted)")
     let playerCore = createPlayerCore(label: uid)
     playerCore.restoreSavedState()
   }
