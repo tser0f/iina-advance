@@ -84,8 +84,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   private let observedPrefKeys: [Preference.Key] = [
     .titleBarStyle,
-    .topPanelPlacementType,
-    .bottomPanelPlacementType,
+    .topPanelPlacement,
+    .bottomPanelPlacement,
     .enableOSC,
     .oscPosition,
     .themeMaterial,
@@ -141,8 +141,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     switch keyPath {
       case PK.titleBarStyle.rawValue,
            PK.enableOSC.rawValue,
-           PK.topPanelPlacementType.rawValue,
-           PK.bottomPanelPlacementType.rawValue,
+           PK.topPanelPlacement.rawValue,
+           PK.bottomPanelPlacement.rawValue,
            PK.oscPosition.rawValue,
            PK.themeMaterial.rawValue:
         refreshTitleBarAndOSCSection()

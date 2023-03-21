@@ -17,8 +17,8 @@ class PlayerWindowPreviewImageBuilder {
   let oscEnabled = Preference.bool(for: .enableOSC)
   let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   let titleBarStyle: Preference.TitleBarStyle = Preference.enum(for: .titleBarStyle)
-  let topPanelPlacement: Preference.PanelPlacementType = Preference.enum(for: .topPanelPlacementType)
-  let bottomPanelPlacement: Preference.PanelPlacementType = Preference.enum(for: .bottomPanelPlacementType)
+  let topPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .topPanelPlacement)
+  let bottomPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomPanelPlacement)
   let isDarkTheme = true  // TODO fully support light preview. Need to find way to invert colors for OSC imgs
   //    let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
   //    let isDarkTheme = !(theme == .light || theme == .mediumLight)  // default to dark

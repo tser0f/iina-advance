@@ -129,15 +129,15 @@ struct Preference {
     static let resizeWindowOption = Key("resizeWindowOption")
 
     static let titleBarStyle = Key("titleBarStyle")
-    static let topPanelPlacementType = Key("topPanelPlacementType")
-    static let bottomPanelPlacementType = Key("bottomPanelPlacementType")
+    static let topPanelPlacement = Key("topPanelPlacement")
+    static let bottomPanelPlacement = Key("bottomPanelPlacement")
     static let enableOSC = Key("enableOSC")
     static let oscPosition = Key("oscPosition")
     static let hideOverlaysWhenOutsideWindow = Key("hideOverlaysWhenOutsideWindow")
 
     // Sidebars:
-    static let leftSidebarPlacementType = Key("leftSidebarPlacementType")
-    static let rightSidebarPlacementType = Key("rightSidebarPlacementType")
+    static let leftSidebarPlacement = Key("leftSidebarPlacement")
+    static let rightSidebarPlacement = Key("rightSidebarPlacement")
     /// `Settings` tab group
     static let settingsTabGroupLocation = Key("settingsTabGroupLocation")
     /// `Playlist` tab group
@@ -465,11 +465,11 @@ struct Preference {
     }
   }
 
-  enum PanelPlacementType: Int, InitializingFromKey {
+  enum PanelPlacement: Int, InitializingFromKey {
     case insideVideo = 1
     case outsideVideo
 
-    static var defaultValue = PanelPlacementType.insideVideo
+    static var defaultValue = PanelPlacement.insideVideo
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -862,15 +862,15 @@ struct Preference {
     .controlBarToolbarButtons: [ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
     .enableOSC: true,
     .titleBarStyle: TitleBarStyle.full.rawValue,
-    .topPanelPlacementType: PanelPlacementType.insideVideo.rawValue,
-    .bottomPanelPlacementType: PanelPlacementType.insideVideo.rawValue,
+    .topPanelPlacement: PanelPlacement.insideVideo.rawValue,
+    .bottomPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .oscPosition: OSCPosition.floating.rawValue,
     .hideOverlaysWhenOutsideWindow: true,
     .playlistWidth: 270,
     .settingsTabGroupLocation: SidebarLocation.rightSidebar.rawValue,
     .playlistTabGroupLocation: SidebarLocation.rightSidebar.rawValue,
-    .leftSidebarPlacementType: PanelPlacementType.insideVideo.rawValue,
-    .rightSidebarPlacementType: PanelPlacementType.insideVideo.rawValue,
+    .leftSidebarPlacement: PanelPlacement.insideVideo.rawValue,
+    .rightSidebarPlacement: PanelPlacement.insideVideo.rawValue,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,

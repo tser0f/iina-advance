@@ -383,7 +383,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // user configured:
-    var placement = Preference.PanelPlacementType.defaultValue
+    var placement = Preference.PanelPlacement.defaultValue
     var tabGroups: Set<SidebarTabGroup> = Set()
 
     // state:
@@ -432,8 +432,8 @@ class MainWindowController: PlayerWindowController {
 
   // Cached user default values
   private lazy var titleBarStyle: Preference.TitleBarStyle = Preference.enum(for: .titleBarStyle)
-  private lazy var topPanelPlacement: Preference.PanelPlacementType = Preference.enum(for: .topPanelPlacementType)
-  private lazy var bottomPanelPlacement: Preference.PanelPlacementType = Preference.enum(for: .topPanelPlacementType)
+  private lazy var topPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .topPanelPlacement)
+  private lazy var bottomPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .topPanelPlacement)
   private lazy var enableOSC: Bool = Preference.bool(for: .enableOSC)
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
@@ -445,8 +445,8 @@ class MainWindowController: PlayerWindowController {
     .titleBarStyle,
     .enableOSC,
     .oscPosition,
-    .topPanelPlacementType,
-    .bottomPanelPlacementType,
+    .topPanelPlacement,
+    .bottomPanelPlacement,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -459,8 +459,8 @@ class MainWindowController: PlayerWindowController {
     .displayTimeAndBatteryInFullScreen,
     .controlBarToolbarButtons,
     .alwaysShowOnTopIcon,
-    .leftSidebarPlacementType,
-    .rightSidebarPlacementType,
+    .leftSidebarPlacement,
+    .rightSidebarPlacement,
     .settingsTabGroupLocation,
     .playlistTabGroupLocation,
   ]
@@ -477,8 +477,8 @@ class MainWindowController: PlayerWindowController {
       case PK.enableOSC.rawValue,
         PK.oscPosition.rawValue,
         PK.titleBarStyle.rawValue,
-        PK.topPanelPlacementType.rawValue,
-        PK.bottomPanelPlacementType.rawValue:
+        PK.topPanelPlacement.rawValue,
+        PK.bottomPanelPlacement.rawValue:
       setupTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -540,10 +540,10 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
-    case PK.leftSidebarPlacementType.rawValue:
+    case PK.leftSidebarPlacement.rawValue:
       // TODO
       break
-    case PK.rightSidebarPlacementType.rawValue:
+    case PK.rightSidebarPlacement.rawValue:
       // TODO
       break
     case PK.settingsTabGroupLocation.rawValue:
@@ -720,8 +720,8 @@ class MainWindowController: PlayerWindowController {
     self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
 
-    leftSidebar.placement = Preference.enum(for: .leftSidebarPlacementType)
-    rightSidebar.placement = Preference.enum(for: .rightSidebarPlacementType)
+    leftSidebar.placement = Preference.enum(for: .leftSidebarPlacement)
+    rightSidebar.placement = Preference.enum(for: .rightSidebarPlacement)
 
     let settingsSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
     setSidebar(locationID: settingsSidebarLocation, forTabGroup: .settings)
@@ -1050,8 +1050,8 @@ class MainWindowController: PlayerWindowController {
     let oscPositionNew: Preference.OSCPosition = Preference.enum(for: .oscPosition)
 //    let oscEnabledNew = Preference.bool(for: .enableOSC)
     titleBarStyle = Preference.enum(for: .titleBarStyle)
-    topPanelPlacement = Preference.enum(for: .topPanelPlacementType)
-    bottomPanelPlacement = Preference.enum(for: .topPanelPlacementType)
+    topPanelPlacement = Preference.enum(for: .topPanelPlacement)
+    bottomPanelPlacement = Preference.enum(for: .topPanelPlacement)
 
     updateTopPanelPosition()
 
@@ -1197,7 +1197,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func changeTitleBarVisibility(to visible: Bool, animate: Bool = true) {
-    let topPanelIsOutside = topPanelPlacement == Preference.PanelPlacementType.outsideVideo
+    let topPanelIsOutside = topPanelPlacement == Preference.PanelPlacement.outsideVideo
     if visible {
       guard !fsState.isFullscreen else { return }
     } else {

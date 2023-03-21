@@ -656,7 +656,7 @@
                                     </menu>
                                 </popUpButtonCell>
                                 <connections>
-                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topPanelPlacementType" id="9yo-1M-9oW"/>
+                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topPanelPlacement" id="9yo-1M-9oW"/>
                                 </connections>
                             </popUpButton>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
@@ -775,7 +775,7 @@
                         </menu>
                     </popUpButtonCell>
                     <connections>
-                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.bottomPanelPlacementType" id="1u6-LI-VnF"/>
+                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.bottomPanelPlacement" id="1u6-LI-VnF"/>
                         <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.enableOSC" id="g6q-jP-rIy"/>
                         <binding destination="lH7-Vv-0M1" name="enabled2" keyPath="values.oscPosition" previousBinding="g6q-jP-rIy" id="y5q-5W-HrE">
                             <dictionary key="options">
@@ -1157,7 +1157,7 @@
                         </menu>
                     </popUpButtonCell>
                     <connections>
-                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.leftSidebarPlacementType" id="7rN-XY-d7O"/>
+                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.leftSidebarPlacement" id="7rN-XY-d7O"/>
                     </connections>
                 </popUpButton>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6mM-VC-jd0" userLabel="Right sidebar placement:">
@@ -1181,7 +1181,7 @@
                         </menu>
                     </popUpButtonCell>
                     <connections>
-                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.rightSidebarPlacementType" id="17T-LE-Lf5"/>
+                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.rightSidebarPlacement" id="17T-LE-Lf5"/>
                     </connections>
                 </popUpButton>
             </subviews>
