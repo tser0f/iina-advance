@@ -317,10 +317,10 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
   // MARK: - Searching
 
   @IBAction func searchFieldAction(_ sender: NSSearchField) {
+    // avoid reload if no change:
+    guard searchString != sender.stringValue else { return }
     self.searchString = sender.stringValue
-    if Preference.UIState.isSaveEnabled {
-      Preference.set(sender.stringValue, for: .uiHistoryTableSearchString)
-    }
+    Preference.UIState.set(sender.stringValue, for: .uiHistoryTableSearchString)
     reloadData()
   }
 
@@ -392,11 +392,8 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     // avoid reload if no change:
     guard searchType != newValue else { return }
     searchType = newValue
-    if Preference.UIState.isSaveEnabled {
-      Preference.set(newValue.rawValue, for: .uiHistoryTableSearchType)
-    } else {
-      reloadData()
-    }
+    Preference.UIState.set(newValue.rawValue, for: .uiHistoryTableSearchType)
+    reloadData()
   }
 }
 

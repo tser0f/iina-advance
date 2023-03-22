@@ -358,10 +358,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
     // Query for the list of open windows and save it.
     // Don't do this too soon, or their orderIndexes may not yet be up to date.
-    if Preference.UIState.isSaveEnabled {
-      DispatchQueue.main.async {
-        Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
-      }
+    DispatchQueue.main.async {
+      Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
     }
   }
 
@@ -490,13 +488,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     guard !isTerminating else { return }
 
-    if Preference.UIState.isSaveEnabled {
-      /// Query for the list of open windows and save it (excluding the window which is about to close).
-      /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
-      /// the user closes a window which is not in the foreground.
-      let openWindowNamesNew = self.getCurrentOpenWindowNames(excludingWindowName: window.frameAutosaveName)
-      Preference.UIState.saveOpenWindowList(windowNamesBackToFront: openWindowNamesNew)
-    }
+    /// Query for the list of open windows and save it (excluding the window which is about to close).
+    /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
+    /// the user closes a window which is not in the foreground.
+    let openWindowNamesNew = self.getCurrentOpenWindowNames(excludingWindowName: window.frameAutosaveName)
+    Preference.UIState.saveOpenWindowList(windowNamesBackToFront: openWindowNamesNew)
 
     // Check whether this is the last player closed; show welcome or history window if configured.
     // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.

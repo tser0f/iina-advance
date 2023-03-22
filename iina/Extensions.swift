@@ -844,7 +844,6 @@ extension NSScrollView {
   func addVerticalScrollObserver(key: Preference.Key) -> NSObjectProtocol {
     let observer = NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification,
                                                           object: self.contentView, queue: .main) { note in
-      guard Preference.UIState.isSaveEnabled else { return }
       if let clipView = note.object as? NSClipView {
         let scrollOffsetY = clipView.bounds.origin.y
 //        Logger.log("Saving Y scroll offset \(key.rawValue.quoted): \(scrollOffsetY)", level: .verbose)
