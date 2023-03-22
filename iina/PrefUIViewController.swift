@@ -17,6 +17,8 @@ fileprivate let SideRightTag = 1
 fileprivate let SideTopTag = 0
 fileprivate let SideBottomTag = 1
 
+fileprivate let uiAnimationDuration: CGFloat = 0.25
+
 @objcMembers
 class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable {
 
@@ -55,7 +57,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     
   @IBOutlet weak var themeMenu: NSMenu!
   @IBOutlet weak var windowPreviewImageView: NSImageView!
-  @IBOutlet weak var oscPositionPopupButton: NSPopUpButton!
+  @IBOutlet weak var oscBottomPlacementContainerView: NSView!
+  @IBOutlet weak var oscSnapToCenterCheckbox: NSButton!
   @IBOutlet weak var oscToolbarStackView: NSStackView!
   @IBOutlet weak var oscAutoHideTimeoutTextField: NSTextField!
   @IBOutlet weak var hideOverlaysOutsideWindowCheckBox: NSButton!
@@ -160,8 +163,19 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
                                          (ib.oscPosition == .top && ib.topPanelPlacement == .insideVideo) ||
                                          (ib.oscPosition == .bottom && ib.bottomPanelPlacement == .insideVideo))
     let hasOverlay = titleBarIsOverlay || oscIsOverlay
+
     oscAutoHideTimeoutTextField.isEnabled = hasOverlay
     hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
+
+    // Use animation where possible to make the transition less jarring. Looks like it will defaiult to "fade"
+    NSAnimationContext.runAnimationGroup({context in
+      context.duration = AccessibilityPreferences.adjustedDuration(uiAnimationDuration)
+      context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
+      let oscIsFloating = ib.oscEnabled && ib.oscPosition == .floating
+      oscSnapToCenterCheckbox.isHidden = !oscIsFloating
+      let oscIsBottom = ib.oscEnabled && ib.oscPosition == .bottom
+      oscBottomPlacementContainerView.isHidden = !oscIsBottom
+    })
   }
 
   @IBAction func updateGeometryValue(_ sender: AnyObject) {
