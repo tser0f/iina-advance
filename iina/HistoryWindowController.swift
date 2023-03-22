@@ -25,7 +25,7 @@ fileprivate extension NSUserInterfaceItemIdentifier {
 
 fileprivate let timeColMinWidths: [Preference.HistoryGroupBy: CGFloat] = [
   .lastPlayedDay: 60,
-  .parentFolder: 130
+  .parentFolder: 145
 ]
 
 class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutlineViewDataSource, NSMenuDelegate, NSMenuItemValidation {
@@ -298,9 +298,6 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
           progressView.textField?.stringValue = ""
           progressView.indicator.isHidden = true
         }
-      } else if identifier == .time {
-        let timeString = getTimeString(from: entry)
-        setMonospacedText(cell, timeString)
       }
       return cell
     } else {
@@ -315,22 +312,6 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     } else {
       return DateFormatter.localizedString(from: entry.addedDate, dateStyle: .short, timeStyle: .short)
     }
-  }
-
-  private func setMonospacedText(_ cell: NSTableCellView, _ stringValue: String) {
-    guard let textField = cell.textField else { return }
-
-    let font: NSFont
-    if #available(macOS 10.15, *) {
-      font = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-    } else if let fixedPitchFont = NSFont.userFixedPitchFont(ofSize: NSFont.systemFontSize) {
-      font = fixedPitchFont
-    } else {
-      return
-    }
-    let attrString = NSMutableAttributedString(string: stringValue)
-    attrString.addAttrib(.font, font)
-    textField.attributedStringValue = attrString
   }
 
   // MARK: - Searching
