@@ -96,10 +96,6 @@ class MainWindowController: PlayerWindowController {
   /** Scale of spacing around & between playback buttons (for top / bottom OSCs) */
   let playbackButtonMarginForFullWidthOSC: CGFloat = 6
 
-  /** Adjust vertical offset of sidebars so that when a sidebar is open while "top" OSC is shown,
-   the horizontal line under the sidebar tab buttons aligns with bottom of the OSC. */
-  lazy var sidebarSeparatorOffsetFromTop: CGFloat = fullWidthOSCPreferredHeight + reducedTitleBarHeight
-
   // MARK: - Objects, Views
 
   override var videoView: VideoView {
@@ -1105,6 +1101,8 @@ class MainWindowController: PlayerWindowController {
       topOSCPreferredHeightConstraint.constant = 0
       bottomOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
     }
+    quickSettingView.refreshVerticalConstraints()
+    playlistView.refreshVerticalConstraints()
 
     if isSwitchingFromTop {
       if isInFullScreen {
@@ -3700,5 +3698,36 @@ extension MainWindowController: PIPViewControllerDelegate {
 }
 
 protocol SidebarTabGroupViewController {
-  var downShift: CGFloat { get set }
+  var mainWindow: MainWindowController! { get }
+  func getTopOfTabsConstraint() -> NSLayoutConstraint?
+  func getHeightOfTabsConstraint() -> NSLayoutConstraint?
+
+  var customTabHeight: CGFloat? { get }
+
+  // Implementing classes should call this, but do not need to define it (see below)
+  func refreshVerticalConstraints()
+}
+
+extension SidebarTabGroupViewController {
+
+  var customTabHeight: CGFloat? { return nil }
+
+  func refreshVerticalConstraints() {
+    let downshift: CGFloat
+    var tabHeight: CGFloat = mainWindow.fullWidthOSCPreferredHeight
+
+    if mainWindow.fsState.isFullscreen || Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+      downshift = 0
+    } else {
+      downshift = mainWindow.reducedTitleBarHeight
+    }
+
+    // this overrides all others
+    if let customTabHeight = customTabHeight {
+      tabHeight = customTabHeight
+    }
+
+    getTopOfTabsConstraint()?.constant = downshift
+    getHeightOfTabsConstraint()?.constant = tabHeight
+  }
 }

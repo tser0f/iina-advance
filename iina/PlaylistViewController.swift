@@ -22,10 +22,11 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     return NSNib.Name("PlaylistViewController")
   }
 
-  var downShift: CGFloat = 0 {
-    didSet {
-      buttonTopConstraint.constant = downShift
-    }
+  func getTopOfTabsConstraint() -> NSLayoutConstraint? {
+    return self.buttonTopConstraint
+  }
+  func getHeightOfTabsConstraint() -> NSLayoutConstraint? {
+    return self.tabHeightConstraint
   }
 
   weak var mainWindow: MainWindowController! {
@@ -98,13 +99,12 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   var useCompactTabHeight = false {
     didSet {
-      updateTabHeightAndDownshift()
+      refreshVerticalConstraints()
     }
   }
 
-  private func updateTabHeightAndDownshift() {
-    tabHeightConstraint.constant = useCompactTabHeight ? 32 : 48
-    buttonTopConstraint.constant = mainWindow.sidebarSeparatorOffsetFromTop - tabHeightConstraint.constant
+  var customTabHeight: CGFloat? {
+    return useCompactTabHeight ? 32 : nil
   }
 
   override func viewDidLoad() {
@@ -128,6 +128,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     removeBtn.toolTip = NSLocalizedString("mini_player.remove", comment: "remove")
 
     hideTotalLength()
+    refreshVerticalConstraints()
 
     // colors
     if #available(macOS 10.14, *) {

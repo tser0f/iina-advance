@@ -15,17 +15,12 @@ fileprivate extension NSColor {
 }
 
 class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, SidebarTabGroupViewController {
+
   override var nibName: NSNib.Name {
     return NSNib.Name("QuickSettingViewController")
   }
 
   let sliderSteps = 24.0
-
-  var downShift: CGFloat = 0 {
-    didSet {
-      buttonTopConstraint.constant = downShift
-    }
-  }
 
   enum TabViewType: Equatable {
     case video
@@ -187,6 +182,14 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     }
   }
 
+  func getTopOfTabsConstraint() -> NSLayoutConstraint? {
+    return self.buttonTopConstraint
+  }
+
+  func getHeightOfTabsConstraint() -> NSLayoutConstraint? {
+    return self.tabHeightConstraint
+  }
+
   override func viewDidLoad() {
     super.viewDidLoad()
 
@@ -196,7 +199,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       view.superview?.superview?.layer?.cornerRadius = 4
     }
 
-    buttonTopConstraint.constant = mainWindow.sidebarSeparatorOffsetFromTop - tabHeightConstraint.constant
+    refreshVerticalConstraints()
 
     // colors
     if #available(macOS 10.14, *) {
