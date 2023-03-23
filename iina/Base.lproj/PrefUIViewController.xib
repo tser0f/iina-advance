@@ -1181,7 +1181,7 @@
                         </menu>
                     </popUpButtonCell>
                     <connections>
-                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.leftSidebarPlacement" id="7rN-XY-d7O"/>
+                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.leadingSidebarPlacement" id="gV3-hE-F8u"/>
                     </connections>
                 </popUpButton>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6mM-VC-jd0" userLabel="Right sidebar placement:">
@@ -1205,7 +1205,7 @@
                         </menu>
                     </popUpButtonCell>
                     <connections>
-                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.rightSidebarPlacement" id="17T-LE-Lf5"/>
+                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.trailingSidebarPlacement" id="gCA-1k-OuQ"/>
                     </connections>
                 </popUpButton>
             </subviews>

@@ -140,6 +140,8 @@ struct Preference {
     static let trailingSidebarPlacement = Key("trailingSidebarPlacement")
     static let showLeadingSidebarToggleButton = Key("showLeadingSidebarToggleButton")
     static let showTrailingSidebarToggleButton = Key("showTrailingSidebarToggleButton")
+    static let hideLeadingSidebarOnClick = Key("hideLeadingSidebarOnClick")
+    static let hideTrailingSidebarOnClick = Key("hideTrailingSidebarOnClick")
     /// `Settings` tab group
     static let settingsTabGroupLocation = Key("settingsTabGroupLocation")
     /// `Playlist` tab group
@@ -875,6 +877,8 @@ struct Preference {
     .trailingSidebarPlacement: PanelPlacement.insideVideo.rawValue,
     .showLeadingSidebarToggleButton: false,
     .showTrailingSidebarToggleButton: false,
+    .hideLeadingSidebarOnClick: true,
+    .hideTrailingSidebarOnClick: true,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
@@ -1244,7 +1248,7 @@ struct Preference {
 
     static func saveOpenWindowList(windowNamesBackToFront: [String]) {
       guard isSaveEnabled else { return }
-      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
+      // Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
       let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")
       Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
     }

@@ -757,15 +757,6 @@ class MainWindowController: PlayerWindowController {
     super.init(playerCore: playerCore)
     self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
-
-    leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
-    trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
-
-    let settingsSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
-    setSidebar(locationID: settingsSidebarLocation, forTabGroup: .settings)
-
-    let playlistSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .playlistTabGroupLocation)
-    setSidebar(locationID: playlistSidebarLocation, forTabGroup: .playlist)
   }
 
   required init?(coder: NSCoder) {
@@ -787,6 +778,19 @@ class MainWindowController: PlayerWindowController {
 
     // TODO: why?
     topPanelView.layerContentsRedrawPolicy = .onSetNeedsDisplay
+
+    // Sidebars
+    leadingSidebarView.isHidden = true
+    trailingSidebarView.isHidden = true
+
+    leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
+    trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
+
+    let settingsSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
+    setSidebar(locationID: settingsSidebarLocation, forTabGroup: .settings)
+
+    let playlistSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .playlistTabGroupLocation)
+    setSidebar(locationID: playlistSidebarLocation, forTabGroup: .playlist)
 
     // Titlebar accessories
 
@@ -821,10 +825,6 @@ class MainWindowController: PlayerWindowController {
 
     updateVideoAspectRatioConstraint(w: AppData.sizeWhenNoVideo.width, h: AppData.sizeWhenNoVideo.height)
     window.aspectRatio = AppData.sizeWhenNoVideo
-
-    // sidebar views
-    leadingSidebarView.isHidden = true
-    trailingSidebarView.isHidden = true
 
     // osc views
     fragControlView.addView(fragControlViewLeftView, in: .center)
@@ -1417,8 +1417,19 @@ class MainWindowController: PlayerWindowController {
       // Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
       // but we will only count it as a drag if `isDragging==true`
       if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView]) {
-        hideSidebars()
-        return
+        var registeredClick = false
+        if let visibleTab = leadingSidebar.visibleTab, Preference.bool(for: .hideLeadingSidebarOnClick) {
+          changeVisibility(forTab: visibleTab, to: false)
+          registeredClick = true
+        }
+
+        if let visibleTab = trailingSidebar.visibleTab, Preference.bool(for: .hideTrailingSidebarOnClick) {
+          changeVisibility(forTab: visibleTab, to: false)
+          registeredClick = true
+        }
+        if registeredClick {
+          return
+        }
       }
 
       if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarView]) {
@@ -2468,7 +2479,7 @@ class MainWindowController: PlayerWindowController {
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
   private func updateLeadingTitleBarAccessory() {
-    leadingSidebarToggleButton.isHidden = !Preference.bool(for: .showLeadingSidebarToggleButton)
+    leadingSidebarToggleButton.isHidden = !(Preference.bool(for: .showLeadingSidebarToggleButton) && !leadingSidebar.tabGroups.isEmpty)
 
     let expandedSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
     let width: CGFloat
@@ -2479,14 +2490,13 @@ class MainWindowController: PlayerWindowController {
     } else {
       width = 0
     }
-    Logger.log("Setting left title bar spacer to: \(width)", level: .verbose)
     leadingTitleBarTrailingSpaceConstraint.constant = width
   }
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar
   private func updateTrailingTitleBarAccessory() {
-    trailingSidebarToggleButton.isHidden = !Preference.bool(for: .showTrailingSidebarToggleButton)
+    trailingSidebarToggleButton.isHidden = !(Preference.bool(for: .showTrailingSidebarToggleButton) && !trailingSidebar.tabGroups.isEmpty)
 
     pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
     pinToTopButton.state = isOntop ? .on : .off
@@ -2500,7 +2510,6 @@ class MainWindowController: PlayerWindowController {
     } else {
       width = 0
     }
-    Logger.log("Setting right title bar spacer to: \(width)", level: .verbose)
     trailingTitleBarLeadingSpaceConstraint.constant = width
   }
 
@@ -2675,7 +2684,7 @@ class MainWindowController: PlayerWindowController {
     changeVisibility(forTab: tab, to: true)
   }
 
-  // hides both sidebars (if visible)
+  // Hides any visible sidebars
   func hideSidebars(animate: Bool = true, then: (() -> Void)? = nil) {
     Logger.log("Hiding all sidebars", level: .verbose)
     // Need to make sure that completionHandler (1) runs at all, and (2) runs after animations
@@ -2825,6 +2834,10 @@ class MainWindowController: PlayerWindowController {
     }
     addingToSidebar.tabGroups.insert(tabGroup)
     removingFromSidebar.tabGroups.remove(tabGroup)
+
+    // Sidebar buttons may have changed:
+    updateLeadingTitleBarAccessory()
+    updateTrailingTitleBarAccessory()
   }
 
   private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
