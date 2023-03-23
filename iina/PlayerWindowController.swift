@@ -533,7 +533,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     playButton.state = state
   }
 
-  /** This method will not set `isOntop`! */
   func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
     guard let window = window else { return }
     window.level = onTop ? .iinaFloating : .normal

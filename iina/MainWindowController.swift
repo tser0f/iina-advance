@@ -141,7 +141,7 @@ class MainWindowController: PlayerWindowController {
 
   override var isOntop: Bool {
     didSet {
-      updateOnTopIcon()
+      updateTrailingTitleBarAccessory()
     }
   }
 
@@ -387,7 +387,13 @@ class MainWindowController: PlayerWindowController {
     var animationState: UIAnimationState = .hidden
 
     // nil means none/hidden:
-    var visibleTab: SidebarTab? = nil
+    var visibleTab: SidebarTab? = nil {
+      didSet {
+        if visibleTab != nil {
+          lastVisibleTab = visibleTab
+        }
+      }
+    }
 
     var visibleTabGroup: SidebarTabGroup? {
       return visibleTab?.group
@@ -396,11 +402,35 @@ class MainWindowController: PlayerWindowController {
     var isVisible: Bool {
       return visibleTab != nil
     }
+
+    private var lastVisibleTab: SidebarTab? = nil
+
+    var defaultTabToShow: SidebarTab? {
+      // Use last visible tab if still valid:
+      if let lastVisibleTab = lastVisibleTab, tabGroups.contains(lastVisibleTab.group) {
+        Logger.log("Returning last visible tab for \(locationID): \(lastVisibleTab.name.quoted)", level: .verbose)
+        return lastVisibleTab
+      }
+
+      // Fall back to default for whatever tab group found:
+      if let group = tabGroups.first {
+        switch group {
+          case .playlist:
+            return SidebarTab.playlist
+          case .settings:
+            return SidebarTab.video
+        }
+      }
+
+      // If sidebar has no tab groups, can't show anything:
+      Logger.log("No tab groups found for \(locationID), returning nil!", level: .warning)
+      return nil
+    }
   }
 
-  private var leftSidebar = Sidebar(.leftSidebar)
-  private var rightSidebar = Sidebar(.rightSidebar)
-  private lazy var sidebarsByID: [Preference.SidebarLocation: Sidebar] = [ leftSidebar.locationID: self.leftSidebar, rightSidebar.locationID: self.rightSidebar]
+  private var leadingSidebar = Sidebar(.leadingSidebar)
+  private var trailingSidebar = Sidebar(.trailingSidebar)
+  private lazy var sidebarsByID: [Preference.SidebarLocation: Sidebar] = [ leadingSidebar.locationID: self.leadingSidebar, trailingSidebar.locationID: self.trailingSidebar]
 
   enum PIPStatus {
     case notInPIP
@@ -455,10 +485,12 @@ class MainWindowController: PlayerWindowController {
     .displayTimeAndBatteryInFullScreen,
     .controlBarToolbarButtons,
     .alwaysShowOnTopIcon,
-    .leftSidebarPlacement,
-    .rightSidebarPlacement,
+    .leadingSidebarPlacement,
+    .trailingSidebarPlacement,
     .settingsTabGroupLocation,
     .playlistTabGroupLocation,
+    .showLeadingSidebarToggleButton,
+    .showTrailingSidebarToggleButton
   ]
 
   override var observedPrefKeys: [Preference.Key] {
@@ -474,7 +506,10 @@ class MainWindowController: PlayerWindowController {
         PK.oscPosition.rawValue,
         PK.titleBarStyle.rawValue,
         PK.topPanelPlacement.rawValue,
-        PK.bottomPanelPlacement.rawValue:
+        PK.bottomPanelPlacement.rawValue,
+        PK.showLeadingSidebarToggleButton.rawValue,
+        PK.showTrailingSidebarToggleButton.rawValue:
+
       setupTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -535,11 +570,11 @@ class MainWindowController: PlayerWindowController {
         setupOSCToolbarButtons(newValue.compactMap(Preference.ToolBarButton.init(rawValue:)))
       }
     case PK.alwaysShowOnTopIcon.rawValue:
-      updateOnTopIcon()
-    case PK.leftSidebarPlacement.rawValue:
+      updateTrailingTitleBarAccessory()
+    case PK.leadingSidebarPlacement.rawValue:
       // TODO
       break
-    case PK.rightSidebarPlacement.rawValue:
+    case PK.trailingSidebarPlacement.rawValue:
       // TODO
       break
     case PK.settingsTabGroupLocation.rawValue:
@@ -557,7 +592,7 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Outlets
 
-  var standardWindowButtons: [NSButton] {
+  private var standardWindowButtons: [NSButton] {
     get {
       return ([.closeButton, .miniaturizeButton, .zoomButton, .documentIconButton] as [NSWindow.ButtonType]).compactMap {
         window?.standardWindowButton($0)
@@ -565,28 +600,31 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  var trafficLightButtonsWidth: CGFloat = 0.0
+  private var trafficLightButtonsWidth: CGFloat = 0.0
 
   /** Get the `NSTextField` of widow's title. */
-  var titleTextField: NSTextField? {
+  private var titleTextField: NSTextField? {
     get {
       return window?.standardWindowButton(.closeButton)?.superview?.subviews.compactMap({ $0 as? NSTextField }).first
     }
   }
 
-  var leftTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
-  var rightTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
-  @IBOutlet var leftTitleBarAccessoryView: NSView!
-  @IBOutlet var rightTitleBarAccessoryView: NSView!
+  private var leadingTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
+  private var trailingTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
+  @IBOutlet var leadingTitleBarAccessoryView: NSView!
+  @IBOutlet var trailingTitleBarAccessoryView: NSView!
 
   /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
-  var currentControlBar: NSView?
+  private var currentControlBar: NSView?
 
-  // Spacer in left title bar accessory view:
-  @IBOutlet weak var leftTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
+  // Spacers in left title bar accessory view:
+  @IBOutlet weak var leadingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var leadingTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
+
   // Spacers in right title bar accessory view:
-  @IBOutlet weak var rightTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
-  @IBOutlet weak var rightTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var trailingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var trailingTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
+
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var topPanelLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
@@ -607,10 +645,11 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var additionalInfoToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var additionalInfoTrailingConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var leftSidebarLeadingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var rightSidebarTrailingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var leftSidebarWidthConstraint: NSLayoutConstraint!
-  @IBOutlet weak var rightSidebarWidthConstraint: NSLayoutConstraint!
+  @IBOutlet weak var leadingSidebarLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var leadingSidebarWidthConstraint: NSLayoutConstraint!
+  @IBOutlet weak var trailingSidebarTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var trailingSidebarWidthConstraint: NSLayoutConstraint!
+
   @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
@@ -626,6 +665,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var topPanelBottomBorder: NSBox!
   /** Reserves space for the title bar components. Does not contain any child views. */
   @IBOutlet weak var titleBarView: NSView!
+  @IBOutlet weak var leadingSidebarToggleButton: NSButton!
+  @IBOutlet weak var trailingSidebarToggleButton: NSButton!
   /** "Pin to Top" button in title bar, if configured to  be shown */
   @IBOutlet weak var pinToTopButton: NSButton!
 
@@ -637,8 +678,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var rightArrowButton: NSButton!
   @IBOutlet weak var settingsButton: NSButton!
   @IBOutlet weak var playlistButton: NSButton!
-  @IBOutlet weak var leftSidebarView: NSVisualEffectView!
-  @IBOutlet weak var rightSidebarView: NSVisualEffectView!
+  @IBOutlet weak var leadingSidebarView: NSVisualEffectView!
+  @IBOutlet weak var trailingSidebarView: NSVisualEffectView!
   @IBOutlet weak var bottomView: NSView!
   @IBOutlet weak var bufferIndicatorView: NSVisualEffectView!
   @IBOutlet weak var bufferProgressLabel: NSTextField!
@@ -691,7 +732,7 @@ class MainWindowController: PlayerWindowController {
   var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
-  override var mouseActionDisabledViews: [NSView?] {[leftSidebarView, rightSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
+  override var mouseActionDisabledViews: [NSView?] {[leadingSidebarView, trailingSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
 
   // MARK: - PIP
 
@@ -717,8 +758,8 @@ class MainWindowController: PlayerWindowController {
     self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
 
-    leftSidebar.placement = Preference.enum(for: .leftSidebarPlacement)
-    rightSidebar.placement = Preference.enum(for: .rightSidebarPlacement)
+    leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
+    trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
 
     let settingsSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
     setSidebar(locationID: settingsSidebarLocation, forTabGroup: .settings)
@@ -751,21 +792,25 @@ class MainWindowController: PlayerWindowController {
 
     trafficLightButtonsWidth = calculateWidthOfTrafficLightButtons()
 
-    leftTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
-    leftTitlebarAccesoryViewController.view = leftTitleBarAccessoryView
-    leftTitlebarAccesoryViewController.layoutAttribute = .left
-    window.addTitlebarAccessoryViewController(leftTitlebarAccesoryViewController)
-    leftTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
+    leadingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
+    leadingTitlebarAccesoryViewController.view = leadingTitleBarAccessoryView
+    leadingTitlebarAccesoryViewController.layoutAttribute = .leading
+    window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
+    leadingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
 
-    rightTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
-    rightTitlebarAccesoryViewController.view = rightTitleBarAccessoryView
-    rightTitlebarAccesoryViewController.layoutAttribute = .right
-    window.addTitlebarAccessoryViewController(rightTitlebarAccesoryViewController)
-    rightTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
-    let buttonSizeConstraint = pinToTopButton.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight)
-    buttonSizeConstraint.isActive = true
-    pinToTopButton.addConstraint(buttonSizeConstraint)
-    updateOnTopIcon()
+    trailingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
+    trailingTitlebarAccesoryViewController.view = trailingTitleBarAccessoryView
+    trailingTitlebarAccesoryViewController.layoutAttribute = .trailing
+    window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+    trailingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
+
+    // Now that we know the height of the title bar, we can set these:
+    for titleBarButton in [leadingSidebarToggleButton, trailingSidebarToggleButton, pinToTopButton] {
+      guard let titleBarButton = titleBarButton else { continue }
+      let buttonSizeConstraint = titleBarButton.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight)
+      buttonSizeConstraint.isActive = true
+      titleBarButton.addConstraint(buttonSizeConstraint)
+    }
 
     // FIXME: do not do this here
     // size
@@ -778,8 +823,8 @@ class MainWindowController: PlayerWindowController {
     window.aspectRatio = AppData.sizeWhenNoVideo
 
     // sidebar views
-    leftSidebarView.isHidden = true
-    rightSidebarView.isHidden = true
+    leadingSidebarView.isHidden = true
+    trailingSidebarView.isHidden = true
 
     // osc views
     fragControlView.addView(fragControlViewLeftView, in: .center)
@@ -837,7 +882,7 @@ class MainWindowController: PlayerWindowController {
     cachedScreenCount = NSScreen.screens.count
     // Do not make visual effects views opaque when window is not in focus
     for view in [topPanelView, osdVisualEffectView, controlBarBottom, controlBarFloating,
-                 leftSidebarView, rightSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
+                 leadingSidebarView, trailingSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
       view?.state = .active
     }
     // hide other views
@@ -936,11 +981,11 @@ class MainWindowController: PlayerWindowController {
         topPanelView.blendingMode = .withinWindow
 
         // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
-        topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leftSidebarView.trailingAnchor, constant: 0)
-        topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: rightSidebarView.leadingAnchor, constant: 0)
+        topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+        topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
       }
-      updateLeftTitleBarSpacer()
-      updateRightTitleBarSpacer()
+      updateLeadingTitleBarAccessory()
+      updateTrailingTitleBarAccessory()
       videoContainerTopConstraint.isActive = true
       topPanelLeadingSpaceConstraint.animator().isActive = true
       topPanelTrailingSpaceConstraint.animator().isActive = true
@@ -998,7 +1043,7 @@ class MainWindowController: PlayerWindowController {
       view?.appearance = appearance
     }
 
-    for sidebar in [leftSidebarView, rightSidebarView] {
+    for sidebar in [leadingSidebarView, trailingSidebarView] {
       sidebar?.material = .dark
       sidebar?.appearance = NSAppearance(named: .vibrantDark)
     }
@@ -1048,7 +1093,7 @@ class MainWindowController: PlayerWindowController {
 //    let oscEnabledNew = Preference.bool(for: .enableOSC)
     titleBarStyle = Preference.enum(for: .titleBarStyle)
     topPanelPlacement = Preference.enum(for: .topPanelPlacement)
-    bottomPanelPlacement = Preference.enum(for: .topPanelPlacement)
+    bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
 
     updateTopPanelPosition()
 
@@ -1182,6 +1227,9 @@ class MainWindowController: PlayerWindowController {
         oscFloatingLeadingTrailingConstraint = nil
       }
     }
+
+    updateLeadingTitleBarAccessory()
+    updateTrailingTitleBarAccessory()
   }
 
   private func hideTitleBar() {
@@ -1204,7 +1252,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     let newAlpha: CGFloat = visible ? 1 : 0
-    for view in standardWindowButtons + [titleTextField, rightTitleBarAccessoryView] {
+    for view in standardWindowButtons + [titleTextField, leadingTitleBarAccessoryView, trailingTitleBarAccessoryView] {
       if animate {
         view?.animator().alphaValue = newAlpha
       } else {
@@ -1258,10 +1306,10 @@ class MainWindowController: PlayerWindowController {
     // record current mouse pos
     mousePosRelatedToWindow = event.locationInWindow
     // playlist resizing
-    if leftSidebar.visibleTab == .playlist {
-      let sf = leftSidebarView.frame
+    if leadingSidebar.visibleTab == .playlist {
+      let sf = leadingSidebarView.frame
       let dragRectCenterX: CGFloat
-      switch leftSidebar.placement {
+      switch leadingSidebar.placement {
         case .insideVideo:
           dragRectCenterX = sf.origin.x + sf.width
         case .outsideVideo:
@@ -1273,10 +1321,10 @@ class MainWindowController: PlayerWindowController {
         Logger.log("User started resize of left sidebar", level: .verbose)
         isResizingLeftSidebar = true
       }
-    } else if rightSidebar.visibleTab == .playlist {
-      let sf = rightSidebarView.frame
+    } else if trailingSidebar.visibleTab == .playlist {
+      let sf = trailingSidebarView.frame
       let dragRectCenterX: CGFloat
-      switch leftSidebar.placement {
+      switch leadingSidebar.placement {
         case .insideVideo:
           dragRectCenterX = sf.origin.x
         case .outsideVideo:
@@ -1295,28 +1343,28 @@ class MainWindowController: PlayerWindowController {
     if isResizingLeftSidebar {
       let currentLocation = event.locationInWindow
       let newWidth: CGFloat
-      switch leftSidebar.placement {
+      switch leadingSidebar.placement {
         case .insideVideo:
           newWidth = currentLocation.x + 2
         case .outsideVideo:
-          newWidth = leftSidebarView.frame.width + currentLocation.x + 2
+          newWidth = leadingSidebarView.frame.width + currentLocation.x + 2
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      leftSidebarWidthConstraint.constant = newPlaylistWidth
-      updateLeftTitleBarSpacer()
+      leadingSidebarWidthConstraint.constant = newPlaylistWidth
+      updateLeadingTitleBarAccessory()
     } else if isResizingRightSidebar {
       let currentLocation = event.locationInWindow
       // resize sidebar
       let newWidth: CGFloat
-      switch rightSidebar.placement {
+      switch trailingSidebar.placement {
         case .insideVideo:
           newWidth = window!.frame.width - currentLocation.x - 2
         case .outsideVideo:
-          newWidth = window!.frame.width - currentLocation.x + rightSidebarView.frame.width - 2
+          newWidth = window!.frame.width - currentLocation.x + trailingSidebarView.frame.width - 2
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      rightSidebarWidthConstraint.constant = newPlaylistWidth
-      updateRightTitleBarSpacer()
+      trailingSidebarWidthConstraint.constant = newPlaylistWidth
+      updateTrailingTitleBarAccessory()
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -1356,19 +1404,19 @@ class MainWindowController: PlayerWindowController {
     } else if isResizingLeftSidebar {
       // if it's a mouseup after resizing sidebar
       isResizingLeftSidebar = false
-      Logger.log("New width of left sidebar playlist is \(leftSidebarWidthConstraint.constant)", level: .verbose)
-      Preference.set(Int(leftSidebarWidthConstraint.constant), for: .playlistWidth)
+      Logger.log("New width of left sidebar playlist is \(leadingSidebarWidthConstraint.constant)", level: .verbose)
+      Preference.set(Int(leadingSidebarWidthConstraint.constant), for: .playlistWidth)
     } else if isResizingRightSidebar {
       // if it's a mouseup after resizing sidebar
       isResizingRightSidebar = false
-      Logger.log("New width of right sidebar playlist is \(rightSidebarWidthConstraint.constant)", level: .verbose)
-      Preference.set(Int(rightSidebarWidthConstraint.constant), for: .playlistWidth)
+      Logger.log("New width of right sidebar playlist is \(trailingSidebarWidthConstraint.constant)", level: .verbose)
+      Preference.set(Int(trailingSidebarWidthConstraint.constant), for: .playlistWidth)
     } else {
       // if it's a mouseup after clicking
 
       // Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
       // but we will only count it as a drag if `isDragging==true`
-      if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leftSidebarView, rightSidebarView, subPopoverView]) {
+      if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView]) {
         hideSidebars()
         return
       }
@@ -1430,7 +1478,7 @@ class MainWindowController: PlayerWindowController {
 
   override func scrollWheel(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
-    guard !isMouseEvent(event, inAnyOf: [leftSidebarView, rightSidebarView, titleBarView, subPopoverView]) else { return }
+    guard !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, titleBarView, subPopoverView]) else { return }
 
     if isMouseEvent(event, inAnyOf: [fragSliderView]) && playSlider.isEnabled {
       seekOverride = true
@@ -1952,8 +2000,8 @@ class MainWindowController: PlayerWindowController {
       player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
     }
 
-    window!.addTitlebarAccessoryViewController(leftTitlebarAccesoryViewController)
-    window!.addTitlebarAccessoryViewController(rightTitlebarAccesoryViewController)
+    window!.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
+    window!.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
 
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
@@ -2417,38 +2465,43 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  func updateOnTopIcon() {
-    pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
-    pinToTopButton.state = isOntop ? .on : .off
+  // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
+  // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
+  private func updateLeadingTitleBarAccessory() {
+    leadingSidebarToggleButton.isHidden = !Preference.bool(for: .showLeadingSidebarToggleButton)
 
-    updateRightTitleBarSpacer()
-  }
-
-  private func updateLeftTitleBarSpacer() {
-    let expandedSidebar = leftSidebar.animationState == .willShow || leftSidebar.animationState == .shown
+    let expandedSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
     let width: CGFloat
     if expandedSidebar && topPanelPlacement == .insideVideo {
-      // Subtract space taken by the 3 standard buttons
-      width = max(0, leftSidebarWidthConstraint.constant - trafficLightButtonsWidth)
+      // Subtract space taken by the 3 standard buttons + other visible buttons
+      let sidebarButtonSpace: CGFloat = leadingSidebarToggleButton.isHidden ? 0 : leadingSidebarToggleButton.frame.width
+      width = max(0, leadingSidebarWidthConstraint.constant - trafficLightButtonsWidth - sidebarButtonSpace)
     } else {
       width = 0
     }
     Logger.log("Setting left title bar spacer to: \(width)", level: .verbose)
-    leftTitleBarLeadingSpaceConstraint.constant = width
+    leadingTitleBarTrailingSpaceConstraint.constant = width
   }
 
-  // Sets the horizontal space needed to push the titlebar & "on top" button leftward, so that they don't overlap on the right sidebar
-  private func updateRightTitleBarSpacer() {
-    let expandedSidebar = rightSidebar.animationState == .willShow || rightSidebar.animationState == .shown
+  // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
+  // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar
+  private func updateTrailingTitleBarAccessory() {
+    trailingSidebarToggleButton.isHidden = !Preference.bool(for: .showTrailingSidebarToggleButton)
+
+    pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
+    pinToTopButton.state = isOntop ? .on : .off
+
+    let expandedSidebar = trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown
     let width: CGFloat
     if expandedSidebar && topPanelPlacement == .insideVideo {
-      let buttonWidth = pinToTopButton.isHidden ? 0 : pinToTopButton.frame.width
-      width = max(0, rightSidebarWidthConstraint.constant - buttonWidth)
+      let sidebarButtonSpace: CGFloat = trailingSidebarToggleButton.isHidden ? 0 : trailingSidebarToggleButton.frame.width
+      let pinToTopButtonSpace: CGFloat = pinToTopButton.isHidden ? 0 : pinToTopButton.frame.width
+      width = max(0, trailingSidebarWidthConstraint.constant - sidebarButtonSpace - pinToTopButtonSpace)
     } else {
       width = 0
     }
     Logger.log("Setting right title bar spacer to: \(width)", level: .verbose)
-    rightTitleBarLeadingSpaceConstraint.constant = width
+    trailingTitleBarLeadingSpaceConstraint.constant = width
   }
 
   // MARK: - UI: OSD
@@ -2568,56 +2621,27 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  // MARK: - UI: Side bar
+  // MARK: - UI: Sidebar
 
   // For JavascriptAPICore:
   func isShowingSettingsSidebar() -> Bool {
-    return leftSidebar.visibleTabGroup == .settings || rightSidebar.visibleTabGroup == .settings
+    return leadingSidebar.visibleTabGroup == .settings || trailingSidebar.visibleTabGroup == .settings
   }
 
   func isShowing(sidebarTab tab: SidebarTab) -> Bool {
-    return leftSidebar.visibleTab == tab || rightSidebar.visibleTab == tab
+    return leadingSidebar.visibleTab == tab || trailingSidebar.visibleTab == tab
   }
 
-  private func setSidebar(locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
-    let addingToSidebar: Sidebar
-    let removingFromSidebar: Sidebar
-    if locationID == leftSidebar.locationID {
-      addingToSidebar = leftSidebar
-      removingFromSidebar = rightSidebar
-    } else {
-      addingToSidebar = rightSidebar
-      removingFromSidebar = leftSidebar
-    }
-    addingToSidebar.tabGroups.insert(tabGroup)
-    removingFromSidebar.tabGroups.remove(tabGroup)
-  }
+  private func toggleVisibility(of sidebar: Sidebar) {
+    // Do nothing if sidebar has no configured tabs
+    guard let tab = sidebar.defaultTabToShow else { return }
 
-  private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
-    for sidebar in [leftSidebar, rightSidebar] {
-      if sidebar.tabGroups.contains(tabGroup) {
-        return sidebar
-      }
+    if sidebar.animationState == .shown {
+      changeVisibility(forTab: tab, to: false)
+    } else if sidebar.animationState == .hidden {
+      changeVisibility(forTab: tab, to: true)
     }
-    Logger.log("No sidebar found for tab group \(tabGroup.rawValue.quoted)!", level: .error)
-    return nil
-  }
-
-  // If location of tab group changed to another sidebar (in user prefs), check if it is showing, and if so, hide it & show it on the other side
-  private func moveSidebarIfNeeded(forTabGroup tabGroup: SidebarTabGroup, toNewSidebarLocation newLocationID: Preference.SidebarLocation) {
-    guard let currentLocationID = getConfiguredSidebar(forTabGroup: tabGroup)?.locationID else { return }
-    guard currentLocationID != newLocationID else { return }
-
-    if let prevSidebar = sidebarsByID[currentLocationID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
-      Logger.log("Moving visible tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
-      changeVisibility(forTab: curentVisibleTab, to: false, then: {
-        self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
-        self.changeVisibility(forTab: curentVisibleTab, to: true)
-      })
-    } else {
-      Logger.log("Moving hidden tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
-      self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
-    }
+    // Do nothing if side bar is in intermediate state
   }
 
   func showSidebar(forTabGroup tabGroup: SidebarTabGroup, force: Bool = false, hideIfAlreadyShown: Bool = true) {
@@ -2636,7 +2660,7 @@ class MainWindowController: PlayerWindowController {
 
   func showSidebar(tab: SidebarTab, force: Bool = false, hideIfAlreadyShown: Bool = true) {
     Logger.log("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
-    if !force && (leftSidebar.animationState.isInTransition || rightSidebar.animationState.isInTransition) {
+    if !force && (leadingSidebar.animationState.isInTransition || trailingSidebar.animationState.isInTransition) {
       return  // do not interrput other actions while it is animating
     }
 
@@ -2656,11 +2680,11 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Hiding all sidebars", level: .verbose)
     // Need to make sure that completionHandler (1) runs at all, and (2) runs after animations
     var completionHandler: (() -> Void)? = then
-    if let visibleTab = leftSidebar.visibleTab {
+    if let visibleTab = leadingSidebar.visibleTab {
       changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
       completionHandler = nil
     }
-    if let visibleTab = rightSidebar.visibleTab {
+    if let visibleTab = trailingSidebar.visibleTab {
       changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
       completionHandler = nil
     }
@@ -2671,7 +2695,7 @@ class MainWindowController: PlayerWindowController {
 
   private func changeVisibility(forTab tab: SidebarTab, to show: Bool, animate: Bool = true, then: (() -> Void)? = nil) {
     guard !isInInteractiveMode else { return }
-    Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show)", level: .verbose)
+    Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show ? "SHOW" : "HIDE")", level: .verbose)
 
     let group = tab.group
     let viewController = (group == .playlist) ? playlistView : quickSettingView
@@ -2708,14 +2732,14 @@ class MainWindowController: PlayerWindowController {
     let widthConstraint: NSLayoutConstraint
     let edgeConstraint: NSLayoutConstraint
     switch sidebar.locationID {
-      case .leftSidebar:
-        sidebarView = leftSidebarView
-        widthConstraint = leftSidebarWidthConstraint
-        edgeConstraint = leftSidebarLeadingConstraint
-      case .rightSidebar:
-        sidebarView = rightSidebarView
-        widthConstraint = rightSidebarWidthConstraint
-        edgeConstraint = rightSidebarTrailingConstraint
+      case .leadingSidebar:
+        sidebarView = leadingSidebarView
+        widthConstraint = leadingSidebarWidthConstraint
+        edgeConstraint = leadingSidebarLeadingConstraint
+      case .trailingSidebar:
+        sidebarView = trailingSidebarView
+        widthConstraint = trailingSidebarWidthConstraint
+        edgeConstraint = trailingSidebarTrailingConstraint
     }
 
     sidebar.animationState = show ? .willShow : .willHide
@@ -2755,10 +2779,10 @@ class MainWindowController: PlayerWindowController {
       context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       switch sidebar.locationID {
-        case .rightSidebar:
-          updateRightTitleBarSpacer()
-        case .leftSidebar:
-          updateLeftTitleBarSpacer()
+        case .leadingSidebar:
+          updateLeadingTitleBarAccessory()
+        case .trailingSidebar:
+          updateTrailingTitleBarAccessory()
       }
       edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }, completionHandler: {
@@ -2778,6 +2802,60 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
+  // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that
+  // the tracking information here can be updated.
+  func didChangeTab(to tabName: String) {
+    guard let tab = SidebarTab(name: tabName) else {
+      Logger.log("Could not find a matching sidebar tab for \(tabName.quoted)!", level: .error)
+      return
+    }
+    guard let sidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
+    sidebar.visibleTab = tab
+  }
+
+  private func setSidebar(locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
+    let addingToSidebar: Sidebar
+    let removingFromSidebar: Sidebar
+    if locationID == leadingSidebar.locationID {
+      addingToSidebar = leadingSidebar
+      removingFromSidebar = trailingSidebar
+    } else {
+      addingToSidebar = trailingSidebar
+      removingFromSidebar = leadingSidebar
+    }
+    addingToSidebar.tabGroups.insert(tabGroup)
+    removingFromSidebar.tabGroups.remove(tabGroup)
+  }
+
+  private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
+    for sidebar in [leadingSidebar, trailingSidebar] {
+      if sidebar.tabGroups.contains(tabGroup) {
+        return sidebar
+      }
+    }
+    Logger.log("No sidebar found for tab group \(tabGroup.rawValue.quoted)!", level: .error)
+    return nil
+  }
+
+  // If location of tab group changed to another sidebar (in user prefs), check if it is showing, and if so, hide it & show it on the other side
+  private func moveSidebarIfNeeded(forTabGroup tabGroup: SidebarTabGroup, toNewSidebarLocation newLocationID: Preference.SidebarLocation) {
+    guard let currentLocationID = getConfiguredSidebar(forTabGroup: tabGroup)?.locationID else { return }
+    guard currentLocationID != newLocationID else { return }
+
+    if let prevSidebar = sidebarsByID[currentLocationID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
+      Logger.log("Moving visible tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
+      changeVisibility(forTab: curentVisibleTab, to: false, then: {
+        self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
+        self.changeVisibility(forTab: curentVisibleTab, to: true)
+      })
+    } else {
+      Logger.log("Moving hidden tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
+      self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
+    }
+  }
+
+  // MARK: - UI: Interactive mode
+
   private func setConstraintsForVideoView(_ constraints: [NSLayoutConstraint.Attribute: CGFloat], animate: Bool = false) {
     for (attr, value) in constraints {
       if let constraint = videoViewConstraints[attr] {
@@ -2789,8 +2867,6 @@ class MainWindowController: PlayerWindowController {
       }
     }
   }
-
-  // MARK: - UI: Interactive mode
 
   func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
     // prerequisites
@@ -3462,8 +3538,16 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  @IBAction func pinToTopButtonAction(_ sender: NSButton) {
+  @IBAction func togglePinToTop(_ sender: NSButton) {
     setWindowFloatingOnTop(!isOntop)
+  }
+
+  @IBAction func toggleLeadingSidebarVisibility(_ sender: NSButton) {
+    toggleVisibility(of: leadingSidebar)
+  }
+
+  @IBAction func toggleTrailingSidebarVisibility(_ sender: NSButton) {
+    toggleVisibility(of: trailingSidebar)
   }
 
   /** When slider changes */

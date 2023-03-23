@@ -268,6 +268,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
 
     currentTab = tab
+    mainWindow.didChangeTab(to: tab.rawValue)
   }
 
   // MARK: - NSTableViewDataSource

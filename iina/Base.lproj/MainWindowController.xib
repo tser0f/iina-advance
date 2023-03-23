@@ -3,6 +3,7 @@
     <dependencies>
         <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21507"/>
+        <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -34,14 +35,15 @@
                 <outlet property="fragSliderView" destination="BE1-yC-oJL" id="KXu-MZ-mx8"/>
                 <outlet property="fragToolbarView" destination="KfP-G9-8pD" id="R84-gZ-D93"/>
                 <outlet property="fragVolumeView" destination="N3B-DL-XOA" id="4VW-Wa-AD7"/>
+                <outlet property="leadingSidebarLeadingConstraint" destination="9tP-D1-Ms9" id="bdf-Gw-1m8"/>
+                <outlet property="leadingSidebarToggleButton" destination="zkB-jk-l3c" id="lcY-wv-u4x"/>
+                <outlet property="leadingSidebarView" destination="XBs-34-TIm" id="Jqt-cB-r2i"/>
+                <outlet property="leadingSidebarWidthConstraint" destination="Cuc-0z-ItB" id="kY3-w2-J9f"/>
+                <outlet property="leadingTitleBarAccessoryView" destination="LFL-4a-93B" id="2gm-1u-SgO"/>
+                <outlet property="leadingTitleBarTrailingSpaceConstraint" destination="ckY-Xn-Az9" id="2Sw-bW-ZKj"/>
                 <outlet property="leftArrowButton" destination="10x-bg-xlj" id="HOT-Yl-7aO"/>
                 <outlet property="leftArrowLabel" destination="Yg9-Sd-sWy" id="fps-VD-ZgC"/>
                 <outlet property="leftLabel" destination="NBD-MV-OuG" id="7xb-a1-6NR"/>
-                <outlet property="leftSidebarLeadingConstraint" destination="9tP-D1-Ms9" id="bdf-Gw-1m8"/>
-                <outlet property="leftSidebarView" destination="XBs-34-TIm" id="Jqt-cB-r2i"/>
-                <outlet property="leftSidebarWidthConstraint" destination="Cuc-0z-ItB" id="kY3-w2-J9f"/>
-                <outlet property="leftTitleBarAccessoryView" destination="LFL-4a-93B" id="2gm-1u-SgO"/>
-                <outlet property="leftTitleBarLeadingSpaceConstraint" destination="ckY-Xn-Az9" id="isR-3E-XKz"/>
                 <outlet property="muteButton" destination="2py-h1-0km" id="baB-6t-gO7"/>
                 <outlet property="oscBottomMainView" destination="Qmi-hb-0aM" id="PM5-Ic-nvt"/>
                 <outlet property="oscFloatingBottomView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
@@ -62,12 +64,6 @@
                 <outlet property="rightArrowButton" destination="EIi-qd-glM" id="U46-Gl-e8D"/>
                 <outlet property="rightArrowLabel" destination="QTI-wi-oyB" id="icX-KI-Muj"/>
                 <outlet property="rightLabel" destination="GgV-Cc-sk0" id="fnx-gO-YPl"/>
-                <outlet property="rightSidebarTrailingConstraint" destination="PAj-s6-32e" id="UEo-Zg-pJq"/>
-                <outlet property="rightSidebarView" destination="epo-S6-QVB" id="efz-TR-rAa"/>
-                <outlet property="rightSidebarWidthConstraint" destination="1BL-aP-tHS" id="3UA-1M-dju"/>
-                <outlet property="rightTitleBarAccessoryView" destination="maF-Zr-K8w" id="H6b-g2-qRx"/>
-                <outlet property="rightTitleBarLeadingSpaceConstraint" destination="c8g-qm-Vdc" id="m15-JQ-OEe"/>
-                <outlet property="rightTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePreviewWhenSeek" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
                 <outlet property="titleBarHeightConstraint" destination="1CI-Wl-F8h" id="K0U-G8-X9f"/>
@@ -77,6 +73,13 @@
                 <outlet property="topPanelLeadingSpaceConstraint" destination="ofB-WP-9dW" id="6hD-K8-P5n"/>
                 <outlet property="topPanelTrailingSpaceConstraint" destination="te1-wi-BbH" id="sfe-UH-ki8"/>
                 <outlet property="topPanelView" destination="TRx-2V-Gr3" id="4CG-pA-rHP"/>
+                <outlet property="trailingSidebarToggleButton" destination="VTu-Ac-dgn" id="CQd-j7-xZg"/>
+                <outlet property="trailingSidebarTrailingConstraint" destination="PAj-s6-32e" id="UEo-Zg-pJq"/>
+                <outlet property="trailingSidebarView" destination="epo-S6-QVB" id="efz-TR-rAa"/>
+                <outlet property="trailingSidebarWidthConstraint" destination="1BL-aP-tHS" id="3UA-1M-dju"/>
+                <outlet property="trailingTitleBarAccessoryView" destination="maF-Zr-K8w" id="H6b-g2-qRx"/>
+                <outlet property="trailingTitleBarLeadingSpaceConstraint" destination="c8g-qm-Vdc" id="m15-JQ-OEe"/>
+                <outlet property="trailingTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
                 <outlet property="videoAspectRatioConstraint" destination="wHS-TJ-sRI" id="6Y8-3g-mLP"/>
                 <outlet property="videoContainerBottomConstraint" destination="68T-mq-A30" id="F8b-US-YWg"/>
                 <outlet property="videoContainerTopConstraint" destination="1Ut-pz-GFg" id="5zH-Ug-voe"/>
@@ -393,7 +396,7 @@
                     <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="XBs-34-TIm" userLabel="Left-Sidebar View">
                         <rect key="frame" x="-240" y="0.0" width="240" height="400"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="240" identifier="leftSidebarWidthConstraint" id="Cuc-0z-ItB"/>
+                            <constraint firstAttribute="width" constant="240" identifier="leadingSidebarWidthConstraint" id="Cuc-0z-ItB"/>
                         </constraints>
                         <shadow key="shadow" blurRadius="12">
                             <color key="color" white="0.0" alpha="0.5" colorSpace="calibratedWhite"/>
@@ -402,7 +405,7 @@
                     <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="epo-S6-QVB" userLabel="Right-Sidebar View">
                         <rect key="frame" x="640" y="0.0" width="240" height="400"/>
                         <constraints>
-                            <constraint firstAttribute="width" constant="240" identifier="rightSidebarWidthConstraint" id="1BL-aP-tHS"/>
+                            <constraint firstAttribute="width" constant="240" identifier="trailingSidebarWidthConstraint" id="1BL-aP-tHS"/>
                         </constraints>
                         <shadow key="shadow" blurRadius="12">
                             <color key="color" white="0.0" alpha="0.5" colorSpace="calibratedWhite"/>
@@ -440,13 +443,13 @@
                     <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="bottomPanelTrailingSpaceConstraint" id="3qV-vK-qlg"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="bottom" identifier="videoContainerBottomConstraint" id="68T-mq-A30"/>
                     <constraint firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="bottom" id="9hV-Fc-eHK"/>
-                    <constraint firstItem="XBs-34-TIm" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" constant="-240" identifier="leftSidebarLeadingConstraint" id="9tP-D1-Ms9"/>
+                    <constraint firstItem="XBs-34-TIm" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" constant="-240" identifier="leadingSidebarLeadingConstraint" id="9tP-D1-Ms9"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="leading" priority="249" constant="330" id="9z2-rX-b7C"/>
                     <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="bottom" constant="8" id="Ham-QL-hBU"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="HfB-0k-fyF"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" identifier="osdLeadingConstraint" id="LBY-By-mfi"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Tdb-EA-alw" secondAttribute="trailing" id="Mqd-Wb-vqq"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="trailing" constant="-240" identifier="rightSidebarTrailingConstraint" id="PAj-s6-32e"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="trailing" constant="-240" identifier="trailingSidebarTrailingConstraint" id="PAj-s6-32e"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" id="RFd-ZJ-29u"/>
                     <constraint firstItem="Qbi-jx-9pO" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="g0O-v5-RQj" secondAttribute="trailing" constant="8" identifier="additionalInfoToOSDSpaceConstraint" id="RUl-l8-s3i"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="Vtd-0f-x7p"/>
@@ -741,66 +744,128 @@
             <autoresizingMask key="autoresizingMask"/>
             <point key="canvasLocation" x="591" y="676"/>
         </stackView>
-        <customView id="LFL-4a-93B" userLabel="Left Title Bar Accessory View">
-            <rect key="frame" x="0.0" y="0.0" width="0.0" height="28"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="LFL-4a-93B" userLabel="Leading Title Bar Accessory View">
+            <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
             <subviews>
-                <customView translatesAutoresizingMaskIntoConstraints="NO" id="7ck-d3-1hv" userLabel="Left Spacer">
-                    <rect key="frame" x="0.0" y="0.0" width="0.0" height="28"/>
+                <stackView distribution="fill" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QL8-sC-ql6" userLabel="Leading-Title-Bar Horizontal Stack View">
+                    <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                    <subviews>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="MEn-aG-818" userLabel="Leading Spacer View">
+                            <rect key="frame" x="0.0" y="0.0" width="0.0" height="50"/>
+                            <constraints>
+                                <constraint firstAttribute="width" identifier="leadingTitleBarLeadingSpaceConstraint" id="8Ry-mq-mNQ"/>
+                            </constraints>
+                        </customView>
+                        <button translatesAutoresizingMaskIntoConstraints="NO" id="zkB-jk-l3c" userLabel="ToggleLeadingSidebar Square Button">
+                            <rect key="frame" x="0.0" y="-4.5" width="50.5" height="59"/>
+                            <constraints>
+                                <constraint firstAttribute="width" secondItem="zkB-jk-l3c" secondAttribute="height" multiplier="1:1" id="8CN-7h-GtN"/>
+                            </constraints>
+                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" imagePosition="only" alignment="center" refusesFirstResponder="YES" state="on" inset="2" id="htR-nK-U9W">
+                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                <font key="font" metaFont="system"/>
+                                <imageReference key="image" image="sidebar.leading" catalog="system" symbolScale="large"/>
+                            </buttonCell>
+                            <connections>
+                                <action selector="toggleLeadingSidebarVisibility:" target="-2" id="TeX-P0-1v4"/>
+                            </connections>
+                        </button>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="7ck-d3-1hv" userLabel="Trailing Spacer View">
+                            <rect key="frame" x="50" y="0.0" width="0.0" height="50"/>
+                            <constraints>
+                                <constraint firstAttribute="width" identifier="leadingTitleBarTrailingSpaceConstraint" id="ckY-Xn-Az9"/>
+                            </constraints>
+                        </customView>
+                    </subviews>
                     <constraints>
-                        <constraint firstAttribute="width" id="ckY-Xn-Az9"/>
+                        <constraint firstItem="MEn-aG-818" firstAttribute="leading" secondItem="QL8-sC-ql6" secondAttribute="leading" id="SCN-Oi-cmk"/>
+                        <constraint firstAttribute="trailing" secondItem="7ck-d3-1hv" secondAttribute="trailing" id="i26-Cw-6MX"/>
                     </constraints>
-                </customView>
+                    <visibilityPriorities>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                    </visibilityPriorities>
+                    <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                    </customSpacing>
+                </stackView>
             </subviews>
             <constraints>
-                <constraint firstItem="7ck-d3-1hv" firstAttribute="top" secondItem="LFL-4a-93B" secondAttribute="top" id="Zpo-MJ-hdt"/>
-                <constraint firstAttribute="trailing" secondItem="7ck-d3-1hv" secondAttribute="trailing" id="ZwK-NB-WIt"/>
-                <constraint firstItem="7ck-d3-1hv" firstAttribute="leading" secondItem="LFL-4a-93B" secondAttribute="leading" id="d5X-N1-SPJ"/>
-                <constraint firstAttribute="bottom" secondItem="7ck-d3-1hv" secondAttribute="bottom" id="rcn-Vs-VdR"/>
+                <constraint firstItem="QL8-sC-ql6" firstAttribute="top" secondItem="LFL-4a-93B" secondAttribute="top" id="DGs-H2-KDv"/>
+                <constraint firstAttribute="trailing" secondItem="QL8-sC-ql6" secondAttribute="trailing" id="Hrz-gb-IxU"/>
+                <constraint firstAttribute="bottom" secondItem="QL8-sC-ql6" secondAttribute="bottom" id="YPW-cg-eRd"/>
+                <constraint firstItem="QL8-sC-ql6" firstAttribute="leading" secondItem="LFL-4a-93B" secondAttribute="leading" id="kdt-3G-JhT"/>
             </constraints>
             <point key="canvasLocation" x="482" y="-133"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Right Title Bar Accessory View">
-            <rect key="frame" x="0.0" y="0.0" width="20" height="16"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Trailing Title Bar Accessory View">
+            <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
             <subviews>
-                <customView translatesAutoresizingMaskIntoConstraints="NO" id="iXQ-as-PYC" userLabel="Left Spacer">
-                    <rect key="frame" x="0.0" y="0.0" width="0.0" height="16"/>
-                    <constraints>
-                        <constraint firstAttribute="width" identifier="rightTitleBarLeadingSpaceConstraint" id="c8g-qm-Vdc"/>
-                    </constraints>
-                </customView>
-                <button hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI" userLabel="PinToTop Square Button">
-                    <rect key="frame" x="0.0" y="0.0" width="20" height="16"/>
-                    <constraints>
-                        <constraint firstAttribute="width" secondItem="Ztc-Kn-fxI" secondAttribute="height" multiplier="1:1" constant="4" id="aKF-M3-oax"/>
-                    </constraints>
-                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="ontop_off" imagePosition="only" alignment="center" alternateImage="ontop" refusesFirstResponder="YES" state="on" inset="2" id="jAf-Be-kY3">
-                        <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
-                    <connections>
-                        <action selector="pinToTopButtonAction:" target="-2" id="4pa-eu-aT5"/>
-                    </connections>
-                </button>
-                <customView translatesAutoresizingMaskIntoConstraints="NO" id="Pu6-TO-IhT" userLabel="Right Spacer">
-                    <rect key="frame" x="20" y="0.0" width="0.0" height="16"/>
-                    <constraints>
-                        <constraint firstAttribute="width" identifier="rightTitleBarTrailingSpaceConstraint" id="Tf8-XK-IVw"/>
-                    </constraints>
-                </customView>
+                <stackView distribution="fill" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="WSW-ov-e8M" userLabel="Trailing-Title-Bar Horizontal Stack View">
+                    <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                    <subviews>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="iXQ-as-PYC" userLabel="Leading Spacer View">
+                            <rect key="frame" x="0.0" y="0.0" width="0.0" height="50"/>
+                            <constraints>
+                                <constraint firstAttribute="width" identifier="trailingTitleBarLeadingSpaceConstraint" id="c8g-qm-Vdc"/>
+                            </constraints>
+                        </customView>
+                        <button translatesAutoresizingMaskIntoConstraints="NO" id="VTu-Ac-dgn" userLabel="ToggleTrailingSidebar Square Button">
+                            <rect key="frame" x="0.0" y="-4.5" width="50.5" height="59"/>
+                            <constraints>
+                                <constraint firstAttribute="width" secondItem="VTu-Ac-dgn" secondAttribute="height" multiplier="1:1" id="4KR-kO-iO1"/>
+                            </constraints>
+                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" imagePosition="only" alignment="center" refusesFirstResponder="YES" state="on" inset="2" id="WJX-cV-vij">
+                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                <font key="font" metaFont="system"/>
+                                <imageReference key="image" image="sidebar.trailing" catalog="system" symbolScale="large"/>
+                            </buttonCell>
+                            <connections>
+                                <action selector="toggleTrailingSidebarVisibility:" target="-2" id="npz-Db-uzI"/>
+                            </connections>
+                        </button>
+                        <button hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI" userLabel="PinToTop Square Button">
+                            <rect key="frame" x="0.0" y="34" width="16" height="16"/>
+                            <constraints>
+                                <constraint firstAttribute="width" secondItem="Ztc-Kn-fxI" secondAttribute="height" multiplier="1:1" id="aKF-M3-oax"/>
+                            </constraints>
+                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="ontop_off" imagePosition="only" alignment="center" alternateImage="ontop" refusesFirstResponder="YES" state="on" inset="2" id="jAf-Be-kY3">
+                                <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
+                                <font key="font" metaFont="system"/>
+                            </buttonCell>
+                            <connections>
+                                <action selector="togglePinToTop:" target="-2" id="4pa-eu-aT5"/>
+                            </connections>
+                        </button>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Pu6-TO-IhT" userLabel="Trailing Spacer View">
+                            <rect key="frame" x="50" y="0.0" width="0.0" height="50"/>
+                            <constraints>
+                                <constraint firstAttribute="width" identifier="trailingTitleBarTrailingSpaceConstraint" id="Tf8-XK-IVw"/>
+                            </constraints>
+                        </customView>
+                    </subviews>
+                    <visibilityPriorities>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                    </visibilityPriorities>
+                    <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                    </customSpacing>
+                </stackView>
             </subviews>
             <constraints>
-                <constraint firstItem="Pu6-TO-IhT" firstAttribute="leading" secondItem="Ztc-Kn-fxI" secondAttribute="trailing" id="4Gk-Dj-VyS"/>
-                <constraint firstItem="Pu6-TO-IhT" firstAttribute="bottom" secondItem="Ztc-Kn-fxI" secondAttribute="bottom" id="5f7-JV-vOU"/>
-                <constraint firstItem="Ztc-Kn-fxI" firstAttribute="top" secondItem="maF-Zr-K8w" secondAttribute="top" id="7Qu-5q-6eY"/>
-                <constraint firstAttribute="trailing" secondItem="Pu6-TO-IhT" secondAttribute="trailing" id="Hsi-ov-F3L"/>
-                <constraint firstAttribute="bottom" secondItem="Ztc-Kn-fxI" secondAttribute="bottom" id="Uqe-bw-DrF"/>
-                <constraint firstItem="iXQ-as-PYC" firstAttribute="trailing" secondItem="Ztc-Kn-fxI" secondAttribute="leading" id="XTi-32-DZX"/>
-                <constraint firstItem="Pu6-TO-IhT" firstAttribute="top" secondItem="Ztc-Kn-fxI" secondAttribute="top" id="Y68-nT-97Q"/>
-                <constraint firstItem="iXQ-as-PYC" firstAttribute="bottom" secondItem="Ztc-Kn-fxI" secondAttribute="bottom" id="ggf-ac-CHN"/>
-                <constraint firstItem="iXQ-as-PYC" firstAttribute="top" secondItem="Ztc-Kn-fxI" secondAttribute="top" id="jsL-sJ-xS6"/>
-                <constraint firstItem="Ztc-Kn-fxI" firstAttribute="centerY" secondItem="maF-Zr-K8w" secondAttribute="centerY" id="rMU-Hk-W7p"/>
-                <constraint firstItem="iXQ-as-PYC" firstAttribute="leading" secondItem="maF-Zr-K8w" secondAttribute="leading" id="vwD-Di-EcW"/>
+                <constraint firstItem="WSW-ov-e8M" firstAttribute="leading" secondItem="maF-Zr-K8w" secondAttribute="leading" id="237-4K-Y1z"/>
+                <constraint firstAttribute="trailing" secondItem="WSW-ov-e8M" secondAttribute="trailing" id="FeA-o4-GzC"/>
+                <constraint firstAttribute="bottom" secondItem="WSW-ov-e8M" secondAttribute="bottom" id="VF9-tA-dEf"/>
+                <constraint firstItem="WSW-ov-e8M" firstAttribute="top" secondItem="maF-Zr-K8w" secondAttribute="top" id="msD-VG-w6j"/>
             </constraints>
             <point key="canvasLocation" x="728" y="-133"/>
         </customView>
@@ -813,6 +878,8 @@
         <image name="pause" width="24" height="24"/>
         <image name="play" width="24" height="24"/>
         <image name="playing-in-pip" width="87" height="68"/>
+        <image name="sidebar.leading" catalog="system" width="24" height="18"/>
+        <image name="sidebar.trailing" catalog="system" width="24" height="18"/>
         <image name="speed" width="24" height="24"/>
         <image name="speedl" width="24" height="24"/>
         <image name="volume" width="16" height="14"/>

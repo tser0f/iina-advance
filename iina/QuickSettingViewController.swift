@@ -410,6 +410,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   private func switchToTab(_ tab: TabViewType) {
     guard isViewLoaded else { return }
     currentTab = tab
+    mainWindow.didChangeTab(to: tab.name)
     tabView.selectTabViewItem(at: tab.buttonTag)
     if case .plugin(let id) = tab,
        let plugin = player.plugins.first(where: { $0.plugin.identifier == id }) {

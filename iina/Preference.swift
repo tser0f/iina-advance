@@ -136,8 +136,10 @@ struct Preference {
     static let hideOverlaysWhenOutsideWindow = Key("hideOverlaysWhenOutsideWindow")
 
     // Sidebars:
-    static let leftSidebarPlacement = Key("leftSidebarPlacement")
-    static let rightSidebarPlacement = Key("rightSidebarPlacement")
+    static let leadingSidebarPlacement = Key("leadingSidebarPlacement")
+    static let trailingSidebarPlacement = Key("trailingSidebarPlacement")
+    static let showLeadingSidebarToggleButton = Key("showLeadingSidebarToggleButton")
+    static let showTrailingSidebarToggleButton = Key("showTrailingSidebarToggleButton")
     /// `Settings` tab group
     static let settingsTabGroupLocation = Key("settingsTabGroupLocation")
     /// `Playlist` tab group
@@ -455,10 +457,10 @@ struct Preference {
   }
 
   enum SidebarLocation: Int, InitializingFromKey {
-    case leftSidebar = 1
-    case rightSidebar
+    case leadingSidebar = 1
+    case trailingSidebar
 
-    static var defaultValue = SidebarLocation.rightSidebar
+    static var defaultValue = SidebarLocation.trailingSidebar
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -867,10 +869,12 @@ struct Preference {
     .oscPosition: OSCPosition.floating.rawValue,
     .hideOverlaysWhenOutsideWindow: true,
     .playlistWidth: 270,
-    .settingsTabGroupLocation: SidebarLocation.rightSidebar.rawValue,
-    .playlistTabGroupLocation: SidebarLocation.rightSidebar.rawValue,
-    .leftSidebarPlacement: PanelPlacement.insideVideo.rawValue,
-    .rightSidebarPlacement: PanelPlacement.insideVideo.rawValue,
+    .settingsTabGroupLocation: SidebarLocation.trailingSidebar.rawValue,
+    .playlistTabGroupLocation: SidebarLocation.trailingSidebar.rawValue,
+    .leadingSidebarPlacement: PanelPlacement.insideVideo.rawValue,
+    .trailingSidebarPlacement: PanelPlacement.insideVideo.rawValue,
+    .showLeadingSidebarToggleButton: false,
+    .showTrailingSidebarToggleButton: false,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
