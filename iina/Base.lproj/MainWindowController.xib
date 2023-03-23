@@ -66,6 +66,7 @@
                 <outlet property="rightSidebarView" destination="epo-S6-QVB" id="efz-TR-rAa"/>
                 <outlet property="rightSidebarWidthConstraint" destination="1BL-aP-tHS" id="3UA-1M-dju"/>
                 <outlet property="rightTitleBarAccessoryView" destination="maF-Zr-K8w" id="H6b-g2-qRx"/>
+                <outlet property="rightTitleBarLeadingSpaceConstraint" destination="c8g-qm-Vdc" id="m15-JQ-OEe"/>
                 <outlet property="rightTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePreviewWhenSeek" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
@@ -760,25 +761,31 @@
             <point key="canvasLocation" x="482" y="-133"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Right Title Bar Accessory View">
-            <rect key="frame" x="0.0" y="0.0" width="36" height="28"/>
+            <rect key="frame" x="0.0" y="0.0" width="20" height="16"/>
             <subviews>
-                <button hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI" userLabel="PinToTop Square Button">
-                    <rect key="frame" x="0.0" y="0.0" width="28" height="28"/>
+                <customView translatesAutoresizingMaskIntoConstraints="NO" id="iXQ-as-PYC" userLabel="Left Spacer">
+                    <rect key="frame" x="0.0" y="0.0" width="0.0" height="16"/>
                     <constraints>
-                        <constraint firstAttribute="width" secondItem="Ztc-Kn-fxI" secondAttribute="height" multiplier="1:1" id="aKF-M3-oax"/>
+                        <constraint firstAttribute="width" identifier="rightTitleBarLeadingSpaceConstraint" id="c8g-qm-Vdc"/>
+                    </constraints>
+                </customView>
+                <button hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI" userLabel="PinToTop Square Button">
+                    <rect key="frame" x="0.0" y="0.0" width="20" height="16"/>
+                    <constraints>
+                        <constraint firstAttribute="width" secondItem="Ztc-Kn-fxI" secondAttribute="height" multiplier="1:1" constant="4" id="aKF-M3-oax"/>
                     </constraints>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="ontop_off" imagePosition="only" alignment="center" alternateImage="ontop" refusesFirstResponder="YES" state="on" inset="2" id="jAf-Be-kY3">
                         <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
-                        <action selector="ontopButtonnAction:" target="-2" id="4pa-eu-aT5"/>
+                        <action selector="pinToTopButtonAction:" target="-2" id="4pa-eu-aT5"/>
                     </connections>
                 </button>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="Pu6-TO-IhT" userLabel="Right Spacer">
-                    <rect key="frame" x="28" y="0.0" width="0.0" height="28"/>
+                    <rect key="frame" x="20" y="0.0" width="0.0" height="16"/>
                     <constraints>
-                        <constraint firstAttribute="width" id="Tf8-XK-IVw"/>
+                        <constraint firstAttribute="width" identifier="rightTitleBarTrailingSpaceConstraint" id="Tf8-XK-IVw"/>
                     </constraints>
                 </customView>
             </subviews>
@@ -786,11 +793,14 @@
                 <constraint firstItem="Pu6-TO-IhT" firstAttribute="leading" secondItem="Ztc-Kn-fxI" secondAttribute="trailing" id="4Gk-Dj-VyS"/>
                 <constraint firstItem="Pu6-TO-IhT" firstAttribute="bottom" secondItem="Ztc-Kn-fxI" secondAttribute="bottom" id="5f7-JV-vOU"/>
                 <constraint firstItem="Ztc-Kn-fxI" firstAttribute="top" secondItem="maF-Zr-K8w" secondAttribute="top" id="7Qu-5q-6eY"/>
-                <constraint firstAttribute="trailing" secondItem="Pu6-TO-IhT" secondAttribute="trailing" constant="8" id="Hsi-ov-F3L"/>
+                <constraint firstAttribute="trailing" secondItem="Pu6-TO-IhT" secondAttribute="trailing" id="Hsi-ov-F3L"/>
                 <constraint firstAttribute="bottom" secondItem="Ztc-Kn-fxI" secondAttribute="bottom" id="Uqe-bw-DrF"/>
-                <constraint firstItem="Ztc-Kn-fxI" firstAttribute="leading" secondItem="maF-Zr-K8w" secondAttribute="leading" id="Xw1-Zd-CI0"/>
+                <constraint firstItem="iXQ-as-PYC" firstAttribute="trailing" secondItem="Ztc-Kn-fxI" secondAttribute="leading" id="XTi-32-DZX"/>
                 <constraint firstItem="Pu6-TO-IhT" firstAttribute="top" secondItem="Ztc-Kn-fxI" secondAttribute="top" id="Y68-nT-97Q"/>
+                <constraint firstItem="iXQ-as-PYC" firstAttribute="bottom" secondItem="Ztc-Kn-fxI" secondAttribute="bottom" id="ggf-ac-CHN"/>
+                <constraint firstItem="iXQ-as-PYC" firstAttribute="top" secondItem="Ztc-Kn-fxI" secondAttribute="top" id="jsL-sJ-xS6"/>
                 <constraint firstItem="Ztc-Kn-fxI" firstAttribute="centerY" secondItem="maF-Zr-K8w" secondAttribute="centerY" id="rMU-Hk-W7p"/>
+                <constraint firstItem="iXQ-as-PYC" firstAttribute="leading" secondItem="maF-Zr-K8w" secondAttribute="leading" id="vwD-Di-EcW"/>
             </constraints>
             <point key="canvasLocation" x="728" y="-133"/>
         </customView>

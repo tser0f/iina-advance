@@ -584,7 +584,8 @@ class MainWindowController: PlayerWindowController {
 
   // Spacer in left title bar accessory view:
   @IBOutlet weak var leftTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
-  // Spacer in right title bar accessory view:
+  // Spacers in right title bar accessory view:
+  @IBOutlet weak var rightTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var rightTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var topPanelLeadingSpaceConstraint: NSLayoutConstraint!
@@ -938,8 +939,8 @@ class MainWindowController: PlayerWindowController {
         topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leftSidebarView.trailingAnchor, constant: 0)
         topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: rightSidebarView.leadingAnchor, constant: 0)
       }
-      updateLeftTitleBarLeadingSpace()
-      updateRightTitleBarTrailingSpace()
+      updateLeftTitleBarSpacer()
+      updateRightTitleBarSpacer()
       videoContainerTopConstraint.isActive = true
       topPanelLeadingSpaceConstraint.animator().isActive = true
       topPanelTrailingSpaceConstraint.animator().isActive = true
@@ -1302,7 +1303,7 @@ class MainWindowController: PlayerWindowController {
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       leftSidebarWidthConstraint.constant = newPlaylistWidth
-      updateLeftTitleBarLeadingSpace()
+      updateLeftTitleBarSpacer()
     } else if isResizingRightSidebar {
       let currentLocation = event.locationInWindow
       // resize sidebar
@@ -1315,7 +1316,7 @@ class MainWindowController: PlayerWindowController {
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       rightSidebarWidthConstraint.constant = newPlaylistWidth
-      updateRightTitleBarTrailingSpace()
+      updateRightTitleBarSpacer()
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -2420,10 +2421,10 @@ class MainWindowController: PlayerWindowController {
     pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
     pinToTopButton.state = isOntop ? .on : .off
 
-    updateRightTitleBarTrailingSpace()
+    updateRightTitleBarSpacer()
   }
 
-  private func updateLeftTitleBarLeadingSpace() {
+  private func updateLeftTitleBarSpacer() {
     let expandedSidebar = leftSidebar.animationState == .willShow || leftSidebar.animationState == .shown
     let width: CGFloat
     if expandedSidebar && topPanelPlacement == .insideVideo {
@@ -2432,21 +2433,22 @@ class MainWindowController: PlayerWindowController {
     } else {
       width = 0
     }
-    Logger.log("Setting left title bar space to: \(width)")
+    Logger.log("Setting left title bar spacer to: \(width)", level: .verbose)
     leftTitleBarLeadingSpaceConstraint.constant = width
   }
 
   // Sets the horizontal space needed to push the titlebar & "on top" button leftward, so that they don't overlap on the right sidebar
-  private func updateRightTitleBarTrailingSpace() {
+  private func updateRightTitleBarSpacer() {
     let expandedSidebar = rightSidebar.animationState == .willShow || rightSidebar.animationState == .shown
     let width: CGFloat
     if expandedSidebar && topPanelPlacement == .insideVideo {
-      width = rightSidebarWidthConstraint.constant
+      let buttonWidth = pinToTopButton.isHidden ? 0 : pinToTopButton.frame.width
+      width = max(0, rightSidebarWidthConstraint.constant - buttonWidth)
     } else {
       width = 0
     }
-    Logger.log("Setting right title bar space to: \(width)")
-    rightTitleBarTrailingSpaceConstraint.constant = width
+    Logger.log("Setting right title bar spacer to: \(width)", level: .verbose)
+    rightTitleBarLeadingSpaceConstraint.constant = width
   }
 
   // MARK: - UI: OSD
@@ -2754,9 +2756,9 @@ class MainWindowController: PlayerWindowController {
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       switch sidebar.locationID {
         case .rightSidebar:
-          updateRightTitleBarTrailingSpace()
+          updateRightTitleBarSpacer()
         case .leftSidebar:
-          updateLeftTitleBarLeadingSpace()
+          updateLeftTitleBarSpacer()
       }
       edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }, completionHandler: {
@@ -3460,8 +3462,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  // TODO: fix typo
-  @IBAction func ontopButtonnAction(_ sender: NSButton) {
+  @IBAction func pinToTopButtonAction(_ sender: NSButton) {
     setWindowFloatingOnTop(!isOntop)
   }
 
