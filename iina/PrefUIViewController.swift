@@ -167,14 +167,17 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     oscAutoHideTimeoutTextField.isEnabled = hasOverlay
     hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
 
-    // Use animation where possible to make the transition less jarring. Looks like it will defaiult to "fade"
+    // Use animation where possible to make the transition less jarring
     NSAnimationContext.runAnimationGroup({context in
       context.duration = AccessibilityPreferences.adjustedDuration(uiAnimationDuration)
       context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
+      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       let oscIsFloating = ib.oscEnabled && ib.oscPosition == .floating
       oscSnapToCenterCheckbox.isHidden = !oscIsFloating
       let oscIsBottom = ib.oscEnabled && ib.oscPosition == .bottom
       oscBottomPlacementContainerView.isHidden = !oscIsBottom
+      // Need this to get proper slide effect
+      oscBottomPlacementContainerView.superview?.layoutSubtreeIfNeeded()
     })
   }
 
