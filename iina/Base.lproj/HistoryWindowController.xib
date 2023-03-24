@@ -63,7 +63,7 @@
                                     <constraint firstAttribute="width" constant="200" id="8T5-1l-PW8"/>
                                     <constraint firstAttribute="height" constant="24" id="i1e-zn-ahj"/>
                                 </constraints>
-                                <searchFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" usesSingleLineMode="YES" recentsAutosaveName="IINAHistorySearchField" id="k5B-TS-AUl">
+                                <searchFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" usesSingleLineMode="YES" bezelStyle="round" recentsAutosaveName="IINAHistorySearchField" id="k5B-TS-AUl">
                                     <font key="font" metaFont="system"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -234,7 +234,7 @@
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Esj-ym-AE9">
-                                                            <rect key="frame" x="2" y="1" width="62" height="16"/>
+                                                            <rect key="frame" x="2" y="1" width="62" height="15"/>
                                                             <textFieldCell key="cell" controlSize="large" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" alignment="left" title="00:00 AM" id="z9u-td-fQW">
                                                                 <font key="font" size="13" name="Menlo-Regular"/>
                                                                 <color key="textColor" name="disabledControlTextColor" catalog="System" colorSpace="catalog"/>
