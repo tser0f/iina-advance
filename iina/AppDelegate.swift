@@ -91,33 +91,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard let keyPath = keyPath, let change = change else { return }
 
     switch keyPath {
-      /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1.
-      /// It uses it this value as its launchID, and stores the new value back to the prefs, which will notify anyone listening to pref changes.
-      /// So this acts like a sort of registration mechanism. Each instance listens to see if the pref is updated by other instances.
-      /// If an older launch sees a newer launch register itself, it will set an `.iinaPing`, which the newer instance will receive, and
-      /// assuming it is well-behaved, disable its usage of shared UI state for the remainder of its run, so that multiple instances don't
-      /// corrupt each other's shared state or create echo-like behavior.
-      case PK.iinaLaunchCount.rawValue:
-        if let newLaunchID = change[.newKey] as? Int {
-          guard newLaunchID != self.launchID else { return }
-          if newLaunchID < self.launchID {
-            Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which looks invalid because it is below the current value! Will disable UI state load/save functionality to be safe.", level: .warning)
-            Preference.UIState.disablePersistentStateUntilNextLaunch()
-          } else {
-            Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(self.launchID!)).")
-            Logger.log("Will assume a newer instance of IINA has started; sending a ping to notify it.")
-            let (version, build) = InfoDictionary.shared.version
-            let buildString = "IINA \(version) Build \(build)"
-            Preference.set(buildString, for: .iinaPing)
-          }
-        }
-      case PK.iinaPing.rawValue:
-        if let info = change[.newKey] as? String {
-          Logger.log("Got a ping. Will assume an instance of IINA is already running, and disable loading/saving UI state. [PingInfo: \(info)]")
+    /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1.
+    /// It uses it this value as its launchID, and stores the new value back to the prefs, which will notify anyone listening to pref changes.
+    /// So this acts like a sort of registration mechanism. Each instance listens to see if the pref is updated by other instances.
+    /// If an older launch sees a newer launch register itself, it will set an `.iinaPing`, which the newer instance will receive, and
+    /// assuming it is well-behaved, disable its usage of shared UI state for the remainder of its run, so that multiple instances don't
+    /// corrupt each other's shared state or create echo-like behavior.
+    case PK.iinaLaunchCount.rawValue:
+      if let newLaunchID = change[.newKey] as? Int {
+        guard newLaunchID != self.launchID else { return }
+        if newLaunchID < self.launchID {
+          Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which looks invalid because it is below the current value! Will disable UI state load/save functionality to be safe.", level: .warning)
           Preference.UIState.disablePersistentStateUntilNextLaunch()
+        } else {
+          Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(self.launchID!)).")
+          Logger.log("Will assume a newer instance of IINA has started; sending a ping to notify it.")
+          let (version, build) = InfoDictionary.shared.version
+          let buildString = "IINA \(version) Build \(build)"
+          Preference.set(buildString, for: .iinaPing)
         }
-      default:
-        break
+      }
+    case PK.iinaPing.rawValue:
+      if let info = change[.newKey] as? String {
+        Logger.log("Got a ping. Will assume an instance of IINA is already running, and disable loading/saving UI state. [PingInfo: \(info)]")
+        Preference.UIState.disablePersistentStateUntilNextLaunch()
+      }
+    default:
+      break
     }
   }
 
@@ -389,31 +389,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Show windows one by one, starting at back and iterating to front:
     for autosaveName in windowNamesBackToFront {
       switch autosaveName {
-        case Constants.WindowAutosaveName.playbackHistory:
-          showHistoryWindow(self)
-        case Constants.WindowAutosaveName.welcome:
-          showWelcomeWindow()
-        case Constants.WindowAutosaveName.preference:
-          showPreferences(self)
-        case Constants.WindowAutosaveName.about:
-          showAboutWindow(self)
-        case Constants.WindowAutosaveName.openURL:
-          // TODO: persist isAlternativeAction too
-          showOpenURLWindow(isAlternativeAction: true)
-        case Constants.WindowAutosaveName.inspector:
-          showInspectorWindow()
-        case Constants.WindowAutosaveName.videoFilter:
-          showVideoFilterWindow(self)
-        case Constants.WindowAutosaveName.audioFilter:
-          showAudioFilterWindow(self)
-        default:
-          // TODO
-//          if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
-//            PlayerCore.restoreSavedState(forPlayerUID: uniqueID)
-//          } else {
-//            Logger.log("Cannot restore window because it is not recognized: \(autosaveName)", level: .warning)
-//          }
-          break
+      case Constants.WindowAutosaveName.playbackHistory:
+        showHistoryWindow(self)
+      case Constants.WindowAutosaveName.welcome:
+        showWelcomeWindow()
+      case Constants.WindowAutosaveName.preference:
+        showPreferences(self)
+      case Constants.WindowAutosaveName.about:
+        showAboutWindow(self)
+      case Constants.WindowAutosaveName.openURL:
+        // TODO: persist isAlternativeAction too
+        showOpenURLWindow(isAlternativeAction: true)
+      case Constants.WindowAutosaveName.inspector:
+        showInspectorWindow()
+      case Constants.WindowAutosaveName.videoFilter:
+        showVideoFilterWindow(self)
+      case Constants.WindowAutosaveName.audioFilter:
+        showAudioFilterWindow(self)
+      default:
+        // TODO
+        //          if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
+        //            PlayerCore.restoreSavedState(forPlayerUID: uniqueID)
+        //          } else {
+        //            Logger.log("Cannot restore window because it is not recognized: \(autosaveName)", level: .warning)
+        //          }
+        break
       }
     }
 
@@ -502,15 +502,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     } else if window.isOnlyOpenWindow() {
       let quitForAction: Preference.ActionWhenNoOpenedWindow?
       switch window.frameAutosaveName {
-        case Constants.WindowAutosaveName.playbackHistory:
-          quitForAction = .historyWindow
-        case Constants.WindowAutosaveName.welcome:
-          guard !initialWindow.expectingAnotherWindowToOpen else {
-            return
-          }
-          quitForAction = .welcomeWindow
-        default:
-          quitForAction = nil
+      case Constants.WindowAutosaveName.playbackHistory:
+        quitForAction = .historyWindow
+      case Constants.WindowAutosaveName.welcome:
+        guard !initialWindow.expectingAnotherWindowToOpen else {
+          return
+        }
+        quitForAction = .welcomeWindow
+      default:
+        quitForAction = nil
       }
       doActionWhenLastWindowWillClose(quitFor: quitForAction)
     }
@@ -529,12 +529,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
 
       switch whatToDo {
-        case .welcomeWindow:
-          showWelcomeWindow()
-        case .historyWindow:
-          showHistoryWindow(self)
-        default:
-          break
+      case .welcomeWindow:
+        showWelcomeWindow()
+      case .historyWindow:
+        showHistoryWindow(self)
+      default:
+        break
       }
     }
   }

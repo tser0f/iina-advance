@@ -72,33 +72,33 @@ class PlayerWindowPreviewImageBuilder {
       // draw OSC bar
       if self.oscEnabled {
         switch self.oscPosition {
-          case .floating:
-            let offsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
-            let offsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
-            self.draw(image: oscFloatingImg, in: cgContext, withAlpha: overlayAlpha, x: offsetX, y: offsetY)
-          case .top:
-            // FIXME: This is INSIDE. Need support for OUTSIDE also!
-            switch self.titleBarStyle {
-              case .minimal:
-                // Special in-title accessory controller
-                let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscTitleImg.height
-                self.draw(image: oscTitleImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
-              case .full:
-                let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
-                let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight + adjustment - titleBarHeight
-                self.draw(image: oscFullImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, height: oscFullHeight - adjustment)
-              case .none:
-                let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
-                self.draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
-            }
-          case .bottom:
-            switch self.bottomPanelPlacement {
-              case .insideVideo:
-                self.draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: videoViewOffsetY)
-                cgContext.setBlendMode(.normal)
-              case .outsideVideo:
-                self.draw(image: oscFullImg, in: cgContext, withAlpha: opaqueControlAlpha, x: 0, y: 0)
-            }
+        case .floating:
+          let offsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
+          let offsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
+          self.draw(image: oscFloatingImg, in: cgContext, withAlpha: overlayAlpha, x: offsetX, y: offsetY)
+        case .top:
+          // FIXME: This is INSIDE. Need support for OUTSIDE also!
+          switch self.titleBarStyle {
+          case .minimal:
+            // Special in-title accessory controller
+            let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscTitleImg.height
+            self.draw(image: oscTitleImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
+          case .full:
+            let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
+            let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight + adjustment - titleBarHeight
+            self.draw(image: oscFullImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, height: oscFullHeight - adjustment)
+          case .none:
+            let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
+            self.draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
+          }
+        case .bottom:
+          switch self.bottomPanelPlacement {
+          case .insideVideo:
+            self.draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: videoViewOffsetY)
+            cgContext.setBlendMode(.normal)
+          case .outsideVideo:
+            self.draw(image: oscFullImg, in: cgContext, withAlpha: opaqueControlAlpha, x: 0, y: 0)
+          }
         }
       }
 
@@ -108,13 +108,13 @@ class PlayerWindowPreviewImageBuilder {
       let titleBarIsOverlay = self.topPanelPlacement == .insideVideo
       if titleBarIsOverlay {
         switch self.titleBarStyle {
-          case .none:
-            drawTitleBarBackground = false
-            break
-          case .minimal:
-            drawTitleBarBackground = false
-          case .full:
-            drawTitleBarBackground = true
+        case .none:
+          drawTitleBarBackground = false
+          break
+        case .minimal:
+          drawTitleBarBackground = false
+        case .full:
+          drawTitleBarBackground = true
         }
       } else {
         drawTitleBarBackground = true

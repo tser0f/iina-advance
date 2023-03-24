@@ -331,42 +331,42 @@ class MainWindowController: PlayerWindowController {
 
     var group: SidebarTabGroup {
       switch self {
-        case .playlist, .chapters:
-          return .playlist
-        case .video, .audio, .sub, .plugin(id: _):
-          return .settings
+      case .playlist, .chapters:
+        return .playlist
+      case .video, .audio, .sub, .plugin(id: _):
+        return .settings
       }
     }
 
     init?(name: String) {
       switch name {
-        case "playlist":
-          self = .playlist
-        case "chapters":
-          self = .chapters
-        case "video":
-          self = .video
-        case "audio":
-          self = .audio
-        case "sub":
-          self = .sub
-        default:
-          if name.hasPrefix("plugin:") {
-            self = .plugin(id: String(name.dropFirst(7)))
-          } else {
-            return nil
-          }
+      case "playlist":
+        self = .playlist
+      case "chapters":
+        self = .chapters
+      case "video":
+        self = .video
+      case "audio":
+        self = .audio
+      case "sub":
+        self = .sub
+      default:
+        if name.hasPrefix("plugin:") {
+          self = .plugin(id: String(name.dropFirst(7)))
+        } else {
+          return nil
+        }
       }
     }
 
     var name: String {
       switch self {
-        case .playlist: return "playlist"
-        case .chapters: return "chapters"
-        case .video: return "video"
-        case .audio: return "audio"
-        case .sub: return "sub"
-        case .plugin(let id): return "plugin:\(id)"
+      case .playlist: return "playlist"
+      case .chapters: return "chapters"
+      case .video: return "video"
+      case .audio: return "audio"
+      case .sub: return "sub"
+      case .plugin(let id): return "plugin:\(id)"
       }
     }
   }
@@ -415,10 +415,10 @@ class MainWindowController: PlayerWindowController {
       // Fall back to default for whatever tab group found:
       if let group = tabGroups.first {
         switch group {
-          case .playlist:
-            return SidebarTab.playlist
-          case .settings:
-            return SidebarTab.video
+        case .playlist:
+          return SidebarTab.playlist
+        case .settings:
+          return SidebarTab.video
         }
       }
 
@@ -502,13 +502,13 @@ class MainWindowController: PlayerWindowController {
     super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 
     switch keyPath {
-      case PK.enableOSC.rawValue,
-        PK.oscPosition.rawValue,
-        PK.titleBarStyle.rawValue,
-        PK.topPanelPlacement.rawValue,
-        PK.bottomPanelPlacement.rawValue,
-        PK.showLeadingSidebarToggleButton.rawValue,
-        PK.showTrailingSidebarToggleButton.rawValue:
+    case PK.enableOSC.rawValue,
+      PK.oscPosition.rawValue,
+      PK.titleBarStyle.rawValue,
+      PK.topPanelPlacement.rawValue,
+      PK.bottomPanelPlacement.rawValue,
+      PK.showLeadingSidebarToggleButton.rawValue,
+      PK.showTrailingSidebarToggleButton.rawValue:
 
       setupTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
@@ -524,7 +524,7 @@ class MainWindowController: PlayerWindowController {
     case PK.enableThumbnailPreview.rawValue, PK.enableThumbnailForRemoteFiles.rawValue:
       // May need to remove thumbs or generate new ones: let method below figure it out:
       self.player.reloadThumbnails()
-        
+
     case PK.showChapterPos.rawValue:
       if let newValue = change[.newKey] as? Bool {
         (playSlider.cell as! PlaySliderCell).drawChapters = newValue
@@ -1310,10 +1310,10 @@ class MainWindowController: PlayerWindowController {
       let sf = leadingSidebarView.frame
       let dragRectCenterX: CGFloat
       switch leadingSidebar.placement {
-        case .insideVideo:
-          dragRectCenterX = sf.origin.x + sf.width
-        case .outsideVideo:
-          dragRectCenterX = sf.origin.x
+      case .insideVideo:
+        dragRectCenterX = sf.origin.x + sf.width
+      case .outsideVideo:
+        dragRectCenterX = sf.origin.x
       }
 
       let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
@@ -1325,10 +1325,10 @@ class MainWindowController: PlayerWindowController {
       let sf = trailingSidebarView.frame
       let dragRectCenterX: CGFloat
       switch leadingSidebar.placement {
-        case .insideVideo:
-          dragRectCenterX = sf.origin.x
-        case .outsideVideo:
-          dragRectCenterX = sf.origin.x + sf.width
+      case .insideVideo:
+        dragRectCenterX = sf.origin.x
+      case .outsideVideo:
+        dragRectCenterX = sf.origin.x + sf.width
       }
 
       let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
@@ -1344,10 +1344,10 @@ class MainWindowController: PlayerWindowController {
       let currentLocation = event.locationInWindow
       let newWidth: CGFloat
       switch leadingSidebar.placement {
-        case .insideVideo:
-          newWidth = currentLocation.x + 2
-        case .outsideVideo:
-          newWidth = leadingSidebarView.frame.width + currentLocation.x + 2
+      case .insideVideo:
+        newWidth = currentLocation.x + 2
+      case .outsideVideo:
+        newWidth = leadingSidebarView.frame.width + currentLocation.x + 2
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       leadingSidebarWidthConstraint.constant = newPlaylistWidth
@@ -1357,10 +1357,10 @@ class MainWindowController: PlayerWindowController {
       // resize sidebar
       let newWidth: CGFloat
       switch trailingSidebar.placement {
-        case .insideVideo:
-          newWidth = window!.frame.width - currentLocation.x - 2
-        case .outsideVideo:
-          newWidth = window!.frame.width - currentLocation.x + trailingSidebarView.frame.width - 2
+      case .insideVideo:
+        newWidth = window!.frame.width - currentLocation.x - 2
+      case .outsideVideo:
+        newWidth = window!.frame.width - currentLocation.x + trailingSidebarView.frame.width - 2
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       trailingSidebarWidthConstraint.constant = newPlaylistWidth
@@ -1703,37 +1703,37 @@ class MainWindowController: PlayerWindowController {
     guard rotateAction == .rotateVideoByQuarters else { return }
 
     switch recognizer.state {
-      case .began, .changed:
-        let cgNewRotationDegrees = recognizer.rotationInDegrees
-        rotateVideoView(toDegrees: cgNewRotationDegrees, animate: false)
-        break
-      case .failed, .cancelled:
-        rotateVideoView(toDegrees: 0, animate: false)
-        break
-      case .ended:
-        // mpv and CoreGraphics rotate in opposite directions
-        let mpvNormalizedRotationDegrees = normalizeRotation(Int(-recognizer.rotationInDegrees))
-        let mpvClosestQuarterRotation = findClosestQuarterRotation(mpvNormalizedRotationDegrees)
-        guard mpvClosestQuarterRotation != 0 else {
-          // Zero degree rotation: no change.
-          // Don't "unwind" if more than 360° rotated; just take shortest partial circle back to origin
-          cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees)
-          Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
-          rotateVideoView(toDegrees: 0, animate: !AccessibilityPreferences.motionReductionEnabled)
-          return
-        }
-
-        // Snap to one of the 4 quarter circle rotations
-        let mpvNewRotation = (player.info.userRotation + mpvClosestQuarterRotation) %% 360
-        Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(player.info.userRotation)°) → new rotation will be \(mpvNewRotation)°")
-        // Need to convert snap-to location back to CG, to feed to animation
-        let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
-                                                           equalToMpvRotation: mpvClosestQuarterRotation)
-        rotateVideoView(toDegrees: cgSnapToDegrees, animate: !AccessibilityPreferences.motionReductionEnabled)
-        player.setVideoRotate(mpvNewRotation)
-
-      default:
+    case .began, .changed:
+      let cgNewRotationDegrees = recognizer.rotationInDegrees
+      rotateVideoView(toDegrees: cgNewRotationDegrees, animate: false)
+      break
+    case .failed, .cancelled:
+      rotateVideoView(toDegrees: 0, animate: false)
+      break
+    case .ended:
+      // mpv and CoreGraphics rotate in opposite directions
+      let mpvNormalizedRotationDegrees = normalizeRotation(Int(-recognizer.rotationInDegrees))
+      let mpvClosestQuarterRotation = findClosestQuarterRotation(mpvNormalizedRotationDegrees)
+      guard mpvClosestQuarterRotation != 0 else {
+        // Zero degree rotation: no change.
+        // Don't "unwind" if more than 360° rotated; just take shortest partial circle back to origin
+        cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees)
+        Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
+        rotateVideoView(toDegrees: 0, animate: !AccessibilityPreferences.motionReductionEnabled)
         return
+      }
+
+      // Snap to one of the 4 quarter circle rotations
+      let mpvNewRotation = (player.info.userRotation + mpvClosestQuarterRotation) %% 360
+      Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(player.info.userRotation)°) → new rotation will be \(mpvNewRotation)°")
+      // Need to convert snap-to location back to CG, to feed to animation
+      let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
+                                                         equalToMpvRotation: mpvClosestQuarterRotation)
+      rotateVideoView(toDegrees: cgSnapToDegrees, animate: !AccessibilityPreferences.motionReductionEnabled)
+      player.setVideoRotate(mpvNewRotation)
+
+    default:
+      return
     }
   }
 
@@ -2656,14 +2656,14 @@ class MainWindowController: PlayerWindowController {
   func showSidebar(forTabGroup tabGroup: SidebarTabGroup, force: Bool = false, hideIfAlreadyShown: Bool = true) {
     Logger.log("ShowSidebar for tabGroup: \(tabGroup.rawValue.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
     switch tabGroup {
-      case .playlist:
-        if let tab = SidebarTab(name: playlistView.currentTab.rawValue) {
-          showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
-        }
-      case .settings:
-        if let tab = SidebarTab(name: quickSettingView.currentTab.name) {
-          showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
-        }
+    case .playlist:
+      if let tab = SidebarTab(name: playlistView.currentTab.rawValue) {
+        showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
+      }
+    case .settings:
+      if let tab = SidebarTab(name: quickSettingView.currentTab.name) {
+        showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
+      }
     }
   }
 
@@ -2741,14 +2741,14 @@ class MainWindowController: PlayerWindowController {
     let widthConstraint: NSLayoutConstraint
     let edgeConstraint: NSLayoutConstraint
     switch sidebar.locationID {
-      case .leadingSidebar:
-        sidebarView = leadingSidebarView
-        widthConstraint = leadingSidebarWidthConstraint
-        edgeConstraint = leadingSidebarLeadingConstraint
-      case .trailingSidebar:
-        sidebarView = trailingSidebarView
-        widthConstraint = trailingSidebarWidthConstraint
-        edgeConstraint = trailingSidebarTrailingConstraint
+    case .leadingSidebar:
+      sidebarView = leadingSidebarView
+      widthConstraint = leadingSidebarWidthConstraint
+      edgeConstraint = leadingSidebarLeadingConstraint
+    case .trailingSidebar:
+      sidebarView = trailingSidebarView
+      widthConstraint = trailingSidebarWidthConstraint
+      edgeConstraint = trailingSidebarTrailingConstraint
     }
 
     sidebar.animationState = show ? .willShow : .willHide
@@ -2757,18 +2757,18 @@ class MainWindowController: PlayerWindowController {
     if show {
       // Make it the active tab in its parent tab group (can do this whether or not it's shown):
       switch tab.group {
-        case .playlist:
-          guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
-            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!", level: .error)
-            return
-          }
-          self.playlistView.pleaseSwitchToTab(tabType)
-        case .settings:
-          guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
-            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!", level: .error)
-            return
-          }
-          self.quickSettingView.pleaseSwitchToTab(tabType)
+      case .playlist:
+        guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
+          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!", level: .error)
+          return
+        }
+        self.playlistView.pleaseSwitchToTab(tabType)
+      case .settings:
+        guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
+          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!", level: .error)
+          return
+        }
+        self.quickSettingView.pleaseSwitchToTab(tabType)
       }
 
       // adjust sidebar width before showing in case it's not up to date
@@ -2788,10 +2788,10 @@ class MainWindowController: PlayerWindowController {
       context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       switch sidebar.locationID {
-        case .leadingSidebar:
-          updateLeadingTitleBarAccessory()
-        case .trailingSidebar:
-          updateTrailingTitleBarAccessory()
+      case .leadingSidebar:
+        updateLeadingTitleBarAccessory()
+      case .trailingSidebar:
+        updateTrailingTitleBarAccessory()
       }
       edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }, completionHandler: {
@@ -3013,7 +3013,6 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  // TODO: fix typo: 'timnePreviewYPos'
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..
   ///
   /// Normally the OSC's thumbnail preview is shown above the time preview. This is the preferred location. However the
@@ -3026,20 +3025,20 @@ class MainWindowController: PlayerWindowController {
   /// - Returns: `true` if the thumbnail can be shown above the slider, `false` otherwise.
   private func canShowThumbnailAbove(timePreviewYPos: Double, thumbnailHeight: Double) -> Bool {
     switch oscPosition {
-      case .top:
-        return false
-      case .bottom:
-        return true
-      case .floating:
-        // The layout preference for the on screen controller is set to the default floating layout.
-        // Must ensure the top of the thumbnail will be below the top of the window.
-        let topOfThumbnail = timePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
-        // Normally the height of the usable area of the window can be obtained from the content
-        // layout. But when the legacy full screen preference is enabled the layout height may be
-        // larger than the content view if the display contains a camera housing. Use the lower of
-        // the two heights.
-        let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
-        return topOfThumbnail <= windowContentHeight
+    case .top:
+      return false
+    case .bottom:
+      return true
+    case .floating:
+      // The layout preference for the on screen controller is set to the default floating layout.
+      // Must ensure the top of the thumbnail will be below the top of the window.
+      let topOfThumbnail = timePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
+      // Normally the height of the usable area of the window can be obtained from the content
+      // layout. But when the legacy full screen preference is enabled the layout height may be
+      // larger than the content view if the display contains a camera housing. Use the lower of
+      // the two heights.
+      let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
+      return topOfThumbnail <= windowContentHeight
     }
   }
 

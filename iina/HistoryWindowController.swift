@@ -80,18 +80,18 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     guard let keyPath = keyPath, change != nil else { return }
 
     switch keyPath {
-      case PK.uiHistoryTableGroupBy.rawValue:
-        guard let groupByNew = HistoryWindowController.getGroupByFromPrefs(), groupByNew != groupBy else { return }
-        groupBy = groupByNew
-      case PK.uiHistoryTableSearchType.rawValue:
-        guard let searchTypeNew = HistoryWindowController.getHistorySearchTypeFromPrefs(), searchTypeNew != searchType else { return }
-        searchType = searchTypeNew
-      case PK.uiHistoryTableSearchString.rawValue:
-        guard let searchStringNew = HistoryWindowController.getSearchStringFromPrefs(), searchStringNew != searchString else { return }
-        searchString = searchStringNew
-        historySearchField.stringValue = searchString
-      default:
-        break
+    case PK.uiHistoryTableGroupBy.rawValue:
+      guard let groupByNew = HistoryWindowController.getGroupByFromPrefs(), groupByNew != groupBy else { return }
+      groupBy = groupByNew
+    case PK.uiHistoryTableSearchType.rawValue:
+      guard let searchTypeNew = HistoryWindowController.getHistorySearchTypeFromPrefs(), searchTypeNew != searchType else { return }
+      searchType = searchTypeNew
+    case PK.uiHistoryTableSearchString.rawValue:
+      guard let searchStringNew = HistoryWindowController.getSearchStringFromPrefs(), searchStringNew != searchString else { return }
+      searchString = searchStringNew
+      historySearchField.stringValue = searchString
+    default:
+      break
     }
     if isWindowLoaded {
       reloadData()

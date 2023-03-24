@@ -142,15 +142,15 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
-      case PK.titleBarStyle.rawValue,
-           PK.enableOSC.rawValue,
-           PK.topPanelPlacement.rawValue,
-           PK.bottomPanelPlacement.rawValue,
-           PK.oscPosition.rawValue,
-           PK.themeMaterial.rawValue:
-        refreshTitleBarAndOSCSection()
-      default:
-        break
+    case PK.titleBarStyle.rawValue,
+      PK.enableOSC.rawValue,
+      PK.topPanelPlacement.rawValue,
+      PK.bottomPanelPlacement.rawValue,
+      PK.oscPosition.rawValue,
+      PK.themeMaterial.rawValue:
+      refreshTitleBarAndOSCSection()
+    default:
+      break
     }
   }
 

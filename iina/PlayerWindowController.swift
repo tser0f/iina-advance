@@ -167,7 +167,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     setMaterial(Preference.enum(for: .themeMaterial))
     
     addObserver(to: .default, forName: .iinaMediaTitleChanged, object: player) { [unowned self] _ in
-        self.updateTitle()
+      self.updateTitle()
     }
 
     leftLabel.mode = .current
@@ -241,7 +241,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let returnValue: Int32
       // execute the command
       switch keyBinding.action.first! {
-      // TODO: replace this with a key binding interceptor
+        // TODO: replace this with a key binding interceptor
       case MPVCommand.abLoop.rawValue:
         abLoop()
         returnValue = 0
