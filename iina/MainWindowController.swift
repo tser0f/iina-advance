@@ -1158,31 +1158,24 @@ class MainWindowController: PlayerWindowController {
         $0!.removeFromSuperview()
     }
 
-    titleBarHeightConstraint.constant = 0
-    topOSCPreferredHeightConstraint.constant = 0
-
-    if enableOSC {
-      if oscPosition == .top {
-        topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
-        if fsState.isFullscreen {
-          topPanelView.isHidden = false
-          fadeableViews.insert(topPanelView)
-          titleBarHeightConstraint.constant = 0
-        } else {
-          titleBarHeightConstraint.constant = reducedTitleBarHeight
-        }
+    if enableOSC && oscPosition == .top {
+      topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
+      if fsState.isFullscreen {
+        fadeableViews.insert(topPanelView)
+        topPanelView.isHidden = false
+        titleBarHeightConstraint.constant = 0
       } else {
-        if fsState.isFullscreen {
-          topPanelView.isHidden = true
-          fadeableViews.remove(topPanelView)
-        }
-        titleBarHeightConstraint.constant = StandardTitleBarHeight
-        topOSCPreferredHeightConstraint.constant = 0
+        titleBarHeightConstraint.constant = reducedTitleBarHeight
       }
     } else {
+      if fsState.isFullscreen {
+        fadeableViews.remove(topPanelView)
+        topPanelView.isHidden = true
+      }
       titleBarHeightConstraint.constant = StandardTitleBarHeight
       topOSCPreferredHeightConstraint.constant = 0
     }
+
     quickSettingView.refreshVerticalConstraints()
     playlistView.refreshVerticalConstraints()
 
@@ -1228,6 +1221,7 @@ class MainWindowController: PlayerWindowController {
       case .bottom:
         currentControlBar = controlBarBottom
         if bottomPanelPlacement == .outsideVideo {
+          fadeableViews.remove(controlBarBottom)
           controlBarBottom.isHidden = false
         } else {
           fadeableViews.insert(controlBarBottom)
@@ -2454,6 +2448,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  // Shows fadeableViews and titlebar via fade
   private func showOverlays() {
     if player.disableUI { return }
 
