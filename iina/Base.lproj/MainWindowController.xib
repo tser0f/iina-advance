@@ -799,7 +799,7 @@
                 <constraint firstAttribute="bottom" secondItem="QL8-sC-ql6" secondAttribute="bottom" id="YPW-cg-eRd"/>
                 <constraint firstItem="QL8-sC-ql6" firstAttribute="leading" secondItem="LFL-4a-93B" secondAttribute="leading" id="kdt-3G-JhT"/>
             </constraints>
-            <point key="canvasLocation" x="482" y="-133"/>
+            <point key="canvasLocation" x="-96" y="-214"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Trailing Title Bar Accessory View">
             <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
@@ -867,7 +867,7 @@
                 <constraint firstAttribute="bottom" secondItem="WSW-ov-e8M" secondAttribute="bottom" id="VF9-tA-dEf"/>
                 <constraint firstItem="WSW-ov-e8M" firstAttribute="top" secondItem="maF-Zr-K8w" secondAttribute="top" id="msD-VG-w6j"/>
             </constraints>
-            <point key="canvasLocation" x="728" y="-133"/>
+            <point key="canvasLocation" x="512" y="-214"/>
         </customView>
     </objects>
     <resources>

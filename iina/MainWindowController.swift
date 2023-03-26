@@ -53,6 +53,8 @@ fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarliest = NSStackView.VisibilityPriority(rawValue: 750)
 }
 
+fileprivate typealias AnimationBlock = (NSAnimationContext) -> Void
+
 class MainWindowController: PlayerWindowController {
 
   override var windowNibName: NSNib.Name {
@@ -960,7 +962,7 @@ class MainWindowController: PlayerWindowController {
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
   private func updateTopPanelPosition() {
-    let windowContentView = topPanelView.superview!
+    guard let window = window, let windowContentView = window.contentView else { return }
     windowContentView.removeConstraint(videoContainerTopConstraint)
     windowContentView.removeConstraint(topPanelLeadingSpaceConstraint)
     windowContentView.removeConstraint(topPanelTrailingSpaceConstraint)
@@ -987,7 +989,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updateBottomPanelPosition() {
-    let windowContentView = controlBarBottom.superview!
+    guard let window = window, let windowContentView = window.contentView else { return }
     windowContentView.removeConstraint(videoContainerBottomConstraint)
     windowContentView.removeConstraint(bottomPanelLeadingSpaceConstraint)
     windowContentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
@@ -1108,6 +1110,19 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  // Recursive function which executions code for a single group in the chain
+  private func executeAnimationGroup(_ animationBlocks: [AnimationBlock], index: Int = 0) {
+    guard index < animationBlocks.count else { return }
+
+    NSAnimationContext.runAnimationGroup({ context in
+      context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
+      context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
+      animationBlocks[index](context)
+    }, completionHandler: {
+      self.executeAnimationGroup(animationBlocks, index: index + 1)
+    })
+  }
+
   private func setupTitleBarAndOSC() {
     enableOSC = Preference.bool(for: .enableOSC)
     oscPosition = Preference.enum(for: .oscPosition)
@@ -1115,137 +1130,134 @@ class MainWindowController: PlayerWindowController {
     topPanelPlacement = Preference.enum(for: .topPanelPlacement)
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
 
-    NSAnimationContext.runAnimationGroup({context in
-      context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
-      context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
+    var animationBlocks: [AnimationBlock] = []
 
-      let windowContentView = topPanelView.superview!
-
+    animationBlocks.append{ [self] context in
       updateTopPanelPosition()
       updateBottomPanelPosition()
 
       updateLeadingTitleBarAccessory()
       updateTrailingTitleBarAccessory()
-      windowContentView.layoutSubtreeIfNeeded()
-    })
 
-    if let cb = currentControlBar {
-      // remove current osc view from fadeable views
-      fadeableViews.remove(cb)
-    }
+      quickSettingView.refreshVerticalConstraints()
+      playlistView.refreshVerticalConstraints()
 
-    if topPanelPlacement == .outsideVideo {
-      fadeableViews.remove(topPanelView)
-      topPanelView.isHidden = false
-      topPanelView.alphaValue = 1
-    } else {
-      // fade-able views
-      fadeableViews.insert(topPanelView)
-    }
+      // reset
+      controlBarFloating.isHidden = true
+      fadeableViews.remove(controlBarFloating)
+      controlBarBottom.isHidden = true
+      fadeableViews.remove(controlBarBottom)
 
-    // reset
-    ([controlBarFloating, controlBarBottom] as [NSView]).forEach { $0.isHidden = true }
+      controlBarFloating.isDragging = false
 
-    controlBarFloating.isDragging = false
-
-    // detach all fragment views
-    [oscFloatingTopView, oscTopMainView, oscBottomMainView].forEach { stackView in
-      stackView!.views.forEach {
-        stackView!.removeView($0)
+      // detach all fragment views
+      [oscFloatingTopView, oscTopMainView, oscBottomMainView].forEach { stackView in
+        stackView!.views.forEach {
+          stackView!.removeView($0)
+        }
       }
-    }
-    [fragSliderView, fragControlView, fragToolbarView, fragVolumeView].forEach {
+      [fragSliderView, fragControlView, fragToolbarView, fragVolumeView].forEach {
         $0!.removeFromSuperview()
-    }
-
-    if enableOSC && oscPosition == .top {
-      topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
-      if fsState.isFullscreen {
-        fadeableViews.insert(topPanelView)
-        topPanelView.isHidden = false
-        titleBarHeightConstraint.constant = 0
-      } else {
-        titleBarHeightConstraint.constant = reducedTitleBarHeight
       }
-    } else {
-      if fsState.isFullscreen {
-        fadeableViews.remove(topPanelView)
-        topPanelView.isHidden = true
-      }
-      titleBarHeightConstraint.constant = StandardTitleBarHeight
-      topOSCPreferredHeightConstraint.constant = 0
-    }
 
-    quickSettingView.refreshVerticalConstraints()
-    playlistView.refreshVerticalConstraints()
-
-    if enableOSC {
-      // add fragment views
-      switch oscPosition {
-      case .floating:
-        currentControlBar = controlBarFloating
-        fadeableViews.insert(controlBarFloating)
-        fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewLeftView)
-        fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewRightView)
-        oscFloatingTopView.addView(fragVolumeView, in: .leading)
-        oscFloatingTopView.addView(fragToolbarView, in: .trailing)
-        oscFloatingTopView.addView(fragControlView, in: .center)
-        
-        // Setting the visibility priority to detach only will cause freeze when resizing the window
-        // (and triggering the detach) in macOS 11.
-        if !isMacOS11 {
-          oscFloatingTopView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragVolumeView)
-          oscFloatingTopView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragToolbarView)
-          oscFloatingTopView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-        }
-        oscFloatingBottomView.addSubview(fragSliderView)
-        Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": fragSliderView])
-        Utility.quickConstraints(["H:|-(>=0)-[v]-(>=0)-|"], ["v": fragControlView])
-        // center control bar
-        let cph = Preference.float(for: .controlBarPositionHorizontal)
-        let cpv = Preference.float(for: .controlBarPositionVertical)
-        controlBarFloating.xConstraint.constant = window!.frame.width * CGFloat(cph)
-        controlBarFloating.yConstraint.constant = window!.frame.height * CGFloat(cpv)
-      case .top:
-        currentControlBar = controlBarTop
-        fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
-        fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
-        oscTopMainView.addView(fragVolumeView, in: .trailing)
-        oscTopMainView.addView(fragToolbarView, in: .trailing)
-        oscTopMainView.addView(fragControlView, in: .leading)
-        oscTopMainView.addView(fragSliderView, in: .leading)
-        oscTopMainView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-        oscTopMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
-        oscTopMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
-        oscTopMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
-      case .bottom:
-        currentControlBar = controlBarBottom
-        if bottomPanelPlacement == .outsideVideo {
-          fadeableViews.remove(controlBarBottom)
-          controlBarBottom.isHidden = false
+      if enableOSC && oscPosition == .top {
+        topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
+        if fsState.isFullscreen {
+          fadeableViews.insert(topPanelView)
+          titleBarHeightConstraint.constant = 0
         } else {
-          fadeableViews.insert(controlBarBottom)
+          if topPanelPlacement == .outsideVideo {
+            fadeableViews.remove(topPanelView)
+          } else {
+            fadeableViews.insert(topPanelView)
+          }
+          topPanelView.isHidden = false
+          titleBarHeightConstraint.constant = reducedTitleBarHeight
         }
-        fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
-        fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
-        oscBottomMainView.addView(fragVolumeView, in: .trailing)
-        oscBottomMainView.addView(fragToolbarView, in: .trailing)
-        oscBottomMainView.addView(fragControlView, in: .leading)
-        oscBottomMainView.addView(fragSliderView, in: .leading)
-        oscBottomMainView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-        oscBottomMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
-        oscBottomMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
-        oscBottomMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
+      } else {
+        if fsState.isFullscreen {
+          fadeableViews.remove(topPanelView)
+          topPanelView.isHidden = true
+        } else {
+          fadeableViews.insert(topPanelView)
+        }
+        titleBarHeightConstraint.constant = StandardTitleBarHeight
+        topOSCPreferredHeightConstraint.constant = 0
       }
+
+      if enableOSC {
+        // add fragment views
+        switch oscPosition {
+        case .floating:
+          currentControlBar = controlBarFloating
+          fadeableViews.insert(controlBarFloating)
+          fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewLeftView)
+          fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewRightView)
+          oscFloatingTopView.addView(fragVolumeView, in: .leading)
+          oscFloatingTopView.addView(fragToolbarView, in: .trailing)
+          oscFloatingTopView.addView(fragControlView, in: .center)
+
+          // Setting the visibility priority to detach only will cause freeze when resizing the window
+          // (and triggering the detach) in macOS 11.
+          if !isMacOS11 {
+            oscFloatingTopView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragVolumeView)
+            oscFloatingTopView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragToolbarView)
+            oscFloatingTopView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+          }
+          oscFloatingBottomView.addSubview(fragSliderView)
+          Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": fragSliderView])
+          Utility.quickConstraints(["H:|-(>=0)-[v]-(>=0)-|"], ["v": fragControlView])
+          // center control bar
+          let cph = Preference.float(for: .controlBarPositionHorizontal)
+          let cpv = Preference.float(for: .controlBarPositionVertical)
+          controlBarFloating.xConstraint.constant = window!.frame.width * CGFloat(cph)
+          controlBarFloating.yConstraint.constant = window!.frame.height * CGFloat(cpv)
+        case .top:
+          currentControlBar = controlBarTop
+          fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
+          fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
+          oscTopMainView.addView(fragVolumeView, in: .trailing)
+          oscTopMainView.addView(fragToolbarView, in: .trailing)
+          oscTopMainView.addView(fragControlView, in: .leading)
+          oscTopMainView.addView(fragSliderView, in: .leading)
+          oscTopMainView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+          oscTopMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
+          oscTopMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
+          oscTopMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
+        case .bottom:
+          currentControlBar = controlBarBottom
+          if bottomPanelPlacement == .outsideVideo {
+            fadeableViews.remove(controlBarBottom)
+          } else {
+            fadeableViews.insert(controlBarBottom)
+          }
+          fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
+          fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
+          oscBottomMainView.addView(fragVolumeView, in: .trailing)
+          oscBottomMainView.addView(fragToolbarView, in: .trailing)
+          oscBottomMainView.addView(fragControlView, in: .leading)
+          oscBottomMainView.addView(fragSliderView, in: .leading)
+          oscBottomMainView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+          oscBottomMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
+          oscBottomMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
+          oscBottomMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
+        }
+        if let currentControlBar = currentControlBar {
+          currentControlBar.isHidden = false
+        }
+      }
+
+      if oscPosition == .floating {
+        playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFloatingOSC
+      } else {
+        playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFullWidthOSC
+      }
+      self.window?.contentView?.layoutSubtreeIfNeeded()
     }
 
-    showOverlays()
-
-    if oscPosition == .floating {
-      playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFloatingOSC
-    } else {
-      playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFullWidthOSC
-    }
+    showOverlays(completionHandler: { [self] in
+      executeAnimationGroup(animationBlocks)
+    })
   }
 
   private func hideTitleBar() {
@@ -2449,7 +2461,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   // Shows fadeableViews and titlebar via fade
-  private func showOverlays() {
+  private func showOverlays(completionHandler: (() -> Void)? = nil) {
     if player.disableUI { return }
 
     animationState = .willShow
@@ -2472,6 +2484,9 @@ class MainWindowController: PlayerWindowController {
           v.isHidden = false
         }
         self.resetOverlaysTimer()
+      }
+      if let completionHandler = completionHandler {
+        completionHandler()
       }
     }
   }
