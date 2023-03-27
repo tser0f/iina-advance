@@ -136,8 +136,8 @@ class MainWindowController: PlayerWindowController {
   var cachedScreenCount = 0
   var blackWindows: [NSWindow] = []
 
-  // Current rotation of videoView
-  private var cgCurrentRotationDegrees: CGFloat = 0
+  // Current rotation of videoView: see MainWindowRotationGesture
+  let rotationHandler = VideoRotationHandler()
 
   // MARK: - Status
 
@@ -466,7 +466,6 @@ class MainWindowController: PlayerWindowController {
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
   private lazy var pinchAction: Preference.PinchAction = Preference.enum(for: .pinchAction)
-  private lazy var rotateAction: Preference.RotateAction = Preference.enum(for: .rotateAction)
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
   private static let mainWindowPrefKeys: [Preference.Key] = PlayerWindowController.playerWindowPrefKeys + [
@@ -481,7 +480,6 @@ class MainWindowController: PlayerWindowController {
     .showChapterPos,
     .arrowButtonAction,
     .pinchAction,
-    .rotateAction,
     .blackOutMonitor,
     .useLegacyFullScreen,
     .displayTimeAndBatteryInFullScreen,
@@ -547,10 +545,6 @@ class MainWindowController: PlayerWindowController {
     case PK.pinchAction.rawValue:
       if let newValue = change[.newKey] as? Int {
         pinchAction = Preference.PinchAction(rawValue: newValue)!
-      }
-    case PK.rotateAction.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        rotateAction = Preference.RotateAction(rawValue: newValue)!
       }
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
@@ -848,9 +842,11 @@ class MainWindowController: PlayerWindowController {
     addVideoViewToWindow()
     window.setIsVisible(true)
 
-    // gesture recognizer
+    rotationHandler.mainWindowController = self
+
+    // gesture recognizers
     cv.addGestureRecognizer(magnificationGestureRecognizer)
-    cv.addGestureRecognizer(NSRotationGestureRecognizer(target: self, action: #selector(MainWindowController.handleRotationGesture(recognizer:))))
+    cv.addGestureRecognizer(NSRotationGestureRecognizer(target: self, action: #selector(rotationHandler.handleRotationGesture(recognizer:))))
 
     // Work around a bug in macOS Ventura where HDR content becomes dimmed when playing in full
     // screen mode once overlaying views are fully hidden (issue #3844). After applying this
@@ -947,6 +943,52 @@ class MainWindowController: PlayerWindowController {
     player.events.emit(.windowLoaded)
   }
 
+  /** Set material for OSC and title bar */
+  override internal func setMaterial(_ theme: Preference.Theme?) {
+    if #available(macOS 10.14, *) {
+      super.setMaterial(theme)
+      return
+    }
+    guard let window = window, let theme = theme else { return }
+
+    let (appearance, material) = Utility.getAppearanceAndMaterial(from: theme)
+    let isDarkTheme = appearance?.isDark ?? true
+    (playSlider.cell as? PlaySliderCell)?.isInDarkTheme = isDarkTheme
+
+    for view in [topPanelView, controlBarFloating, controlBarBottom,
+                 osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView] {
+      view?.material = material
+      view?.appearance = appearance
+    }
+
+    for sidebar in [leadingSidebarView, trailingSidebarView] {
+      sidebar?.material = .dark
+      sidebar?.appearance = NSAppearance(named: .vibrantDark)
+    }
+
+    window.appearance = appearance
+  }
+
+  /// Returns the position in seconds for the given percent of the total duration of the video the percentage represents.
+  ///
+  /// The number of seconds returned must be considered an estimate that could change. The duration of the video is obtained from
+  /// the [mpv](https://mpv.io/manual/stable/) `duration` property. The documentation for this property cautions that
+  /// mpv is not always able to determine the duration and when it does return a duration it may be an estimate. If the duration is
+  /// unknown this method will fallback to using the current playback position, if that is known. Otherwise this method will return zero.
+  /// - Parameter percent: Position in the video as a percentage of the duration.
+  /// - Returns: The position in the video the given percentage represents.
+  private func percentToSeconds(_ percent: Double) -> Double {
+    if let duration = player.info.videoDuration?.second {
+      return duration * percent / 100
+    } else if let position = player.info.videoPosition?.second {
+      return position * percent / 100
+    } else {
+      return 0
+    }
+  }
+
+  // - MARK: Controllers & Title Bar
+
   /**
            "Outside"
          ┌─────────────┐
@@ -1027,50 +1069,6 @@ class MainWindowController: PlayerWindowController {
     videoAspectRatioConstraint = videoContainerView.heightAnchor.constraint(equalTo: videoContainerView.widthAnchor, multiplier: height / width)
     videoAspectRatioConstraint.isActive = true
     videoContainerView.addConstraint(videoAspectRatioConstraint)
-  }
-
-  /// Returns the position in seconds for the given percent of the total duration of the video the percentage represents.
-  ///
-  /// The number of seconds returned must be considered an estimate that could change. The duration of the video is obtained from
-  /// the [mpv](https://mpv.io/manual/stable/) `duration` property. The documentation for this property cautions that
-  /// mpv is not always able to determine the duration and when it does return a duration it may be an estimate. If the duration is
-  /// unknown this method will fallback to using the current playback position, if that is known. Otherwise this method will return zero.
-  /// - Parameter percent: Position in the video as a percentage of the duration.
-  /// - Returns: The position in the video the given percentage represents.
-  private func percentToSeconds(_ percent: Double) -> Double {
-    if let duration = player.info.videoDuration?.second {
-      return duration * percent / 100
-    } else if let position = player.info.videoPosition?.second {
-      return position * percent / 100
-    } else {
-      return 0
-    }
-  }
-
-  /** Set material for OSC and title bar */
-  override internal func setMaterial(_ theme: Preference.Theme?) {
-    if #available(macOS 10.14, *) {
-      super.setMaterial(theme)
-      return
-    }
-    guard let window = window, let theme = theme else { return }
-
-    let (appearance, material) = Utility.getAppearanceAndMaterial(from: theme)
-    let isDarkTheme = appearance?.isDark ?? true
-    (playSlider.cell as? PlaySliderCell)?.isInDarkTheme = isDarkTheme
-
-    for view in [topPanelView, controlBarFloating, controlBarBottom,
-                 osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView] {
-      view?.material = material
-      view?.appearance = appearance
-    }
-
-    for sidebar in [leadingSidebarView, trailingSidebarView] {
-      sidebar?.material = .dark
-      sidebar?.appearance = NSAppearance(named: .vibrantDark)
-    }
-
-    window.appearance = appearance
   }
 
   private func calculateWidthOfTrafficLightButtons() -> CGFloat {
@@ -1639,129 +1637,6 @@ class MainWindowController: PlayerWindowController {
       } else if recognizer.state == .ended {
         updateWindowParametersForMPV()
       }
-    }
-  }
-
-  private func degToRad(_ degrees: CGFloat) -> CGFloat {
-    return degrees * CGFloat.pi / 180
-  }
-
-  // Returns the total degrees in the given rotation which are due to complete 360° rotations
-  private func completeCircleDegrees(of rotationDegrees: CGFloat) -> CGFloat{
-    CGFloat(Int(rotationDegrees / 360) * 360)
-  }
-
-  // Reduces the given rotation to one which is a positive number between 0 and 360 degrees and has the same resulting orientation.
-  private func normalizeRotation(_ rotationDegrees: Int) -> Int {
-    // Take out all full rotations so we end up with number between -360 and 360
-    let simplifiedRotation = rotationDegrees %% 360
-    // Remove direction and return a number from 0..<360
-    return simplifiedRotation < 0 ? simplifiedRotation + 360 : simplifiedRotation
-  }
-
-  // Find which 90° rotation the given rotation is closest to (within 45° of it).
-  private func findClosestQuarterRotation(_ mpvNormalizedRotationDegrees: Int) -> Int {
-    assert(mpvNormalizedRotationDegrees >= 0 && mpvNormalizedRotationDegrees < 360)
-    for quarterCircleRotation in AppData.rotations {
-      if mpvNormalizedRotationDegrees < quarterCircleRotation + 45 {
-        return quarterCircleRotation
-      }
-    }
-    return AppData.rotations[0]
-  }
-
-  // Side effect: sets `cgCurrentRotationDegrees` to `toDegrees` before returning
-  func rotateVideoView(toDegrees: CGFloat, animate: Bool = true) {
-    let fromDegrees = cgCurrentRotationDegrees
-    let toRadians = degToRad(toDegrees)
-
-    // Animation is enabled by default for this view.
-    // We only want to animate some rotations and not others, and never want to animate
-    // position change. So put these in an explicitly disabled transaction block:
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    // Rotate about center point. Also need to change position because.
-    let centerPoint = CGPointMake(NSMidX(videoView.frame), NSMidY(videoView.frame))
-    videoView.layer?.position = centerPoint
-    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-    CATransaction.commit()
-
-    if animate {
-      Logger.log("Animating rotation from \(fromDegrees)° to \(toDegrees)°")
-
-      CATransaction.begin()
-      // This will show an animation but doesn't change its permanent state.
-      // Still need the rotation call down below to do that.
-      let rotateAnimation = CABasicAnimation(keyPath: "transform")
-      rotateAnimation.valueFunction = CAValueFunction(name: .rotateZ)
-      rotateAnimation.fromValue = degToRad(fromDegrees)
-      rotateAnimation.toValue = toRadians
-      rotateAnimation.duration = 0.2
-      videoView.layer?.add(rotateAnimation, forKey: "transform")
-      CATransaction.commit()
-    }
-
-    // This block updates the view's permanent position, but won't animate.
-    // Need to call this even if running the animation above, or else layer will revert to its prev appearance after
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    videoView.layer?.transform = CATransform3DMakeRotation(toRadians, 0, 0, 1)
-    CATransaction.commit()
-
-    cgCurrentRotationDegrees = toDegrees
-  }
-
-  private func findNearestCGQuarterRotation(forCGRotation cgRotationInDegrees: CGFloat, equalToMpvRotation mpvQuarterRotation: Int) -> CGFloat {
-    let cgCompleteCirclesTotalDegrees = completeCircleDegrees(of: cgRotationInDegrees)
-    let cgClosestQuarterRotation = CGFloat(normalizeRotation(-mpvQuarterRotation))
-    let cgLessThanWholeRotation = cgRotationInDegrees - cgCompleteCirclesTotalDegrees
-    let cgSnapToDegrees: CGFloat
-    if cgLessThanWholeRotation > 0 {
-      // positive direction:
-      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + cgClosestQuarterRotation
-    } else {
-      // negative direction:
-      cgSnapToDegrees = cgCompleteCirclesTotalDegrees + (cgClosestQuarterRotation - 360)
-    }
-    Logger.log("mpvQuarterRotation: \(mpvQuarterRotation) cgCompleteCirclesTotalDegrees: \(cgCompleteCirclesTotalDegrees)° cgLessThanWholeRotation: \(cgLessThanWholeRotation); cgClosestQuarterRotation: \(cgClosestQuarterRotation)° -> cgSnapToDegrees: \(cgSnapToDegrees)°")
-    return cgSnapToDegrees
-  }
-
-  @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
-    guard rotateAction == .rotateVideoByQuarters else { return }
-
-    switch recognizer.state {
-    case .began, .changed:
-      let cgNewRotationDegrees = recognizer.rotationInDegrees
-      rotateVideoView(toDegrees: cgNewRotationDegrees, animate: false)
-      break
-    case .failed, .cancelled:
-      rotateVideoView(toDegrees: 0, animate: false)
-      break
-    case .ended:
-      // mpv and CoreGraphics rotate in opposite directions
-      let mpvNormalizedRotationDegrees = normalizeRotation(Int(-recognizer.rotationInDegrees))
-      let mpvClosestQuarterRotation = findClosestQuarterRotation(mpvNormalizedRotationDegrees)
-      guard mpvClosestQuarterRotation != 0 else {
-        // Zero degree rotation: no change.
-        // Don't "unwind" if more than 360° rotated; just take shortest partial circle back to origin
-        cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees)
-        Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
-        rotateVideoView(toDegrees: 0, animate: !AccessibilityPreferences.motionReductionEnabled)
-        return
-      }
-
-      // Snap to one of the 4 quarter circle rotations
-      let mpvNewRotation = (player.info.userRotation + mpvClosestQuarterRotation) %% 360
-      Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(player.info.userRotation)°) → new rotation will be \(mpvNewRotation)°")
-      // Need to convert snap-to location back to CG, to feed to animation
-      let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
-                                                         equalToMpvRotation: mpvClosestQuarterRotation)
-      rotateVideoView(toDegrees: cgSnapToDegrees, animate: !AccessibilityPreferences.motionReductionEnabled)
-      player.setVideoRotate(mpvNewRotation)
-
-    default:
-      return
     }
   }
 

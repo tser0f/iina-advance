@@ -1232,7 +1232,7 @@ class MPVController: NSObject {
         DispatchQueue.main.async {
           // FIXME: this isn't perfect - a bad frame briefly appears during transition
           Logger.log("Resetting videoView")
-          self.player.mainWindow.rotateVideoView(toDegrees: 0, animate: false)
+          self.player.mainWindow.rotationHandler.rotateVideoView(toDegrees: 0, animate: false)
         }
       }
 
