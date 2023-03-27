@@ -33,19 +33,11 @@ fileprivate let StandardTitleBarHeight: CGFloat = {
   return titleBarHeight
 }()
 
-fileprivate let SettingsWidth: CGFloat = 360
-fileprivate let PlaylistMinWidth: CGFloat = 240
-fileprivate let PlaylistMaxWidth: CGFloat = 500
-
 fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
 
 fileprivate let UIAnimationDuration = 0.25
 fileprivate let OSDAnimationDuration = 0.5
-fileprivate let SidebarAnimationDuration = 0.2
 fileprivate let CropAnimationDuration = 0.2
-
-// How close the cursor has to be horizontally to the edge of the sidebar in order to trigger its resize:
-fileprivate let sidebarResizeActivationRadius = 4.0
 
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
@@ -166,8 +158,6 @@ class MainWindowController: PlayerWindowController {
 
   var mousePosRelatedToWindow: CGPoint?
   var isDragging: Bool = false
-  private var isResizingLeftSidebar: Bool = false
-  private var isResizingRightSidebar: Bool = false
 
   var pipStatus = PIPStatus.notInPIP
   var isInInteractiveMode: Bool = false
@@ -305,134 +295,10 @@ class MainWindowController: PlayerWindowController {
   var animationState: UIAnimationState = .shown
   var osdAnimationState: UIAnimationState = .hidden
 
-  // Sidebar
-
-  /** Type of the view embedded in sidebar. */
-  enum SidebarTabGroup: String {
-    case settings
-    case playlist
-
-    func width() -> CGFloat {
-      switch self {
-      case .settings:
-        return SettingsWidth
-      case .playlist:
-        return CGFloat(Preference.integer(for: .playlistWidth)).clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      }
-    }
-  }
-
-  enum SidebarTab: Equatable {
-    case playlist
-    case chapters
-
-    case video
-    case audio
-    case sub
-    case plugin(id: String)
-
-    var group: SidebarTabGroup {
-      switch self {
-      case .playlist, .chapters:
-        return .playlist
-      case .video, .audio, .sub, .plugin(id: _):
-        return .settings
-      }
-    }
-
-    init?(name: String) {
-      switch name {
-      case "playlist":
-        self = .playlist
-      case "chapters":
-        self = .chapters
-      case "video":
-        self = .video
-      case "audio":
-        self = .audio
-      case "sub":
-        self = .sub
-      default:
-        if name.hasPrefix("plugin:") {
-          self = .plugin(id: String(name.dropFirst(7)))
-        } else {
-          return nil
-        }
-      }
-    }
-
-    var name: String {
-      switch self {
-      case .playlist: return "playlist"
-      case .chapters: return "chapters"
-      case .video: return "video"
-      case .audio: return "audio"
-      case .sub: return "sub"
-      case .plugin(let id): return "plugin:\(id)"
-      }
-    }
-  }
-
-  private class Sidebar {
-    let locationID: Preference.SidebarLocation
-
-    init(_ locationID: Preference.SidebarLocation) {
-      self.locationID = locationID
-    }
-
-    // user configured:
-    var placement = Preference.PanelPlacement.defaultValue
-    var tabGroups: Set<SidebarTabGroup> = Set()
-
-    // state:
-
-    var animationState: UIAnimationState = .hidden
-
-    // nil means none/hidden:
-    var visibleTab: SidebarTab? = nil {
-      didSet {
-        if visibleTab != nil {
-          lastVisibleTab = visibleTab
-        }
-      }
-    }
-
-    var visibleTabGroup: SidebarTabGroup? {
-      return visibleTab?.group
-    }
-
-    var isVisible: Bool {
-      return visibleTab != nil
-    }
-
-    private var lastVisibleTab: SidebarTab? = nil
-
-    var defaultTabToShow: SidebarTab? {
-      // Use last visible tab if still valid:
-      if let lastVisibleTab = lastVisibleTab, tabGroups.contains(lastVisibleTab.group) {
-        Logger.log("Returning last visible tab for \(locationID): \(lastVisibleTab.name.quoted)", level: .verbose)
-        return lastVisibleTab
-      }
-
-      // Fall back to default for whatever tab group found:
-      if let group = tabGroups.first {
-        switch group {
-        case .playlist:
-          return SidebarTab.playlist
-        case .settings:
-          return SidebarTab.video
-        }
-      }
-
-      // If sidebar has no tab groups, can't show anything:
-      Logger.log("No tab groups found for \(locationID), returning nil!", level: .warning)
-      return nil
-    }
-  }
-
-  private var leadingSidebar = Sidebar(.leadingSidebar)
-  private var trailingSidebar = Sidebar(.trailingSidebar)
-  private lazy var sidebarsByID: [Preference.SidebarLocation: Sidebar] = [ leadingSidebar.locationID: self.leadingSidebar, trailingSidebar.locationID: self.trailingSidebar]
+  /// Sidebars: see file `Sidebars.swift`
+  var leadingSidebar = Sidebar(.leadingSidebar)
+  var trailingSidebar = Sidebar(.trailingSidebar)
+  lazy var sidebarsByID: [Preference.SidebarLocation: Sidebar] = [ leadingSidebar.locationID: self.leadingSidebar, trailingSidebar.locationID: self.trailingSidebar]
 
   enum PIPStatus {
     case notInPIP
@@ -1331,66 +1197,13 @@ class MainWindowController: PlayerWindowController {
     guard !controlBarFloating.isDragging else { return }
     // record current mouse pos
     mousePosRelatedToWindow = event.locationInWindow
-    // playlist resizing
-    if leadingSidebar.visibleTab == .playlist {
-      let sf = leadingSidebarView.frame
-      let dragRectCenterX: CGFloat
-      switch leadingSidebar.placement {
-      case .insideVideo:
-        dragRectCenterX = sf.origin.x + sf.width
-      case .outsideVideo:
-        dragRectCenterX = sf.origin.x
-      }
-
-      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
-      if NSPointInRect(mousePosRelatedToWindow!, activationRect) {
-        Logger.log("User started resize of left sidebar", level: .verbose)
-        isResizingLeftSidebar = true
-      }
-    } else if trailingSidebar.visibleTab == .playlist {
-      let sf = trailingSidebarView.frame
-      let dragRectCenterX: CGFloat
-      switch leadingSidebar.placement {
-      case .insideVideo:
-        dragRectCenterX = sf.origin.x
-      case .outsideVideo:
-        dragRectCenterX = sf.origin.x + sf.width
-      }
-
-      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
-      if NSPointInRect(mousePosRelatedToWindow!, activationRect) {
-        Logger.log("User started resize of right sidebar", level: .verbose)
-        isResizingRightSidebar = true
-      }
-    }
+    // Start resize if applicable
+    startResizingSidebar(with: event)
   }
 
   override func mouseDragged(with event: NSEvent) {
-    if isResizingLeftSidebar {
-      let currentLocation = event.locationInWindow
-      let newWidth: CGFloat
-      switch leadingSidebar.placement {
-      case .insideVideo:
-        newWidth = currentLocation.x + 2
-      case .outsideVideo:
-        newWidth = leadingSidebarView.frame.width + currentLocation.x + 2
-      }
-      let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      leadingSidebarWidthConstraint.constant = newPlaylistWidth
-      updateLeadingTitleBarAccessory()
-    } else if isResizingRightSidebar {
-      let currentLocation = event.locationInWindow
-      // resize sidebar
-      let newWidth: CGFloat
-      switch trailingSidebar.placement {
-      case .insideVideo:
-        newWidth = window!.frame.width - currentLocation.x - 2
-      case .outsideVideo:
-        newWidth = window!.frame.width - currentLocation.x + trailingSidebarView.frame.width - 2
-      }
-      let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
-      trailingSidebarWidthConstraint.constant = newPlaylistWidth
-      updateTrailingTitleBarAccessory()
+    if resizeSidebar(with: event) {
+      return
     } else if !fsState.isFullscreen {
       guard !controlBarFloating.isDragging else { return }
 
@@ -1418,7 +1231,7 @@ class MainWindowController: PlayerWindowController {
 
   override func mouseUp(with event: NSEvent) {
     if Logger.isEnabled(.verbose) {
-      Logger.log("MainWindow mouseUp. isDragging: \(isDragging), isResizingRightSidebar: \(isResizingRightSidebar), clickCount: \(event.clickCount)",
+      Logger.log("MainWindow mouseUp. isDragging: \(isDragging), clickCount: \(event.clickCount)",
                  level: .verbose, subsystem: player.subsystem)
     }
 
@@ -1427,33 +1240,15 @@ class MainWindowController: PlayerWindowController {
     if isDragging {
       // if it's a mouseup after dragging window
       isDragging = false
-    } else if isResizingLeftSidebar {
-      // if it's a mouseup after resizing sidebar
-      isResizingLeftSidebar = false
-      Logger.log("New width of left sidebar playlist is \(leadingSidebarWidthConstraint.constant)", level: .verbose)
-      Preference.set(Int(leadingSidebarWidthConstraint.constant), for: .playlistWidth)
-    } else if isResizingRightSidebar {
-      // if it's a mouseup after resizing sidebar
-      isResizingRightSidebar = false
-      Logger.log("New width of right sidebar playlist is \(trailingSidebarWidthConstraint.constant)", level: .verbose)
-      Preference.set(Int(trailingSidebarWidthConstraint.constant), for: .playlistWidth)
+    } else if finishResizingSidebar() {
+      return
     } else {
       // if it's a mouseup after clicking
 
       // Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
       // but we will only count it as a drag if `isDragging==true`
       if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView]) {
-        var registeredClick = false
-        if let visibleTab = leadingSidebar.visibleTab, Preference.bool(for: .hideLeadingSidebarOnClick) {
-          changeVisibility(forTab: visibleTab, to: false)
-          registeredClick = true
-        }
-
-        if let visibleTab = trailingSidebar.visibleTab, Preference.bool(for: .hideTrailingSidebarOnClick) {
-          changeVisibility(forTab: visibleTab, to: false)
-          registeredClick = true
-        }
-        if registeredClick {
+        if hideSidebarsOnClick() {
           return
         }
       }
@@ -2420,7 +2215,7 @@ class MainWindowController: PlayerWindowController {
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
-  private func updateLeadingTitleBarAccessory() {
+  func updateLeadingTitleBarAccessory() {
     leadingSidebarToggleButton.isHidden = !(Preference.bool(for: .showLeadingSidebarToggleButton) && !leadingSidebar.tabGroups.isEmpty)
 
     let expandedSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
@@ -2437,7 +2232,7 @@ class MainWindowController: PlayerWindowController {
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar
-  private func updateTrailingTitleBarAccessory() {
+  func updateTrailingTitleBarAccessory() {
     trailingSidebarToggleButton.isHidden = !(Preference.bool(for: .showTrailingSidebarToggleButton) && !trailingSidebar.tabGroups.isEmpty)
 
     pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
@@ -2569,243 +2364,6 @@ class MainWindowController: PlayerWindowController {
       additionalInfoStackView.setVisibilityPriority(.mustHold, for: additionalInfoBatteryView)
     } else {
       additionalInfoStackView.setVisibilityPriority(.notVisible, for: additionalInfoBatteryView)
-    }
-  }
-
-  // MARK: - UI: Sidebar
-
-  // For JavascriptAPICore:
-  func isShowingSettingsSidebar() -> Bool {
-    return leadingSidebar.visibleTabGroup == .settings || trailingSidebar.visibleTabGroup == .settings
-  }
-
-  func isShowing(sidebarTab tab: SidebarTab) -> Bool {
-    return leadingSidebar.visibleTab == tab || trailingSidebar.visibleTab == tab
-  }
-
-  private func toggleVisibility(of sidebar: Sidebar) {
-    // Do nothing if sidebar has no configured tabs
-    guard let tab = sidebar.defaultTabToShow else { return }
-
-    if sidebar.animationState == .shown {
-      changeVisibility(forTab: tab, to: false)
-    } else if sidebar.animationState == .hidden {
-      changeVisibility(forTab: tab, to: true)
-    }
-    // Do nothing if side bar is in intermediate state
-  }
-
-  func showSidebar(forTabGroup tabGroup: SidebarTabGroup, force: Bool = false, hideIfAlreadyShown: Bool = true) {
-    Logger.log("ShowSidebar for tabGroup: \(tabGroup.rawValue.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
-    switch tabGroup {
-    case .playlist:
-      if let tab = SidebarTab(name: playlistView.currentTab.rawValue) {
-        showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
-      }
-    case .settings:
-      if let tab = SidebarTab(name: quickSettingView.currentTab.name) {
-        showSidebar(tab: tab, force: force, hideIfAlreadyShown: hideIfAlreadyShown)
-      }
-    }
-  }
-
-  func showSidebar(tab: SidebarTab, force: Bool = false, hideIfAlreadyShown: Bool = true) {
-    Logger.log("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
-    if !force && (leadingSidebar.animationState.isInTransition || trailingSidebar.animationState.isInTransition) {
-      return  // do not interrput other actions while it is animating
-    }
-
-    guard let destinationSidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
-
-    if destinationSidebar.visibleTab == tab && hideIfAlreadyShown {
-      changeVisibility(forTab: tab, to: false)
-      return
-    }
-
-    // This will change the sidebar to the displayed tab group if needed:
-    changeVisibility(forTab: tab, to: true)
-  }
-
-  // Hides any visible sidebars
-  func hideSidebars(animate: Bool = true, then: (() -> Void)? = nil) {
-    Logger.log("Hiding all sidebars", level: .verbose)
-    // Need to make sure that completionHandler (1) runs at all, and (2) runs after animations
-    var completionHandler: (() -> Void)? = then
-    if let visibleTab = leadingSidebar.visibleTab {
-      changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
-      completionHandler = nil
-    }
-    if let visibleTab = trailingSidebar.visibleTab {
-      changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
-      completionHandler = nil
-    }
-    if let completionHandler = completionHandler {
-      completionHandler()
-    }
-  }
-
-  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, animate: Bool = true, then: (() -> Void)? = nil) {
-    guard !isInInteractiveMode else { return }
-    Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show ? "SHOW" : "HIDE")", level: .verbose)
-
-    let group = tab.group
-    let viewController = (group == .playlist) ? playlistView : quickSettingView
-    guard let sidebar = getConfiguredSidebar(forTabGroup: group) else { return }
-    let currentWidth = group.width()
-
-    var nothingToDo = false
-    if show && sidebar.isVisible {
-      if sidebar.visibleTabGroup != group {
-        // If tab is open but with wrong tab group, hide it, then change it, then show again
-        Logger.log("Need to change tab group for \(sidebar.locationID): will hide & reopen", level: .verbose)
-        changeVisibility(forTab: tab, to: false, then: {
-          self.changeVisibility(forTab: tab, to: true)
-        })
-        return
-      } else if let visibleTab = sidebar.visibleTab, visibleTab == tab {
-        Logger.log("Nothing to do; \(sidebar.locationID) is already showing tab \(visibleTab.name.quoted)", level: .verbose)
-        nothingToDo = true
-      }
-      // Else just need to change tab in tab group. Fall through
-    } else if !show && !sidebar.isVisible {
-      Logger.log("Nothing to do; \(sidebar.locationID) (which contains tab \(tab.name.quoted)) is already hidden", level: .verbose)
-      nothingToDo = true
-    }
-
-    if nothingToDo {
-      if let thenDo = then {
-        thenDo()
-      }
-      return
-    }
-
-    let sidebarView: NSVisualEffectView
-    let widthConstraint: NSLayoutConstraint
-    let edgeConstraint: NSLayoutConstraint
-    switch sidebar.locationID {
-    case .leadingSidebar:
-      sidebarView = leadingSidebarView
-      widthConstraint = leadingSidebarWidthConstraint
-      edgeConstraint = leadingSidebarLeadingConstraint
-    case .trailingSidebar:
-      sidebarView = trailingSidebarView
-      widthConstraint = trailingSidebarWidthConstraint
-      edgeConstraint = trailingSidebarTrailingConstraint
-    }
-
-    sidebar.animationState = show ? .willShow : .willHide
-    Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose)
-
-    if show {
-      // Make it the active tab in its parent tab group (can do this whether or not it's shown):
-      switch tab.group {
-      case .playlist:
-        guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
-          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!", level: .error)
-          return
-        }
-        self.playlistView.pleaseSwitchToTab(tabType)
-      case .settings:
-        guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
-          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!", level: .error)
-          return
-        }
-        self.quickSettingView.pleaseSwitchToTab(tabType)
-      }
-
-      // adjust sidebar width before showing in case it's not up to date
-      widthConstraint.constant = currentWidth
-      sidebarView.isHidden = false
-
-      // add view and constraints
-      let view = viewController.view
-      sidebarView.addSubview(view)
-      let constraintsH = NSLayoutConstraint.constraints(withVisualFormat: "H:|[v]|", options: [], metrics: nil, views: ["v": view])
-      let constraintsV = NSLayoutConstraint.constraints(withVisualFormat: "V:|[v]|", options: [], metrics: nil, views: ["v": view])
-      NSLayoutConstraint.activate(constraintsH)
-      NSLayoutConstraint.activate(constraintsV)
-    }
-
-    NSAnimationContext.runAnimationGroup({ context in
-      context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      switch sidebar.locationID {
-      case .leadingSidebar:
-        updateLeadingTitleBarAccessory()
-      case .trailingSidebar:
-        updateTrailingTitleBarAccessory()
-      }
-      edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
-    }, completionHandler: {
-      if show {
-        sidebar.animationState = .shown
-        sidebar.visibleTab = tab
-      } else {
-        sidebar.visibleTab = nil
-        sidebarView.subviews.removeAll()
-        sidebarView.isHidden = true
-        sidebar.animationState = .hidden
-      }
-      Logger.log("Sidebar animation state is now: \(sidebar.animationState)")
-      if let thenDo = then {
-        thenDo()
-      }
-    })
-  }
-
-  // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that
-  // the tracking information here can be updated.
-  func didChangeTab(to tabName: String) {
-    guard let tab = SidebarTab(name: tabName) else {
-      Logger.log("Could not find a matching sidebar tab for \(tabName.quoted)!", level: .error)
-      return
-    }
-    guard let sidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
-    sidebar.visibleTab = tab
-  }
-
-  private func setSidebar(locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
-    let addingToSidebar: Sidebar
-    let removingFromSidebar: Sidebar
-    if locationID == leadingSidebar.locationID {
-      addingToSidebar = leadingSidebar
-      removingFromSidebar = trailingSidebar
-    } else {
-      addingToSidebar = trailingSidebar
-      removingFromSidebar = leadingSidebar
-    }
-    addingToSidebar.tabGroups.insert(tabGroup)
-    removingFromSidebar.tabGroups.remove(tabGroup)
-
-    // Sidebar buttons may have changed:
-    updateLeadingTitleBarAccessory()
-    updateTrailingTitleBarAccessory()
-  }
-
-  private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
-    for sidebar in [leadingSidebar, trailingSidebar] {
-      if sidebar.tabGroups.contains(tabGroup) {
-        return sidebar
-      }
-    }
-    Logger.log("No sidebar found for tab group \(tabGroup.rawValue.quoted)!", level: .error)
-    return nil
-  }
-
-  // If location of tab group changed to another sidebar (in user prefs), check if it is showing, and if so, hide it & show it on the other side
-  private func moveSidebarIfNeeded(forTabGroup tabGroup: SidebarTabGroup, toNewSidebarLocation newLocationID: Preference.SidebarLocation) {
-    guard let currentLocationID = getConfiguredSidebar(forTabGroup: tabGroup)?.locationID else { return }
-    guard currentLocationID != newLocationID else { return }
-
-    if let prevSidebar = sidebarsByID[currentLocationID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
-      Logger.log("Moving visible tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
-      changeVisibility(forTab: curentVisibleTab, to: false, then: {
-        self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
-        self.changeVisibility(forTab: curentVisibleTab, to: true)
-      })
-    } else {
-      Logger.log("Moving hidden tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
-      self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
     }
   }
 
@@ -3733,40 +3291,5 @@ extension MainWindowController: PIPViewControllerDelegate {
   func pipActionStop(_ pip: PIPViewController) {
     // Stopping PIP pauses playback
     player.pause()
-  }
-}
-
-protocol SidebarTabGroupViewController {
-  var mainWindow: MainWindowController! { get }
-  func getTopOfTabsConstraint() -> NSLayoutConstraint?
-  func getHeightOfTabsConstraint() -> NSLayoutConstraint?
-
-  var customTabHeight: CGFloat? { get }
-
-  // Implementing classes should call this, but do not need to define it (see below)
-  func refreshVerticalConstraints()
-}
-
-extension SidebarTabGroupViewController {
-
-  var customTabHeight: CGFloat? { return nil }
-
-  func refreshVerticalConstraints() {
-    let downshift: CGFloat
-    var tabHeight: CGFloat = mainWindow.fullWidthOSCPreferredHeight
-
-    if mainWindow.fsState.isFullscreen || Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
-      downshift = 0
-    } else {
-      downshift = mainWindow.reducedTitleBarHeight
-    }
-
-    // this overrides all others
-    if let customTabHeight = customTabHeight {
-      tabHeight = customTabHeight
-    }
-
-    getTopOfTabsConstraint()?.constant = downshift
-    getHeightOfTabsConstraint()?.constant = tabHeight
   }
 }
