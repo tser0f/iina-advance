@@ -48,17 +48,17 @@
                                 </connections>
                             </searchField>
                             <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="40" horizontalPageScroll="10" verticalLineScroll="40" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="none" verticalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="Isy-K8-od9" userLabel="PrefNavPanelTable Scroll View">
-                                <rect key="frame" x="0.0" y="0.0" width="200" height="420"/>
+                                <rect key="frame" x="20" y="0.0" width="180" height="420"/>
                                 <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="H3G-ed-YHx" userLabel="PrefNavPanel Clip View">
-                                    <rect key="frame" x="0.0" y="0.0" width="200" height="420"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="180" height="420"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" tableStyle="sourceList" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" autosaveName="" rowHeight="40" viewBased="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vde-uJ-0ge" userLabel="PrefNavPanel Table View">
-                                            <rect key="frame" x="0.0" y="0.0" width="200" height="420"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="180" height="420"/>
                                             <color key="backgroundColor" name="_sourceListBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                             <tableColumns>
-                                                <tableColumn width="168" minWidth="100" maxWidth="1000" id="s8e-nX-tcx">
+                                                <tableColumn width="148" minWidth="100" maxWidth="1000" id="s8e-nX-tcx">
                                                     <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border">
                                                         <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                         <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
@@ -71,11 +71,11 @@
                                                     <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                     <prototypeCellViews>
                                                         <tableCellView id="Cky-oa-sEY">
-                                                            <rect key="frame" x="10" y="0.0" width="180" height="40"/>
+                                                            <rect key="frame" x="10" y="0.0" width="160" height="40"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <subviews>
                                                                 <imageView wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="5Yr-Dy-tXq">
-                                                                    <rect key="frame" x="16" y="9" width="22" height="22"/>
+                                                                    <rect key="frame" x="0.0" y="9" width="22" height="22"/>
                                                                     <constraints>
                                                                         <constraint firstAttribute="width" secondItem="5Yr-Dy-tXq" secondAttribute="height" multiplier="1:1" id="ITq-jp-a8v"/>
                                                                         <constraint firstAttribute="height" constant="22" id="W2O-qT-W0s"/>
@@ -86,7 +86,7 @@
                                                                     </connections>
                                                                 </imageView>
                                                                 <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="XDU-ud-pYc">
-                                                                    <rect key="frame" x="44" y="12" width="122" height="16"/>
+                                                                    <rect key="frame" x="28" y="12" width="118" height="16"/>
                                                                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Table View Cell" id="Ukj-Vg-wHf" customClass="PrefTabTitleLabelCell" customModule="IINA" customModuleProvider="target">
                                                                         <font key="font" metaFont="systemBold"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -101,7 +101,7 @@
                                                                 <constraint firstAttribute="trailing" secondItem="XDU-ud-pYc" secondAttribute="trailing" constant="16" id="GBQ-e5-LaX"/>
                                                                 <constraint firstItem="XDU-ud-pYc" firstAttribute="leading" secondItem="5Yr-Dy-tXq" secondAttribute="trailing" constant="8" id="N2o-JC-vPx"/>
                                                                 <constraint firstItem="5Yr-Dy-tXq" firstAttribute="centerY" secondItem="Cky-oa-sEY" secondAttribute="centerY" id="eBq-gK-JL2"/>
-                                                                <constraint firstItem="5Yr-Dy-tXq" firstAttribute="leading" secondItem="Cky-oa-sEY" secondAttribute="leading" constant="16" id="ekq-kA-abF"/>
+                                                                <constraint firstItem="5Yr-Dy-tXq" firstAttribute="leading" secondItem="Cky-oa-sEY" secondAttribute="leading" id="ekq-kA-abF"/>
                                                                 <constraint firstItem="XDU-ud-pYc" firstAttribute="centerY" secondItem="Cky-oa-sEY" secondAttribute="centerY" id="h97-II-d9Q"/>
                                                             </constraints>
                                                             <connections>
@@ -122,6 +122,7 @@
                                     <nil key="backgroundColor"/>
                                     <edgeInsets key="contentInsets" left="0.0" right="0.0" top="0.0" bottom="0.0"/>
                                 </clipView>
+                                <edgeInsets key="contentInsets" left="0.0" right="0.0" top="0.0" bottom="0.0"/>
                                 <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="DkZ-6e-xVc">
                                     <rect key="frame" x="-100" y="-100" width="220" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
@@ -140,7 +141,7 @@
                             <constraint firstItem="Isy-K8-od9" firstAttribute="top" secondItem="rKj-eM-MTH" secondAttribute="bottom" identifier="navTableSearchFieldSpacingConstraint" id="nOO-7o-aOI"/>
                             <constraint firstItem="rKj-eM-MTH" firstAttribute="leading" secondItem="AO2-1e-7F6" secondAttribute="leading" constant="8" id="szD-ja-pwz"/>
                             <constraint firstAttribute="trailing" secondItem="rKj-eM-MTH" secondAttribute="trailing" constant="8" id="uph-Ge-Lqq"/>
-                            <constraint firstItem="Isy-K8-od9" firstAttribute="leading" secondItem="AO2-1e-7F6" secondAttribute="leading" id="vb0-7P-sn7"/>
+                            <constraint firstItem="Isy-K8-od9" firstAttribute="leading" secondItem="AO2-1e-7F6" secondAttribute="leading" constant="20" id="vb0-7P-sn7"/>
                         </constraints>
                     </visualEffectView>
                     <box horizontalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="anY-kd-ix3" userLabel="Vertical Divider Line">
@@ -234,7 +235,7 @@
                     <rect key="frame" x="0.0" y="0.0" width="340" height="180"/>
                     <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="oMs-Q9-XbP">
                         <rect key="frame" x="0.0" y="0.0" width="340" height="180"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" rowHeight="40" rowSizeStyle="automatic" viewBased="YES" id="MUI-pR-u00">
                                 <rect key="frame" x="0.0" y="0.0" width="340" height="180"/>

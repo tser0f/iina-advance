@@ -249,6 +249,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
 
     // Reload data:
 
+    let sw = Utility.Stopwatch()
     let recentsUnfiltered = NSDocumentController.shared.recentDocumentURLs
     lastPlaybackURL = getLastPlaybackIfValid()
     if let lastURL = lastPlaybackURL {
@@ -259,6 +260,8 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
     } else {
       recentDocuments = recentsUnfiltered
     }
+
+    Logger.log("Organized recentDocuments list in \(sw) ms")
 
     // Refresh UI:
 

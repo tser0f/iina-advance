@@ -130,8 +130,9 @@ class PlayerWindowPreviewImageBuilder {
       }
     }
 
+    let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius)) * 2
     let previewImage = drawImageInBitmapImageContext(width: outputWidth, height: outputHeight, drawingCalls: drawingCalls)?
-      .roundCorners(withRadius: 20.0)
+      .roundCorners(withRadius: roundedCornerRadius)
 
     return previewImage
   }

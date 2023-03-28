@@ -51,6 +51,9 @@ struct Preference {
     static let recordRecentFiles = Key("recordRecentFiles")
     static let trackAllFilesInRecentOpenMenu = Key("trackAllFilesInRecentOpenMenu")
 
+    /** Radius for rounded corners for windows & UI elements (0 for none) */
+    static let roundedCornerRadius = Key("roundedCornerRadius")
+
     /** Material for OSC and title bar (Theme(int)) */
     static let themeMaterial = Key("themeMaterial")
 
@@ -119,6 +122,7 @@ struct Preference {
     static let controlBarToolbarButtons = Key("controlBarToolbarButtons")
 
     static let enableOSD = Key("enableOSD")
+    static let osdPosition = Key("osdPosition")
     static let osdAutoHideTimeout = Key("osdAutoHideTimeout")
     static let osdTextSize = Key("osdTextSize")
 
@@ -371,8 +375,8 @@ struct Preference {
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
     static let uiPrefDetailViewScrollOffsetY = Key("uiPrefDetailViewScrollOffsetY")
-    // These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with "uiCollapseView"
-    // `true` == open;  `false` == folded
+    /** These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with "uiCollapseView":
+     `true` == open;  `false` == folded */
     static let uiCollapseViewMediaIsOpened = Key("uiCollapseViewMediaIsOpened")
     static let uiCollapseViewPauseResume = Key("uiCollapseViewPauseResume")
     static let uiCollapseViewSubAutoLoadAdvanced = Key("uiCollapseViewSubAutoLoadAdvanced")
@@ -454,6 +458,17 @@ struct Preference {
           return nil
         }
       }
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum OSDPosition: Int, InitializingFromKey {
+    case topLeft = 1
+    case topRight
+
+    static var defaultValue = OSDPosition.topRight
+
+    init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
     }
   }
@@ -880,8 +895,10 @@ struct Preference {
     .hideLeadingSidebarOnClick: true,
     .hideTrailingSidebarOnClick: true,
     .prefetchPlaylistVideoDuration: true,
+    .roundedCornerRadius: 10.0,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
+    .osdPosition: OSDPosition.topLeft.rawValue,
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(20),
     .softVolume: 100,

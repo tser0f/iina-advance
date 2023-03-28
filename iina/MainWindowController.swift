@@ -335,6 +335,7 @@ class MainWindowController: PlayerWindowController {
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
   private static let mainWindowPrefKeys: [Preference.Key] = PlayerWindowController.playerWindowPrefKeys + [
+    .osdPosition,
     .titleBarStyle,
     .enableOSC,
     .oscPosition,
@@ -447,6 +448,11 @@ class MainWindowController: PlayerWindowController {
       if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarLocation(rawValue: newRawValue) {
         self.moveSidebarIfNeeded(forTabGroup: .playlist, toNewSidebarLocation: newID)
       }
+    case PK.osdPosition.rawValue:
+      // If OSD is showing, it will move over as a neat animation:
+      executeAnimation { _ in
+        self.updateOSDPosition()
+      }
     default:
       return
     }
@@ -503,9 +509,18 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var windowContentViewLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var windowContentViewTrailingConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var osdLeadingConstraint: NSLayoutConstraint!
+  /**
+   ┌──────────────────────┐
+   │                      │
+   │ A ┌────┐ B  ┌────┐ C │  A: leadingSidebarToOSDSpaceConstraint
+   │◄─►│    │◄──►│    │◄─►│  B: additionalInfoToOSDSpaceConstraint
+   │   └────┘    └────┘   │  C: trailingSidebarToOSDSpaceConstraint
+   │                      │
+   └──────────────────────┘
+   */
+  @IBOutlet weak var leadingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var additionalInfoToOSDSpaceConstraint: NSLayoutConstraint!
-  @IBOutlet weak var additionalInfoTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var leadingSidebarLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var leadingSidebarWidthConstraint: NSLayoutConstraint!
@@ -729,12 +744,19 @@ class MainWindowController: PlayerWindowController {
 
     player.initVideo()
 
+    let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius))
+
     // init quick setting view now
     let _ = quickSettingView
 
     // buffer indicator view
-    bufferIndicatorView.roundCorners(withRadius: 10)
+    if roundedCornerRadius > 0.0 {
+      bufferIndicatorView.roundCorners(withRadius: roundedCornerRadius)
+      osdVisualEffectView.roundCorners(withRadius: roundedCornerRadius)
+      additionalInfoView.roundCorners(withRadius: roundedCornerRadius)
+    }
     updateBufferIndicatorView()
+    updateOSDPosition()
 
     // thumbnail peek view
     thumbnailPeekView.isHidden = true
@@ -752,8 +774,6 @@ class MainWindowController: PlayerWindowController {
     }
     // hide other views
     osdVisualEffectView.isHidden = true
-    osdVisualEffectView.roundCorners(withRadius: 10)
-    additionalInfoView.roundCorners(withRadius: 10)
     leftArrowLabel.isHidden = true
     rightArrowLabel.isHidden = true
     timePreviewWhenSeek.isHidden = true
@@ -972,6 +992,10 @@ class MainWindowController: PlayerWindowController {
       button.action = #selector(self.toolBarButtonAction(_:))
       fragToolbarView.addView(button, in: .trailing)
     }
+  }
+
+  private func executeAnimation(_ animationBlock: @escaping AnimationBlock) {
+    executeAnimationGroup([animationBlock])
   }
 
   // Recursive function which executions code for a single group in the chain
@@ -2251,6 +2275,31 @@ class MainWindowController: PlayerWindowController {
   }
 
   // MARK: - UI: OSD
+
+  func updateOSDPosition() {
+    guard let contentView = window?.contentView else { return }
+    contentView.removeConstraint(additionalInfoToOSDSpaceConstraint)
+    contentView.removeConstraint(leadingSidebarToOSDSpaceConstraint)
+    contentView.removeConstraint(trailingSidebarToOSDSpaceConstraint)
+    let osdPosition: Preference.OSDPosition = Preference.enum(for: .osdPosition)
+    switch osdPosition {
+    case .topLeft:
+      // OSD on left, AdditionalInfo on right
+      leadingSidebarToOSDSpaceConstraint = leadingSidebarView.trailingAnchor.constraint(equalTo: osdVisualEffectView.leadingAnchor, constant: -8.0)
+      trailingSidebarToOSDSpaceConstraint = trailingSidebarView.leadingAnchor.constraint(equalTo: additionalInfoView.trailingAnchor, constant: 8.0)
+      additionalInfoToOSDSpaceConstraint = additionalInfoView.leadingAnchor.constraint(greaterThanOrEqualTo: osdVisualEffectView.trailingAnchor, constant: 8.0)
+    case .topRight:
+      // AdditionalInfo on left, OSD on right
+      leadingSidebarToOSDSpaceConstraint = leadingSidebarView.trailingAnchor.constraint(equalTo: additionalInfoView.leadingAnchor, constant: -8.0)
+      trailingSidebarToOSDSpaceConstraint = trailingSidebarView.leadingAnchor.constraint(equalTo: osdVisualEffectView.trailingAnchor, constant: 8.0)
+      additionalInfoToOSDSpaceConstraint = additionalInfoView.trailingAnchor.constraint(lessThanOrEqualTo: osdVisualEffectView.leadingAnchor, constant: -8.0)
+    }
+
+    leadingSidebarToOSDSpaceConstraint.isActive = true
+    trailingSidebarToOSDSpaceConstraint.isActive = true
+    additionalInfoToOSDSpaceConstraint.isActive = true
+    contentView.layoutSubtreeIfNeeded()
+  }
 
   // Do not call displayOSD directly, call PlayerCore.sendOSD instead.
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Float? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
