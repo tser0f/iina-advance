@@ -123,6 +123,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   // MARK: - SPUUpdaterDelegate
 
+  @IBOutlet weak var updaterController: SPUStandardUpdaterController!
+
   func feedURLString(for updater: SPUUpdater) -> String? {
     return Preference.bool(for: .receiveBetaUpdate) ? AppData.appcastBetaLink : AppData.appcastLink
   }
@@ -257,6 +259,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // FIXME: this actually causes a window to opened in the background. Should delay this until intending to show it
     // show alpha in color panels
     NSColorPanel.shared.showsAlpha = true
+
+    // see https://sparkle-project.org/documentation/api-reference/Classes/SPUUpdater.html#/c:objc(cs)SPUUpdater(im)clearFeedURLFromUserDefaults
+    updaterController.updater.clearFeedURLFromUserDefaults()
 
     // other initializations at App level
     if #available(macOS 10.12.2, *) {
