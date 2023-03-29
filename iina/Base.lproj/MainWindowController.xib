@@ -520,7 +520,7 @@
                 <constraint firstAttribute="bottom" secondItem="2py-h1-0km" secondAttribute="bottom" id="wqB-gH-wXf"/>
                 <constraint firstItem="2py-h1-0km" firstAttribute="top" secondItem="N3B-DL-XOA" secondAttribute="top" id="zDt-kW-Co2"/>
             </constraints>
-            <point key="canvasLocation" x="318" y="584"/>
+            <point key="canvasLocation" x="623" y="471"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="BE1-yC-oJL" userLabel="OSC Fragment: Playback Position Slider">
             <rect key="frame" x="0.0" y="0.0" width="500" height="42"/>
@@ -588,7 +588,7 @@
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="leading" secondItem="NBD-MV-OuG" secondAttribute="trailing" constant="2" id="uHE-D2-HgP"/>
                 <constraint firstItem="GgV-Cc-sk0" firstAttribute="leading" secondItem="eBP-6g-bAT" secondAttribute="trailing" constant="2" id="vzW-0s-yR6"/>
             </constraints>
-            <point key="canvasLocation" x="236" y="490"/>
+            <point key="canvasLocation" x="230" y="471"/>
         </customView>
         <customView placeholderIntrinsicWidth="18" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="8Ej-eH-OR9" userLabel="OSC Fragment: Playback Control Left">
             <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
@@ -609,7 +609,7 @@
                 <constraint firstAttribute="width" constant="26" id="grc-Ve-XDC"/>
                 <constraint firstAttribute="height" constant="24" id="zqT-9O-0G6"/>
             </constraints>
-            <point key="canvasLocation" x="-55" y="713"/>
+            <point key="canvasLocation" x="-162" y="584"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Xts-Pc-T8d" userLabel="OSC Fragment: Playback Control Right">
             <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
@@ -630,7 +630,7 @@
                 <constraint firstAttribute="height" constant="24" id="sLY-0Y-Hql"/>
                 <constraint firstAttribute="width" constant="26" id="zCh-hV-cEH"/>
             </constraints>
-            <point key="canvasLocation" x="-143" y="713"/>
+            <point key="canvasLocation" x="-53" y="584"/>
         </customView>
         <customView placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4" userLabel="OSC Fragment: Playback Control Middle">
             <rect key="frame" x="0.0" y="0.0" width="144" height="36"/>
@@ -735,16 +735,16 @@
                 <constraint firstItem="10x-bg-xlj" firstAttribute="leading" secondItem="siV-cJ-huN" secondAttribute="trailing" id="qcZ-ea-Ibq"/>
                 <constraint firstItem="06z-vV-Q73" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="xbo-Ky-Ajh"/>
             </constraints>
-            <point key="canvasLocation" x="377" y="703"/>
+            <point key="canvasLocation" x="-162" y="468"/>
         </customView>
         <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" horizontalClippingResistancePriority="500" translatesAutoresizingMaskIntoConstraints="NO" id="hDm-KI-3o4" userLabel="OSC Fragment: Control View">
             <rect key="frame" x="0.0" y="0.0" width="200" height="24"/>
-            <point key="canvasLocation" x="133" y="703"/>
+            <point key="canvasLocation" x="253" y="584"/>
         </stackView>
         <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" id="KfP-G9-8pD" userLabel="OSC Fragment: Toolbar">
             <rect key="frame" x="0.0" y="0.0" width="106" height="24"/>
             <autoresizingMask key="autoresizingMask"/>
-            <point key="canvasLocation" x="591" y="676"/>
+            <point key="canvasLocation" x="499" y="584"/>
         </stackView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="LFL-4a-93B" userLabel="Leading Title Bar Accessory View">
             <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>

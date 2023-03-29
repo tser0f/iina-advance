@@ -2234,9 +2234,9 @@ class MainWindowController: PlayerWindowController {
   func updateLeadingTitleBarAccessory() {
     leadingSidebarToggleButton.isHidden = !(Preference.bool(for: .showLeadingSidebarToggleButton) && !leadingSidebar.tabGroups.isEmpty)
 
-    let expandedSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
+    let isSpaceNeededForSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
     let width: CGFloat
-    if expandedSidebar && topPanelPlacement == .insideVideo {
+    if isSpaceNeededForSidebar && topPanelPlacement == .insideVideo {
       // Subtract space taken by the 3 standard buttons + other visible buttons
       let sidebarButtonSpace: CGFloat = leadingSidebarToggleButton.isHidden ? 0 : leadingSidebarToggleButton.frame.width
       width = max(0, leadingSidebarWidthConstraint.constant - trafficLightButtonsWidth - sidebarButtonSpace)
@@ -2254,16 +2254,23 @@ class MainWindowController: PlayerWindowController {
     pinToTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
     pinToTopButton.state = isOntop ? .on : .off
 
-    let expandedSidebar = trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown
-    let width: CGFloat
-    if expandedSidebar && topPanelPlacement == .insideVideo {
-      let sidebarButtonSpace: CGFloat = trailingSidebarToggleButton.isHidden ? 0 : trailingSidebarToggleButton.frame.width
-      let pinToTopButtonSpace: CGFloat = pinToTopButton.isHidden ? 0 : pinToTopButton.frame.width
-      width = max(0, trailingSidebarWidthConstraint.constant - sidebarButtonSpace - pinToTopButtonSpace)
-    } else {
-      width = 0
+    let isSpaceNeededForSidebar = trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown
+    var widthToReserve: CGFloat = 0
+    if isSpaceNeededForSidebar && topPanelPlacement == .insideVideo {
+      widthToReserve = trailingSidebarWidthConstraint.constant
+      if !trailingSidebarToggleButton.isHidden {
+        widthToReserve -= trailingSidebarToggleButton.frame.width
+      }
+      if !pinToTopButton.isHidden {
+        widthToReserve -= pinToTopButton.frame.width
+      }
+      widthToReserve = max(0, widthToReserve)
     }
-    trailingTitleBarLeadingSpaceConstraint.constant = width
+    trailingTitleBarLeadingSpaceConstraint.constant = widthToReserve
+
+    // Add padding to the side for buttons
+    let isButtonShowing = !pinToTopButton.isHidden || !trailingSidebarToggleButton.isHidden
+    trailingTitleBarTrailingSpaceConstraint.constant = isButtonShowing ? 4 : 0
   }
 
   // MARK: - UI: OSD
