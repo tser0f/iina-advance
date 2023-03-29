@@ -216,6 +216,12 @@ extension MainWindowController {
     }
   }
 
+  func hideSidebarThenShowAgain(tab: SidebarTab) {
+    changeVisibility(forTab: tab, to: false, then: {
+      self.changeVisibility(forTab: tab, to: true)
+    })
+  }
+
   private func changeVisibility(forTab tab: SidebarTab, to show: Bool, animate: Bool = true, then: (() -> Void)? = nil) {
     guard !isInInteractiveMode else { return }
     Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show ? "SHOW" : "HIDE")", level: .verbose)
@@ -230,9 +236,7 @@ extension MainWindowController {
       if sidebar.visibleTabGroup != group {
         // If tab is open but with wrong tab group, hide it, then change it, then show again
         Logger.log("Need to change tab group for \(sidebar.locationID): will hide & reopen", level: .verbose)
-        changeVisibility(forTab: tab, to: false, then: {
-          self.changeVisibility(forTab: tab, to: true)
-        })
+        hideSidebarThenShowAgain(tab: tab)
         return
       } else if let visibleTab = sidebar.visibleTab, visibleTab == tab {
         Logger.log("Nothing to do; \(sidebar.locationID) is already showing tab \(visibleTab.name.quoted)", level: .verbose)
@@ -253,16 +257,13 @@ extension MainWindowController {
 
     let sidebarView: NSVisualEffectView
     let widthConstraint: NSLayoutConstraint
-    let edgeConstraint: NSLayoutConstraint
     switch sidebar.locationID {
     case .leadingSidebar:
       sidebarView = leadingSidebarView
       widthConstraint = leadingSidebarWidthConstraint
-      edgeConstraint = leadingSidebarLeadingConstraint
     case .trailingSidebar:
       sidebarView = trailingSidebarView
       widthConstraint = trailingSidebarWidthConstraint
-      edgeConstraint = trailingSidebarTrailingConstraint
     }
 
     sidebar.animationState = show ? .willShow : .willHide
@@ -298,17 +299,58 @@ extension MainWindowController {
       NSLayoutConstraint.activate(constraintsV)
     }
 
-    NSAnimationContext.runAnimationGroup({ context in
-      context.duration = animate ? AccessibilityPreferences.adjustedDuration(SidebarAnimationDuration) : 0
+    var blockChain: [AnimationBlock] = []
+
+    blockChain.append{ [self] context in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+      guard let contentView = window?.contentView else { return }
+
       switch sidebar.locationID {
       case .leadingSidebar:
+        contentView.removeConstraint(videoContainerLeadingToLeadingSidebarConstraint)
+        contentView.removeConstraint(windowContentViewLeadingConstraint)
+
+        let leadingSidebarPlacement: Preference.PanelPlacement = Preference.enum(for: .leadingSidebarPlacement)
+        leadingSidebar.placement = leadingSidebarPlacement
+        if show && leadingSidebarPlacement == .outsideVideo {
+          videoContainerLeadingToLeadingSidebarConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+          windowContentViewLeadingConstraint = contentView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: 0)
+        } else { // inside video, or hidden
+          let newWidth = show ? 0 : currentWidth
+          videoContainerLeadingToLeadingSidebarConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: newWidth)
+          windowContentViewLeadingConstraint = contentView.leadingAnchor.constraint(equalTo: videoContainerView.leadingAnchor, constant: 0)
+        }
+        windowContentViewLeadingConstraint.isActive = true
+        videoContainerLeadingToLeadingSidebarConstraint.isActive = true
+
         updateLeadingTitleBarAccessory()
       case .trailingSidebar:
+        contentView.removeConstraint(videoContainerTrailingToTrailingSidebarConstraint)
+        contentView.removeConstraint(windowContentViewTrailingConstraint)
+
+        let trailingSidebarPlacement: Preference.PanelPlacement = Preference.enum(for: .trailingSidebarPlacement)
+        trailingSidebar.placement = trailingSidebarPlacement
+        if show && trailingSidebarPlacement == .outsideVideo {
+          videoContainerTrailingToTrailingSidebarConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+          windowContentViewTrailingConstraint = contentView.trailingAnchor.constraint(equalTo: trailingSidebarView.trailingAnchor, constant: 0)
+        } else { // inside video, or hidden
+          /// NOTE: `newWidth` has opposite sign here vs leading sidebar
+          let newWidth = show ? 0 : -currentWidth
+          videoContainerTrailingToTrailingSidebarConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.trailingAnchor, constant: newWidth)
+          windowContentViewTrailingConstraint = contentView.trailingAnchor.constraint(equalTo: videoContainerView.trailingAnchor, constant: 0)
+        }
+
+        windowContentViewTrailingConstraint.isActive = true
+        videoContainerTrailingToTrailingSidebarConstraint.isActive = true
+
         updateTrailingTitleBarAccessory()
       }
-      edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
-    }, completionHandler: {
+
+      contentView.layoutSubtreeIfNeeded()
+      //      edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
+    }
+
+    blockChain.append{ _ in
       if show {
         sidebar.animationState = .shown
         sidebar.visibleTab = tab
@@ -322,7 +364,8 @@ extension MainWindowController {
       if let thenDo = then {
         thenDo()
       }
-    })
+    }
+    runAnimationChain(blockChain, allowAnimation: animate)
   }
 
   // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that

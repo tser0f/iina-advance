@@ -45,7 +45,7 @@ fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarliest = NSStackView.VisibilityPriority(rawValue: 750)
 }
 
-fileprivate typealias AnimationBlock = (NSAnimationContext) -> Void
+typealias AnimationBlock = (NSAnimationContext) -> Void
 
 class MainWindowController: PlayerWindowController {
 
@@ -435,11 +435,13 @@ class MainWindowController: PlayerWindowController {
     case PK.alwaysShowOnTopIcon.rawValue:
       updateTrailingTitleBarAccessory()
     case PK.leadingSidebarPlacement.rawValue:
-      // TODO
-      break
+      if let curentVisibleTab = leadingSidebar.visibleTab {
+        hideSidebarThenShowAgain(tab: curentVisibleTab)
+      }
     case PK.trailingSidebarPlacement.rawValue:
-      // TODO
-      break
+      if let curentVisibleTab = trailingSidebar.visibleTab {
+        hideSidebarThenShowAgain(tab: curentVisibleTab)
+      }
     case PK.settingsTabGroupLocation.rawValue:
       if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarLocation(rawValue: newRawValue) {
         self.moveSidebarIfNeeded(forTabGroup: .settings, toNewSidebarLocation: newID)
@@ -450,7 +452,7 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
-      executeAnimation { _ in
+      runAnimation { _ in
         self.updateOSDPosition()
       }
     default:
@@ -522,9 +524,9 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var additionalInfoToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var leadingSidebarLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerLeadingToLeadingSidebarConstraint: NSLayoutConstraint!
   @IBOutlet weak var leadingSidebarWidthConstraint: NSLayoutConstraint!
-  @IBOutlet weak var trailingSidebarTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerTrailingToTrailingSidebarConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarWidthConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
@@ -994,20 +996,20 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func executeAnimation(_ animationBlock: @escaping AnimationBlock) {
-    executeAnimationGroup([animationBlock])
+  func runAnimation(_ animationBlock: @escaping AnimationBlock) {
+    runAnimationChain([animationBlock])
   }
 
   // Recursive function which executions code for a single group in the chain
-  private func executeAnimationGroup(_ animationBlocks: [AnimationBlock], index: Int = 0) {
+  func runAnimationChain(_ animationBlocks: [AnimationBlock], allowAnimation: Bool = true, index: Int = 0) {
     guard index < animationBlocks.count else { return }
 
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
-      context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
+      context.duration = allowAnimation ? AccessibilityPreferences.adjustedDuration(UIAnimationDuration) : 0
+      context.allowsImplicitAnimation = allowAnimation ? !AccessibilityPreferences.motionReductionEnabled : false
       animationBlocks[index](context)
     }, completionHandler: {
-      self.executeAnimationGroup(animationBlocks, index: index + 1)
+      self.runAnimationChain(animationBlocks, index: index + 1)
     })
   }
 
@@ -1018,9 +1020,7 @@ class MainWindowController: PlayerWindowController {
     topPanelPlacement = Preference.enum(for: .topPanelPlacement)
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
 
-    var animationBlocks: [AnimationBlock] = []
-
-    animationBlocks.append{ [self] context in
+    let animationBlock: AnimationBlock = { [self] context in
       updateTopPanelPosition()
       updateBottomPanelPosition()
 
@@ -1144,7 +1144,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     showOverlays(completionHandler: { [self] in
-      executeAnimationGroup(animationBlocks)
+      runAnimation(animationBlock)
     })
   }
 
