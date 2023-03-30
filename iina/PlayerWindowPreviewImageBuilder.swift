@@ -46,15 +46,85 @@ class PlayerWindowPreviewImageBuilder {
       videoViewOffsetY += oscFullHeight
     }
 
-    let titleBarOffsetY: Int
-    if topPanelPlacement == .outsideVideo {
-      // extra space for title bar
-      titleBarOffsetY = videoViewOffsetY + videoViewImg.height
-    } else if topPanelPlacement == .insideVideo && oscEnabled && oscPosition == .top {
-      titleBarOffsetY = videoViewOffsetY + videoViewImg.height - titleBarHeight
+    let oscImg: CGImage?
+    let oscOffsetY: Int
+    let oscHeight: Int
+    let oscAlpha: CGFloat
+    if self.oscEnabled {
+
+      switch oscPosition {
+
+      case .top:
+        switch topPanelPlacement {
+
+        case .outsideVideo:
+          oscAlpha = opaqueControlAlpha
+          oscImg = oscFullImg
+          oscHeight = oscFullHeight - (oscFullHeight / 8)  // remove some space between controller & title bar
+          oscOffsetY = videoViewOffsetY + videoViewImg.height
+
+        case .insideVideo:
+          oscAlpha = overlayAlpha
+
+          switch self.titleBarStyle {
+          case .minimal:
+            // Special in-title accessory controller
+            oscImg = oscTitleImg
+            oscHeight = oscTitleImg.height
+            oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight
+          case .full:
+            oscImg = oscFullImg
+            let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
+            oscHeight = oscFullHeight - adjustment
+            oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight - titleBarHeight
+          case .none:
+            oscImg = oscFullImg
+            oscHeight = oscFullHeight
+            oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight
+          }  // switch titleBarStyle
+
+        }  // switch topPanelPlacement
+
+      case .bottom:
+        oscImg = oscFullImg
+        oscHeight = oscFullHeight
+
+        switch self.bottomPanelPlacement {
+        case .outsideVideo:
+          oscAlpha = opaqueControlAlpha
+          oscOffsetY = 0
+        case .insideVideo:
+          oscAlpha = overlayAlpha
+          oscOffsetY = videoViewOffsetY
+        }  // switch bottomPanelPlacement
+
+      case .floating:
+        oscAlpha = overlayAlpha
+        oscImg = oscFloatingImg
+        oscHeight = oscFullHeight
+        oscOffsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
+
+      }  // switch oscPosition
+
     } else {
-      titleBarOffsetY = videoViewOffsetY + videoViewImg.height - titleBarHeight
+      // OSC disabled
+      oscAlpha = overlayAlpha
+      oscImg = nil
+      oscHeight = 0
+      oscOffsetY = 0
     }
+
+    let titlebarDownshiftY: Int
+    if topPanelPlacement == .outsideVideo {
+      if oscEnabled && oscPosition == .top {
+        titlebarDownshiftY = -oscHeight
+      } else {
+        titlebarDownshiftY = 0  // right above video
+      }
+    } else {
+      titlebarDownshiftY = titleBarHeight  // inside video
+    }
+    let titleBarOffsetY: Int = videoViewOffsetY + videoViewImg.height - titlebarDownshiftY
 
     let outputWidth: Int = videoViewImg.width
     let outputHeight: Int = titleBarOffsetY + titleBarHeight
@@ -70,42 +140,20 @@ class PlayerWindowPreviewImageBuilder {
       self.draw(image: videoViewImg, in: cgContext, x: 0, y: videoViewOffsetY)
 
       // draw OSC bar
-      if self.oscEnabled {
-        switch self.oscPosition {
-        case .floating:
-          let offsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
-          let offsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
-          self.draw(image: oscFloatingImg, in: cgContext, withAlpha: overlayAlpha, x: offsetX, y: offsetY)
-        case .top:
-          // FIXME: This is INSIDE. Need support for OUTSIDE also!
-          switch self.titleBarStyle {
-          case .minimal:
-            // Special in-title accessory controller
-            let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscTitleImg.height
-            self.draw(image: oscTitleImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
-          case .full:
-            let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
-            let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight + adjustment - titleBarHeight
-            self.draw(image: oscFullImg, in: cgContext, withAlpha: overlayAlpha, x: 0, y: oscOffsetY, height: oscFullHeight - adjustment)
-          case .none:
-            let oscOffsetY = videoViewOffsetY + videoViewImg.height - oscFullHeight
-            self.draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: oscOffsetY)
-          }
-        case .bottom:
-          switch self.bottomPanelPlacement {
-          case .insideVideo:
-            self.draw(image: oscFullImg, in: cgContext,  withAlpha: overlayAlpha, x: 0, y: videoViewOffsetY)
-            cgContext.setBlendMode(.normal)
-          case .outsideVideo:
-            self.draw(image: oscFullImg, in: cgContext, withAlpha: opaqueControlAlpha, x: 0, y: 0)
-          }
+      if let oscImg = oscImg {
+        let oscOffsetX: Int
+        if self.oscPosition == .floating {
+          oscOffsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
+        } else {
+          oscOffsetX = 0
         }
+        self.draw(image: oscImg, in: cgContext, withAlpha: oscAlpha, x: oscOffsetX, y: oscOffsetY, height: oscHeight)
       }
 
       // draw title bar
-      let drawTitleBarButtons = self.titleBarStyle != .none
       let drawTitleBarBackground: Bool
       let titleBarIsOverlay = self.topPanelPlacement == .insideVideo
+      let drawTitleBarButtons = !titleBarIsOverlay || self.titleBarStyle != .none
       if titleBarIsOverlay {
         switch self.titleBarStyle {
         case .none:
