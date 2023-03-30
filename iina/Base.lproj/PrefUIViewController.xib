@@ -148,7 +148,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button verticalHuggingPriority="750" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="Wn6-zz-utQ">
-                                <rect key="frame" x="15" y="48" width="190" height="15"/>
+                                <rect key="frame" x="15" y="48" width="190" height="16"/>
                                 <buttonCell key="cell" type="radio" title="When media is opened manually" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="CJE-ap-IH8">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -158,7 +158,7 @@
                                 </connections>
                             </button>
                             <button verticalHuggingPriority="750" tag="2" translatesAutoresizingMaskIntoConstraints="NO" id="UhD-Lf-aPQ">
-                                <rect key="frame" x="15" y="30" width="67" height="15"/>
+                                <rect key="frame" x="15" y="30" width="67" height="16"/>
                                 <buttonCell key="cell" type="radio" title="Disabled" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="duf-3s-3bL">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -200,7 +200,7 @@
                                 </connections>
                             </popUpButton>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="z5X-oj-MdV">
-                                <rect key="frame" x="15" y="66" width="58" height="15"/>
+                                <rect key="frame" x="15" y="66" width="58" height="16"/>
                                 <buttonCell key="cell" type="radio" title="Always" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="yIN-jg-MxS">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -1463,6 +1463,31 @@
                         <binding destination="lH7-Vv-0M1" name="value" keyPath="values.enableOSD" id="CwB-hu-vT4"/>
                     </connections>
                 </button>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="AuL-MP-Wlj">
+                    <rect key="frame" x="230" y="96" width="57" height="16"/>
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Position:" id="vaT-Rf-wZg">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ttu-Y8-S4Y" userLabel="OSD-Position Popup">
+                    <rect key="frame" x="290" y="89" width="97" height="25"/>
+                    <popUpButtonCell key="cell" type="push" title="Top Left" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="JXw-5D-T1X" id="s8S-bm-lNY" userLabel="OSD-Position Popup Button Cell">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="menu"/>
+                        <menu key="menu" id="eJI-x0-GiD">
+                            <items>
+                                <menuItem title="Top Left" state="on" tag="1" id="JXw-5D-T1X" userLabel="Top Left"/>
+                                <menuItem title="Top Right" tag="2" id="c1Q-5T-iDw"/>
+                            </items>
+                        </menu>
+                    </popUpButtonCell>
+                    <connections>
+                        <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.enableOSD" id="NLH-1B-aTf"/>
+                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.osdPosition" id="2cb-Tj-qiW"/>
+                    </connections>
+                </popUpButton>
             </subviews>
             <constraints>
                 <constraint firstItem="MU2-yF-bjd" firstAttribute="firstBaseline" secondItem="zyi-J3-lSp" secondAttribute="firstBaseline" id="2eq-3z-2lT"/>
@@ -1478,20 +1503,25 @@
                 <constraint firstItem="wDT-XM-dyY" firstAttribute="leading" secondItem="qNv-Yk-nvp" secondAttribute="leading" id="Sl9-5L-eII"/>
                 <constraint firstItem="2xg-kt-Cz4" firstAttribute="leading" secondItem="63o-gu-DxA" secondAttribute="leading" id="T4S-0z-tzx"/>
                 <constraint firstItem="HcO-CN-3qi" firstAttribute="baseline" secondItem="63o-gu-DxA" secondAttribute="baseline" id="VQQ-1l-vxW"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Ttu-Y8-S4Y" secondAttribute="trailing" id="WWf-6T-gho"/>
                 <constraint firstItem="MU2-yF-bjd" firstAttribute="leading" secondItem="c8m-G4-or8" secondAttribute="leading" constant="120" id="XOy-xv-UQT"/>
                 <constraint firstItem="wDT-XM-dyY" firstAttribute="leading" secondItem="63o-gu-DxA" secondAttribute="trailing" constant="8" id="Yas-Qc-aZh"/>
                 <constraint firstAttribute="leading" secondItem="zyi-J3-lSp" secondAttribute="trailing" constant="-120" id="Ytt-RS-SYl"/>
                 <constraint firstItem="MU2-yF-bjd" firstAttribute="top" secondItem="c8m-G4-or8" secondAttribute="top" constant="8" id="Z6R-Ey-JnO"/>
                 <constraint firstItem="qNv-Yk-nvp" firstAttribute="leading" secondItem="bGH-kO-7Rd" secondAttribute="trailing" constant="8" id="ZTP-CX-Nq5"/>
                 <constraint firstAttribute="bottom" secondItem="2xg-kt-Cz4" secondAttribute="bottom" constant="8" id="d5A-Ct-HNP"/>
+                <constraint firstItem="AuL-MP-Wlj" firstAttribute="firstBaseline" secondItem="MU2-yF-bjd" secondAttribute="firstBaseline" id="eXB-14-MDh"/>
+                <constraint firstItem="AuL-MP-Wlj" firstAttribute="leading" secondItem="MU2-yF-bjd" secondAttribute="trailing" constant="16" id="ekS-gs-4db"/>
                 <constraint firstItem="oz1-yC-uZC" firstAttribute="leading" secondItem="qNv-Yk-nvp" secondAttribute="trailing" constant="8" id="gNU-dG-Iah"/>
                 <constraint firstItem="oz1-yC-uZC" firstAttribute="baseline" secondItem="qNv-Yk-nvp" secondAttribute="baseline" id="t2c-O7-ORF"/>
                 <constraint firstItem="2xg-kt-Cz4" firstAttribute="top" secondItem="63o-gu-DxA" secondAttribute="bottom" constant="16" id="tIH-Ni-sZT"/>
+                <constraint firstItem="Ttu-Y8-S4Y" firstAttribute="leading" secondItem="AuL-MP-Wlj" secondAttribute="trailing" constant="8" id="uF9-eB-d9H"/>
                 <constraint firstItem="qNv-Yk-nvp" firstAttribute="baseline" secondItem="bGH-kO-7Rd" secondAttribute="baseline" id="upI-ga-m1J"/>
+                <constraint firstItem="Ttu-Y8-S4Y" firstAttribute="firstBaseline" secondItem="AuL-MP-Wlj" secondAttribute="firstBaseline" id="v0N-nd-a8d"/>
                 <constraint firstItem="63o-gu-DxA" firstAttribute="leading" secondItem="bGH-kO-7Rd" secondAttribute="leading" id="yem-Xi-Hum"/>
                 <constraint firstItem="bGH-kO-7Rd" firstAttribute="top" secondItem="MU2-yF-bjd" secondAttribute="bottom" constant="16" id="zHi-Hz-WHg"/>
             </constraints>
-            <point key="canvasLocation" x="14" y="459"/>
+            <point key="canvasLocation" x="-13" y="479"/>
         </customView>
         <customView id="3uJ-UU-1zw" userLabel="Prefs &gt; UI &gt; Thumbnail Viewer">
             <rect key="frame" x="0.0" y="0.0" width="480" height="80"/>
