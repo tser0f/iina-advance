@@ -54,8 +54,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet var sectionSidebarsView: NSView!
   @IBOutlet var sectionThumbnailView: NSView!
   @IBOutlet var sectionPictureInPictureView: NSView!
-    
+
   @IBOutlet weak var themeMenu: NSMenu!
+  @IBOutlet weak var titleBarStyleContainerView: NSView!
   @IBOutlet weak var windowPreviewImageView: NSImageView!
   @IBOutlet weak var oscBottomPlacementContainerView: NSView!
   @IBOutlet weak var oscSnapToCenterCheckbox: NSButton!
@@ -193,6 +194,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       oscSnapToCenterCheckbox.isHidden = !oscIsFloating
       let oscIsBottom = ib.oscEnabled && ib.oscPosition == .bottom
       oscBottomPlacementContainerView.isHidden = !oscIsBottom
+
+      titleBarStyleContainerView.isHidden = ib.topPanelPlacement != .insideVideo
+
       // Need this to get proper slide effect
       oscBottomPlacementContainerView.superview?.layoutSubtreeIfNeeded()
     })

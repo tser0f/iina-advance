@@ -25,6 +25,8 @@
                 <outlet property="sectionThumbnailView" destination="3uJ-UU-1zw" id="Noy-VW-Uax"/>
                 <outlet property="sectionWindowView" destination="D77-Iw-nrY" id="qGB-hx-chL"/>
                 <outlet property="themeMenu" destination="Cpu-U2-hGC" id="jer-bS-DhW"/>
+                <outlet property="titleBarStyleContainerView" destination="yqi-SP-x25" id="dMG-VQ-dEu"/>
+                <outlet property="topPanelPlacementContainerView" destination="TRL-kd-T5g" id="IgL-Fu-uaM"/>
                 <outlet property="trailingSidebarBox" destination="4b0-vT-JOG" id="dyy-6J-QPV"/>
                 <outlet property="view" destination="Hz6-mo-xeY" id="0bl-1N-x8E"/>
                 <outlet property="windowPosBox" destination="Mye-uz-WUr" id="lyj-Yi-EMu"/>
@@ -150,7 +152,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button verticalHuggingPriority="750" tag="1" translatesAutoresizingMaskIntoConstraints="NO" id="Wn6-zz-utQ">
-                                <rect key="frame" x="15" y="48" width="190" height="16"/>
+                                <rect key="frame" x="15" y="47.5" width="190" height="16"/>
                                 <buttonCell key="cell" type="radio" title="When media is opened manually" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="CJE-ap-IH8">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -160,7 +162,7 @@
                                 </connections>
                             </button>
                             <button verticalHuggingPriority="750" tag="2" translatesAutoresizingMaskIntoConstraints="NO" id="UhD-Lf-aPQ">
-                                <rect key="frame" x="15" y="30" width="67" height="16"/>
+                                <rect key="frame" x="15" y="29.5" width="67" height="16"/>
                                 <buttonCell key="cell" type="radio" title="Disabled" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="duf-3s-3bL">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -202,7 +204,7 @@
                                 </connections>
                             </popUpButton>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="z5X-oj-MdV">
-                                <rect key="frame" x="15" y="66" width="58" height="16"/>
+                                <rect key="frame" x="15" y="65.5" width="58" height="16"/>
                                 <buttonCell key="cell" type="radio" title="Always" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="yIN-jg-MxS">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -610,109 +612,116 @@
                 <constraint firstItem="RRL-GG-R45" firstAttribute="top" secondItem="0kj-QC-B9P" secondAttribute="bottom" constant="16" id="y83-Np-mrT"/>
                 <constraint firstItem="RFk-nU-SGL" firstAttribute="leading" secondItem="D77-Iw-nrY" secondAttribute="leading" id="ypV-gE-Ld4"/>
             </constraints>
-            <point key="canvasLocation" x="14" y="-501"/>
+            <point key="canvasLocation" x="2" y="-540"/>
         </customView>
         <customView id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller">
-            <rect key="frame" x="0.0" y="0.0" width="544" height="642"/>
+            <rect key="frame" x="0.0" y="0.0" width="544" height="618"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
-                    <rect key="frame" x="-2" y="602" width="124" height="32"/>
+                    <rect key="frame" x="-2" y="578" width="124" height="32"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Title Bar and Controller:" id="g06-Ja-Ot8">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL" userLabel="Title Bar:">
-                    <rect key="frame" x="118" y="618" width="58" height="16"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Title bar:" id="EvR-Ml-f7d">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
-                <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="G8V-iH-NaV" userLabel="Title-Bar Box">
-                    <rect key="frame" x="117" y="566" width="372" height="48"/>
-                    <view key="contentView" id="gSM-HX-Bgi" userLabel="Title-Bar Box View">
-                        <rect key="frame" x="4" y="5" width="364" height="40"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5fw-7T-Axx" userLabel="Placement:">
-                                <rect key="frame" x="14" y="13" width="72" height="16"/>
-                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Placement:" id="Hfu-Kw-wrU">
-                                    <font key="font" metaFont="system"/>
-                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Panel-Placement Popup">
-                                <rect key="frame" x="89" y="6" width="125" height="25"/>
-                                <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Panel-Placement Popup Button Cell">
-                                    <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                                    <font key="font" metaFont="menu"/>
-                                    <menu key="menu" id="CD9-hv-Dz3">
-                                        <items>
-                                            <menuItem title="Outside Video" tag="2" id="jwm-vt-kxK"/>
-                                            <menuItem title="Inside Video" state="on" tag="1" id="cDl-zI-S6p"/>
-                                        </items>
-                                    </menu>
-                                </popUpButtonCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topPanelPlacement" id="9yo-1M-9oW"/>
-                                </connections>
-                            </popUpButton>
-                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
-                                <rect key="frame" x="224" y="13" width="39" height="16"/>
-                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Style:" id="RVj-MO-iHC">
-                                    <font key="font" metaFont="system"/>
-                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="67g-AK-VP6" userLabel="Title-Bar-Style Popup">
-                                <rect key="frame" x="266" y="6" width="86" height="25"/>
-                                <popUpButtonCell key="cell" type="push" title="Full" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Title-Bar-Style Popup Button Cell">
-                                    <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                                    <font key="font" metaFont="menu"/>
-                                    <menu key="menu" id="1Wl-Pc-ZHa">
-                                        <items>
-                                            <menuItem title="Full" state="on" tag="1" id="QzP-RR-FmW" userLabel="Full"/>
-                                            <menuItem title="Minimal" tag="2" id="c4E-iU-1Lk" userLabel="Minimal"/>
-                                            <menuItem title="Hidden" id="S83-pY-xca"/>
-                                        </items>
-                                    </menu>
-                                </popUpButtonCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.titleBarStyle" id="ng2-OR-2mp"/>
-                                </connections>
-                            </popUpButton>
-                        </subviews>
-                        <constraints>
-                            <constraint firstItem="f7b-zH-WwI" firstAttribute="leading" secondItem="5fw-7T-Axx" secondAttribute="trailing" priority="900" constant="8" id="3Qr-qP-HRX"/>
-                            <constraint firstItem="67g-AK-VP6" firstAttribute="height" secondItem="f7b-zH-WwI" secondAttribute="height" id="5DQ-mP-uYG"/>
-                            <constraint firstItem="5fw-7T-Axx" firstAttribute="leading" secondItem="gSM-HX-Bgi" secondAttribute="leading" constant="16" id="6ae-gq-aQj"/>
-                            <constraint firstItem="KXy-D0-Irg" firstAttribute="leading" secondItem="f7b-zH-WwI" secondAttribute="trailing" constant="16" id="LWD-BH-0Fc"/>
-                            <constraint firstItem="67g-AK-VP6" firstAttribute="top" secondItem="gSM-HX-Bgi" secondAttribute="top" constant="10" id="ND8-Vl-TNh"/>
-                            <constraint firstAttribute="bottom" secondItem="67g-AK-VP6" secondAttribute="bottom" constant="10" id="Xrg-Kg-I1c"/>
-                            <constraint firstItem="67g-AK-VP6" firstAttribute="leading" secondItem="KXy-D0-Irg" secondAttribute="trailing" priority="900" constant="8" id="bwN-HA-IwA"/>
-                            <constraint firstItem="KXy-D0-Irg" firstAttribute="firstBaseline" secondItem="67g-AK-VP6" secondAttribute="firstBaseline" id="gdk-Jg-t4H"/>
-                            <constraint firstAttribute="trailing" secondItem="67g-AK-VP6" secondAttribute="trailing" constant="16" id="jnp-Hh-mTs"/>
-                            <constraint firstItem="KXy-D0-Irg" firstAttribute="firstBaseline" secondItem="5fw-7T-Axx" secondAttribute="firstBaseline" id="pmo-0L-tqU"/>
-                            <constraint firstItem="f7b-zH-WwI" firstAttribute="firstBaseline" secondItem="5fw-7T-Axx" secondAttribute="firstBaseline" id="rRo-2T-SXK"/>
-                        </constraints>
-                    </view>
-                </box>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sJc-KZ-R3m">
-                    <rect key="frame" x="118" y="542" width="56" height="16"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Preview:" id="192-HJ-S0P">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
+                <stackView distribution="fill" orientation="vertical" alignment="leading" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4SE-r9-OnD" userLabel="Top-Panel Vertical Stack View">
+                    <rect key="frame" x="120" y="562" width="360" height="48"/>
+                    <subviews>
+                        <customView identifier="topPanelPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="TRL-kd-T5g" userLabel="Top-Panel-Position-Container View">
+                            <rect key="frame" x="0.0" y="28" width="360" height="20"/>
+                            <subviews>
+                                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
+                                    <rect key="frame" x="65" y="3" width="134" height="16"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top panel placement:" id="EvR-Ml-f7d">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Panel-Placement Popup">
+                                    <rect key="frame" x="202" y="-4" width="162" height="25"/>
+                                    <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Panel-Placement Popup Button Cell">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                        <font key="font" metaFont="menu"/>
+                                        <menu key="menu" id="CD9-hv-Dz3">
+                                            <items>
+                                                <menuItem title="Outside Video" tag="2" id="jwm-vt-kxK"/>
+                                                <menuItem title="Inside Video" state="on" tag="1" id="cDl-zI-S6p"/>
+                                            </items>
+                                        </menu>
+                                    </popUpButtonCell>
+                                    <connections>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topPanelPlacement" id="9yo-1M-9oW"/>
+                                    </connections>
+                                </popUpButton>
+                            </subviews>
+                            <constraints>
+                                <constraint firstItem="f7b-zH-WwI" firstAttribute="top" secondItem="TRL-kd-T5g" secondAttribute="top" id="R6J-Zp-2lU"/>
+                                <constraint firstItem="f7b-zH-WwI" firstAttribute="firstBaseline" secondItem="BTX-tO-uhL" secondAttribute="firstBaseline" id="RWZ-u9-VTw"/>
+                                <constraint firstItem="f7b-zH-WwI" firstAttribute="leading" secondItem="BTX-tO-uhL" secondAttribute="trailing" constant="8" id="cbY-ti-VEm"/>
+                                <constraint firstItem="BTX-tO-uhL" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="TRL-kd-T5g" secondAttribute="leading" id="dbd-eD-hjx"/>
+                                <constraint firstAttribute="bottom" secondItem="f7b-zH-WwI" secondAttribute="bottom" id="fYW-Oy-yd5"/>
+                                <constraint firstAttribute="trailing" secondItem="f7b-zH-WwI" secondAttribute="trailing" id="uW5-UI-eAh"/>
+                            </constraints>
+                        </customView>
+                        <customView identifier="titleBarStyleContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="yqi-SP-x25" userLabel="Title-Bar-Style-Container View">
+                            <rect key="frame" x="0.0" y="0.0" width="360" height="20"/>
+                            <subviews>
+                                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
+                                    <rect key="frame" x="108" y="3" width="91" height="16"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Title bar style:" id="RVj-MO-iHC">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="67g-AK-VP6" userLabel="Title-Bar-Style Popup">
+                                    <rect key="frame" x="202" y="-4" width="162" height="25"/>
+                                    <popUpButtonCell key="cell" type="push" title="Full" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Title-Bar-Style Popup Button Cell">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                        <font key="font" metaFont="menu"/>
+                                        <menu key="menu" id="1Wl-Pc-ZHa">
+                                            <items>
+                                                <menuItem title="Full" state="on" tag="1" id="QzP-RR-FmW" userLabel="Full"/>
+                                                <menuItem title="Minimal" tag="2" id="c4E-iU-1Lk" userLabel="Minimal"/>
+                                                <menuItem title="Hidden" id="S83-pY-xca"/>
+                                            </items>
+                                        </menu>
+                                    </popUpButtonCell>
+                                    <connections>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.titleBarStyle" id="ng2-OR-2mp"/>
+                                    </connections>
+                                </popUpButton>
+                            </subviews>
+                            <constraints>
+                                <constraint firstAttribute="bottom" secondItem="67g-AK-VP6" secondAttribute="bottom" id="150-3q-kuO"/>
+                                <constraint firstItem="67g-AK-VP6" firstAttribute="leading" secondItem="KXy-D0-Irg" secondAttribute="trailing" constant="8" id="5qB-hb-6UP"/>
+                                <constraint firstItem="KXy-D0-Irg" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="yqi-SP-x25" secondAttribute="leading" id="5x1-8P-ox2"/>
+                                <constraint firstItem="67g-AK-VP6" firstAttribute="firstBaseline" secondItem="KXy-D0-Irg" secondAttribute="firstBaseline" id="nVk-tY-LPP"/>
+                                <constraint firstAttribute="trailing" secondItem="67g-AK-VP6" secondAttribute="trailing" id="vOX-ny-1MF"/>
+                                <constraint firstItem="67g-AK-VP6" firstAttribute="top" secondItem="yqi-SP-x25" secondAttribute="top" id="wg8-lZ-dkV"/>
+                            </constraints>
+                        </customView>
+                    </subviews>
+                    <constraints>
+                        <constraint firstItem="f7b-zH-WwI" firstAttribute="height" secondItem="67g-AK-VP6" secondAttribute="height" id="69G-XR-fDU"/>
+                        <constraint firstItem="f7b-zH-WwI" firstAttribute="leading" secondItem="67g-AK-VP6" secondAttribute="leading" id="DVX-Xf-0iq"/>
+                        <constraint firstItem="f7b-zH-WwI" firstAttribute="trailing" secondItem="67g-AK-VP6" secondAttribute="trailing" id="PCz-gU-m8d"/>
+                        <constraint firstItem="KXy-D0-Irg" firstAttribute="height" secondItem="BTX-tO-uhL" secondAttribute="height" id="gjs-S2-d5j"/>
+                    </constraints>
+                    <visibilityPriorities>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                    </visibilityPriorities>
+                    <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                    </customSpacing>
+                </stackView>
                 <imageView translatesAutoresizingMaskIntoConstraints="NO" id="yaR-pw-wfD" userLabel="Window-Layout-Preview Image View">
-                    <rect key="frame" x="180" y="298" width="300" height="260"/>
+                    <rect key="frame" x="120" y="294" width="300" height="260"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="300" id="7kQ-ne-UX4"/>
                         <constraint firstAttribute="height" constant="260" id="k3B-op-pIn"/>
@@ -777,7 +786,7 @@
                                 <constraint firstAttribute="bottom" secondItem="GbG-nw-ict" secondAttribute="bottom" id="vVD-13-g1w"/>
                             </constraints>
                         </customView>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="mk9-4m-UZR" userLabel="Bottom-OSC-Placement-Container View">
+                        <customView identifier="oscBottomPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="mk9-4m-UZR" userLabel="Bottom-OSC-Placement-Container View">
                             <rect key="frame" x="0.0" y="24" width="360" height="20"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Xua-UF-KwL">
@@ -855,7 +864,7 @@
                     </textFieldCell>
                 </textField>
                 <box horizontalCompressionResistancePriority="800" verticalCompressionResistancePriority="800" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="omS-tS-OVJ" userLabel="Toolbar-Preview Box">
-                    <rect key="frame" x="263" y="180" width="116" height="28"/>
+                    <rect key="frame" x="264" y="180" width="116" height="28"/>
                     <view key="contentView" id="pBh-nz-cS5" userLabel="Toolbar-Preview-Box View">
                         <rect key="frame" x="4" y="5" width="108" height="20"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -880,7 +889,7 @@
                     </constraints>
                 </box>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="gVR-so-xgt">
-                    <rect key="frame" x="377" y="177" width="110" height="32"/>
+                    <rect key="frame" x="378" y="177" width="109" height="32"/>
                     <buttonCell key="cell" type="push" title="Customize…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="1nM-AX-Ozm">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -1033,23 +1042,21 @@
                 </box>
             </subviews>
             <constraints>
-                <constraint firstItem="G8V-iH-NaV" firstAttribute="leading" secondItem="BTX-tO-uhL" secondAttribute="leading" id="0dA-Er-wZB"/>
                 <constraint firstItem="omS-tS-OVJ" firstAttribute="top" secondItem="BTa-m6-8NZ" secondAttribute="bottom" constant="8" id="0e1-Vm-wvq"/>
                 <constraint firstItem="gVR-so-xgt" firstAttribute="leading" secondItem="omS-tS-OVJ" secondAttribute="trailing" constant="8" id="3MP-4O-Z3K"/>
                 <constraint firstItem="BTa-m6-8NZ" firstAttribute="leading" secondItem="gjB-It-iFS" secondAttribute="leading" constant="120" id="5QU-6m-wb6"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="SyB-0R-TLF" secondAttribute="trailing" id="8ox-SI-Bqn"/>
-                <constraint firstItem="KXy-D0-Irg" firstAttribute="height" secondItem="BTX-tO-uhL" secondAttribute="height" id="9MG-ma-FwH"/>
+                <constraint firstItem="yaR-pw-wfD" firstAttribute="leading" secondItem="TRL-kd-T5g" secondAttribute="leading" id="8tA-k0-kbf"/>
                 <constraint firstItem="4XH-GU-VhV" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="gjB-It-iFS" secondAttribute="leading" constant="120" id="A6A-Wt-sRz"/>
                 <constraint firstItem="6ml-Xj-nVX" firstAttribute="leading" secondItem="bVg-yv-fOx" secondAttribute="leading" id="AsH-9x-l2e"/>
-                <constraint firstItem="G8V-iH-NaV" firstAttribute="top" secondItem="BTX-tO-uhL" secondAttribute="bottom" constant="6" id="Ayn-mc-gjh"/>
-                <constraint firstItem="sJc-KZ-R3m" firstAttribute="top" secondItem="yaR-pw-wfD" secondAttribute="top" id="DUc-cm-Dvt"/>
-                <constraint firstItem="yaR-pw-wfD" firstAttribute="top" secondItem="G8V-iH-NaV" secondAttribute="bottom" constant="12" id="DVp-LQ-ITS"/>
+                <constraint firstItem="GbG-nw-ict" firstAttribute="trailing" secondItem="f7b-zH-WwI" secondAttribute="trailing" id="AzP-XN-Y1i"/>
+                <constraint firstItem="yaR-pw-wfD" firstAttribute="top" secondItem="4SE-r9-OnD" secondAttribute="bottom" constant="8" id="DVp-LQ-ITS"/>
                 <constraint firstItem="q8D-b2-H0y" firstAttribute="leading" secondItem="BTa-m6-8NZ" secondAttribute="leading" constant="20" id="EPu-ZP-lW5"/>
                 <constraint firstItem="rft-T0-lds" firstAttribute="top" secondItem="OMM-mG-Uts" secondAttribute="bottom" constant="8" id="GKq-oC-uGE"/>
                 <constraint firstItem="6ml-Xj-nVX" firstAttribute="top" secondItem="rft-T0-lds" secondAttribute="bottom" constant="16" id="HLQ-xF-5Qa"/>
+                <constraint firstItem="4SE-r9-OnD" firstAttribute="top" secondItem="4XH-GU-VhV" secondAttribute="top" id="Hc6-fh-jM2"/>
                 <constraint firstItem="2Fc-2d-hIJ" firstAttribute="width" secondItem="2Fc-2d-hIJ" secondAttribute="height" multiplier="1:1" id="JSO-Tj-v8X"/>
                 <constraint firstItem="omS-tS-OVJ" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="q8D-b2-H0y" secondAttribute="trailing" constant="8" id="Kvt-R8-Efd"/>
-                <constraint firstItem="5fw-7T-Axx" firstAttribute="height" secondItem="BTX-tO-uhL" secondAttribute="height" id="LgK-Vc-9pB"/>
                 <constraint firstItem="NpR-4X-AUC" firstAttribute="height" secondItem="6ml-Xj-nVX" secondAttribute="height" id="NQF-dV-lTJ"/>
                 <constraint firstItem="gVR-so-xgt" firstAttribute="baseline" secondItem="q8D-b2-H0y" secondAttribute="baseline" id="OEQ-c0-3H3"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="6ml-Xj-nVX" secondAttribute="trailing" id="Oe5-qn-5Oo"/>
@@ -1057,47 +1064,42 @@
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="height" secondItem="GbG-nw-ict" secondAttribute="height" id="OvX-9X-f6S"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="BTa-m6-8NZ" secondAttribute="trailing" id="Pm6-G5-20D"/>
                 <constraint firstItem="HgG-px-UUt" firstAttribute="centerY" secondItem="2Fc-2d-hIJ" secondAttribute="centerY" id="PtR-O2-tdP"/>
+                <constraint firstItem="4SE-r9-OnD" firstAttribute="leading" secondItem="gjB-It-iFS" secondAttribute="leading" constant="120" id="QhJ-5H-HwU"/>
                 <constraint firstItem="omS-tS-OVJ" firstAttribute="centerY" secondItem="q8D-b2-H0y" secondAttribute="centerY" id="QuW-aH-6lC"/>
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="top" secondItem="omS-tS-OVJ" secondAttribute="bottom" constant="8" id="RWJ-jY-brF"/>
                 <constraint firstItem="rft-T0-lds" firstAttribute="height" secondItem="OMM-mG-Uts" secondAttribute="height" id="RaP-va-cF7"/>
                 <constraint firstItem="rft-T0-lds" firstAttribute="leading" secondItem="OMM-mG-Uts" secondAttribute="leading" id="Rkx-mT-jHK"/>
                 <constraint firstItem="4XH-GU-VhV" firstAttribute="top" secondItem="gjB-It-iFS" secondAttribute="top" constant="8" id="SUP-it-bME"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="4SE-r9-OnD" secondAttribute="trailing" id="T2y-3D-aUN"/>
                 <constraint firstItem="HgG-px-UUt" firstAttribute="height" secondItem="jbc-22-59W" secondAttribute="height" id="TFK-n0-TM0"/>
-                <constraint firstItem="BTa-m6-8NZ" firstAttribute="top" secondItem="yaR-pw-wfD" secondAttribute="bottom" constant="12" id="VMF-3e-rRQ"/>
-                <constraint firstItem="SyB-0R-TLF" firstAttribute="height" secondItem="f7b-zH-WwI" secondAttribute="height" id="Wl8-9k-psU"/>
+                <constraint firstItem="BTa-m6-8NZ" firstAttribute="top" secondItem="yaR-pw-wfD" secondAttribute="bottom" constant="8" id="VMF-3e-rRQ"/>
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="leading" secondItem="q8D-b2-H0y" secondAttribute="leading" id="XJE-Hd-PaT"/>
-                <constraint firstItem="sJc-KZ-R3m" firstAttribute="leading" secondItem="BTX-tO-uhL" secondAttribute="leading" id="Yfg-9c-zKU"/>
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="height" secondItem="bVg-yv-fOx" secondAttribute="height" id="Yhh-hb-boj"/>
-                <constraint firstItem="6ml-Xj-nVX" firstAttribute="height" secondItem="BTX-tO-uhL" secondAttribute="height" id="Yoo-cu-BVu"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="OMM-mG-Uts" secondAttribute="trailing" id="Yxo-AW-upP"/>
                 <constraint firstItem="vC3-U1-cHH" firstAttribute="centerY" secondItem="2Fc-2d-hIJ" secondAttribute="centerY" id="ZIt-uS-S1A"/>
-                <constraint firstItem="sJc-KZ-R3m" firstAttribute="height" secondItem="BTX-tO-uhL" secondAttribute="height" id="aLL-ak-CzE"/>
-                <constraint firstItem="yaR-pw-wfD" firstAttribute="leading" secondItem="sJc-KZ-R3m" secondAttribute="trailing" constant="8" id="anQ-tQ-2Sf"/>
-                <constraint firstItem="BTX-tO-uhL" firstAttribute="firstBaseline" secondItem="4XH-GU-VhV" secondAttribute="firstBaseline" id="ap7-mX-knb"/>
-                <constraint firstItem="BTX-tO-uhL" firstAttribute="leading" secondItem="gjB-It-iFS" secondAttribute="leading" constant="120" id="bw9-Jk-otJ"/>
                 <constraint firstItem="HgG-px-UUt" firstAttribute="leading" secondItem="q8D-b2-H0y" secondAttribute="leading" id="cgF-wa-d3H"/>
                 <constraint firstAttribute="bottom" secondItem="0eU-xI-byi" secondAttribute="bottom" constant="8" id="dsz-0o-3UL"/>
                 <constraint firstItem="gVR-so-xgt" firstAttribute="top" relation="greaterThanOrEqual" secondItem="BTa-m6-8NZ" secondAttribute="bottom" constant="8" id="eN6-zo-Rmc"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="gVR-so-xgt" secondAttribute="trailing" id="f0U-Y7-QR7"/>
                 <constraint firstItem="2Fc-2d-hIJ" firstAttribute="leading" secondItem="vC3-U1-cHH" secondAttribute="trailing" constant="8" id="fPX-XY-3Lq"/>
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="top" relation="greaterThanOrEqual" secondItem="gVR-so-xgt" secondAttribute="bottom" constant="8" id="g3B-gJ-d6s"/>
-                <constraint firstItem="BTa-m6-8NZ" firstAttribute="trailing" secondItem="yaR-pw-wfD" secondAttribute="trailing" id="gU5-cd-2Dh"/>
                 <constraint firstItem="gVR-so-xgt" firstAttribute="trailing" secondItem="BTa-m6-8NZ" secondAttribute="trailing" id="gXp-7B-exx"/>
                 <constraint firstItem="4XH-GU-VhV" firstAttribute="leading" secondItem="gjB-It-iFS" secondAttribute="leading" id="iTX-Ic-VCy"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="0eU-xI-byi" secondAttribute="trailing" id="jhi-2B-pAH"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="BTX-tO-uhL" secondAttribute="trailing" id="lkW-tt-hbK"/>
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="baseline" secondItem="HgG-px-UUt" secondAttribute="baseline" id="mcc-vX-Jfk"/>
                 <constraint firstItem="kw0-f3-qrz" firstAttribute="height" secondItem="rft-T0-lds" secondAttribute="height" id="nF3-ba-RVo"/>
                 <constraint firstItem="HgG-px-UUt" firstAttribute="height" secondItem="q8D-b2-H0y" secondAttribute="height" id="oee-q3-DOe"/>
                 <constraint firstItem="HgG-px-UUt" firstAttribute="leading" secondItem="2Fc-2d-hIJ" secondAttribute="trailing" constant="8" id="qRb-M3-igm"/>
+                <constraint firstItem="q8D-b2-H0y" firstAttribute="height" secondItem="BTX-tO-uhL" secondAttribute="height" id="rvI-xY-410"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="rft-T0-lds" secondAttribute="trailing" id="sbH-ic-ioS"/>
                 <constraint firstItem="0eU-xI-byi" firstAttribute="top" secondItem="6ml-Xj-nVX" secondAttribute="bottom" constant="6" id="wjF-MV-3US"/>
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="top" secondItem="SyB-0R-TLF" secondAttribute="bottom" constant="8" id="xNr-ni-zgT"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="G8V-iH-NaV" secondAttribute="trailing" id="yjh-Ph-LDB"/>
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="HgG-px-UUt" secondAttribute="trailing" constant="8" id="z4E-Tj-yG1"/>
+                <constraint firstItem="GbG-nw-ict" firstAttribute="height" secondItem="f7b-zH-WwI" secondAttribute="height" id="zGO-d4-CbL"/>
+                <constraint firstItem="GbG-nw-ict" firstAttribute="leading" secondItem="f7b-zH-WwI" secondAttribute="leading" id="zIW-49-6lf"/>
                 <constraint firstItem="6ml-Xj-nVX" firstAttribute="leading" secondItem="0eU-xI-byi" secondAttribute="leading" id="zS7-aO-rrc"/>
             </constraints>
-            <point key="canvasLocation" x="19" y="56"/>
+            <point key="canvasLocation" x="19" y="46"/>
         </customView>
         <customView id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars">
             <rect key="frame" x="0.0" y="0.0" width="584" height="181"/>
