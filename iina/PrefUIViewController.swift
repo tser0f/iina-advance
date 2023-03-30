@@ -63,6 +63,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var oscAutoHideTimeoutTextField: NSTextField!
   @IBOutlet weak var hideOverlaysOutsideWindowCheckBox: NSButton!
 
+  @IBOutlet var leadingSidebarBox: NSBox!
+  @IBOutlet var trailingSidebarBox: NSBox!
+
   @IBOutlet weak var windowSizeCheckBox: NSButton!
   @IBOutlet weak var windowSizeTypePopUpButton: NSPopUpButton!
   @IBOutlet weak var windowSizeValueTextField: NSTextField!
@@ -92,6 +95,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .enableOSC,
     .oscPosition,
     .themeMaterial,
+    .settingsTabGroupLocation,
+    .playlistTabGroupLocation,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -119,6 +124,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
     oscToolbarStackView.wantsLayer = true
 
+    refreshSidebarSection()
     refreshTitleBarAndOSCSection()
     updateOSCToolbarButtons()
     setupGeometryRelatedControls()
@@ -149,9 +155,20 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       PK.oscPosition.rawValue,
       PK.themeMaterial.rawValue:
       refreshTitleBarAndOSCSection()
+    case PK.settingsTabGroupLocation.rawValue, PK.playlistTabGroupLocation.rawValue:
+      refreshSidebarSection()
     default:
       break
     }
+  }
+
+  private func refreshSidebarSection() {
+    let tabGroup1: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
+    let tabGroup2: Preference.SidebarLocation = Preference.enum(for: .playlistTabGroupLocation)
+    let isUsingLeadingSidebar = tabGroup1 == .leadingSidebar || tabGroup2 == .leadingSidebar
+    let isUsingTrailingSidebar = tabGroup1 == .trailingSidebar || tabGroup2 == .trailingSidebar
+    setSubViews(of: leadingSidebarBox, enabled: isUsingLeadingSidebar)
+    setSubViews(of: trailingSidebarBox, enabled: isUsingTrailingSidebar)
   }
 
   private func refreshTitleBarAndOSCSection() {
