@@ -9,7 +9,10 @@
 import Foundation
 
 fileprivate let overlayAlpha: CGFloat = 0.6
-fileprivate let opaqueControlAlpha: CGFloat = 0.9  // don't be completely white or black
+fileprivate let opaqueControlAlpha: CGFloat = 1.0
+fileprivate let outputImgWidth: Int = 640
+fileprivate let outputImgHeight: Int = 480
+fileprivate let menuBarHeight: Int = 20
 
 class PlayerWindowPreviewImageBuilder {
   static var cgImageCache: [String: CGImage] = [:]
@@ -19,9 +22,7 @@ class PlayerWindowPreviewImageBuilder {
   let titleBarStyle: Preference.TitleBarStyle = Preference.enum(for: .titleBarStyle)
   let topPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .topPanelPlacement)
   let bottomPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomPanelPlacement)
-  let isDarkTheme = true  // TODO fully support light preview. Need to find way to invert colors for OSC imgs
-  //    let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
-  //    let isDarkTheme = !(theme == .light || theme == .mediumLight)  // default to dark
+  let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
 
 
   // TODO (1): draw border around window
@@ -36,6 +37,8 @@ class PlayerWindowPreviewImageBuilder {
       Logger.log("Cannot generate window preview image: failed to load asset(s)", level: .error)
       return nil
     }
+    let isDarkTheme = !(theme == .light || theme == .mediumLight)  // default to dark
+    let roundedCornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
 
     let oscFullHeight: Int = oscFullImg.height
     let titleBarHeight: Int = titleBarButtonsImg.height
@@ -50,7 +53,7 @@ class PlayerWindowPreviewImageBuilder {
     let oscOffsetY: Int
     let oscHeight: Int
     let oscAlpha: CGFloat
-    if self.oscEnabled {
+    if oscEnabled {
 
       switch oscPosition {
 
@@ -66,7 +69,7 @@ class PlayerWindowPreviewImageBuilder {
         case .insideVideo:
           oscAlpha = overlayAlpha
 
-          switch self.titleBarStyle {
+          switch titleBarStyle {
           case .minimal:
             // Special in-title accessory controller
             oscImg = oscTitleImg
@@ -81,22 +84,22 @@ class PlayerWindowPreviewImageBuilder {
             oscImg = oscFullImg
             oscHeight = oscFullHeight
             oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight
-          }  // switch titleBarStyle
+          }  // end switch titleBarStyle
 
-        }  // switch topPanelPlacement
+        }  // end switch topPanelPlacement
 
       case .bottom:
         oscImg = oscFullImg
         oscHeight = oscFullHeight
 
-        switch self.bottomPanelPlacement {
+        switch bottomPanelPlacement {
         case .outsideVideo:
           oscAlpha = opaqueControlAlpha
-          oscOffsetY = 0
+          oscOffsetY = videoViewOffsetY - oscFullHeight
         case .insideVideo:
           oscAlpha = overlayAlpha
           oscOffsetY = videoViewOffsetY
-        }  // switch bottomPanelPlacement
+        }  // end switch bottomPanelPlacement
 
       case .floating:
         oscAlpha = overlayAlpha
@@ -104,7 +107,7 @@ class PlayerWindowPreviewImageBuilder {
         oscHeight = oscFullHeight
         oscOffsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
 
-      }  // switch oscPosition
+      }  // end switch oscPosition
 
     } else {
       // OSC disabled
@@ -126,40 +129,62 @@ class PlayerWindowPreviewImageBuilder {
     }
     let titleBarOffsetY: Int = videoViewOffsetY + videoViewImg.height - titlebarDownshiftY
 
-    let outputWidth: Int = videoViewImg.width
-    let outputHeight: Int = titleBarOffsetY + titleBarHeight
+    let winWidth: Int = videoViewImg.width
+    let winHeight: Int = titleBarOffsetY + titleBarHeight
+    let winOriginX: Int = (outputImgWidth - winWidth) / 2
+    let winOriginY: Int = (outputImgHeight - winHeight) / 2 - menuBarHeight
+
+    let winRect = NSRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+
+    let drawingCalls: (CGContext) -> Void = { [self] cgContext in
+      let bgColor = NSColor.underPageBackgroundColor.cgColor
+      cgContext.setFillColor(bgColor)
+      cgContext.fill([CGRect(x: 0, y: 0, width: outputImgWidth, height: outputImgHeight)])
+
+      // Draw menu bar
+      let menuBarColor: CGColor = addAlpha(opaqueControlAlpha, to: NSColor.windowBackgroundColor)
+      cgContext.setFillColor(menuBarColor)
+      cgContext.fill([CGRect(x: 0, y: outputImgHeight - titleBarHeight, width: outputImgWidth, height: titleBarHeight)])
+
+      if #available(macOS 11.0, *) {
+        if let appleLogo = NSImage(systemSymbolName: "apple.logo", accessibilityDescription: nil)?.tinted(.textColor) {
+
+          let paddingY = titleBarHeight / 8
+          let logoHeight = titleBarHeight - (paddingY * 2)
+          let logoWidth = Int(CGFloat(logoHeight) * appleLogo.size.aspect)
+          cgContext.draw(appleLogo.cgImage!, in: CGRect(x: paddingY * 2, y: outputImgHeight - titleBarHeight + paddingY, width: logoWidth, height: logoHeight))
+        }
+      } else {
+        // Fallback on earlier versions
+      }
 
 
-    let drawingCalls: (CGContext) -> Void = { cgContext in
-      // Draw background with opposite color as control color, so we can use alpha to lighten the controls
-      let bgColor: CGFloat = self.isDarkTheme ? 1 : 0
-      cgContext.setFillColor(CGColor(red: bgColor, green: bgColor, blue: bgColor, alpha: 1))
-      cgContext.fill([CGRect(x: 0, y: 0, width: outputWidth, height: outputHeight)])
+      // Start drawing window. Clip its corners to round it:
+      cgContext.beginPath()
+      cgContext.addPath(CGPath(roundedRect: winRect, cornerWidth: roundedCornerRadius * 2, cornerHeight: roundedCornerRadius * 2, transform: nil))
+      cgContext.closePath()
+      cgContext.clip()
 
       // draw video
-      self.draw(image: videoViewImg, in: cgContext, x: 0, y: videoViewOffsetY)
+      draw(image: videoViewImg, in: cgContext, x: winOriginX, y: winOriginY + videoViewOffsetY)
 
       // draw OSC bar
       if let oscImg = oscImg {
         let oscOffsetX: Int
-        if self.oscPosition == .floating {
+        if oscPosition == .floating {
           oscOffsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
         } else {
           oscOffsetX = 0
         }
-        self.draw(image: oscImg, in: cgContext, withAlpha: oscAlpha, x: oscOffsetX, y: oscOffsetY, height: oscHeight)
+        draw(image: oscImg, in: cgContext, withAlpha: oscAlpha, x: winOriginX + oscOffsetX, y: winOriginY + oscOffsetY, height: oscHeight)
       }
 
       // draw title bar
+      let isTitleBarInside = topPanelPlacement == .insideVideo
       let drawTitleBarBackground: Bool
-      let titleBarIsOverlay = self.topPanelPlacement == .insideVideo
-      let drawTitleBarButtons = !titleBarIsOverlay || self.titleBarStyle != .none
-      if titleBarIsOverlay {
-        switch self.titleBarStyle {
-        case .none:
-          drawTitleBarBackground = false
-          break
-        case .minimal:
+      if isTitleBarInside {
+        switch titleBarStyle {
+        case .none, .minimal:
           drawTitleBarBackground = false
         case .full:
           drawTitleBarBackground = true
@@ -167,24 +192,38 @@ class PlayerWindowPreviewImageBuilder {
       } else {
         drawTitleBarBackground = true
       }
-      if drawTitleBarBackground {
-        let titleBarAlpha: CGFloat = titleBarIsOverlay ? overlayAlpha : opaqueControlAlpha
-        let color: CGFloat = self.isDarkTheme ? 0 : 1
-        cgContext.setFillColor(CGColor(red: color, green: color, blue: color, alpha: titleBarAlpha))
-        cgContext.fill([CGRect(x: 0, y: titleBarOffsetY, width: outputWidth, height: titleBarHeight)])
-      }
-      if drawTitleBarButtons {
-        self.draw(image: titleBarButtonsImg, in: cgContext, x: 0, y: titleBarOffsetY)
-      }
-    }
 
-    let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius)) * 2
-    let previewImage = drawImageInBitmapImageContext(width: outputWidth, height: outputHeight, drawingCalls: drawingCalls)?
+      if drawTitleBarBackground {
+        let titleBarAlpha: CGFloat = isTitleBarInside ? overlayAlpha : opaqueControlAlpha
+        let titleBarColor: CGColor = addAlpha(titleBarAlpha, to: NSColor.windowBackgroundColor)
+        cgContext.setFillColor(titleBarColor)
+        cgContext.fill([CGRect(x: winOriginX, y: winOriginY + titleBarOffsetY, width: winWidth, height: titleBarHeight)])
+      }
+
+      let drawTitleBarButtons = !isTitleBarInside || titleBarStyle != .none
+      if drawTitleBarButtons {
+        draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY)
+      }
+    }  // drawingCalls
+
+    let previewImage = drawImageInBitmapImageContext(width: outputImgWidth, height: outputImgHeight, drawingCalls: drawingCalls)?
       .roundCorners(withRadius: roundedCornerRadius)
 
     return previewImage
   }
 
+  private func addAlpha(_ alpha: CGFloat, to color: NSColor) -> CGColor {
+    color.withAlphaComponent(alpha).cgColor
+  }
+
+  private func tintImage(_ inputImage: CGImage, _ context: CGContext) -> CGImage? {
+    let ciContext = CIContext()
+    guard let filter = CIFilter(name:"CISepiaTone") else { return nil }
+    filter.setValue(inputImage, forKey: kCIInputImageKey)
+    filter.setValue(0.9, forKey: kCIInputIntensityKey)
+    guard let outputCIImage = filter.outputImage else { return nil }
+    return ciContext.createCGImage(outputCIImage, from: outputCIImage.extent)
+  }
 
   private func loadCGImage(named name: String) -> CGImage? {
     if let cachedImage = PlayerWindowPreviewImageBuilder.cgImageCache[name] {
@@ -212,7 +251,7 @@ class PlayerWindowPreviewImageBuilder {
     cgContext.setAlpha(1)
   }
 
-  private func drawImageInBitmapImageContext(width: Int, height: Int, roundedCornerRadius: CGFloat? = nil, drawingCalls: (CGContext) -> Void) -> NSImage? {
+  private func drawImageInBitmapImageContext(width: Int, height: Int, drawingCalls: (CGContext) -> Void) -> NSImage? {
 
     guard let compositeImageRep = makeNewImgRep(width: width, height: height) else {
       Logger.log("DrawImageInBitmapImageContext: Failed to create NSBitmapImageRep!", level: .error)

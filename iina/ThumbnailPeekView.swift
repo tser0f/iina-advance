@@ -17,15 +17,15 @@ class ThumbnailPeekView: NSView {
     let cornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
     if cornerRadius > 0.0 {
       self.layer?.cornerRadius = cornerRadius
+      self.layer?.masksToBounds = true
+      self.imageView.wantsLayer = true
+      self.imageView.layer?.cornerRadius = cornerRadius
+      self.imageView.layer?.masksToBounds = true
     }
-    self.layer?.masksToBounds = true
     // shadow is set in xib  // FIXME: shadow is broken
     self.layer?.shadowRadius = 4
     self.layer?.borderWidth = 2
     self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
-    self.imageView.wantsLayer = true
-    self.imageView.layer?.cornerRadius = 8
-    self.imageView.layer?.masksToBounds = true
   }
 
 }

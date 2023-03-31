@@ -365,3 +365,18 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 }
 
+
+class PlayerWindowPreviewView: NSView {
+
+  override func awakeFromNib() {
+    self.wantsLayer = true
+    let cornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
+    if cornerRadius > 0.0 {
+      self.layer?.cornerRadius = cornerRadius
+    }
+    self.layer?.masksToBounds = true
+    self.layer?.borderWidth = 1
+    self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
+  }
+
+}
