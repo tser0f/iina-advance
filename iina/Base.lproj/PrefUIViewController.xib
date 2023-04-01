@@ -51,7 +51,7 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Hz6-mo-xeY" userLabel="Prefs &gt; UI View">
             <rect key="frame" x="0.0" y="0.0" width="480" height="500"/>
-            <point key="canvasLocation" x="545" y="471"/>
+            <point key="canvasLocation" x="541" y="-496"/>
         </customView>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customView id="M9c-Ak-HmK" userLabel="Prefs &gt; UI &gt; Appearance">
@@ -112,15 +112,15 @@
                 <constraint firstItem="BMi-Ax-7wP" firstAttribute="height" secondItem="APB-Nm-aTA" secondAttribute="height" id="rQ0-JL-2aL"/>
                 <constraint firstAttribute="bottom" secondItem="BMi-Ax-7wP" secondAttribute="bottom" constant="8" id="wlh-tx-VdQ"/>
             </constraints>
-            <point key="canvasLocation" x="14" y="-429"/>
+            <point key="canvasLocation" x="2" y="-820"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="lH7-Vv-0M1"/>
-        <customView misplaced="YES" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="416"/>
+        <customView id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window">
+            <rect key="frame" x="0.0" y="0.0" width="480" height="412"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleWindow" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RFk-nU-SGL">
-                    <rect key="frame" x="-2" y="392" width="61" height="16"/>
+                    <rect key="frame" x="-2" y="388" width="61" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Window:" id="GKy-3g-4MB">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -244,10 +244,10 @@
                     </connections>
                 </button>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="350" width="360" height="58"/>
+                    <rect key="frame" x="120" y="350" width="360" height="54"/>
                     <subviews>
                         <button identifier="Trigger0" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
-                            <rect key="frame" x="-2" y="41" width="139" height="18"/>
+                            <rect key="frame" x="-2" y="37" width="139" height="18"/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="16" id="A7s-tU-qXn"/>
                             </constraints>
@@ -260,13 +260,13 @@
                             </connections>
                         </button>
                         <box identifier="Content0" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="L5c-uf-ged">
-                            <rect key="frame" x="-3" y="-4" width="366" height="44"/>
+                            <rect key="frame" x="-3" y="-4" width="366" height="40"/>
                             <view key="contentView" id="dCZ-8R-c9z">
-                                <rect key="frame" x="4" y="5" width="358" height="36"/>
+                                <rect key="frame" x="4" y="5" width="358" height="32"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sCc-NR-e8c">
-                                        <rect key="frame" x="16" y="7" width="59" height="21"/>
+                                        <rect key="frame" x="16" y="7" width="59" height="17"/>
                                         <popUpButtonCell key="cell" type="roundRect" title="Width:" bezelStyle="roundedRect" alignment="left" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="B1c-oO-fIs" id="I4X-oi-ewe">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="message" size="11"/>
@@ -615,7 +615,7 @@
             <point key="canvasLocation" x="2" y="-540"/>
         </customView>
         <customView id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller">
-            <rect key="frame" x="0.0" y="0.0" width="544" height="602"/>
+            <rect key="frame" x="0.0" y="0.0" width="480" height="602"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
@@ -1112,7 +1112,7 @@
                 <constraint firstItem="GbG-nw-ict" firstAttribute="leading" secondItem="f7b-zH-WwI" secondAttribute="leading" id="zIW-49-6lf"/>
                 <constraint firstItem="6ml-Xj-nVX" firstAttribute="leading" secondItem="0eU-xI-byi" secondAttribute="leading" id="zS7-aO-rrc"/>
             </constraints>
-            <point key="canvasLocation" x="19" y="46"/>
+            <point key="canvasLocation" x="2" y="27"/>
         </customView>
         <customView id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars">
             <rect key="frame" x="0.0" y="0.0" width="584" height="185"/>
@@ -1539,7 +1539,7 @@
                 <constraint firstItem="63o-gu-DxA" firstAttribute="leading" secondItem="bGH-kO-7Rd" secondAttribute="leading" id="yem-Xi-Hum"/>
                 <constraint firstItem="bGH-kO-7Rd" firstAttribute="top" secondItem="MU2-yF-bjd" secondAttribute="bottom" constant="16" id="zHi-Hz-WHg"/>
             </constraints>
-            <point key="canvasLocation" x="-13" y="479"/>
+            <point key="canvasLocation" x="2" y="451"/>
         </customView>
         <customView id="3uJ-UU-1zw" userLabel="Prefs &gt; UI &gt; Thumbnail Viewer">
             <rect key="frame" x="0.0" y="0.0" width="480" height="80"/>

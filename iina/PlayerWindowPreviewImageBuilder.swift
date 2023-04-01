@@ -12,7 +12,29 @@ fileprivate let overlayAlpha: CGFloat = 0.6
 fileprivate let opaqueControlAlpha: CGFloat = 1.0
 fileprivate let outputImgWidth: Int = 640
 fileprivate let outputImgHeight: Int = 480
-fileprivate let menuBarHeight: Int = 20
+fileprivate let oscFullWidthHeight: Int = 71
+fileprivate let oscFloatingHeight: Int = 50
+
+fileprivate extension CGContext {
+  // Decorator for state
+  func withNewCGState<T>(_ closure: () throws -> T) rethrows -> T {
+    saveGState()
+    defer {
+      restoreGState()
+    }
+    return try closure()
+  }
+
+  func drawRoundedRect(_ rect: NSRect, cornerRadius: CGFloat, fillColor: CGColor) {
+    setFillColor(fillColor)
+    // Clip its corners to round it:
+    beginPath()
+    addPath(CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil))
+    closePath()
+    clip()
+    fill([rect])
+  }
+}
 
 class PlayerWindowPreviewImageBuilder {
   static var cgImageCache: [String: CGImage] = [:]
@@ -22,34 +44,64 @@ class PlayerWindowPreviewImageBuilder {
   let titleBarStyle: Preference.TitleBarStyle = Preference.enum(for: .titleBarStyle)
   let topPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .topPanelPlacement)
   let bottomPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomPanelPlacement)
-  let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
 
+  fileprivate var iconColor: NSColor = {
+    .textColor
+  }()
 
-  // TODO (1): draw border around window
-  // TODO (2): embed window preview into screen preview to make it prettier
-  // TODO (3): support light themes (above)
+  fileprivate lazy var desktopWallpaperColor: NSColor = {
+    if appearance.isDark {
+      return NSColor(red: 0x54 / 255, green: 0x55 / 255, blue: 0x54 / 255, alpha: 1.0)  // "stone"
+    } else {
+      return NSColor(red: 0x7A / 255, green: 0x7B / 255, blue: 0x80 / 255, alpha: 1.0)  // "space gray pro"
+    }
+//    NSColor(red: 0x68 / 255, green: 0x67 / 255, blue: 0xAF / 255, alpha: 1.0)  // "blue violet"
+  }()
+
+  fileprivate var appearance: NSAppearance = {
+    if #available(macOS 10.14, *) {
+      var theme: Preference.Theme = Preference.enum(for: .themeMaterial)
+      if theme == .system && NSAppearance.current.isDark {
+        // For some reason, "system" dark does not result in the same colors as "dark".
+        // Just override it with "dark" to keep it consistent.
+        theme = .dark
+      }
+      if let themeAppearance = NSAppearance(iinaTheme: theme) {
+        return themeAppearance
+      }
+    }
+    if let dark = NSAppearance(named: .vibrantDark) {
+      return dark
+    }
+    return NSAppearance.current
+  }()
+
+  func withIINAAppearance<T>(_ closure: () throws -> T) rethrows -> T {
+    let previousAppearance = NSAppearance.current
+    NSAppearance.current = appearance
+    defer {
+      NSAppearance.current = previousAppearance
+    }
+    return try closure()
+  }
+
   func updateWindowPreviewImage() -> NSImage? {
     guard let videoViewImg = loadCGImage(named: "preview-videoview"),
-          let oscFullImg = loadCGImage(named: "preview-osc-full"),
-          let oscTitleImg = loadCGImage(named: "preview-osc-title"),
           let oscFloatingImg = loadCGImage(named: "preview-osc-floating"),
           let titleBarButtonsImg = loadCGImage(named: "preview-titlebar-buttons") else {
       Logger.log("Cannot generate window preview image: failed to load asset(s)", level: .error)
       return nil
     }
-    let isDarkTheme = !(theme == .light || theme == .mediumLight)  // default to dark
     let roundedCornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
-
-    let oscFullHeight: Int = oscFullImg.height
     let titleBarHeight: Int = titleBarButtonsImg.height
+    let menuBarHeight: Int = titleBarHeight
 
     var videoViewOffsetY: Int = 0
     if oscEnabled && oscPosition == .bottom && bottomPanelPlacement == .outsideVideo {
       // add extra space for bottom panel
-      videoViewOffsetY += oscFullHeight
+      videoViewOffsetY += oscFullWidthHeight
     }
 
-    let oscImg: CGImage?
     let oscOffsetY: Int
     let oscHeight: Int
     let oscAlpha: CGFloat
@@ -62,8 +114,7 @@ class PlayerWindowPreviewImageBuilder {
 
         case .outsideVideo:
           oscAlpha = opaqueControlAlpha
-          oscImg = oscFullImg
-          oscHeight = oscFullHeight - (oscFullHeight / 8)  // remove some space between controller & title bar
+          oscHeight = oscFullWidthHeight - (oscFullWidthHeight / 8)  // remove some space between controller & title bar
           oscOffsetY = videoViewOffsetY + videoViewImg.height
 
         case .insideVideo:
@@ -72,30 +123,26 @@ class PlayerWindowPreviewImageBuilder {
           switch titleBarStyle {
           case .minimal:
             // Special in-title accessory controller
-            oscImg = oscTitleImg
-            oscHeight = oscTitleImg.height
+            oscHeight = titleBarHeight
             oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight
           case .full:
-            oscImg = oscFullImg
-            let adjustment = oscFullHeight / 8 // remove some space between controller & title bar
-            oscHeight = oscFullHeight - adjustment
+            let adjustment = oscFullWidthHeight / 8 // remove some space between controller & title bar
+            oscHeight = oscFullWidthHeight - adjustment
             oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight - titleBarHeight
           case .none:
-            oscImg = oscFullImg
-            oscHeight = oscFullHeight
+            oscHeight = oscFullWidthHeight
             oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight
           }  // end switch titleBarStyle
 
         }  // end switch topPanelPlacement
 
       case .bottom:
-        oscImg = oscFullImg
-        oscHeight = oscFullHeight
+        oscHeight = oscFullWidthHeight
 
         switch bottomPanelPlacement {
         case .outsideVideo:
           oscAlpha = opaqueControlAlpha
-          oscOffsetY = videoViewOffsetY - oscFullHeight
+          oscOffsetY = videoViewOffsetY - oscFullWidthHeight
         case .insideVideo:
           oscAlpha = overlayAlpha
           oscOffsetY = videoViewOffsetY
@@ -103,8 +150,7 @@ class PlayerWindowPreviewImageBuilder {
 
       case .floating:
         oscAlpha = overlayAlpha
-        oscImg = oscFloatingImg
-        oscHeight = oscFullHeight
+        oscHeight = oscFullWidthHeight
         oscOffsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
 
       }  // end switch oscPosition
@@ -112,7 +158,6 @@ class PlayerWindowPreviewImageBuilder {
     } else {
       // OSC disabled
       oscAlpha = overlayAlpha
-      oscImg = nil
       oscHeight = 0
       oscOffsetY = 0
     }
@@ -132,34 +177,32 @@ class PlayerWindowPreviewImageBuilder {
     let winWidth: Int = videoViewImg.width
     let winHeight: Int = titleBarOffsetY + titleBarHeight
     let winOriginX: Int = (outputImgWidth - winWidth) / 2
-    let winOriginY: Int = (outputImgHeight - winHeight) / 2 - menuBarHeight
+    let winOriginY: Int = (outputImgHeight - winHeight - menuBarHeight) / 2
 
     let winRect = NSRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
 
     let drawingCalls: (CGContext) -> Void = { [self] cgContext in
-      let bgColor = NSColor.underPageBackgroundColor.cgColor
+      let bgColor = desktopWallpaperColor.cgColor
       cgContext.setFillColor(bgColor)
       cgContext.fill([CGRect(x: 0, y: 0, width: outputImgWidth, height: outputImgHeight)])
 
       // Draw menu bar
       let menuBarColor: CGColor = addAlpha(opaqueControlAlpha, to: NSColor.windowBackgroundColor)
       cgContext.setFillColor(menuBarColor)
-      cgContext.fill([CGRect(x: 0, y: outputImgHeight - titleBarHeight, width: outputImgWidth, height: titleBarHeight)])
+      cgContext.fill([CGRect(x: 0, y: outputImgHeight - menuBarHeight, width: outputImgWidth, height: menuBarHeight)])
 
-      if #available(macOS 11.0, *) {
-        if let appleLogo = NSImage(systemSymbolName: "apple.logo", accessibilityDescription: nil)?.tinted(.textColor) {
-
-          let paddingY = titleBarHeight / 8
-          let logoHeight = titleBarHeight - (paddingY * 2)
-          let logoWidth = Int(CGFloat(logoHeight) * appleLogo.size.aspect)
-          cgContext.draw(appleLogo.cgImage!, in: CGRect(x: paddingY * 2, y: outputImgHeight - titleBarHeight + paddingY, width: logoWidth, height: logoHeight))
-        }
+      if #available(macOS 11.0, *), let appleLogo = NSImage(systemSymbolName: "apple.logo", accessibilityDescription: nil) {
+        let totalHeight = CGFloat(menuBarHeight)
+        let padTotalV = totalHeight / 6
+        let padTotalH = padTotalV * 3
+        _ = drawPaddedIcon(appleLogo, in: cgContext, x: 0, y: CGFloat(outputImgHeight - menuBarHeight),
+                           totalHeight: totalHeight, padTotalH: padTotalH, padTotalV: padTotalV)
       } else {
         // Fallback on earlier versions
       }
 
 
-      // Start drawing window. Clip its corners to round it:
+      // Start drawing window. Clip the corners to round it:
       cgContext.beginPath()
       cgContext.addPath(CGPath(roundedRect: winRect, cornerWidth: roundedCornerRadius * 2, cornerHeight: roundedCornerRadius * 2, transform: nil))
       cgContext.closePath()
@@ -168,15 +211,76 @@ class PlayerWindowPreviewImageBuilder {
       // draw video
       draw(image: videoViewImg, in: cgContext, x: winOriginX, y: winOriginY + videoViewOffsetY)
 
-      // draw OSC bar
-      if let oscImg = oscImg {
-        let oscOffsetX: Int
+      // draw OSC
+      if oscEnabled {
+
+        let oscOffsetFromWindowOriginX: Int
+        let oscWidth: Int
         if oscPosition == .floating {
-          oscOffsetX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
+          oscOffsetFromWindowOriginX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
+          oscWidth = oscFloatingImg.width
         } else {
-          oscOffsetX = 0
+          oscOffsetFromWindowOriginX = 0
+          oscWidth = winWidth
         }
-        draw(image: oscImg, in: cgContext, withAlpha: oscAlpha, x: winOriginX + oscOffsetX, y: winOriginY + oscOffsetY, height: oscHeight)
+
+        // Draw OSC panel
+        let oscRect = NSRect(x: winOriginX + oscOffsetFromWindowOriginX, y: winOriginY + oscOffsetY, width: oscWidth, height: oscHeight)
+        let oscPanelColor: CGColor = addAlpha(oscAlpha, to: NSColor.windowBackgroundColor)
+        if oscPosition == .floating {
+          cgContext.withNewCGState {
+            cgContext.drawRoundedRect(oscRect, cornerRadius: roundedCornerRadius, fillColor: oscPanelColor)
+          }
+        } else {
+          cgContext.setFillColor(oscPanelColor)
+          cgContext.fill([oscRect])
+        }
+
+        // Draw play controls
+        let oscCenterY = oscRect.origin.y + (CGFloat(oscHeight) / 2)
+        let iconHeight = CGFloat(oscHeight) / 2.0
+        let spacingH = iconHeight / 2
+        var iconOriginX = oscRect.origin.x
+        if oscPosition == .top && topPanelPlacement == .insideVideo && titleBarStyle == .minimal {
+          // Special case: OSC is inside title bar. Add space for traffic light buttons
+          iconOriginX += CGFloat(titleBarButtonsImg.width)
+        } else {
+          iconOriginX += spacingH
+        }
+        let leftArrowImage = #imageLiteral(resourceName: "speedl")
+        iconOriginX += drawIconVCenter(leftArrowImage, in: cgContext, originX: iconOriginX, centerY: oscCenterY, iconHeight: iconHeight)
+        iconOriginX += spacingH
+        let playButtonImage = #imageLiteral(resourceName: "play")
+        iconOriginX += drawIconVCenter(playButtonImage, in: cgContext, originX: iconOriginX, centerY: oscCenterY, iconHeight: iconHeight)
+        iconOriginX += spacingH
+        let rightArrowImage = #imageLiteral(resourceName: "speed")
+        iconOriginX += drawIconVCenter(rightArrowImage, in: cgContext, originX: iconOriginX, centerY: oscCenterY, iconHeight: iconHeight)
+        iconOriginX += spacingH
+
+        let oscMaxX = oscRect.origin.x + CGFloat(oscWidth)
+        let pillWidth = iconHeight // ~similar size
+        // subtract pill width and its spacing
+        let playBarWidth = oscMaxX - iconOriginX - spacingH - pillWidth - spacingH
+        if playBarWidth < 0 {
+          Logger.log("While drawing preview image: ran out of space while drawing OSC!", level: .error)
+        } else {
+
+          // Draw play position bar
+          let playBarHeight = iconHeight / 4.0
+          let playbarOriginY = oscCenterY - (playBarHeight / 2)
+          let playBarRect = NSRect(x: Int(iconOriginX), y: Int(playbarOriginY), width: Int(playBarWidth), height: Int(playBarHeight))
+          cgContext.setFillColor(iconColor.cgColor)
+          cgContext.fill([playBarRect])
+
+          // Draw little pill-shaped thing
+          iconOriginX += playBarWidth + spacingH
+          let pillHeight = iconHeight / 1.8
+          let pillOriginY = oscCenterY - (pillHeight / 2)
+          let pillRect = NSRect(x: Int(iconOriginX), y: Int(pillOriginY), width: Int(pillWidth), height: Int(pillHeight))
+          cgContext.withNewCGState {
+            cgContext.drawRoundedRect(pillRect, cornerRadius: roundedCornerRadius, fillColor: iconColor.cgColor)
+          }
+        }
       }
 
       // draw title bar
@@ -241,6 +345,44 @@ class PlayerWindowPreviewImageBuilder {
     return cgImage
   }
 
+  /** Draws icon from left to right in the given context. The width of the icon is derived from `totalHeight` and the icon's aspect ratio.
+  Returns the horizontal space which was used by the icon (including padding). */
+  private func drawPaddedIcon(_ iconImage: NSImage, in cgContext: CGContext, x originX: CGFloat, y originY: CGFloat, totalHeight: CGFloat,
+                              padTotalH: CGFloat? = nil, padTotalV: CGFloat? = nil,
+                              padL: CGFloat? = nil, padR: CGFloat? = nil,
+                              padT: CGFloat? = nil, padB: CGFloat? = nil) -> CGFloat {
+    let padTotalHoriz: CGFloat = padTotalH ?? 0
+    let padTotalVert: CGFloat = padTotalV ?? 0
+    let padTop: CGFloat = padT ?? (padTotalVert / 2)
+    let padBottom: CGFloat = padB ?? (padTotalVert / 2)
+    let padLeft: CGFloat = padL ?? (padTotalHoriz / 2)
+    let padRight: CGFloat = padR ?? (padTotalHoriz / 2)
+
+    let iconHeight = totalHeight - padTop - padBottom
+    let iconWidth = CGFloat(iconHeight) * iconImage.size.aspect
+
+    drawIcon(iconImage, in: cgContext, originX: originX + padLeft, originY: originY + padBottom, width: iconWidth, height: iconHeight)
+    return padRight + iconWidth
+  }
+
+  /** Draws icon from left to right in the given context. The width of the icon is derived from `iconHeight` and the icon's aspect ratio.
+   Returns the width of the icon (not including padding). */
+  private func drawIconVCenter(_ iconImage: NSImage, in cgContext: CGContext, originX: CGFloat, centerY: CGFloat, iconHeight: CGFloat) -> CGFloat {
+    let originY = centerY - (iconHeight / 2)
+    let iconWidth = CGFloat(iconHeight) * iconImage.size.aspect
+    drawIcon(iconImage, in: cgContext, originX: originX, originY: originY, width: iconWidth, height: iconHeight)
+    return iconWidth
+  }
+
+  private func drawIcon(_ iconImage: NSImage, in cgContext: CGContext, originX: CGFloat, originY: CGFloat, width: CGFloat, height: CGFloat) {
+    let tintedImage: NSImage = iconImage.tinted(iconColor)
+    guard let cgImage = tintedImage.cgImage else {
+      Logger.log("Cannot draw icon: failed to get tinted cgImage from NSImage \(iconImage.name()?.quoted ?? "nil")", level: .error)
+      return
+    }
+    cgContext.draw(cgImage, in: CGRect(x: originX, y: originY, width: width, height: height))
+  }
+
   private func draw(image cgImage: CGImage, in cgContext: CGContext,
                     withAlpha alpha: CGFloat = 1,
                     x: Int, y: Int, width widthOverride: Int? = nil, height heightOverride: Int? = nil) {
@@ -267,7 +409,9 @@ class PlayerWindowPreviewImageBuilder {
     NSGraphicsContext.current = context
     let cgContext = context.cgContext
 
-    drawingCalls(cgContext)
+    withIINAAppearance {
+      drawingCalls(cgContext)
+    }
 
     defer {
       NSGraphicsContext.restoreGraphicsState()
