@@ -43,8 +43,6 @@ class VideoView: NSView {
   // cached indicator to prevent unnecessary updates of DisplayLink
   var currentDisplay: UInt32?
 
-  var pendingRedrawsAfterEnteringPIP = 0;
-
   private var displayIdleTimer: Timer?
 
   lazy var hdrSubsystem = Logger.Subsystem(rawValue: "hdr")
@@ -101,17 +99,9 @@ class VideoView: NSView {
     uninit()
   }
 
-  override func layout() {
-    super.layout()
-    if pendingRedrawsAfterEnteringPIP != 0 && superview != nil {
-      pendingRedrawsAfterEnteringPIP -= 1
-      videoLayer.draw(forced: true)
-    }
+  override func draw(_ dirtyRect: NSRect) {
+    // do nothing
   }
-
-//  override func draw(_ dirtyRect: NSRect) {
-//    // do nothing
-//  }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
     return Preference.bool(for: .videoViewAcceptsFirstMouse)

@@ -616,7 +616,7 @@ class MainWindowController: PlayerWindowController {
   // MARK: - PIP
 
   lazy var _pip: PIPViewController = {
-    let pip = PIPViewController()
+    let pip = VideoPIPViewController()
     if #available(macOS 10.12, *) {
       pip.delegate = self
     }
@@ -1213,10 +1213,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseDown(with event: NSEvent) {
-    if Logger.isEnabled(.verbose) {
-      Logger.log("MainWindow mouseDown \(event.locationInWindow)", level: .verbose, subsystem: player.subsystem)
+    if Logger.enabled && Logger.Level.preferred >= .verbose {
+      Logger.log("MainWindow mouseDown @ \(event.locationInWindow)", level: .verbose, subsystem: player.subsystem)
     }
-    workaroundCursorDefect()
     // do nothing if it's related to floating OSC
     guard !controlBarFloating.isDragging else { return }
     // record current mouse pos
@@ -1233,33 +1232,29 @@ class MainWindowController: PlayerWindowController {
 
       if let mousePosRelatedToWindow = mousePosRelatedToWindow {
         if !isDragging {
-          // Require that the user must drag the cursor at least a small distance for it to start a "drag" (`isDragging==true`)
-          // The user's action will only be counted as a click if `isDragging==false` when `mouseUp` is called.
-          // (Apple's trackpad in particular is very sensitive and tends to call `mouseDragged()` if there is even the slightest
-          // roll of the finger during a click, and the distance of the "drag" may be less than 1 pixel)
-          if mousePosRelatedToWindow.isWithinRadius(radius: Constants.Distance.mainWindowMinInitialDragThreshold,
-                                                    ofPoint: event.locationInWindow) {
+          /// Require that the user must drag the cursor at least a small distance for it to start a "drag" (`isDragging==true`)
+          /// The user's action will only be counted as a click if `isDragging==false` when `mouseUp` is called.
+          /// (Apple's trackpad in particular is very sensitive and tends to call `mouseDragged()` if there is even the slightest
+          /// roll of the finger during a click, and the distance of the "drag" may be less than `minimumInitialDragDistance`)
+          if mousePosRelatedToWindow.distance(to: event.locationInWindow) <= Constants.Distance.mainWindowMinInitialDragThreshold {
             return
           }
           if Logger.enabled && Logger.Level.preferred >= .verbose {
-            Logger.log("MainWindow mouseDrag: minimum dragging distance was met!", level: .verbose, subsystem: player.subsystem)
+            Logger.log("MainWindow mouseDrag: minimum dragging distance was met", level: .verbose, subsystem: player.subsystem)
           }
           isDragging = true
         }
-        if isDragging {
-          window?.performDrag(with: event)
-        }
+        window?.performDrag(with: event)
       }
     }
   }
 
   override func mouseUp(with event: NSEvent) {
-    if Logger.isEnabled(.verbose) {
-      Logger.log("MainWindow mouseUp. isDragging: \(isDragging), clickCount: \(event.clickCount)",
+    if Logger.enabled && Logger.Level.preferred >= .verbose {
+      Logger.log("MainWindow mouseUp @ \(event.locationInWindow), isDragging: \(isDragging), clickCount: \(event.clickCount)",
                  level: .verbose, subsystem: player.subsystem)
     }
 
-    workaroundCursorDefect()
     mousePosRelatedToWindow = nil
     if isDragging {
       // if it's a mouseup after dragging window
@@ -1269,14 +1264,13 @@ class MainWindowController: PlayerWindowController {
     } else {
       // if it's a mouseup after clicking
 
-      // Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
-      // but we will only count it as a drag if `isDragging==true`
+      /// Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
+      /// but we will only count it as a drag if `isDragging==true`
       if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView]) {
         if hideSidebarsOnClick() {
           return
         }
       }
-
       if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarView]) {
         let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
         if userDefault == "Minimize" {
@@ -3219,17 +3213,6 @@ extension MainWindowController: PIPViewControllerDelegate {
 
     pip.presentAsPicture(inPicture: pipVideo)
     pipOverlayView.isHidden = false
-
-    // If the video is paused, it will end up in a weird state due to the
-    // animation. By forcing a redraw it will keep its paused image throughout.
-    // (At least) in 10.15, presentAsPictureInPicture: behaves asynchronously.
-    // Therefore we should wait until the view is moved to the PIP superview.
-    let currentTrackIsAlbumArt = player.info.currentTrack(.video)?.isAlbumart ?? false
-    if player.info.isPaused || currentTrackIsAlbumArt {
-      // It takes two `layout` before finishing entering PIP (tested on macOS 12, but
-      // could be earlier). Force redraw for the first two `layout`s.
-      videoView.pendingRedrawsAfterEnteringPIP = 2
-    }
 
     if let window = self.window {
       let windowShouldDoNothing = window.styleMask.contains(.fullScreen) || window.isMiniaturized

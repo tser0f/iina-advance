@@ -134,17 +134,6 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     return Preference.UIState.isRestoreEnabled ? Preference.string(for: .uiHistoryTableSearchString) : nil
   }
 
-  private func donateColWidth(to targetColumn: NSTableColumn, targetWidth: CGFloat, from donorColumn: NSTableColumn) {
-    let extraWidthNeeded = targetWidth - targetColumn.width
-    // Don't take more than needed, or more than possible:
-    let widthToDonate = min(extraWidthNeeded, max(donorColumn.width - donorColumn.minWidth, 0))
-    if widthToDonate > 0 {
-      Logger.log("Donating \(widthToDonate) pts width to col \(targetColumn.identifier.rawValue.quoted) from \(donorColumn.identifier.rawValue.quoted) width (\(donorColumn.width))")
-      donorColumn.width -= widthToDonate
-      targetColumn.width += widthToDonate
-    }
-  }
-
   // Change min width of "Played at" column
   private func adjustTimeColumnMinWidth() {
     guard let timeColumn = outlineView.tableColumn(withIdentifier: .time) else { return }
@@ -165,6 +154,17 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     timeColumn.minWidth = newMinWidth
     outlineView.layoutSubtreeIfNeeded()
     Logger.log("Updated \(timeColumn.identifier.rawValue.quoted) col width: \(timeColumn.width), minWidth: \(timeColumn.minWidth)", level: .verbose)
+  }
+
+  private func donateColWidth(to targetColumn: NSTableColumn, targetWidth: CGFloat, from donorColumn: NSTableColumn) {
+    let extraWidthNeeded = targetWidth - targetColumn.width
+    // Don't take more than needed, or more than possible:
+    let widthToDonate = min(extraWidthNeeded, max(donorColumn.width - donorColumn.minWidth, 0))
+    if widthToDonate > 0 {
+      Logger.log("Donating \(widthToDonate) pts width to col \(targetColumn.identifier.rawValue.quoted) from \(donorColumn.identifier.rawValue.quoted) width (\(donorColumn.width))")
+      donorColumn.width -= widthToDonate
+      targetColumn.width += widthToDonate
+    }
   }
 
   private func reloadData() {
