@@ -59,7 +59,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var titleBarStyleContainerView: NSView!
   @IBOutlet weak var windowPreviewImageView: NSImageView!
   @IBOutlet weak var oscBottomPlacementContainerView: NSView!
-  @IBOutlet weak var oscSnapToCenterCheckbox: NSButton!
+  @IBOutlet weak var oscSnapToCenterCheckboxContainerView: NSView!
   @IBOutlet weak var oscToolbarStackView: NSStackView!
   @IBOutlet weak var oscAutoHideTimeoutTextField: NSTextField!
   @IBOutlet weak var hideOverlaysOutsideWindowCheckBox: NSButton!
@@ -126,7 +126,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     oscToolbarStackView.wantsLayer = true
 
     refreshSidebarSection()
-    refreshTitleBarAndOSCSection()
+    refreshTitleBarAndOSCSection(animate: false)
     updateOSCToolbarButtons()
     setupGeometryRelatedControls()
     setupResizingRelatedControls()
@@ -172,9 +172,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     setSubViews(of: trailingSidebarBox, enabled: isUsingTrailingSidebar)
   }
 
-  private func refreshTitleBarAndOSCSection() {
+  private func refreshTitleBarAndOSCSection(animate: Bool = true) {
     let ib = PlayerWindowPreviewImageBuilder()
-    windowPreviewImageView.image = ib.updateWindowPreviewImage()
 
     let titleBarIsOverlay = ib.titleBarStyle != .none && ib.topPanelPlacement == .insideVideo
     let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .floating ||
@@ -182,23 +181,55 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
                                          (ib.oscPosition == .bottom && ib.bottomPanelPlacement == .insideVideo))
     let hasOverlay = titleBarIsOverlay || oscIsOverlay
 
-    oscAutoHideTimeoutTextField.isEnabled = hasOverlay
-    hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
-
+    var viewHidePairs: [(NSView, Bool)] = []
     // Use animation where possible to make the transition less jarring
     NSAnimationContext.runAnimationGroup({context in
-      context.duration = AccessibilityPreferences.adjustedDuration(uiAnimationDuration)
-      context.allowsImplicitAnimation = !AccessibilityPreferences.motionReductionEnabled
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      let oscIsFloating = ib.oscEnabled && ib.oscPosition == .floating
-      oscSnapToCenterCheckbox.isHidden = !oscIsFloating
-      let oscIsBottom = ib.oscEnabled && ib.oscPosition == .bottom
-      oscBottomPlacementContainerView.isHidden = !oscIsBottom
+      context.duration = 0 // TODO animate ? AccessibilityPreferences.adjustedDuration(uiAnimationDuration) : 0
+      context.allowsImplicitAnimation = animate ? !AccessibilityPreferences.motionReductionEnabled : false
+      context.timingFunction = CAMediaTimingFunction(name: .linear)
 
-      titleBarStyleContainerView.isHidden = ib.topPanelPlacement != .insideVideo
+      oscAutoHideTimeoutTextField.isEnabled = hasOverlay
+      hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
+      windowPreviewImageView.image = ib.updateWindowPreviewImage()
+
+      let oscIsFloating = ib.oscEnabled && ib.oscPosition == .floating
+
+      if oscSnapToCenterCheckboxContainerView.isHidden != !oscIsFloating {
+        viewHidePairs.append((oscSnapToCenterCheckboxContainerView, !oscIsFloating))
+      }
+
+      let oscIsBottom = ib.oscEnabled && ib.oscPosition == .bottom
+      if oscBottomPlacementContainerView.isHidden != !oscIsBottom {
+        viewHidePairs.append((oscBottomPlacementContainerView, !oscIsBottom))
+      }
+
+      let topPanelInsideVideo = ib.topPanelPlacement == .insideVideo
+      if titleBarStyleContainerView.isHidden != !topPanelInsideVideo {
+        viewHidePairs.append((titleBarStyleContainerView, !topPanelInsideVideo))
+      }
+
+      for (view, shouldHide) in viewHidePairs {
+        for subview in view.subviews {
+          subview.animator().isHidden = shouldHide
+        }
+      }
 
       // Need this to get proper slide effect
       oscBottomPlacementContainerView.superview?.layoutSubtreeIfNeeded()
+    }, completionHandler: { [self] in
+      oscAutoHideTimeoutTextField.isEnabled = hasOverlay
+      hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
+      windowPreviewImageView.image = ib.updateWindowPreviewImage()
+
+      NSAnimationContext.runAnimationGroup({context in
+        context.duration = animate ? AccessibilityPreferences.adjustedDuration(uiAnimationDuration) : 0
+        context.allowsImplicitAnimation = animate ? !AccessibilityPreferences.motionReductionEnabled : false
+        context.timingFunction = CAMediaTimingFunction(name: .linear)
+        for (view, shouldHide) in viewHidePairs {
+          view.animator().isHidden = shouldHide
+        }
+      }, completionHandler: {
+      })
     })
   }
 

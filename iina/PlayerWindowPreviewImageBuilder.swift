@@ -224,61 +224,92 @@ class PlayerWindowPreviewImageBuilder {
           oscWidth = winWidth
         }
 
-        // Draw OSC panel
+        let leftArrowImage = #imageLiteral(resourceName: "speedl")
+        let playImage = #imageLiteral(resourceName: "play")
+        let rightArrowImage = #imageLiteral(resourceName: "speed")
+
         let oscRect = NSRect(x: winOriginX + oscOffsetFromWindowOriginX, y: winOriginY + oscOffsetY, width: oscWidth, height: oscHeight)
         let oscPanelColor: CGColor = addAlpha(oscAlpha, to: NSColor.windowBackgroundColor)
+        let iconHeight: CGFloat
+        let iconGroupCenterY: CGFloat
+        let spacingH: CGFloat
+        var nextIconMinX: CGFloat
+
         if oscPosition == .floating {
+          // Draw OSC panel
           cgContext.withNewCGState {
             cgContext.drawRoundedRect(oscRect, cornerRadius: roundedCornerRadius, fillColor: oscPanelColor)
           }
+
+          // Draw play controls
+          iconHeight = CGFloat(oscHeight) * 0.44
+          spacingH = iconHeight * 0.66
+          let leftArrowWidth = CGFloat(iconHeight) * leftArrowImage.size.aspect
+          let playWidth = CGFloat(iconHeight) * playImage.size.aspect
+          let rightArrowWidth = CGFloat(iconHeight) * rightArrowImage.size.aspect
+          let totalButtonWidth = leftArrowWidth + spacingH + playWidth + spacingH + rightArrowWidth
+
+          iconGroupCenterY = oscRect.minY + (CGFloat(oscHeight) * 0.6)
+          nextIconMinX = oscRect.minX + (oscRect.width * 0.5) - (totalButtonWidth * 0.5)
+
         } else {
+          // Draw OSC panel
           cgContext.setFillColor(oscPanelColor)
           cgContext.fill([oscRect])
+
+          // Draw play controls
+          iconHeight = CGFloat(oscHeight) * 0.5
+          spacingH = iconHeight * 0.5
+
+          iconGroupCenterY = oscRect.origin.y + (CGFloat(oscHeight) * 0.5)
+          nextIconMinX = oscRect.origin.x
+          if oscPosition == .top && topPanelPlacement == .insideVideo && titleBarStyle == .minimal {
+            // Special case: OSC is inside title bar. Add space for traffic light buttons
+            nextIconMinX += CGFloat(titleBarButtonsImg.width)
+          } else {
+            nextIconMinX += spacingH
+          }
         }
 
-        // Draw play controls
-        let oscCenterY = oscRect.origin.y + (CGFloat(oscHeight) / 2)
-        let iconHeight = CGFloat(oscHeight) / 2.0
-        let spacingH = iconHeight / 2
-        var iconOriginX = oscRect.origin.x
-        if oscPosition == .top && topPanelPlacement == .insideVideo && titleBarStyle == .minimal {
-          // Special case: OSC is inside title bar. Add space for traffic light buttons
-          iconOriginX += CGFloat(titleBarButtonsImg.width)
-        } else {
-          iconOriginX += spacingH
-        }
-        let leftArrowImage = #imageLiteral(resourceName: "speedl")
-        iconOriginX += drawIconVCenter(leftArrowImage, in: cgContext, originX: iconOriginX, centerY: oscCenterY, iconHeight: iconHeight)
-        iconOriginX += spacingH
-        let playButtonImage = #imageLiteral(resourceName: "play")
-        iconOriginX += drawIconVCenter(playButtonImage, in: cgContext, originX: iconOriginX, centerY: oscCenterY, iconHeight: iconHeight)
-        iconOriginX += spacingH
-        let rightArrowImage = #imageLiteral(resourceName: "speed")
-        iconOriginX += drawIconVCenter(rightArrowImage, in: cgContext, originX: iconOriginX, centerY: oscCenterY, iconHeight: iconHeight)
-        iconOriginX += spacingH
+        nextIconMinX += drawIconVCenter(leftArrowImage, in: cgContext, originX: nextIconMinX, centerY: iconGroupCenterY, iconHeight: iconHeight)
+        nextIconMinX += spacingH
+        nextIconMinX += drawIconVCenter(playImage, in: cgContext, originX: nextIconMinX, centerY: iconGroupCenterY, iconHeight: iconHeight)
+        nextIconMinX += spacingH
+        nextIconMinX += drawIconVCenter(rightArrowImage, in: cgContext, originX: nextIconMinX, centerY: iconGroupCenterY, iconHeight: iconHeight)
+        nextIconMinX += spacingH
 
-        let oscMaxX = oscRect.origin.x + CGFloat(oscWidth)
-        let pillWidth = iconHeight // ~similar size
-        // subtract pill width and its spacing
-        let playBarWidth = oscMaxX - iconOriginX - spacingH - pillWidth - spacingH
-        if playBarWidth < 0 {
-          Logger.log("While drawing preview image: ran out of space while drawing OSC!", level: .error)
-        } else {
-
+        if oscPosition == .floating {
           // Draw play position bar
-          let playBarHeight = iconHeight / 4.0
-          let playbarOriginY = oscCenterY - (playBarHeight / 2)
-          let playBarRect = NSRect(x: Int(iconOriginX), y: Int(playbarOriginY), width: Int(playBarWidth), height: Int(playBarHeight))
+          let playBarWidth = oscRect.width - spacingH - spacingH
+          let playBarHeight = iconHeight * 0.17
+          let playbarMinY = oscRect.minY + CGFloat(oscHeight) * 0.17
+          let playBarRect = NSRect(x: Int(oscRect.minX + spacingH), y: Int(playbarMinY), width: Int(playBarWidth), height: Int(playBarHeight))
           cgContext.setFillColor(iconColor.cgColor)
           cgContext.fill([playBarRect])
 
-          // Draw little pill-shaped thing
-          iconOriginX += playBarWidth + spacingH
-          let pillHeight = iconHeight / 1.8
-          let pillOriginY = oscCenterY - (pillHeight / 2)
-          let pillRect = NSRect(x: Int(iconOriginX), y: Int(pillOriginY), width: Int(pillWidth), height: Int(pillHeight))
-          cgContext.withNewCGState {
-            cgContext.drawRoundedRect(pillRect, cornerRadius: roundedCornerRadius, fillColor: iconColor.cgColor)
+        } else {
+          let pillWidth = iconHeight // ~similar size
+          // subtract pill width and its spacing
+          let playBarWidth = oscRect.maxX - nextIconMinX - spacingH - pillWidth - spacingH
+          if playBarWidth < 0 {
+            Logger.log("While drawing preview image: ran out of space while drawing OSC!", level: .error)
+          } else {
+
+            // Draw play position bar
+            let playBarHeight = iconHeight * 0.25
+            let playbarOriginY = iconGroupCenterY - (playBarHeight / 2)
+            let playBarRect = NSRect(x: Int(nextIconMinX), y: Int(playbarOriginY), width: Int(playBarWidth), height: Int(playBarHeight))
+            cgContext.setFillColor(iconColor.cgColor)
+            cgContext.fill([playBarRect])
+
+            // Draw little pill-shaped thing
+            nextIconMinX += playBarWidth + spacingH
+            let pillHeight = iconHeight * 0.55
+            let pillOriginY = iconGroupCenterY - (pillHeight / 2)
+            let pillRect = NSRect(x: Int(nextIconMinX), y: Int(pillOriginY), width: Int(pillWidth), height: Int(pillHeight))
+            cgContext.withNewCGState {
+              cgContext.drawRoundedRect(pillRect, cornerRadius: roundedCornerRadius, fillColor: iconColor.cgColor)
+            }
           }
         }
       }
