@@ -10,10 +10,16 @@ import Foundation
 
 fileprivate let overlayAlpha: CGFloat = 0.6
 fileprivate let opaqueControlAlpha: CGFloat = 1.0
+
 fileprivate let outputImgWidth: Int = 640
 fileprivate let outputImgHeight: Int = 480
+
+fileprivate let titleBarHeight: Int = 46
+fileprivate let menuBarHeight: Int = titleBarHeight
 fileprivate let oscFullWidthHeight: Int = 71
-fileprivate let oscFloatingHeight: Int = 50
+fileprivate let oscFloatingHeight: Int = 74
+fileprivate let oscFloatingWidth: Int = 280
+
 
 fileprivate extension CGContext {
   // Decorator for state
@@ -87,14 +93,12 @@ class PlayerWindowPreviewImageBuilder {
 
   func updateWindowPreviewImage() -> NSImage? {
     guard let videoViewImg = loadCGImage(named: "preview-videoview"),
-          let oscFloatingImg = loadCGImage(named: "preview-osc-floating"),
           let titleBarButtonsImg = loadCGImage(named: "preview-titlebar-buttons") else {
       Logger.log("Cannot generate window preview image: failed to load asset(s)", level: .error)
       return nil
     }
     let roundedCornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
-    let titleBarHeight: Int = titleBarButtonsImg.height
-    let menuBarHeight: Int = titleBarHeight
+    let titleBarButtonsWidth = CGFloat(titleBarHeight) * (CGFloat(titleBarButtonsImg.width) / CGFloat(titleBarButtonsImg.height))
 
     var videoViewOffsetY: Int = 0
     if oscEnabled && oscPosition == .bottom && bottomPanelPlacement == .outsideVideo {
@@ -150,8 +154,8 @@ class PlayerWindowPreviewImageBuilder {
 
       case .floating:
         oscAlpha = overlayAlpha
-        oscHeight = oscFullWidthHeight
-        oscOffsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingImg.height
+        oscHeight = oscFloatingHeight
+        oscOffsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingHeight
 
       }  // end switch oscPosition
 
@@ -193,7 +197,7 @@ class PlayerWindowPreviewImageBuilder {
 
       if #available(macOS 11.0, *), let appleLogo = NSImage(systemSymbolName: "apple.logo", accessibilityDescription: nil) {
         let totalHeight = CGFloat(menuBarHeight)
-        let padTotalV = totalHeight / 6
+        let padTotalV = totalHeight * 0.2
         let padTotalH = padTotalV * 3
         _ = drawPaddedIcon(appleLogo, in: cgContext, x: 0, y: CGFloat(outputImgHeight - menuBarHeight),
                            totalHeight: totalHeight, padTotalH: padTotalH, padTotalV: padTotalV)
@@ -217,8 +221,8 @@ class PlayerWindowPreviewImageBuilder {
         let oscOffsetFromWindowOriginX: Int
         let oscWidth: Int
         if oscPosition == .floating {
-          oscOffsetFromWindowOriginX = (videoViewImg.width / 2) - (oscFloatingImg.width / 2)
-          oscWidth = oscFloatingImg.width
+          oscOffsetFromWindowOriginX = (videoViewImg.width / 2) - (oscFloatingWidth / 2)
+          oscWidth = oscFloatingWidth
         } else {
           oscOffsetFromWindowOriginX = 0
           oscWidth = winWidth
@@ -236,14 +240,14 @@ class PlayerWindowPreviewImageBuilder {
         var nextIconMinX: CGFloat
 
         if oscPosition == .floating {
-          // Draw OSC panel
+          // Draw floating OSC panel
           cgContext.withNewCGState {
             cgContext.drawRoundedRect(oscRect, cornerRadius: roundedCornerRadius, fillColor: oscPanelColor)
           }
 
           // Draw play controls
           iconHeight = CGFloat(oscHeight) * 0.44
-          spacingH = iconHeight * 0.66
+          spacingH = iconHeight * 0.60
           let leftArrowWidth = CGFloat(iconHeight) * leftArrowImage.size.aspect
           let playWidth = CGFloat(iconHeight) * playImage.size.aspect
           let rightArrowWidth = CGFloat(iconHeight) * rightArrowImage.size.aspect
@@ -253,7 +257,7 @@ class PlayerWindowPreviewImageBuilder {
           nextIconMinX = oscRect.minX + (oscRect.width * 0.5) - (totalButtonWidth * 0.5)
 
         } else {
-          // Draw OSC panel
+          // Draw full-width OSC panel
           cgContext.setFillColor(oscPanelColor)
           cgContext.fill([oscRect])
 
@@ -265,7 +269,7 @@ class PlayerWindowPreviewImageBuilder {
           nextIconMinX = oscRect.origin.x
           if oscPosition == .top && topPanelPlacement == .insideVideo && titleBarStyle == .minimal {
             // Special case: OSC is inside title bar. Add space for traffic light buttons
-            nextIconMinX += CGFloat(titleBarButtonsImg.width)
+            nextIconMinX += titleBarButtonsWidth
           } else {
             nextIconMinX += spacingH
           }
@@ -279,10 +283,10 @@ class PlayerWindowPreviewImageBuilder {
         nextIconMinX += spacingH
 
         if oscPosition == .floating {
-          // Draw play position bar
+          // Draw play position bar for "floating" OSC
           let playBarWidth = oscRect.width - spacingH - spacingH
-          let playBarHeight = iconHeight * 0.17
-          let playbarMinY = oscRect.minY + CGFloat(oscHeight) * 0.17
+          let playBarHeight = iconHeight * 0.2
+          let playbarMinY = oscRect.minY + CGFloat(oscHeight) * 0.15
           let playBarRect = NSRect(x: Int(oscRect.minX + spacingH), y: Int(playbarMinY), width: Int(playBarWidth), height: Int(playBarHeight))
           cgContext.setFillColor(iconColor.cgColor)
           cgContext.fill([playBarRect])
@@ -337,7 +341,7 @@ class PlayerWindowPreviewImageBuilder {
 
       let drawTitleBarButtons = !isTitleBarInside || titleBarStyle != .none
       if drawTitleBarButtons {
-        draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY)
+        draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY, width: Int(titleBarButtonsWidth), height: titleBarHeight)
       }
     }  // drawingCalls
 
