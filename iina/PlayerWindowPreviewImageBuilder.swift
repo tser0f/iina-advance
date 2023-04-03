@@ -11,14 +11,17 @@ import Foundation
 fileprivate let overlayAlpha: CGFloat = 0.6
 fileprivate let opaqueControlAlpha: CGFloat = 1.0
 
-fileprivate let outputImgWidth: Int = 640
-fileprivate let outputImgHeight: Int = 480
+fileprivate let scaleFactor: Int = 4
+fileprivate let outputImgWidth: Int = 340 * scaleFactor
+fileprivate let outputImgHeight: Int = outputImgWidth * 3 / 4  // Output image expected to be 4:3
 
-fileprivate let titleBarHeight: Int = 46
+fileprivate let titleBarHeight: Int = 24 * scaleFactor
 fileprivate let menuBarHeight: Int = titleBarHeight
-fileprivate let oscFullWidthHeight: Int = 71
-fileprivate let oscFloatingHeight: Int = 74
-fileprivate let oscFloatingWidth: Int = 280
+fileprivate let windowWidth: Int = 240 * scaleFactor
+fileprivate let windowHeight: Int = windowWidth * 9 / 16
+fileprivate let oscFullWidthHeight: Int = 35 * scaleFactor
+fileprivate let oscFloatingHeight: Int = 37 * scaleFactor
+fileprivate let oscFloatingWidth: Int = 140 * scaleFactor
 
 
 fileprivate extension CGContext {
@@ -97,7 +100,7 @@ class PlayerWindowPreviewImageBuilder {
       Logger.log("Cannot generate window preview image: failed to load asset(s)", level: .error)
       return nil
     }
-    let roundedCornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
+    let roundedCornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius)) * CGFloat(scaleFactor)
     let titleBarButtonsWidth = CGFloat(titleBarHeight) * (CGFloat(titleBarButtonsImg.width) / CGFloat(titleBarButtonsImg.height))
 
     var videoViewOffsetY: Int = 0
@@ -119,7 +122,7 @@ class PlayerWindowPreviewImageBuilder {
         case .outsideVideo:
           oscAlpha = opaqueControlAlpha
           oscHeight = oscFullWidthHeight - (oscFullWidthHeight / 8)  // remove some space between controller & title bar
-          oscOffsetY = videoViewOffsetY + videoViewImg.height
+          oscOffsetY = videoViewOffsetY + windowHeight
 
         case .insideVideo:
           oscAlpha = overlayAlpha
@@ -128,14 +131,14 @@ class PlayerWindowPreviewImageBuilder {
           case .minimal:
             // Special in-title accessory controller
             oscHeight = titleBarHeight
-            oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight
+            oscOffsetY = videoViewOffsetY + windowHeight - oscHeight
           case .full:
             let adjustment = oscFullWidthHeight / 8 // remove some space between controller & title bar
             oscHeight = oscFullWidthHeight - adjustment
-            oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight - titleBarHeight
+            oscOffsetY = videoViewOffsetY + windowHeight - oscHeight - titleBarHeight
           case .none:
             oscHeight = oscFullWidthHeight
-            oscOffsetY = videoViewOffsetY + videoViewImg.height - oscHeight
+            oscOffsetY = videoViewOffsetY + windowHeight - oscHeight
           }  // end switch titleBarStyle
 
         }  // end switch topPanelPlacement
@@ -155,7 +158,7 @@ class PlayerWindowPreviewImageBuilder {
       case .floating:
         oscAlpha = overlayAlpha
         oscHeight = oscFloatingHeight
-        oscOffsetY = videoViewOffsetY + (videoViewImg.height / 2) - oscFloatingHeight
+        oscOffsetY = videoViewOffsetY + (windowHeight / 2) - oscFloatingHeight
 
       }  // end switch oscPosition
 
@@ -176,14 +179,13 @@ class PlayerWindowPreviewImageBuilder {
     } else {
       titlebarDownshiftY = titleBarHeight  // inside video
     }
-    let titleBarOffsetY: Int = videoViewOffsetY + videoViewImg.height - titlebarDownshiftY
+    let titleBarOffsetY: Int = videoViewOffsetY + windowHeight - titlebarDownshiftY
 
-    let winWidth: Int = videoViewImg.width
     let winHeight: Int = titleBarOffsetY + titleBarHeight
-    let winOriginX: Int = (outputImgWidth - winWidth) / 2
+    let winOriginX: Int = (outputImgWidth - windowWidth) / 2
     let winOriginY: Int = (outputImgHeight - winHeight - menuBarHeight) / 2
 
-    let winRect = NSRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+    let winRect = NSRect(x: winOriginX, y: winOriginY, width: windowWidth, height: winHeight)
 
     let drawingCalls: (CGContext) -> Void = { [self] cgContext in
       let bgColor = desktopWallpaperColor.cgColor
@@ -208,12 +210,12 @@ class PlayerWindowPreviewImageBuilder {
 
       // Start drawing window. Clip the corners to round it:
       cgContext.beginPath()
-      cgContext.addPath(CGPath(roundedRect: winRect, cornerWidth: roundedCornerRadius * 2, cornerHeight: roundedCornerRadius * 2, transform: nil))
+      cgContext.addPath(CGPath(roundedRect: winRect, cornerWidth: roundedCornerRadius, cornerHeight: roundedCornerRadius, transform: nil))
       cgContext.closePath()
       cgContext.clip()
 
       // draw video
-      draw(image: videoViewImg, in: cgContext, x: winOriginX, y: winOriginY + videoViewOffsetY)
+      draw(image: videoViewImg, in: cgContext, x: winOriginX, y: winOriginY + videoViewOffsetY, width: windowWidth, height: windowHeight)
 
       // draw OSC
       if oscEnabled {
@@ -221,11 +223,11 @@ class PlayerWindowPreviewImageBuilder {
         let oscOffsetFromWindowOriginX: Int
         let oscWidth: Int
         if oscPosition == .floating {
-          oscOffsetFromWindowOriginX = (videoViewImg.width / 2) - (oscFloatingWidth / 2)
+          oscOffsetFromWindowOriginX = (windowWidth / 2) - (oscFloatingWidth / 2)
           oscWidth = oscFloatingWidth
         } else {
           oscOffsetFromWindowOriginX = 0
-          oscWidth = winWidth
+          oscWidth = windowWidth
         }
 
         let leftArrowImage = #imageLiteral(resourceName: "speedl")
@@ -242,7 +244,7 @@ class PlayerWindowPreviewImageBuilder {
         if oscPosition == .floating {
           // Draw floating OSC panel
           cgContext.withNewCGState {
-            cgContext.drawRoundedRect(oscRect, cornerRadius: roundedCornerRadius, fillColor: oscPanelColor)
+            cgContext.drawRoundedRect(oscRect, cornerRadius: roundedCornerRadius / 2, fillColor: oscPanelColor)
           }
 
           // Draw play controls
@@ -293,7 +295,7 @@ class PlayerWindowPreviewImageBuilder {
 
         } else {
           let pillWidth = iconHeight // ~similar size
-          // subtract pill width and its spacing
+          // Subtract pill width and its spacing
           let playBarWidth = oscRect.maxX - nextIconMinX - spacingH - pillWidth - spacingH
           if playBarWidth < 0 {
             Logger.log("While drawing preview image: ran out of space while drawing OSC!", level: .error)
@@ -312,13 +314,13 @@ class PlayerWindowPreviewImageBuilder {
             let pillOriginY = iconGroupCenterY - (pillHeight / 2)
             let pillRect = NSRect(x: Int(nextIconMinX), y: Int(pillOriginY), width: Int(pillWidth), height: Int(pillHeight))
             cgContext.withNewCGState {
-              cgContext.drawRoundedRect(pillRect, cornerRadius: roundedCornerRadius, fillColor: iconColor.cgColor)
+              cgContext.drawRoundedRect(pillRect, cornerRadius: min(pillHeight * 0.5, roundedCornerRadius / 2), fillColor: iconColor.cgColor)
             }
           }
         }
       }
 
-      // draw title bar
+      // Draw title bar
       let isTitleBarInside = topPanelPlacement == .insideVideo
       let drawTitleBarBackground: Bool
       if isTitleBarInside {
@@ -336,9 +338,10 @@ class PlayerWindowPreviewImageBuilder {
         let titleBarAlpha: CGFloat = isTitleBarInside ? overlayAlpha : opaqueControlAlpha
         let titleBarColor: CGColor = addAlpha(titleBarAlpha, to: NSColor.windowBackgroundColor)
         cgContext.setFillColor(titleBarColor)
-        cgContext.fill([CGRect(x: winOriginX, y: winOriginY + titleBarOffsetY, width: winWidth, height: titleBarHeight)])
+        cgContext.fill([CGRect(x: winOriginX, y: winOriginY + titleBarOffsetY, width: windowWidth, height: titleBarHeight)])
       }
 
+      // Draw traffic light buttons
       let drawTitleBarButtons = !isTitleBarInside || titleBarStyle != .none
       if drawTitleBarButtons {
         draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY, width: Int(titleBarButtonsWidth), height: titleBarHeight)
@@ -353,15 +356,6 @@ class PlayerWindowPreviewImageBuilder {
 
   private func addAlpha(_ alpha: CGFloat, to color: NSColor) -> CGColor {
     color.withAlphaComponent(alpha).cgColor
-  }
-
-  private func tintImage(_ inputImage: CGImage, _ context: CGContext) -> CGImage? {
-    let ciContext = CIContext()
-    guard let filter = CIFilter(name:"CISepiaTone") else { return nil }
-    filter.setValue(inputImage, forKey: kCIInputImageKey)
-    filter.setValue(0.9, forKey: kCIInputIntensityKey)
-    guard let outputCIImage = filter.outputImage else { return nil }
-    return ciContext.createCGImage(outputCIImage, from: outputCIImage.extent)
   }
 
   private func loadCGImage(named name: String) -> CGImage? {
@@ -410,7 +404,7 @@ class PlayerWindowPreviewImageBuilder {
   }
 
   private func drawIcon(_ iconImage: NSImage, in cgContext: CGContext, originX: CGFloat, originY: CGFloat, width: CGFloat, height: CGFloat) {
-    let tintedImage: NSImage = iconImage.tinted(iconColor)
+    let tintedImage: NSImage = iconImage.tinted(iconColor) // FIXME: apply alpha
     guard let cgImage = tintedImage.cgImage else {
       Logger.log("Cannot draw icon: failed to get tinted cgImage from NSImage \(iconImage.name()?.quoted ?? "nil")", level: .error)
       return
