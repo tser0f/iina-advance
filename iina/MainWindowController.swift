@@ -1013,12 +1013,19 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
-  private func setupTitleBarAndOSC() {
+  private func setupTitleBarAndOSC(willSetFullScreenTo: Bool? = nil) {
     enableOSC = Preference.bool(for: .enableOSC)
     oscPosition = Preference.enum(for: .oscPosition)
     titleBarStyle = Preference.enum(for: .titleBarStyle)
     topPanelPlacement = Preference.enum(for: .topPanelPlacement)
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
+
+    let isFullScreen: Bool
+    if let willSetFullScreenTo = willSetFullScreenTo {
+      isFullScreen = willSetFullScreenTo
+    } else {
+      isFullScreen = fsState.isFullscreen
+    }
 
     let animationBlock: AnimationBlock = { [self] context in
       updateTopPanelPosition()
@@ -1030,15 +1037,57 @@ class MainWindowController: PlayerWindowController {
       quickSettingView.refreshVerticalConstraints()
       playlistView.refreshVerticalConstraints()
 
-      // reset
+
+      if isFullScreen {
+        // Remove all title bar accessories (if needed):
+        if let accessories = window?.titlebarAccessoryViewControllers, !accessories.isEmpty {
+          for index in (0 ..< accessories.count).reversed() {
+            window!.removeTitlebarAccessoryViewController(at: index)
+          }
+        }
+
+        // Hide title bar:
+        titleBarHeightConstraint.constant = 0
+        changeTitleBarVisibility(to: false) // TODO
+
+      } else {  // Not fullscreen
+
+        // Add back title bar accessories (if needed):
+        if let window = window, window.titlebarAccessoryViewControllers.isEmpty {
+          window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
+          window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+        }
+
+        // Show title bar
+        if enableOSC && oscPosition == .top {  // FIXME: this is wrong
+          titleBarHeightConstraint.constant = reducedTitleBarHeight
+        } else {
+          titleBarHeightConstraint.constant = StandardTitleBarHeight
+        }
+        changeTitleBarVisibility(to: true)  // TODO
+
+        let showTitleBarInsideVideo = topPanelPlacement == .insideVideo && titleBarStyle != .none
+
+        if showTitleBarInsideVideo {
+          // Title bar is fadeable
+          fadeableViews.insert(topPanelView)
+        }
+
+        if showTitleBarInsideVideo || topPanelPlacement == .outsideVideo {
+          titleBarHeightConstraint.constant = StandardTitleBarHeight
+        }
+      }
+
+      // Reset OSC panels
       controlBarFloating.isHidden = true
       fadeableViews.remove(controlBarFloating)
       controlBarBottom.isHidden = true
       fadeableViews.remove(controlBarBottom)
-
       controlBarFloating.isDragging = false
+      fadeableViews.remove(topPanelView)
+      topPanelView.isHidden = true
 
-      // detach all fragment views
+      // Detach all OSC fragment views
       [oscFloatingTopView, oscTopMainView, oscBottomMainView].forEach { stackView in
         stackView!.views.forEach {
           stackView!.removeView($0)
@@ -1048,28 +1097,17 @@ class MainWindowController: PlayerWindowController {
         $0!.removeFromSuperview()
       }
 
-      if enableOSC && oscPosition == .top {
-        topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
-        if fsState.isFullscreen {
-          fadeableViews.insert(topPanelView)
-          titleBarHeightConstraint.constant = 0
-        } else {
-          if topPanelPlacement == .outsideVideo {
-            fadeableViews.remove(topPanelView)
-          } else {
-            fadeableViews.insert(topPanelView)
-          }
-          topPanelView.isHidden = false
-          titleBarHeightConstraint.constant = reducedTitleBarHeight
-        }
+      if oscPosition == .top {
+        // need top overlay for OSC, but hide title bar
+        topPanelView.isHidden = false
       } else {
-        if fsState.isFullscreen {
-          fadeableViews.remove(topPanelView)
-          topPanelView.isHidden = true
-        } else {
-          fadeableViews.insert(topPanelView)
-        }
-        titleBarHeightConstraint.constant = StandardTitleBarHeight
+        // stop animation and hide topPanelView
+        fadeableViews.remove(topPanelView)
+        topPanelView.isHidden = true
+      }
+
+      if !(enableOSC && oscPosition == .top) {
+        // No top OSC
         topOSCPreferredHeightConstraint.constant = 0
       }
 
@@ -1112,6 +1150,18 @@ class MainWindowController: PlayerWindowController {
           oscTopMainView.setVisibilityPriority(.mustHold, for: fragSliderView)
           oscTopMainView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
           oscTopMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
+
+          topOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
+          if isFullScreen {
+            fadeableViews.insert(topPanelView)
+            titleBarHeightConstraint.constant = 0
+          } else {
+            if topPanelPlacement == .insideVideo {
+              fadeableViews.insert(topPanelView)
+            }
+            topPanelView.isHidden = false
+            titleBarHeightConstraint.constant = reducedTitleBarHeight
+          }
         case .bottom:
           currentControlBar = controlBarBottom
           if bottomPanelPlacement == .outsideVideo {
@@ -1148,22 +1198,13 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
-  private func hideTitleBar() {
-    titleBarHeightConstraint.constant = 0
-    changeTitleBarVisibility(to: false)
-
-    if let accessories = window?.titlebarAccessoryViewControllers, !accessories.isEmpty {
-      for index in (0 ..< accessories.count).reversed() {
-        window!.removeTitlebarAccessoryViewController(at: index)
-      }
-    }
-  }
-
   private func changeTitleBarVisibility(to visible: Bool, animate: Bool = true) {
     let topPanelIsOutside = topPanelPlacement == Preference.PanelPlacement.outsideVideo
     if visible {
+      // Do not show title bar in fullscreen
       guard !fsState.isFullscreen else { return }
     } else {
+      // Do not show title bar in fullscreen
       guard !topPanelIsOutside else { return }
     }
 
@@ -1175,6 +1216,7 @@ class MainWindowController: PlayerWindowController {
         view?.alphaValue = newAlpha
       }
     }
+
   }
 
   // MARK: - Mouse / Trackpad events
@@ -1554,7 +1596,7 @@ class MainWindowController: PlayerWindowController {
     cv.trackingAreas.forEach(cv.removeTrackingArea)
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
 
-    // TODO: save window position & state here
+    // TODO: save playback state here
     
     player.events.emit(.windowWillClose)
   }
@@ -1569,35 +1611,24 @@ class MainWindowController: PlayerWindowController {
     return [window]
   }
 
-  func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
-    NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AccessibilityPreferences.adjustedDuration(duration)
-      window.animator().setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    }, completionHandler: nil)
-
-  }
-
-  func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
-    if NSMenu.menuBarVisible() {
-      NSMenu.setMenuBarVisible(false)
-    }
-    let priorWindowedFrame = fsState.priorWindowedFrame!
-
-    NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AccessibilityPreferences.adjustedDuration(duration)
-      window.animator().setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    }, completionHandler: nil)
-
-    NSMenu.setMenuBarVisible(true)
-  }
-
-  func windowWillEnterFullScreen(_ notification: Notification) {
+  private func resetViewsForFullScreenTransition() {
     // When playback is paused the display link is stopped in order to avoid wasting energy on
-    // needless processing. It must be running while transitioning to full screen mode.
+    // needless processing. It must be running while transitioning to/from full screen mode.
     videoView.displayActive()
+
     if isInInteractiveMode {
       exitInteractiveMode(immediately: true)
     }
+
+    thumbnailPeekView.isHidden = true
+    timePreviewWhenSeek.isHidden = true
+    isMouseInSlider = false
+  }
+
+  func windowWillEnterFullScreen(_ notification: Notification) {
+    Logger.log("windowWillEnterFullScreen", level: .verbose)
+
+    resetViewsForFullScreenTransition()
 
     // Set the appearance to match the theme so the title bar matches the theme
     let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
@@ -1609,21 +1640,10 @@ class MainWindowController: PlayerWindowController {
       default: window!.appearance = NSAppearance(named: .vibrantLight)
       }
     }
-    if oscPosition == .top {
-      // need top overlay for OSC, but hide title bar
-      topPanelView.isHidden = false
-    } else {
-      // stop animation and hide topPanelView
-      fadeableViews.remove(topPanelView)
-      topPanelView.isHidden = true
-    }
 
-    hideTitleBar()
+    setupTitleBarAndOSC(willSetFullScreenTo: true)
+
     setWindowFloatingOnTop(false, updateOnTopStatus: false)
-
-    thumbnailPeekView.isHidden = true
-    timePreviewWhenSeek.isHidden = true
-    isMouseInSlider = false
 
     let isLegacyFullScreen = notification.name == .iinaLegacyFullScreen
     fsState.startAnimatingToFullScreen(legacy: isLegacyFullScreen, priorWindowedFrame: window!.frame)
@@ -1633,10 +1653,16 @@ class MainWindowController: PlayerWindowController {
     player.mpv.setFlag(MPVOption.Window.keepaspect, true)
   }
 
-  func windowDidEnterFullScreen(_ notification: Notification) {
-    fsState.finishAnimating()
+  func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
+    Logger.log("window startCustomAnimationToEnterFullScreenOn", level: .verbose)
+    runAnimation{ context in
+      window.setFrame(screen.frame, display: true)
+    }
+  }
 
-    changeTitleBarVisibility(to: true)
+  func windowDidEnterFullScreen(_ notification: Notification) {
+    Logger.log("windowDidEnterFullScreen", level: .verbose)
+    fsState.finishAnimating()
 
     videoViewConstraints.values.forEach { $0.constant = 0 }
     videoView.needsLayout = true
@@ -1678,24 +1704,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowWillExitFullScreen(_ notification: Notification) {
-    // When playback is paused the display link is stopped in order to avoid wasting energy on
-    // needless processing. It must be running while transitioning from full screen mode.
-    videoView.displayActive()
-    if isInInteractiveMode {
-      exitInteractiveMode(immediately: true)
-    }
+    Logger.log("windowWillExitFullScreen", level: .verbose)
+    resetViewsForFullScreenTransition()
 
-    if oscPosition == .top {
-      titleBarHeightConstraint.constant = reducedTitleBarHeight
-    } else {
-      titleBarHeightConstraint.constant = StandardTitleBarHeight
-    }
-
-    thumbnailPeekView.isHidden = true
-    timePreviewWhenSeek.isHidden = true
     additionalInfoView.isHidden = true
-    isMouseInSlider = false
-
     fadeableViews.remove(additionalInfoView)
 
     fsState.startAnimatingToWindow()
@@ -1712,16 +1724,25 @@ class MainWindowController: PlayerWindowController {
     player.mpv.setFlag(MPVOption.Window.keepaspect, false)
   }
 
+  func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
+    Logger.log("window startCustomAnimationToExitFullScreenWithDuration", level: .verbose)
+    if NSMenu.menuBarVisible() {
+      NSMenu.setMenuBarVisible(false)
+    }
+
+    runAnimation{ [self] context in
+      window.setFrame(fsState.priorWindowedFrame!, display: true)
+      NSMenu.setMenuBarVisible(true)
+    }
+  }
+
   func windowDidExitFullScreen(_ notification: Notification) {
+    Logger.log("windowDidExitFullScreen", level: .verbose)
     if AccessibilityPreferences.motionReductionEnabled {
       // When animation is not used exiting full screen does not restore the previous size of the
       // window. Restore it now.
       window!.setFrame(fsState.priorWindowedFrame!, display: true, animate: false)
     }
-    if topPanelPlacement == .insideVideo {
-      fadeableViews.insert(topPanelView)
-    }
-    topPanelView.isHidden = false
     fsState.finishAnimating()
 
     if Preference.bool(for: .blackOutMonitor) {
@@ -1739,13 +1760,10 @@ class MainWindowController: PlayerWindowController {
       player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
     }
 
-    window!.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
-    window!.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
-
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
-    showOverlays()
+    setupTitleBarAndOSC(willSetFullScreenTo: false)
 
     videoViewConstraints.values.forEach { $0.constant = 0 }
     videoView.needsLayout = true
@@ -2123,13 +2141,18 @@ class MainWindowController: PlayerWindowController {
     }
 
     animationState = .willHide
-    NSAnimationContext.runAnimationGroup({ (context) in
+
+    var animationBlocks: [AnimationBlock] = []
+
+    animationBlocks.append{ [self] context in
       context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 0
       }
       changeTitleBarVisibility(to: false)
-    }) {
+    }
+
+    animationBlocks.append{ [self] context in
       // if no interrupt then hide animation
       if self.animationState == .willHide {
         self.animationState = .hidden
@@ -2138,6 +2161,8 @@ class MainWindowController: PlayerWindowController {
         }
       }
     }
+
+    runAnimationChain(animationBlocks)
   }
 
   // Shows fadeableViews and titlebar via fade
@@ -2150,13 +2175,17 @@ class MainWindowController: PlayerWindowController {
     if !player.info.isPaused {
       player.createSyncUITimer()
     }
-    NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = AccessibilityPreferences.adjustedDuration(UIAnimationDuration)
+
+    var animationBlocks: [AnimationBlock] = []
+
+    animationBlocks.append{ [self] context in
       fadeableViews.forEach { (v) in
         v.animator().alphaValue = 1
       }
       changeTitleBarVisibility(to: true)
-    }) {
+    }
+
+    animationBlocks.append{ [self] context in
       // if no interrupt then hide animation
       if self.animationState == .willShow {
         self.animationState = .shown
@@ -2165,10 +2194,15 @@ class MainWindowController: PlayerWindowController {
         }
         self.resetOverlaysTimer()
       }
-      if let completionHandler = completionHandler {
+    }
+
+    if let completionHandler = completionHandler {
+      animationBlocks.append{ _ in
         completionHandler()
       }
     }
+
+    runAnimationChain(animationBlocks)
   }
 
   // MARK: - UI: Show / Hide Timer
