@@ -546,7 +546,9 @@ extension SidebarTabGroupViewController {
     let downshift: CGFloat
     var tabHeight: CGFloat = mainWindow.fullWidthOSCPreferredHeight
 
-    if mainWindow.fsState.isFullscreen || Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+    let isTitleBarHidden = Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.insideVideo && Preference.enum(for: .titleBarStyle) == Preference.TitleBarStyle.none
+    let isOutsideVideo = Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo
+    if mainWindow.fsState.isFullscreen || isTitleBarHidden || isOutsideVideo {
       downshift = 0
     } else {
       downshift = mainWindow.reducedTitleBarHeight

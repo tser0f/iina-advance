@@ -39,6 +39,7 @@
                 <outlet property="leadingSidebarView" destination="XBs-34-TIm" id="Jqt-cB-r2i"/>
                 <outlet property="leadingSidebarWidthConstraint" destination="Cuc-0z-ItB" id="kY3-w2-J9f"/>
                 <outlet property="leadingTitleBarAccessoryView" destination="LFL-4a-93B" id="2gm-1u-SgO"/>
+                <outlet property="leadingTitleBarLeadingSpaceConstraint" destination="8Ry-mq-mNQ" id="abn-rz-U1P"/>
                 <outlet property="leadingTitleBarTrailingSpaceConstraint" destination="ckY-Xn-Az9" id="2Sw-bW-ZKj"/>
                 <outlet property="leftArrowButton" destination="10x-bg-xlj" id="HOT-Yl-7aO"/>
                 <outlet property="leftArrowLabel" destination="Yg9-Sd-sWy" id="fps-VD-ZgC"/>
@@ -96,7 +97,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="3440" height="1415"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
             <view key="contentView" wantsLayer="YES" id="se5-gp-TjO" userLabel="Window-Content View">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

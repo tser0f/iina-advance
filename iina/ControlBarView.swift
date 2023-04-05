@@ -8,6 +8,7 @@
 
 import Cocoa
 
+// The control bar when position=="floating"
 class ControlBarView: NSVisualEffectView {
 
   @IBOutlet weak var xConstraint: NSLayoutConstraint!
