@@ -305,7 +305,7 @@
                             <constraint firstAttribute="trailing" secondItem="g0j-zS-jKv" secondAttribute="trailing" constant="16" id="WKr-7v-aYn"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="OiF-pA-8Sd" userLabel="OSC-Floating Overlay View" customClass="ControlBarView" customModule="IINA" customModuleProvider="target">
+                    <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="OiF-pA-8Sd" userLabel="OSC-Floating Overlay View" customClass="ControlBarView" customModule="IINA" customModuleProvider="target">
                         <rect key="frame" x="110" y="60" width="440" height="67"/>
                         <subviews>
                             <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Unr-Y6-JoM" userLabel="OSC-Floating-TopHalf View">
@@ -333,7 +333,7 @@
                             <outlet property="yConstraint" destination="cRP-R4-zYY" id="kxT-61-1SZ"/>
                         </connections>
                     </visualEffectView>
-                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-Panel View">
+                    <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-Panel View">
                         <rect key="frame" x="0.0" y="328" width="640" height="72"/>
                         <subviews>
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="Title-Bar View">
@@ -381,7 +381,7 @@
                             <constraint firstItem="pgt-r3-Vbf" firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="bottom" id="xMQ-WC-fps"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="OSC-Bottom View">
+                    <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="OSC-Bottom View">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="44"/>
                         <subviews>
                             <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Qmi-hb-0aM" userLabel="OSC-Bottom Horizontal Stack View">
@@ -414,7 +414,7 @@
                             <color key="color" white="0.0" alpha="0.5" colorSpace="calibratedWhite"/>
                         </shadow>
                     </visualEffectView>
-                    <customView wantsLayer="YES" id="vej-bg-g6C" customClass="ThumbnailPeekView" customModule="IINA" customModuleProvider="target">
+                    <customView hidden="YES" wantsLayer="YES" id="vej-bg-g6C" customClass="ThumbnailPeekView" customModule="IINA" customModuleProvider="target">
                         <rect key="frame" x="30" y="45" width="160" height="90"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <subviews>

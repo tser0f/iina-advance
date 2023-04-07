@@ -39,6 +39,8 @@ fileprivate let UIAnimationDuration = 0.25
 fileprivate let OSDAnimationDuration = 0.5
 fileprivate let CropAnimationDuration = 0.2
 
+fileprivate let minOverlayHideTimeout: Float = 0.15
+
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 800)
@@ -470,6 +472,10 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  private var documentIconButton: NSButton? {
+    window?.standardWindowButton(.documentIconButton)
+  }
+
   private var trafficLightButtons: [NSButton] {
     get {
       return ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).compactMap {
@@ -723,10 +729,6 @@ class MainWindowController: PlayerWindowController {
     playbackButtonSizeConstraint.constant = playbackButtonSize
     bottomOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
 
-    setupTitleBarAndOSC()
-    let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
-    setupOSCToolbarButtons(buttons)
-
     // video view
     guard let cv = window.contentView else { return }
     cv.autoresizesSubviews = false
@@ -759,15 +761,6 @@ class MainWindowController: PlayerWindowController {
     // init quick setting view now
     let _ = quickSettingView
 
-    // buffer indicator view
-    if roundedCornerRadius > 0.0 {
-      bufferIndicatorView.roundCorners(withRadius: roundedCornerRadius)
-      osdVisualEffectView.roundCorners(withRadius: roundedCornerRadius)
-      additionalInfoView.roundCorners(withRadius: roundedCornerRadius)
-    }
-    updateBufferIndicatorView()
-    updateOSDPosition()
-
     // thumbnail peek view
     thumbnailPeekView.isHidden = true
 
@@ -789,6 +782,19 @@ class MainWindowController: PlayerWindowController {
     timePreviewWhenSeek.isHidden = true
     bottomView.isHidden = true
     pipOverlayView.isHidden = true
+
+    setupTitleBarAndOSC()
+    let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
+    setupOSCToolbarButtons(buttons)
+
+    // buffer indicator view
+    if roundedCornerRadius > 0.0 {
+      bufferIndicatorView.roundCorners(withRadius: roundedCornerRadius)
+      osdVisualEffectView.roundCorners(withRadius: roundedCornerRadius)
+      additionalInfoView.roundCorners(withRadius: roundedCornerRadius)
+    }
+    updateBufferIndicatorView()
+    updateOSDPosition()
     
     if player.disableUI { hideOverlays() }
 
@@ -1044,32 +1050,33 @@ class MainWindowController: PlayerWindowController {
 
       updateLeadingTitleBarAccessory()
       updateTrailingTitleBarAccessory()
+      let hasTitleBar = topPanelPlacement == .outsideVideo || titleBarStyle != .none
+      let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
+      let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
+      if hasTitleBar && hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
+        show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+      } else {
+        hideAndRemoveFromFadeable(leadingSidebarToggleButton)
+      }
+      if hasTitleBar && hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
+        show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+      } else {
+        hideAndRemoveFromFadeable(trailingSidebarToggleButton)
+      }
+
+      pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
+      pinToTopButton.state = isOntop ? .on : .off
+
 
       quickSettingView.refreshVerticalConstraints()
       playlistView.refreshVerticalConstraints()
 
       // Reset view states
-      controlBarFloating.isHidden = true
-      fadeableViews.remove(controlBarFloating)
       controlBarFloating.isDragging = false
-      controlBarBottom.isHidden = true
-      fadeableViews.remove(controlBarBottom)
-      topPanelView.isHidden = true
-      fadeableViews.remove(topPanelView)
+      hideAndRemoveFromFadeable(controlBarFloating, controlBarBottom, topPanelView, titleTextField)
       for button in standardWindowButtons {
-        fadeableViews.remove(button)
-        button.alphaValue = 0
-        button.isHidden = true
+        hideAndRemoveFromFadeable(button)
       }
-      fadeableViews.remove(titleTextField!)
-      titleTextField!.alphaValue = 0
-      titleTextField!.isHidden = true
-      fadeableViews.remove(leadingTitleBarAccessoryView)
-      leadingTitleBarAccessoryView!.alphaValue = 0
-      leadingTitleBarAccessoryView!.isHidden = true
-      fadeableViews.remove(trailingTitleBarAccessoryView)
-      trailingTitleBarAccessoryView!.alphaValue = 0
-      trailingTitleBarAccessoryView!.isHidden = true
 
       // Detach all OSC fragment views
       [oscFloatingTopView, oscTopMainView, oscBottomMainView].forEach { stackView in
@@ -1089,9 +1096,8 @@ class MainWindowController: PlayerWindowController {
         }
 
         titleBarHeightConstraint.constant = 0  // Will be overridden if top OSC is showing
-        for view in trafficLightButtons {
-          view.alphaValue = 1
-          view.isHidden = false
+        for button in trafficLightButtons {
+          show(button)
         }
 
       } else {  // Not fullscreen
@@ -1105,51 +1111,26 @@ class MainWindowController: PlayerWindowController {
         titleBarHeightConstraint.constant = StandardTitleBarHeight  // May be overridden based on titleBarStyle or by OSC layout
 
         if topPanelPlacement == .outsideVideo {
-          topPanelView.isHidden = false
-
-          for view in standardWindowButtons + [titleTextField, leadingTitleBarAccessoryView, trailingTitleBarAccessoryView] {
-            view!.alphaValue = 1
-            view!.isHidden = false
+          show(topPanelView, titleTextField)
+          for button in standardWindowButtons {
+            show(button)
           }
         } else if topPanelPlacement == .insideVideo {
 
           switch titleBarStyle {
           case .full:
             // Title bar is fadeable
-            topPanelView.isHidden = false
-            topPanelView.alphaValue = 1
-            fadeableViews.insert(topPanelView)
-            titleTextField!.alphaValue = 1
-            titleTextField!.isHidden = false
-            fadeableViews.insert(titleTextField!)
-            if let button = window.standardWindowButton(.documentIconButton) {
-              button.alphaValue = 1
-              button.isHidden = false
-              fadeableViews.insert(button)
+            for button in standardWindowButtons {
+              show(button)
             }
-            fallthrough
+            show(topPanelView, titleTextField, makeFadeable: true)
           case .minimal:
             for button in trafficLightButtons {
-              button.alphaValue = 1
-              button.isHidden = false
-              fadeableViews.insert(button)
+              show(button, makeFadeable: true)
             }
-
-            leadingTitleBarAccessoryView.alphaValue = 1
-            leadingTitleBarAccessoryView.isHidden = false
-            fadeableViews.insert(leadingTitleBarAccessoryView)
-            trailingTitleBarAccessoryView.alphaValue = 1
-            trailingTitleBarAccessoryView.isHidden = false
-            fadeableViews.insert(trailingTitleBarAccessoryView)
+            hideAndRemoveFromFadeable(documentIconButton)
           case .none:
             titleBarHeightConstraint.constant = 0
-
-            leadingTitleBarAccessoryView.alphaValue = 1
-            leadingTitleBarAccessoryView.isHidden = false
-            fadeableViews.insert(leadingTitleBarAccessoryView)
-            trailingTitleBarAccessoryView.alphaValue = 1
-            trailingTitleBarAccessoryView.isHidden = false
-            fadeableViews.insert(trailingTitleBarAccessoryView)
           }
         }
       }
@@ -1160,8 +1141,9 @@ class MainWindowController: PlayerWindowController {
         switch oscPosition {
         case .floating:
           currentControlBar = controlBarFloating
-          fadeableViews.insert(controlBarFloating)  // floating is always fadeable
-          controlBarFloating.isHidden = false  // show for transition animation
+          show(controlBarFloating,
+               makeFadeable: true)   // floating is always fadeable
+
           fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewLeftView)
           fragControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: fragControlViewRightView)
           oscFloatingTopView.addView(fragVolumeView, in: .leading)
@@ -1188,12 +1170,9 @@ class MainWindowController: PlayerWindowController {
 
         case .top:
           currentControlBar = controlBarTop
-          topPanelView.isHidden = false  // show for transition animation or if placement == "outside"
-          topPanelView.alphaValue = 1
-          if isFullScreen || topPanelPlacement == .insideVideo {
-            // Always fade top panel for top OSC
-            fadeableViews.insert(topPanelView)
-          }
+          show(topPanelView,   // show for transition animation or if placement == "outside"
+            makeFadeable: isFullScreen || topPanelPlacement == .insideVideo)
+
           fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
           fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
           oscTopMainView.addView(fragVolumeView, in: .trailing)
@@ -1214,10 +1193,9 @@ class MainWindowController: PlayerWindowController {
             case .minimal:
               titleBarHeightConstraint.constant = reducedTitleBarHeight
               // TODO! implement me!
-
-              // FIXME 1: fix sidepanel initial show
-              // FIXME 2: fix "Inside Video" controls auto-hide with 0 sec
-              // FIXME 3: implement "Hide immediately when cursor leaves window"
+              // FIXME 1: File > Close disabled
+              // FIXME 2: fix sidepanel initial show
+              // FIXME 3: document icon weirdness
               // FIXME 4: disable prefs for titlebar buttons when titlebar hidden
             case .none:
               break
@@ -1226,10 +1204,9 @@ class MainWindowController: PlayerWindowController {
 
         case .bottom:
           currentControlBar = controlBarBottom
-          controlBarBottom.isHidden = false  // show for transition animation
-          if isFullScreen || bottomPanelPlacement == .insideVideo {
-            fadeableViews.insert(controlBarBottom)
-          }
+          show(controlBarBottom,   // show for transition animation or if placement == "outside"
+               makeFadeable: isFullScreen || bottomPanelPlacement == .insideVideo)
+
           fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
           fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewRightView)
           oscBottomMainView.addView(fragVolumeView, in: .trailing)
@@ -1259,6 +1236,26 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
+  private func hideAndRemoveFromFadeable(_ views: NSView?...) {
+    for view in views {
+      guard let view = view else { continue }
+      view.alphaValue = 0
+      view.isHidden = true
+      fadeableViews.remove(view)
+    }
+  }
+
+  private func show(_ views: NSView?..., makeFadeable: Bool = false) {
+    for view in views {
+      guard let view = view else { continue }
+      view.alphaValue = 1
+      view.isHidden = false
+      if makeFadeable {
+        fadeableViews.insert(view)
+      }
+    }
+  }
+
   // MARK: - Mouse / Trackpad events
 
   @discardableResult
@@ -1268,6 +1265,7 @@ class MainWindowController: PlayerWindowController {
     if success && keyBinding.action.first == MPVCommand.screenshot.rawValue {
       player.sendOSD(.screenshot)
     }
+    // FIXME: add close window binding
     return success
   }
 
@@ -1460,8 +1458,9 @@ class MainWindowController: PlayerWindowController {
       // main window
       isMouseInWindow = false
       if controlBarFloating.isDragging { return }
-      destroyOverlaysTimer()
-      hideOverlays()
+      if Preference.bool(for: .hideOverlaysWhenOutsideWindow) {
+        hideOverlays()
+      }
     } else if obj == 1 {
       // slider
       isMouseInSlider = false
@@ -1604,14 +1603,14 @@ class MainWindowController: PlayerWindowController {
       playSlider.abLoopB.addTrackingArea(NSTrackingArea(rect: playSlider.abLoopB.bounds, options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved], owner: self, userInfo: ["obj": 1]))
     }
 
-    // update timer
-    resetOverlaysTimer()
     // truncate middle for title
     if let attrTitle = titleTextField?.attributedStringValue.mutableCopy() as? NSMutableAttributedString, attrTitle.length > 0 {
       let p = attrTitle.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as! NSMutableParagraphStyle
       p.lineBreakMode = .byTruncatingMiddle
       attrTitle.addAttribute(.paragraphStyle, value: p, range: NSRange(location: 0, length: attrTitle.length))
     }
+    // update timer
+    resetOverlaysTimer()
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -2183,6 +2182,7 @@ class MainWindowController: PlayerWindowController {
       player.invalidateTimer()
     }
 
+    destroyOverlaysTimer()
     animationState = .willHide
 
     var animationBlocks: [AnimationBlock] = []
@@ -2218,6 +2218,7 @@ class MainWindowController: PlayerWindowController {
     if !player.info.isPaused {
       player.createSyncUITimer()
     }
+    resetOverlaysTimer()
 
     var animationBlocks: [AnimationBlock] = []
 
@@ -2234,7 +2235,6 @@ class MainWindowController: PlayerWindowController {
         for v in fadeableViews {
           v.isHidden = false
         }
-        resetOverlaysTimer()
       }
     }
 
@@ -2250,15 +2250,19 @@ class MainWindowController: PlayerWindowController {
   // MARK: - UI: Show / Hide Timer
 
   private func resetOverlaysTimer() {
+    // If timer exists, destroy first
     destroyOverlaysTimer()
 
-    // create new timer
-    let timeout = Preference.float(for: .controlBarAutoHideTimeout)
+    // Create new timer.
+    // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
+    var timeout = Double(Preference.float(for: .controlBarAutoHideTimeout))
+    if timeout < UIAnimationDuration {
+      timeout = UIAnimationDuration
+    }
     hideOverlaysTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOverlaysAndCursor), userInfo: nil, repeats: false)
   }
 
   private func destroyOverlaysTimer() {
-    // if timer exist, destroy first
     if let hideOverlaysTimer = hideOverlaysTimer {
       hideOverlaysTimer.invalidate()
       self.hideOverlaysTimer = nil
@@ -2302,16 +2306,12 @@ class MainWindowController: PlayerWindowController {
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
   func updateLeadingTitleBarAccessory() {
-    let hasTitleBar = topPanelPlacement == .outsideVideo || titleBarStyle != .none
-    let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
-    leadingSidebarToggleButton.isHidden = !(hasTitleBar && hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton))
-
     let isSpaceNeededForSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
     let trailingSpace: CGFloat
     if isSpaceNeededForSidebar && topPanelPlacement == .insideVideo {
       // Subtract space taken by the 3 standard buttons + other visible buttons
       let sidebarButtonSpace: CGFloat = leadingSidebarToggleButton.isHidden ? 0 : leadingSidebarToggleButton.frame.width
-      let trafficLightsSpace = titleBarStyle == .none ? 0 : -trafficLightButtonsWidth
+      let trafficLightsSpace = titleBarStyle == .none ? 0 : trafficLightButtonsWidth
       trailingSpace = max(0, leadingSidebarWidthConstraint.constant - trafficLightsSpace - sidebarButtonSpace)
     } else {
       trailingSpace = 0
@@ -2322,13 +2322,6 @@ class MainWindowController: PlayerWindowController {
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar
   func updateTrailingTitleBarAccessory() {
-    let hasTitleBar = topPanelPlacement == .outsideVideo || titleBarStyle != .none
-    let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
-    trailingSidebarToggleButton.isHidden = !(hasTitleBar && hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton))
-
-    pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
-    pinToTopButton.state = isOntop ? .on : .off
-
     let isSpaceNeededForSidebar = trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown
     var widthToReserve: CGFloat = 0
     if isSpaceNeededForSidebar && topPanelPlacement == .insideVideo {
@@ -2376,7 +2369,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   // Do not call displayOSD directly, call PlayerCore.sendOSD instead.
-  func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Float? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
+  func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
     guard player.displayOSD && !isShowingPersistentOSD else { return }
 
     if hideOSDTimer != nil {
@@ -2414,9 +2407,19 @@ class MainWindowController: PlayerWindowController {
       osdAccessoryText.stringValue = try! (try! Template(string: text)).render(osdData)
     }
 
-    osdVisualEffectView.alphaValue = 1
-    osdVisualEffectView.isHidden = false
+    show(osdVisualEffectView)
     osdVisualEffectView.layoutSubtreeIfNeeded()
+    if autoHide {
+      let timeout: Double
+      if let forcedTimeout = forcedTimeout {
+        timeout = forcedTimeout
+      } else {
+        // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
+        let configuredTimeout = Double(Preference.float(for: .osdAutoHideTimeout))
+        timeout = configuredTimeout <= OSDAnimationDuration ? OSDAnimationDuration : configuredTimeout
+      }
+      hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
+    }
 
     osdStackView.views(in: .bottom).forEach {
       osdStackView.removeView($0)
@@ -2437,6 +2440,7 @@ class MainWindowController: PlayerWindowController {
       osdStackView.addView(accessoryView, in: .bottom)
       Utility.quickConstraints(["H:|-0-[v(>=240)]-0-|"], ["v": accessoryView])
 
+      // FIXME: do not do this here
       // enlarge window if too small
       let winFrame = window!.frame
       var newFrame = winFrame
@@ -2448,19 +2452,15 @@ class MainWindowController: PlayerWindowController {
       accessoryView.layer?.opacity = 0
 
       NSAnimationContext.runAnimationGroup({ context in
-        context.duration = 0.3
+        context.duration = OSDAnimationDuration
         context.allowsImplicitAnimation = true
         window!.setFrame(newFrame, display: true)
         osdVisualEffectView.layoutSubtreeIfNeeded()
-      }, completionHandler: {
+      }, completionHandler: { [self] in
         accessoryView.layer?.opacity = 1
       })
     }
 
-    if autoHide {
-      let timeout = forcedTimeout ?? Preference.float(for: .osdAutoHideTimeout)
-      hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
-    }
   }
 
   @objc
