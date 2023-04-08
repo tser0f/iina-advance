@@ -26,6 +26,7 @@
                 <outlet property="bufferSpin" destination="uZe-PA-1Id" id="PdW-fg-yqB"/>
                 <outlet property="controlBarBottom" destination="DFb-1L-U9o" id="U9w-bH-8zM"/>
                 <outlet property="controlBarFloating" destination="OiF-pA-8Sd" id="7C1-6a-ZK6"/>
+                <outlet property="controlBarTitleBar" destination="FK3-bI-nks" id="kqg-dT-tkI"/>
                 <outlet property="controlBarTop" destination="pgt-r3-Vbf" id="dqS-nQ-If8"/>
                 <outlet property="fragControlView" destination="hDm-KI-3o4" id="ITm-fa-cWL"/>
                 <outlet property="fragControlViewLeftView" destination="8Ej-eH-OR9" id="Grg-cg-qxF"/>
@@ -48,7 +49,7 @@
                 <outlet property="oscBottomMainView" destination="Qmi-hb-0aM" id="PM5-Ic-nvt"/>
                 <outlet property="oscFloatingBottomView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
                 <outlet property="oscFloatingTopView" destination="Unr-Y6-JoM" id="URb-3v-Gzc"/>
-                <outlet property="oscTitleBarMainView" destination="QL8-sC-ql6" id="TcH-tR-IAe"/>
+                <outlet property="oscTitleBarMainView" destination="icJ-I7-xRz" id="7lx-6S-9Oi"/>
                 <outlet property="oscTopMainView" destination="fDY-vk-Ylv" id="phs-Yu-dGn"/>
                 <outlet property="osdAccessoryProgress" destination="i10-rt-9cb" id="ZdR-ZV-uoQ"/>
                 <outlet property="osdAccessoryText" destination="lb1-5R-hR3" id="A7o-3l-NYe"/>
@@ -749,12 +750,11 @@
             <point key="canvasLocation" x="499" y="584"/>
         </stackView>
         <customView identifier="Leading-TitleBarAccessoryView" id="LFL-4a-93B" userLabel="Leading Title Bar Accessory View">
-            <rect key="frame" x="0.0" y="0.0" width="200" height="28"/>
+            <rect key="frame" x="0.0" y="0.0" width="200" height="50"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
             <subviews>
-                <stackView identifier="Leading-TitleBarAccessory-HorizontalStackView" distribution="fill" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" id="QL8-sC-ql6" userLabel="Leading-Title-Bar Horizontal Stack View">
-                    <rect key="frame" x="0.0" y="-22" width="24" height="50"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMinX="YES" widthSizable="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
+                <stackView identifier="Leading-TitleBarAccessory-HorizontalStackView" distribution="fill" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QL8-sC-ql6" userLabel="Leading-Title-Bar Horizontal Stack View">
+                    <rect key="frame" x="0.0" y="0.0" width="24" height="50"/>
                     <subviews>
                         <customView identifier="LeadingTitleBarAcc-LeadingSpacer" translatesAutoresizingMaskIntoConstraints="NO" id="MEn-aG-818" userLabel="Leading Spacer View">
                             <rect key="frame" x="0.0" y="0.0" width="0.0" height="50"/>
@@ -783,6 +783,9 @@
                             </constraints>
                         </customView>
                     </subviews>
+                    <constraints>
+                        <constraint firstItem="7ck-d3-1hv" firstAttribute="height" secondItem="MEn-aG-818" secondAttribute="height" id="pJF-3V-W7n"/>
+                    </constraints>
                     <visibilityPriorities>
                         <integer value="1000"/>
                         <integer value="1000"/>
@@ -794,7 +797,31 @@
                         <real value="3.4028234663852886e+38"/>
                     </customSpacing>
                 </stackView>
+                <customView identifier="OSC-Title-Bar-View" hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="FK3-bI-nks" userLabel="OSC-Title-Bar View">
+                    <rect key="frame" x="24" y="0.0" width="184" height="50"/>
+                    <subviews>
+                        <stackView identifier="OSC-Title-Bar-Stack-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="icJ-I7-xRz" userLabel="OSC-Title-Bar Stack View">
+                            <rect key="frame" x="8" y="0.0" width="168" height="50"/>
+                        </stackView>
+                    </subviews>
+                    <constraints>
+                        <constraint firstAttribute="bottom" secondItem="icJ-I7-xRz" secondAttribute="bottom" id="4x8-FD-je0"/>
+                        <constraint firstAttribute="trailing" secondItem="icJ-I7-xRz" secondAttribute="trailing" constant="8" identifier="oscTopStackViewTrailingConstraint" id="PWw-Tl-lf5"/>
+                        <constraint firstItem="icJ-I7-xRz" firstAttribute="top" secondItem="FK3-bI-nks" secondAttribute="top" id="Ptf-7h-Al0"/>
+                        <constraint firstItem="icJ-I7-xRz" firstAttribute="leading" secondItem="FK3-bI-nks" secondAttribute="leading" constant="8" identifier="oscTopStackViewLeadingConstraint" id="d1N-I9-hd4"/>
+                    </constraints>
+                </customView>
             </subviews>
+            <constraints>
+                <constraint firstItem="MEn-aG-818" firstAttribute="height" secondItem="LFL-4a-93B" secondAttribute="height" id="0uc-fC-vk1"/>
+                <constraint firstItem="FK3-bI-nks" firstAttribute="top" secondItem="LFL-4a-93B" secondAttribute="top" id="ESQ-c4-Dqj"/>
+                <constraint firstAttribute="bottom" secondItem="FK3-bI-nks" secondAttribute="bottom" id="MOz-Cv-a7E"/>
+                <constraint firstItem="FK3-bI-nks" firstAttribute="leading" secondItem="QL8-sC-ql6" secondAttribute="trailing" id="XZy-JA-my5"/>
+                <constraint firstItem="QL8-sC-ql6" firstAttribute="top" secondItem="LFL-4a-93B" secondAttribute="top" id="g3m-af-oHN"/>
+                <constraint firstItem="QL8-sC-ql6" firstAttribute="leading" secondItem="LFL-4a-93B" secondAttribute="leading" id="pbD-ED-Iaw"/>
+                <constraint firstAttribute="bottom" secondItem="QL8-sC-ql6" secondAttribute="bottom" id="rsV-6z-5yD"/>
+                <constraint firstAttribute="trailing" secondItem="icJ-I7-xRz" secondAttribute="trailing" id="xAv-Jo-xwb"/>
+            </constraints>
             <point key="canvasLocation" x="-96" y="-214"/>
         </customView>
         <customView identifier="Trailing-TitleBarAccessoryView" translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Trailing Title Bar Accessory View">

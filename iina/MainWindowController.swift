@@ -563,14 +563,13 @@ class MainWindowController: PlayerWindowController {
   /** "Pin to Top" button in title bar, if configured to  be shown */
   @IBOutlet weak var pinToTopButton: NSButton!
 
+  @IBOutlet weak var controlBarTitleBar: NSView!
   @IBOutlet weak var controlBarTop: NSView!
   @IBOutlet weak var controlBarFloating: ControlBarView!
   @IBOutlet weak var controlBarBottom: NSVisualEffectView!
   @IBOutlet weak var timePreviewWhenSeek: NSTextField!
   @IBOutlet weak var leftArrowButton: NSButton!
   @IBOutlet weak var rightArrowButton: NSButton!
-  @IBOutlet weak var settingsButton: NSButton!
-  @IBOutlet weak var playlistButton: NSButton!
   @IBOutlet weak var leadingSidebarView: NSVisualEffectView!
   @IBOutlet weak var trailingSidebarView: NSVisualEffectView!
   @IBOutlet weak var bottomView: NSView!
@@ -1080,7 +1079,8 @@ class MainWindowController: PlayerWindowController {
 
       // Reset view states
       controlBarFloating.isDragging = false
-      hideAndRemoveFromFadeable(controlBarFloating, controlBarBottom, topPanelView, titleTextField)
+      hideAndRemoveFromFadeable(controlBarFloating, controlBarBottom, topPanelView, controlBarTitleBar, titleTextField)
+      window.titleVisibility = .hidden  // Note: MUST use this to guarantee that documentIcon is shown/hidden consistently
       for button in standardWindowButtons {
         hideAndRemoveFromFadeable(button)
       }
@@ -1118,24 +1118,28 @@ class MainWindowController: PlayerWindowController {
         titleBarHeightConstraint.constant = StandardTitleBarHeight  // May be overridden based on titleBarStyle or by OSC layout
 
         if topPanelPlacement == .outsideVideo {
-          show(topPanelView, titleTextField)
+          window.titleVisibility = .visible
           for button in standardWindowButtons {
             show(button)
           }
+          show(topPanelView)
         } else if topPanelPlacement == .insideVideo {
 
           switch titleBarStyle {
           case .full:
+            window.titleVisibility = .visible
             show(topPanelView, titleTextField, makeFadeable: true)
             // Title bar is fadeable
             for button in standardWindowButtons {
               show(button, makeFadeable: true)
             }
           case .minimal:
+            window.titleVisibility = .hidden
             for button in trafficLightButtons {
               show(button, makeFadeable: true)
             }
           case .none:
+            window.titleVisibility = .hidden
             titleBarHeightConstraint.constant = 0
           }
         }
@@ -1192,8 +1196,9 @@ class MainWindowController: PlayerWindowController {
           }
 
           if isTitleBarOSC {
-            currentControlBar = leadingTitleBarAccessoryView
-            // For background only. Otherwise unaffiliated with OSC:
+            currentControlBar = controlBarTitleBar
+            show(controlBarTitleBar, makeFadeable: true)
+            // Use top panel to provide a visual effects background. It is otherwise unaffiliated with OSC:
             show(topPanelView, makeFadeable: true)
 
             fragControlView.setVisibilityPriority(.notVisible, for: fragControlViewLeftView)
@@ -1251,22 +1256,6 @@ class MainWindowController: PlayerWindowController {
       }
 
       window.contentView?.layoutSubtreeIfNeeded()
-    }
-
-    // Unfortunately, this block seems to be necessary in order to get rid of the document icon
-    // right after the window is opened:
-    animationBlocks.append{ [self] context in
-      context.duration = 0
-      if topPanelPlacement == .outsideVideo {
-        show(documentIconButton)
-      } else {
-        switch titleBarStyle {
-        case .full:
-          show(documentIconButton, makeFadeable: true)
-        case .minimal, .none:
-          hideAndRemoveFromFadeable(documentIconButton)
-        }
-      }
     }
 
     showFadeableViews(completionHandler: { [self] in
@@ -1497,6 +1486,9 @@ class MainWindowController: PlayerWindowController {
       if controlBarFloating.isDragging { return }
       if Preference.bool(for: .hideFadeableViewsWhenOutsideWindow) {
         hideFadeableViews()
+      } else {
+        // Closes loophole in case cursor hovered over OSC before exiting (in which case timer was destroyed)
+        resetFadeTimer()
       }
     } else if obj == 1 {
       // slider
