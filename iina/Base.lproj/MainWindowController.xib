@@ -15,8 +15,8 @@
                 <outlet property="additionalInfoTitle" destination="3uh-OF-zy6" id="N6w-Hh-fQ1"/>
                 <outlet property="additionalInfoToOSDSpaceConstraint" destination="RUl-l8-s3i" id="Bq2-Vt-7D0"/>
                 <outlet property="additionalInfoView" destination="Qbi-jx-9pO" id="bdV-ZH-SkC"/>
-                <outlet property="bottomBarBottomConstraint" destination="vP1-IE-sbB" id="G77-vL-Wf8"/>
                 <outlet property="bottomOSCPreferredHeightConstraint" destination="Kcz-RI-CQp" id="3Gt-QN-wYJ"/>
+                <outlet property="bottomPanelBottomConstraint" destination="vP1-IE-sbB" id="G77-vL-Wf8"/>
                 <outlet property="bottomPanelLeadingSpaceConstraint" destination="Wkx-hm-sJ4" id="EyE-ox-wzo"/>
                 <outlet property="bottomPanelTrailingSpaceConstraint" destination="3qV-vK-qlg" id="Gpt-6V-BMV"/>
                 <outlet property="bottomView" destination="Tdb-EA-alw" id="5Xv-Ja-j4G"/>
@@ -49,6 +49,8 @@
                 <outlet property="oscFloatingBottomView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
                 <outlet property="oscFloatingTopView" destination="Unr-Y6-JoM" id="URb-3v-Gzc"/>
                 <outlet property="oscTopMainView" destination="fDY-vk-Ylv" id="phs-Yu-dGn"/>
+                <outlet property="oscTopStackViewLeadingConstraint" destination="tfY-Gh-Uv1" id="aQV-xH-Ol0"/>
+                <outlet property="oscTopStackViewTrailingConstraint" destination="fUQ-Rf-uYa" id="NNg-a4-cuy"/>
                 <outlet property="osdAccessoryProgress" destination="i10-rt-9cb" id="ZdR-ZV-uoQ"/>
                 <outlet property="osdAccessoryText" destination="lb1-5R-hR3" id="A7o-3l-NYe"/>
                 <outlet property="osdLabel" destination="Ofw-1d-N4T" id="9ei-8o-aYw"/>
@@ -354,8 +356,8 @@
                                 </subviews>
                                 <constraints>
                                     <constraint firstAttribute="bottom" secondItem="fDY-vk-Ylv" secondAttribute="bottom" id="XcG-Qs-KDA"/>
-                                    <constraint firstAttribute="trailing" secondItem="fDY-vk-Ylv" secondAttribute="trailing" constant="8" id="fUQ-Rf-uYa"/>
-                                    <constraint firstItem="fDY-vk-Ylv" firstAttribute="leading" secondItem="pgt-r3-Vbf" secondAttribute="leading" constant="8" id="tfY-Gh-Uv1"/>
+                                    <constraint firstAttribute="trailing" secondItem="fDY-vk-Ylv" secondAttribute="trailing" constant="8" identifier="oscTopStackViewTrailingConstraint" id="fUQ-Rf-uYa"/>
+                                    <constraint firstItem="fDY-vk-Ylv" firstAttribute="leading" secondItem="pgt-r3-Vbf" secondAttribute="leading" constant="8" identifier="oscTopStackViewLeadingConstraint" id="tfY-Gh-Uv1"/>
                                     <constraint firstItem="fDY-vk-Ylv" firstAttribute="top" secondItem="pgt-r3-Vbf" secondAttribute="top" id="xOA-fC-WYr"/>
                                 </constraints>
                             </customView>
@@ -491,8 +493,8 @@
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="2py-h1-0km">
                     <rect key="frame" x="0.0" y="0.0" width="24" height="24"/>
                     <constraints>
-                        <constraint firstAttribute="height" constant="24" id="MPG-2q-w6a"/>
-                        <constraint firstAttribute="width" constant="24" id="vBo-ma-Dnu"/>
+                        <constraint firstAttribute="width" secondItem="2py-h1-0km" secondAttribute="height" multiplier="1:1" id="8xW-mi-Khh"/>
+                        <constraint firstAttribute="width" priority="900" constant="24" identifier="VolumeIconSizeConstraint" id="vBo-ma-Dnu"/>
                     </constraints>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="volume" imagePosition="only" alignment="center" alternateImage="mute" refusesFirstResponder="YES" imageScaling="proportionallyDown" inset="2" id="XXj-HK-hXa">
                         <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
@@ -505,7 +507,7 @@
                 <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="SAG-kc-FAt" userLabel="Volume Slider">
                     <rect key="frame" x="26" y="4" width="74" height="17"/>
                     <constraints>
-                        <constraint firstAttribute="width" constant="70" id="P2L-LI-jT7"/>
+                        <constraint firstAttribute="width" priority="900" constant="70" identifier="VolumeSliderWidthConstraint" id="P2L-LI-jT7"/>
                     </constraints>
                     <sliderCell key="cell" controlSize="mini" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="ncp-01-dCG" customClass="VolumeSliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
@@ -608,7 +610,7 @@
                 <constraint firstItem="Yg9-Sd-sWy" firstAttribute="centerY" secondItem="8Ej-eH-OR9" secondAttribute="centerY" id="WQ5-1e-17L"/>
                 <constraint firstAttribute="trailing" secondItem="Yg9-Sd-sWy" secondAttribute="trailing" id="cjX-bE-au9"/>
                 <constraint firstAttribute="width" constant="26" id="grc-Ve-XDC"/>
-                <constraint firstAttribute="height" constant="24" id="zqT-9O-0G6"/>
+                <constraint firstAttribute="height" priority="900" constant="24" identifier="PlaybackControlLeftHeight" id="zqT-9O-0G6"/>
             </constraints>
             <point key="canvasLocation" x="-162" y="584"/>
         </customView>
@@ -628,7 +630,7 @@
                 <constraint firstItem="QTI-wi-oyB" firstAttribute="centerY" secondItem="Xts-Pc-T8d" secondAttribute="centerY" id="HgA-Mc-Bhf"/>
                 <constraint firstItem="QTI-wi-oyB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Xts-Pc-T8d" secondAttribute="leading" id="NqC-Xk-Iqd"/>
                 <constraint firstAttribute="trailing" secondItem="QTI-wi-oyB" secondAttribute="trailing" constant="8" id="eQW-Mv-flr"/>
-                <constraint firstAttribute="height" constant="24" id="sLY-0Y-Hql"/>
+                <constraint firstAttribute="height" priority="900" constant="24" identifier="PlaybackControlRightHeight" id="sLY-0Y-Hql"/>
                 <constraint firstAttribute="width" constant="26" id="zCh-hV-cEH"/>
             </constraints>
             <point key="canvasLocation" x="-53" y="584"/>
@@ -642,7 +644,7 @@
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="nmT-n6-05X" userLabel="Top Spacer">
                     <rect key="frame" x="0.0" y="30" width="144" height="6"/>
                     <constraints>
-                        <constraint firstAttribute="height" constant="6" id="YL7-wD-yNP"/>
+                        <constraint firstAttribute="height" priority="900" constant="6" identifier="playbackButtonMarginSizeConstraint" id="YL7-wD-yNP"/>
                     </constraints>
                 </customView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="10x-bg-xlj" userLabel="Left Arrow Button">
@@ -665,7 +667,7 @@
                     <rect key="frame" x="60" y="6" width="24" height="24"/>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="gxw-pJ-Lcg" secondAttribute="height" multiplier="1:1" id="7Xg-CL-HXe"/>
-                        <constraint firstAttribute="width" constant="24" identifier="PlayControlSize" id="7xv-qQ-n43"/>
+                        <constraint firstAttribute="width" priority="900" constant="24" identifier="playbackButtonSizeConstraint" id="7xv-qQ-n43"/>
                     </constraints>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="play" imagePosition="only" alignment="center" alternateImage="pause" refusesFirstResponder="YES" state="on" imageScaling="proportionallyUpOrDown" inset="2" id="mWQ-R0-GGr">
                         <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>

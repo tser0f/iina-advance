@@ -27,4 +27,19 @@ class MainWindow: NSWindow {
   override var canBecomeMain: Bool {
     forceKeyAndMain ? true : super.canBecomeMain
   }
+
+  /// Hiding the Close (red stoplight) button causes `File` > `Close` to be disabled as an unwanted side effect.
+  /// We must re-implement the window close functionality here.
+  override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+    if item.action == #selector(self.performClose(_:)) {
+      return true
+    } else {
+      return super.validateUserInterfaceItem(item)
+    }
+  }
+
+  /// See `validateUserInterfaceItem()`.
+  override func performClose(_ sender: Any?) {
+    self.close()
+  }
 }

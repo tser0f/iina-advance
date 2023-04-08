@@ -19,7 +19,12 @@ class OSCToolbarButton {
     toolbarButton.refusesFirstResponder = true
     toolbarButton.toolTip = buttonType.description()
     let sideSize = Preference.ToolBarButton.frameHeight
-    Utility.quickConstraints(["H:[btn(\(sideSize))]", "V:[btn(\(sideSize))]"], ["btn": toolbarButton])
+    let widthConstraint = toolbarButton.widthAnchor.constraint(equalToConstant: sideSize)
+    widthConstraint.priority = .defaultHigh
+    widthConstraint.isActive = true
+    let heightConstraint = toolbarButton.heightAnchor.constraint(equalToConstant: sideSize)
+    heightConstraint.priority = .defaultHigh
+    heightConstraint.isActive = true
   }
 
   static func buildDragItem(from toolbarButton: NSButton, pasteboardWriter: NSPasteboardWriting,

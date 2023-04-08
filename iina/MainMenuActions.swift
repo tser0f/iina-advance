@@ -254,7 +254,7 @@ extension PlayerWindowController {
     }
   }
 
-// MARK: - Audio
+  // MARK: - Audio
 
   @objc func menuChangeVolume(_ sender: NSMenuItem) {
     if let volumeDelta = sender.representedObject as? Int {

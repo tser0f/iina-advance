@@ -39,8 +39,6 @@ fileprivate let UIAnimationDuration = 0.25
 fileprivate let OSDAnimationDuration = 0.5
 fileprivate let CropAnimationDuration = 0.2
 
-fileprivate let minOverlayHideTimeout: Float = 0.15
-
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 800)
@@ -473,7 +471,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   private var documentIconButton: NSButton? {
-    window?.standardWindowButton(.documentIconButton)
+    get {
+      window?.standardWindowButton(.documentIconButton)
+    }
   }
 
   private var trafficLightButtons: [NSButton] {
@@ -514,6 +514,9 @@ class MainWindowController: PlayerWindowController {
   // Needs to be changed to align with either sidepanel or right of screen:
   @IBOutlet weak var topPanelTrailingSpaceConstraint: NSLayoutConstraint!
 
+  @IBOutlet weak var oscTopStackViewLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var oscTopStackViewTrailingConstraint: NSLayoutConstraint!
+
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var bottomPanelLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
@@ -543,7 +546,7 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var videoContainerTrailingToTrailingSidebarConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarWidthConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var bottomPanelBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
   // Size of each side of the square 3 playback buttons ⏪⏯️⏩ (Left Arrow, Play/Pause, Right Arrow):
@@ -727,7 +730,6 @@ class MainWindowController: PlayerWindowController {
     updateArrowButtonImage()
 
     playbackButtonSizeConstraint.constant = playbackButtonSize
-    bottomOSCPreferredHeightConstraint.constant = fullWidthOSCPreferredHeight
 
     // video view
     guard let cv = window.contentView else { return }
@@ -892,6 +894,8 @@ class MainWindowController: PlayerWindowController {
   // - MARK: Controllers & Title Bar
 
   /**
+   This ONLY updates the constraints to toggle between `inside` and `outside` placement types.
+   Whether it is actually shown is a concern for somewhere else.
            "Outside"
          ┌─────────────┐
          │  Title Bar  │   Top of    Top of
@@ -905,7 +909,7 @@ class MainWindowController: PlayerWindowController {
    │     │  VIDEO     O│     │          │     │  VIDEO     O│     │
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
-  private func updateTopPanelPosition() {
+  private func updateTopPanelPlacement() {
     guard let window = window, let windowContentView = window.contentView else { return }
     windowContentView.removeConstraint(videoContainerTopConstraint)
     windowContentView.removeConstraint(topPanelLeadingSpaceConstraint)
@@ -919,7 +923,7 @@ class MainWindowController: PlayerWindowController {
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: windowContentView.leadingAnchor, constant: 0)
       topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: windowContentView.trailingAnchor, constant: 0)
     } else {
-      // Inside video or disabled
+      // Inside video or not shown
       videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.topAnchor, constant: 0)
       topPanelView.blendingMode = .withinWindow
 
@@ -932,22 +936,20 @@ class MainWindowController: PlayerWindowController {
     topPanelTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateBottomPanelPosition() {
+  private func updateBottomPanelPlacement() {
     guard let window = window, let windowContentView = window.contentView else { return }
     windowContentView.removeConstraint(videoContainerBottomConstraint)
     windowContentView.removeConstraint(bottomPanelLeadingSpaceConstraint)
     windowContentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
 
-    if Preference.bool(for: .enableOSC) &&
-        Preference.enum(for: .oscPosition) == Preference.OSCPosition.bottom &&
-        Preference.enum(for: .bottomPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+    if Preference.enum(for: .bottomPanelPlacement) == Preference.PanelPlacement.outsideVideo {
       videoContainerBottomConstraint = videoContainerView.bottomAnchor.constraint(equalTo: controlBarBottom.topAnchor, constant: 0)
       controlBarBottom.blendingMode = .behindWindow
 
       // Align left & right sides with window (sidebars go below top panel)
       bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: windowContentView.leadingAnchor, constant: 0)
       bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: windowContentView.trailingAnchor, constant: 0)
-    } else {  // inside video
+    } else {  // Inside video
       videoContainerBottomConstraint = videoContainerView.bottomAnchor.constraint(equalTo: controlBarBottom.bottomAnchor, constant: 0)
       controlBarBottom.blendingMode = .withinWindow
 
@@ -1027,7 +1029,7 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
-  private func setupTitleBarAndOSC(willSetFullScreenTo: Bool? = nil) {
+  private func setupTitleBarAndOSC(fullScreen: Bool? = nil) {
     enableOSC = Preference.bool(for: .enableOSC)
     oscPosition = Preference.enum(for: .oscPosition)
     titleBarStyle = Preference.enum(for: .titleBarStyle)
@@ -1037,16 +1039,22 @@ class MainWindowController: PlayerWindowController {
     guard let window = window else { return }
 
     let isFullScreen: Bool
-    if let willSetFullScreenTo = willSetFullScreenTo {
-      isFullScreen = willSetFullScreenTo
+    if let fullScreen = fullScreen {
+      isFullScreen = fullScreen
     } else {
       isFullScreen = fsState.isFullscreen
     }
 
     var animationBlocks: [AnimationBlock] = []
+
     animationBlocks.append{ [self] context in
-      updateTopPanelPosition()
-      updateBottomPanelPosition()
+      // Set to 0 as default (also makes animation prettier):
+      titleBarHeightConstraint.constant = 0
+      topOSCPreferredHeightConstraint.constant = 0
+      bottomOSCPreferredHeightConstraint.constant = 0
+
+      updateTopPanelPlacement()
+      updateBottomPanelPlacement()
 
       updateLeadingTitleBarAccessory()
       updateTrailingTitleBarAccessory()
@@ -1119,18 +1127,21 @@ class MainWindowController: PlayerWindowController {
 
           switch titleBarStyle {
           case .full:
+            show(topPanelView, titleTextField, makeFadeable: true)
             // Title bar is fadeable
             for button in standardWindowButtons {
-              show(button)
+              show(button, makeFadeable: true)
             }
-            show(topPanelView, titleTextField, makeFadeable: true)
           case .minimal:
             for button in trafficLightButtons {
               show(button, makeFadeable: true)
             }
+            // Need to do this again here or sometimes it doesn't hide:
             hideAndRemoveFromFadeable(documentIconButton)
           case .none:
             titleBarHeightConstraint.constant = 0
+            // Need to do this again here or sometimes it doesn't hide:
+            hideAndRemoveFromFadeable(documentIconButton)
           }
         }
       }
@@ -1191,12 +1202,12 @@ class MainWindowController: PlayerWindowController {
             case .full:
               titleBarHeightConstraint.constant = reducedTitleBarHeight
             case .minimal:
-              titleBarHeightConstraint.constant = reducedTitleBarHeight
-              // TODO! implement me!
-              // FIXME 1: File > Close disabled
+              titleBarHeightConstraint.constant = 0
+              topOSCPreferredHeightConstraint.constant = StandardTitleBarHeight
+
+              // FIXME 1: this isn't working properly. Need to put in titlebar accessory
               // FIXME 2: fix sidepanel initial show
-              // FIXME 3: document icon weirdness
-              // FIXME 4: disable prefs for titlebar buttons when titlebar hidden
+              // FIXME 3: disable prefs for titlebar buttons when titlebar hidden
             case .none:
               break
             }
@@ -1219,16 +1230,27 @@ class MainWindowController: PlayerWindowController {
           oscBottomMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
 
           playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFullWidthOSC
+          bottomOSCPreferredHeightConstraint.animator().constant = fullWidthOSCPreferredHeight
         }
       }
 
-      let isShowingTopOSC = enableOSC && oscPosition == .top
-      if !isShowingTopOSC {
-        // No top OSC
-        topOSCPreferredHeightConstraint.constant = 0
-      }
-
       window.contentView?.layoutSubtreeIfNeeded()
+    }
+
+    // Unfortunately, this block seems to be necessary in order to get rid of the document icon
+    // right after the window is opened:
+    animationBlocks.append{ [self] context in
+      context.duration = 0
+      if topPanelPlacement == .outsideVideo {
+        show(documentIconButton)
+      } else {
+        switch titleBarStyle {
+        case .full:
+          show(documentIconButton, makeFadeable: true)
+        case .minimal, .none:
+          hideAndRemoveFromFadeable(documentIconButton)
+        }
+      }
     }
 
     showOverlays(completionHandler: { [self] in
@@ -1265,7 +1287,6 @@ class MainWindowController: PlayerWindowController {
     if success && keyBinding.action.first == MPVCommand.screenshot.rawValue {
       player.sendOSD(.screenshot)
     }
-    // FIXME: add close window binding
     return success
   }
 
@@ -1609,6 +1630,7 @@ class MainWindowController: PlayerWindowController {
       p.lineBreakMode = .byTruncatingMiddle
       attrTitle.addAttribute(.paragraphStyle, value: p, range: NSRange(location: 0, length: attrTitle.length))
     }
+    setupTitleBarAndOSC()
     // update timer
     resetOverlaysTimer()
   }
@@ -1679,7 +1701,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    setupTitleBarAndOSC(willSetFullScreenTo: true)
+    setupTitleBarAndOSC(fullScreen: true)
 
     setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
@@ -1801,7 +1823,7 @@ class MainWindowController: PlayerWindowController {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
-    setupTitleBarAndOSC(willSetFullScreenTo: false)
+    setupTitleBarAndOSC(fullScreen: false)
 
     videoViewConstraints.values.forEach { $0.constant = 0 }
     videoView.needsLayout = true
@@ -2306,35 +2328,52 @@ class MainWindowController: PlayerWindowController {
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
   func updateLeadingTitleBarAccessory() {
-    let isSpaceNeededForSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
-    let trailingSpace: CGFloat
-    if isSpaceNeededForSidebar && topPanelPlacement == .insideVideo {
-      // Subtract space taken by the 3 standard buttons + other visible buttons
+    leadingTitleBarTrailingSpaceConstraint.constant = 0 // default
+    oscTopStackViewLeadingConstraint.constant = 8  // default
+
+    if topPanelPlacement == .insideVideo {
       let sidebarButtonSpace: CGFloat = leadingSidebarToggleButton.isHidden ? 0 : leadingSidebarToggleButton.frame.width
       let trafficLightsSpace = titleBarStyle == .none ? 0 : trafficLightButtonsWidth
-      trailingSpace = max(0, leadingSidebarWidthConstraint.constant - trafficLightsSpace - sidebarButtonSpace)
-    } else {
-      trailingSpace = 0
+      // Subtract space taken by the 3 standard buttons + other visible buttons
+      let trailingSpace: CGFloat = max(0, leadingSidebarWidthConstraint.constant - trafficLightsSpace - sidebarButtonSpace)
+
+      let isSpaceNeededForSidebar = leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown
+
+      if isSpaceNeededForSidebar {
+        leadingTitleBarTrailingSpaceConstraint.constant = trailingSpace
+      } else if titleBarStyle == .minimal && enableOSC && oscPosition == .top {
+        // Special case for top OSC inside video. Needed because the OSC's stack view is placed where the title bar normally goes,
+        // but since it is a separate view, it has its own constraints. This is only needed for when the sidebar is closed.
+        oscTopStackViewLeadingConstraint.constant = trafficLightsSpace + sidebarButtonSpace + 8
+      }
     }
-    leadingTitleBarTrailingSpaceConstraint.constant = trailingSpace
   }
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar
   func updateTrailingTitleBarAccessory() {
-    let isSpaceNeededForSidebar = trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown
-    var widthToReserve: CGFloat = 0
-    if isSpaceNeededForSidebar && topPanelPlacement == .insideVideo {
-      widthToReserve = trailingSidebarWidthConstraint.constant
+    trailingTitleBarLeadingSpaceConstraint.constant = 0  // default
+    oscTopStackViewTrailingConstraint.constant = 8  // default
+
+    if topPanelPlacement == .insideVideo {
+      var spaceForButtons: CGFloat = 0
       if !trailingSidebarToggleButton.isHidden {
-        widthToReserve -= trailingSidebarToggleButton.frame.width
+        spaceForButtons += trailingSidebarToggleButton.frame.width
       }
       if !pinToTopButton.isHidden {
-        widthToReserve -= pinToTopButton.frame.width
+        spaceForButtons += pinToTopButton.frame.width
       }
-      widthToReserve = max(0, widthToReserve)
+
+      let isSpaceNeededForSidebar = trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown
+      if isSpaceNeededForSidebar {
+        let widthToReserve = max(0, trailingSidebarWidthConstraint.constant - spaceForButtons)
+        trailingTitleBarLeadingSpaceConstraint.constant = widthToReserve
+      } else if titleBarStyle == .minimal && enableOSC && oscPosition == .top {
+        // Special case for top OSC inside video. Needed because the OSC's stack view is placed where the title bar normally goes,
+        // but since it is a separate view, it has its own constraints. This is only needed for when the sidebar is closed.
+        oscTopStackViewTrailingConstraint.constant = spaceForButtons + 8
+      }
     }
-    trailingTitleBarLeadingSpaceConstraint.constant = widthToReserve
 
     // Add padding to the side for buttons
     let isButtonShowing = !pinToTopButton.isHidden || !trailingSidebarToggleButton.isHidden
@@ -2585,7 +2624,7 @@ class MainWindowController: PlayerWindowController {
     NSAnimationContext.runAnimationGroup({ (context) in
       context.duration = AccessibilityPreferences.adjustedDuration(CropAnimationDuration)
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      bottomBarBottomConstraint.animator().constant = 0
+      bottomPanelBottomConstraint.animator().constant = 0
       setConstraintsForVideoView(newConstants, animate: true)
     }) {
       self.cropSettingsView?.cropBoxView.isHidden = false
@@ -2607,7 +2646,7 @@ class MainWindowController: PlayerWindowController {
 
     // if exit without animation
     if immediately {
-      bottomBarBottomConstraint.constant = -InteractiveModeBottomViewHeight
+      bottomPanelBottomConstraint.constant = -InteractiveModeBottomViewHeight
       ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
         videoViewConstraints[attr]!.constant = 0
       }
@@ -2622,7 +2661,7 @@ class MainWindowController: PlayerWindowController {
     NSAnimationContext.runAnimationGroup({ (context) in
       context.duration = AccessibilityPreferences.adjustedDuration(CropAnimationDuration)
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      bottomBarBottomConstraint.animator().constant = -InteractiveModeBottomViewHeight
+      bottomPanelBottomConstraint.animator().constant = -InteractiveModeBottomViewHeight
       ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
         videoViewConstraints[attr]!.animator().constant = 0
       }
@@ -3006,7 +3045,7 @@ class MainWindowController: PlayerWindowController {
 
     resetCollectionBehavior()
     // don't know why they will be disabled
-    standardWindowButtons.forEach { $0.isEnabled = true }
+//    standardWindowButtons.forEach { $0.isEnabled = true }
   }
 
   // MARK: - Sync UI with playback
