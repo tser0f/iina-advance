@@ -137,7 +137,7 @@ struct Preference {
     static let bottomPanelPlacement = Key("bottomPanelPlacement")
     static let enableOSC = Key("enableOSC")
     static let oscPosition = Key("oscPosition")
-    static let hideOverlaysWhenOutsideWindow = Key("hideOverlaysWhenOutsideWindow")
+    static let hideFadeableViewsWhenOutsideWindow = Key("hideFadeableViewsWhenOutsideWindow")
 
     // Sidebars:
     static let leadingSidebarPlacement = Key("leadingSidebarPlacement")
@@ -884,7 +884,7 @@ struct Preference {
     .topPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .bottomPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .oscPosition: OSCPosition.floating.rawValue,
-    .hideOverlaysWhenOutsideWindow: true,
+    .hideFadeableViewsWhenOutsideWindow: true,
     .playlistWidth: 270,
     .settingsTabGroupLocation: SidebarLocation.trailingSidebar.rawValue,
     .playlistTabGroupLocation: SidebarLocation.trailingSidebar.rawValue,

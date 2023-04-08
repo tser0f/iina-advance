@@ -365,7 +365,7 @@ extension MainWindowController {
         thenDo()
       }
     }
-    runAnimationChain(blockChain, allowAnimation: animate)
+    runAnimations(blockChain, allowAnimation: animate)
   }
 
   // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that

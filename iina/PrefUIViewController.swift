@@ -62,7 +62,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var oscSnapToCenterCheckboxContainerView: NSView!
   @IBOutlet weak var oscToolbarStackView: NSStackView!
   @IBOutlet weak var oscAutoHideTimeoutTextField: NSTextField!
-  @IBOutlet weak var hideOverlaysOutsideWindowCheckBox: NSButton!
+  @IBOutlet weak var hideFadeableViewsOutsideWindowCheckBox: NSButton!
 
   @IBOutlet var leadingSidebarBox: NSBox!
   @IBOutlet var trailingSidebarBox: NSBox!
@@ -189,7 +189,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       context.timingFunction = CAMediaTimingFunction(name: .linear)
 
       oscAutoHideTimeoutTextField.isEnabled = hasOverlay
-      hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
+      hideFadeableViewsOutsideWindowCheckBox.isEnabled = hasOverlay
       windowPreviewImageView.image = ib.updateWindowPreviewImage()
 
       let oscIsFloating = ib.oscEnabled && ib.oscPosition == .floating
@@ -218,7 +218,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       oscBottomPlacementContainerView.superview?.layoutSubtreeIfNeeded()
     }, completionHandler: { [self] in
       oscAutoHideTimeoutTextField.isEnabled = hasOverlay
-      hideOverlaysOutsideWindowCheckBox.isEnabled = hasOverlay
+      hideFadeableViewsOutsideWindowCheckBox.isEnabled = hasOverlay
       windowPreviewImageView.image = ib.updateWindowPreviewImage()
 
       NSAnimationContext.runAnimationGroup({context in
