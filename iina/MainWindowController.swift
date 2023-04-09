@@ -1052,31 +1052,6 @@ class MainWindowController: PlayerWindowController {
       topOSCPreferredHeightConstraint.constant = 0
       bottomOSCPreferredHeightConstraint.constant = 0
 
-      updateTopPanelPlacement()
-      updateBottomPanelPlacement()
-
-      updateLeadingTitleBarAccessory()
-      updateTrailingTitleBarAccessory()
-      let hasTitleBar = topPanelPlacement == .outsideVideo || titleBarStyle != .none
-      let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
-      let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
-      if hasTitleBar && hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
-        show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-      } else {
-        hideAndRemoveFromFadeable(leadingSidebarToggleButton)
-      }
-      if hasTitleBar && hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
-        show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-      } else {
-        hideAndRemoveFromFadeable(trailingSidebarToggleButton)
-      }
-
-      pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
-      pinToTopButton.state = isOntop ? .on : .off
-
-      quickSettingView.refreshVerticalConstraints()
-      playlistView.refreshVerticalConstraints()
-
       // Reset view states
       controlBarFloating.isDragging = false
       hideAndRemoveFromFadeable(controlBarFloating, controlBarBottom, topPanelView, controlBarTitleBar, titleTextField)
@@ -1095,20 +1070,35 @@ class MainWindowController: PlayerWindowController {
         $0!.removeFromSuperview()
       }
 
-      // Title bar:
-      if isFullScreen {
-        // Remove all title bar accessories (if needed):
-        for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
-          window.removeTitlebarAccessoryViewController(at: index)
-        }
+      updateTopPanelPlacement()
+      updateBottomPanelPlacement()
 
-        titleBarHeightConstraint.constant = 0  // Will be overridden if top OSC is showing
-        for button in trafficLightButtons {
-          show(button)
-        }
+      quickSettingView.refreshVerticalConstraints()
+      playlistView.refreshVerticalConstraints()
 
-      } else {  // Not fullscreen
+      // - Title bar:
 
+      updateLeadingTitleBarAccessory()
+      updateTrailingTitleBarAccessory()
+
+      let hasTitleBar = !isFullScreen && (topPanelPlacement == .outsideVideo || titleBarStyle != .none)
+      let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
+      let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
+      if hasTitleBar && hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
+        show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+      } else {
+        hideAndRemoveFromFadeable(leadingSidebarToggleButton)
+      }
+      if hasTitleBar && hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
+        show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+      } else {
+        hideAndRemoveFromFadeable(trailingSidebarToggleButton)
+      }
+
+      pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
+      pinToTopButton.state = isOntop ? .on : .off
+
+      if hasTitleBar {
         // Add back title bar accessories (if needed):
         if window.titlebarAccessoryViewControllers.isEmpty {
           window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
@@ -1116,31 +1106,47 @@ class MainWindowController: PlayerWindowController {
         }
 
         titleBarHeightConstraint.constant = StandardTitleBarHeight  // May be overridden based on titleBarStyle or by OSC layout
+      } else {
+        // Remove all title bar accessories (if needed):
+        for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
+          window.removeTitlebarAccessoryViewController(at: index)
+        }
+      }
+
+      if isFullScreen {
+        for button in trafficLightButtons {
+          show(button)
+        }
+
+      } else {  // Not fullscreen
 
         if topPanelPlacement == .outsideVideo {
           window.titleVisibility = .visible
+          show(topPanelView, titleTextField)
           for button in standardWindowButtons {
             show(button)
           }
-          show(topPanelView)
+
         } else if topPanelPlacement == .insideVideo {
 
           switch titleBarStyle {
           case .full:
             window.titleVisibility = .visible
-            show(topPanelView, titleTextField, makeFadeable: true)
             // Title bar is fadeable
+            show(topPanelView, titleTextField, makeFadeable: true)
             for button in standardWindowButtons {
               show(button, makeFadeable: true)
             }
+
           case .minimal:
             window.titleVisibility = .hidden
             for button in trafficLightButtons {
               show(button, makeFadeable: true)
             }
+
           case .none:
             window.titleVisibility = .hidden
-            titleBarHeightConstraint.constant = 0
+
           }
         }
       }
