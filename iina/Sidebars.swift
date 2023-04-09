@@ -216,27 +216,34 @@ extension MainWindowController {
     }
   }
 
-  func hideSidebarThenShowAgain(tab: SidebarTab) {
+  func hideSidebarThenShowAgain(_ sidebarID: Preference.SidebarLocation) {
+    guard let sidebar = sidebarsByID[sidebarID], let tab = sidebar.visibleTab else { return }
     changeVisibility(forTab: tab, to: false, then: {
       self.changeVisibility(forTab: tab, to: true)
     })
   }
 
-  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, animate: Bool = true, then: (() -> Void)? = nil) {
+  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, animate: Bool = true, then doAfter: (() -> Void)? = nil) {
     guard !isInInteractiveMode else { return }
     Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show ? "SHOW" : "HIDE")", level: .verbose)
 
     let group = tab.group
-    let viewController = (group == .playlist) ? playlistView : quickSettingView
     guard let sidebar = getConfiguredSidebar(forTabGroup: group) else { return }
     let currentWidth = group.width()
+    Logger.log("New sidebar width for group \(group.rawValue.quoted): \(currentWidth)")
 
     var nothingToDo = false
     if show && sidebar.isVisible {
       if sidebar.visibleTabGroup != group {
         // If tab is open but with wrong tab group, hide it, then change it, then show again
         Logger.log("Need to change tab group for \(sidebar.locationID): will hide & reopen", level: .verbose)
-        hideSidebarThenShowAgain(tab: tab)
+        guard let visibleTab = sidebar.visibleTab else {
+          Logger.log("Internal error setting tab group for sidebar \(sidebar.locationID)", level: .error)
+          return
+        }
+        changeVisibility(forTab: visibleTab, to: false, then: {
+          self.changeVisibility(forTab: tab, to: true, then: doAfter)
+        })
         return
       } else if let visibleTab = sidebar.visibleTab, visibleTab == tab {
         Logger.log("Nothing to do; \(sidebar.locationID) is already showing tab \(visibleTab.name.quoted)", level: .verbose)
@@ -248,58 +255,71 @@ extension MainWindowController {
       nothingToDo = true
     }
 
+    var blockChain: [AnimationBlock] = []
+
     if nothingToDo {
-      if let thenDo = then {
-        thenDo()
+      if let doAfter = doAfter {
+        blockChain.append{ context in
+          doAfter()
+        }
+        runAnimations(blockChain, allowAnimation: animate)
       }
       return
     }
 
     let sidebarView: NSVisualEffectView
-    let widthConstraint: NSLayoutConstraint
     switch sidebar.locationID {
     case .leadingSidebar:
       sidebarView = leadingSidebarView
-      widthConstraint = leadingSidebarWidthConstraint
     case .trailingSidebar:
       sidebarView = trailingSidebarView
-      widthConstraint = trailingSidebarWidthConstraint
     }
 
-    sidebar.animationState = show ? .willShow : .willHide
-    Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose)
+    blockChain.append{ [self] context in
+      if show {
+        sidebar.animationState = .willShow
+        // Make it the active tab in its parent tab group (can do this whether or not it's shown):
+        switch tab.group {
+        case .playlist:
+          guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
+            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!", level: .error)
+            return
+          }
+          self.playlistView.pleaseSwitchToTab(tabType)
+        case .settings:
+          guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
+            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!", level: .error)
+            return
+          }
+          self.quickSettingView.pleaseSwitchToTab(tabType)
+        }
 
-    if show {
-      // Make it the active tab in its parent tab group (can do this whether or not it's shown):
-      switch tab.group {
-      case .playlist:
-        guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
-          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!", level: .error)
-          return
+        // Adjust sidebar widths (& related constraints) before showing in case it's not up to date
+        switch sidebar.locationID {
+        case .leadingSidebar:
+          videoContainerLeadingToLeadingSidebarConstraint.constant = currentWidth
+          windowContentViewLeadingConstraint.constant = 0
+          leadingSidebarWidthConstraint.constant = currentWidth
+        case .trailingSidebar:
+          videoContainerTrailingToTrailingSidebarConstraint.constant = -currentWidth  // note: opposite here vs leading sidebar
+          windowContentViewTrailingConstraint.constant = 0
+          trailingSidebarWidthConstraint.constant = currentWidth
         }
-        self.playlistView.pleaseSwitchToTab(tabType)
-      case .settings:
-        guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
-          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!", level: .error)
-          return
-        }
-        self.quickSettingView.pleaseSwitchToTab(tabType)
+
+        // add view and constraints
+        let viewController = (group == .playlist) ? playlistView : quickSettingView
+        let tabGroupView = viewController.view
+        sidebarView.addSubview(tabGroupView)
+        tabGroupView.heightAnchor.constraint(equalTo: sidebarView.heightAnchor).isActive = true
+        tabGroupView.widthAnchor.constraint(equalTo: sidebarView.widthAnchor).isActive = true
+
+        sidebarView.isHidden = false
+      } else {
+        sidebar.animationState = .willHide
       }
 
-      // adjust sidebar width before showing in case it's not up to date
-      widthConstraint.constant = currentWidth
-      sidebarView.isHidden = false
-
-      // add view and constraints
-      let view = viewController.view
-      sidebarView.addSubview(view)
-      let constraintsH = NSLayoutConstraint.constraints(withVisualFormat: "H:|[v]|", options: [], metrics: nil, views: ["v": view])
-      let constraintsV = NSLayoutConstraint.constraints(withVisualFormat: "V:|[v]|", options: [], metrics: nil, views: ["v": view])
-      NSLayoutConstraint.activate(constraintsH)
-      NSLayoutConstraint.activate(constraintsV)
+      Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose)
     }
-
-    var blockChain: [AnimationBlock] = []
 
     blockChain.append{ [self] context in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
@@ -347,24 +367,24 @@ extension MainWindowController {
       }
 
       contentView.layoutSubtreeIfNeeded()
-      //      edgeConstraint.animator().constant = (show ? 0 : -currentWidth)
     }
 
     blockChain.append{ _ in
       if show {
         sidebar.animationState = .shown
         sidebar.visibleTab = tab
-      } else {
+      } else {  // hide
         sidebar.visibleTab = nil
         sidebarView.subviews.removeAll()
         sidebarView.isHidden = true
         sidebar.animationState = .hidden
       }
       Logger.log("Sidebar animation state is now: \(sidebar.animationState)")
-      if let thenDo = then {
-        thenDo()
+      if let doAfter = doAfter {
+        doAfter()
       }
     }
+
     runAnimations(blockChain, allowAnimation: animate)
   }
 
@@ -379,7 +399,7 @@ extension MainWindowController {
     sidebar.visibleTab = tab
   }
 
-  func setSidebar(locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
+  private func updateSidebarLocation(_ locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
     let addingToSidebar: Sidebar
     let removingFromSidebar: Sidebar
     if locationID == leadingSidebar.locationID {
@@ -408,19 +428,19 @@ extension MainWindowController {
   }
 
   // If location of tab group changed to another sidebar (in user prefs), check if it is showing, and if so, hide it & show it on the other side
-  func moveSidebarIfNeeded(forTabGroup tabGroup: SidebarTabGroup, toNewSidebarLocation newLocationID: Preference.SidebarLocation) {
+  func moveTabGroup(_ tabGroup: SidebarTabGroup, toSidebarLocation newLocationID: Preference.SidebarLocation) {
     guard let currentLocationID = getConfiguredSidebar(forTabGroup: tabGroup)?.locationID else { return }
     guard currentLocationID != newLocationID else { return }
 
     if let prevSidebar = sidebarsByID[currentLocationID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
       Logger.log("Moving visible tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
       changeVisibility(forTab: curentVisibleTab, to: false, then: {
-        self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
+        self.updateSidebarLocation(newLocationID, forTabGroup: tabGroup)
         self.changeVisibility(forTab: curentVisibleTab, to: true)
       })
     } else {
       Logger.log("Moving hidden tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)", level: .verbose)
-      self.setSidebar(locationID: newLocationID, forTabGroup: tabGroup)
+      self.updateSidebarLocation(newLocationID, forTabGroup: tabGroup)
     }
   }
 

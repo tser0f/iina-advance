@@ -435,20 +435,21 @@ class MainWindowController: PlayerWindowController {
     case PK.alwaysShowOnTopIcon.rawValue:
       updateTrailingTitleBarAccessory()
     case PK.leadingSidebarPlacement.rawValue:
-      if let curentVisibleTab = leadingSidebar.visibleTab {
-        hideSidebarThenShowAgain(tab: curentVisibleTab)
+      if leadingSidebar.isVisible {
+        // Close whatever is showing, then open with new placement:
+        hideSidebarThenShowAgain(leadingSidebar.locationID)
       }
     case PK.trailingSidebarPlacement.rawValue:
-      if let curentVisibleTab = trailingSidebar.visibleTab {
-        hideSidebarThenShowAgain(tab: curentVisibleTab)
+      if trailingSidebar.isVisible {
+        hideSidebarThenShowAgain(leadingSidebar.locationID)
       }
     case PK.settingsTabGroupLocation.rawValue:
       if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarLocation(rawValue: newRawValue) {
-        self.moveSidebarIfNeeded(forTabGroup: .settings, toNewSidebarLocation: newID)
+        self.moveTabGroup(.settings, toSidebarLocation: newID)
       }
     case PK.playlistTabGroupLocation.rawValue:
       if let newRawValue = change[.newKey] as? Int, let newID = Preference.SidebarLocation(rawValue: newRawValue) {
-        self.moveSidebarIfNeeded(forTabGroup: .playlist, toNewSidebarLocation: newID)
+        self.moveTabGroup(.playlist, toSidebarLocation: newID)
       }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
@@ -680,10 +681,10 @@ class MainWindowController: PlayerWindowController {
     trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
 
     let settingsSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
-    setSidebar(locationID: settingsSidebarLocation, forTabGroup: .settings)
+    sidebarsByID[settingsSidebarLocation]?.tabGroups.insert(.settings)
 
     let playlistSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .playlistTabGroupLocation)
-    setSidebar(locationID: playlistSidebarLocation, forTabGroup: .playlist)
+    sidebarsByID[playlistSidebarLocation]?.tabGroups.insert(.playlist)
 
     // Titlebar accessories
 
@@ -1194,8 +1195,10 @@ class MainWindowController: PlayerWindowController {
               titleBarHeightConstraint.constant = StandardTitleBarHeight
               isTitleBarOSC = true
 
-              // FIXME 2: fix sidepanel initial show
-              // FIXME 3: disable prefs for titlebar buttons when titlebar hidden
+              // FIXME 1: finish implementing me
+              // FIXME 2: fix shadow effect on outer panels
+              // FIXME 3: prevent window drag when dragging playback position & volume sliders when titlebar hidden
+              // FIXME 4: disable prefs for titlebar buttons when titlebar hidden
             case .none:
               break
             }
