@@ -9,6 +9,7 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="MainWindowController" customModule="IINA" customModuleProvider="target">
             <connections>
+                <outlet property="additionalInfoBattery" destination="1XY-X2-FcE" id="8dX-mC-W51"/>
                 <outlet property="additionalInfoBatteryView" destination="Ybl-06-ksj" id="NdR-gs-P1p"/>
                 <outlet property="additionalInfoLabel" destination="4mb-jy-Y1w" id="rgV-hQ-MH2"/>
                 <outlet property="additionalInfoStackView" destination="HJv-RK-JT8" id="T3L-fd-A60"/>
@@ -136,13 +137,21 @@
                     <visualEffectView identifier="Additional-Info-View" hidden="YES" wantsLayer="YES" horizontalCompressionResistancePriority="250" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Qbi-jx-9pO" userLabel="Additional-Info View">
                         <rect key="frame" x="477" y="253" width="155" height="67"/>
                         <subviews>
-                            <stackView distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="HJv-RK-JT8" userLabel="Additional-Info Horizontal Stack View">
+                            <textField identifier="Additional-Info-Title" horizontalHuggingPriority="200" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="3uh-OF-zy6">
+                                <rect key="frame" x="14" y="38" width="127" height="21"/>
+                                <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Title" id="DVg-p3-w5Q">
+                                    <font key="font" metaFont="system" size="18"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <stackView identifier="Additional-Info-Horizontal-Stack-View" distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="HJv-RK-JT8" userLabel="Additional-Info Horizontal Stack View">
                                 <rect key="frame" x="16" y="4" width="123" height="30"/>
                                 <subviews>
-                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="P1S-9b-Nzw">
+                                    <customView identifier="Additional-Info-Label-Container" translatesAutoresizingMaskIntoConstraints="NO" id="P1S-9b-Nzw" userLabel="Additional-Info-Label-Container View">
                                         <rect key="frame" x="0.0" y="0.0" width="56" height="30"/>
                                         <subviews>
-                                            <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4mb-jy-Y1w">
+                                            <textField identifier="Additional-Info-Label" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4mb-jy-Y1w">
                                                 <rect key="frame" x="4" y="6" width="54" height="21"/>
                                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="99:99" id="IyU-0H-hyV">
                                                     <font key="font" metaFont="system" size="18"/>
@@ -164,10 +173,10 @@
                                             <constraint firstAttribute="height" constant="12" id="2HL-LZ-uj7"/>
                                         </constraints>
                                     </box>
-                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="Ybl-06-ksj">
+                                    <customView identifier="Additional-Info-Battery-View" translatesAutoresizingMaskIntoConstraints="NO" id="Ybl-06-ksj" userLabel="Additional-Info-Battery View">
                                         <rect key="frame" x="73" y="0.0" width="50" height="30"/>
                                         <subviews>
-                                            <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1XY-X2-FcE">
+                                            <textField identifier="Additional-Info-Battery-Text" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1XY-X2-FcE">
                                                 <rect key="frame" x="-2" y="8" width="46" height="16"/>
                                                 <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="100%" id="va1-P5-3b0">
                                                     <font key="font" metaFont="systemBold"/>
@@ -175,7 +184,7 @@
                                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                 </textFieldCell>
                                             </textField>
-                                            <imageView wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="EpK-FB-bM0">
+                                            <imageView identifier="Additional-Info-Battery-Image" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="EpK-FB-bM0" userLabel="Additional-Info-Battery Image View">
                                                 <rect key="frame" x="0.0" y="0.0" width="50" height="30"/>
                                                 <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="battery" id="5rw-Sh-BRR"/>
                                             </imageView>
@@ -203,14 +212,6 @@
                                     <real value="3.4028234663852886e+38"/>
                                 </customSpacing>
                             </stackView>
-                            <textField horizontalHuggingPriority="200" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="3uh-OF-zy6">
-                                <rect key="frame" x="14" y="38" width="127" height="21"/>
-                                <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Label" id="DVg-p3-w5Q">
-                                    <font key="font" metaFont="system" size="18"/>
-                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
                         </subviews>
                         <constraints>
                             <constraint firstItem="HJv-RK-JT8" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Qbi-jx-9pO" secondAttribute="leading" constant="16" id="4JZ-kz-GjJ"/>
