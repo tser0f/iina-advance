@@ -343,7 +343,7 @@ extension MainWindowController {
         windowContentViewLeadingConstraint.isActive = true
         videoContainerLeadingToLeadingSidebarConstraint.isActive = true
 
-        updateLeadingTitleBarAccessory()
+        updateTitleBarAccessories()
       case .trailingSidebar:
         contentView.removeConstraint(videoContainerTrailingToTrailingSidebarConstraint)
         contentView.removeConstraint(windowContentViewTrailingConstraint)
@@ -363,7 +363,7 @@ extension MainWindowController {
         windowContentViewTrailingConstraint.isActive = true
         videoContainerTrailingToTrailingSidebarConstraint.isActive = true
 
-        updateTrailingTitleBarAccessory()
+        updateTitleBarAccessories()
       }
 
       contentView.layoutSubtreeIfNeeded()
@@ -413,8 +413,8 @@ extension MainWindowController {
     removingFromSidebar.tabGroups.remove(tabGroup)
 
     // Sidebar buttons may have changed:
-    updateLeadingTitleBarAccessory()
-    updateTrailingTitleBarAccessory()
+    updateTitleBarAccessories()
+    updateTitleBarAccessories()
   }
 
   private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
@@ -482,9 +482,10 @@ extension MainWindowController {
 
   // Returns true if handled; false if not
   func resizeSidebar(with dragEvent: NSEvent) -> Bool {
+    let currentLocation = dragEvent.locationInWindow
+    let newWidth: CGFloat
+
     if leadingSidebar.isResizing {
-      let currentLocation = dragEvent.locationInWindow
-      let newWidth: CGFloat
       switch leadingSidebar.placement {
       case .insideVideo:
         newWidth = currentLocation.x + 2
@@ -493,12 +494,7 @@ extension MainWindowController {
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       leadingSidebarWidthConstraint.constant = newPlaylistWidth
-      updateLeadingTitleBarAccessory()
-      return true
     } else if trailingSidebar.isResizing {
-      let currentLocation = dragEvent.locationInWindow
-      // resize sidebar
-      let newWidth: CGFloat
       switch trailingSidebar.placement {
       case .insideVideo:
         newWidth = window!.frame.width - currentLocation.x - 2
@@ -507,10 +503,12 @@ extension MainWindowController {
       }
       let newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       trailingSidebarWidthConstraint.constant = newPlaylistWidth
-      updateTrailingTitleBarAccessory()
-      return true
+    } else {
+      return false
     }
-    return false
+    
+    updateTitleBarAccessories()
+    return true
   }
 
   func finishResizingSidebar() -> Bool {

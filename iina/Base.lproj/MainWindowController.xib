@@ -51,6 +51,7 @@
                 <outlet property="oscFloatingBottomView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
                 <outlet property="oscFloatingTopView" destination="Unr-Y6-JoM" id="URb-3v-Gzc"/>
                 <outlet property="oscTitleBarMainView" destination="icJ-I7-xRz" id="7lx-6S-9Oi"/>
+                <outlet property="oscTitleBarWidthConstraint" destination="zC9-dS-D1S" id="MU1-ei-qEz"/>
                 <outlet property="oscTopMainView" destination="fDY-vk-Ylv" id="phs-Yu-dGn"/>
                 <outlet property="osdAccessoryProgress" destination="i10-rt-9cb" id="ZdR-ZV-uoQ"/>
                 <outlet property="osdAccessoryText" destination="lb1-5R-hR3" id="A7o-3l-NYe"/>
@@ -751,11 +752,11 @@
             <point key="canvasLocation" x="499" y="584"/>
         </stackView>
         <customView identifier="Leading-TitleBarAccessoryView" id="LFL-4a-93B" userLabel="Leading Title Bar Accessory View">
-            <rect key="frame" x="0.0" y="0.0" width="200" height="50"/>
+            <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
             <subviews>
                 <stackView identifier="Leading-TitleBarAccessory-HorizontalStackView" distribution="fill" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QL8-sC-ql6" userLabel="Leading-Title-Bar Horizontal Stack View">
-                    <rect key="frame" x="0.0" y="0.0" width="24" height="50"/>
+                    <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                     <subviews>
                         <customView identifier="LeadingTitleBarAcc-LeadingSpacer" translatesAutoresizingMaskIntoConstraints="NO" id="MEn-aG-818" userLabel="Leading Spacer View">
                             <rect key="frame" x="0.0" y="0.0" width="0.0" height="50"/>
@@ -764,7 +765,7 @@
                             </constraints>
                         </customView>
                         <button identifier="LeadingSidebarToggleButton" translatesAutoresizingMaskIntoConstraints="NO" id="zkB-jk-l3c" userLabel="ToggleLeadingSidebar Square Button">
-                            <rect key="frame" x="0.0" y="8.5" width="24.5" height="33"/>
+                            <rect key="frame" x="0.0" y="-4.5" width="50.5" height="59"/>
                             <constraints>
                                 <constraint firstAttribute="width" secondItem="zkB-jk-l3c" secondAttribute="height" multiplier="1:1" id="8CN-7h-GtN"/>
                             </constraints>
@@ -778,7 +779,7 @@
                             </connections>
                         </button>
                         <customView identifier="LeadingTitleBarAcc-TrailingSpacer" translatesAutoresizingMaskIntoConstraints="NO" id="7ck-d3-1hv" userLabel="Trailing Spacer View">
-                            <rect key="frame" x="24" y="0.0" width="0.0" height="50"/>
+                            <rect key="frame" x="50" y="0.0" width="0.0" height="50"/>
                             <constraints>
                                 <constraint firstAttribute="width" identifier="leadingTitleBarTrailingSpaceConstraint" id="ckY-Xn-Az9"/>
                             </constraints>
@@ -799,17 +800,18 @@
                     </customSpacing>
                 </stackView>
                 <customView identifier="OSC-Title-Bar-View" hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="FK3-bI-nks" userLabel="OSC-Title-Bar View">
-                    <rect key="frame" x="24" y="0.0" width="184" height="50"/>
+                    <rect key="frame" x="50" y="0.0" width="0.0" height="50"/>
                     <subviews>
                         <stackView identifier="OSC-Title-Bar-Stack-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="icJ-I7-xRz" userLabel="OSC-Title-Bar Stack View">
-                            <rect key="frame" x="8" y="0.0" width="168" height="50"/>
+                            <rect key="frame" x="0.0" y="0.0" width="0.0" height="50"/>
                         </stackView>
                     </subviews>
                     <constraints>
                         <constraint firstAttribute="bottom" secondItem="icJ-I7-xRz" secondAttribute="bottom" id="4x8-FD-je0"/>
-                        <constraint firstAttribute="trailing" secondItem="icJ-I7-xRz" secondAttribute="trailing" constant="8" identifier="oscTopStackViewTrailingConstraint" id="PWw-Tl-lf5"/>
+                        <constraint firstAttribute="trailing" secondItem="icJ-I7-xRz" secondAttribute="trailing" identifier="oscTopStackViewTrailingConstraint" id="PWw-Tl-lf5"/>
                         <constraint firstItem="icJ-I7-xRz" firstAttribute="top" secondItem="FK3-bI-nks" secondAttribute="top" id="Ptf-7h-Al0"/>
-                        <constraint firstItem="icJ-I7-xRz" firstAttribute="leading" secondItem="FK3-bI-nks" secondAttribute="leading" constant="8" identifier="oscTopStackViewLeadingConstraint" id="d1N-I9-hd4"/>
+                        <constraint firstItem="icJ-I7-xRz" firstAttribute="leading" secondItem="FK3-bI-nks" secondAttribute="leading" identifier="oscTopStackViewLeadingConstraint" id="d1N-I9-hd4"/>
+                        <constraint firstAttribute="width" identifier="oscTitleBarWidthConstraint" id="zC9-dS-D1S"/>
                     </constraints>
                 </customView>
             </subviews>
@@ -823,7 +825,7 @@
                 <constraint firstAttribute="bottom" secondItem="QL8-sC-ql6" secondAttribute="bottom" id="rsV-6z-5yD"/>
                 <constraint firstAttribute="trailing" secondItem="icJ-I7-xRz" secondAttribute="trailing" id="xAv-Jo-xwb"/>
             </constraints>
-            <point key="canvasLocation" x="-96" y="-214"/>
+            <point key="canvasLocation" x="-84" y="-193"/>
         </customView>
         <customView identifier="Trailing-TitleBarAccessoryView" translatesAutoresizingMaskIntoConstraints="NO" id="maF-Zr-K8w" userLabel="Trailing Title Bar Accessory View">
             <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
@@ -891,7 +893,7 @@
                 <constraint firstAttribute="bottom" secondItem="WSW-ov-e8M" secondAttribute="bottom" id="VF9-tA-dEf"/>
                 <constraint firstItem="WSW-ov-e8M" firstAttribute="top" secondItem="maF-Zr-K8w" secondAttribute="top" id="msD-VG-w6j"/>
             </constraints>
-            <point key="canvasLocation" x="512" y="-214"/>
+            <point key="canvasLocation" x="502" y="-193"/>
         </customView>
     </objects>
     <resources>
