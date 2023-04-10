@@ -17,8 +17,8 @@ fileprivate let outputImgHeight: Int = outputImgWidth * 3 / 4  // Output image e
 
 fileprivate let titleBarHeight: Int = 24 * scaleFactor
 fileprivate let menuBarHeight: Int = titleBarHeight
-fileprivate let windowWidth: Int = 240 * scaleFactor
-fileprivate let windowHeight: Int = windowWidth * 9 / 16
+fileprivate let videoWidth: Int = 240 * scaleFactor
+fileprivate let videoHeight: Int = videoWidth * 9 / 16
 fileprivate let oscFullWidthHeight: Int = 35 * scaleFactor
 fileprivate let oscFloatingHeight: Int = 37 * scaleFactor
 fileprivate let oscFloatingWidth: Int = 140 * scaleFactor
@@ -117,28 +117,33 @@ class PlayerWindowPreviewImageBuilder {
       switch oscPosition {
 
       case .top:
+
+        switch titleBarStyle {
+        case .full:
+          let adjustment = oscFullWidthHeight / 8 // remove some space between controller & title bar
+          oscHeight = oscFullWidthHeight - adjustment
+        case .minimal:
+          // Special in-title accessory controller
+          oscHeight = titleBarHeight
+        case .none:
+          oscHeight = oscFullWidthHeight
+        }  // end switch titleBarStyle
+
         switch topPanelPlacement {
 
         case .outsideVideo:
           oscAlpha = opaqueControlAlpha
-          oscHeight = oscFullWidthHeight - (oscFullWidthHeight / 8)  // remove some space between controller & title bar
-          oscOffsetY = videoViewOffsetY + windowHeight
+          oscOffsetY = videoViewOffsetY + videoHeight
 
         case .insideVideo:
           oscAlpha = overlayAlpha
 
           switch titleBarStyle {
-          case .minimal:
-            // Special in-title accessory controller
-            oscHeight = titleBarHeight
-            oscOffsetY = videoViewOffsetY + windowHeight - oscHeight
           case .full:
-            let adjustment = oscFullWidthHeight / 8 // remove some space between controller & title bar
-            oscHeight = oscFullWidthHeight - adjustment
-            oscOffsetY = videoViewOffsetY + windowHeight - oscHeight - titleBarHeight
-          case .none:
-            oscHeight = oscFullWidthHeight
-            oscOffsetY = videoViewOffsetY + windowHeight - oscHeight
+            oscOffsetY = videoViewOffsetY + videoHeight - oscHeight - titleBarHeight
+          case .minimal,
+              .none:
+            oscOffsetY = videoViewOffsetY + videoHeight - oscHeight
           }  // end switch titleBarStyle
 
         }  // end switch topPanelPlacement
@@ -158,7 +163,7 @@ class PlayerWindowPreviewImageBuilder {
       case .floating:
         oscAlpha = overlayAlpha
         oscHeight = oscFloatingHeight
-        oscOffsetY = videoViewOffsetY + (windowHeight / 2) - oscFloatingHeight
+        oscOffsetY = videoViewOffsetY + (videoHeight / 2) - oscFloatingHeight
 
       }  // end switch oscPosition
 
@@ -169,25 +174,24 @@ class PlayerWindowPreviewImageBuilder {
       oscOffsetY = 0
     }
 
-    let titlebarDownshiftY: Int
+    var winHeight: Int = videoViewOffsetY + videoHeight
     if topPanelPlacement == .outsideVideo {
       if oscEnabled && oscPosition == .top {
-        titlebarDownshiftY = -oscHeight
+        winHeight += oscHeight
+        if titleBarStyle == .full {
+          winHeight += titleBarHeight
+        }
       } else {
-        titlebarDownshiftY = 0  // right above video
+        winHeight += titleBarHeight
       }
-    } else {
-      titlebarDownshiftY = titleBarHeight  // inside video
     }
-    let titleBarOffsetY: Int = videoViewOffsetY + windowHeight - titlebarDownshiftY
-
-    let winHeight: Int = titleBarOffsetY + titleBarHeight
-    let winOriginX: Int = (outputImgWidth - windowWidth) / 2
+    let winOriginX: Int = (outputImgWidth - videoWidth) / 2
     let winOriginY: Int = (outputImgHeight - winHeight - menuBarHeight) / 2
 
-    let winRect = NSRect(x: winOriginX, y: winOriginY, width: windowWidth, height: winHeight)
+    let winRect = NSRect(x: winOriginX, y: winOriginY, width: videoWidth, height: winHeight)
 
     let drawingCalls: (CGContext) -> Void = { [self] cgContext in
+      // Draw desktop background color
       let bgColor = desktopWallpaperColor.cgColor
       cgContext.setFillColor(bgColor)
       cgContext.fill([CGRect(x: 0, y: 0, width: outputImgWidth, height: outputImgHeight)])
@@ -215,7 +219,7 @@ class PlayerWindowPreviewImageBuilder {
       cgContext.clip()
 
       // draw video
-      draw(image: videoViewImg, in: cgContext, x: winOriginX, y: winOriginY + videoViewOffsetY, width: windowWidth, height: windowHeight)
+      draw(image: videoViewImg, in: cgContext, x: winOriginX, y: winOriginY + videoViewOffsetY, width: videoWidth, height: videoHeight)
 
       // draw OSC
       if oscEnabled {
@@ -223,11 +227,11 @@ class PlayerWindowPreviewImageBuilder {
         let oscOffsetFromWindowOriginX: Int
         let oscWidth: Int
         if oscPosition == .floating {
-          oscOffsetFromWindowOriginX = (windowWidth / 2) - (oscFloatingWidth / 2)
+          oscOffsetFromWindowOriginX = (videoWidth / 2) - (oscFloatingWidth / 2)
           oscWidth = oscFloatingWidth
         } else {
           oscOffsetFromWindowOriginX = 0
-          oscWidth = windowWidth
+          oscWidth = videoWidth
         }
 
         let leftArrowImage = #imageLiteral(resourceName: "speedl")
@@ -269,7 +273,7 @@ class PlayerWindowPreviewImageBuilder {
 
           iconGroupCenterY = oscRect.origin.y + (CGFloat(oscHeight) * 0.5)
           nextIconMinX = oscRect.origin.x
-          if oscPosition == .top && topPanelPlacement == .insideVideo && titleBarStyle == .minimal {
+          if oscPosition == .top && titleBarStyle == .minimal {
             // Special case: OSC is inside title bar. Add space for traffic light buttons
             nextIconMinX += titleBarButtonsWidth
           } else {
@@ -321,9 +325,18 @@ class PlayerWindowPreviewImageBuilder {
       }
 
       // Draw title bar
+      var titleBarOffsetY: Int = videoViewOffsetY + videoHeight
+      if topPanelPlacement == .insideVideo {
+        titleBarOffsetY -= titleBarHeight
+      } else {  // outside
+        if oscEnabled && oscPosition == .top && titleBarStyle == .full {
+          titleBarOffsetY += oscHeight
+        }
+      }
+
       let isTitleBarInside = topPanelPlacement == .insideVideo
       let drawTitleBarBackground: Bool
-      if isTitleBarInside {
+      if isTitleBarInside || (oscEnabled && oscPosition == .top) {
         switch titleBarStyle {
         case .none, .minimal:
           drawTitleBarBackground = false
@@ -335,14 +348,15 @@ class PlayerWindowPreviewImageBuilder {
       }
 
       if drawTitleBarBackground {
+        // Draw title bar background
         let titleBarAlpha: CGFloat = isTitleBarInside ? overlayAlpha : opaqueControlAlpha
         let titleBarColor: CGColor = addAlpha(titleBarAlpha, to: NSColor.windowBackgroundColor)
         cgContext.setFillColor(titleBarColor)
-        cgContext.fill([CGRect(x: winOriginX, y: winOriginY + titleBarOffsetY, width: windowWidth, height: titleBarHeight)])
+        cgContext.fill([CGRect(x: winOriginX, y: winOriginY + titleBarOffsetY, width: videoWidth, height: titleBarHeight)])
       }
 
       // Draw traffic light buttons
-      let drawTitleBarButtons = !isTitleBarInside || titleBarStyle != .none
+      let drawTitleBarButtons = (!isTitleBarInside && (!oscEnabled || oscPosition != .top))  || titleBarStyle != .none
       if drawTitleBarButtons {
         draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY, width: Int(titleBarButtonsWidth), height: titleBarHeight)
       }

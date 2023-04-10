@@ -203,9 +203,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         viewHidePairs.append((oscBottomPlacementContainerView, !oscIsBottom))
       }
 
-      let topPanelInsideVideo = ib.topPanelPlacement == .insideVideo
-      if titleBarStyleContainerView.isHidden != !topPanelInsideVideo {
-        viewHidePairs.append((titleBarStyleContainerView, !topPanelInsideVideo))
+      let showTitleBarStyle = ib.topPanelPlacement == .insideVideo || ib.oscPosition == .top
+      if titleBarStyleContainerView.isHidden != !showTitleBarStyle {
+        viewHidePairs.append((titleBarStyleContainerView, !showTitleBarStyle))
       }
 
       for (view, shouldHide) in viewHidePairs {
