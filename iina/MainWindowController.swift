@@ -2388,7 +2388,7 @@ class MainWindowController: PlayerWindowController {
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
   private func updateSpacingForLeadingTitleBarAccessory(hasTitleBar: Bool) -> CGFloat {
-    var trailingSpace: CGFloat = 0
+    var trailingSpace: CGFloat = 8  // Add standard space before title text by default
 
     let hasSidebarToggleButton = !leadingSidebarToggleButton.isHidden || fadeableViews.contains(leadingSidebarToggleButton)
     let sidebarButtonSpace: CGFloat = hasSidebarToggleButton ? leadingSidebarToggleButton.frame.width : 0
