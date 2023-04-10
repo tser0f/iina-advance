@@ -35,17 +35,11 @@ fileprivate let StandardTitleBarHeight: CGFloat = {
 
 fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
 
-fileprivate let UIAnimationDuration = 0.25
-fileprivate let OSDAnimationDuration = 0.5
-fileprivate let CropAnimationDuration = 0.2
-
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 800)
   static let detachEarliest = NSStackView.VisibilityPriority(rawValue: 750)
 }
-
-typealias AnimationBlock = (NSAnimationContext) -> Void
 
 class MainWindowController: PlayerWindowController {
 
@@ -453,7 +447,7 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
-      runAnimation { _ in
+      UIAnimation.run { _ in
         self.updateOSDPosition()
       }
     default:
@@ -1010,24 +1004,6 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  func runAnimation(_ animationBlock: @escaping AnimationBlock) {
-    runAnimations([animationBlock])
-  }
-
-  /// Recursive function which executes each of the given `AnimationBlock`s in sequence.
-  /// Will execute without animation if motion reduction is enabled; otherwise uses `UIAnimationDuration` for duration.
-  func runAnimations(_ animationBlocks: [AnimationBlock], allowAnimation: Bool = true, index: Int = 0) {
-    guard index < animationBlocks.count else { return }
-
-    NSAnimationContext.runAnimationGroup({ context in
-      context.duration = allowAnimation ? AccessibilityPreferences.adjustedDuration(UIAnimationDuration) : 0
-      context.allowsImplicitAnimation = allowAnimation ? !AccessibilityPreferences.motionReductionEnabled : false
-      animationBlocks[index](context)
-    }, completionHandler: {
-      self.runAnimations(animationBlocks, index: index + 1)
-    })
-  }
-
   private func isTitleBarOSC(fullScreen fullScreenOverride: Bool? = nil) -> Bool {
     let isFullScreen: Bool
     if let fullScreen = fullScreenOverride {
@@ -1059,11 +1035,9 @@ class MainWindowController: PlayerWindowController {
 
     animationBlocks.append{ [self] context in
       /// Set to 0 as default (also makes animation prettier).
-      /// Note: Even when executed inside an animation block, MacOS only sometimes creates implicit animations for
-      /// changes to constraints like these. Using an explicit call to `animator()` seems to be required to guarantee it.
-      titleBarHeightConstraint.animator().constant = 0
-      topOSCPreferredHeightConstraint.animator().constant = 0
-      bottomOSCPreferredHeightConstraint.animator().constant = 0
+      titleBarHeightConstraint.animateToConstant(0)
+      topOSCPreferredHeightConstraint.animateToConstant(0)
+      bottomOSCPreferredHeightConstraint.animateToConstant(0)
 
       // Reset view states to defaults
       controlBarFloating.isDragging = false
@@ -1118,7 +1092,7 @@ class MainWindowController: PlayerWindowController {
           window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
         }
 
-        titleBarHeightConstraint.animator().constant = StandardTitleBarHeight  // May be overridden based on titleBarStyle or by OSC layout
+        titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)  // May be overridden by OSC layout
       } else {
         // Remove all title bar accessories (if needed):
         for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
@@ -1201,15 +1175,15 @@ class MainWindowController: PlayerWindowController {
           if !isFullScreen && topPanelPlacement == .insideVideo {
             switch titleBarStyle {
             case .full:
-              titleBarHeightConstraint.animator().constant = reducedTitleBarHeight
+              titleBarHeightConstraint.animateToConstant(reducedTitleBarHeight)
             case .minimal:
-              titleBarHeightConstraint.animator().constant = StandardTitleBarHeight
+              titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)
 
-              // FIXME 1: augment uses of `animator()` to respect reduced motion pref
               // FIXME 2: fix shadow effect on outer panels
               // FIXME 3: prevent window drag when dragging playback position & volume sliders when titlebar hidden
               // FIXME 4: fix random disappearing views when toggling OSC top <-> bottom
               // FIXME 5: disable prefs for titlebar buttons when titlebar hidden
+              // FIXME 6: find alternatives for SF Symbols sidebar.trailing & sidebar.leading
             case .none:
               break
             }
@@ -1251,7 +1225,7 @@ class MainWindowController: PlayerWindowController {
             oscTopMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
 
             playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFullWidthOSC
-            topOSCPreferredHeightConstraint.animator().constant = fullWidthOSCPreferredHeight
+            topOSCPreferredHeightConstraint.animateToConstant(fullWidthOSCPreferredHeight)
           }
 
         case .bottom:
@@ -1271,15 +1245,15 @@ class MainWindowController: PlayerWindowController {
           oscBottomMainView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
 
           playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFullWidthOSC
-          bottomOSCPreferredHeightConstraint.animator().constant = fullWidthOSCPreferredHeight
+          bottomOSCPreferredHeightConstraint.animateToConstant(fullWidthOSCPreferredHeight)
         }
       }
 
       window.contentView?.layoutSubtreeIfNeeded()
     }
 
-    showFadeableViews(completionHandler: { [self] in
-      runAnimations(animationBlocks)
+    showFadeableViews(completionHandler: {
+      UIAnimation.run(animationBlocks)
     })
   }
 
@@ -1743,7 +1717,7 @@ class MainWindowController: PlayerWindowController {
 
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToEnterFullScreenOn", level: .verbose)
-    runAnimation{ context in
+    UIAnimation.run{ context in
       window.setFrame(screen.frame, display: true)
     }
   }
@@ -1818,7 +1792,7 @@ class MainWindowController: PlayerWindowController {
       NSMenu.setMenuBarVisible(false)
     }
 
-    runAnimation{ [self] context in
+    UIAnimation.run{ [self] context in
       window.setFrame(fsState.priorWindowedFrame!, display: true)
       NSMenu.setMenuBarVisible(true)
     }
@@ -1991,40 +1965,42 @@ class MainWindowController: PlayerWindowController {
 //    Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
 
-    // The `videoView` is not updated during full screen animation (unless using a custom one, however it could be
-    // unbearably laggy under current render mechanism). Thus when entering full screen, we should keep `videoView`'s
-    // aspect ratio. Otherwise, when entered full screen, there will be an awkward animation that looks like
-    // `videoView` "resized" to screen size suddenly when mpv redraws the video content in correct aspect ratio.
-    if case let .animating(toFullScreen, _, _) = fsState {
-      let aspect: NSSize
-      let targetFrame: NSRect
-      if toFullScreen {
-        aspect = window.aspectRatio == .zero ? window.frame.size : window.aspectRatio
-        targetFrame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.contentView!.frame)
-      } else {
-        aspect = window.screen?.frame.size ?? NSScreen.main!.frame.size
-        targetFrame = aspect.grow(toSize: window.frame.size).centeredRect(in: window.contentView!.frame)
+    UIAnimation.disableAnimation {
+      // The `videoView` is not updated during full screen animation (unless using a custom one, however it could be
+      // unbearably laggy under current render mechanism). Thus when entering full screen, we should keep `videoView`'s
+      // aspect ratio. Otherwise, when entered full screen, there will be an awkward animation that looks like
+      // `videoView` "resized" to screen size suddenly when mpv redraws the video content in correct aspect ratio.
+      if case let .animating(toFullScreen, _, _) = fsState {
+        let aspect: NSSize
+        let targetFrame: NSRect
+        if toFullScreen {
+          aspect = window.aspectRatio == .zero ? window.frame.size : window.aspectRatio
+          targetFrame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.contentView!.frame)
+        } else {
+          aspect = window.screen?.frame.size ?? NSScreen.main!.frame.size
+          targetFrame = aspect.grow(toSize: window.frame.size).centeredRect(in: window.contentView!.frame)
+        }
+
+        updateVideoAspectRatioConstraint(w: targetFrame.width, h: targetFrame.height)
+
+        setConstraintsForVideoView([
+          .left: targetFrame.minX,
+          .right:  targetFrame.maxX - window.frame.width,
+          .bottom: -targetFrame.minY,
+          .top: window.frame.height - targetFrame.maxY
+        ])
       }
 
-      updateVideoAspectRatioConstraint(w: targetFrame.width, h: targetFrame.height)
-
-      setConstraintsForVideoView([
-        .left: targetFrame.minX,
-        .right:  targetFrame.maxX - window.frame.width,
-        .bottom: -targetFrame.minY,
-        .top: window.frame.height - targetFrame.maxY
-      ])
-    }
-
-    if isInInteractiveMode {
-      // interactive mode
-      cropSettingsView?.cropBoxView.resized(with: videoView.frame)
-    } else if oscPosition == .floating {
-      // Update floating control bar position
-      updateFloatingOSCAfterWindowDidResize()
-    } else {
-      // May need to update title bar OSC
-      updateTitleBarAccessories()
+      if isInInteractiveMode {
+        // interactive mode
+        cropSettingsView?.cropBoxView.resized(with: videoView.frame)
+      } else if oscPosition == .floating {
+        // Update floating control bar position
+        updateFloatingOSCAfterWindowDidResize()
+      } else {
+        // May need to update title bar OSC
+        updateTitleBarAccessories()
+      }
     }
 
     player.events.emit(.windowResized, data: window.frame)
@@ -2254,7 +2230,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    runAnimations(animationBlocks)
+    UIAnimation.run(animationBlocks)
   }
 
   // Shows fadeableViews and titlebar via fade
@@ -2295,7 +2271,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    runAnimations(animationBlocks)
+    UIAnimation.run(animationBlocks)
   }
 
   // MARK: - UI: Show / Hide Fadeable Views Timer
@@ -2307,8 +2283,8 @@ class MainWindowController: PlayerWindowController {
     // Create new timer.
     // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
     var timeout = Double(Preference.float(for: .controlBarAutoHideTimeout))
-    if timeout < UIAnimationDuration {
-      timeout = UIAnimationDuration
+    if timeout < UIAnimation.UIAnimationDuration {
+      timeout = UIAnimation.UIAnimationDuration
     }
     hideFadeableViewsTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideFadeableViewsAndCursor), userInfo: nil, repeats: false)
   }
@@ -2365,9 +2341,9 @@ class MainWindowController: PlayerWindowController {
       // Fortunately, this doesn't happen very often and is not a very intensive calculation.
       guard let window = window else { return }
       let availableSpace = max(0, window.frame.width - leadingSpaceUsed - trailingSpaceUsed - 8)
-      oscTitleBarWidthConstraint.animator().constant = availableSpace
+      oscTitleBarWidthConstraint.animateToConstant(availableSpace)
     } else {
-      oscTitleBarWidthConstraint.animator().constant = 0
+      oscTitleBarWidthConstraint.animateToConstant(0)
     }
   }
 
@@ -2387,7 +2363,7 @@ class MainWindowController: PlayerWindowController {
         trailingSpace = max(0, leadingSidebarWidthConstraint.constant - trafficLightsSpace - sidebarButtonSpace)
       }
     }
-    leadingTitleBarTrailingSpaceConstraint.animator().constant = trailingSpace
+    leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
 
     let totalSpaceUsed = trailingSpace + sidebarButtonSpace + trafficLightsSpace
     return totalSpaceUsed
@@ -2412,12 +2388,12 @@ class MainWindowController: PlayerWindowController {
         leadingSpace = max(0, trailingSidebarWidthConstraint.constant - spaceForButtons)
       }
     }
-    trailingTitleBarLeadingSpaceConstraint.animator().constant = leadingSpace + spaceForButtons
+    trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace + spaceForButtons)
 
     // Add padding to the side for buttons
     let isAnyButtonVisible = !pinToTopButton.isHidden || !trailingSidebarToggleButton.isHidden
     let buttonMargin: CGFloat = isAnyButtonVisible ? 4 : 0
-    trailingTitleBarTrailingSpaceConstraint.animator().constant = buttonMargin
+    trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
 
     let totalSpaceUsed = leadingSpace + spaceForButtons + buttonMargin
     return totalSpaceUsed
@@ -2498,7 +2474,7 @@ class MainWindowController: PlayerWindowController {
       } else {
         // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
         let configuredTimeout = Double(Preference.float(for: .osdAutoHideTimeout))
-        timeout = configuredTimeout <= OSDAnimationDuration ? OSDAnimationDuration : configuredTimeout
+        timeout = configuredTimeout <= UIAnimation.OSDAnimationDuration ? UIAnimation.OSDAnimationDuration : configuredTimeout
       }
       hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
     }
@@ -2533,12 +2509,10 @@ class MainWindowController: PlayerWindowController {
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0
 
-      NSAnimationContext.runAnimationGroup({ context in
-        context.duration = OSDAnimationDuration
-        context.allowsImplicitAnimation = true
+      UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
         window!.setFrame(newFrame, display: true)
         osdVisualEffectView.layoutSubtreeIfNeeded()
-      }, completionHandler: { [self] in
+      }, completionHandler: {
         accessoryView.layer?.opacity = 1
       })
     }
@@ -2547,16 +2521,15 @@ class MainWindowController: PlayerWindowController {
 
   @objc
   func hideOSD() {
-    NSAnimationContext.runAnimationGroup({ (context) in
+    UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
       self.osdAnimationState = .willHide
-      context.duration = OSDAnimationDuration
-      osdVisualEffectView.animator().alphaValue = 0
-    }) {
+      osdVisualEffectView.alphaValue = 0
+    }, completionHandler: {
       if self.osdAnimationState == .willHide {
         self.osdAnimationState = .hidden
         self.osdStackView.views(in: .bottom).forEach { self.osdStackView.removeView($0) }
       }
-    }
+    })
     isShowingPersistentOSD = false
     osdContext = nil
   }
@@ -2574,14 +2547,10 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Interactive mode
 
-  private func setConstraintsForVideoView(_ constraints: [NSLayoutConstraint.Attribute: CGFloat], animate: Bool = false) {
+  private func setConstraintsForVideoView(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
     for (attr, value) in constraints {
       if let constraint = videoViewConstraints[attr] {
-        if animate {
-          constraint.animator().constant = value
-        } else {
-          constraint.constant = value
-        }
+        constraint.animateToConstant(value)
       }
     }
   }
@@ -2616,12 +2585,14 @@ class MainWindowController: PlayerWindowController {
         aspect = window.aspectRatio
       }
       let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
-      setConstraintsForVideoView([
-        .left: frame.minX,
-        .right: window.frame.width - frame.maxX,  // `frame.x` should also work
-        .bottom: -frame.minY,
-        .top: window.frame.height - frame.maxY  // `frame.y` should also work
-      ])
+      UIAnimation.disableAnimation {
+        setConstraintsForVideoView([
+          .left: frame.minX,
+          .right: window.frame.width - frame.maxX,  // `frame.x` should also work
+          .bottom: -frame.minY,
+          .top: window.frame.height - frame.maxY  // `frame.y` should also work
+        ])
+      }
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
       // force rerender a frame
@@ -2664,18 +2635,17 @@ class MainWindowController: PlayerWindowController {
     self.cropSettingsView = controlView
 
     // show crop settings view
-    NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = AccessibilityPreferences.adjustedDuration(CropAnimationDuration)
+    UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      bottomPanelBottomConstraint.animator().constant = 0
-      setConstraintsForVideoView(newConstants, animate: true)
-    }) {
+      bottomPanelBottomConstraint.animateToConstant(0)
+      setConstraintsForVideoView(newConstants)
+    }, completionHandler: {
       self.cropSettingsView?.cropBoxView.isHidden = false
       self.videoView.layer?.shadowColor = .black
       self.videoView.layer?.shadowOpacity = 1
       self.videoView.layer?.shadowOffset = .zero
       self.videoView.layer?.shadowRadius = 3
-    }
+    })
   }
 
   func exitInteractiveMode(immediately: Bool = false, then: @escaping () -> Void = {}) {
@@ -2701,21 +2671,20 @@ class MainWindowController: PlayerWindowController {
     }
 
     // if with animation
-    NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = AccessibilityPreferences.adjustedDuration(CropAnimationDuration)
+    UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      bottomPanelBottomConstraint.animator().constant = -InteractiveModeBottomViewHeight
+      bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
       ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-        videoViewConstraints[attr]!.animator().constant = 0
+        videoViewConstraints[attr]!.animateToConstant(0)
       }
-    }) {
+    }, completionHandler: {
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       self.showFadeableViews()
       then()
-    }
+    })
   }
 
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..

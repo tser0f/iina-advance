@@ -223,7 +223,7 @@ extension MainWindowController {
     })
   }
 
-  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, animate: Bool = true, then doAfter: (() -> Void)? = nil) {
+  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, then doAfter: (() -> Void)? = nil) {
     guard !isInInteractiveMode else { return }
     Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show ? "SHOW" : "HIDE")", level: .verbose)
 
@@ -262,7 +262,7 @@ extension MainWindowController {
         blockChain.append{ context in
           doAfter()
         }
-        runAnimations(blockChain, allowAnimation: animate)
+        UIAnimation.run(blockChain)
       }
       return
     }
@@ -385,7 +385,7 @@ extension MainWindowController {
       }
     }
 
-    runAnimations(blockChain, allowAnimation: animate)
+    UIAnimation.run(blockChain)
   }
 
   // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that
@@ -506,7 +506,7 @@ extension MainWindowController {
     } else {
       return false
     }
-    
+
     updateTitleBarAccessories()
     return true
   }

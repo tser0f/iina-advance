@@ -23,10 +23,14 @@ class VideoRotationHandler {
     switch recognizer.state {
     case .began, .changed:
       let cgNewRotationDegrees = recognizer.rotationInDegrees
-      rotateVideoView(toDegrees: cgNewRotationDegrees, animate: false)
+      UIAnimation.disableAnimation {
+        rotateVideoView(toDegrees: cgNewRotationDegrees)
+      }
       break
     case .failed, .cancelled:
-      rotateVideoView(toDegrees: 0, animate: false)
+      UIAnimation.disableAnimation {
+        rotateVideoView(toDegrees: 0)
+      }
       break
     case .ended:
       // mpv and CoreGraphics rotate in opposite directions
@@ -37,7 +41,7 @@ class VideoRotationHandler {
         // Don't "unwind" if more than 360° rotated; just take shortest partial circle back to origin
         cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees)
         Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
-        rotateVideoView(toDegrees: 0, animate: !AccessibilityPreferences.motionReductionEnabled)
+        rotateVideoView(toDegrees: 0)
         return
       }
 
@@ -47,7 +51,7 @@ class VideoRotationHandler {
       // Need to convert snap-to location back to CG, to feed to animation
       let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
                                                          equalToMpvRotation: mpvClosestQuarterRotation)
-      rotateVideoView(toDegrees: cgSnapToDegrees, animate: !AccessibilityPreferences.motionReductionEnabled)
+      rotateVideoView(toDegrees: cgSnapToDegrees)
       player.setVideoRotate(mpvNewRotation)
 
     default:
@@ -96,7 +100,7 @@ class VideoRotationHandler {
   }
 
   // Side effect: sets `cgCurrentRotationDegrees` to `toDegrees` before returning
-  func rotateVideoView(toDegrees: CGFloat, animate: Bool = true) {
+  func rotateVideoView(toDegrees: CGFloat) {
     let fromDegrees = cgCurrentRotationDegrees
     let toRadians = degToRad(toDegrees)
 
@@ -111,7 +115,7 @@ class VideoRotationHandler {
     videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     CATransaction.commit()
 
-    if animate {
+    if UIAnimation.isAnimationEnabled {
       Logger.log("Animating rotation from \(fromDegrees)° to \(toDegrees)°")
 
       CATransaction.begin()
