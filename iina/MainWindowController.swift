@@ -549,7 +549,7 @@ class MainWindowController: PlayerWindowController {
 
   /** Top-of-video overlay, may contain `titleBarView` and/or top OSC if configured. */
   @IBOutlet weak var topPanelView: NSVisualEffectView!
-  /** Border below `titleBarView`, or top OSC if configured. */
+  /** Bottom border of `topPanelView`. */
   @IBOutlet weak var topPanelBottomBorder: NSBox!
   /** Reserves space for the title bar components. Does not contain any child views. */
   @IBOutlet weak var titleBarView: NSView!
@@ -562,6 +562,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var controlBarTop: NSView!
   @IBOutlet weak var controlBarFloating: ControlBarView!
   @IBOutlet weak var controlBarBottom: NSVisualEffectView!
+  /** Top border of `controlBarBottom`. */
+  @IBOutlet weak var controlBarBottomTopBorder: NSBox!
   @IBOutlet weak var timePreviewWhenSeek: NSTextField!
   @IBOutlet weak var leftArrowButton: NSButton!
   @IBOutlet weak var rightArrowButton: NSButton!
@@ -939,6 +941,7 @@ class MainWindowController: PlayerWindowController {
     if Preference.enum(for: .bottomPanelPlacement) == Preference.PanelPlacement.outsideVideo {
       videoContainerBottomConstraint = videoContainerView.bottomAnchor.constraint(equalTo: controlBarBottom.topAnchor, constant: 0)
       controlBarBottom.blendingMode = .behindWindow
+      controlBarBottomTopBorder.isHidden = false
 
       // Align left & right sides with window (sidebars go below top panel)
       bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: windowContentView.leadingAnchor, constant: 0)
@@ -946,6 +949,7 @@ class MainWindowController: PlayerWindowController {
     } else {  // Inside video
       videoContainerBottomConstraint = videoContainerView.bottomAnchor.constraint(equalTo: controlBarBottom.bottomAnchor, constant: 0)
       controlBarBottom.blendingMode = .withinWindow
+      controlBarBottomTopBorder.isHidden = true
 
       // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
       bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
@@ -1030,6 +1034,7 @@ class MainWindowController: PlayerWindowController {
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
 
     guard let window = window else { return }
+    guard let contentView = window.contentView else { return }
 
     // fullScreenOverride == future full screen state, but should be used in present calculations
     let isFullScreen: Bool = fullScreenOverride ?? fsState.isFullscreen
@@ -1064,6 +1069,23 @@ class MainWindowController: PlayerWindowController {
 
       updateTopPanelPlacement()
       updateBottomPanelPlacement()
+
+      /// NOTE: these assume `trailingSidebarView` is above `leadingSidebarView`
+      /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
+      if topPanelPlacement == .insideVideo {
+        // Sidebars cast shadow on top panel
+        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
+      } else {
+        // No shadow (because top panel does not cast a shadow)
+        contentView.addSubview(topPanelView, positioned: .above, relativeTo: trailingSidebarView)
+      }
+      if bottomPanelPlacement == .insideVideo {
+        // Sidebars cast shadow on bottom OSC
+        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
+      } else {
+        // No shadow (because bottom panel does not cast a shadow)
+        contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: trailingSidebarView)
+      }
 
       quickSettingView.refreshVerticalConstraints()
       playlistView.refreshVerticalConstraints()
@@ -1181,7 +1203,6 @@ class MainWindowController: PlayerWindowController {
             case .minimal:
               titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)
 
-              // FIXME 2: fix shadow effect on outer panels
               // FIXME 3: prevent window drag when dragging playback position & volume sliders when titlebar hidden
               // FIXME 4: fix random disappearing views when toggling OSC top <-> bottom
               // FIXME 5: disable prefs for titlebar buttons when titlebar hidden
