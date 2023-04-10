@@ -1005,12 +1005,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func isTitleBarOSC(fullScreen fullScreenOverride: Bool? = nil) -> Bool {
-    let isFullScreen: Bool
-    if let fullScreen = fullScreenOverride {
-      isFullScreen = fullScreen
-    } else {
-      isFullScreen = fsState.isFullscreen
-    }
+    let isFullScreen: Bool = fullScreenOverride ?? fsState.isFullscreen
     return !isFullScreen && topPanelPlacement == .insideVideo && titleBarStyle == .minimal && enableOSC && oscPosition == .top
   }
 
@@ -1066,39 +1061,6 @@ class MainWindowController: PlayerWindowController {
       // - Title bar:
 
       updateTitleBarAccessories(fullScreen: isFullScreen)
-
-      let isTitleBarOSC = isTitleBarOSC(fullScreen: isFullScreen)
-      let hasTitleBar = !isFullScreen && (topPanelPlacement == .outsideVideo || titleBarStyle != .none)
-      let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
-      let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
-      if hasTitleBar && hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
-        show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-      } else {
-        hideAndRemoveFromFadeable(leadingSidebarToggleButton)
-      }
-      if hasTitleBar && hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
-        show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-      } else {
-        hideAndRemoveFromFadeable(trailingSidebarToggleButton)
-      }
-
-      pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
-      pinToTopButton.state = isOntop ? .on : .off
-
-      if hasTitleBar {
-        // Add back title bar accessories (if needed):
-        if window.titlebarAccessoryViewControllers.isEmpty {
-          window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
-          window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
-        }
-
-        titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)  // May be overridden by OSC layout
-      } else {
-        // Remove all title bar accessories (if needed):
-        for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
-          window.removeTitlebarAccessoryViewController(at: index)
-        }
-      }
 
       if isFullScreen {
         for button in trafficLightButtons {
@@ -1189,6 +1151,7 @@ class MainWindowController: PlayerWindowController {
             }
           }
 
+          let isTitleBarOSC = isTitleBarOSC(fullScreen: isFullScreen)
           if isTitleBarOSC {
             currentControlBar = controlBarTitleBar
             show(controlBarTitleBar, makeFadeable: true)
@@ -2330,16 +2293,52 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  // FIXME: allow disabling of animation for window resize
   func updateTitleBarAccessories(fullScreen fullScreenOverride: Bool? = nil) {
+    guard let window = window else { return }
+    let isFullScreen: Bool = fullScreenOverride ?? fsState.isFullscreen
+    let isTitleBarOSC = isTitleBarOSC(fullScreen: isFullScreen)
+    let hasTitleBar = !isFullScreen && (topPanelPlacement == .outsideVideo || titleBarStyle != .none)
+    let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
+    let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
+
+    // LeadingSidebar toggle button
+    if hasTitleBar && hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
+      show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+    } else {
+      hideAndRemoveFromFadeable(leadingSidebarToggleButton)
+    }
+    // TrailingSidebar toggle button
+    if hasTitleBar && hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
+      show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+    } else {
+      hideAndRemoveFromFadeable(trailingSidebarToggleButton)
+    }
+
+    pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
+    pinToTopButton.state = isOntop ? .on : .off
+
+    if hasTitleBar {
+      // Add back title bar accessories (if needed):
+      if window.titlebarAccessoryViewControllers.isEmpty {
+        window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
+        window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+      }
+
+      titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)  // May be overridden by OSC layout
+    } else {
+      // Remove all title bar accessories (if needed):
+      for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
+        window.removeTitlebarAccessoryViewController(at: index)
+      }
+    }
+
     let leadingSpaceUsed = updateLeadingTitleBarAccessory()
     let trailingSpaceUsed = updateTrailingTitleBarAccessory()
 
-    if isTitleBarOSC(fullScreen: fullScreenOverride) {
+    if isTitleBarOSC {
       // Title bar accessories don't seem to like attaching to other views via constraints.
       // So the next best option is to programmatically update the constraint's constant any time anything changes.
       // Fortunately, this doesn't happen very often and is not a very intensive calculation.
-      guard let window = window else { return }
       let availableSpace = max(0, window.frame.width - leadingSpaceUsed - trailingSpaceUsed - 8)
       oscTitleBarWidthConstraint.animateToConstant(availableSpace)
     } else {
