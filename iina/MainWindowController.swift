@@ -435,7 +435,7 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.trailingSidebarPlacement.rawValue:
       if trailingSidebar.isVisible {
-        hideSidebarThenShowAgain(leadingSidebar.locationID)
+        hideSidebarThenShowAgain(trailingSidebar.locationID)
       }
     case PK.settingsTabGroupLocation.rawValue:
       if let newRawValue = change[.newKey] as? Int, let newLocationID = Preference.SidebarLocation(rawValue: newRawValue) {
@@ -2301,19 +2301,11 @@ class MainWindowController: PlayerWindowController {
     let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
     let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
 
-    // LeadingSidebar toggle button
-    if hasTitleBar && hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
-      show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-    } else {
-      hideAndRemoveFromFadeable(leadingSidebarToggleButton)
-    }
-    // TrailingSidebar toggle button
-    if hasTitleBar && hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
-      show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-    } else {
-      hideAndRemoveFromFadeable(trailingSidebarToggleButton)
-    }
+    // Defaults:
+    hideAndRemoveFromFadeable(leadingSidebarToggleButton)
+    hideAndRemoveFromFadeable(trailingSidebarToggleButton)
 
+    // "On Top" (mpv) AKA "Pin to Top" (OS)
     pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
     pinToTopButton.state = isOntop ? .on : .off
 
@@ -2325,6 +2317,16 @@ class MainWindowController: PlayerWindowController {
       }
 
       titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)  // May be overridden by OSC layout
+
+      // LeadingSidebar toggle button
+      if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
+        show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+      }
+      // TrailingSidebar toggle button
+      if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
+        show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+      }
+
     } else {
       // Remove all title bar accessories (if needed):
       for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
