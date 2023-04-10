@@ -276,6 +276,10 @@ extension MainWindowController {
     }
 
     blockChain.append{ [self] context in
+      // This code block needs to be an AnimationBlock because it goes in the middle of the chain, but there is no visible animation.
+      // Set duration to 0, or else it will look like a pause:
+      context.duration = 0
+
       if show {
         sidebar.animationState = .willShow
         // Make it the active tab in its parent tab group (can do this whether or not it's shown):
@@ -343,7 +347,7 @@ extension MainWindowController {
         windowContentViewLeadingConstraint.isActive = true
         videoContainerLeadingToLeadingSidebarConstraint.isActive = true
 
-        updateTitleBarAccessories()
+        updateSpacingForTitleBarAccessories()
       case .trailingSidebar:
         contentView.removeConstraint(videoContainerTrailingToTrailingSidebarConstraint)
         contentView.removeConstraint(windowContentViewTrailingConstraint)
@@ -363,7 +367,7 @@ extension MainWindowController {
         windowContentViewTrailingConstraint.isActive = true
         videoContainerTrailingToTrailingSidebarConstraint.isActive = true
 
-        updateTitleBarAccessories()
+        updateSpacingForTitleBarAccessories()
       }
 
       contentView.layoutSubtreeIfNeeded()
@@ -413,8 +417,8 @@ extension MainWindowController {
     removingFromSidebar.tabGroups.remove(tabGroup)
 
     // Sidebar buttons may have changed:
-    updateTitleBarAccessories()
-    updateTitleBarAccessories()
+    updateSpacingForTitleBarAccessories()
+    updateSpacingForTitleBarAccessories()
   }
 
   private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
@@ -507,7 +511,7 @@ extension MainWindowController {
       return false
     }
 
-    updateTitleBarAccessories()
+    updateSpacingForTitleBarAccessories()
     return true
   }
 
