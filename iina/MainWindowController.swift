@@ -1214,8 +1214,9 @@ class MainWindowController: PlayerWindowController {
               // FIXME 3: prevent window drag when dragging playback position & volume sliders when titlebar hidden
               // FIXME 4: fix random disappearing views when toggling OSC top <-> bottom
               // FIXME 5: disable prefs for titlebar buttons when titlebar hidden
-              // FIXME 6: find alternatives for SF Symbols sidebar.trailing & sidebar.leading
               // FIXME 7: prevent sidebars from opening if not enough space
+              // FIXME 8: add back support for window minimize & maximize when buttons not shown
+              // FIXME 9: verify legacy full screen
             case .none:
               break
             }
@@ -2391,7 +2392,7 @@ class MainWindowController: PlayerWindowController {
 
     let hasSidebarToggleButton = !leadingSidebarToggleButton.isHidden || fadeableViews.contains(leadingSidebarToggleButton)
     let sidebarButtonSpace: CGFloat = hasSidebarToggleButton ? leadingSidebarToggleButton.frame.width : 0
-    let trafficLightsSpace = hasTitleBar ? 0 : trafficLightButtonsWidth
+    let trafficLightsSpace = hasTitleBar ? trafficLightButtonsWidth : 0
 
     let isSpaceNeededForSidebar = topPanelPlacement == .insideVideo
       && (leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown)
