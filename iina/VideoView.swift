@@ -51,10 +51,6 @@ class VideoView: NSView {
 
   // MARK: - Attributes
 
-  override var mouseDownCanMoveWindow: Bool {
-    return true
-  }
-
   // MARK: - Init
 
   override init(frame: CGRect) {

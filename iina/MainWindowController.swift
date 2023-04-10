@@ -664,7 +664,7 @@ class MainWindowController: PlayerWindowController {
     window.styleMask.insert(.fullSizeContentView)
 
     // need to deal with control bar, so we handle it manually
-    // w.isMovableByWindowBackground  = true
+    window.isMovableByWindowBackground  = false
 
     // set background color to black
     window.backgroundColor = .black
@@ -1046,6 +1046,7 @@ class MainWindowController: PlayerWindowController {
     // fullScreenOverride == future full screen state, but should be used in present calculations
     let isFullScreen: Bool = fullScreenOverride ?? fsState.isFullscreen
     let hasTitleBar = hasTitleBar(fullScreen: fullScreenOverride)
+    let isTitleBarOSC = isTitleBarOSC(fullScreen: fullScreenOverride)
 
     var animationBlocks: [AnimationBlock] = []
 
@@ -1151,13 +1152,12 @@ class MainWindowController: PlayerWindowController {
             }
 
           case .minimal:
-            window.titleVisibility = .hidden
             for button in trafficLightButtons {
               show(button, makeFadeable: fadeable)
             }
 
           case .none:
-            window.titleVisibility = .hidden
+            break
 
           }
         } else {  // topPanelPlacement == .outsideVideo and no top OSC
@@ -1211,7 +1211,7 @@ class MainWindowController: PlayerWindowController {
             case .minimal:
               titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)
 
-              // FIXME 3: prevent window drag when dragging playback position & volume sliders when titlebar hidden
+              // FIXME 2: option key to show title
               // FIXME 4: fix random disappearing views when toggling OSC top <-> bottom
               // FIXME 5: disable prefs for titlebar buttons when titlebar hidden
               // FIXME 7: prevent sidebars from opening if not enough space
@@ -1222,7 +1222,6 @@ class MainWindowController: PlayerWindowController {
             }
           }
 
-          let isTitleBarOSC = isTitleBarOSC(fullScreen: isFullScreen)
           if isTitleBarOSC {
             currentControlBar = controlBarTitleBar
             show(controlBarTitleBar, makeFadeable: topPanelPlacement == .insideVideo)

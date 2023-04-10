@@ -523,7 +523,7 @@
                     <constraints>
                         <constraint firstAttribute="width" priority="900" constant="70" identifier="VolumeSliderWidthConstraint" id="P2L-LI-jT7"/>
                     </constraints>
-                    <sliderCell key="cell" controlSize="mini" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="ncp-01-dCG" customClass="VolumeSliderCell" customModule="IINA" customModuleProvider="target"/>
+                    <sliderCell key="cell" controlSize="mini" continuous="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="ncp-01-dCG" customClass="VolumeSliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
                         <action selector="volumeSliderChanges:" target="-2" id="5AA-pG-FOc"/>
                     </connections>
@@ -544,7 +544,7 @@
             <subviews>
                 <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback Slider" customClass="PlaySlider" customModule="IINA" customModuleProvider="target">
                     <rect key="frame" x="46" y="5" width="408" height="28"/>
-                    <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
+                    <sliderCell key="cell" continuous="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
                         <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>
                     </connections>
