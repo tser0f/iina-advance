@@ -784,7 +784,6 @@ class MainWindowController: PlayerWindowController {
     bottomView.isHidden = true
     pipOverlayView.isHidden = true
 
-    setupTitleBarAndOSC()
     let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
     setupOSCToolbarButtons(buttons)
 
@@ -908,19 +907,19 @@ class MainWindowController: PlayerWindowController {
    │     │  VIDEO     O│     │          │     │  VIDEO     O│     │
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
-  private func updateTopPanelPlacement() {
-    guard let window = window, let windowContentView = window.contentView else { return }
-    windowContentView.removeConstraint(videoContainerTopConstraint)
-    windowContentView.removeConstraint(topPanelLeadingSpaceConstraint)
-    windowContentView.removeConstraint(topPanelTrailingSpaceConstraint)
+  private func updateTopPanelPlacement(isOutsideVideo: Bool) {
+    guard let window = window, let contentView = window.contentView else { return }
+    contentView.removeConstraint(videoContainerTopConstraint)
+    contentView.removeConstraint(topPanelLeadingSpaceConstraint)
+    contentView.removeConstraint(topPanelTrailingSpaceConstraint)
 
-    if Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+    if isOutsideVideo {
       videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.bottomAnchor, constant: 0)
       topPanelView.blendingMode = .behindWindow
 
       // Align left & right sides with window (sidebars go below top panel)
-      topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: windowContentView.leadingAnchor, constant: 0)
-      topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: windowContentView.trailingAnchor, constant: 0)
+      topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
+      topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
     } else {
       // Inside video or not shown
       videoContainerTopConstraint = videoContainerView.topAnchor.constraint(equalTo: topPanelView.topAnchor, constant: 0)
@@ -933,22 +932,32 @@ class MainWindowController: PlayerWindowController {
     videoContainerTopConstraint.isActive = true
     topPanelLeadingSpaceConstraint.isActive = true
     topPanelTrailingSpaceConstraint.isActive = true
+
+    /// NOTE: these assume `trailingSidebarView` is above `leadingSidebarView`
+    /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
+    if isOutsideVideo {
+      // No shadow (because top panel does not cast a shadow)
+      contentView.addSubview(topPanelView, positioned: .above, relativeTo: trailingSidebarView)
+    } else {
+      // Sidebars cast shadow on top panel
+      contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
+    }
   }
 
-  private func updateBottomPanelPlacement() {
-    guard let window = window, let windowContentView = window.contentView else { return }
-    windowContentView.removeConstraint(videoContainerBottomConstraint)
-    windowContentView.removeConstraint(bottomPanelLeadingSpaceConstraint)
-    windowContentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
+  private func updateBottomPanelPlacement(isOutsideVideo: Bool) {
+    guard let window = window, let contentView = window.contentView else { return }
+    contentView.removeConstraint(videoContainerBottomConstraint)
+    contentView.removeConstraint(bottomPanelLeadingSpaceConstraint)
+    contentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
 
-    if Preference.enum(for: .bottomPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+    if isOutsideVideo {
       videoContainerBottomConstraint = videoContainerView.bottomAnchor.constraint(equalTo: controlBarBottom.topAnchor, constant: 0)
       controlBarBottom.blendingMode = .behindWindow
       controlBarBottomTopBorder.isHidden = false
 
       // Align left & right sides with window (sidebars go below top panel)
-      bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: windowContentView.leadingAnchor, constant: 0)
-      bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: windowContentView.trailingAnchor, constant: 0)
+      bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
+      bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
     } else {  // Inside video
       videoContainerBottomConstraint = videoContainerView.bottomAnchor.constraint(equalTo: controlBarBottom.bottomAnchor, constant: 0)
       controlBarBottom.blendingMode = .withinWindow
@@ -961,6 +970,16 @@ class MainWindowController: PlayerWindowController {
     videoContainerBottomConstraint.isActive = true
     bottomPanelLeadingSpaceConstraint.isActive = true
     bottomPanelTrailingSpaceConstraint.isActive = true
+
+    /// NOTE: these assume `trailingSidebarView` is above `leadingSidebarView`
+    /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
+    if isOutsideVideo {
+      // No shadow (because bottom panel does not cast a shadow)
+      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: trailingSidebarView)
+    } else {
+      // Sidebars cast shadow on bottom OSC
+      contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
+    }
   }
 
   private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
@@ -1043,7 +1062,6 @@ class MainWindowController: PlayerWindowController {
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
 
     guard let window = window else { return }
-    guard let contentView = window.contentView else { return }
 
     // fullScreenOverride == future full screen state, but should be used in present calculations
     let isFullScreen: Bool = fullScreenOverride ?? fsState.isFullscreen
@@ -1077,69 +1095,53 @@ class MainWindowController: PlayerWindowController {
         $0!.removeFromSuperview()
       }
 
-      updateTopPanelPlacement()
-      updateBottomPanelPlacement()
-
-      /// NOTE: these assume `trailingSidebarView` is above `leadingSidebarView`
-      /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
-      if topPanelPlacement == .insideVideo {
-        // Sidebars cast shadow on top panel
-        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
-      } else {
-        // No shadow (because top panel does not cast a shadow)
-        contentView.addSubview(topPanelView, positioned: .above, relativeTo: trailingSidebarView)
-      }
-      if bottomPanelPlacement == .insideVideo {
-        // Sidebars cast shadow on bottom OSC
-        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
-      } else {
-        // No shadow (because bottom panel does not cast a shadow)
-        contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: trailingSidebarView)
-      }
+      updateTopPanelPlacement(isOutsideVideo: !isFullScreen && topPanelPlacement == .outsideVideo)
+      updateBottomPanelPlacement(isOutsideVideo: !isFullScreen && bottomPanelPlacement == .outsideVideo)
 
       quickSettingView.refreshVerticalConstraints()
       playlistView.refreshVerticalConstraints()
 
-      // - Title bar:
-
-      if hasTitleBar {
-        // Add back title bar accessories (if needed):
-        if window.titlebarAccessoryViewControllers.isEmpty {
-          window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
-          window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
-        }
-
-        titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)  // May be overridden by OSC layout
-
-        // LeadingSidebar toggle button
-        let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
-        if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
-          show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-        }
-        // TrailingSidebar toggle button
-        let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
-        if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
-          show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
-        }
-
-      } else {
+      if !hasTitleBar {
         // Remove all title bar accessories (if needed):
         for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
           window.removeTitlebarAccessoryViewController(at: index)
         }
       }
 
-      // "On Top" (mpv) AKA "Pin to Top" (OS)
-      updatePinToTopButton(fullScreen: fullScreenOverride)
-
-      updateSpacingForTitleBarAccessories(fullScreen: isFullScreen)
-
       if isFullScreen {
         for button in trafficLightButtons {
           show(button)
         }
 
+        window.titleVisibility = .visible
+
       } else {  // Not fullscreen
+
+        if hasTitleBar {
+          // Add back title bar accessories (if needed):
+          if window.titlebarAccessoryViewControllers.isEmpty {
+            window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
+            window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+          }
+
+          titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)  // May be overridden by OSC layout
+
+          // LeadingSidebar toggle button
+          let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
+          if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
+            show(leadingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+          }
+          // TrailingSidebar toggle button
+          let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
+          if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
+            show(trailingSidebarToggleButton, makeFadeable: topPanelPlacement == .insideVideo)
+          }
+
+          // "On Top" (mpv) AKA "Pin to Top" (OS)
+          updatePinToTopButton(fullScreen: fullScreenOverride)
+
+          updateSpacingForTitleBarAccessories(fullScreen: isFullScreen)
+        }
 
         if topPanelPlacement == .insideVideo || (enableOSC && oscPosition == .top) {
           let fadeable = topPanelPlacement == .insideVideo
@@ -1670,6 +1672,7 @@ class MainWindowController: PlayerWindowController {
       p.lineBreakMode = .byTruncatingMiddle
       attrTitle.addAttribute(.paragraphStyle, value: p, range: NSRange(location: 0, length: attrTitle.length))
     }
+    updateTitle()  // Need to call this here, or else when opening directly to fullscreen, window title is just "Window"
     setupTitleBarAndOSC()
     // update timer
     resetFadeTimer()
@@ -1768,6 +1771,9 @@ class MainWindowController: PlayerWindowController {
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
+
+    // Shw this after fullscreen animation has finished, so it doesn't pop up during the animation:
+    show(documentIconButton)
 
     if Preference.bool(for: .blackOutMonitor) {
       blackOutOtherMonitors()
