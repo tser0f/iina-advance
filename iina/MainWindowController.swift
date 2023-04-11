@@ -550,6 +550,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var topOSCPreferredHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomOSCPreferredHeightConstraint: NSLayoutConstraint!
 
+  @IBOutlet weak var timePreviewWhenSeekHorizontalCenterConstraint: NSLayoutConstraint!
+
   /** Top-of-video overlay, may contain `titleBarView` and/or top OSC if configured. */
   @IBOutlet weak var topPanelView: NSVisualEffectView!
   /** Bottom border of `topPanelView`. */
@@ -2753,16 +2755,10 @@ class MainWindowController: PlayerWindowController {
 
   /** Display time label when mouse over slider */
   private func updateTimeLabel(_ mouseXPos: CGFloat, originalPos: NSPoint) {
-    let timeLabelXPos = round(mouseXPos + playSlider.frame.origin.x - timePreviewWhenSeek.frame.width / 2)
-    let timeLabelYPos = playSlider.frame.origin.y + playSlider.frame.height
-    timePreviewWhenSeek.frame.origin = NSPoint(x: timeLabelXPos, y: timeLabelYPos)
-    let sliderFrameInWindow = playSlider.superview!.convert(playSlider.frame.origin, to: nil)
-    var percentage = Double((mouseXPos - 3) / (playSlider.frame.width - 6))
-    if percentage < 0 {
-      percentage = 0
-    }
+    timePreviewWhenSeekHorizontalCenterConstraint.constant = mouseXPos
 
     guard let duration = player.info.videoDuration else { return }
+    let percentage = max(0, Double((mouseXPos - 3) / (playSlider.frame.width - 6)))
     let previewTime = duration * percentage
     guard timePreviewWhenSeek.stringValue != previewTime.stringRepresentation else { return }
 
@@ -2787,6 +2783,7 @@ class MainWindowController: PlayerWindowController {
         thumbOriginY = timePreviewOriginY + timePreviewWhenSeek.frame.height
       } else {
         // Show thumbnail below slider
+        let sliderFrameInWindow = playSlider.superview!.convert(playSlider.frame.origin, to: nil)
         thumbOriginY = sliderFrameInWindow.y - thumbHeight
       }
       thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: thumbOriginY)
@@ -3273,18 +3270,16 @@ class MainWindowController: PlayerWindowController {
 
   /** When slider changes */
   @IBAction override func playSliderChanges(_ sender: NSSlider) {
-    // guard let event = NSApp.currentEvent else { return }
     guard !player.info.fileLoading else { return }
     super.playSliderChanges(sender)
 
-    // seek and update time
+    // update position of time label
+    timePreviewWhenSeekHorizontalCenterConstraint.constant = sender.knobPointPosition() - playSlider.frame.origin.x
+
+    // update text of time label
     let percentage = 100 * sender.doubleValue / sender.maxValue
-    // label
-    timePreviewWhenSeek.frame.origin = CGPoint(
-      x: round(sender.knobPointPosition() - timePreviewWhenSeek.frame.width / 2),
-      y: playSlider.frame.origin.y + playSlider.frame.height)
     let seekTime = player.info.videoDuration! * percentage * 0.01
-    Logger.log("PlaySliderChanged: setting time indicator to: \(seekTime.stringRepresentation)")
+    Logger.log("PlaySliderChanged: setting seek time label to \(seekTime.stringRepresentation.quoted)")
     timePreviewWhenSeek.stringValue = seekTime.stringRepresentation
   }
 

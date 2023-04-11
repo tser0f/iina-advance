@@ -70,6 +70,7 @@
                 <outlet property="rightLabel" destination="GgV-Cc-sk0" id="fnx-gO-YPl"/>
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePreviewWhenSeek" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
+                <outlet property="timePreviewWhenSeekHorizontalCenterConstraint" destination="ekV-Sh-cEZ" id="zYq-k1-B2g"/>
                 <outlet property="titleBarHeightConstraint" destination="1CI-Wl-F8h" id="K0U-G8-X9f"/>
                 <outlet property="titleBarView" destination="WaC-08-utU" id="Ahh-93-k7q"/>
                 <outlet property="topOSCPreferredHeightConstraint" destination="DXc-2g-UvP" id="3vj-Gl-4aQ"/>
@@ -542,13 +543,6 @@
         <customView identifier="OSC-Fragment-Playback-Position" translatesAutoresizingMaskIntoConstraints="NO" id="BE1-yC-oJL" userLabel="OSC Fragment: Playback Position Slider">
             <rect key="frame" x="0.0" y="0.0" width="500" height="42"/>
             <subviews>
-                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback Slider" customClass="PlaySlider" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="46" y="5" width="408" height="28"/>
-                    <sliderCell key="cell" continuous="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
-                    <connections>
-                        <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>
-                    </connections>
-                </slider>
                 <textField identifier="Playback-Position-LeftLabel" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NBD-MV-OuG" userLabel="Left Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
                     <rect key="frame" x="-2" y="16" width="50" height="11"/>
                     <constraints>
@@ -564,6 +558,13 @@
                         <binding destination="-2" name="font" keyPath="monospacedFont" id="uHM-ya-PZy"/>
                     </connections>
                 </textField>
+                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback Slider" customClass="PlaySlider" customModule="IINA" customModuleProvider="target">
+                    <rect key="frame" x="46" y="5" width="408" height="28"/>
+                    <sliderCell key="cell" continuous="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
+                    <connections>
+                        <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>
+                    </connections>
+                </slider>
                 <textField identifier="Playback-Position-RightLabel" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GgV-Cc-sk0" userLabel="Right Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
                     <rect key="frame" x="452" y="16" width="50" height="11"/>
                     <constraints>
@@ -580,7 +581,7 @@
                     </connections>
                 </textField>
                 <textField identifier="Playback-Seek-Time-Label" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
-                    <rect key="frame" x="198" y="31" width="39" height="11"/>
+                    <rect key="frame" x="229" y="31" width="39" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" priority="900" constant="11" id="Eis-nn-SIU"/>
                     </constraints>
@@ -599,7 +600,7 @@
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="centerY" secondItem="BE1-yC-oJL" secondAttribute="centerY" id="XFh-GC-Pub"/>
                 <constraint firstItem="qOq-6a-7j7" firstAttribute="top" secondItem="BE1-yC-oJL" secondAttribute="top" id="ZlC-qT-aez"/>
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="centerY" secondItem="NBD-MV-OuG" secondAttribute="centerY" id="dX4-4l-aJM"/>
-                <constraint firstItem="qOq-6a-7j7" firstAttribute="leading" secondItem="BE1-yC-oJL" secondAttribute="leading" constant="200" placeholder="YES" id="ekV-Sh-cEZ"/>
+                <constraint firstItem="qOq-6a-7j7" firstAttribute="centerX" secondItem="eBP-6g-bAT" secondAttribute="leading" constant="200" identifier="TimePreviewWhenSeekHorizontalCenterConstraint" id="ekV-Sh-cEZ"/>
                 <constraint firstItem="NBD-MV-OuG" firstAttribute="leading" secondItem="BE1-yC-oJL" secondAttribute="leading" id="fcm-ao-T7h"/>
                 <constraint firstAttribute="trailing" secondItem="GgV-Cc-sk0" secondAttribute="trailing" id="plE-qU-XZt"/>
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="leading" secondItem="NBD-MV-OuG" secondAttribute="trailing" constant="2" id="uHE-D2-HgP"/>
