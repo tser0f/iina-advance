@@ -30,10 +30,10 @@
                 <outlet property="controlBarFloating" destination="OiF-pA-8Sd" id="7C1-6a-ZK6"/>
                 <outlet property="controlBarTitleBar" destination="FK3-bI-nks" id="kqg-dT-tkI"/>
                 <outlet property="controlBarTop" destination="pgt-r3-Vbf" id="dqS-nQ-If8"/>
+                <outlet property="fragControlLeftArrowLabelView" destination="8Ej-eH-OR9" id="Grg-cg-qxF"/>
+                <outlet property="fragControlRightArrowLabelView" destination="Xts-Pc-T8d" id="yhF-yH-Cdh"/>
                 <outlet property="fragControlView" destination="hDm-KI-3o4" id="ITm-fa-cWL"/>
-                <outlet property="fragControlViewLeftView" destination="8Ej-eH-OR9" id="Grg-cg-qxF"/>
-                <outlet property="fragControlViewMiddleView" destination="Yv6-0K-6E4" id="8vA-vh-qiH"/>
-                <outlet property="fragControlViewRightView" destination="Xts-Pc-T8d" id="yhF-yH-Cdh"/>
+                <outlet property="fragPlaybackControlButtonsView" destination="Yv6-0K-6E4" id="8vA-vh-qiH"/>
                 <outlet property="fragSliderView" destination="BE1-yC-oJL" id="KXu-MZ-mx8"/>
                 <outlet property="fragToolbarView" destination="KfP-G9-8pD" id="R84-gZ-D93"/>
                 <outlet property="fragVolumeView" destination="N3B-DL-XOA" id="4VW-Wa-AD7"/>
@@ -450,7 +450,7 @@
                             <outlet property="imageView" destination="HHm-A9-jIP" id="KtN-I3-vJb"/>
                         </connections>
                     </customView>
-                    <customView identifier="Interactive-Mode-Bottom-View" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Tdb-EA-alw" userLabel="Interactive-Mode-Bottom View">
+                    <customView identifier="Interactive-Mode-Bottom-View" hidden="YES" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Tdb-EA-alw" userLabel="Interactive-Mode-Bottom View">
                         <rect key="frame" x="0.0" y="-60" width="640" height="60"/>
                         <constraints>
                             <constraint firstAttribute="height" constant="60" id="sUc-WO-8kQ"/>
@@ -544,14 +544,14 @@
             <rect key="frame" x="0.0" y="0.0" width="500" height="42"/>
             <subviews>
                 <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback Slider" customClass="PlaySlider" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="48" y="-1" width="404" height="28"/>
+                    <rect key="frame" x="46" y="5" width="408" height="28"/>
                     <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
                         <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>
                     </connections>
                 </slider>
                 <textField identifier="Playback-Position-LeftLabel" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NBD-MV-OuG" userLabel="Left Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="0.0" y="8" width="50" height="14"/>
+                    <rect key="frame" x="-2" y="16" width="50" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="11" id="BzO-eZ-2m8"/>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="46" id="CMl-dC-PCr"/>
@@ -580,7 +580,7 @@
                         <binding destination="-2" name="font" keyPath="monospacedFont" id="6lX-sn-136"/>
                     </connections>
                 </textField>
-                <textField identifier="Playback-Seek-Time-Label" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
+                <textField identifier="Playback-Seek-Time-Label" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
                     <rect key="frame" x="229" y="31" width="39" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" priority="900" constant="11" id="Eis-nn-SIU"/>
@@ -608,10 +608,10 @@
             </constraints>
             <point key="canvasLocation" x="230" y="471"/>
         </customView>
-        <customView identifier="OSC-Fragment-Playback-Control-Left" placeholderIntrinsicWidth="18" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="8Ej-eH-OR9" userLabel="OSC Fragment: Playback Control Left">
+        <customView identifier="OSC-Fragment-Playback-Control-Left" placeholderIntrinsicWidth="18" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="8Ej-eH-OR9" userLabel="OSC Fragment: Playback Control Left Arrow Label">
             <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
             <subviews>
-                <textField identifier="LeftArrow-Label" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Arrow Label">
+                <textField identifier="LeftArrow-Label" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Arrow Label">
                     <rect key="frame" x="1" y="6" width="27" height="13"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="right" title="-32x" id="eCe-SS-Wlj">
                         <font key="font" metaFont="system" size="10"/>
@@ -629,10 +629,10 @@
             </constraints>
             <point key="canvasLocation" x="-162" y="584"/>
         </customView>
-        <customView identifier="OSC-Fragment-Playback-Control-Right" translatesAutoresizingMaskIntoConstraints="NO" id="Xts-Pc-T8d" userLabel="OSC Fragment: Playback Control Right">
+        <customView identifier="OSC-Fragment-Playback-Control-Right" translatesAutoresizingMaskIntoConstraints="NO" id="Xts-Pc-T8d" userLabel="OSC Fragment: Playback Control Right Arrow Label">
             <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
             <subviews>
-                <textField identifier="RightArrow-Label" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Arrow Label">
+                <textField identifier="RightArrow-Label" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Arrow Label">
                     <rect key="frame" x="-2" y="6" width="22" height="13"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="left" title="32x" id="ULE-u4-k9L">
                         <font key="font" metaFont="system" size="10"/>
@@ -650,7 +650,7 @@
             </constraints>
             <point key="canvasLocation" x="-53" y="584"/>
         </customView>
-        <customView identifier="OSC-Fragment-Playback-Control-Middle" placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4" userLabel="OSC Fragment: Playback Control Middle">
+        <customView identifier="OSC-Fragment-Playback-Control-Middle" placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4" userLabel="OSC Fragment: Playback Control Buttons">
             <rect key="frame" x="0.0" y="0.0" width="144" height="36"/>
             <subviews>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="siV-cJ-huN" userLabel="Left-most Spacer">
@@ -672,7 +672,7 @@
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
-                        <action selector="leftButtonAction:" target="-2" id="WRV-J4-Hq8"/>
+                        <action selector="leftArrowButtonAction:" target="-2" id="WRV-J4-Hq8"/>
                     </connections>
                 </button>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="I07-AH-cjL" userLabel="Left-Middle Spacer">
@@ -705,7 +705,7 @@
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
-                        <action selector="rightButtonAction:" target="-2" id="mQT-3l-E7s"/>
+                        <action selector="rightArrowButtonAction:" target="-2" id="mQT-3l-E7s"/>
                     </connections>
                 </button>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="06z-vV-Q73" userLabel="Right-most Spacer">
