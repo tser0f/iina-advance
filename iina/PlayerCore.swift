@@ -182,6 +182,9 @@ class PlayerCore: NSObject {
   /// Whether shutdown of this player has completed (mpv has shutdown).
   var isShutdown = false
 
+  /// Whether stopping of this player has been initiated.
+  var isStopping = false
+
   /// Whether mpv playback has stopped and the media has been unloaded.
   var isStopped = true
 
@@ -489,6 +492,11 @@ class PlayerCore: NSObject {
     isShuttingDown = true
     Logger.log("Shutting down", subsystem: subsystem)
     savePlayerState()
+    // Once mpv has been instructed to quit accessing the mpv core can result in a crash. Must not
+    // allow the display link thread or the mpvGLQueue dispatch queue to continue processing because
+    // these entities will call mpv.
+    mainWindow.videoView.videoLayer.suspend()
+    mainWindow.videoView.stopDisplayLink()
     mpv.mpvQuit()
   }
 
@@ -647,6 +655,7 @@ class PlayerCore: NSObject {
     // initiated directly through mpv.
     guard !isStopped else { return }
     Logger.log("Stopping playback", subsystem: subsystem)
+    isStopping = true
     mpv.command(.stop)
   }
 
@@ -657,6 +666,7 @@ class PlayerCore: NSObject {
   func playbackStopped() {
     Logger.log("Playback has stopped", subsystem: subsystem)
     isStopped = true
+    isStopping = false
     postNotification(.iinaPlayerStopped)
   }
 
@@ -1512,6 +1522,7 @@ class PlayerCore: NSObject {
     triedUsingExactSeekForCurrentFile = false
     info.fileLoading = false
     info.haveDownloadedSub = false
+    isStopping = false
     isStopped = false
 
     // Kick off thumbnails load/gen - it can happen in background
@@ -1569,8 +1580,10 @@ class PlayerCore: NSObject {
   }
 
   func trackListChanged() {
-    // Must not process track list changes if mpv is terminating.
-    guard !isShuttingDown else { return }
+    // No need to process track list changes if playback is being stopped. Must not process track
+    // list changes if mpv is terminating as accessing mpv once shutdown has been initiated can
+    // trigger a crash.
+    guard !isStopping, !isStopped, !isShuttingDown else { return }
     Logger.log("Track list changed", subsystem: subsystem)
     reloadTrackInfo()
     reloadSelectedTracks()
@@ -1601,7 +1614,9 @@ class PlayerCore: NSObject {
   func refreshEdrMode() {
     guard mainWindow.loaded else { return }
     DispatchQueue.main.async {
-      guard !self.isStopped else { return }
+      // No need to refresh if playback is being stopped. Must not attempt to refresh if mpv is
+      // terminating as accessing mpv once shutdown has been initiated can trigger a crash.
+      guard !self.isStopping, !self.isStopped, !self.isShuttingDown else { return }
       self.mainWindow.videoView.refreshEdrMode()
     }
   }

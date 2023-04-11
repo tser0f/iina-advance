@@ -681,8 +681,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         try FileManager.default.trashItem(at: url, resultingItemURL: nil)
         successes.insert(index)
       } catch let error {
-        Utility.showAlert("playlist.error_deleting", arguments:
-          [error.localizedDescription])
+        Utility.showAlert("playlist.error_deleting", arguments: [error.localizedDescription])
       }
     }
     if !successes.isEmpty {

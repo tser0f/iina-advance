@@ -317,7 +317,7 @@ extension InitialWindowController: NSTableViewDelegate, NSTableViewDataSource {
     return [
       "filename": url.lastPathComponent,
       "docIcon": NSWorkspace.shared.icon(forFile: url.path)
-    ]
+    ] as [String: Any]
   }
 
   // facilitates highlight on hover

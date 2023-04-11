@@ -8,6 +8,8 @@
 
 import Cocoa
 
+fileprivate let subsystem = Logger.makeSubsystem("thumbcache")
+
 class ThumbnailCache {
   private typealias CacheVersion = UInt8
   private typealias FileSize = UInt64

@@ -36,8 +36,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   private var observers: [NSObjectProtocol] = []
   var observedPrefKeys: [Preference.Key] = [
+    .logLevel,
     .iinaLaunchCount,
-    .iinaPing
+    .iinaPing,
   ]
 
   // Windows
@@ -49,6 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   lazy var inspector: InspectorWindowController = InspectorWindowController()
   lazy var historyWindow: HistoryWindowController = HistoryWindowController()
   lazy var guideWindow: GuideWindowController = GuideWindowController()
+  lazy var logWindow: LogWindowController = LogWindowController()
 
   lazy var vfWindow: FilterWindowController = FilterWindowController(filterType: MPVProperty.vf,
                                                                      autosaveName: Constants.WindowAutosaveName.videoFilter)
@@ -83,6 +85,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   private let bindingTableStateManger: BindingTableStateManager = BindingTableState.manager
   private let confTableStateManager: ConfTableStateManager = ConfTableState.manager
 
+  /// Whether the shutdown sequence timed out.
+  private var timedOut = false
+
   @IBOutlet weak var menuController: MenuController!
 
   @IBOutlet weak var dockMenu: NSMenu!
@@ -91,6 +96,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard let keyPath = keyPath, let change = change else { return }
 
     switch keyPath {
+    case Preference.Key.logLevel.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        Logger.Level.preferred = Logger.Level(rawValue: newValue.clamped(to: 0...3))!
+      }
+
     /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1.
     /// It uses it this value as its launchID, and stores the new value back to the prefs, which will notify anyone listening to pref changes.
     /// So this acts like a sort of registration mechanism. Each instance listens to see if the pref is updated by other instances.
@@ -111,25 +121,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           Preference.set(buildString, for: .iinaPing)
         }
       }
+
     case PK.iinaPing.rawValue:
       if let info = change[.newKey] as? String {
         Logger.log("Got a ping. Will assume an instance of IINA is already running, and disable loading/saving UI state. [PingInfo: \(info)]")
         Preference.UIState.disablePersistentStateUntilNextLaunch()
       }
+
     default:
       break
     }
   }
 
-  // MARK: - SPUUpdaterDelegate
-
-  @IBOutlet weak var updaterController: SPUStandardUpdaterController!
-
-  func feedURLString(for updater: SPUUpdater) -> String? {
-    return Preference.bool(for: .receiveBetaUpdate) ? AppData.appcastBetaLink : AppData.appcastLink
-  }
-
-  // MARK: - App Delegate
+  // MARK: - Logs
 
   /// Log details about when and from what sources IINA was built.
   ///
@@ -147,9 +151,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     Logger.log("Built \(date) from branch \(branch), commit \(commit)")
   }
 
+
+  // MARK: - SPUUpdaterDelegate
+  @IBOutlet weak var updaterController: SPUStandardUpdaterController!
+
+  func feedURLString(for updater: SPUUpdater) -> String? {
+    return Preference.bool(for: .receiveBetaUpdate) ? AppData.appcastBetaLink : AppData.appcastLink
+  }
+
+  // MARK: - App Delegate
+
   func applicationWillFinishLaunching(_ notification: Notification) {
     // Must setup preferences before logging so log level is set correctly.
     registerUserDefaultValues()
+
+    observedPrefKeys.forEach { key in
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
 
     // Start the log file by logging the version of IINA producing the log file.
     let (version, build) = InfoDictionary.shared.version
@@ -251,6 +269,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     shouldIgnoreOpenFile = true
     commandLineStatus.isCommandLine = true
     commandLineStatus.filenames = iinaArgFilenames
+  }
+
+  deinit {
+    ObjcUtils.silenced {
+      for key in self.observedPrefKeys {
+        UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
+      }
+    }
   }
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
@@ -546,6 +572,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   // MARK: Application termination
 
+  @objc
+  func shutdownTimedout() {
+    timedOut = true
+    Logger.log("Timed out waiting for players to stop and shutdown", level: .warning)
+    // For debugging list players that have not terminated.
+    for player in PlayerCore.playerCores {
+      let label = player.label
+      if !player.isStopped {
+        Logger.log("Player \(label) failed to stop", level: .warning)
+      } else if !player.isShutdown {
+        Logger.log("Player \(label) failed to shutdown", level: .warning)
+      }
+    }
+    // For debugging purposes we do not remove observers in case players stop or shutdown after
+    // the timeout has fired as knowing that occurred maybe useful for debugging why the
+    // termination sequence failed to complete on time.
+    Logger.log("Not waiting for players to shutdown; proceeding with application termination",
+               level: .warning)
+    // Tell Cocoa to proceed with termination.
+    NSApp.reply(toApplicationShouldTerminate: true)
+  }
+
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     Logger.log("App should terminate")
     isTerminating = true
@@ -609,26 +657,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // arbitrary timeout that forces termination to complete. The expectation is that this timeout
     // is never triggered. If a timeout warning is logged during termination then that needs to be
     // investigated.
-    var timedOut = false
-    let timer = Timer(timeInterval: 10, repeats: false) { _ in
-      timedOut = true
-      Logger.log("Timed out waiting for players to stop and shutdown", level: .warning)
-      // For debugging list players that have not terminated.
-      for player in PlayerCore.playerCores {
-        let label = player.label
-        if !player.isStopped {
-          Logger.log("Player \(label) failed to stop", level: .warning)
-        } else if !player.isShutdown {
-          Logger.log("Player \(label) failed to shutdown", level: .warning)
-        }
+    var timer: Timer
+    if #available(macOS 10.12, *) {
+      timer = Timer(timeInterval: 10, repeats: false) { _ in
+        // Once macOS 10.11 is no longer supported the contents of the method can be inlined in this
+        // closure.
+        self.shutdownTimedout()
       }
-      // For debugging purposes we do not remove observers in case players stop or shutdown after
-      // the timeout has fired as knowing that occurred maybe useful for debugging why the
-      // termination sequence failed to complete on time.
-      Logger.log("Not waiting for players to shutdown; proceeding with application termination",
-                 level: .warning)
-      // Tell Cocoa to proceed with termination.
-      NSApp.reply(toApplicationShouldTerminate: true)
+    } else {
+      timer = Timer(timeInterval: TimeInterval(10), target: self,
+                    selector: #selector(self.shutdownTimedout), userInfo: nil, repeats: false)
     }
     RunLoop.main.add(timer, forMode: .common)
 
@@ -636,7 +674,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let center = NotificationCenter.default
     var observers: [NSObjectProtocol] = []
     var observer = center.addObserver(forName: .iinaPlayerStopped, object: nil, queue: .main) { note in
-      guard !timedOut else {
+      guard !self.timedOut else {
         // The player has stopped after IINA already timed out, gave up waiting for players to
         // shutdown, and told Cocoa to proceed with termination. AppKit will continue to process
         // queued tasks during application termination even after AppKit has called
@@ -662,7 +700,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     // Establish an observer for a player core shutting down.
     observer = center.addObserver(forName: .iinaPlayerShutdown, object: nil, queue: .main) { _ in
-      guard !timedOut else {
+      guard !self.timedOut else {
         // The player has shutdown after IINA already timed out, gave up waiting for players to
         // shutdown, and told Cocoa to proceed with termination. AppKit will continue to process
         // queued tasks during application termination even after AppKit has called
@@ -938,6 +976,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   @IBAction func showHistoryWindow(_ sender: AnyObject) {
     Logger.log("Showing History window", level: .verbose)
     historyWindow.showWindow(self)
+  }
+
+  @IBAction func showLogWindow(_ sender: AnyObject) {
+    logWindow.showWindow(self)
   }
 
   @IBAction func showHighlights(_ sender: AnyObject) {
