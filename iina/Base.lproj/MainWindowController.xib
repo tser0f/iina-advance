@@ -30,9 +30,6 @@
                 <outlet property="controlBarFloating" destination="OiF-pA-8Sd" id="7C1-6a-ZK6"/>
                 <outlet property="controlBarTitleBar" destination="FK3-bI-nks" id="kqg-dT-tkI"/>
                 <outlet property="controlBarTop" destination="pgt-r3-Vbf" id="dqS-nQ-If8"/>
-                <outlet property="fragControlLeftArrowLabelView" destination="8Ej-eH-OR9" id="Grg-cg-qxF"/>
-                <outlet property="fragControlRightArrowLabelView" destination="Xts-Pc-T8d" id="yhF-yH-Cdh"/>
-                <outlet property="fragControlView" destination="hDm-KI-3o4" id="ITm-fa-cWL"/>
                 <outlet property="fragPlaybackControlButtonsView" destination="Yv6-0K-6E4" id="8vA-vh-qiH"/>
                 <outlet property="fragSliderView" destination="BE1-yC-oJL" id="KXu-MZ-mx8"/>
                 <outlet property="fragToolbarView" destination="KfP-G9-8pD" id="R84-gZ-D93"/>
@@ -50,6 +47,7 @@
                 <outlet property="muteButton" destination="2py-h1-0km" id="baB-6t-gO7"/>
                 <outlet property="oscBottomMainView" destination="Qmi-hb-0aM" id="PM5-Ic-nvt"/>
                 <outlet property="oscFloatingBottomView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
+                <outlet property="oscFloatingPlayButtonsContainerView" destination="hDm-KI-3o4" id="ITm-fa-cWL"/>
                 <outlet property="oscFloatingTopView" destination="Unr-Y6-JoM" id="URb-3v-Gzc"/>
                 <outlet property="oscTitleBarMainView" destination="icJ-I7-xRz" id="7lx-6S-9Oi"/>
                 <outlet property="oscTitleBarWidthConstraint" destination="zC9-dS-D1S" id="MU1-ei-qEz"/>
@@ -317,6 +315,61 @@
                         <subviews>
                             <stackView identifier="OSC-Floating-TopHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Unr-Y6-JoM" userLabel="OSC-Floating-TopHalf View">
                                 <rect key="frame" x="10" y="26" width="420" height="37"/>
+                                <middleViews>
+                                    <customView identifier="Left-Speed-Label-Container-View" misplaced="YES" placeholderIntrinsicWidth="18" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="8Ej-eH-OR9" userLabel="Left-Speed-Label-Container View">
+                                        <rect key="frame" x="0.0" y="7" width="18" height="24"/>
+                                        <subviews>
+                                            <textField identifier="Left-Speed-Label" hidden="YES" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Speed Label">
+                                                <rect key="frame" x="-2" y="5" width="30" height="13"/>
+                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="right" title="-32x" id="eCe-SS-Wlj">
+                                                    <font key="font" metaFont="system" size="10"/>
+                                                    <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                </textFieldCell>
+                                            </textField>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="Yg9-Sd-sWy" firstAttribute="centerY" secondItem="8Ej-eH-OR9" secondAttribute="centerY" id="WQ5-1e-17L"/>
+                                            <constraint firstAttribute="trailing" secondItem="Yg9-Sd-sWy" secondAttribute="trailing" id="cjX-bE-au9"/>
+                                            <constraint firstAttribute="width" constant="26" id="grc-Ve-XDC"/>
+                                            <constraint firstItem="Yg9-Sd-sWy" firstAttribute="leading" secondItem="8Ej-eH-OR9" secondAttribute="leading" id="sMT-B8-x1h"/>
+                                            <constraint firstAttribute="height" priority="900" constant="24" identifier="PlaybackControlLeftHeight" id="zqT-9O-0G6"/>
+                                        </constraints>
+                                    </customView>
+                                    <stackView identifier="OSC-Fragment-Control-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" horizontalClippingResistancePriority="500" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hDm-KI-3o4" userLabel="OSC-Floating-PlayButtons-Container Stack View">
+                                        <rect key="frame" x="18" y="0.0" width="0.0" height="37"/>
+                                    </stackView>
+                                    <customView identifier="Right-Speed-Label-Container-View" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Xts-Pc-T8d" userLabel="Right-Speed-Label-Container View">
+                                        <rect key="frame" x="18" y="0.0" width="402" height="37"/>
+                                        <subviews>
+                                            <textField identifier="Right-Speed-Label" hidden="YES" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Speed Label">
+                                                <rect key="frame" x="-2" y="5" width="30" height="13"/>
+                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="left" title="32x" id="ULE-u4-k9L">
+                                                    <font key="font" metaFont="system" size="10"/>
+                                                    <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                </textFieldCell>
+                                            </textField>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="QTI-wi-oyB" firstAttribute="centerY" secondItem="Xts-Pc-T8d" secondAttribute="centerY" id="HgA-Mc-Bhf"/>
+                                            <constraint firstItem="QTI-wi-oyB" firstAttribute="leading" secondItem="Xts-Pc-T8d" secondAttribute="leading" id="NqC-Xk-Iqd"/>
+                                            <constraint firstAttribute="trailing" secondItem="QTI-wi-oyB" secondAttribute="trailing" id="Zh4-XB-RHd"/>
+                                            <constraint firstAttribute="height" priority="900" constant="24" identifier="PlaybackControlRightHeight" id="sLY-0Y-Hql"/>
+                                            <constraint firstAttribute="width" constant="26" id="zCh-hV-cEH"/>
+                                        </constraints>
+                                    </customView>
+                                </middleViews>
+                                <visibilityPriorities>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                </visibilityPriorities>
+                                <customSpacing>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                </customSpacing>
                             </stackView>
                             <stackView identifier="OSC-Floating-BottomHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="1000" horizontalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="hb6-oe-rHm" userLabel="OSC-Floating-BottomHalf View">
                                 <rect key="frame" x="10" y="-1" width="420" height="37"/>
@@ -610,48 +663,6 @@
             </constraints>
             <point key="canvasLocation" x="230" y="471"/>
         </customView>
-        <customView identifier="OSC-Fragment-Playback-Control-Left" placeholderIntrinsicWidth="18" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="8Ej-eH-OR9" userLabel="OSC Fragment: Playback Control Left Arrow Label">
-            <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
-            <subviews>
-                <textField identifier="LeftArrow-Label" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Arrow Label">
-                    <rect key="frame" x="1" y="6" width="27" height="13"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="right" title="-32x" id="eCe-SS-Wlj">
-                        <font key="font" metaFont="system" size="10"/>
-                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
-            </subviews>
-            <constraints>
-                <constraint firstItem="Yg9-Sd-sWy" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="8Ej-eH-OR9" secondAttribute="leading" id="UQy-51-n85"/>
-                <constraint firstItem="Yg9-Sd-sWy" firstAttribute="centerY" secondItem="8Ej-eH-OR9" secondAttribute="centerY" id="WQ5-1e-17L"/>
-                <constraint firstAttribute="trailing" secondItem="Yg9-Sd-sWy" secondAttribute="trailing" id="cjX-bE-au9"/>
-                <constraint firstAttribute="width" constant="26" id="grc-Ve-XDC"/>
-                <constraint firstAttribute="height" priority="900" constant="24" identifier="PlaybackControlLeftHeight" id="zqT-9O-0G6"/>
-            </constraints>
-            <point key="canvasLocation" x="-162" y="584"/>
-        </customView>
-        <customView identifier="OSC-Fragment-Playback-Control-Right" translatesAutoresizingMaskIntoConstraints="NO" id="Xts-Pc-T8d" userLabel="OSC Fragment: Playback Control Right Arrow Label">
-            <rect key="frame" x="0.0" y="0.0" width="26" height="24"/>
-            <subviews>
-                <textField identifier="RightArrow-Label" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Arrow Label">
-                    <rect key="frame" x="-2" y="6" width="22" height="13"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="left" title="32x" id="ULE-u4-k9L">
-                        <font key="font" metaFont="system" size="10"/>
-                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
-            </subviews>
-            <constraints>
-                <constraint firstItem="QTI-wi-oyB" firstAttribute="centerY" secondItem="Xts-Pc-T8d" secondAttribute="centerY" id="HgA-Mc-Bhf"/>
-                <constraint firstItem="QTI-wi-oyB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Xts-Pc-T8d" secondAttribute="leading" id="NqC-Xk-Iqd"/>
-                <constraint firstAttribute="trailing" secondItem="QTI-wi-oyB" secondAttribute="trailing" constant="8" id="eQW-Mv-flr"/>
-                <constraint firstAttribute="height" priority="900" constant="24" identifier="PlaybackControlRightHeight" id="sLY-0Y-Hql"/>
-                <constraint firstAttribute="width" constant="26" id="zCh-hV-cEH"/>
-            </constraints>
-            <point key="canvasLocation" x="-53" y="584"/>
-        </customView>
         <customView identifier="OSC-Fragment-Playback-Control-Middle" placeholderIntrinsicWidth="184" placeholderIntrinsicHeight="24" translatesAutoresizingMaskIntoConstraints="NO" id="Yv6-0K-6E4" userLabel="OSC Fragment: Playback Control Buttons">
             <rect key="frame" x="0.0" y="0.0" width="144" height="36"/>
             <subviews>
@@ -757,10 +768,6 @@
             </constraints>
             <point key="canvasLocation" x="-166" y="453"/>
         </customView>
-        <stackView identifier="OSC-Fragment-Control-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" horizontalClippingResistancePriority="500" translatesAutoresizingMaskIntoConstraints="NO" id="hDm-KI-3o4" userLabel="OSC Fragment: Control View">
-            <rect key="frame" x="0.0" y="0.0" width="200" height="24"/>
-            <point key="canvasLocation" x="253" y="584"/>
-        </stackView>
         <stackView identifier="OSC-Fragment-Toolbar-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" id="KfP-G9-8pD" userLabel="OSC Fragment: Toolbar">
             <rect key="frame" x="0.0" y="0.0" width="106" height="24"/>
             <autoresizingMask key="autoresizingMask"/>
