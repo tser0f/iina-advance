@@ -898,7 +898,7 @@ class MainWindowController: PlayerWindowController {
     window.appearance = appearance
   }
 
-  // - MARK: Controllers & Title Bar
+  // - MARK: Controllers & Title Bar Layout
 
   /**
    This ONLY updates the constraints to toggle between `inside` and `outside` placement types.
@@ -1002,8 +1002,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updatePinToTopButton(fullScreen fullScreenOverride: Bool? = nil) {
-    let hasTitleBar = hasTitleBar(fullScreen: fullScreenOverride)
-    pinToTopButton.isHidden = !(hasTitleBar && (Preference.bool(for: .alwaysShowOnTopIcon) || isOntop))
+    let hasNoTitleBar = hasNoTitleBar(fullScreen: fullScreenOverride)
+    let showOnTopStatus = Preference.bool(for: .alwaysShowOnTopIcon) || isOntop
+    pinToTopButton.isHidden = hasNoTitleBar || !showOnTopStatus
     pinToTopButton.state = isOntop ? .on : .off
   }
 
@@ -1026,15 +1027,15 @@ class MainWindowController: PlayerWindowController {
     return !isFullScreen && enableOSC && oscPosition == .top && titleBarStyle == .minimal
   }
 
-  private func hasTitleBar(fullScreen fullScreenOverride: Bool? = nil) -> Bool {
+  private func hasNoTitleBar(fullScreen fullScreenOverride: Bool? = nil) -> Bool {
     let isFullScreen: Bool = fullScreenOverride ?? fsState.isFullscreen
     if isFullScreen {
+      return true
+    }
+    if topPanelPlacement == .outsideVideo && (!enableOSC || oscPosition != .top) {
       return false
     }
-    if topPanelPlacement == .insideVideo || (topPanelPlacement == .outsideVideo && enableOSC && oscPosition == .top) {
-      return titleBarStyle != .none
-    }
-    return true
+    return titleBarStyle == .none
   }
 
   private func setupTitleBarAndOSC(fullScreen fullScreenOverride: Bool? = nil) {
@@ -1048,8 +1049,9 @@ class MainWindowController: PlayerWindowController {
 
     // fullScreenOverride == future full screen state, but should be used in present calculations
     let isFullScreen: Bool = fullScreenOverride ?? fsState.isFullscreen
-    let hasTitleBar = hasTitleBar(fullScreen: fullScreenOverride)
+    let hasNoTitleBar = hasNoTitleBar(fullScreen: fullScreenOverride)
     let isTitleBarOSC = isTitleBarOSC(fullScreen: fullScreenOverride)
+    let hasTopOSC = enableOSC && oscPosition == .top
 
     var animationBlocks: [AnimationBlock] = []
 
@@ -1058,8 +1060,8 @@ class MainWindowController: PlayerWindowController {
       titleBarHeightConstraint.animateToConstant(0)
       topOSCPreferredHeightConstraint.animateToConstant(0)
       bottomOSCPreferredHeightConstraint.animateToConstant(0)
-      // Top of OSD should in most cases be >= this constant
-      osdOffsetFromTopFallbackConstraint.animateToConstant(StandardTitleBarHeight + 8)
+      // Top of OSD should in most cases be below top of video container >= this constant
+      osdOffsetFromTopFallbackConstraint.animateToConstant(8)
 
       // Reset view states to defaults
       controlBarFloating.isDragging = false
@@ -1088,7 +1090,7 @@ class MainWindowController: PlayerWindowController {
 
       // Title bar & title bar accessories:
 
-      if !hasTitleBar {
+      if hasNoTitleBar {
         // Remove all title bar accessories (if needed):
         for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
           window.removeTitlebarAccessoryViewController(at: index)
@@ -1096,15 +1098,15 @@ class MainWindowController: PlayerWindowController {
       }
 
       if isFullScreen {
-        // Note: documentIconButton will be handled elsewhere due to its peculiarities
+        /// Note: `documentIconButton` & `titleTextField` require special handling and will be handled elsewhere
         for button in trafficLightButtons {
           show(button)
         }
         window.titleVisibility = .visible
         osdOffsetFromTopFallbackConstraint.animateToConstant(8)  // OSD top = 8pt below video container top
 
-      } else if titleBarStyle == .none {
-        osdOffsetFromTopFallbackConstraint.animateToConstant(8)  // OSD top = 8pt below video container top
+      } else if hasNoTitleBar {
+        // nothing
       } else {  // Not fullscreen, has title bar
         let fadeable = topPanelPlacement == .insideVideo
 
@@ -1113,8 +1115,12 @@ class MainWindowController: PlayerWindowController {
           show(button, makeFadeable: fadeable)
         }
 
+        if topPanelPlacement == .insideVideo && titleBarStyle == .minimal && !hasTopOSC {
+          osdOffsetFromTopFallbackConstraint.animateToConstant(StandardTitleBarHeight + 8)
+        }
+
         // Force "full" title bar style if outside video & no top OSC
-        if titleBarStyle == .full || (topPanelPlacement == .outsideVideo && (!enableOSC || oscPosition != .top)) {
+        if titleBarStyle == .full || (topPanelPlacement == .outsideVideo && !hasTopOSC) {
           show(documentIconButton, titleTextField, makeFadeable: fadeable)
           window.titleVisibility = .visible
           titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)  // May be overridden by OSC layout
@@ -2349,15 +2355,14 @@ class MainWindowController: PlayerWindowController {
   func updateSpacingForTitleBarAccessories(fullScreen fullScreenOverride: Bool? = nil) {
     guard let window = window else { return }
 
-    let hasTitleBar = hasTitleBar(fullScreen: fullScreenOverride)
-    let leadingSpaceUsed = updateSpacingForLeadingTitleBarAccessory(hasTitleBar: hasTitleBar)
+    let leadingSpaceUsed = updateSpacingForLeadingTitleBarAccessory()
     let trailingSpaceUsed = updateSpacingForTrailingTitleBarAccessory()
 
     if isTitleBarOSC(fullScreen: fullScreenOverride) {
       // Title bar accessories don't seem to like attaching to other views via constraints.
       // So the next best option is to programmatically update the constraint's constant any time anything changes.
       // Fortunately, this doesn't happen very often and is not a very intensive calculation.
-      let availableSpace = max(0, window.frame.width - leadingSpaceUsed - trailingSpaceUsed - 8)
+      let availableSpace = max(0, window.frame.width - leadingSpaceUsed - trailingSpaceUsed - 12 - (trailingSpaceUsed > 0 ? 4 : 0))
       oscTitleBarWidthConstraint.animateToConstant(availableSpace)
     } else {
       oscTitleBarWidthConstraint.animateToConstant(0)
@@ -2366,22 +2371,21 @@ class MainWindowController: PlayerWindowController {
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
-  private func updateSpacingForLeadingTitleBarAccessory(hasTitleBar: Bool) -> CGFloat {
+  private func updateSpacingForLeadingTitleBarAccessory() -> CGFloat {
     var trailingSpace: CGFloat = 8  // Add standard space before title text by default
 
     let hasSidebarToggleButton = !leadingSidebarToggleButton.isHidden || fadeableViews.contains(leadingSidebarToggleButton)
     let sidebarButtonSpace: CGFloat = hasSidebarToggleButton ? leadingSidebarToggleButton.frame.width : 0
-    let trafficLightsSpace = hasTitleBar ? trafficLightButtonsWidth : 0
 
     let isSpaceNeededForSidebar = topPanelPlacement == .insideVideo
       && (leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown)
     if isSpaceNeededForSidebar {
       // Subtract space taken by the 3 standard buttons + other visible buttons
-      trailingSpace = max(0, leadingSidebarWidthConstraint.constant - trafficLightsSpace - sidebarButtonSpace)
+      trailingSpace = max(0, leadingSidebarWidthConstraint.constant - trafficLightButtonsWidth - sidebarButtonSpace)
     }
     leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
 
-    let totalSpaceUsed = trailingSpace + sidebarButtonSpace + trafficLightsSpace
+    let totalSpaceUsed = trailingSpace + sidebarButtonSpace + trafficLightButtonsWidth
     return totalSpaceUsed
   }
 
