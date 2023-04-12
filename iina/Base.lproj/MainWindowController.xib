@@ -881,7 +881,7 @@
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                             <connections>
-                                <action selector="togglePinToTop:" target="-2" id="4pa-eu-aT5"/>
+                                <action selector="toggleOnTop:" target="-2" id="4pa-eu-aT5"/>
                             </connections>
                         </button>
                         <customView identifier="TrailingTitleBarAcc-TrailingSpacer" translatesAutoresizingMaskIntoConstraints="NO" id="Pu6-TO-IhT" userLabel="Trailing Spacer View">
