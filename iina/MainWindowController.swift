@@ -69,23 +69,23 @@ class MainWindowController: PlayerWindowController {
     return StandardTitleBarHeight
   }()
 
-  // Preferred height for "full-width" OSCs (i.e. top and bottom, not floating)
-  let fullWidthOSCPreferredHeight: CGFloat = 44
-
-  // Size of playback button icon (W = H):
-  let playButtonSizeForFullOSC: CGFloat = 24
-  let playButtonSizeForFloatingOSC: CGFloat = 24
-  let playButtonSizeForTitleBarOSC: CGFloat = 18
-
-  /** Scale of spacing around & between playback buttons (for floating OSC):
+  // Preferred height for "full-width" OSCs (i.e. top and bottom, not floating or in title bar)
+  var oscBarHeight = CGFloat(Preference.integer(for: .oscBarHeight))
+  // Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
+  var oscBarPlaybackButtonSize = CGFloat(Preference.integer(for: .oscBarPlaybackButtonSize))
+  /** Scale of spacing around & between playback buttons (for top/bottom OSC):
    (1) 1x margin above and below buttons,
    (2) 2x margin to left and right of button group,
    (3) 4x spacing betwen buttons
    */
-  let playbackButtonMarginForFloatingOSC: CGFloat = 4
-  /** Scale of spacing around & between playback buttons (for top / bottom OSCs) */
-  let playbackButtonMarginForFullWidthOSC: CGFloat = 6
-  let playbackButtonMarginForTitleBarOSC: CGFloat = 3
+  let oscBarPlaybackButtonMargin: CGFloat = 6
+
+  let oscFloatingPlaybackButtonSize: CGFloat = 24
+  let oscFloatingPlaybackButtonMargin: CGFloat = 4
+
+  let oscTitleBarPlaybackButtonSize: CGFloat = 18
+  let oscTitleBarPlaybackButtonMargin: CGFloat = 3
+
 
   // MARK: - Objects, Views
 
@@ -339,6 +339,8 @@ class MainWindowController: PlayerWindowController {
     .oscPosition,
     .topPanelPlacement,
     .bottomPanelPlacement,
+    .oscBarHeight,
+    .oscBarPlaybackButtonSize,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -372,6 +374,8 @@ class MainWindowController: PlayerWindowController {
       PK.titleBarStyle.rawValue,
       PK.topPanelPlacement.rawValue,
       PK.bottomPanelPlacement.rawValue,
+      PK.oscBarHeight.rawValue,
+      PK.oscBarPlaybackButtonSize.rawValue,
       PK.showLeadingSidebarToggleButton.rawValue,
       PK.showTrailingSidebarToggleButton.rawValue:
 
@@ -1057,6 +1061,8 @@ class MainWindowController: PlayerWindowController {
     titleBarStyle = Preference.enum(for: .titleBarStyle)
     topPanelPlacement = Preference.enum(for: .topPanelPlacement)
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
+    oscBarHeight = min(16, CGFloat(Preference.integer(for: .oscBarHeight)))
+    oscBarPlaybackButtonSize = min(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonSize)))
 
     guard let window = window else { return }
 
@@ -1184,8 +1190,8 @@ class MainWindowController: PlayerWindowController {
             controlBarFloating.xConstraint.constant = window.frame.width * CGFloat(cph)
             controlBarFloating.yConstraint.constant = window.frame.height * CGFloat(cpv)
 
-            playbackButtonSizeConstraint.constant = playButtonSizeForFloatingOSC
-            playbackButtonMarginSizeConstraint.constant = playbackButtonMarginForFloatingOSC
+            playbackButtonSizeConstraint.constant = oscFloatingPlaybackButtonSize
+            playbackButtonMarginSizeConstraint.constant = oscFloatingPlaybackButtonMargin
 
           case .top:
             if !isFullScreen {
@@ -1199,22 +1205,19 @@ class MainWindowController: PlayerWindowController {
               }
             }
 
+            /// For `controlBarTitleBar`, use top panel to provide a visual effects background (it is otherwise unaffiliated with OSC)
+            show(topPanelView, makeFadeable: topPanelPlacement == .insideVideo)
             if hasTitleBarOSC {
               currentControlBar = controlBarTitleBar
               show(controlBarTitleBar, makeFadeable: topPanelPlacement == .insideVideo)
-              // Use top panel to provide a visual effects background. It is otherwise unaffiliated with OSC:
-              show(topPanelView, makeFadeable: topPanelPlacement == .insideVideo)
 
-              addControlBarViews(to: oscTitleBarMainView, btnSize: playButtonSizeForTitleBarOSC, btnMargin: playbackButtonMarginForTitleBarOSC)
+              addControlBarViews(to: oscTitleBarMainView, btnSize: oscTitleBarPlaybackButtonSize, btnMargin: oscTitleBarPlaybackButtonMargin)
 
             } else {
               currentControlBar = controlBarTop
-              show(topPanelView,   // show for transition animation or if placement == "outside"
-                   makeFadeable: isFullScreen || topPanelPlacement == .insideVideo)
+              addControlBarViews(to: oscTopMainView, btnSize: oscBarPlaybackButtonSize, btnMargin: oscBarPlaybackButtonMargin)
 
-              addControlBarViews(to: oscTopMainView, btnSize: playButtonSizeForFullOSC, btnMargin: playbackButtonMarginForFullWidthOSC)
-
-              constraintToSet = (topOSCPreferredHeightConstraint, fullWidthOSCPreferredHeight)
+              constraintToSet = (topOSCPreferredHeightConstraint, oscBarHeight)
             }
 
           case .bottom:
@@ -1222,9 +1225,9 @@ class MainWindowController: PlayerWindowController {
             show(controlBarBottom,   // show for transition animation or if placement == "outside"
                  makeFadeable: isFullScreen || bottomPanelPlacement == .insideVideo)
 
-            addControlBarViews(to: oscBottomMainView, btnSize: playButtonSizeForFullOSC, btnMargin: playbackButtonMarginForFullWidthOSC)
+            addControlBarViews(to: oscBottomMainView, btnSize: oscBarPlaybackButtonSize, btnMargin: oscBarPlaybackButtonMargin)
 
-            constraintToSet = (bottomOSCPreferredHeightConstraint, fullWidthOSCPreferredHeight)
+            constraintToSet = (bottomOSCPreferredHeightConstraint, oscBarHeight)
           }
         }
         if let constraintToSet = constraintToSet {

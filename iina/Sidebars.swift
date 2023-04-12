@@ -566,7 +566,7 @@ extension SidebarTabGroupViewController {
 
   func refreshVerticalConstraints() {
     let downshift: CGFloat
-    var tabHeight: CGFloat = mainWindow.fullWidthOSCPreferredHeight
+    var tabHeight: CGFloat = mainWindow.oscBarHeight
 
     let isTitleBarHidden = Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.insideVideo && Preference.enum(for: .titleBarStyle) == Preference.TitleBarStyle.none
     let isOutsideVideo = Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo
