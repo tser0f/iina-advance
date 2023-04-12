@@ -540,6 +540,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var videoContainerTrailingToTrailingSidebarConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var oscTitleBarWidthConstraint: NSLayoutConstraint!
+  // The OSD should always be below the top panel + 8. But if top panel/title bar is transparent, we need this constraint
+  @IBOutlet weak var osdOffsetFromTopFallbackConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var bottomPanelBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
@@ -695,18 +697,14 @@ class MainWindowController: PlayerWindowController {
     window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
     leadingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
     leadingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight).isActive = true
+    osdOffsetFromTopFallbackConstraint.constant = StandardTitleBarHeight + 8
 
     trailingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     trailingTitlebarAccesoryViewController.view = trailingTitleBarAccessoryView
     trailingTitlebarAccesoryViewController.layoutAttribute = .trailing
     window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
     trailingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
-
-    // Now that we know the height of the title bar, we can set these:
-    for titleBarButton in [leadingSidebarToggleButton, trailingSidebarToggleButton, pinToTopButton] {
-      guard let titleBarButton = titleBarButton else { continue }
-      titleBarButton.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight).isActive = true
-    }
+    trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight).isActive = true
 
     // FIXME: do not do this here
     // size
@@ -1060,6 +1058,8 @@ class MainWindowController: PlayerWindowController {
       titleBarHeightConstraint.animateToConstant(0)
       topOSCPreferredHeightConstraint.animateToConstant(0)
       bottomOSCPreferredHeightConstraint.animateToConstant(0)
+      // Top of OSD should in most cases be >= this constant
+      osdOffsetFromTopFallbackConstraint.animateToConstant(StandardTitleBarHeight + 8)
 
       // Reset view states to defaults
       controlBarFloating.isDragging = false
@@ -1086,7 +1086,7 @@ class MainWindowController: PlayerWindowController {
       quickSettingView.refreshVerticalConstraints()
       playlistView.refreshVerticalConstraints()
 
-      // Title bar:
+      // Title bar & title bar accessories:
 
       if !hasTitleBar {
         // Remove all title bar accessories (if needed):
@@ -1101,9 +1101,11 @@ class MainWindowController: PlayerWindowController {
           show(button)
         }
         window.titleVisibility = .visible
+        osdOffsetFromTopFallbackConstraint.animateToConstant(8)  // OSD top = 8pt below video container top
 
-      } else if titleBarStyle != .none {  // Not fullscreen, with title bar
-
+      } else if titleBarStyle == .none {
+        osdOffsetFromTopFallbackConstraint.animateToConstant(8)  // OSD top = 8pt below video container top
+      } else {  // Not fullscreen, has title bar
         let fadeable = topPanelPlacement == .insideVideo
 
         show(topPanelView, makeFadeable: fadeable)
@@ -1183,6 +1185,7 @@ class MainWindowController: PlayerWindowController {
             case .minimal:
               titleBarHeightConstraint.animateToConstant(StandardTitleBarHeight)
 
+              // FIXME 1: volume knob is black in Top+Minimal (why?!?!?!)
               // FIXME 2: option key to show title
               // FIXME 4: fix random disappearing views when toggling OSC top <-> bottom
               // FIXME 5: disable prefs for titlebar buttons when titlebar hidden
