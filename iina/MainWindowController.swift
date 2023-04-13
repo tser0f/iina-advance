@@ -69,22 +69,22 @@ class MainWindowController: PlayerWindowController {
     return StandardTitleBarHeight
   }()
 
-  // Preferred height for "full-width" OSCs (i.e. top and bottom, not floating or in title bar)
+  /// Preferred height for "full-width" OSCs (i.e. top and bottom, not floating or in title bar)
   var oscBarHeight = CGFloat(Preference.integer(for: .oscBarHeight))
-  // Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
-  var oscBarPlaybackButtonSize = CGFloat(Preference.integer(for: .oscBarPlaybackButtonSize))
-  /** Scale of spacing around & between playback buttons (for top/bottom OSC):
-   (1) 1x margin above and below buttons,
-   (2) 2x margin to left and right of button group,
-   (3) 4x spacing betwen buttons
-   */
-  let oscBarPlaybackButtonMargin: CGFloat = 6
+  /// Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
+  var oscBarPlayBtnsSize = CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth))
+  /// Scale of spacing above & below playback buttons (for top/bottom OSC):
+  var oscBarPlayBtnsVPad = CGFloat(Preference.integer(for: .oscBarPlayBtnsVPad))
+  /// Scale of spacing to the left & right of each playback button (for top/bottom OSC):
+  var oscBarPlayBtnsHPad = CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad))
 
-  let oscFloatingPlaybackButtonSize: CGFloat = 24
-  let oscFloatingPlaybackButtonMargin: CGFloat = 4
+  let oscFloatingPlayBtnsSize: CGFloat = 24
+  let oscFloatingPlayBtnsVPad: CGFloat = 4
+  let oscFloatingPlayBtnsHPad: CGFloat = 8
 
-  let oscTitleBarPlaybackButtonSize: CGFloat = 18
-  let oscTitleBarPlaybackButtonMargin: CGFloat = 3
+  let oscTitleBarPlayBtnsSize: CGFloat = 18
+  let oscTitleBarPlayBtnsVPad: CGFloat = 3
+  let oscTitleBarPlayBtnsHPad: CGFloat = 6
 
 
   // MARK: - Objects, Views
@@ -340,7 +340,7 @@ class MainWindowController: PlayerWindowController {
     .topPanelPlacement,
     .bottomPanelPlacement,
     .oscBarHeight,
-    .oscBarPlaybackButtonSize,
+    .oscBarPlaybackButtonsSquareWidth,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -375,7 +375,7 @@ class MainWindowController: PlayerWindowController {
       PK.topPanelPlacement.rawValue,
       PK.bottomPanelPlacement.rawValue,
       PK.oscBarHeight.rawValue,
-      PK.oscBarPlaybackButtonSize.rawValue,
+      PK.oscBarPlaybackButtonsSquareWidth.rawValue,
       PK.showLeadingSidebarToggleButton.rawValue,
       PK.showTrailingSidebarToggleButton.rawValue:
 
@@ -550,9 +550,12 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var bottomPanelBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
-  // Size of each side of the square 3 playback buttons ⏪⏯️⏩ (Left Arrow, Play/Pause, Right Arrow):
-  @IBOutlet weak var playbackButtonSizeConstraint: NSLayoutConstraint!
-  @IBOutlet weak var playbackButtonMarginSizeConstraint: NSLayoutConstraint!
+  /// Size of each side of the 3 square playback buttons ⏪⏯️⏩ (`leftArrowButton`, Play/Pause, `rightArrowButton`):
+  @IBOutlet weak var playbackButtonsSquareWidthConstraint: NSLayoutConstraint!
+  /// Space added above and below the 3 square playback buttons:
+  @IBOutlet weak var playbackButtonsVerticalPaddingConstraint: NSLayoutConstraint!
+  /// Space added to the left and right of *each* of the 3 square playback buttons:
+  @IBOutlet weak var playbackButtonsHorizontalPaddingConstraint: NSLayoutConstraint!
   @IBOutlet weak var topOSCPreferredHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomOSCPreferredHeightConstraint: NSLayoutConstraint!
 
@@ -1050,6 +1053,7 @@ class MainWindowController: PlayerWindowController {
   // FIXME: BUG: legacy full screen is crashing
   // FIXME: BUG: volume knob is black in Top+Minimal (why?!?!?!)
   // FIXME: BUG: prevent sidebars from opening if not enough space
+  // FIXME: improve open/close animations for top & bottom bars
   // FIXME: show title when option key depressed
   // FIXME: disable prefs for titlebar buttons when titlebar hidden
 
@@ -1062,7 +1066,9 @@ class MainWindowController: PlayerWindowController {
     topPanelPlacement = Preference.enum(for: .topPanelPlacement)
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
     oscBarHeight = min(16, CGFloat(Preference.integer(for: .oscBarHeight)))
-    oscBarPlaybackButtonSize = min(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonSize)))
+    oscBarPlayBtnsSize = min(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth)))
+    oscBarPlayBtnsVPad = min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsVPad)))
+    oscBarPlayBtnsHPad = min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
 
     guard let window = window else { return }
 
@@ -1190,8 +1196,9 @@ class MainWindowController: PlayerWindowController {
             controlBarFloating.xConstraint.constant = window.frame.width * CGFloat(cph)
             controlBarFloating.yConstraint.constant = window.frame.height * CGFloat(cpv)
 
-            playbackButtonSizeConstraint.constant = oscFloatingPlaybackButtonSize
-            playbackButtonMarginSizeConstraint.constant = oscFloatingPlaybackButtonMargin
+            playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
+            playbackButtonsVerticalPaddingConstraint.constant = oscFloatingPlayBtnsVPad
+            playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
 
           case .top:
             if !isFullScreen {
@@ -1211,11 +1218,11 @@ class MainWindowController: PlayerWindowController {
               currentControlBar = controlBarTitleBar
               show(controlBarTitleBar, makeFadeable: topPanelPlacement == .insideVideo)
 
-              addControlBarViews(to: oscTitleBarMainView, btnSize: oscTitleBarPlaybackButtonSize, btnMargin: oscTitleBarPlaybackButtonMargin)
+              addControlBarViews(to: oscTitleBarMainView, btnSize: oscTitleBarPlayBtnsSize, btnVPad: oscTitleBarPlayBtnsVPad, btnHPad: oscTitleBarPlayBtnsHPad)
 
             } else {
               currentControlBar = controlBarTop
-              addControlBarViews(to: oscTopMainView, btnSize: oscBarPlaybackButtonSize, btnMargin: oscBarPlaybackButtonMargin)
+              addControlBarViews(to: oscTopMainView, btnSize: oscBarPlayBtnsSize, btnVPad: oscBarPlayBtnsVPad, btnHPad: oscBarPlayBtnsHPad)
 
               constraintToSet = (topOSCPreferredHeightConstraint, oscBarHeight)
             }
@@ -1225,8 +1232,7 @@ class MainWindowController: PlayerWindowController {
             show(controlBarBottom,   // show for transition animation or if placement == "outside"
                  makeFadeable: isFullScreen || bottomPanelPlacement == .insideVideo)
 
-            addControlBarViews(to: oscBottomMainView, btnSize: oscBarPlaybackButtonSize, btnMargin: oscBarPlaybackButtonMargin)
-
+            addControlBarViews(to: oscBottomMainView, btnSize: oscBarPlayBtnsSize, btnVPad: oscBarPlayBtnsVPad, btnHPad: oscBarPlayBtnsHPad)
             constraintToSet = (bottomOSCPreferredHeightConstraint, oscBarHeight)
           }
         }
@@ -1243,8 +1249,7 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
-  private func addControlBarViews(to containerView: NSStackView, btnSize: CGFloat, btnMargin: CGFloat) {
-
+  private func addControlBarViews(to containerView: NSStackView, btnSize: CGFloat, btnVPad: CGFloat, btnHPad: CGFloat) {
     containerView.addView(fragVolumeView, in: .trailing)
     containerView.addView(fragToolbarView, in: .trailing)
     containerView.addView(fragPlaybackControlButtonsView, in: .leading)
@@ -1255,8 +1260,9 @@ class MainWindowController: PlayerWindowController {
     containerView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
     containerView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
 
-    playbackButtonSizeConstraint.constant = btnSize
-    playbackButtonMarginSizeConstraint.constant = btnMargin
+    playbackButtonsSquareWidthConstraint.constant = btnSize
+    playbackButtonsVerticalPaddingConstraint.constant = btnHPad
+    playbackButtonsHorizontalPaddingConstraint.constant = btnVPad
   }
 
   private func hideAndRemoveFromFadeable(_ views: NSView?...) {

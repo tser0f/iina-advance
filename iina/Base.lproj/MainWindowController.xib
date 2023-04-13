@@ -62,8 +62,9 @@
                 <outlet property="pipOverlayView" destination="Nrz-jZ-Luf" id="EU7-oY-Bwp"/>
                 <outlet property="playButton" destination="gxw-pJ-Lcg" id="t9H-xd-uqj"/>
                 <outlet property="playSlider" destination="eBP-6g-bAT" id="lGv-18-YeQ"/>
-                <outlet property="playbackButtonMarginSizeConstraint" destination="YL7-wD-yNP" id="l9W-Mh-gHr"/>
-                <outlet property="playbackButtonSizeConstraint" destination="7xv-qQ-n43" id="Bu6-zH-TFP"/>
+                <outlet property="playbackButtonsHorizontalPaddingConstraint" destination="Rlb-yb-jOY" id="q7Z-Ov-Hd9"/>
+                <outlet property="playbackButtonsSquareWidthConstraint" destination="7xv-qQ-n43" id="Bu6-zH-TFP"/>
+                <outlet property="playbackButtonsVerticalPaddingConstraint" destination="YL7-wD-yNP" id="YOH-fS-W3A"/>
                 <outlet property="rightArrowButton" destination="EIi-qd-glM" id="U46-Gl-e8D"/>
                 <outlet property="rightArrowLabel" destination="QTI-wi-oyB" id="icX-KI-Muj"/>
                 <outlet property="rightLabel" destination="GgV-Cc-sk0" id="fnx-gO-YPl"/>
@@ -653,11 +654,14 @@
             <subviews>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="siV-cJ-huN" userLabel="Left-most Spacer">
                     <rect key="frame" x="0.0" y="6" width="12" height="24"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="12" identifier="playbackButtonsHorizontalPaddingConstraint" id="Rlb-yb-jOY"/>
+                    </constraints>
                 </customView>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="nmT-n6-05X" userLabel="Top Spacer">
                     <rect key="frame" x="0.0" y="30" width="144" height="6"/>
                     <constraints>
-                        <constraint firstAttribute="height" priority="850" constant="6" identifier="playbackButtonMarginSizeConstraint" id="YL7-wD-yNP"/>
+                        <constraint firstAttribute="height" priority="850" constant="6" identifier="playbackButtonsVerticalPaddingConstraint" id="YL7-wD-yNP"/>
                     </constraints>
                 </customView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="10x-bg-xlj" userLabel="Left Arrow Button">
@@ -680,7 +684,7 @@
                     <rect key="frame" x="60" y="6" width="24" height="24"/>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="gxw-pJ-Lcg" secondAttribute="height" multiplier="1:1" id="7Xg-CL-HXe"/>
-                        <constraint firstAttribute="width" priority="850" constant="24" identifier="playbackButtonSizeConstraint" id="7xv-qQ-n43"/>
+                        <constraint firstAttribute="width" priority="850" constant="24" identifier="playbackButtonsSquareWidthConstraint" id="7xv-qQ-n43"/>
                     </constraints>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="play" imagePosition="only" alignment="center" alternateImage="pause" refusesFirstResponder="YES" state="on" imageScaling="proportionallyUpOrDown" inset="2" id="mWQ-R0-GGr">
                         <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
@@ -735,7 +739,6 @@
                 <constraint firstAttribute="trailing" secondItem="06z-vV-Q73" secondAttribute="trailing" id="PLL-cS-kT4"/>
                 <constraint firstItem="siV-cJ-huN" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="QZd-EP-nGL"/>
                 <constraint firstItem="nmT-n6-05X" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="QnG-XA-8a0"/>
-                <constraint firstItem="siV-cJ-huN" firstAttribute="width" secondItem="nmT-n6-05X" secondAttribute="height" multiplier="2" id="Uvu-V2-1Te"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="leading" secondItem="I07-AH-cjL" secondAttribute="trailing" id="XL0-Ya-7hM"/>
                 <constraint firstItem="EIi-qd-glM" firstAttribute="width" secondItem="10x-bg-xlj" secondAttribute="width" id="YB1-TV-uzN"/>
                 <constraint firstItem="xm8-R6-4qa" firstAttribute="leading" secondItem="nmT-n6-05X" secondAttribute="leading" id="bPl-29-zAl"/>
