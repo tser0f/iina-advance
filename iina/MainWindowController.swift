@@ -70,13 +70,22 @@ class MainWindowController: PlayerWindowController {
   }()
 
   /// Preferred height for "full-width" OSCs (i.e. top and bottom, not floating or in title bar)
-  var oscBarHeight = CGFloat(Preference.integer(for: .oscBarHeight))
+  var oscBarHeight: CGFloat {
+    min(16, CGFloat(Preference.integer(for: .oscBarHeight)))
+  }
+
   /// Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
-  var oscBarPlayBtnsSize = CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth))
+  var oscBarPlayBtnsSize: CGFloat {
+    min(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth)))
+  }
   /// Scale of spacing above & below playback buttons (for top/bottom OSC):
-  var oscBarPlayBtnsVPad = CGFloat(Preference.integer(for: .oscBarPlayBtnsVPad))
+  var oscBarPlayBtnsVPad: CGFloat {
+    min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
+  }
   /// Scale of spacing to the left & right of each playback button (for top/bottom OSC):
-  var oscBarPlayBtnsHPad = CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad))
+  var oscBarPlayBtnsHPad: CGFloat {
+    min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
+  }
 
   let oscFloatingPlayBtnsSize: CGFloat = 24
   let oscFloatingPlayBtnsVPad: CGFloat = 4
@@ -1050,8 +1059,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   // FIXME: BUG: add back support for window minimize & maximize when buttons not shown
-  // FIXME: BUG: legacy full screen is crashing
-  // FIXME: BUG: volume knob is black in Top+Minimal (why?!?!?!)
+  // FIXME: BUG: volume slider has wrong colors in Top+Minimal (why?!?!?!)
   // FIXME: BUG: prevent sidebars from opening if not enough space
   // FIXME: improve open/close animations for top & bottom bars
   // FIXME: show title when option key depressed
@@ -1065,10 +1073,6 @@ class MainWindowController: PlayerWindowController {
     titleBarStyle = Preference.enum(for: .titleBarStyle)
     topPanelPlacement = Preference.enum(for: .topPanelPlacement)
     bottomPanelPlacement = Preference.enum(for: .bottomPanelPlacement)
-    oscBarHeight = min(16, CGFloat(Preference.integer(for: .oscBarHeight)))
-    oscBarPlayBtnsSize = min(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth)))
-    oscBarPlayBtnsVPad = min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsVPad)))
-    oscBarPlayBtnsHPad = min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
 
     guard let window = window else { return }
 
@@ -1108,17 +1112,15 @@ class MainWindowController: PlayerWindowController {
 
       if hasNoTitleBar {
         // Remove all title bar accessories (if needed):
-        for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
-          window.removeTitlebarAccessoryViewController(at: index)
+        if window.styleMask.contains(.titled) {  /// Note: below will crash if `styleMask` doesn't contain `.titled`
+          for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
+            window.removeTitlebarAccessoryViewController(at: index)
+          }
         }
       }
 
       if isFullScreen {
-        /// Note: `documentIconButton` & `titleTextField` require special handling and will be handled elsewhere
-        for button in trafficLightButtons {
-          show(button)
-        }
-        window.titleVisibility = .visible
+        /// Skip handling`titleTextField` and title bar buttons - they will be shown when transition to fullscreen is done
         osdOffsetFromTopFallbackConstraint.animateToConstant(8)  // OSD top = 8pt below video container top
 
       } else if hasNoTitleBar {
@@ -1143,7 +1145,7 @@ class MainWindowController: PlayerWindowController {
         }
 
         // Add back title bar accessories (if needed):
-        if window.titlebarAccessoryViewControllers.isEmpty {
+        if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
           window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
           window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
         }
@@ -1606,6 +1608,7 @@ class MainWindowController: PlayerWindowController {
 
   /** A method being called when window open. Pretend to be a window delegate. */
   override func windowDidOpen() {
+    Logger.log("MainWindowController: WindowDidOpen", level: .verbose, subsystem: player.subsystem)
     super.windowDidOpen()
     guard let window = self.window, let cv = window.contentView else { return }
 
@@ -1740,8 +1743,12 @@ class MainWindowController: PlayerWindowController {
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
 
-    // Shw this after fullscreen animation has finished, so it doesn't pop up during the animation:
+    // Shw these after fullscreen animation has finished, so they don't pop up during the animation:
     show(documentIconButton)
+    for button in trafficLightButtons {
+      show(button)
+    }
+    window?.titleVisibility = .visible
 
     if Preference.bool(for: .blackOutMonitor) {
       blackOutOtherMonitors()
@@ -1888,6 +1895,7 @@ class MainWindowController: PlayerWindowController {
 
   private func legacyAnimateToWindowed(framePriorToBeingInFullscreen: NSRect) {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
+    Logger.log("legacyAnimateToWindowed", level: .verbose, subsystem: player.subsystem)
 
     // call delegate
     windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
@@ -1936,6 +1944,7 @@ class MainWindowController: PlayerWindowController {
 
   private func legacyAnimateToFullscreen() {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
+    Logger.log("legacyAnimateToFullscreen", level: .verbose, subsystem: player.subsystem)
     // call delegate
     windowWillEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
     // stylemask

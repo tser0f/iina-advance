@@ -104,7 +104,7 @@
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
-            <view key="contentView" identifier="MainWindow-ContentView" wantsLayer="YES" id="se5-gp-TjO" userLabel="Window-Content View">
+            <view key="contentView" identifier="MainWindow-ContentView" autoresizesSubviews="NO" wantsLayer="YES" id="se5-gp-TjO" userLabel="Window-Content View">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
@@ -498,7 +498,7 @@
                     </customView>
                 </subviews>
                 <constraints>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="g0O-v5-RQj" secondAttribute="bottom" constant="210" identifier="vidContainerBtm_GE_osdBtm_Constraint" id="0pt-vB-Ycm"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="g0O-v5-RQj" secondAttribute="bottom" constant="8" identifier="vidContainerBtm_GE_osdBtm_Constraint" id="0pt-vB-Ycm"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" identifier="videoContainerTopConstraint" id="1Ut-pz-GFg"/>
                     <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="bottomPanelTrailingSpaceConstraint" id="3qV-vK-qlg"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="bottom" identifier="videoContainerBottomConstraint" id="68T-mq-A30"/>
@@ -515,7 +515,7 @@
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="Vtd-0f-x7p"/>
                     <constraint firstItem="DFb-1L-U9o" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="bottomPanelLeadingSpaceConstraint" id="Wkx-hm-sJ4"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerY" secondItem="3nL-Ky-Hfa" secondAttribute="centerY" id="XlV-7n-jPb"/>
-                    <constraint firstItem="g0O-v5-RQj" firstAttribute="top" relation="greaterThanOrEqual" secondItem="3nL-Ky-Hfa" secondAttribute="top" identifier="osdOffsetFromTopFallbackConstraint" id="Xtd-Tp-gx1"/>
+                    <constraint firstItem="g0O-v5-RQj" firstAttribute="top" relation="greaterThanOrEqual" secondItem="3nL-Ky-Hfa" secondAttribute="top" constant="8" identifier="osdOffsetFromTopFallbackConstraint" id="Xtd-Tp-gx1"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="OiF-pA-8Sd" secondAttribute="bottom" priority="750" constant="60" id="cRP-R4-zYY"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="trailing" constant="8" identifier="trailingSidebarLeading_GE_oscFloatingTrailing_Constraint" id="cln-MW-RoF"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="bottom" secondItem="XBs-34-TIm" secondAttribute="bottom" id="f5L-Kv-wdv"/>
