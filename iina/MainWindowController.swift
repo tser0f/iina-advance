@@ -78,21 +78,15 @@ class MainWindowController: PlayerWindowController {
   var oscBarPlayBtnsSize: CGFloat {
     max(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth)))
   }
-  /// Scale of spacing above & below playback buttons (for top/bottom OSC):
-  var oscBarPlayBtnsVPad: CGFloat {
-    max(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
-  }
   /// Scale of spacing to the left & right of each playback button (for top/bottom OSC):
-  var oscBarPlayBtnsHPad: CGFloat {
-    max(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
+  var oscBarPlayBtnsHPadding: CGFloat {
+    max(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPadding)))
   }
 
   let oscFloatingPlayBtnsSize: CGFloat = 24
-  let oscFloatingPlayBtnsVPad: CGFloat = 4
   let oscFloatingPlayBtnsHPad: CGFloat = 8
 
   let oscTitleBarPlayBtnsSize: CGFloat = 18
-  let oscTitleBarPlayBtnsVPad: CGFloat = 3
   let oscTitleBarPlayBtnsHPad: CGFloat = 6
 
 
@@ -350,8 +344,7 @@ class MainWindowController: PlayerWindowController {
     .bottomPanelPlacement,
     .oscBarHeight,
     .oscBarPlaybackButtonsSquareWidth,
-    .oscBarPlayBtnsVPad,
-    .oscBarPlayBtnsHPad,
+    .oscBarPlayBtnsHPadding,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -387,8 +380,7 @@ class MainWindowController: PlayerWindowController {
       PK.bottomPanelPlacement.rawValue,
       PK.oscBarHeight.rawValue,
       PK.oscBarPlaybackButtonsSquareWidth.rawValue,
-      PK.oscBarPlayBtnsVPad.rawValue,
-      PK.oscBarPlayBtnsHPad.rawValue,
+      PK.oscBarPlayBtnsHPadding.rawValue,
       PK.showLeadingSidebarToggleButton.rawValue,
       PK.showTrailingSidebarToggleButton.rawValue:
 
@@ -1208,7 +1200,6 @@ class MainWindowController: PlayerWindowController {
             controlBarFloating.yConstraint.constant = window.frame.height * CGFloat(cpv)
 
             playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
-            playbackButtonsVerticalPaddingConstraint.constant = oscFloatingPlayBtnsVPad
             playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
 
           case .top:
@@ -1229,11 +1220,11 @@ class MainWindowController: PlayerWindowController {
               currentControlBar = controlBarTitleBar
               show(controlBarTitleBar, makeFadeable: topPanelPlacement == .insideVideo)
 
-              addControlBarViews(to: oscTitleBarMainView, btnSize: oscTitleBarPlayBtnsSize, btnVPad: oscTitleBarPlayBtnsVPad, btnHPad: oscTitleBarPlayBtnsHPad)
+              addControlBarViews(to: oscTitleBarMainView, btnSize: oscTitleBarPlayBtnsSize, btnHPad: oscTitleBarPlayBtnsHPad)
 
             } else {
               currentControlBar = controlBarTop
-              addControlBarViews(to: oscTopMainView, btnSize: oscBarPlayBtnsSize, btnVPad: oscBarPlayBtnsVPad, btnHPad: oscBarPlayBtnsHPad)
+              addControlBarViews(to: oscTopMainView, btnSize: oscBarPlayBtnsSize, btnHPad: oscBarPlayBtnsHPadding)
 
               topOSCTargetHeight = oscBarHeight
             }
@@ -1243,7 +1234,7 @@ class MainWindowController: PlayerWindowController {
             show(controlBarBottom,   // show for transition animation or if placement == "outside"
                  makeFadeable: isFullScreen || bottomPanelPlacement == .insideVideo)
 
-            addControlBarViews(to: oscBottomMainView, btnSize: oscBarPlayBtnsSize, btnVPad: oscBarPlayBtnsVPad, btnHPad: oscBarPlayBtnsHPad)
+            addControlBarViews(to: oscBottomMainView, btnSize: oscBarPlayBtnsSize, btnHPad: oscBarPlayBtnsHPadding)
             bottomOSCTargetHeight = oscBarHeight
           }
         }
@@ -1264,7 +1255,7 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
-  private func addControlBarViews(to containerView: NSStackView, btnSize: CGFloat, btnVPad: CGFloat, btnHPad: CGFloat) {
+  private func addControlBarViews(to containerView: NSStackView, btnSize: CGFloat, btnHPad: CGFloat) {
     containerView.addView(fragVolumeView, in: .trailing)
     containerView.addView(fragToolbarView, in: .trailing)
     containerView.addView(fragPlaybackControlButtonsView, in: .leading)
@@ -1276,8 +1267,7 @@ class MainWindowController: PlayerWindowController {
     containerView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
 
     playbackButtonsSquareWidthConstraint.constant = btnSize
-    playbackButtonsVerticalPaddingConstraint.constant = btnHPad
-    playbackButtonsHorizontalPaddingConstraint.constant = btnVPad
+    playbackButtonsHorizontalPaddingConstraint.constant = btnHPad
   }
 
   private func hideAndRemoveFromFadeable(_ views: NSView?...) {

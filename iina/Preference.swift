@@ -137,8 +137,7 @@ struct Preference {
     static let bottomPanelPlacement = Key("bottomPanelPlacement")
     static let oscBarHeight = Key("oscBarHeight")
     static let oscBarPlaybackButtonsSquareWidth = Key("oscBarPlaybackButtonsSquareWidth")
-    static let oscBarPlayBtnsVPad = Key("oscBarPlayBtnsVPad")
-    static let oscBarPlayBtnsHPad = Key("oscBarPlayBtnsHPad")
+    static let oscBarPlayBtnsHPadding = Key("oscBarPlayBtnsHPadding")
     static let enableOSC = Key("enableOSC")
     static let oscPosition = Key("oscPosition")
     static let hideFadeableViewsWhenOutsideWindow = Key("hideFadeableViewsWhenOutsideWindow")
@@ -889,8 +888,7 @@ struct Preference {
     .bottomPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .oscBarHeight: 44,
     .oscBarPlaybackButtonsSquareWidth: 24,
-    .oscBarPlayBtnsVPad: 6,
-    .oscBarPlayBtnsHPad: 12,
+    .oscBarPlayBtnsHPadding: 12,
     .oscPosition: OSCPosition.floating.rawValue,
     .hideFadeableViewsWhenOutsideWindow: true,
     .playlistWidth: 270,
