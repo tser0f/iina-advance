@@ -71,20 +71,20 @@ class MainWindowController: PlayerWindowController {
 
   /// Preferred height for "full-width" OSCs (i.e. top and bottom, not floating or in title bar)
   var oscBarHeight: CGFloat {
-    min(16, CGFloat(Preference.integer(for: .oscBarHeight)))
+    max(16, CGFloat(Preference.integer(for: .oscBarHeight)))
   }
 
   /// Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
   var oscBarPlayBtnsSize: CGFloat {
-    min(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth)))
+    max(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth)))
   }
   /// Scale of spacing above & below playback buttons (for top/bottom OSC):
   var oscBarPlayBtnsVPad: CGFloat {
-    min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
+    max(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
   }
   /// Scale of spacing to the left & right of each playback button (for top/bottom OSC):
   var oscBarPlayBtnsHPad: CGFloat {
-    min(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
+    max(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPad)))
   }
 
   let oscFloatingPlayBtnsSize: CGFloat = 24
@@ -1117,7 +1117,8 @@ class MainWindowController: PlayerWindowController {
 
       if hasNoTitleBar {
         // Remove all title bar accessories (if needed):
-        if window.styleMask.contains(.titled) {  /// Note: below will crash if `styleMask` doesn't contain `.titled`
+        if window.styleMask.contains(.titled) {
+          /// Note: `window.titlebarAccessoryViewControllers` will crash if `styleMask` doesn't contain `.titled`
           for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
             window.removeTitlebarAccessoryViewController(at: index)
           }
