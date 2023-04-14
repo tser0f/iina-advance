@@ -557,8 +557,6 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
   /// Size of each side of the 3 square playback buttons ⏪⏯️⏩ (`leftArrowButton`, Play/Pause, `rightArrowButton`):
   @IBOutlet weak var playbackButtonsSquareWidthConstraint: NSLayoutConstraint!
-  /// Space added above and below the 3 square playback buttons:
-  @IBOutlet weak var playbackButtonsVerticalPaddingConstraint: NSLayoutConstraint!
   /// Space added to the left and right of *each* of the 3 square playback buttons:
   @IBOutlet weak var playbackButtonsHorizontalPaddingConstraint: NSLayoutConstraint!
   @IBOutlet weak var topOSCPreferredHeightConstraint: NSLayoutConstraint!
@@ -610,7 +608,7 @@ class MainWindowController: PlayerWindowController {
 
   @IBOutlet weak var fragToolbarView: NSStackView!
   @IBOutlet weak var fragVolumeView: NSView!
-  @IBOutlet weak var fragSliderView: NSView!
+  @IBOutlet weak var fragPositionSliderView: NSView!
   @IBOutlet weak var fragPlaybackControlButtonsView: NSView!
 
   @IBOutlet weak var leftArrowLabel: NSTextField!
@@ -1173,7 +1171,7 @@ class MainWindowController: PlayerWindowController {
 
       UIAnimation.disableAnimation {
         // Remove
-        for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragSliderView] {
+        for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
           view?.removeFromSuperview()
         }
 
@@ -1191,8 +1189,8 @@ class MainWindowController: PlayerWindowController {
             oscFloatingTopView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
             oscFloatingTopView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
             oscFloatingTopView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-            oscFloatingBottomView.addSubview(fragSliderView)
-            Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": fragSliderView])
+            oscFloatingBottomView.addSubview(fragPositionSliderView)
+            Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": fragPositionSliderView])
             // center control bar
             let cph = Preference.float(for: .controlBarPositionHorizontal)
             let cpv = Preference.float(for: .controlBarPositionVertical)
@@ -1256,13 +1254,13 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func addControlBarViews(to containerView: NSStackView, btnSize: CGFloat, btnHPad: CGFloat) {
-    containerView.addView(fragVolumeView, in: .trailing)
-    containerView.addView(fragToolbarView, in: .trailing)
     containerView.addView(fragPlaybackControlButtonsView, in: .leading)
-    containerView.addView(fragSliderView, in: .leading)
+    containerView.addView(fragPositionSliderView, in: .leading)
+    containerView.addView(fragVolumeView, in: .leading)
+    containerView.addView(fragToolbarView, in: .leading)
 
     containerView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-    containerView.setVisibilityPriority(.mustHold, for: fragSliderView)
+    containerView.setVisibilityPriority(.mustHold, for: fragPositionSliderView)
     containerView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
     containerView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
 
@@ -1443,7 +1441,7 @@ class MainWindowController: PlayerWindowController {
     guard !isInInteractiveMode else { return }
     guard !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, titleBarView, subPopoverView]) else { return }
 
-    if isMouseEvent(event, inAnyOf: [fragSliderView]) && playSlider.isEnabled {
+    if isMouseEvent(event, inAnyOf: [fragPositionSliderView]) && playSlider.isEnabled {
       seekOverride = true
     } else if isMouseEvent(event, inAnyOf: [fragVolumeView]) && volumeSlider.isEnabled {
       volumeOverride = true

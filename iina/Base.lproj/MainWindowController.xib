@@ -31,7 +31,7 @@
                 <outlet property="controlBarTitleBar" destination="FK3-bI-nks" id="kqg-dT-tkI"/>
                 <outlet property="controlBarTop" destination="pgt-r3-Vbf" id="dqS-nQ-If8"/>
                 <outlet property="fragPlaybackControlButtonsView" destination="Yv6-0K-6E4" id="8vA-vh-qiH"/>
-                <outlet property="fragSliderView" destination="BE1-yC-oJL" id="KXu-MZ-mx8"/>
+                <outlet property="fragPositionSliderView" destination="BE1-yC-oJL" id="KXu-MZ-mx8"/>
                 <outlet property="fragToolbarView" destination="KfP-G9-8pD" id="R84-gZ-D93"/>
                 <outlet property="fragVolumeView" destination="N3B-DL-XOA" id="4VW-Wa-AD7"/>
                 <outlet property="leadingSidebarToOSDSpaceConstraint" destination="LBY-By-mfi" id="bna-VC-p0r"/>
@@ -390,7 +390,7 @@
                             <customView identifier="OSC-Top-View" translatesAutoresizingMaskIntoConstraints="NO" id="pgt-r3-Vbf" userLabel="OSC-Top View">
                                 <rect key="frame" x="0.0" y="0.0" width="640" height="44"/>
                                 <subviews>
-                                    <stackView identifier="OSC-Top-Stack-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="fDY-vk-Ylv" userLabel="OSC-Top Stack View">
+                                    <stackView identifier="OSC-Top-Stack-View" distribution="equalSpacing" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="fDY-vk-Ylv" userLabel="OSC-Top Stack View">
                                         <rect key="frame" x="8" y="0.0" width="624" height="44"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="44" identifier="topOSCPreferredHeightConstraint" id="DXc-2g-UvP"/>
@@ -437,7 +437,7 @@
                                 <color key="borderColor" red="0.48627450979999998" green="0.48627450979999998" blue="0.48627450979999998" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
                                 <color key="fillColor" name="quaternaryLabelColor" catalog="System" colorSpace="catalog"/>
                             </box>
-                            <stackView orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Qmi-hb-0aM" userLabel="OSC-Bottom Horizontal Stack View">
+                            <stackView distribution="equalSpacing" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Qmi-hb-0aM" userLabel="OSC-Bottom Horizontal Stack View">
                                 <rect key="frame" x="8" y="0.0" width="624" height="44"/>
                             </stackView>
                         </subviews>
