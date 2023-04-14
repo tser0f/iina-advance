@@ -155,6 +155,14 @@ extension MainWindowController {
     return leadingSidebar.visibleTab == tab || trailingSidebar.visibleTab == tab
   }
 
+  @IBAction func toggleLeadingSidebarVisibility(_ sender: NSButton) {
+    toggleVisibility(of: leadingSidebar)
+  }
+
+  @IBAction func toggleTrailingSidebarVisibility(_ sender: NSButton) {
+    toggleVisibility(of: trailingSidebar)
+  }
+
   func toggleVisibility(of sidebar: Sidebar) {
     // Do nothing if sidebar has no configured tabs
     guard let tab = sidebar.defaultTabToShow else { return }
@@ -549,6 +557,9 @@ extension MainWindowController {
 
 // MARK: - SidebarTabGroupViewController
 
+private let defaultDownshift: CGFloat = 0
+private let defaultTabHeight: CGFloat = 48
+
 protocol SidebarTabGroupViewController {
   var mainWindow: MainWindowController! { get }
   func getTopOfTabsConstraint() -> NSLayoutConstraint?
@@ -564,23 +575,35 @@ extension SidebarTabGroupViewController {
 
   var customTabHeight: CGFloat? { return nil }
 
+  /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
   func refreshVerticalConstraints() {
     let downshift: CGFloat
-    var tabHeight: CGFloat = mainWindow.oscBarHeight
-
-    let isTitleBarHidden = Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.insideVideo && Preference.enum(for: .titleBarStyle) == Preference.TitleBarStyle.none
-    let isOutsideVideo = Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo
-    if mainWindow.fsState.isFullscreen || isTitleBarHidden || isOutsideVideo {
-      downshift = 0
+    var tabHeight: CGFloat
+    if Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+      downshift = defaultDownshift
+      tabHeight = defaultTabHeight
+      Logger.log("MainWindow top panel is outside video; using default downshift (\(downshift)) and tab height (\(tabHeight))", level: .verbose, subsystem: mainWindow.player.subsystem)
     } else {
-      downshift = mainWindow.reducedTitleBarHeight
+      // Downshift: try to match title bar height
+      if mainWindow.hasNoTitleBar() {
+        downshift = defaultDownshift
+      } else {
+        // Need to adjust if has title bar, but it's style .minimal
+        downshift = mainWindow.reducedTitleBarHeight
+      }
+
+      tabHeight = mainWindow.topOSCTargetHeight
+      // Put some safeguards in place:
+      if tabHeight <= 0 || tabHeight > 70 {
+        tabHeight = defaultTabHeight
+      }
     }
 
-    // this overrides all others
     if let customTabHeight = customTabHeight {
+      // customTabHeight overrides any other height value
       tabHeight = customTabHeight
     }
-
+    Logger.log("Sidebar downshift: \(downshift), TabHeight: \(tabHeight)", level: .verbose, subsystem: mainWindow.player.subsystem)
     getTopOfTabsConstraint()?.constant = downshift
     getHeightOfTabsConstraint()?.constant = tabHeight
   }

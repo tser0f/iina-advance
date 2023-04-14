@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21507" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21507"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21701"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -114,7 +114,7 @@
                     <constraints>
                         <constraint firstItem="3Fk-ey-FhK" firstAttribute="top" secondItem="dNi-Ib-2vd" secondAttribute="top" id="4LK-un-GWd"/>
                         <constraint firstAttribute="bottom" secondItem="Ma8-6g-tVw" secondAttribute="bottom" id="HNL-01-U01"/>
-                        <constraint firstAttribute="height" constant="48" identifier="buttonHeightConstraint" id="OsF-5u-ZcS"/>
+                        <constraint firstAttribute="height" constant="48" identifier="tabHeightConstraint" id="OsF-5u-ZcS"/>
                         <constraint firstItem="rH3-pU-mFc" firstAttribute="top" secondItem="dNi-Ib-2vd" secondAttribute="top" id="YVm-dH-zWO"/>
                         <constraint firstAttribute="bottom" secondItem="3Fk-ey-FhK" secondAttribute="bottom" id="dxx-Gz-ehl"/>
                         <constraint firstItem="Ma8-6g-tVw" firstAttribute="top" secondItem="dNi-Ib-2vd" secondAttribute="top" id="meL-a5-YbR"/>
@@ -183,17 +183,17 @@
                     <tabViewItems>
                         <tabViewItem label="Video" identifier="1" id="CYP-el-A6A" userLabel="VideoTab Tab View Item">
                             <view key="view" id="NRI-ba-KMd" userLabel="VideoTab View">
-                                <rect key="frame" x="0.0" y="0.0" width="360" height="827"/>
+                                <rect key="frame" x="0.0" y="0.0" width="360" height="829"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="SHU-hX-9MT" userLabel="VideoTab Scroll View">
-                                        <rect key="frame" x="0.0" y="0.0" width="354" height="827"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="354" height="829"/>
                                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="8Es-YX-dNf" userLabel="VideoTab Clip View">
-                                            <rect key="frame" x="0.0" y="0.0" width="354" height="827"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="354" height="829"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <view translatesAutoresizingMaskIntoConstraints="NO" id="ZGz-La-n9c" userLabel="VideoTab Flipped CONTENT VIEW" customClass="FlippedView" customModule="IINA" customModuleProvider="target">
-                                                    <rect key="frame" x="0.0" y="67" width="354" height="760"/>
+                                                    <rect key="frame" x="0.0" y="69" width="354" height="760"/>
                                                     <subviews>
                                                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="seu-WU-cTV" userLabel="HORIZONTAL-INSETS">
                                                             <rect key="frame" x="20" y="740" width="314" height="0.0"/>
@@ -1587,7 +1587,7 @@
                                         <rect key="frame" x="0.0" y="0.0" width="360" height="829"/>
                                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="epy-wp-Ja5" userLabel="SubtitlesTab Clip View">
                                             <rect key="frame" x="0.0" y="0.0" width="360" height="829"/>
-                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="pm4-x9-WJ5" userLabel="SubtitlesTab Flipped CONTENT VIEW" customClass="FlippedView" customModule="IINA" customModuleProvider="target">
                                                     <rect key="frame" x="0.0" y="-1" width="360" height="830"/>
@@ -1605,7 +1605,7 @@
                                                                     <rect key="frame" x="0.0" y="285" width="360" height="75"/>
                                                                     <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="dJV-R0-O3M" userLabel="SubTable Clip View">
                                                                         <rect key="frame" x="0.0" y="0.0" width="360" height="75"/>
-                                                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                                        <autoresizingMask key="autoresizingMask"/>
                                                                         <subviews>
                                                                             <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" tableStyle="fullWidth" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" rowSizeStyle="automatic" viewBased="YES" id="2vU-hm-gGB" userLabel="SubTable Table View">
                                                                                 <rect key="frame" x="0.0" y="0.0" width="360" height="75"/>
@@ -1761,7 +1761,7 @@
                                                                     <rect key="frame" x="0.0" y="166" width="360" height="75"/>
                                                                     <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="EKn-MX-Fao" userLabel="SecondarySub Clip View">
                                                                         <rect key="frame" x="0.0" y="0.0" width="360" height="75"/>
-                                                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                                        <autoresizingMask key="autoresizingMask"/>
                                                                         <subviews>
                                                                             <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" tableStyle="fullWidth" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" rowSizeStyle="automatic" viewBased="YES" id="Jve-qX-Agy" userLabel="SecondarySub Table View">
                                                                                 <rect key="frame" x="0.0" y="0.0" width="360" height="75"/>
@@ -2464,7 +2464,7 @@
                 <constraint firstAttribute="bottom" secondItem="udA-m2-eJb" secondAttribute="bottom" id="grA-dL-eg4"/>
                 <constraint firstAttribute="trailing" secondItem="iNg-R1-bXw" secondAttribute="trailing" id="im6-JF-oJl"/>
                 <constraint firstItem="iNg-R1-bXw" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="j0a-1p-fwe"/>
-                <constraint firstItem="dNi-Ib-2vd" firstAttribute="top" secondItem="Hz6-mo-xeY" secondAttribute="top" id="qd3-0i-qbr"/>
+                <constraint firstItem="dNi-Ib-2vd" firstAttribute="top" secondItem="Hz6-mo-xeY" secondAttribute="top" identifier="ButtonTopConstraint" id="qd3-0i-qbr"/>
                 <constraint firstItem="L78-cf-BxB" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="tzm-Ub-xUS"/>
                 <constraint firstAttribute="width" constant="360" id="wbT-t0-p1J"/>
             </constraints>
