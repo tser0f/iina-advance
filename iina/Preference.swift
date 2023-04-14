@@ -119,8 +119,13 @@ struct Preference {
     /** Timeout for auto hiding control bar (float) */
     static let controlBarAutoHideTimeout = Key("controlBarAutoHideTimeout")
 
+    /// OSC toolbar
     static let controlBarToolbarButtons = Key("controlBarToolbarButtons")
+    static let controlBarToolbarButtonIconSize = Key("controlBarToolbarButtonIconSize")
+    // The space added around all the sides of each button
+    static let controlBarToolbarButtonPadding = Key("controlBarToolbarButtonPadding")
 
+    /// OSD
     static let enableOSD = Key("enableOSD")
     static let osdPosition = Key("osdPosition")
     static let osdAutoHideTimeout = Key("osdAutoHideTimeout")
@@ -132,6 +137,7 @@ struct Preference {
     static let resizeWindowTiming = Key("resizeWindowTiming")
     static let resizeWindowOption = Key("resizeWindowOption")
 
+    /// Title bar and OSC
     static let titleBarStyle = Key("titleBarStyle")
     static let topPanelPlacement = Key("topPanelPlacement")
     static let bottomPanelPlacement = Key("bottomPanelPlacement")
@@ -817,14 +823,25 @@ struct Preference {
     case subTrack
 
     func image() -> NSImage {
-      switch self {
-      case .settings: return NSImage(named: NSImage.actionTemplateName)!
-      case .playlist: return #imageLiteral(resourceName: "playlist")
-      case .pip: return #imageLiteral(resourceName: "pip")
-      case .fullScreen: return #imageLiteral(resourceName: "fullscreen")
-      case .musicMode: return #imageLiteral(resourceName: "toggle-album-art")
-      case .subTrack: return #imageLiteral(resourceName: "sub-track")
-      }
+//      if #available(macOS 11.0, *) {
+//        switch self {
+//        case .settings: return NSImage(named: NSImage.actionTemplateName)!  // "ellipsis.circle"
+//        case .playlist: return NSImage(systemSymbolName: "play.square.stack.fill", accessibilityDescription: nil)!
+//        case .pip: return NSImage(systemSymbolName: "pip.enter", accessibilityDescription: nil)!
+//        case .fullScreen: return NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: nil)!
+//        case .musicMode: return NSImage(systemSymbolName: "music.note", accessibilityDescription: nil)!
+//        case .subTrack: return NSImage(systemSymbolName: "captions.bubble.fill", accessibilityDescription: nil)!
+//        }
+//      } else {
+        switch self {
+        case .settings: return NSImage(named: NSImage.actionTemplateName)!
+        case .playlist: return #imageLiteral(resourceName: "playlist")
+        case .pip: return #imageLiteral(resourceName: "pip")
+        case .fullScreen: return #imageLiteral(resourceName: "fullscreen")
+        case .musicMode: return #imageLiteral(resourceName: "toggle-album-art")
+        case .subTrack: return #imageLiteral(resourceName: "sub-track")
+        }
+//      }
     }
 
     func description() -> String {
@@ -839,9 +856,6 @@ struct Preference {
       }
       return NSLocalizedString("osc_toolbar.\(key)", comment: key)
     }
-
-    // Width will be identical
-    static let frameHeight: CGFloat = 24
 
   }
 
@@ -882,6 +896,8 @@ struct Preference {
     .controlBarStickToCenter: true,
     .controlBarAutoHideTimeout: Float(2.5),
     .controlBarToolbarButtons: [ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
+    .controlBarToolbarButtonIconSize: 14,
+    .controlBarToolbarButtonPadding: 5,  // spacing between icons is x2 this number
     .enableOSC: true,
     .titleBarStyle: TitleBarStyle.full.rawValue,
     .topPanelPlacement: PanelPlacement.insideVideo.rawValue,

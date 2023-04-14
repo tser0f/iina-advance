@@ -130,6 +130,10 @@ class PrefOSCToolbarCurrentItemsView: NSStackView, NSDraggingSource {
       let button = PrefOSCToolbarCurrentItem(buttonType: buttonType, superView: self)
       self.addView(button, in: .trailing)
     }
+    let btnPad = CGFloat(Preference.float(for: .controlBarToolbarButtonPadding))
+    self.spacing = 2 * btnPad
+    self.edgeInsets = .init(top: btnPad, left: btnPad, bottom: btnPad, right: btnPad)
+    self.heightAnchor.constraint(equalToConstant: 2 * btnPad + OSCToolbarButton.iconSize).isActive = true
   }
 
   private func updateItems() {
@@ -151,7 +155,8 @@ class PrefOSCToolbarCurrentItemsView: NSStackView, NSDraggingSource {
       // remove the dragged view and insert a placeholder at its position.
       let index = views.firstIndex(of: itemBeingDragged)!
       removeView(itemBeingDragged)
-      Utility.quickConstraints(["H:[v(\(Preference.ToolBarButton.frameHeight))]", "V:[v(\(Preference.ToolBarButton.frameHeight))]"], ["v": placeholderView])
+      let sideLength = OSCToolbarButton.iconSize
+      Utility.quickConstraints(["H:[v(\(sideLength))]", "V:[v(\(sideLength))]"], ["v": placeholderView])
       insertView(placeholderView, at: index, in: .trailing)
     }
   }
@@ -165,9 +170,9 @@ class PrefOSCToolbarCurrentItemsView: NSStackView, NSDraggingSource {
 
   func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
     if operation == [] || operation == .delete {
-      let diameter = Preference.ToolBarButton.frameHeight
+      let sideLength = OSCToolbarButton.iconSize
       // Do "poof" animation on item remove
-      NSAnimationEffect.disappearingItemDefault.show(centeredAt: screenPoint, size: NSSize(width: diameter, height: diameter), completionHandler: {
+      NSAnimationEffect.disappearingItemDefault.show(centeredAt: screenPoint, size: NSSize(width: sideLength, height: sideLength), completionHandler: {
         self.updateItems()
       })
     }
@@ -216,9 +221,9 @@ class PrefOSCToolbarCurrentItemsView: NSStackView, NSDraggingSource {
 
     // get the expected drag destination position and index
     let pos = convert(sender.draggingLocation, from: nil)
-    let phWidth = Preference.ToolBarButton.frameHeight
+    let phWidth = OSCToolbarButton.iconSize
     let phHeight = phWidth
-    var index = views.count - Int(floor((frame.width - pos.x) / phWidth)) - 1
+    var index = views.count - Int(floor((frame.width - pos.x) / OSCToolbarButton.buttonSize)) - 1
     if index < 0 { index = 0 }
     dragDestIndex = index
 

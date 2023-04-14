@@ -345,6 +345,9 @@ class MainWindowController: PlayerWindowController {
     .oscBarHeight,
     .oscBarPlaybackButtonsSquareWidth,
     .oscBarPlayBtnsHPadding,
+    .controlBarToolbarButtons,
+    .controlBarToolbarButtonIconSize,
+    .controlBarToolbarButtonPadding,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -354,7 +357,6 @@ class MainWindowController: PlayerWindowController {
     .blackOutMonitor,
     .useLegacyFullScreen,
     .displayTimeAndBatteryInFullScreen,
-    .controlBarToolbarButtons,
     .alwaysShowOnTopIcon,
     .leadingSidebarPlacement,
     .trailingSidebarPlacement,
@@ -385,6 +387,11 @@ class MainWindowController: PlayerWindowController {
       PK.showTrailingSidebarToggleButton.rawValue:
 
       setupTitleBarAndOSC()
+    case PK.controlBarToolbarButtonIconSize.rawValue,
+      PK.controlBarToolbarButtonPadding.rawValue,
+      PK.controlBarToolbarButtons.rawValue:
+
+      setupOSCToolbarButtons()
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) {
@@ -434,10 +441,6 @@ class MainWindowController: PlayerWindowController {
         if !newValue {
           additionalInfoView.isHidden = true
         }
-      }
-    case PK.controlBarToolbarButtons.rawValue:
-      if let newValue = change[.newKey] as? [Int] {
-        setupOSCToolbarButtons(newValue.compactMap(Preference.ToolBarButton.init(rawValue:)))
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updatePinToTopButton()
@@ -770,8 +773,7 @@ class MainWindowController: PlayerWindowController {
       view?.state = .active
     }
 
-    let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
-    setupOSCToolbarButtons(buttons)
+    setupOSCToolbarButtons()
 
     // buffer indicator view
     if roundedCornerRadius > 0.0 {
@@ -1022,8 +1024,8 @@ class MainWindowController: PlayerWindowController {
     pinToTopButton.state = isOntop ? .on : .off
   }
 
-  private func setupOSCToolbarButtons(_ buttons: [Preference.ToolBarButton]) {
-    var buttons = buttons
+  private func setupOSCToolbarButtons() {
+    var buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
     if #available(macOS 10.12.2, *) {} else {
       buttons = buttons.filter { $0 != .pip }
     }
@@ -1033,6 +1035,11 @@ class MainWindowController: PlayerWindowController {
       OSCToolbarButton.setStyle(of: button, buttonType: buttonType)
       button.action = #selector(self.toolBarButtonAction(_:))
       fragToolbarView.addView(button, in: .trailing)
+      // It's not possible to control the icon padding from inside the buttons in all cases.
+      // Instead we can get the same effect with a little more work, by controlling the stack view:
+      let btnPad = max(0, CGFloat(Preference.float(for: .controlBarToolbarButtonPadding)))
+      fragToolbarView.spacing = 2 * btnPad
+      fragToolbarView.edgeInsets = .init(top: btnPad, left: btnPad, bottom: btnPad, right: btnPad)
     }
   }
 

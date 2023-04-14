@@ -10,6 +10,13 @@ import Foundation
 
 // Not elegant. Just a place to stick common code so that it won't be duplicated
 class OSCToolbarButton {
+  static var iconSize: CGFloat {
+    max(0, CGFloat(Preference.integer(for: .controlBarToolbarButtonIconSize)))
+  }
+  static var buttonSize: CGFloat {
+    return iconSize + (2 * max(0, CGFloat(Preference.integer(for: .controlBarToolbarButtonPadding))))
+  }
+
   static func setStyle(of toolbarButton: NSButton, buttonType: Preference.ToolBarButton) {
     toolbarButton.translatesAutoresizingMaskIntoConstraints = false
     toolbarButton.bezelStyle = .regularSquare
@@ -18,11 +25,12 @@ class OSCToolbarButton {
     toolbarButton.tag = buttonType.rawValue
     toolbarButton.refusesFirstResponder = true
     toolbarButton.toolTip = buttonType.description()
-    let sideSize = Preference.ToolBarButton.frameHeight
-    let widthConstraint = toolbarButton.widthAnchor.constraint(equalToConstant: sideSize)
+    toolbarButton.imageScaling = .scaleProportionallyUpOrDown
+    let iconSize = iconSize
+    let widthConstraint = toolbarButton.widthAnchor.constraint(equalToConstant: iconSize)
     widthConstraint.priority = .defaultHigh
     widthConstraint.isActive = true
-    let heightConstraint = toolbarButton.heightAnchor.constraint(equalToConstant: sideSize)
+    let heightConstraint = toolbarButton.heightAnchor.constraint(equalToConstant: iconSize)
     heightConstraint.priority = .defaultHigh
     heightConstraint.isActive = true
   }
@@ -35,7 +43,7 @@ class OSCToolbarButton {
     let imageSize = imgReps[0].size
 
     let dragItem = NSDraggingItem(pasteboardWriter: pasteboardWriter)
-    let iconSize = Preference.ToolBarButton.frameHeight
+    let iconSize = iconSize
     // Image is centered in frame, and frame has 0px offset from left & bottom of superview
     let dragOrigin = CGPoint(x: (iconSize - imageSize.width) / 2, y: (iconSize - imageSize.height) / 2)
     dragItem.draggingFrame = NSRect(origin: dragOrigin, size: imageSize)
