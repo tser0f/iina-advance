@@ -28,10 +28,14 @@ class MainWindow: NSWindow {
     forceKeyAndMain ? true : super.canBecomeMain
   }
 
-  /// Hiding the Close (red stoplight) button causes `File` > `Close` to be disabled as an unwanted side effect.
-  /// We must re-implement the window close functionality here.
+  /// Setting `alphaValue=0` for Close & Miniaturize (red & green traffic lights) buttons causes `File` > `Close`
+  /// and `Window` > `Minimize` to be disabled as an unwanted side effect. This can cause key bindings to fail
+  /// during animations or if we're not careful to set `alphaValue=1` for hidden items. Permanently enabling them
+  /// here guarantees consistent behavior.
   override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
     if item.action == #selector(self.performClose(_:)) {
+      return true
+    } else if item.action == #selector(self.performMiniaturize(_:)) {
       return true
     } else {
       return super.validateUserInterfaceItem(item)

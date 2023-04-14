@@ -1058,7 +1058,6 @@ class MainWindowController: PlayerWindowController {
     return titleBarStyle == .none
   }
 
-  // FIXME: BUG: add back support for window minimize & maximize when buttons not shown
   // FIXME: BUG: volume slider has wrong colors in Top+Minimal (why?!?!?!)
   // FIXME: BUG: prevent sidebars from opening if not enough space
   // FIXME: improve open/close animations for top & bottom bars
@@ -1096,7 +1095,13 @@ class MainWindowController: PlayerWindowController {
       /// inside the same `AnimationBlock`; only the final value when leaving the block is used for the animation.
       controlBarFloating.isDragging = false
       hideAndRemoveFromFadeable(controlBarFloating, controlBarBottom, topPanelView, controlBarTitleBar, titleTextField)
-      window.titleVisibility = .hidden  // Note: MUST use this to guarantee that documentIcon is shown/hidden consistently
+      /// Note: MUST use this to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
+      /// Setting `isHidden=true` on `titleTextField` and `documentIcon` don't appear to work.
+      /// Setting `alphaValue=0` does appear to work, but this is a cleaner solution.
+      window.titleVisibility = .hidden
+
+      /// Also note: looks like another Apple bug where setting `alphaValue=0` on the "minimize" button will
+      /// cause `window.performMiniaturize()` to do nothing, so MUST use `isHidden=true` + `alphaValue=1` instead.
       for button in standardWindowButtons {
         hideAndRemoveFromFadeable(button)
       }
@@ -1270,7 +1275,7 @@ class MainWindowController: PlayerWindowController {
   private func hideAndRemoveFromFadeable(_ views: NSView?...) {
     for view in views {
       guard let view = view else { continue }
-      view.alphaValue = 0
+      view.alphaValue = 1  /// see note about `window.performMiniaturize()`
       view.isHidden = true
       fadeableViews.remove(view)
     }
@@ -1743,7 +1748,7 @@ class MainWindowController: PlayerWindowController {
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
 
-    // Shw these after fullscreen animation has finished, so they don't pop up during the animation:
+    // Show these after fullscreen animation has finished, so they don't pop up during the animation:
     show(documentIconButton)
     for button in trafficLightButtons {
       show(button)
@@ -1788,8 +1793,14 @@ class MainWindowController: PlayerWindowController {
     Logger.log("windowWillExitFullScreen", level: .verbose)
     resetViewsForFullScreenTransition()
 
-    additionalInfoView.isHidden = true
-    fadeableViews.remove(additionalInfoView)
+    hideAndRemoveFromFadeable(additionalInfoView)
+
+    // Hide during the animation:
+    hideAndRemoveFromFadeable(documentIconButton, titleTextField)
+    for button in trafficLightButtons {
+      hideAndRemoveFromFadeable(button)
+    }
+    window?.titleVisibility = .hidden
 
     fsState.startAnimatingToWindow()
 
