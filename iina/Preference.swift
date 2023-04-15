@@ -107,6 +107,24 @@ struct Preference {
 
     // MARK: - Keys: UI
 
+    /// Title bar and OSC
+    static let titleBarStyle = Key("titleBarStyle")
+    static let topPanelPlacement = Key("topPanelPlacement")
+    static let bottomPanelPlacement = Key("bottomPanelPlacement")
+    static let enableOSC = Key("enableOSC")
+    static let oscPosition = Key("oscPosition")
+    static let hideFadeableViewsWhenOutsideWindow = Key("hideFadeableViewsWhenOutsideWindow")
+
+    // The following apply only to "bar"-type OSCs (i.e. not floating or title bar):
+    static let oscBarHeight = Key("oscBarHeight")
+    static let oscBarPlaybackButtonsIconSize = Key("oscBarPlaybackButtonsIconSize")
+    static let oscBarPlayBtnsHPadding = Key("oscBarPlayBtnsHPadding")
+    /// Size of one side of a (square) OSC toolbar button
+    static let oscBarToolbarButtonIconSize = Key("oscBarToolbarButtonIconSize")
+    /// The space added around all the sides of each button
+    static let oscBarToolbarButtonPadding = Key("oscBarToolbarButtonPadding")
+
+    /// OSC toolbar
     /** Horizontal position of control bar. (float, 0 - 1) */
     static let controlBarPositionHorizontal = Key("controlBarPositionHorizontal")
 
@@ -119,11 +137,8 @@ struct Preference {
     /** Timeout for auto hiding control bar (float) */
     static let controlBarAutoHideTimeout = Key("controlBarAutoHideTimeout")
 
-    /// OSC toolbar
+    /// Which buttons to display in the OSC, stored as `Array` of `Integer`s
     static let controlBarToolbarButtons = Key("controlBarToolbarButtons")
-    static let controlBarToolbarButtonIconSize = Key("controlBarToolbarButtonIconSize")
-    // The space added around all the sides of each button
-    static let controlBarToolbarButtonPadding = Key("controlBarToolbarButtonPadding")
 
     /// OSD
     static let enableOSD = Key("enableOSD")
@@ -136,17 +151,6 @@ struct Preference {
     static let initialWindowSizePosition = Key("initialWindowSizePosition")
     static let resizeWindowTiming = Key("resizeWindowTiming")
     static let resizeWindowOption = Key("resizeWindowOption")
-
-    /// Title bar and OSC
-    static let titleBarStyle = Key("titleBarStyle")
-    static let topPanelPlacement = Key("topPanelPlacement")
-    static let bottomPanelPlacement = Key("bottomPanelPlacement")
-    static let oscBarHeight = Key("oscBarHeight")
-    static let oscBarPlaybackButtonsSquareWidth = Key("oscBarPlaybackButtonsSquareWidth")
-    static let oscBarPlayBtnsHPadding = Key("oscBarPlayBtnsHPadding")
-    static let enableOSC = Key("enableOSC")
-    static let oscPosition = Key("oscPosition")
-    static let hideFadeableViewsWhenOutsideWindow = Key("hideFadeableViewsWhenOutsideWindow")
 
     // Sidebars:
     static let leadingSidebarPlacement = Key("leadingSidebarPlacement")
@@ -896,14 +900,14 @@ struct Preference {
     .controlBarStickToCenter: true,
     .controlBarAutoHideTimeout: Float(2.5),
     .controlBarToolbarButtons: [ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
-    .controlBarToolbarButtonIconSize: 14,
-    .controlBarToolbarButtonPadding: 5,  // spacing between icons is x2 this number
+    .oscBarToolbarButtonIconSize: 14,
+    .oscBarToolbarButtonPadding: 5,  // spacing between icons is x2 this number
     .enableOSC: true,
     .titleBarStyle: TitleBarStyle.full.rawValue,
     .topPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .bottomPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .oscBarHeight: 44,
-    .oscBarPlaybackButtonsSquareWidth: 24,
+    .oscBarPlaybackButtonsIconSize: 24,
     .oscBarPlayBtnsHPadding: 12,
     .oscPosition: OSCPosition.floating.rawValue,
     .hideFadeableViewsWhenOutsideWindow: true,

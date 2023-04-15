@@ -76,7 +76,7 @@ class MainWindowController: PlayerWindowController {
 
   /// Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
   var oscBarPlayBtnsSize: CGFloat {
-    max(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsSquareWidth)))
+    max(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsIconSize)))
   }
   /// Scale of spacing to the left & right of each playback button (for top/bottom OSC):
   var oscBarPlayBtnsHPadding: CGFloat {
@@ -85,9 +85,13 @@ class MainWindowController: PlayerWindowController {
 
   let oscFloatingPlayBtnsSize: CGFloat = 24
   let oscFloatingPlayBtnsHPad: CGFloat = 8
+  let oscFloatingToolbarButtonIconSize: CGFloat = 14
+  let oscFloatingToolbarButtonIconPadding: CGFloat = 5
 
   let oscTitleBarPlayBtnsSize: CGFloat = 18
   let oscTitleBarPlayBtnsHPad: CGFloat = 6
+  let oscTitleBarToolbarButtonIconSize: CGFloat = 14
+  let oscTitleBarToolbarButtonIconPadding: CGFloat = 5
 
 
   // MARK: - Objects, Views
@@ -343,11 +347,11 @@ class MainWindowController: PlayerWindowController {
     .topPanelPlacement,
     .bottomPanelPlacement,
     .oscBarHeight,
-    .oscBarPlaybackButtonsSquareWidth,
+    .oscBarPlaybackButtonsIconSize,
     .oscBarPlayBtnsHPadding,
     .controlBarToolbarButtons,
-    .controlBarToolbarButtonIconSize,
-    .controlBarToolbarButtonPadding,
+    .oscBarToolbarButtonIconSize,
+    .oscBarToolbarButtonPadding,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -381,14 +385,14 @@ class MainWindowController: PlayerWindowController {
       PK.topPanelPlacement.rawValue,
       PK.bottomPanelPlacement.rawValue,
       PK.oscBarHeight.rawValue,
-      PK.oscBarPlaybackButtonsSquareWidth.rawValue,
+      PK.oscBarPlaybackButtonsIconSize.rawValue,
       PK.oscBarPlayBtnsHPadding.rawValue,
       PK.showLeadingSidebarToggleButton.rawValue,
       PK.showTrailingSidebarToggleButton.rawValue:
 
       setupTitleBarAndOSC()
-    case PK.controlBarToolbarButtonIconSize.rawValue,
-      PK.controlBarToolbarButtonPadding.rawValue,
+    case PK.oscBarToolbarButtonIconSize.rawValue,
+      PK.oscBarToolbarButtonPadding.rawValue,
       PK.controlBarToolbarButtons.rawValue:
 
       setupOSCToolbarButtons()
@@ -497,10 +501,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   // Width of the 3 traffic light buttons
-  private var trafficLightButtonsWidth: CGFloat = {
+  private lazy var trafficLightButtonsWidth: CGFloat = {
       var maxX: CGFloat = 0
       for buttonType in [NSWindow.ButtonType.closeButton, NSWindow.ButtonType.miniaturizeButton, NSWindow.ButtonType.zoomButton] {
-        if let button = NSWindow.standardWindowButton(buttonType, for: .titled) {
+        if let button = window!.standardWindowButton(buttonType) {
           maxX = max(maxX, button.frame.origin.x + button.frame.width)
         }
       }
@@ -1079,6 +1083,13 @@ class MainWindowController: PlayerWindowController {
   var bottomOSCTargetHeight: CGFloat = 0
   var osdTargetOffsetFromTop: CGFloat = 8
 
+  ////// TODO
+  fileprivate enum Visibility {
+    case hidden
+    case visible
+    case fadeable
+  }
+
   private func setupTitleBarAndOSC(fullScreen fullScreenOverride: Bool? = nil) {
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
     enableOSC = Preference.bool(for: .enableOSC)
@@ -1194,7 +1205,7 @@ class MainWindowController: PlayerWindowController {
           case .floating:
             currentControlBar = controlBarFloating
             show(controlBarFloating, makeFadeable: true)   // floating is always fadeable
-            setupOSCToolbarButtons(iconSize: 14, iconPadding: 5)
+            setupOSCToolbarButtons(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
 
             oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
             oscFloatingUpperView.addView(fragVolumeView, in: .leading)
@@ -1235,11 +1246,16 @@ class MainWindowController: PlayerWindowController {
               currentControlBar = controlBarTitleBar
               show(controlBarTitleBar, makeFadeable: topPanelPlacement == .insideVideo)
 
-              addControlBarViews(to: oscTitleBarMainView, btnSize: oscTitleBarPlayBtnsSize, btnHPad: oscTitleBarPlayBtnsHPad)
+              addControlBarViews(to: oscTitleBarMainView,
+                                 playBtnSize: oscTitleBarPlayBtnsSize,
+                                 playBtnHPad: oscTitleBarPlayBtnsHPad,
+                                 toolbarIconSize: oscTitleBarToolbarButtonIconSize,
+                                 toolbarIconPadding: oscTitleBarToolbarButtonIconPadding)
 
             } else {
               currentControlBar = controlBarTop
-              addControlBarViews(to: oscTopMainView, btnSize: oscBarPlayBtnsSize, btnHPad: oscBarPlayBtnsHPadding)
+              addControlBarViews(to: oscTopMainView,
+                                 playBtnSize: oscBarPlayBtnsSize, playBtnHPad: oscBarPlayBtnsHPadding)
 
               topOSCTargetHeight = oscBarHeight
             }
@@ -1249,7 +1265,8 @@ class MainWindowController: PlayerWindowController {
             show(controlBarBottom,   // show for transition animation or if placement == "outside"
                  makeFadeable: isFullScreen || bottomPanelPlacement == .insideVideo)
 
-            addControlBarViews(to: oscBottomMainView, btnSize: oscBarPlayBtnsSize, btnHPad: oscBarPlayBtnsHPadding)
+            addControlBarViews(to: oscBottomMainView,
+                               playBtnSize: oscBarPlayBtnsSize, playBtnHPad: oscBarPlayBtnsHPadding)
             bottomOSCTargetHeight = oscBarHeight
           }
         }
@@ -1274,20 +1291,22 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
-  private func addControlBarViews(to containerView: NSStackView, btnSize: CGFloat, btnHPad: CGFloat) {
+  private func addControlBarViews(to containerView: NSStackView, playBtnSize: CGFloat, playBtnHPad: CGFloat,
+                                  toolbarIconSize: CGFloat? = nil, toolbarIconPadding: CGFloat? = nil) {
+    setupOSCToolbarButtons(iconSize: toolbarIconSize, iconPadding: toolbarIconPadding)
     containerView.addView(fragPlaybackControlButtonsView, in: .leading)
     containerView.addView(fragPositionSliderView, in: .leading)
     containerView.addView(fragVolumeView, in: .leading)
     containerView.addView(fragToolbarView, in: .leading)
-    setupOSCToolbarButtons()
 
     containerView.setClippingResistancePriority(.defaultLow, for: .horizontal)
     containerView.setVisibilityPriority(.mustHold, for: fragPositionSliderView)
     containerView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
     containerView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
 
-    playbackButtonsSquareWidthConstraint.constant = btnSize
-    playbackButtonsHorizontalPaddingConstraint.constant = btnHPad
+    playbackButtonsSquareWidthConstraint.constant = playBtnSize
+    playbackButtonsHorizontalPaddingConstraint.constant = playBtnHPad
+
   }
 
   private func hideAndRemoveFromFadeable(_ views: NSView?...) {
@@ -2387,15 +2406,18 @@ class MainWindowController: PlayerWindowController {
     let leadingSpaceUsed = updateSpacingForLeadingTitleBarAccessory()
     let trailingSpaceUsed = updateSpacingForTrailingTitleBarAccessory()
 
+    let widthOfTitleBarOSC: CGFloat
     if hasTitleBarOSC(fullScreen: fullScreenOverride) {
       // Title bar accessories don't seem to like attaching to other views via constraints.
       // So the next best option is to programmatically update the constraint's constant any time anything changes.
       // Fortunately, this doesn't happen very often and is not a very intensive calculation.
-      let availableSpace = max(0, window.frame.width - leadingSpaceUsed - trailingSpaceUsed - 12 - (trailingSpaceUsed > 0 ? 4 : 0))
-      oscTitleBarWidthConstraint.animateToConstant(availableSpace)
+      let totalSpace = window.frame.width
+      widthOfTitleBarOSC = max(0, totalSpace - leadingSpaceUsed - trailingSpaceUsed - 12 - (trailingSpaceUsed > 0 ? 4 : 0))
     } else {
-      oscTitleBarWidthConstraint.animateToConstant(0)
+      widthOfTitleBarOSC = 0
     }
+    oscTitleBarWidthConstraint.animateToConstant(widthOfTitleBarOSC)
+//    Logger.log("Updated title bar spacing. LeadingSpaceUsed: \(leadingSpaceUsed), TrailingSpaceUsed: \(trailingSpaceUsed), TitleBarOSCWidth: \(widthOfTitleBarOSC)", level: .verbose, subsystem: player.subsystem)
   }
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
