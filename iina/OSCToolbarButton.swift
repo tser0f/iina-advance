@@ -9,7 +9,11 @@
 import Foundation
 
 // Not elegant. Just a place to stick common code so that it won't be duplicated
-class OSCToolbarButton {
+class OSCToolbarButton: NSButton {
+  func setStyle(buttonType: Preference.ToolBarButton) {
+    OSCToolbarButton.setStyle(of: self, buttonType: buttonType)
+  }
+
   static var iconSize: CGFloat {
     max(0, CGFloat(Preference.integer(for: .controlBarToolbarButtonIconSize)))
   }
@@ -36,18 +40,21 @@ class OSCToolbarButton {
   }
 
   static func buildDragItem(from toolbarButton: NSButton, pasteboardWriter: NSPasteboardWriting,
-                            buttonType: Preference.ToolBarButton) -> NSDraggingItem? {
+                            buttonType: Preference.ToolBarButton, isCurrentItem: Bool) -> NSDraggingItem? {
     // seems to be the only reliable way to get image size
     guard let imgReps = toolbarButton.image?.representations else { return nil }
     guard !imgReps.isEmpty else { return nil }
     let imageSize = imgReps[0].size
 
     let dragItem = NSDraggingItem(pasteboardWriter: pasteboardWriter)
-    let iconSize = iconSize
-    // Image is centered in frame, and frame has 0px offset from left & bottom of superview
-    let dragOrigin = CGPoint(x: (iconSize - imageSize.width) / 2, y: (iconSize - imageSize.height) / 2)
+
+    // Bit of a kludge to make drag image origin line up in 2 different layouts:
+    let buttonSize = isCurrentItem ? iconSize : buttonSize
+    // Image is centered in frame, and frame has 1px offset from left & bottom of box
+    let dragOrigin = CGPoint(x: (buttonSize - imageSize.width) / 2 + 1, y: (buttonSize - imageSize.height) / 2 + 1)
     dragItem.draggingFrame = NSRect(origin: dragOrigin, size: imageSize)
-    Logger.log("Dragging from AvailableItemsView: \(dragItem.draggingFrame) (imageSize: \(imageSize))")
+    let debugSrcLabel = isCurrentItem ? "CurrentItemsView" : "AvailableItemsView"
+    Logger.log("Dragging from \(debugSrcLabel): \(dragItem.draggingFrame) (imageSize: \(imageSize))", level: .verbose)
     dragItem.imageComponentsProvider = {
       let imageComponent = NSDraggingImageComponent(key: .icon)
       let image = buttonType.image().tinted(.textColor)

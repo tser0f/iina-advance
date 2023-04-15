@@ -92,7 +92,7 @@ class PrefOSCToolbarCurrentItem: NSButton, NSPasteboardWriting {
   }
 
   override func mouseDown(with event: NSEvent) {
-    guard let dragItem = OSCToolbarButton.buildDragItem(from: self, pasteboardWriter: self, buttonType: buttonType) else { return }
+    guard let dragItem = OSCToolbarButton.buildDragItem(from: self, pasteboardWriter: self, buttonType: buttonType, isCurrentItem: true) else { return }
 
     currentItemsView.itemBeingDragged = self
     beginDraggingSession(with: [dragItem], event: event, source: currentItemsView)
@@ -133,7 +133,6 @@ class PrefOSCToolbarCurrentItemsView: NSStackView, NSDraggingSource {
     let btnPad = CGFloat(Preference.float(for: .controlBarToolbarButtonPadding))
     self.spacing = 2 * btnPad
     self.edgeInsets = .init(top: btnPad, left: btnPad, bottom: btnPad, right: btnPad)
-    self.heightAnchor.constraint(equalToConstant: 2 * btnPad + OSCToolbarButton.iconSize).isActive = true
   }
 
   private func updateItems() {

@@ -17,9 +17,13 @@ class PrefOSCToolbarDraggingItemViewController: NSViewController, NSPasteboardWr
   var availableItemsView: PrefOSCToolbarAvailableItemsView?
   var buttonType: Preference.ToolBarButton
 
-  @IBOutlet weak var toolbarButton: NSButton!
+  @IBOutlet weak var toolbarButton: OSCToolbarButton!
   @IBOutlet weak var descriptionLabel: NSTextField!
 
+  @IBOutlet weak var buttonLeadingToBoxLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var buttonTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var buttonTopToBoxTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var buttonBottomToBoxBottomConstraint: NSLayoutConstraint!
 
   init(buttonType: Preference.ToolBarButton) {
     self.buttonType = buttonType
@@ -33,9 +37,16 @@ class PrefOSCToolbarDraggingItemViewController: NSViewController, NSPasteboardWr
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    OSCToolbarButton.setStyle(of: toolbarButton, buttonType: buttonType)
+    let hPadding = max(0, CGFloat(Preference.integer(for: .controlBarToolbarButtonPadding)))
+    toolbarButton.setStyle(buttonType: buttonType)
+    // Add 1 for box border
+    buttonLeadingToBoxLeadingConstraint.constant = hPadding + 1
+    buttonTopToBoxTopConstraint.constant = hPadding + 1
+    buttonBottomToBoxBottomConstraint.constant = hPadding + 1
+    buttonTrailingConstraint.constant = hPadding
     // Button is actually disabled so that its mouseDown goes to its superview instead. But don't gray it out.
     (toolbarButton.cell! as! NSButtonCell).imageDimsWhenDisabled = false
+    toolbarButton.superview?.layoutSubtreeIfNeeded()
 
     descriptionLabel.stringValue = buttonType.description()
   }
@@ -54,7 +65,7 @@ class PrefOSCToolbarDraggingItemViewController: NSViewController, NSPasteboardWr
   override func mouseDown(with event: NSEvent) {
     guard let availableItemsView = availableItemsView else { return }
 
-    guard let dragItem = OSCToolbarButton.buildDragItem(from: toolbarButton, pasteboardWriter: self, buttonType: buttonType) else { return }
+    guard let dragItem = OSCToolbarButton.buildDragItem(from: toolbarButton, pasteboardWriter: self, buttonType: buttonType, isCurrentItem: false) else { return }
     view.beginDraggingSession(with: [dragItem], event: event, source: availableItemsView)
   }
 

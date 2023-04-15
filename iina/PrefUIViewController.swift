@@ -98,6 +98,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .themeMaterial,
     .settingsTabGroupLocation,
     .playlistTabGroupLocation,
+    .controlBarToolbarButtons,
+    .controlBarToolbarButtonIconSize,
+    .controlBarToolbarButtonPadding,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -158,6 +161,11 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       refreshTitleBarAndOSCSection()
     case PK.settingsTabGroupLocation.rawValue, PK.playlistTabGroupLocation.rawValue:
       refreshSidebarSection()
+    case PK.controlBarToolbarButtons.rawValue,
+      PK.controlBarToolbarButtonIconSize.rawValue,
+      PK.controlBarToolbarButtonPadding.rawValue:
+
+      updateOSCToolbarButtons()
     default:
       break
     }
@@ -275,16 +283,18 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       let newItems = self.toolbarSettingsSheetController.currentButtonTypes
       let array = newItems.map { $0.rawValue }
       Preference.set(array, for: .controlBarToolbarButtons)
-      self.updateOSCToolbarButtons()
     }
   }
 
   private func updateOSCToolbarButtons() {
     oscToolbarStackView.views.forEach { oscToolbarStackView.removeView($0) }
     for buttonType in PrefUIViewController.oscToolbarButtons {
-      let button = NSButton()
-      OSCToolbarButton.setStyle(of: button, buttonType: buttonType)
+      let button = OSCToolbarButton()
+      button.setStyle(buttonType: buttonType)
       oscToolbarStackView.addView(button, in: .trailing)
+      let btnPad = max(0, CGFloat(Preference.float(for: .controlBarToolbarButtonPadding)))
+      oscToolbarStackView.spacing = 2 * btnPad
+      oscToolbarStackView.edgeInsets = .init(top: btnPad, left: btnPad, bottom: btnPad, right: btnPad)
       // Button is actually disabled so that its mouseDown goes to its superview instead
       button.isEnabled = false
       // But don't gray it out
