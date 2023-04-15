@@ -46,9 +46,9 @@
                 <outlet property="leftLabel" destination="NBD-MV-OuG" id="7xb-a1-6NR"/>
                 <outlet property="muteButton" destination="2py-h1-0km" id="baB-6t-gO7"/>
                 <outlet property="oscBottomMainView" destination="Qmi-hb-0aM" id="PM5-Ic-nvt"/>
-                <outlet property="oscFloatingBottomView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
+                <outlet property="oscFloatingLowerView" destination="hb6-oe-rHm" id="ZKe-zm-evE"/>
                 <outlet property="oscFloatingPlayButtonsContainerView" destination="hDm-KI-3o4" id="ITm-fa-cWL"/>
-                <outlet property="oscFloatingTopView" destination="Unr-Y6-JoM" id="URb-3v-Gzc"/>
+                <outlet property="oscFloatingUpperView" destination="Unr-Y6-JoM" id="URb-3v-Gzc"/>
                 <outlet property="oscTitleBarMainView" destination="icJ-I7-xRz" id="7lx-6S-9Oi"/>
                 <outlet property="oscTitleBarWidthConstraint" destination="zC9-dS-D1S" id="MU1-ei-qEz"/>
                 <outlet property="oscTopMainView" destination="fDY-vk-Ylv" id="phs-Yu-dGn"/>
@@ -315,7 +315,7 @@
                     <visualEffectView identifier="OSC-Floating-View" hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="OiF-pA-8Sd" userLabel="OSC-Floating Overlay View" customClass="ControlBarView" customModule="IINA" customModuleProvider="target">
                         <rect key="frame" x="110" y="60" width="440" height="67"/>
                         <subviews>
-                            <stackView identifier="OSC-Floating-TopHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Unr-Y6-JoM" userLabel="OSC-Floating-TopHalf View">
+                            <stackView identifier="OSC-Floating-TopHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Unr-Y6-JoM" userLabel="OSC-Floating-UpperHalf View">
                                 <rect key="frame" x="10" y="26" width="420" height="37"/>
                                 <middleViews>
                                     <textField identifier="Left-Speed-Label" hidden="YES" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Speed Label">
@@ -358,7 +358,7 @@
                                     <real value="3.4028234663852886e+38"/>
                                 </customSpacing>
                             </stackView>
-                            <stackView identifier="OSC-Floating-BottomHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="1000" horizontalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="hb6-oe-rHm" userLabel="OSC-Floating-BottomHalf View">
+                            <stackView identifier="OSC-Floating-BottomHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="1000" horizontalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="hb6-oe-rHm" userLabel="OSC-Floating-LowerHalf View">
                                 <rect key="frame" x="10" y="-1" width="420" height="37"/>
                             </stackView>
                         </subviews>

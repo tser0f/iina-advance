@@ -496,7 +496,16 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private var trafficLightButtonsWidth: CGFloat = 0.0
+  // Width of the 3 traffic light buttons
+  private var trafficLightButtonsWidth: CGFloat = {
+      var maxX: CGFloat = 0
+      for buttonType in [NSWindow.ButtonType.closeButton, NSWindow.ButtonType.miniaturizeButton, NSWindow.ButtonType.zoomButton] {
+        if let button = NSWindow.standardWindowButton(buttonType, for: .titled) {
+          maxX = max(maxX, button.frame.origin.x + button.frame.width)
+        }
+      }
+      return maxX
+  }()
 
   /** Get the `NSTextField` of widow's title. */
   private var titleTextField: NSTextField? {
@@ -605,8 +614,8 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var additionalInfoBattery: NSTextField!
 
   @IBOutlet weak var oscFloatingPlayButtonsContainerView: NSStackView!
-  @IBOutlet weak var oscFloatingTopView: NSStackView!
-  @IBOutlet weak var oscFloatingBottomView: NSView!
+  @IBOutlet weak var oscFloatingUpperView: NSStackView!
+  @IBOutlet weak var oscFloatingLowerView: NSView!
   @IBOutlet weak var oscBottomMainView: NSStackView!
   @IBOutlet weak var oscTopMainView: NSStackView!
   @IBOutlet weak var oscTitleBarMainView: NSStackView!
@@ -698,8 +707,6 @@ class MainWindowController: PlayerWindowController {
     sidebarsByID[playlistSidebarLocation]?.tabGroups.insert(.playlist)
 
     // Titlebar accessories
-
-    trafficLightButtonsWidth = calculateWidthOfTrafficLightButtons()
 
     leadingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     leadingTitlebarAccesoryViewController.view = leadingTitleBarAccessoryView
@@ -921,7 +928,9 @@ class MainWindowController: PlayerWindowController {
    │     │  VIDEO     O│     │          │     │  VIDEO     O│     │
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
+//  private var isTopPanelOutside: Bool = false
   private func updateTopPanelPlacement(isOutsideVideo: Bool) {
+//    guard isTopPanelOutside != isOutsideVideo else { return }
     guard let window = window, let contentView = window.contentView else { return }
     contentView.removeConstraint(topPanelLeadingSpaceConstraint)
     contentView.removeConstraint(topPanelTrailingSpaceConstraint)
@@ -957,9 +966,13 @@ class MainWindowController: PlayerWindowController {
       // Sidebars cast shadow on top panel
       contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
     }
+
+//    isTopPanelOutside = isOutsideVideo
   }
 
+//  private var isBottomPanelOutside: Bool = false
   private func updateBottomPanelPlacement(isOutsideVideo: Bool) {
+//    guard isTopPanelOutside != isOutsideVideo else { return }
     guard let window = window, let contentView = window.contentView else { return }
     contentView.removeConstraint(bottomPanelLeadingSpaceConstraint)
     contentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
@@ -996,16 +1009,7 @@ class MainWindowController: PlayerWindowController {
       // Sidebars cast shadow on bottom OSC
       contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
     }
-  }
-
-  private func calculateWidthOfTrafficLightButtons() -> CGFloat {
-    var maxX: CGFloat = 0
-    for buttonType in [NSWindow.ButtonType.closeButton, NSWindow.ButtonType.miniaturizeButton, NSWindow.ButtonType.zoomButton] {
-      if let button = window?.standardWindowButton(buttonType) {
-        maxX = max(maxX, button.frame.origin.x + button.frame.width)
-      }
-    }
-    return maxX
+//    isBottomPanelOutside = isOutsideVideo
   }
 
   private func updatePinToTopButton(fullScreen fullScreenOverride: Bool? = nil) {
@@ -1024,22 +1028,24 @@ class MainWindowController: PlayerWindowController {
     pinToTopButton.state = isOntop ? .on : .off
   }
 
-  private func setupOSCToolbarButtons() {
-    var buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
+  private func setupOSCToolbarButtons(iconSize: CGFloat? = nil, iconPadding: CGFloat? = nil) {
+    let buttonTypeRawValues = Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []
+    var buttonTypes = buttonTypeRawValues.compactMap(Preference.ToolBarButton.init(rawValue:))
     if #available(macOS 10.12.2, *) {} else {
-      buttons = buttons.filter { $0 != .pip }
+      buttonTypes = buttonTypes.filter { $0 != .pip }
     }
     fragToolbarView.views.forEach { fragToolbarView.removeView($0) }
-    for buttonType in buttons {
-      let button = NSButton()
-      OSCToolbarButton.setStyle(of: button, buttonType: buttonType)
+    Logger.log("Adding buttons to OSC toolbar: \(buttonTypes)", level: .verbose, subsystem: player.subsystem)
+    for buttonType in buttonTypes {
+      let button = OSCToolbarButton()
+      button.setStyle(buttonType: buttonType, iconSize: iconSize, iconPadding: iconPadding)
       button.action = #selector(self.toolBarButtonAction(_:))
       fragToolbarView.addView(button, in: .trailing)
       // It's not possible to control the icon padding from inside the buttons in all cases.
       // Instead we can get the same effect with a little more work, by controlling the stack view:
-      let btnPad = max(0, CGFloat(Preference.float(for: .controlBarToolbarButtonPadding)))
-      fragToolbarView.spacing = 2 * btnPad
-      fragToolbarView.edgeInsets = .init(top: btnPad, left: btnPad, bottom: btnPad, right: btnPad)
+      fragToolbarView.spacing = 2 * button.iconPadding
+      fragToolbarView.edgeInsets = .init(top: button.iconPadding, left: button.iconPadding,
+                                         bottom: button.iconPadding, right: button.iconPadding)
     }
   }
 
@@ -1096,8 +1102,7 @@ class MainWindowController: PlayerWindowController {
       titleBarTargetHeight = 0
       topOSCTargetHeight = 0
       bottomOSCTargetHeight = 0
-      osdTargetOffsetFromTop = 0
-      /// Spacing between OSD and top of `videoContainerView` should usually be >= 8pts
+      /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
       osdTargetOffsetFromTop = 8
 
       /// Reset view states to defaults. We can change these values as many times as we want as long as we are still
@@ -1130,10 +1135,8 @@ class MainWindowController: PlayerWindowController {
 
       if isFullScreen {
         /// Skip handling`titleTextField` and title bar buttons - they will be shown when transition to fullscreen is done
-        osdTargetOffsetFromTop = 8    // OSD top = 8pt below video container top
-
       } else if hasNoTitleBar {
-        // nothing
+        /// Nothing
       } else {  // Not fullscreen, has title bar
         let fadeable = topPanelPlacement == .insideVideo
 
@@ -1179,7 +1182,8 @@ class MainWindowController: PlayerWindowController {
       // OSC:
 
       UIAnimation.disableAnimation {
-        // Remove
+        // Remove subviews from OSC
+        fragToolbarView.views.forEach { fragToolbarView.removeView($0) }
         for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
           view?.removeFromSuperview()
         }
@@ -1190,15 +1194,19 @@ class MainWindowController: PlayerWindowController {
           case .floating:
             currentControlBar = controlBarFloating
             show(controlBarFloating, makeFadeable: true)   // floating is always fadeable
+            setupOSCToolbarButtons(iconSize: 14, iconPadding: 5)
 
             oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
-            oscFloatingTopView.addView(fragVolumeView, in: .leading)
-            oscFloatingTopView.addView(fragToolbarView, in: .trailing)
+            oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+            // Note: this line will CRASH IINA if toolbar is too large to fit! Be careful with button size & spacing
+            oscFloatingUpperView.addView(fragToolbarView, in: .trailing)
 
-            oscFloatingTopView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
-            oscFloatingTopView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
-            oscFloatingTopView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-            oscFloatingBottomView.addSubview(fragPositionSliderView)
+
+            oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
+            oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
+            oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+            
+            oscFloatingLowerView.addSubview(fragPositionSliderView)
             Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": fragPositionSliderView])
             // center control bar
             let cph = Preference.float(for: .controlBarPositionHorizontal)
@@ -1271,6 +1279,7 @@ class MainWindowController: PlayerWindowController {
     containerView.addView(fragPositionSliderView, in: .leading)
     containerView.addView(fragVolumeView, in: .leading)
     containerView.addView(fragToolbarView, in: .leading)
+    setupOSCToolbarButtons()
 
     containerView.setClippingResistancePriority(.defaultLow, for: .horizontal)
     containerView.setVisibilityPriority(.mustHold, for: fragPositionSliderView)
@@ -2085,32 +2094,32 @@ class MainWindowController: PlayerWindowController {
     controlBarFloating.xConstraint.constant = xPos
     controlBarFloating.yConstraint.constant = yPos
 
-    // Detach the views in oscFloatingTopView manually on macOS 11 only; as it will cause freeze
+    // Detach the views in oscFloatingUpperView manually on macOS 11 only; as it will cause freeze
     if isMacOS11 {
       guard let maxWidth = [fragVolumeView, fragToolbarView].compactMap({ $0?.frame.width }).max() else {
         return
       }
 
       // window - 10 - controlBarFloating
-      // controlBarFloating - 12 - oscFloatingTopView
+      // controlBarFloating - 12 - oscFloatingUpperView
       let margin: CGFloat = (10 + 12) * 2
       let hide = (window.frame.width
                   - oscFloatingPlayButtonsContainerView.frame.width
                   - maxWidth*2
                   - margin) < 0
 
-      let views = oscFloatingTopView.views
+      let views = oscFloatingUpperView.views
       if hide {
         if views.contains(fragVolumeView)
             && views.contains(fragToolbarView) {
-          oscFloatingTopView.removeView(fragVolumeView)
-          oscFloatingTopView.removeView(fragToolbarView)
+          oscFloatingUpperView.removeView(fragVolumeView)
+          oscFloatingUpperView.removeView(fragToolbarView)
         }
       } else {
         if !views.contains(fragVolumeView)
             && !views.contains(fragToolbarView) {
-          oscFloatingTopView.addView(fragVolumeView, in: .leading)
-          oscFloatingTopView.addView(fragToolbarView, in: .trailing)
+          oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+          oscFloatingUpperView.addView(fragToolbarView, in: .trailing)
         }
       }
     }
@@ -2405,8 +2414,8 @@ class MainWindowController: PlayerWindowController {
     }
     leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
 
-    let totalSpaceUsed = trailingSpace + sidebarButtonSpace + trafficLightButtonsWidth
-    return totalSpaceUsed
+    let totalSpaceOccupied = trailingSpace + sidebarButtonSpace + trafficLightButtonsWidth
+    return totalSpaceOccupied
   }
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
@@ -2434,8 +2443,8 @@ class MainWindowController: PlayerWindowController {
     let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
     trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
 
-    let totalSpaceUsed = leadingSpace + spaceForButtons + buttonMargin
-    return totalSpaceUsed
+    let totalSpaceOccupied = leadingSpace + spaceForButtons + buttonMargin
+    return totalSpaceOccupied
   }
 
   // MARK: - UI: OSD

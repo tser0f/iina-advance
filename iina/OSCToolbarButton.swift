@@ -10,8 +10,19 @@ import Foundation
 
 // Not elegant. Just a place to stick common code so that it won't be duplicated
 class OSCToolbarButton: NSButton {
-  func setStyle(buttonType: Preference.ToolBarButton) {
-    OSCToolbarButton.setStyle(of: self, buttonType: buttonType)
+  var iconSize: CGFloat = 0
+  var iconPadding: CGFloat = 0
+
+  var buttonSize: CGFloat {
+    return self.iconSize + (2 * self.iconPadding)
+  }
+
+  func setStyle(buttonType: Preference.ToolBarButton, iconSize: CGFloat? = nil, iconPadding: CGFloat? = nil) {
+    let iconSize = iconSize ?? max(0, CGFloat(Preference.float(for: .controlBarToolbarButtonIconSize)))
+    let iconPadding = iconPadding ?? max(0, CGFloat(Preference.float(for: .controlBarToolbarButtonPadding)))
+    OSCToolbarButton.setStyle(of: self, buttonType: buttonType, iconSize: iconSize)
+    self.iconSize = iconSize
+    self.iconPadding = iconPadding
   }
 
   static var iconSize: CGFloat {
@@ -21,7 +32,9 @@ class OSCToolbarButton: NSButton {
     return iconSize + (2 * max(0, CGFloat(Preference.integer(for: .controlBarToolbarButtonPadding))))
   }
 
-  static func setStyle(of toolbarButton: NSButton, buttonType: Preference.ToolBarButton) {
+  static func setStyle(of toolbarButton: NSButton, buttonType: Preference.ToolBarButton, iconSize: CGFloat? = nil) {
+    let iconSize = iconSize ?? max(0, CGFloat(Preference.float(for: .controlBarToolbarButtonIconSize)))
+
     toolbarButton.translatesAutoresizingMaskIntoConstraints = false
     toolbarButton.bezelStyle = .regularSquare
     toolbarButton.image = buttonType.image()
@@ -30,7 +43,6 @@ class OSCToolbarButton: NSButton {
     toolbarButton.refusesFirstResponder = true
     toolbarButton.toolTip = buttonType.description()
     toolbarButton.imageScaling = .scaleProportionallyUpOrDown
-    let iconSize = iconSize
     let widthConstraint = toolbarButton.widthAnchor.constraint(equalToConstant: iconSize)
     widthConstraint.priority = .defaultHigh
     widthConstraint.isActive = true

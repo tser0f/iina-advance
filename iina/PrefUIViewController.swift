@@ -292,9 +292,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       let button = OSCToolbarButton()
       button.setStyle(buttonType: buttonType)
       oscToolbarStackView.addView(button, in: .trailing)
-      let btnPad = max(0, CGFloat(Preference.float(for: .controlBarToolbarButtonPadding)))
-      oscToolbarStackView.spacing = 2 * btnPad
-      oscToolbarStackView.edgeInsets = .init(top: btnPad, left: btnPad, bottom: btnPad, right: btnPad)
+      oscToolbarStackView.spacing = 2 * button.iconPadding
+      oscToolbarStackView.edgeInsets = .init(top: button.iconPadding, left: button.iconPadding, bottom: button.iconPadding, right: button.iconPadding)
       // Button is actually disabled so that its mouseDown goes to its superview instead
       button.isEnabled = false
       // But don't gray it out

@@ -63,7 +63,7 @@ class PrefOSCToolbarSettingsSheetController: NSWindowController, PrefOSCToolbarC
 }
 
 
-class PrefOSCToolbarCurrentItem: NSButton, NSPasteboardWriting {
+class PrefOSCToolbarCurrentItem: OSCToolbarButton, NSPasteboardWriting {
 
   var currentItemsView: PrefOSCToolbarCurrentItemsView
   var buttonType: Preference.ToolBarButton
@@ -73,7 +73,7 @@ class PrefOSCToolbarCurrentItem: NSButton, NSPasteboardWriting {
     self.currentItemsView = superView
     super.init(frame: .zero)
 
-    OSCToolbarButton.setStyle(of: self, buttonType: buttonType)
+    setStyle(buttonType: buttonType)
   }
 
   required init?(coder: NSCoder) {

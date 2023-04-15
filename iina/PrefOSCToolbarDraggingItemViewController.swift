@@ -37,13 +37,12 @@ class PrefOSCToolbarDraggingItemViewController: NSViewController, NSPasteboardWr
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    let hPadding = max(0, CGFloat(Preference.integer(for: .controlBarToolbarButtonPadding)))
     toolbarButton.setStyle(buttonType: buttonType)
     // Add 1 for box border
-    buttonLeadingToBoxLeadingConstraint.constant = hPadding + 1
-    buttonTopToBoxTopConstraint.constant = hPadding + 1
-    buttonBottomToBoxBottomConstraint.constant = hPadding + 1
-    buttonTrailingConstraint.constant = hPadding
+    buttonLeadingToBoxLeadingConstraint.constant = toolbarButton.iconPadding + 1
+    buttonTopToBoxTopConstraint.constant = toolbarButton.iconPadding + 1
+    buttonBottomToBoxBottomConstraint.constant = toolbarButton.iconPadding + 1
+    buttonTrailingConstraint.constant = toolbarButton.iconPadding
     // Button is actually disabled so that its mouseDown goes to its superview instead. But don't gray it out.
     (toolbarButton.cell! as! NSButtonCell).imageDimsWhenDisabled = false
     toolbarButton.superview?.layoutSubtreeIfNeeded()
