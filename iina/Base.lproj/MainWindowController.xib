@@ -16,7 +16,6 @@
                 <outlet property="additionalInfoTitle" destination="3uh-OF-zy6" id="N6w-Hh-fQ1"/>
                 <outlet property="additionalInfoToOSDSpaceConstraint" destination="RUl-l8-s3i" id="Bq2-Vt-7D0"/>
                 <outlet property="additionalInfoView" destination="Qbi-jx-9pO" id="bdV-ZH-SkC"/>
-                <outlet property="bottomOSCPreferredHeightConstraint" destination="Kcz-RI-CQp" id="3Gt-QN-wYJ"/>
                 <outlet property="bottomPanelBottomConstraint" destination="vP1-IE-sbB" id="G77-vL-Wf8"/>
                 <outlet property="bottomPanelLeadingSpaceConstraint" destination="Wkx-hm-sJ4" id="EyE-ox-wzo"/>
                 <outlet property="bottomPanelTrailingSpaceConstraint" destination="3qV-vK-qlg" id="Gpt-6V-BMV"/>
@@ -55,7 +54,7 @@
                 <outlet property="osdAccessoryProgress" destination="i10-rt-9cb" id="ZdR-ZV-uoQ"/>
                 <outlet property="osdAccessoryText" destination="lb1-5R-hR3" id="A7o-3l-NYe"/>
                 <outlet property="osdLabel" destination="Ofw-1d-N4T" id="9ei-8o-aYw"/>
-                <outlet property="osdOffsetFromTopFallbackConstraint" destination="Xtd-Tp-gx1" id="Df4-De-rti"/>
+                <outlet property="osdMinOffsetFromTopConstraint" destination="Xtd-Tp-gx1" id="Df4-De-rti"/>
                 <outlet property="osdStackView" destination="g0j-zS-jKv" id="aoo-Tm-yhj"/>
                 <outlet property="osdVisualEffectView" destination="g0O-v5-RQj" id="V4X-8K-6O1"/>
                 <outlet property="pinToTopButton" destination="Ztc-Kn-fxI" id="xCA-hX-VpW"/>
@@ -85,6 +84,7 @@
                 <outlet property="trailingTitleBarLeadingSpaceConstraint" destination="c8g-qm-Vdc" id="m15-JQ-OEe"/>
                 <outlet property="trailingTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
                 <outlet property="videoAspectRatioConstraint" destination="wHS-TJ-sRI" id="6Y8-3g-mLP"/>
+                <outlet property="videoContainerBottomToBottomPanelBottomConstraint" destination="ayn-Wv-3NJ" id="LXY-f9-Zrt"/>
                 <outlet property="videoContainerBottomToBottomPanelTopConstraint" destination="68T-mq-A30" id="dZZ-Lb-2wM"/>
                 <outlet property="videoContainerBottomToContentViewBottomConstraint" destination="4gm-o8-h98" id="GyQ-e0-oLf"/>
                 <outlet property="videoContainerLeadingToLeadingSidebarConstraint" destination="9tP-D1-Ms9" id="T1I-Eh-Ha1"/>
@@ -429,10 +429,10 @@
                         </constraints>
                     </visualEffectView>
                     <visualEffectView identifier="OSC-Bottom-View" hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="OSC-Bottom View">
-                        <rect key="frame" x="0.0" y="-44" width="640" height="44"/>
+                        <rect key="frame" x="0.0" y="0.0" width="640" height="0.0"/>
                         <subviews>
                             <box identifier="ControlBarBottomTopBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="EJf-SX-YpP" userLabel="Bottom-Panel-Top-Border Box">
-                                <rect key="frame" x="0.0" y="43" width="640" height="1"/>
+                                <rect key="frame" x="0.0" y="-1" width="640" height="1"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="1" id="iul-EY-vfA"/>
                                 </constraints>
@@ -440,13 +440,12 @@
                                 <color key="fillColor" name="quaternaryLabelColor" catalog="System" colorSpace="catalog"/>
                             </box>
                             <stackView distribution="equalSpacing" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Qmi-hb-0aM" userLabel="OSC-Bottom Horizontal Stack View">
-                                <rect key="frame" x="8" y="0.0" width="624" height="44"/>
+                                <rect key="frame" x="8" y="0.0" width="624" height="0.0"/>
                             </stackView>
                         </subviews>
                         <constraints>
                             <constraint firstAttribute="bottom" secondItem="Qmi-hb-0aM" secondAttribute="bottom" id="84H-65-Ego"/>
                             <constraint firstItem="Qmi-hb-0aM" firstAttribute="top" secondItem="DFb-1L-U9o" secondAttribute="top" id="ANy-8g-kkb"/>
-                            <constraint firstAttribute="height" constant="44" identifier="bottomOSCPreferredHeightConstraint" id="Kcz-RI-CQp"/>
                             <constraint firstAttribute="trailing" secondItem="Qmi-hb-0aM" secondAttribute="trailing" constant="8" identifier="bottomPanelTrailingSpaceConstraint" id="bOW-iG-HNY"/>
                             <constraint firstAttribute="trailing" secondItem="EJf-SX-YpP" secondAttribute="trailing" id="bX4-9Y-drG"/>
                             <constraint firstItem="Qmi-hb-0aM" firstAttribute="leading" secondItem="DFb-1L-U9o" secondAttribute="leading" constant="8" id="c3E-rA-tSH"/>
@@ -516,8 +515,9 @@
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="Vtd-0f-x7p"/>
                     <constraint firstItem="DFb-1L-U9o" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="bottomPanelLeadingSpaceConstraint" id="Wkx-hm-sJ4"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerY" secondItem="3nL-Ky-Hfa" secondAttribute="centerY" id="XlV-7n-jPb"/>
-                    <constraint firstItem="g0O-v5-RQj" firstAttribute="top" relation="greaterThanOrEqual" secondItem="3nL-Ky-Hfa" secondAttribute="top" constant="8" identifier="osdOffsetFromTopFallbackConstraint" id="Xtd-Tp-gx1"/>
+                    <constraint firstItem="g0O-v5-RQj" firstAttribute="top" relation="greaterThanOrEqual" secondItem="3nL-Ky-Hfa" secondAttribute="top" constant="8" identifier="osdMinOffsetFromTopConstraint" id="Xtd-Tp-gx1"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" constant="28" identifier="videoContainerlViewTop-ContentViewTop-Constraint" id="Zqm-9J-g9b"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="bottom" identifier="videoContainerBottom-BottomOSCBottom-Constraint" id="ayn-Wv-3NJ"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="OiF-pA-8Sd" secondAttribute="bottom" priority="750" constant="60" id="cRP-R4-zYY"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="trailing" constant="8" identifier="trailingSidebarLeading_GE_oscFloatingTrailing_Constraint" id="cln-MW-RoF"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="bottom" secondItem="XBs-34-TIm" secondAttribute="bottom" id="f5L-Kv-wdv"/>

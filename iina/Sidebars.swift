@@ -579,20 +579,21 @@ extension SidebarTabGroupViewController {
   func refreshVerticalConstraints() {
     let downshift: CGFloat
     var tabHeight: CGFloat
-    if Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+    let isFullScreen = mainWindow.useFullScreenLayout
+    if !isFullScreen && Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
       downshift = defaultDownshift
       tabHeight = defaultTabHeight
       Logger.log("MainWindow top panel is outside video; using default downshift (\(downshift)) and tab height (\(tabHeight))", level: .verbose, subsystem: mainWindow.player.subsystem)
     } else {
       // Downshift: try to match title bar height
-      if mainWindow.hasNoTitleBar() {
+      if !isFullScreen && mainWindow.currentLayout.hasNoTitleBar() {
         downshift = defaultDownshift
       } else {
         // Need to adjust if has title bar, but it's style .minimal
         downshift = mainWindow.reducedTitleBarHeight
       }
 
-      tabHeight = mainWindow.topOSCTargetHeight
+      tabHeight = mainWindow.topOSCPreferredHeightConstraint.constant
       // Put some safeguards in place:
       if tabHeight <= 0 || tabHeight > 70 {
         tabHeight = defaultTabHeight
