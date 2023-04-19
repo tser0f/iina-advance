@@ -481,53 +481,7 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Outlets
 
-  private var standardWindowButtons: [NSButton] {
-    get {
-      return ([.closeButton, .miniaturizeButton, .zoomButton, .documentIconButton] as [NSWindow.ButtonType]).compactMap {
-        window?.standardWindowButton($0)
-      }
-    }
-  }
-
-  private var documentIconButton: NSButton? {
-    get {
-      window?.standardWindowButton(.documentIconButton)
-    }
-  }
-
-  private var trafficLightButtons: [NSButton] {
-    get {
-      return ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).compactMap {
-        window?.standardWindowButton($0)
-      }
-    }
-  }
-
-  // Width of the 3 traffic light buttons
-  private lazy var trafficLightButtonsWidth: CGFloat = {
-      var maxX: CGFloat = 0
-      for buttonType in [NSWindow.ButtonType.closeButton, NSWindow.ButtonType.miniaturizeButton, NSWindow.ButtonType.zoomButton] {
-        if let button = window!.standardWindowButton(buttonType) {
-          maxX = max(maxX, button.frame.origin.x + button.frame.width)
-        }
-      }
-      return maxX
-  }()
-
-  /** Get the `NSTextField` of widow's title. */
-  private var titleTextField: NSTextField? {
-    get {
-      return window?.standardWindowButton(.closeButton)?.superview?.subviews.compactMap({ $0 as? NSTextField }).first
-    }
-  }
-
-  private var leadingTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
-  private var trailingTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
-  @IBOutlet var leadingTitleBarAccessoryView: NSView!
-  @IBOutlet var trailingTitleBarAccessoryView: NSView!
-
-  /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
-  private var currentControlBar: NSView?
+  // - Outlets: Constraints
 
   // Spacers in left title bar accessory view:
   @IBOutlet weak var leadingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
@@ -537,28 +491,40 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var trailingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
 
+  @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
+
+  // - Top panel (title bar and/or top OSC) constraints
+  @IBOutlet weak var videoContainerTopToTopPanelBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerTopToContentViewTopConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var topPanelLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
   @IBOutlet weak var topPanelTrailingSpaceConstraint: NSLayoutConstraint!
 
+  // - Bottom OSC constraints
+  @IBOutlet weak var videoContainerBottomToBottomPanelTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerBottomToBottomPanelBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerBottomToContentViewBottomConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var bottomPanelLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
   @IBOutlet weak var bottomPanelTrailingSpaceConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTopToTopPanelBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTopToContentViewTopConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerBottomToBottomPanelTopConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerBottomToBottomPanelBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerBottomToContentViewBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var windowContentViewLeadingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var windowContentViewTrailingConstraint: NSLayoutConstraint!
+  // - Leading sidebar constraints
+  @IBOutlet weak var videoContainerLeadingToContentViewLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerLeadingToLeadingSidebarLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerLeadingToLeadingSidebarTrailingConstraint: NSLayoutConstraint!
 
-  /** ┌──────────────────────┐
+  // - Trailing sidebar constraints
+  @IBOutlet weak var videoContainerTrailingToContentViewTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerTrailingToTrailingSidebarLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerTrailingToTrailingSidebarTrailingConstraint: NSLayoutConstraint!
+
+  /** OSD: shown here in "upper-left" configuration.
+      For "upper-right" config: swap OSD & AdditionalInfo anchors in A & C, and invert all the params of C.
+      ┌──────────────────────┐
       │ A ┌────┐ B  ┌────┐ C │  A: leadingSidebarToOSDSpaceConstraint
-      │◄─►│    │◄──►│    │◄─►│  B: additionalInfoToOSDSpaceConstraint
+      │◄─►│ OSD│◄──►│ Add│◄─►│  B: additionalInfoToOSDSpaceConstraint
       │   └────┘    └────┘   │  C: trailingSidebarToOSDSpaceConstraint
       └──────────────────────┘
    */
@@ -566,10 +532,6 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var additionalInfoToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var videoContainerLeadingToLeadingSidebarConstraint: NSLayoutConstraint!
-  @IBOutlet weak var leadingSidebarWidthConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTrailingToTrailingSidebarConstraint: NSLayoutConstraint!
-  @IBOutlet weak var trailingSidebarWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var oscTitleBarWidthConstraint: NSLayoutConstraint!
   // The OSD should always be below the top panel + 8. But if top panel/title bar is transparent, we need this constraint
   @IBOutlet weak var osdMinOffsetFromTopConstraint: NSLayoutConstraint!
@@ -584,6 +546,11 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var topOSCPreferredHeightConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var timePreviewWhenSeekHorizontalCenterConstraint: NSLayoutConstraint!
+
+  // - Outlets: Views
+
+  @IBOutlet var leadingTitleBarAccessoryView: NSView!
+  @IBOutlet var trailingTitleBarAccessoryView: NSView!
 
   /** Top-of-video panel, may contain `titleBarView` and/or top OSC if configured. */
   @IBOutlet weak var topPanelView: NSVisualEffectView!
@@ -643,6 +610,52 @@ class MainWindowController: PlayerWindowController {
 
   @IBOutlet weak var pipOverlayView: NSVisualEffectView!
   @IBOutlet weak var videoContainerView: NSView!
+
+  private var standardWindowButtons: [NSButton] {
+    get {
+      return ([.closeButton, .miniaturizeButton, .zoomButton, .documentIconButton] as [NSWindow.ButtonType]).compactMap {
+        window?.standardWindowButton($0)
+      }
+    }
+  }
+
+  private var documentIconButton: NSButton? {
+    get {
+      window?.standardWindowButton(.documentIconButton)
+    }
+  }
+
+  private var trafficLightButtons: [NSButton] {
+    get {
+      return ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).compactMap {
+        window?.standardWindowButton($0)
+      }
+    }
+  }
+
+  // Width of the 3 traffic light buttons
+  private lazy var trafficLightButtonsWidth: CGFloat = {
+    var maxX: CGFloat = 0
+    for buttonType in [NSWindow.ButtonType.closeButton, NSWindow.ButtonType.miniaturizeButton, NSWindow.ButtonType.zoomButton] {
+      if let button = window!.standardWindowButton(buttonType) {
+        maxX = max(maxX, button.frame.origin.x + button.frame.width)
+      }
+    }
+    return maxX
+  }()
+
+  /** Get the `NSTextField` of widow's title. */
+  private var titleTextField: NSTextField? {
+    get {
+      return window?.standardWindowButton(.closeButton)?.superview?.subviews.compactMap({ $0 as? NSTextField }).first
+    }
+  }
+
+  private var leadingTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
+  private var trailingTitlebarAccesoryViewController: NSTitlebarAccessoryViewController!
+
+  /** Current OSC view. May be top, bottom, or floating depneding on user pref. */
+  private var currentControlBar: NSView?
 
   lazy var pluginOverlayViewContainer: NSView! = {
     guard let window = window, let cv = window.contentView else { return nil }
@@ -1642,7 +1655,7 @@ class MainWindowController: PlayerWindowController {
     if isDragging {
       // if it's a mouseup after dragging window
       isDragging = false
-    } else if finishResizingSidebar() {
+    } else if finishResizingSidebar(with: event) {
       return
     } else {
       // if it's a mouseup after clicking
@@ -2667,7 +2680,7 @@ class MainWindowController: PlayerWindowController {
       && (leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown)
     if isSpaceNeededForSidebar {
       // Subtract space taken by the 3 standard buttons + other visible buttons
-      trailingSpace = max(0, leadingSidebarWidthConstraint.constant - trafficLightButtonsWidth - sidebarButtonSpace)
+      trailingSpace = max(0, leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
     }
     leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
 
@@ -2691,7 +2704,7 @@ class MainWindowController: PlayerWindowController {
     let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo
       && (trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown)
     if isSpaceNeededForSidebar {
-      leadingSpace = max(0, trailingSidebarWidthConstraint.constant - spaceForButtons)
+      leadingSpace = max(0, trailingSidebar.currentWidth - spaceForButtons)
     }
     trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
 
