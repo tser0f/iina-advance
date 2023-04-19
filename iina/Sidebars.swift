@@ -215,7 +215,7 @@ extension MainWindowController {
   // Hides any visible sidebars
   func hideSidebars(animate: Bool = true, then: (() -> Void)? = nil) {
     Logger.log("Hiding all sidebars", level: .verbose)
-    // Need to make sure that completionHandler (1) runs at all, and (2) runs after animations
+    // Need to make sure that completionHandler (1) runs after animations, or (2) runs at all
     var completionHandler: (() -> Void)? = then
     if let visibleTab = leadingSidebar.visibleTab {
       changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
@@ -225,6 +225,7 @@ extension MainWindowController {
       changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
       completionHandler = nil
     }
+    // Run completion handler, only if it hasn't been scheduled to run already:
     if let completionHandler = completionHandler {
       completionHandler()
     }
@@ -267,7 +268,7 @@ extension MainWindowController {
                    level: .verbose, subsystem: player.subsystem)
         nothingToDo = true
       }
-      // Else just need to change tab in tab group. Fall through
+    // Else just need to change tab in tab group. Fall through
     } else if !show && !sidebar.isVisible {
       Logger.log("Nothing to do; \(sidebar.locationID) (which contains tab \(tab.name.quoted)) is already hidden",
                  level: .verbose, subsystem: player.subsystem)
@@ -460,10 +461,19 @@ extension MainWindowController {
     if let prevSidebar = sidebarsByID[currentLocationID], prevSidebar.visibleTabGroup == tabGroup, let curentVisibleTab = prevSidebar.visibleTab {
       Logger.log("Moving visible tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)",
                  level: .verbose, subsystem: player.subsystem)
+
+      // Also close sidebar at new location if it is in the way.
+      // This will happen in parallel to the block below it:
+      if let newSidebar = sidebarsByID[newLocationID], let obstructingVisibleTab = newSidebar.visibleTab, newSidebar.isVisible {
+        changeVisibility(forTab: obstructingVisibleTab, to: false)
+      }
+
+      // Close sidebar at old location. Then reopen tab group at its new location:
       changeVisibility(forTab: curentVisibleTab, to: false, then: {
         self.updateSidebarLocation(newLocationID, forTabGroup: tabGroup)
         self.changeVisibility(forTab: curentVisibleTab, to: true)
       })
+
     } else {
       Logger.log("Moving hidden tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)",
                  level: .verbose, subsystem: player.subsystem)
@@ -576,7 +586,7 @@ protocol SidebarTabGroupViewController {
   var customTabHeight: CGFloat? { get }
 
   // Implementing classes should call this, but do not need to define it (see below)
-  func refreshVerticalConstraints()
+  func refreshVerticalConstraints(layout futureLayout: MainWindowController.LayoutPlan?)
 }
 
 extension SidebarTabGroupViewController {
@@ -584,25 +594,25 @@ extension SidebarTabGroupViewController {
   var customTabHeight: CGFloat? { return nil }
 
   /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
-  func refreshVerticalConstraints() {
+  func refreshVerticalConstraints(layout futureLayout: MainWindowController.LayoutPlan? = nil) {
+    let layout = futureLayout ?? mainWindow.currentLayout
     let downshift: CGFloat
     var tabHeight: CGFloat
-    let isFullScreen = mainWindow.useFullScreenLayout
-    if !isFullScreen && Preference.enum(for: .topPanelPlacement) == Preference.PanelPlacement.outsideVideo {
+    if !layout.isFullScreen && layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
       downshift = defaultDownshift
       tabHeight = defaultTabHeight
       Logger.log("MainWindow top panel is outside video; using default downshift (\(downshift)) and tab height (\(tabHeight))",
                  level: .verbose, subsystem: mainWindow.player.subsystem)
     } else {
       // Downshift: try to match title bar height
-      if !isFullScreen && mainWindow.currentLayout.hasNoTitleBar() {
+      if !layout.isFullScreen && layout.hasNoTitleBar() {
         downshift = defaultDownshift
       } else {
         // Need to adjust if has title bar, but it's style .minimal
         downshift = mainWindow.reducedTitleBarHeight
       }
 
-      tabHeight = mainWindow.topOSCPreferredHeightConstraint.constant
+      tabHeight = layout.topOSCHeight
       // Put some safeguards in place:
       if tabHeight <= 0 || tabHeight > 70 {
         tabHeight = defaultTabHeight

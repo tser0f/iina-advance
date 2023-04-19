@@ -1140,7 +1140,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     static func initialLayout() -> LayoutPlan {
-      // Reflect what is in the XIB
+      // Match what is shown in the XIB
       return LayoutPlan(useFullScreenLayout: false,
                         topPanelPlacement:.insideVideo,
                         bottomPanelPlacement: .insideVideo,
@@ -1231,6 +1231,8 @@ class MainWindowController: PlayerWindowController {
 
     // 2: Animation: Minimize panels which are no longer needed
     animationBlocks.append{ [self] context in
+      /// Need to use `linear` or else panels of different sizes won't line up as they move
+      context.timingFunction = CAMediaTimingFunction(name: .linear)
       closeOldPanels(futureLayout)
     }
 
@@ -1242,6 +1244,7 @@ class MainWindowController: PlayerWindowController {
 
     // 4: Animation: Open new panels
     animationBlocks.append{ [self] context in
+      context.timingFunction = CAMediaTimingFunction(name: .linear)
       openNewPanels(futureLayout)
     }
 
@@ -1252,7 +1255,12 @@ class MainWindowController: PlayerWindowController {
       currentLayout = futureLayout
     }
 
-    showFadeableViews(completionHandler: {
+    // 6: After animations all finish, start fade timer
+    animationBlocks.append{ [self] context in
+      resetFadeTimer()
+    }
+
+    showFadeableViews(thenRestartFadeTimer: false, completionHandler: {
       UIAnimation.run(animationBlocks)
     })
   }
@@ -1322,7 +1330,12 @@ class MainWindowController: PlayerWindowController {
       videoContainerTopToTopPanelBottomConstraint.animateToConstant(0)
       videoContainerTopToContentViewTopConstraint.animateToConstant(0)
     } else {
-      updateTopPanelHeight(to: futureLayout.topPanelHeight, isOutsideVideo: futureLayout.topPanelPlacement == .outsideVideo)
+      if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
+        updateTopPanelHeight(to: futureLayout.topPanelHeight, isOutsideVideo: futureLayout.topPanelPlacement == .outsideVideo)
+        // Update sidebar vertical alignments to match
+        quickSettingView.refreshVerticalConstraints(layout: futureLayout)
+        playlistView.refreshVerticalConstraints(layout: futureLayout)
+      }
     }
 
     if futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement {
@@ -1381,11 +1394,9 @@ class MainWindowController: PlayerWindowController {
     updateTopPanelHeight(to: futureLayout.topPanelHeight, isOutsideVideo: futureLayout.topPanelPlacement == .outsideVideo)
     updateBottomOSCHeight(to: futureLayout.bottomOSCHeight, isOutsideVideo: futureLayout.bottomPanelPlacement == .outsideVideo)
 
-    applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
-
     // Update sidebar vertical alignments
-    quickSettingView.refreshVerticalConstraints()
-    playlistView.refreshVerticalConstraints()
+    quickSettingView.refreshVerticalConstraints(layout: futureLayout)
+    playlistView.refreshVerticalConstraints(layout: futureLayout)
 
     controlBarBottom.layoutSubtreeIfNeeded()
     window.contentView?.layoutSubtreeIfNeeded()
@@ -1393,6 +1404,8 @@ class MainWindowController: PlayerWindowController {
 
   private func showRemainingViews(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
+
+    applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
 
     if futureLayout.titleIconAndText.isShowable {
       apply(visibility: futureLayout.titleIconAndText, documentIconButton, titleTextField)
@@ -2551,10 +2564,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   // Shows fadeableViews and titlebar via fade
-  private func showFadeableViews(completionHandler: (() -> Void)? = nil) {
+  private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true,
+                                 completionHandler: (() -> Void)? = nil) {
     guard !player.disableUI else { return }
-    // FIXME: uncomment & verify that this works. Also, why does clicking always hide the fadeable views?
-//    if animationState == .hidden || animationState == .shown {
 
     animationState = .willShow
     // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
@@ -2562,7 +2574,7 @@ class MainWindowController: PlayerWindowController {
     if !player.info.isPaused {
       player.createSyncUITimer()
     }
-    resetFadeTimer()
+    destroyFadeTimer()
 
     var animationBlocks: [AnimationBlock] = []
 
@@ -2579,6 +2591,9 @@ class MainWindowController: PlayerWindowController {
         for v in fadeableViews {
           v.isHidden = false
         }
+        if restartFadeTimer {
+          resetFadeTimer()
+        }
       }
     }
 
@@ -2587,7 +2602,7 @@ class MainWindowController: PlayerWindowController {
         completionHandler()
       }
     }
-
+    
     UIAnimation.run(animationBlocks)
   }
 
