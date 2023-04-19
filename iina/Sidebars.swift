@@ -250,8 +250,8 @@ extension MainWindowController {
     var nothingToDo = false
     if show && sidebar.isVisible {
       if sidebar.visibleTabGroup != group {
-        // If tab is open but with wrong tab group, hide it, then change it, then show again
-        Logger.log("Need to change tab group for \(sidebar.locationID): will hide & reopen",
+        // If tab is showing but with wrong tab group, hide it, then change it, then show again
+        Logger.log("Need to change tab group for \(sidebar.locationID): will hide & re-show sidebar",
                    level: .verbose, subsystem: player.subsystem)
         guard let visibleTab = sidebar.visibleTab else {
           Logger.log("Internal error setting tab group for sidebar \(sidebar.locationID)",
@@ -341,18 +341,18 @@ extension MainWindowController {
       switch sidebar.locationID {
       case .leadingSidebar:
         leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
-        updateLeadingSidebarWidth(to: currentWidth, open: show, placement: leadingSidebar.placement)
+        updateLeadingSidebarWidth(to: currentWidth, show: show, placement: leadingSidebar.placement)
 
       case .trailingSidebar:
         trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
-        updateTrailingSidebarWidth(to: currentWidth, open: show, placement: trailingSidebar.placement)
+        updateTrailingSidebarWidth(to: currentWidth, show: show, placement: trailingSidebar.placement)
       }
 
       updateSpacingForTitleBarAccessories()
       contentView.layoutSubtreeIfNeeded()
     }
 
-    animationBlocks.append{ [self] _ in
+    animationBlocks.append{ [self] context in
       if show {
         sidebar.animationState = .shown
         sidebar.visibleTab = tab
@@ -362,18 +362,20 @@ extension MainWindowController {
         sidebarView.isHidden = true
         sidebar.animationState = .hidden
       }
-      Logger.log("Sidebar animation state is now: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Sidebar animationState is now: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
       if let doAfter = doAfter {
         doAfter()
+      } else {
+        context.duration = 0
       }
     }
 
     UIAnimation.run(animationBlocks)
   }
 
-  private func updateLeadingSidebarWidth(to newWidth: CGFloat, open: Bool, placement: Preference.PanelPlacement) {
-    Logger.log("LeadingSidebar opening: \(open) width: \(newWidth) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
-    if open {
+  private func updateLeadingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
+    Logger.log("LeadingSidebar showing: \(show) width: \(newWidth) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    if show {
       switch placement {
       case .outsideVideo:
         videoContainerLeadingToLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
@@ -391,9 +393,9 @@ extension MainWindowController {
     }
   }
 
-  private func updateTrailingSidebarWidth(to newWidth: CGFloat, open: Bool, placement: Preference.PanelPlacement) {
-    Logger.log("TrailingSidebar opening: \(open) width: \(newWidth) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
-    if open {
+  private func updateTrailingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
+    Logger.log("TrailingSidebar showing: \(show) width: \(newWidth) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    if show {
       switch placement {
       case .outsideVideo:
         videoContainerTrailingToTrailingSidebarLeadingConstraint.animateToConstant(0)
@@ -508,7 +510,7 @@ extension MainWindowController {
       }
       newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       UIAnimation.disableAnimation {
-        updateLeadingSidebarWidth(to: newPlaylistWidth, open: true, placement: leadingSidebar.placement)
+        updateLeadingSidebarWidth(to: newPlaylistWidth, show: true, placement: leadingSidebar.placement)
       }
     } else if trailingSidebar.isResizing {
       switch trailingSidebar.placement {
@@ -519,7 +521,7 @@ extension MainWindowController {
       }
       newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
       UIAnimation.disableAnimation {
-        updateTrailingSidebarWidth(to: newPlaylistWidth, open: true, placement: trailingSidebar.placement)
+        updateTrailingSidebarWidth(to: newPlaylistWidth, show: true, placement: trailingSidebar.placement)
       }
     } else {
       return false
