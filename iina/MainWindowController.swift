@@ -593,7 +593,7 @@ class MainWindowController: PlayerWindowController {
 
   @IBOutlet weak var oscFloatingPlayButtonsContainerView: NSStackView!
   @IBOutlet weak var oscFloatingUpperView: NSStackView!
-  @IBOutlet weak var oscFloatingLowerView: NSView!
+  @IBOutlet weak var oscFloatingLowerView: NSStackView!
   @IBOutlet weak var oscBottomMainView: NSStackView!
   @IBOutlet weak var oscTopMainView: NSStackView!
   @IBOutlet weak var oscTitleBarMainView: NSStackView!
@@ -1273,6 +1273,7 @@ class MainWindowController: PlayerWindowController {
 
   private func fadeOutOldViews(_ futureLayout: LayoutPlan) {
     animationState = .willHide
+    Logger.log("FadeOutOldViews", level: .verbose, subsystem: player.subsystem)
 
     // Title bar & title bar accessories:
 
@@ -1312,6 +1313,7 @@ class MainWindowController: PlayerWindowController {
 
   private func closeOldPanels(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
+    Logger.log("CloseOldPanels", level: .verbose, subsystem: player.subsystem)
 
     if futureLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
@@ -1353,8 +1355,7 @@ class MainWindowController: PlayerWindowController {
 
   private func updateHiddenViewsAndConstraints(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
-
-    Logger.log("updateHiddenViewsAndConstraints()")
+    Logger.log("UpdateHiddenViewsAndConstraints", level: .verbose, subsystem: player.subsystem)
 
     animationState = .willShow
 
@@ -1367,6 +1368,8 @@ class MainWindowController: PlayerWindowController {
         }
       }
     }
+
+    updateSpacingForTitleBarAccessories(futureLayout)
 
     let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
 
@@ -1399,6 +1402,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     if let setupControlBarInternalViews = futureLayout.setupControlBarInternalViews {
+      Logger.log("Setting up control bar: \(futureLayout.oscPosition)", level: .verbose, subsystem: player.subsystem)
       setupControlBarInternalViews()
     }
 
@@ -1421,6 +1425,7 @@ class MainWindowController: PlayerWindowController {
 
   private func openNewPanels(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
+    Logger.log("OpenNewPanels", level: .verbose, subsystem: player.subsystem)
 
     // Update heights to their final values:
     titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
@@ -1439,6 +1444,7 @@ class MainWindowController: PlayerWindowController {
 
   private func showRemainingViews(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
+    Logger.log("ShowRemainingViews", level: .verbose, subsystem: player.subsystem)
 
     applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
 
@@ -1461,8 +1467,6 @@ class MainWindowController: PlayerWindowController {
         window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
         window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
       }
-
-      updateSpacingForTitleBarAccessories(futureLayout)
     }
 
     window.contentView?.layoutSubtreeIfNeeded()
@@ -1529,10 +1533,16 @@ class MainWindowController: PlayerWindowController {
           setupOSCToolbarButtons(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
 
           oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
-          oscFloatingUpperView.addView(fragVolumeView, in: .leading)
-          // Note: this line will CRASH IINA if toolbar is too large to fit! Be careful with button size & spacing
-          oscFloatingUpperView.addView(fragToolbarView, in: .trailing)
-
+          // There sweems to be a race condition when adding to these StackViews.
+          // Sometimes it still contains the old view, and then trying to add again will cause a crash.
+          // Must check if it already contains the view before adding.
+          if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
+            oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+          }
+          if !oscFloatingUpperView.views(in: .trailing).contains(fragToolbarView) {
+            // This line will CRASH IINA if toolbar is too large to fit! Be careful with button size & spacing
+            oscFloatingUpperView.addView(fragToolbarView, in: .trailing)
+          }
 
           oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
           oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: fragToolbarView)
