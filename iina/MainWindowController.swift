@@ -126,6 +126,10 @@ class MainWindowController: PlayerWindowController {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
   }()
 
+  private lazy var rotationGestureRecognizer: NSRotationGestureRecognizer = {
+    return NSRotationGestureRecognizer(target: self, action: #selector(MainWindowController.handleRotationGesture(recognizer:)))
+  }()
+
   /** For auto hiding UI after a timeout. */
   var hideFadeableViewsTimer: Timer?
   var hideOSDTimer: Timer?
@@ -763,7 +767,7 @@ class MainWindowController: PlayerWindowController {
     // gesture recognizers
     rotationHandler.mainWindowController = self
     cv.addGestureRecognizer(magnificationGestureRecognizer)
-    cv.addGestureRecognizer(NSRotationGestureRecognizer(target: self, action: #selector(rotationHandler.handleRotationGesture(recognizer:))))
+    cv.addGestureRecognizer(rotationGestureRecognizer)
 
     // Work around a bug in macOS Ventura where HDR content becomes dimmed when playing in full
     // screen mode once overlaying views are fully hidden (issue #3844). After applying this
@@ -1184,6 +1188,7 @@ class MainWindowController: PlayerWindowController {
   private func apply(visibility: Visibility, to view: NSView) {
     switch visibility {
     case .hidden:
+      view.alphaValue = 0
       view.isHidden = true
       fadeableViews.remove(view)
     case .showAlways:
@@ -1225,9 +1230,9 @@ class MainWindowController: PlayerWindowController {
     var animationBlocks: [AnimationBlock] = []
 
     // 1: Animation: Fade out views which no longer will be shown but aren't enclosed in a panel
-//    animationBlocks.append{ [self] context in
-//      fadeOutOldViewsTodo(futureLayout)
-//    }
+    animationBlocks.append{ [self] context in
+      fadeOutOldViews(futureLayout)
+    }
 
     // 2: Animation: Minimize panels which are no longer needed
     animationBlocks.append{ [self] context in
@@ -1257,6 +1262,7 @@ class MainWindowController: PlayerWindowController {
 
     // 6: After animations all finish, start fade timer
     animationBlocks.append{ [self] context in
+      animationState = .shown
       resetFadeTimer()
     }
 
@@ -1265,55 +1271,47 @@ class MainWindowController: PlayerWindowController {
     })
   }
 
-  private func fadeOutOldViewsTodo(_ futureLayout: LayoutPlan) {
+  private func fadeOutOldViews(_ futureLayout: LayoutPlan) {
+    animationState = .willHide
+
     // Title bar & title bar accessories:
 
-    /// Note: MUST use this to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
-    /// Setting `isHidden=true` on `titleTextField` and `documentIcon` don't appear to work.
-    /// Setting `alphaValue=0` does appear to work, but this is a cleaner solution.
-    //      window.titleVisibility = .hidden
+    // Hide all title bar items if top panel placement is changing
+    let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
 
-    /// Also note: looks like another Apple bug where setting `alphaValue=0` on the "minimize" button will
-    /// cause `window.performMiniaturize()` to do nothing, so MUST use `isHidden=true` + `alphaValue=1` instead.
+    if futureLayout.titleIconAndText == .hidden || isTopPanelPlacementChanging {
+      let docHidden = documentIconButton?.isHidden ?? false
+      let titleHidden = titleTextField?.isHidden ?? false
+      apply(visibility: .hidden, documentIconButton, titleTextField)
+      documentIconButton?.isHidden = docHidden
+      titleTextField?.isHidden = titleHidden
+    }
 
-    //    animationBlocks.append{ [self] context in
-    //      for v in fadeableViews {
-    //        v.animator().alphaValue = 0
-    //      }
-    //    }
-    //
-    //    animationBlocks.append{ [self] context in
-    //      // if no interrupt then hide animation
-    //      if animationState == .willHide {
-    //        animationState = .hidden
-    //        for v in fadeableViews {
-    //          v.isHidden = true
-    //        }
-    //      }
-    //    }
+    if futureLayout.trafficLightButtons == .hidden || isTopPanelPlacementChanging {
+      for button in trafficLightButtons {
+        apply(visibility: .hidden, to: button)
+      }
+    }
+
+    /// Setting `.isHidden = true` for these icons visibly messes up their layout.
+    /// So just set alpha value for now, and hide later in `updateHiddenViewsAndConstraints()`
+    if futureLayout.leadingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
+      leadingSidebarToggleButton.alphaValue = 0
+      fadeableViews.remove(leadingSidebarToggleButton)
+    }
+    if futureLayout.trailingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
+      trailingSidebarToggleButton.alphaValue = 0
+      fadeableViews.remove(trailingSidebarToggleButton)
+    }
+    if futureLayout.pinToTopButton == .hidden || isTopPanelPlacementChanging {
+      pinToTopButton.alphaValue = 0
+      fadeableViews.remove(pinToTopButton)
+    }
+
   }
 
   private func closeOldPanels(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
-    if futureLayout.titlebarAccessoryViewControllers == .hidden {
-      // Remove all title bar accessories (if needed):
-      if window.styleMask.contains(.titled) {
-        /// Note: `window.titlebarAccessoryViewControllers` will crash if `styleMask` doesn't contain `.titled`
-        for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
-          window.removeTitlebarAccessoryViewController(at: index)
-        }
-      }
-    }
-    for button in trafficLightButtons {
-      applyHiddenOnly(visibility: futureLayout.trafficLightButtons, to: button)
-    }
-    if futureLayout.titleIconAndText == .hidden {
-      apply(visibility: futureLayout.titleIconAndText, documentIconButton, titleTextField)
-      window.titleVisibility = .hidden
-    }
-    applyHiddenOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
-    applyHiddenOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-    applyHiddenOnly(visibility: futureLayout.pinToTopButton, to: pinToTopButton)
 
     if futureLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
@@ -1358,6 +1356,37 @@ class MainWindowController: PlayerWindowController {
 
     Logger.log("updateHiddenViewsAndConstraints()")
 
+    animationState = .willShow
+
+    if futureLayout.titlebarAccessoryViewControllers == .hidden {
+      // Remove all title bar accessories (if needed):
+      if window.styleMask.contains(.titled) {
+        /// Note: `window.titlebarAccessoryViewControllers` will crash if `styleMask` doesn't contain `.titled`
+        for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
+          window.removeTitlebarAccessoryViewController(at: index)
+        }
+      }
+    }
+
+    let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
+
+    if futureLayout.leadingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
+      applyHiddenOnly(visibility: .hidden, to: leadingSidebarToggleButton)
+    }
+    if futureLayout.trailingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
+      applyHiddenOnly(visibility: .hidden, to: trailingSidebarToggleButton)
+    }
+    if futureLayout.pinToTopButton == .hidden || isTopPanelPlacementChanging {
+      applyHiddenOnly(visibility: .hidden, to: pinToTopButton)
+    }
+
+    if futureLayout.titleIconAndText == .hidden || futureLayout.topPanelPlacement != currentLayout.topPanelPlacement {
+      /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
+      /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
+      /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
+      window.titleVisibility = .hidden
+    }
+
     /// These should all be either 0 height or unchanged from `currentLayout`
     apply(visibility: futureLayout.controlBarTitleBar, to: controlBarTitleBar)
     apply(visibility: futureLayout.controlBarBottom, to: controlBarBottom)
@@ -1379,6 +1408,12 @@ class MainWindowController: PlayerWindowController {
 
     if futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement {
       updateBottomPanelPlacement(isOutsideVideo: futureLayout.bottomPanelPlacement == .outsideVideo)
+    }
+
+    /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
+    /// cause `window.performMiniaturize()` to be ignored. So MUST use `isHidden=true` + `alphaValue=1` instead.
+    for button in trafficLightButtons {
+      button.alphaValue = 1
     }
 
     window.contentView?.layoutSubtreeIfNeeded()
@@ -1863,6 +1898,10 @@ class MainWindowController: PlayerWindowController {
         updateWindowParametersForMPV()
       }
     }
+  }
+
+  @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
+    rotationHandler.handleRotationGesture(recognizer: recognizer)
   }
 
   // MARK: - Window delegate: Open / Close
@@ -2602,7 +2641,7 @@ class MainWindowController: PlayerWindowController {
         completionHandler()
       }
     }
-    
+
     UIAnimation.run(animationBlocks)
   }
 
