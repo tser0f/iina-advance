@@ -1161,6 +1161,11 @@ class MainWindowController: PlayerWindowController {
       return enableOSC && oscPosition == .floating
     }
 
+    var hasPermanentOSC: Bool {
+      return enableOSC && !isFullScreen &&
+        ((oscPosition == .top && topPanelPlacement == .outsideVideo) || (oscPosition == .bottom && bottomPanelPlacement == .outsideVideo))
+    }
+
     /// If true:
     /// • Traffic buttons should not be displayed
     /// • `titleBarView` should have zero height
@@ -1765,6 +1770,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override internal func performMouseAction(_ action: Preference.MouseClickAction) {
+    Logger.log("Performing mouseAction: \(action)", level: .verbose, subsystem: player.subsystem)
     super.performMouseAction(action)
     switch action {
     case .fullscreen:
@@ -2573,6 +2579,8 @@ class MainWindowController: PlayerWindowController {
       return
     }
 
+    Logger.log("Hiding fadeable views", level: .verbose, subsystem: player.subsystem)
+
     // Follow energy efficiency best practices and stop the timer that updates the OSC while it is
     // hidden. However the timer can't be stopped if the mini player is being used as it always
     // displays the the OSC or the timer is also updating the information being displayed in the
@@ -2584,7 +2592,7 @@ class MainWindowController: PlayerWindowController {
     // off whether AppKit has requested that a NSTouchBar object be created. This avoids running the
     // timer on Macs that do not have a touch bar. It also may avoid running the timer when a
     // MacBook with a touch bar is being operated in closed clameshell mode.
-    if !player.isInMiniPlayer && !player.needsTouchBar {
+    if !player.isInMiniPlayer && !player.needsTouchBar && !currentLayout.hasPermanentOSC {
       player.invalidateTimer()
     }
 

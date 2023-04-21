@@ -515,7 +515,10 @@ class PlayerCore: NSObject {
 
   // invalidate timer
   func invalidateTimer() {
-    self.syncPlayTimeTimer?.invalidate()
+    if let syncPlayTimeTimer = self.syncPlayTimeTimer {
+      self.syncPlayTimeTimer = nil
+      syncPlayTimeTimer.invalidate()
+    }
   }
 
   func switchToMiniPlayer(automatically: Bool = false) {
