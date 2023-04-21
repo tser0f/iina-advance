@@ -1260,13 +1260,15 @@ class MainWindowController: PlayerWindowController {
 
     // 5: Animation: Fade in remaining views
     animationBlocks.append{ [self] context in
-      showRemainingViews(futureLayout)
+      fadeInNewViews(futureLayout)
 
       currentLayout = futureLayout
     }
 
     // 6: After animations all finish, start fade timer
     animationBlocks.append{ [self] context in
+      context.duration = 0
+
       animationState = .shown
       resetFadeTimer()
     }
@@ -1299,21 +1301,32 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    /// Setting `.isHidden = true` for these icons visibly messes up their layout.
-    /// So just set alpha value for now, and hide later in `updateHiddenViewsAndConstraints()`
-    if futureLayout.leadingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
-      leadingSidebarToggleButton.alphaValue = 0
-      fadeableViews.remove(leadingSidebarToggleButton)
-    }
-    if futureLayout.trailingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
-      trailingSidebarToggleButton.alphaValue = 0
-      fadeableViews.remove(trailingSidebarToggleButton)
-    }
-    if futureLayout.pinToTopButton == .hidden || isTopPanelPlacementChanging {
-      pinToTopButton.alphaValue = 0
-      fadeableViews.remove(pinToTopButton)
-    }
+    applyHiddenOnly(visibility: futureLayout.controlBarTitleBar, to: controlBarTitleBar)
 
+    if isTopPanelPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
+      // Hide all title bar accessories (if needed):
+      leadingTitleBarAccessoryView.alphaValue = 0
+      fadeableViews.remove(leadingTitleBarAccessoryView)
+      trailingTitleBarAccessoryView.alphaValue = 0
+      fadeableViews.remove(trailingTitleBarAccessoryView)
+    } else {
+      /// We may have gotten here in response to one of these buttons' visibility being toggled in the prefs,
+      /// so we need to allow for showing/hiding these individually.
+      /// Setting `.isHidden = true` for these icons visibly messes up their layout.
+      /// So just set alpha value for now, and hide later in `updateHiddenViewsAndConstraints()`
+      if futureLayout.leadingSidebarToggleButton == .hidden {
+        leadingSidebarToggleButton.alphaValue = 0
+        fadeableViews.remove(leadingSidebarToggleButton)
+      }
+      if futureLayout.trailingSidebarToggleButton == .hidden {
+        trailingSidebarToggleButton.alphaValue = 0
+        fadeableViews.remove(trailingSidebarToggleButton)
+      }
+      if futureLayout.pinToTopButton == .hidden {
+        pinToTopButton.alphaValue = 0
+        fadeableViews.remove(pinToTopButton)
+      }
+    }
   }
 
   private func closeOldPanels(_ futureLayout: LayoutPlan) {
@@ -1364,29 +1377,11 @@ class MainWindowController: PlayerWindowController {
 
     animationState = .willShow
 
-    if futureLayout.titlebarAccessoryViewControllers == .hidden {
-      // Remove all title bar accessories (if needed):
-      if window.styleMask.contains(.titled) {
-        /// Note: `window.titlebarAccessoryViewControllers` will crash if `styleMask` doesn't contain `.titled`
-        for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
-          window.removeTitlebarAccessoryViewController(at: index)
-        }
-      }
-    }
+    applyHiddenOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
+    applyHiddenOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
+    applyHiddenOnly(visibility: futureLayout.pinToTopButton, to: pinToTopButton)
 
     updateSpacingForTitleBarAccessories(futureLayout)
-
-    let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
-
-    if futureLayout.leadingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
-      applyHiddenOnly(visibility: .hidden, to: leadingSidebarToggleButton)
-    }
-    if futureLayout.trailingSidebarToggleButton == .hidden || isTopPanelPlacementChanging {
-      applyHiddenOnly(visibility: .hidden, to: trailingSidebarToggleButton)
-    }
-    if futureLayout.pinToTopButton == .hidden || isTopPanelPlacementChanging {
-      applyHiddenOnly(visibility: .hidden, to: pinToTopButton)
-    }
 
     if futureLayout.titleIconAndText == .hidden || futureLayout.topPanelPlacement != currentLayout.topPanelPlacement {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
@@ -1430,7 +1425,7 @@ class MainWindowController: PlayerWindowController {
 
   private func openNewPanels(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
-    Logger.log("OpenNewPanels", level: .verbose, subsystem: player.subsystem)
+    Logger.log("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)", level: .verbose, subsystem: player.subsystem)
 
     // Update heights to their final values:
     titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
@@ -1447,9 +1442,9 @@ class MainWindowController: PlayerWindowController {
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
-  private func showRemainingViews(_ futureLayout: LayoutPlan) {
+  private func fadeInNewViews(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
-    Logger.log("ShowRemainingViews", level: .verbose, subsystem: player.subsystem)
+    Logger.log("FadeInNewViews", level: .verbose, subsystem: player.subsystem)
 
     applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
 
@@ -1466,15 +1461,32 @@ class MainWindowController: PlayerWindowController {
     applyShowableOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
     applyShowableOnly(visibility: futureLayout.pinToTopButton, to: pinToTopButton)
 
-    if futureLayout.titlebarAccessoryViewControllers.isShowable {
-      // Add back title bar accessories (if needed):
-      if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
-        window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
-        window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
-      }
-    }
+    // Add back title bar accessories (if needed):
+    applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
+    applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
 
     window.contentView?.layoutSubtreeIfNeeded()
+  }
+
+  // TODO: remove when sure this isn't needed
+  private func addTitleBarAccessoryViews() {
+    guard let window = window else { return }
+    leadingTitleBarAccessoryView.isHidden = false
+    if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
+      window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
+      window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+    }
+  }
+
+  // TODO: remove when sure this isn't needed
+  private func removeTitleBarAccessoryViews() {
+    guard let window = window else { return }
+    if window.styleMask.contains(.titled) {
+      /// Note: `window.titlebarAccessoryViewControllers` will crash if `styleMask` doesn't contain `.titled`
+      for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
+        window.removeTitlebarAccessoryViewController(at: index)
+      }
+    }
   }
 
   // This method should only make a layout plan. It should not alter the current layout.
