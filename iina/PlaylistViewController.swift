@@ -547,7 +547,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         }
         cellView.setTitle(displayStr)
         // playback progress and duration
-        cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+        cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         cellView.durationLabel.stringValue = ""
         player.playlistQueue.async {
           if let (artist, title) = getCachedMetadata() {
