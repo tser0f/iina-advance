@@ -273,7 +273,7 @@
                             </box>
                         </subviews>
                         <constraints>
-                            <constraint firstAttribute="width" constant="300" id="7Iq-RW-lqo"/>
+                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="300" id="7Iq-RW-lqo"/>
                             <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="200" id="SB2-oa-OYU"/>
                             <constraint firstItem="qN9-Wd-Ae5" firstAttribute="leading" secondItem="dkl-qd-rae" secondAttribute="leading" id="hBp-pv-9rw"/>
                             <constraint firstAttribute="trailing" secondItem="qN9-Wd-Ae5" secondAttribute="trailing" id="k5e-VP-pYu"/>
