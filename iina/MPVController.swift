@@ -121,7 +121,7 @@ class MPVController: NSObject {
 
   var fileLoaded: Bool = false
 
-  let mpvLogHandler: MPVLogHandler!
+  let inputSectionLogScanner: MPVInputSectionLogScanner!
 
   private var hooks: [UInt64: MPVHookValue] = [:]
   private var hookCounter: UInt64 = 1
@@ -167,7 +167,7 @@ class MPVController: NSObject {
 
   init(playerCore: PlayerCore) {
     self.player = playerCore
-    self.mpvLogHandler = MPVLogHandler(player: playerCore)
+    self.inputSectionLogScanner = MPVInputSectionLogScanner(player: playerCore)
     super.init()
   }
 
@@ -930,7 +930,7 @@ class MPVController: NSObject {
 
       Logger.log("[\(prefix)] \(level): \(text)", level: logLevelMap[level] ?? .verbose, subsystem: mpvSubsystem)
 
-      mpvLogHandler.handleLogMessage(prefix: prefix, level: level, msg: text)
+      inputSectionLogScanner.handleLogScanner(prefix: prefix, level: level, msg: text)
 
     case MPV_EVENT_HOOK:
       let userData = event.pointee.reply_userdata

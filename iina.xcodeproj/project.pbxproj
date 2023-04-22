@@ -265,7 +265,7 @@
 		D1EAF5E728E6B6780023BACF /* TableUIChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1EAF5E628E6B6780023BACF /* TableUIChange.swift */; };
 		D1FA42E328E4323E00DF49DD /* InputSectionStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FA42E228E4323E00DF49DD /* InputSectionStack.swift */; };
 		D1FA42E528E5E54700DF49DD /* AppInputConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FA42E428E5E54700DF49DD /* AppInputConfig.swift */; };
-		D1FD2DD828521AD500CF7B35 /* MPVLogHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DD728521AD500CF7B35 /* MPVLogHandler.swift */; };
+		D1FD2DD828521AD500CF7B35 /* MPVInputSectionLogScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */; };
 		D1FD2DDC28533EE700CF7B35 /* InputSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DDB28533EE700CF7B35 /* InputSection.swift */; };
 		E301EFDA21312AB300BC8588 /* KeychainAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = E301EFD921312AB300BC8588 /* KeychainAccess.swift */; };
 		E30D2EBD21F5FD2600E1FF0D /* PluginOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30D2EBC21F5FD2600E1FF0D /* PluginOverlayView.swift */; };
@@ -1639,7 +1639,7 @@
 		D1EAF5E628E6B6780023BACF /* TableUIChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableUIChange.swift; sourceTree = "<group>"; };
 		D1FA42E228E4323E00DF49DD /* InputSectionStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSectionStack.swift; sourceTree = "<group>"; };
 		D1FA42E428E5E54700DF49DD /* AppInputConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInputConfig.swift; sourceTree = "<group>"; };
-		D1FD2DD728521AD500CF7B35 /* MPVLogHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVLogHandler.swift; sourceTree = "<group>"; };
+		D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVInputSectionLogScanner.swift; sourceTree = "<group>"; };
 		D1FD2DDB28533EE700CF7B35 /* InputSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSection.swift; sourceTree = "<group>"; };
 		D27556FC1EC6E1C300CAB2A4 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/HistoryWindowController.strings"; sourceTree = "<group>"; };
 		D27E35CE1E379B6D0064BE57 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/MainMenu.strings"; sourceTree = "<group>"; };
@@ -2557,7 +2557,7 @@
 			children = (
 				84A0BA961D2FA1CE00BC8DA1 /* PlayerCore.swift */,
 				84A0BA981D2FAAA700BC8DA1 /* MPVController.swift */,
-				D1FD2DD728521AD500CF7B35 /* MPVLogHandler.swift */,
+				D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */,
 				D18333BD2834CE620060A4E9 /* PlayerBindingController.swift */,
 				D1D7361529893D9A000EB5F4 /* GeometryController.swift */,
 			);
@@ -3089,7 +3089,7 @@
 				D188CB2628D9E95500F166FD /* BindingTableState.swift in Sources */,
 				D1A8878C29D16452000D1AE4 /* RotationHandler.swift in Sources */,
 				E3513AFB20F120F600F8C347 /* PreferenceViewController.swift in Sources */,
-				D1FD2DD828521AD500CF7B35 /* MPVLogHandler.swift in Sources */,
+				D1FD2DD828521AD500CF7B35 /* MPVInputSectionLogScanner.swift in Sources */,
 				E38BD4AF20054BD9007635FC /* MainWindow.swift in Sources */,
 				51E63DFB29CFB031008AFC20 /* PlaySlider.swift in Sources */,
 				84F5D4A01E44F9DB0060A838 /* KeyBindingItem.swift in Sources */,
