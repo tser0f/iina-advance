@@ -9,7 +9,6 @@
 import Cocoa
 
 class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, SidebarTabGroupViewController {
-
   override var nibName: NSNib.Name {
     return NSNib.Name("QuickSettingViewController")
   }
