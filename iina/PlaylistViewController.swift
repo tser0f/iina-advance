@@ -185,6 +185,14 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     if playlist {
       player.reloadPlaylist()
       playlistTableView.reloadData()
+
+      var currentPlayItemIndex = 0
+      for (rowIndex, item) in player.info.playlist.enumerated() {
+        if item.isPlaying {
+          currentPlayItemIndex = rowIndex
+        }
+      }
+      playlistTableView.scrollRowToVisible(currentPlayItemIndex)
     }
     if chapters {
       player.reloadChapters()
@@ -537,19 +545,9 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
           guard let artist = metadata.artist, let title = metadata.title else { return nil }
           return (artist, title)
         }
-
-        if let prefix = player.info.currentVideosInfo.first(where: { $0.path == item.filename })?.prefix,
-          !prefix.isEmpty,
-          prefix.count <= displayStr.count,  // check whether prefix length > filename length
-          prefix.count >= PrefixMinLength,
-          filename.count > FilenameMinLength {
-          cellView.setPrefix(prefix)
-          cellView.setTitle(String(filename[filename.index(filename.startIndex, offsetBy: prefix.count)...]))
-        } else {
-          cellView.setTitle(filename)
-        }
+        cellView.setTitle(displayStr)
         // playback progress and duration
-        cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+        cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         cellView.durationLabel.stringValue = ""
         player.playlistQueue.async {
           if let (artist, title) = getCachedMetadata() {
