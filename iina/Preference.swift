@@ -308,9 +308,6 @@ struct Preference {
     static let logLevel = Key("logLevel")
     static let enablePiiMaskingInLog = Key("enablePiiMaskingInLog")
 
-    /* [advanced] The highest mpv log level which IINA will include mpv log events in its own logfile (mutually exclusive of mpv's logfile) */
-    static let iinaMpvLogLevel = Key("iinaMpvLogLevel")
-
     /* [debugging] If true, enables even more verbose logging so that input bindings computations can be more easily debugged. */
     static let logKeyBindingsRebuild = Key("logKeyBindingsRebuild")
 
@@ -1041,7 +1038,6 @@ struct Preference {
     .enableLogging: false,
     .logLevel: Logger.Level.debug.rawValue,
     .enablePiiMaskingInLog: true,
-    .iinaMpvLogLevel: MPVLogLevel.warn.rawValue,
     .logKeyBindingsRebuild: false,
     .displayKeyBindingRawValues: false,
     .useInlineEditorInsteadOfDialogForNewInputConf: true,

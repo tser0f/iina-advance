@@ -26,18 +26,6 @@ private func all(_ string: String) -> NSRange {
 }
 
 class MPVLogHandler {
-  /*
-   * Change this variable to adjust threshold for *receiving* MPV_EVENT_LOG_MESSAGE messages.
-   * NOTE: Lua keybindings require at *least* level "debug", so don't set threshold to be stricter than this level
-   */
-  static let mpvLogSubscriptionLevel: MPVLogLevel = .debug
-
-  /*
-   * Change this variable to adjust threshold for writing MPV_EVENT_LOG_MESSAGE messages in IINA's log.
-   * This is unrelated to any log files mpv writes to directly.
-   */
-  static let iinaMpvLogLevel = MPVLogLevel(rawValue: Preference.integer(for: .iinaMpvLogLevel))!
-
   private unowned let player: PlayerCore
 
   /*
@@ -52,13 +40,6 @@ class MPVLogHandler {
 
   // Assumes we are NOT running on the main thread.
   func handleLogMessage(prefix: String, level: String, msg: String) {
-    // Reproduce the log line to IINA log only if within the configured mpv logging threshold
-    // (and of course only if IINA logging threshold is .debug or above)
-    if MPVLogHandler.iinaMpvLogLevel.shouldLog(severity: level) {
-      // try to match IINA's log format
-      let lev = level[level.index(level.startIndex, offsetBy: 0)]  // Some log levels are spelled out. Others are only 1 char. Shorten all to 1 char
-      Logger.log("[\(prefix)][\(lev)] \(msg)", level: .debug, subsystem: mpvLogSubsystem, appendNewlineAtTheEnd: false)
-    }
     extractSectionInfo(prefix: prefix, severity: level, msg: msg)
   }
 
@@ -68,7 +49,7 @@ class MPVLogHandler {
    */
   @discardableResult
   private func extractSectionInfo(prefix: String, severity: String, msg: String) -> Bool {
-    guard prefix == "cplayer", severity == MPVLogLevel.debug.description else {
+    guard prefix == "cplayer", severity .starts(with: "d") else {
       return false
     }
 

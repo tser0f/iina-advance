@@ -72,23 +72,25 @@ class Logger: NSObject {
     }
   }
 
-  static var subsystems: [Subsystem] = [.general]
+  @Atomic static var subsystems: [Subsystem] = [.general]
 
   static func makeSubsystem(_ rawValue: String) -> Subsystem {
-    for (index, subsystem) in subsystems.enumerated() {
-      // The first subsystem will always be "iina"
-      if index == 0 { continue }
-      if rawValue < subsystem.rawValue {
-        let newSubsystem = Subsystem(rawValue: rawValue)
-        subsystems.insert(newSubsystem, at: index)
-        return newSubsystem
-      } else if rawValue == subsystem.rawValue {
-        return subsystem
+    $subsystems.withLock() { subsystems in
+      for (index, subsystem) in subsystems.enumerated() {
+        // The first subsystem will always be "iina"
+        if index == 0 { continue }
+        if rawValue < subsystem.rawValue {
+          let newSubsystem = Subsystem(rawValue: rawValue)
+          subsystems.insert(newSubsystem, at: index)
+          return newSubsystem
+        } else if rawValue == subsystem.rawValue {
+          return subsystem
+        }
       }
+      let newSubsystem = Subsystem(rawValue: rawValue)
+      subsystems.append(newSubsystem)
+      return newSubsystem
     }
-    let newSubsystem = Subsystem(rawValue: rawValue)
-    subsystems.append(newSubsystem)
-    return newSubsystem
   }
 
   enum Level: Int, Comparable, CustomStringConvertible {
@@ -282,7 +284,7 @@ class Logger: NSObject {
     }
   }
 
-  static func log(_ message: String, level: Level = .debug, subsystem: Subsystem = .general, appendNewlineAtTheEnd: Bool = true) {
+  static func log(_ message: String, level: Level = .debug, subsystem: Subsystem = .general) {
     #if !DEBUG
     guard enabled else { return }
     #endif
@@ -290,7 +292,7 @@ class Logger: NSObject {
     guard level.rawValue >= Preference.integer(for: .logLevel) else { return }
 
     let date = Date()
-    let string = formatMessage(message, level, subsystem, appendNewlineAtTheEnd, date)
+    let string = formatMessage(message, level, subsystem, true, date)
     let log = Log(subsystem: subsystem.rawValue, level: level.rawValue, message: message, date: dateFormatter.string(from: date), logString: string)
     DispatchQueue.main.async {
       (NSApp.delegate as? AppDelegate)?.logWindow.logs.append(log)

@@ -14,6 +14,31 @@ fileprivate let no_str = "no"
 
 fileprivate let logEvents = false
 
+/*
+ * Change this variable to adjust threshold for *receiving* MPV_EVENT_LOG_MESSAGE messages.
+ * NOTE: Lua keybindings require at *least* level "debug", so don't set threshold to be stricter than this level
+ */
+fileprivate let mpvLogSubscriptionLevel: String = "debug"
+
+/*
+ "no"    - disable absolutely all messages
+ "fatal" - critical/aborting errors
+ "error" - simple errors
+ "warn"  - possible problems
+ "info"  - informational message
+ "v"     - noisy informational message
+ "debug" - very noisy technical information
+ "trace" - extremely noisy
+ */
+fileprivate let mpvSubsystem = Logger.makeSubsystem("mpv")
+fileprivate let logLevelMap: [String: Logger.Level] = ["fatal": .error,
+                                                       "error": .error,
+                                                       "warn": .warning,
+                                                       "info": .debug,
+                                                       "v": .verbose,
+                                                       "debug": .debug,
+                                                       "trace": .verbose]
+
 extension mpv_event_id: CustomStringConvertible {
   // Generated code from mpv is objc and does not have Swift's built-in enum name introspection.
   // We provide that here using mpv_event_name()
@@ -367,7 +392,7 @@ class MPVController: NSObject {
     chkErr(mpv_set_option_string(mpv, MPVOption.Input.inputConf, inputConfPath))
 
     // Receive log messages at given level of verbosity.
-    chkErr(mpv_request_log_messages(mpv, MPVLogHandler.mpvLogSubscriptionLevel.description))
+    chkErr(mpv_request_log_messages(mpv, mpvLogSubscriptionLevel))
 
     // Request tick event.
     // chkErr(mpv_request_event(mpv, MPV_EVENT_TICK, 1))
@@ -417,8 +442,7 @@ class MPVController: NSObject {
     }
     let apiType = UnsafeMutableRawPointer(mutating: (MPV_RENDER_API_TYPE_OPENGL as NSString).utf8String)
     var openGLInitParams = mpv_opengl_init_params(get_proc_address: mpvGetOpenGLFunc,
-                                                  get_proc_address_ctx: nil,
-                                                  extra_exts: nil)
+                                                  get_proc_address_ctx: nil)
     withUnsafeMutablePointer(to: &openGLInitParams) { openGLInitParams in
       // var advanced: CInt = 1
       var params = [
@@ -899,13 +923,14 @@ class MPVController: NSObject {
 
     case MPV_EVENT_LOG_MESSAGE:
       let dataOpaquePtr = OpaquePointer(event.pointee.data)
-      if let dataPtr = UnsafeMutablePointer<mpv_event_log_message>(dataOpaquePtr) {
-        let prefix = String(cString: (dataPtr.pointee.prefix)!)
-        let level = String(cString: (dataPtr.pointee.level)!)
-        let message = String(cString: (dataPtr.pointee.text)!)
+      guard let dataPtr = UnsafeMutablePointer<mpv_event_log_message>(dataOpaquePtr) else { return }
+      let prefix = String(cString: (dataPtr.pointee.prefix)!)
+      let level = String(cString: (dataPtr.pointee.level)!)
+      let text = String(cString: (dataPtr.pointee.text)!)
 
-        mpvLogHandler.handleLogMessage(prefix: prefix, level: level, msg: message)
-      }
+      Logger.log("[\(prefix)] \(level): \(text)", level: logLevelMap[level] ?? .verbose, subsystem: mpvSubsystem)
+
+      mpvLogHandler.handleLogMessage(prefix: prefix, level: level, msg: text)
 
     case MPV_EVENT_HOOK:
       let userData = event.pointee.reply_userdata
