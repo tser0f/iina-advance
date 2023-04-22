@@ -291,8 +291,16 @@ extension MainWindowController {
     switch sidebar.locationID {
     case .leadingSidebar:
       sidebarView = leadingSidebarView
+      leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
+      if show {
+        leadingSidebarView.blendingMode = leadingSidebar.placement == .outsideVideo ? .behindWindow : .withinWindow
+      }
     case .trailingSidebar:
       sidebarView = trailingSidebarView
+      trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
+      if show {
+        trailingSidebarView.blendingMode = trailingSidebar.placement == .outsideVideo ? .behindWindow : .withinWindow
+      }
     }
 
     animationBlocks.append{ [self] context in
@@ -335,17 +343,16 @@ extension MainWindowController {
       Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
     }
 
+    // Animate the showing/hiding:
     animationBlocks.append{ [self] context in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       guard let contentView = window?.contentView else { return }
 
       switch sidebar.locationID {
       case .leadingSidebar:
-        leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
         updateLeadingSidebarWidth(to: currentWidth, show: show, placement: leadingSidebar.placement)
 
       case .trailingSidebar:
-        trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
         updateTrailingSidebarWidth(to: currentWidth, show: show, placement: trailingSidebar.placement)
       }
 
@@ -379,18 +386,19 @@ extension MainWindowController {
     if show {
       switch placement {
       case .outsideVideo:
-        videoContainerLeadingToLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
-        videoContainerLeadingToLeadingSidebarTrailingConstraint.animateToConstant(0)
-        videoContainerLeadingToContentViewLeadingConstraint.animateToConstant(newWidth)
+        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
+        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(0)
+        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(newWidth)
       case .insideVideo:
-        videoContainerLeadingToLeadingSidebarLeadingConstraint.animateToConstant(0)
-        videoContainerLeadingToLeadingSidebarTrailingConstraint.animateToConstant(-newWidth)
-        videoContainerLeadingToContentViewLeadingConstraint.animateToConstant(0)
+        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(0)
+        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(-newWidth)
+        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
       }
     } else {
-      videoContainerLeadingToLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
-      videoContainerLeadingToLeadingSidebarTrailingConstraint.animateToConstant(0)
-      videoContainerLeadingToContentViewLeadingConstraint.animateToConstant(0)
+      /// Slide left to hide
+      videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
+      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(0)
+      videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
     }
   }
 
@@ -399,18 +407,18 @@ extension MainWindowController {
     if show {
       switch placement {
       case .outsideVideo:
-        videoContainerTrailingToTrailingSidebarLeadingConstraint.animateToConstant(0)
-        videoContainerTrailingToTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
-        videoContainerTrailingToContentViewTrailingConstraint.animateToConstant(-newWidth)
+        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
+        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
+        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(-newWidth)
       case .insideVideo:
-        videoContainerTrailingToTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
-        videoContainerTrailingToTrailingSidebarTrailingConstraint.animateToConstant(0)
-        videoContainerTrailingToContentViewTrailingConstraint.animateToConstant(0)
+        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
+        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(0)
+        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
       }
     } else {
-      videoContainerTrailingToTrailingSidebarLeadingConstraint.animateToConstant(0)
-      videoContainerTrailingToTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
-      videoContainerTrailingToContentViewTrailingConstraint.animateToConstant(0)
+      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
+      videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
+      videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
     }
   }
 
