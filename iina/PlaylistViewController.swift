@@ -291,6 +291,18 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
   }
 
+  // Updates display of all tabs buttons to indicate that the given tab is active and the rest are not
+  private func updateTabButtons(activeTab: TabViewType) {
+    switch activeTab {
+    case .playlist:
+      updateTabActiveStatus(for: playlistBtn, isActive: true)
+      updateTabActiveStatus(for: chaptersBtn, isActive: false)
+    case .chapters:
+      updateTabActiveStatus(for: playlistBtn, isActive: false)
+      updateTabActiveStatus(for: chaptersBtn, isActive: true)
+    }
+  }
+
   private func updateTabActiveStatus(for btn: NSButton, isActive: Bool) {
     if #available(macOS 10.14, *) {
       btn.contentTintColor = isActive ? NSColor.sidebarTabTintActive : NSColor.sidebarTabTint
