@@ -951,7 +951,7 @@ class MPVController: NSObject {
     case MPV_EVENT_AUDIO_RECONFIG: break
 
     case MPV_EVENT_VIDEO_RECONFIG:
-      onVideoReconfig()
+      player.onVideoReconfig()
 
     case MPV_EVENT_START_FILE:
       Logger.log("Got mpv '\(eventId)'", level: .verbose, subsystem: player.subsystem)
@@ -1086,31 +1086,6 @@ class MPVController: NSObject {
     player.syncUI(.playlist)
   }
 
-  private func onVideoReconfig() {
-    // If loading file, video reconfig can return 0 width and height
-    if player.info.fileLoading {
-      return
-    }
-    var dwidth = getInt(MPVProperty.dwidth)
-    var dheight = getInt(MPVProperty.dheight)
-    let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
-    let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
-    if player.info.userRotation == 90 || player.info.userRotation == 270 {
-      swap(&dwidth, &dheight)
-    }
-    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) - \(mpvVideoRotate)); PlayerInfo = (W: \(player.info.displayWidth!) H: \(player.info.displayHeight!) Rot: \(player.info.userRotation)°)", level: .verbose, subsystem: player.subsystem)
-    if dwidth != player.info.displayWidth! || dheight != player.info.displayHeight! {
-      // filter the last video-reconfig event before quit
-      if dwidth == 0 && dheight == 0 && getFlag(MPVProperty.coreIdle) { return }
-      // video size changed
-      player.info.displayWidth = dwidth
-      player.info.displayHeight = dheight
-      DispatchQueue.main.async {
-        self.player.notifyMainWindowVideoSizeChanged()
-      }
-    }
-  }
-
   // MARK: - Property listeners
 
   private func handlePropertyChange(_ property: mpv_event_property) {
@@ -1141,30 +1116,16 @@ class MPVController: NSObject {
       }
 
     case MPVOption.TrackSelection.vid:
-      player.info.vid = Int(getInt(MPVOption.TrackSelection.vid))
-      player.postNotification(.iinaVIDChanged)
-      player.sendOSD(.track(player.info.currentTrack(.video) ?? .noneVideoTrack))
+      player.vidChanged()
 
     case MPVOption.TrackSelection.aid:
-      player.info.aid = Int(getInt(MPVOption.TrackSelection.aid))
-        let aidStr = player.info.aid != nil ? "\(player.info.aid!)" : "nil"
-      Logger.log("Got mpv prop: \(MPVOption.TrackSelection.aid.quoted) = \(aidStr)", level: .verbose, subsystem: player.subsystem)
-      guard player.mainWindow.loaded else { break }
-      DispatchQueue.main.sync {
-        player.mainWindow?.muteButton.isEnabled = (player.info.aid != 0)
-        player.mainWindow?.volumeSlider.isEnabled = (player.info.aid != 0)
-      }
-      player.postNotification(.iinaAIDChanged)
-      player.sendOSD(.track(player.info.currentTrack(.audio) ?? .noneAudioTrack))
+      player.aidChanged()
 
     case MPVOption.TrackSelection.sid:
-      player.info.sid = Int(getInt(MPVOption.TrackSelection.sid))
-      player.postNotification(.iinaSIDChanged)
-      player.sendOSD(.track(player.info.currentTrack(.sub) ?? .noneSubTrack))
+      player.sidChanged()
 
     case MPVOption.Subtitles.secondarySid:
-      player.info.secondSid = Int(getInt(MPVOption.Subtitles.secondarySid))
-      player.postNotification(.iinaSIDChanged)
+      player.secondarySidChanged()
 
     case MPVOption.PlaybackControl.pause:
       guard let paused = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
@@ -1358,16 +1319,14 @@ class MPVController: NSObject {
 
     case MPVProperty.trackList:
       player.trackListChanged()
-      player.postNotification(.iinaTracklistChanged)
 
     case MPVProperty.vf:
       Logger.log("Got mpv prop: \(MPVProperty.vf.quoted)", level: .verbose, subsystem: player.subsystem)
       needReloadQuickSettingsView = true
-      player.postNotification(.iinaVFChanged)
+      player.vfChanged()
 
     case MPVProperty.af:
-      Logger.log("Got mpv prop: \(MPVProperty.af.quoted)", level: .verbose, subsystem: player.subsystem)
-      player.postNotification(.iinaAFChanged)
+      player.afChanged()
 
     case MPVOption.Window.fullscreen:
       Logger.log("Got mpv prop: \(MPVOption.Window.fullscreen.quoted)", level: .verbose, subsystem: player.subsystem)
@@ -1401,11 +1360,10 @@ class MPVController: NSObject {
       }
 
     case MPVProperty.mediaTitle:
-      player.postNotification(.iinaMediaTitleChanged)
+      player.mediaTitleChanged()
 
     case MPVProperty.idleActive:
-      Logger.log("Got mpv prop: \(MPVProperty.idleActive.quoted))", level: .verbose, subsystem: player.subsystem)
-      if getFlag(MPVProperty.idleActive) {
+      if let idleActive = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee, idleActive {
         if receivedEndFileWhileLoading && player.info.fileLoading {
           player.errorOpeningFileAndCloseMainWindow()
           player.info.fileLoading = false
@@ -1441,9 +1399,7 @@ class MPVController: NSObject {
     }
 
     if needReloadQuickSettingsView {
-      DispatchQueue.main.async {
-        self.player.mainWindow.quickSettingView.reload()
-      }
+      player.needReloadQuickSettingsView()
     }
 
     // This code is running in the com.colliderli.iina.controller dispatch queue. We must not run

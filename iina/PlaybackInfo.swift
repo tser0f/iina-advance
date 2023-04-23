@@ -232,7 +232,10 @@ class PlaybackInfo {
 
   var haveDownloadedSub: Bool = false
 
-  var matchedSubs: [String: [URL]] = [:]
+  @Atomic var matchedSubs: [String: [URL]] = [:]
+
+  func getMatchedSubs(_ file: String) -> [URL]? { $matchedSubs.withLock { $0[file] } }
+
   var currentSubsInfo: [FileInfo] = []
   var currentVideosInfo: [FileInfo] = []
 

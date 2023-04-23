@@ -151,7 +151,7 @@ class PlayerCore: NSObject {
 
    `autoLoadFilesInCurrentFolder(ticket:)`
    */
-  var backgroundQueueTicket = 0
+  @Atomic var backgroundQueueTicket = 0
 
   var mainWindow: MainWindowController!
   var miniPlayer: MiniPlayerWindowController!
@@ -425,6 +425,8 @@ class PlayerCore: NSObject {
     // Send load file command
     info.fileLoading = true
     info.justOpenedFile = true
+    isStopping = false
+    isStopped = false
     mpv.command(.loadfile, args: [path])
 
     if Preference.bool(for: .enablePlaylistLoop) {
@@ -492,11 +494,6 @@ class PlayerCore: NSObject {
     isShuttingDown = true
     Logger.log("Shutting down", subsystem: subsystem)
     savePlayerState()
-    // Once mpv has been instructed to quit accessing the mpv core can result in a crash. Must not
-    // allow the display link thread or the mpvGLQueue dispatch queue to continue processing because
-    // these entities will call mpv.
-    mainWindow.videoView.videoLayer.suspend()
-    mainWindow.videoView.stopDisplayLink()
     mpv.mpvQuit()
   }
 
@@ -646,13 +643,17 @@ class PlayerCore: NSObject {
 
   /// Stop playback and unload the media.
   func stop() {
+    // If the user immediately closes the player window it is possible the background task may still
+    // be working to load subtitles. Invalidate the ticket to get that task to abandon the work.
+    $backgroundQueueTicket.withLock { $0 += 1 }
+
     savePlaybackPosition()
 
     mainWindow.videoView.stopDisplayLink()
     invalidateTimer()
 
     info.currentFolder = nil
-    info.matchedSubs.removeAll()
+    info.$matchedSubs.withLock { $0.removeAll() }
 
     // Do not send a stop command to mpv if it is already stopped. This happens when quitting is
     // initiated directly through mpv.
@@ -1489,7 +1490,7 @@ class PlayerCore: NSObject {
     }
 
     // Auto load
-    backgroundQueueTicket += 1
+    $backgroundQueueTicket.withLock { $0 += 1 }
     let shouldAutoLoadFiles = info.shouldAutoLoadFiles
     let currentTicket = backgroundQueueTicket
     backgroundQueue.async {
@@ -1499,7 +1500,7 @@ class PlayerCore: NSObject {
         self.autoLoadFilesInCurrentFolder(ticket: currentTicket)
       }
       // auto load matched subtitles
-      if let matchedSubs = self.info.matchedSubs[path] {
+      if let matchedSubs = self.info.getMatchedSubs(path) {
         Logger.log("Found \(matchedSubs.count) subs for current file", subsystem: self.subsystem)
         for sub in matchedSubs {
           guard currentTicket == self.backgroundQueueTicket else { return }
@@ -1567,6 +1568,35 @@ class PlayerCore: NSObject {
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
   }
 
+  func afChanged() {
+    guard !isShuttingDown, !isShutdown else { return }
+    postNotification(.iinaAFChanged)
+  }
+
+  func aidChanged() {
+    guard !isShuttingDown, !isShutdown else { return }
+    info.aid = Int(mpv.getInt(MPVOption.TrackSelection.aid))
+    guard mainWindow.loaded else { return }
+    DispatchQueue.main.sync {
+      mainWindow?.muteButton.isEnabled = (info.aid != 0)
+      mainWindow?.volumeSlider.isEnabled = (info.aid != 0)
+    }
+    postNotification(.iinaAIDChanged)
+    sendOSD(.track(info.currentTrack(.audio) ?? .noneAudioTrack))
+  }
+
+  func mediaTitleChanged() {
+    guard !isShuttingDown, !isShutdown else { return }
+    postNotification(.iinaMediaTitleChanged)
+  }
+
+  func needReloadQuickSettingsView() {
+    guard !isShuttingDown, !isShutdown else { return }
+    DispatchQueue.main.async {
+      self.mainWindow.quickSettingView.reload()
+    }
+  }
+
   func playbackRestarted() {
     Logger.log("Playback restarted", subsystem: subsystem)
     reloadSavedIINAfilters()
@@ -1582,11 +1612,35 @@ class PlayerCore: NSObject {
     }
   }
 
+  @available(macOS 10.15, *)
+  func refreshEdrMode() {
+    guard mainWindow.loaded else { return }
+    DispatchQueue.main.async { [self] in
+      // No need to refresh if playback is being stopped. Must not attempt to refresh if mpv is
+      // terminating as accessing mpv once shutdown has been initiated can trigger a crash.
+      guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
+      mainWindow.videoView.refreshEdrMode()
+    }
+  }
+
+  func secondarySidChanged() {
+    guard !isShuttingDown, !isShutdown else { return }
+    info.secondSid = Int(mpv.getInt(MPVOption.Subtitles.secondarySid))
+    postNotification(.iinaSIDChanged)
+  }
+
+  func sidChanged() {
+    guard !isShuttingDown, !isShutdown else { return }
+    info.sid = Int(mpv.getInt(MPVOption.TrackSelection.sid))
+    postNotification(.iinaSIDChanged)
+    sendOSD(.track(info.currentTrack(.sub) ?? .noneSubTrack))
+  }
+
   func trackListChanged() {
     // No need to process track list changes if playback is being stopped. Must not process track
     // list changes if mpv is terminating as accessing mpv once shutdown has been initiated can
     // trigger a crash.
-    guard !isStopping, !isStopped, !isShuttingDown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     Logger.log("Track list changed", subsystem: subsystem)
     reloadTrackInfo()
     reloadSelectedTracks()
@@ -1611,17 +1665,42 @@ class PlayerCore: NSObject {
         }
       }
     }
+    postNotification(.iinaTracklistChanged)
   }
 
-  @available(macOS 10.15, *)
-  func refreshEdrMode() {
-    guard mainWindow.loaded else { return }
-    DispatchQueue.main.async {
-      // No need to refresh if playback is being stopped. Must not attempt to refresh if mpv is
-      // terminating as accessing mpv once shutdown has been initiated can trigger a crash.
-      guard !self.isStopping, !self.isStopped, !self.isShuttingDown else { return }
-      self.mainWindow.videoView.refreshEdrMode()
+  func onVideoReconfig() {
+    // If loading file, video reconfig can return 0 width and height
+    guard !info.fileLoading, !isShuttingDown, !isShutdown else { return }
+    var dwidth = mpv.getInt(MPVProperty.dwidth)
+    var dheight = mpv.getInt(MPVProperty.dheight)
+    if info.userRotation == 90 || info.userRotation == 270 {
+      swap(&dwidth, &dheight)
     }
+    let mpvParamRotate = mpv.getInt(MPVProperty.videoParamsRotate)
+    let mpvVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
+    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) - \(mpvVideoRotate)); PlayerInfo = (W: \(info.displayWidth!) H: \(info.displayHeight!) Rot: \(info.userRotation)°)", level: .verbose, subsystem: subsystem)
+    if dwidth != info.displayWidth! || dheight != info.displayHeight! {
+      // filter the last video-reconfig event before quit
+      if dwidth == 0 && dheight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
+      // video size changed
+      info.displayWidth = dwidth
+      info.displayHeight = dheight
+      DispatchQueue.main.sync {
+        notifyMainWindowVideoSizeChanged()
+      }
+    }
+  }
+
+  func vfChanged() {
+    guard !isShuttingDown, !isShutdown else { return }
+    postNotification(.iinaVFChanged)
+  }
+
+  func vidChanged() {
+    guard !isShuttingDown, !isShutdown else { return }
+    info.vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
+    postNotification(.iinaVIDChanged)
+    sendOSD(.track(info.currentTrack(.video) ?? .noneVideoTrack))
   }
 
   @objc
