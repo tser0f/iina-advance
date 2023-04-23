@@ -139,6 +139,9 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     if pendingSwitchRequest != nil {
       switchToTab(pendingSwitchRequest!)
       pendingSwitchRequest = nil
+    } else {
+      // Initial display: need to draw highlight for currentTab
+      updateTabButtons(activeTab: currentTab)
     }
 
     observedPrefKeys.forEach { key in
@@ -264,19 +267,28 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   /** Switch tab (for internal call) */
   private func switchToTab(_ tab: TabViewType) {
+    updateTabButtons(activeTab: tab)
     switch tab {
     case .playlist:
       tabView.selectTabViewItem(at: 0)
-      updateTabActiveStatus(for: playlistBtn, isActive: true)
-      updateTabActiveStatus(for: chaptersBtn, isActive: false)
     case .chapters:
       tabView.selectTabViewItem(at: 1)
-      updateTabActiveStatus(for: playlistBtn, isActive: false)
-      updateTabActiveStatus(for: chaptersBtn, isActive: true)
     }
 
     currentTab = tab
     mainWindow.didChangeTab(to: tab.rawValue)
+  }
+
+  // Updates display of all tabs buttons to indicate that the given tab is active and the rest are not
+  private func updateTabButtons(activeTab: TabViewType) {
+    switch activeTab {
+    case .playlist:
+      updateTabActiveStatus(for: playlistBtn, isActive: true)
+      updateTabActiveStatus(for: chaptersBtn, isActive: false)
+    case .chapters:
+      updateTabActiveStatus(for: playlistBtn, isActive: false)
+      updateTabActiveStatus(for: chaptersBtn, isActive: true)
+    }
   }
 
   private func updateTabActiveStatus(for btn: NSButton, isActive: Bool) {
