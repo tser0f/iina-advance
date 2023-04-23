@@ -495,8 +495,6 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var trailingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var videoAspectRatioConstraint: NSLayoutConstraint!
-
   // - Top panel (title bar and/or top OSC) constraints
   @IBOutlet weak var videoContainerTopOffsetFromTopPanelBottomConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerTopOffsetFromTopPanelTopConstraint: NSLayoutConstraint!
@@ -673,7 +671,10 @@ class MainWindowController: PlayerWindowController {
 
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
-  var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
+  private var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
+  private var videoViewConstraints2: [NSLayoutConstraint] = []
+  private var videoAspectRatioConstraint: NSLayoutConstraint!
+
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
   override var mouseActionDisabledViews: [NSView?] {[leadingSidebarView, trailingSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
@@ -878,17 +879,13 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func addVideoViewToWindow() {
+  // Finishes transition into windowed mode:
+  func addVideoViewToWindow() {
     videoContainerView.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
-    ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-      // FIXME: figure out why this 2px adjustment is necessary
-      let constantAdustment: CGFloat = attr == .top || attr == .left ? -2 : 0
-      videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
-                                                      attribute: attr, multiplier: 1, constant: constantAdustment)
-      videoViewConstraints[attr]!.isActive = true
-    }
+    // FIXME: figure out why this 2px adjustment is necessary
+    addConstraintsForVideoView(left: -2, right: 0, bottom: 0, top: -2)
   }
 
   private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
@@ -897,11 +894,11 @@ class MainWindowController: PlayerWindowController {
       guard videoAspectRatioConstraint.multiplier != newMultiplier else {
         return
       }
-      videoContainerView.removeConstraint(videoAspectRatioConstraint)
+      videoView.removeConstraint(videoAspectRatioConstraint)
     }
-    videoAspectRatioConstraint = videoContainerView.heightAnchor.constraint(equalTo: videoContainerView.widthAnchor, multiplier: height / width)
+    videoAspectRatioConstraint = videoView.heightAnchor.constraint(equalTo: videoView.widthAnchor, multiplier: height / width)
     videoAspectRatioConstraint.isActive = true
-    videoContainerView.addConstraint(videoAspectRatioConstraint)
+    videoView.addConstraint(videoAspectRatioConstraint)
   }
 
   /** Set material for OSC and title bar */
@@ -2073,7 +2070,12 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowWillEnterFullScreen(_ notification: Notification) {
-    Logger.log("windowWillEnterFullScreen", level: .verbose)
+
+    let isLegacyFullScreen = notification.name == .iinaLegacyFullScreen
+    let priorWindowedFrame = window!.frame
+    fsState.startAnimatingToFullScreen(legacy: isLegacyFullScreen, priorWindowedFrame: priorWindowedFrame)
+
+    Logger.log("windowWillEnterFullScreen priorWindowedFrame is \(fsState.priorWindowedFrame!)", level: .verbose)
 
     resetViewsForFullScreenTransition()
 
@@ -2093,9 +2095,6 @@ class MainWindowController: PlayerWindowController {
 
     setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
-    let isLegacyFullScreen = notification.name == .iinaLegacyFullScreen
-    fsState.startAnimatingToFullScreen(legacy: isLegacyFullScreen, priorWindowedFrame: window!.frame)
-
     videoView.videoLayer.suspend()
     // Let mpv decide the correct render region in full screen
     player.mpv.setFlag(MPVOption.Window.keepaspect, true)
@@ -2112,7 +2111,7 @@ class MainWindowController: PlayerWindowController {
     Logger.log("windowDidEnterFullScreen", level: .verbose)
     fsState.finishAnimating()
 
-    videoViewConstraints.values.forEach { $0.constant = 0 }
+    setConstraintsForVideoView()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
@@ -2186,14 +2185,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
-    Logger.log("window startCustomAnimationToExitFullScreenWithDuration", level: .verbose)
-    if NSMenu.menuBarVisible() {
-      NSMenu.setMenuBarVisible(false)
-    }
+    Logger.log("window startCustomAnimationToExitFullScreenWithDuration setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose)
 
     UIAnimation.run{ [self] context in
       window.setFrame(fsState.priorWindowedFrame!, display: true)
-      NSMenu.setMenuBarVisible(true)
     }
   }
 
@@ -2202,6 +2197,8 @@ class MainWindowController: PlayerWindowController {
     if AccessibilityPreferences.motionReductionEnabled {
       // When animation is not used exiting full screen does not restore the previous size of the
       // window. Restore it now.
+
+      Logger.log("windowDidExitFullScreen setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose)
       window!.setFrame(fsState.priorWindowedFrame!, display: true, animate: false)
     }
     fsState.finishAnimating()
@@ -2227,7 +2224,7 @@ class MainWindowController: PlayerWindowController {
     useFullScreenLayout = false
     updateTitleBarAndOSC()
 
-    videoViewConstraints.values.forEach { $0.constant = 0 }
+    setConstraintsForVideoView()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
@@ -2352,7 +2349,9 @@ class MainWindowController: PlayerWindowController {
 
   func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
     guard let window = window else { return frameSize }
-//    Logger.log("WindowWillResize requested with desired size: \(frameSize)", level: .verbose, subsystem: player.subsystem)
+    // This method can be called as a side effect of the animation. If so, ignore.
+    guard fsState == .windowed else { return frameSize }
+    Logger.log("WindowWillResize requested with desired size: \(frameSize)", level: .verbose, subsystem: player.subsystem)
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
       Logger.log("WindowWillResize: requested size is too small; will change to minimum (\(minSize))", level: .verbose, subsystem: player.subsystem)
       let frameSizeNew = window.aspectRatio.grow(toSize: minSize)
@@ -2364,8 +2363,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowDidResize(_ notification: Notification) {
-//    Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
+    // This method can be called as a side effect of the animation. If so, ignore.
+    guard fsState == .windowed else { return }
+    Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
 
     UIAnimation.disableAnimation {
       // The `videoView` is not updated during full screen animation (unless using a custom one, however it could be
@@ -2385,12 +2386,12 @@ class MainWindowController: PlayerWindowController {
 
         updateVideoAspectRatioConstraint(w: targetFrame.width, h: targetFrame.height)
 
-        setConstraintsForVideoView([
-          .left: targetFrame.minX,
-          .right:  targetFrame.maxX - window.frame.width,
-          .bottom: -targetFrame.minY,
-          .top: window.frame.height - targetFrame.maxY
-        ])
+        setConstraintsForVideoView(
+          left: targetFrame.minX,
+          right:  targetFrame.maxX - window.frame.width,
+          bottom: -targetFrame.minY,
+          top: window.frame.height - targetFrame.maxY
+        )
       }
 
       if isInInteractiveMode {
@@ -2954,12 +2955,46 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Interactive mode
 
-  private func setConstraintsForVideoView(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
-    for (attr, value) in constraints {
-      if let constraint = videoViewConstraints[attr] {
-        constraint.animateToConstant(value)
+
+  private func addConstraintsForVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
+    addVideoViewConstraint(.left, left)
+    addVideoViewConstraint(.right, right)
+    addVideoViewConstraint(.bottom, bottom)
+    addVideoViewConstraint(.top, top)
+
+    var constraint = videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor)
+    constraint.priority = .required
+    videoViewConstraints2.append(constraint)
+    constraint.isActive = true
+
+    constraint = videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
+    constraint.priority = .required
+    videoViewConstraints2.append(constraint)
+    constraint.isActive = true
+  }
+
+  private func setConstraintsForVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
+    for (attr, constraint) in videoViewConstraints {
+      switch attr {
+      case .left:
+        constraint.animateToConstant(left)
+      case .right:
+        constraint.animateToConstant(right)
+      case .bottom:
+        constraint.animateToConstant(bottom)
+      case .top:
+        constraint.animateToConstant(top)
+      default:
+        break
       }
     }
+  }
+
+  private func addVideoViewConstraint(_ attr: NSLayoutConstraint.Attribute, _ constantAdustment: CGFloat) {
+    videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
+                                                    attribute: attr, multiplier: 1, constant: constantAdustment)
+    videoViewConstraints[attr]!.priority = .defaultLow
+    videoViewConstraints[attr]!.isActive = true
   }
 
   func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
@@ -2992,13 +3027,13 @@ class MainWindowController: PlayerWindowController {
         aspect = window.aspectRatio
       }
       let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
-      UIAnimation.disableAnimation {
-        setConstraintsForVideoView([
-          .left: frame.minX,
-          .right: window.frame.width - frame.maxX,  // `frame.x` should also work
-          .bottom: -frame.minY,
-          .top: window.frame.height - frame.maxY  // `frame.y` should also work
-        ])
+      UIAnimation.disableAnimation { [self] in
+        setConstraintsForVideoView(
+          left: frame.minX,
+          right: window.frame.width - frame.maxX,  /// `frame.x` should also work
+          bottom: -frame.minY,
+          top: window.frame.height - frame.maxY    /// `frame.y` should also work
+        )
       }
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
@@ -3022,13 +3057,6 @@ class MainWindowController: PlayerWindowController {
     let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
     let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
-    let newConstants: [NSLayoutConstraint.Attribute: CGFloat] = [
-      .left: newVideoViewFrame.minX,
-      .right: newVideoViewFrame.maxX - window.frame.width,
-      .bottom: -newVideoViewFrame.minY,
-      .top: window.frame.height - newVideoViewFrame.maxY
-    ]
-
     let selectedRect: NSRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
 
     // add crop setting view
@@ -3045,7 +3073,11 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(0)
-      setConstraintsForVideoView(newConstants)
+      setConstraintsForVideoView(
+        left: newVideoViewFrame.minX,
+        right: newVideoViewFrame.maxX - window.frame.width,
+        bottom: -newVideoViewFrame.minY,
+        top: window.frame.height - newVideoViewFrame.maxY)
     }, completionHandler: {
       self.cropSettingsView?.cropBoxView.isHidden = false
       self.videoView.layer?.shadowColor = .black
@@ -3067,9 +3099,7 @@ class MainWindowController: PlayerWindowController {
     // if exit without animation
     if immediately {
       bottomPanelBottomConstraint.constant = -InteractiveModeBottomViewHeight
-      ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-        videoViewConstraints[attr]!.constant = 0
-      }
+      setConstraintsForVideoView()
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
@@ -3081,9 +3111,7 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
-      ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-        videoViewConstraints[attr]!.animateToConstant(0)
-      }
+      setConstraintsForVideoView()
     }, completionHandler: {
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)

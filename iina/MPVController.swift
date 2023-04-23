@@ -927,8 +927,12 @@ class MPVController: NSObject {
       let prefix = String(cString: (dataPtr.pointee.prefix)!)
       let level = String(cString: (dataPtr.pointee.level)!)
       let text = String(cString: (dataPtr.pointee.text)!)
+      let mpvIINALevel = logLevelMap[level] ?? .verbose
 
-      Logger.log("[\(prefix)] \(level): \(text)", level: logLevelMap[level] ?? .verbose, subsystem: mpvSubsystem)
+      // TODO bring back pref
+      if mpvIINALevel.rawValue >= Logger.Level.warning.rawValue {
+        Logger.log("[\(prefix)] \(level): \(text)", level: mpvIINALevel, subsystem: mpvSubsystem)
+      }
 
       inputSectionLogScanner.handleLogScanner(prefix: prefix, level: level, msg: text)
 

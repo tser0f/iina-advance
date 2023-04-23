@@ -597,12 +597,7 @@ class PlayerCore: NSObject {
     miniPlayer.videoViewAspectConstraint?.isActive = false
     miniPlayer.videoViewAspectConstraint = nil
     mainWindow.videoView.removeFromSuperview()
-    mainWindowContentView?.addSubview(mainWindow.videoView, positioned: .below, relativeTo: nil)
-    ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-      mainWindow.videoViewConstraints[attr] = NSLayoutConstraint(item: mainWindow.videoView, attribute: attr, relatedBy: .equal,
-                                                                 toItem: mainWindowContentView, attribute: attr, multiplier: 1, constant: 0)
-      mainWindow.videoViewConstraints[attr]!.isActive = true
-    }
+    mainWindow.addVideoViewToWindow()
     // show main window
     if showMainWindow {
       mainWindow.window?.makeKeyAndOrderFront(self)

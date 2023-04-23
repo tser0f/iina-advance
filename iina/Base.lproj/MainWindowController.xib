@@ -81,7 +81,6 @@
                 <outlet property="trailingTitleBarAccessoryView" destination="maF-Zr-K8w" id="H6b-g2-qRx"/>
                 <outlet property="trailingTitleBarLeadingSpaceConstraint" destination="c8g-qm-Vdc" id="m15-JQ-OEe"/>
                 <outlet property="trailingTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
-                <outlet property="videoAspectRatioConstraint" destination="wHS-TJ-sRI" id="6Y8-3g-mLP"/>
                 <outlet property="videoContainerBottomOffsetFromBottomPanelBottomConstraint" destination="ayn-Wv-3NJ" id="LXY-f9-Zrt"/>
                 <outlet property="videoContainerBottomOffsetFromBottomPanelTopConstraint" destination="68T-mq-A30" id="dZZ-Lb-2wM"/>
                 <outlet property="videoContainerBottomOffsetFromContentViewBottomConstraint" destination="4gm-o8-h98" id="GyQ-e0-oLf"/>
@@ -135,9 +134,6 @@
                     </visualEffectView>
                     <customView identifier="Video-Container-View" translatesAutoresizingMaskIntoConstraints="NO" id="3nL-Ky-Hfa" userLabel="Video-Container View">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
-                        <constraints>
-                            <constraint firstAttribute="width" secondItem="3nL-Ky-Hfa" secondAttribute="height" multiplier="16:9" priority="100" id="wHS-TJ-sRI"/>
-                        </constraints>
                     </customView>
                     <visualEffectView identifier="Additional-Info-View" hidden="YES" wantsLayer="YES" horizontalCompressionResistancePriority="250" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Qbi-jx-9pO" userLabel="Additional-Info View">
                         <rect key="frame" x="477" y="255" width="155" height="67"/>
