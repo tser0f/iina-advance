@@ -672,7 +672,7 @@ class MainWindowController: PlayerWindowController {
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
   private var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
-  private var videoViewConstraints2: [NSLayoutConstraint] = []
+  private var videoViewCenterConstraints: [NSLayoutConstraint] = []
   private var videoAspectRatioConstraint: NSLayoutConstraint!
 
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
@@ -885,7 +885,8 @@ class MainWindowController: PlayerWindowController {
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
     // FIXME: figure out why this 2px adjustment is necessary
-    addConstraintsForVideoView(left: -2, right: 0, bottom: 0, top: -2)
+    addOffsetConstraintsToVideoView(left: -2, right: 0, bottom: 0, top: -2)
+    addCenterConstraintsToVideoView()
   }
 
   private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
@@ -899,6 +900,57 @@ class MainWindowController: PlayerWindowController {
     videoAspectRatioConstraint = videoView.heightAnchor.constraint(equalTo: videoView.widthAnchor, multiplier: height / width)
     videoAspectRatioConstraint.isActive = true
     videoView.addConstraint(videoAspectRatioConstraint)
+  }
+
+  private func addOffsetConstraintsToVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
+    addVideoViewOffsetConstraint(.left, left)
+    addVideoViewOffsetConstraint(.right, right)
+    addVideoViewOffsetConstraint(.bottom, bottom)
+    addVideoViewOffsetConstraint(.top, top)
+  }
+
+  private func addVideoViewOffsetConstraint(_ attr: NSLayoutConstraint.Attribute, _ constantAdustment: CGFloat) {
+    videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
+                                                    attribute: attr, multiplier: 1, constant: constantAdustment)
+    videoViewConstraints[attr]!.priority = .defaultLow
+    videoViewConstraints[attr]!.isActive = true
+  }
+
+  private func setOffsetConstraintsForVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
+    for (attr, constraint) in videoViewConstraints {
+      switch attr {
+      case .left:
+        constraint.animateToConstant(left)
+      case .right:
+        constraint.animateToConstant(right)
+      case .bottom:
+        constraint.animateToConstant(bottom)
+      case .top:
+        constraint.animateToConstant(top)
+      default:
+        break
+      }
+    }
+  }
+
+  // Adding these center constraints:
+  // • In fullscreen mode, needed to center the video on screen
+  // • In windowed mode, if for some reason all other layout constraints cannot be met
+  //   (if the aspect ratio is too extreme and/or window too small to allow all OSC / title bar controls to fit)
+  //   allows black bars to appear on the sides of the video. This most likely indicates a bug in IINA or some rare
+  //   corner case which wasn't planned for. But it's probably better than the built-in default, which is to break the aspect ratio.
+  private func addCenterConstraintsToVideoView() {
+    guard videoViewCenterConstraints.isEmpty else { return }
+
+    var constraint = videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor)
+    constraint.priority = .required
+    constraint.isActive = true
+    videoViewCenterConstraints.append(constraint)
+
+    constraint = videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
+    constraint.priority = .required
+    constraint.isActive = true
+    videoViewCenterConstraints.append(constraint)
   }
 
   /** Set material for OSC and title bar */
@@ -2111,7 +2163,7 @@ class MainWindowController: PlayerWindowController {
     Logger.log("windowDidEnterFullScreen", level: .verbose)
     fsState.finishAnimating()
 
-    setConstraintsForVideoView()
+    setOffsetConstraintsForVideoView()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
@@ -2224,7 +2276,7 @@ class MainWindowController: PlayerWindowController {
     useFullScreenLayout = false
     updateTitleBarAndOSC()
 
-    setConstraintsForVideoView()
+    setOffsetConstraintsForVideoView()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
@@ -2386,7 +2438,7 @@ class MainWindowController: PlayerWindowController {
 
         updateVideoAspectRatioConstraint(w: targetFrame.width, h: targetFrame.height)
 
-        setConstraintsForVideoView(
+        setOffsetConstraintsForVideoView(
           left: targetFrame.minX,
           right:  targetFrame.maxX - window.frame.width,
           bottom: -targetFrame.minY,
@@ -2956,47 +3008,6 @@ class MainWindowController: PlayerWindowController {
   // MARK: - UI: Interactive mode
 
 
-  private func addConstraintsForVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
-    addVideoViewConstraint(.left, left)
-    addVideoViewConstraint(.right, right)
-    addVideoViewConstraint(.bottom, bottom)
-    addVideoViewConstraint(.top, top)
-
-    var constraint = videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor)
-    constraint.priority = .required
-    videoViewConstraints2.append(constraint)
-    constraint.isActive = true
-
-    constraint = videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
-    constraint.priority = .required
-    videoViewConstraints2.append(constraint)
-    constraint.isActive = true
-  }
-
-  private func setConstraintsForVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
-    for (attr, constraint) in videoViewConstraints {
-      switch attr {
-      case .left:
-        constraint.animateToConstant(left)
-      case .right:
-        constraint.animateToConstant(right)
-      case .bottom:
-        constraint.animateToConstant(bottom)
-      case .top:
-        constraint.animateToConstant(top)
-      default:
-        break
-      }
-    }
-  }
-
-  private func addVideoViewConstraint(_ attr: NSLayoutConstraint.Attribute, _ constantAdustment: CGFloat) {
-    videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
-                                                    attribute: attr, multiplier: 1, constant: constantAdustment)
-    videoViewConstraints[attr]!.priority = .defaultLow
-    videoViewConstraints[attr]!.isActive = true
-  }
-
   func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
     // prerequisites
     guard let window = window else { return }
@@ -3028,7 +3039,7 @@ class MainWindowController: PlayerWindowController {
       }
       let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
       UIAnimation.disableAnimation { [self] in
-        setConstraintsForVideoView(
+        setOffsetConstraintsForVideoView(
           left: frame.minX,
           right: window.frame.width - frame.maxX,  /// `frame.x` should also work
           bottom: -frame.minY,
@@ -3073,7 +3084,7 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(0)
-      setConstraintsForVideoView(
+      setOffsetConstraintsForVideoView(
         left: newVideoViewFrame.minX,
         right: newVideoViewFrame.maxX - window.frame.width,
         bottom: -newVideoViewFrame.minY,
@@ -3099,7 +3110,7 @@ class MainWindowController: PlayerWindowController {
     // if exit without animation
     if immediately {
       bottomPanelBottomConstraint.constant = -InteractiveModeBottomViewHeight
-      setConstraintsForVideoView()
+      setOffsetConstraintsForVideoView()
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
@@ -3111,7 +3122,7 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
-      setConstraintsForVideoView()
+      setOffsetConstraintsForVideoView()
     }, completionHandler: {
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)
