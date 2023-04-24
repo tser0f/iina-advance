@@ -953,6 +953,13 @@ class MainWindowController: PlayerWindowController {
     videoViewCenterConstraints.append(constraint)
   }
 
+  private func removeCenterConstraintsFromVideoView() {
+    for constraint in videoViewCenterConstraints {
+      constraint.isActive = false
+    }
+    videoViewCenterConstraints.removeAll()
+  }
+
   /** Set material for OSC and title bar */
   override internal func setMaterial(_ theme: Preference.Theme?) {
     if #available(macOS 10.14, *) {
@@ -1386,11 +1393,9 @@ class MainWindowController: PlayerWindowController {
     Logger.log("CloseOldPanels", level: .verbose, subsystem: player.subsystem)
 
     if futureLayout.titleBarHeight == 0 {
-      // FIXME: change to make it like updateTopPanelHeight
       titleBarHeightConstraint.animateToConstant(0)
     }
     if futureLayout.topOSCHeight == 0 {
-      // FIXME: change to make it like updateTopPanelHeight
       topOSCPreferredHeightConstraint.animateToConstant(0)
     }
     if futureLayout.osdMinOffsetFromTop == 0 {
@@ -3019,8 +3024,10 @@ class MainWindowController: PlayerWindowController {
 
     isPausedPriorToInteractiveMode = player.info.isPaused
     player.pause()
+    // FIXME: add key binding interceptor to block key bindings & add ESC key
     isInInteractiveMode = true
     hideFadeableViews()
+    hideOSD()
 
     if fsState.isFullscreen {
       let aspect: NSSize
@@ -3054,14 +3061,15 @@ class MainWindowController: PlayerWindowController {
     bottomView.isHidden = false
     bottomView.addSubview(controlView.view)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.view])
+    removeCenterConstraintsFromVideoView()
 
     let origVideoSize = NSSize(width: ow, height: oh)
     // the max region that the video view can occupy
     let bezelSize = CropBoxViewController.bezelSize
     let newVideoViewBounds = NSRect(x: bezelSize,
-                                    y: bezelSize,
+                                    y: InteractiveModeBottomViewHeight,
                                     width: window.frame.width - (bezelSize + bezelSize),
-                                    height: window.frame.height - (bezelSize + bezelSize))
+                                    height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize)
     let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
     let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
@@ -3086,7 +3094,7 @@ class MainWindowController: PlayerWindowController {
         right: newVideoViewFrame.maxX - window.frame.width,
         bottom: -newVideoViewFrame.minY,
         top: window.frame.height - newVideoViewFrame.maxY)
-    }, completionHandler: {
+    }, completionHandler: { [self] in
       self.cropSettingsView?.cropBoxView.isHidden = false
       self.videoView.layer?.shadowColor = .black
       self.videoView.layer?.shadowOpacity = 1
@@ -3105,22 +3113,17 @@ class MainWindowController: PlayerWindowController {
     cropSettingsView?.cropBoxView.isHidden = true
 
     // if exit without animation
-    if immediately {
-      bottomPanelBottomConstraint.constant = -InteractiveModeBottomViewHeight
-      setOffsetConstraintsForVideoView()
-      self.cropSettingsView?.cropBoxView.removeFromSuperview()
-      self.hideSidebars(animate: false)
-      self.bottomView.subviews.removeAll()
-      self.bottomView.isHidden = true
-      return
-    }
+    let duration: CGFloat = immediately ? 0 : UIAnimation.CropAnimationDuration
 
     // if with animation
-    UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
+    UIAnimation.run(withDuration: duration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
+      // Restore prev constraints:
+      updateBottomOSCHeight(to: currentLayout.bottomOSCHeight, placement: currentLayout.bottomPanelPlacement)
+      addCenterConstraintsToVideoView()
       setOffsetConstraintsForVideoView()
-    }, completionHandler: {
+    }, completionHandler: { [self] in
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
