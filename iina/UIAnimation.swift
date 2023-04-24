@@ -57,7 +57,7 @@ struct UIAnimation {
       context.allowsImplicitAnimation = isAnimationEnabled
       animationBlocks[index](context)
     }, completionHandler: {
-      self.run(withDuration: duration, animationBlocks, index: index + 1)
+      self.run(withDuration: duration, animationBlocks, index: index + 1, completionHandler: completionHandler)
     })
   }
 }
