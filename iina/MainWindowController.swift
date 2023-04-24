@@ -3057,7 +3057,11 @@ class MainWindowController: PlayerWindowController {
 
     let origVideoSize = NSSize(width: ow, height: oh)
     // the max region that the video view can occupy
-    let newVideoViewBounds = NSRect(x: 20, y: 20 + 60, width: window.frame.width - 40, height: window.frame.height - 104)
+    let bezelSize = CropBoxViewController.bezelSize
+    let newVideoViewBounds = NSRect(x: bezelSize,
+                                    y: bezelSize,
+                                    width: window.frame.width - (bezelSize + bezelSize),
+                                    height: window.frame.height - (bezelSize + bezelSize))
     let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
     let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
