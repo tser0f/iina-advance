@@ -2343,15 +2343,8 @@ class MainWindowController: PlayerWindowController {
     // restore window frame and aspect ratio
     let videoSize = player.videoSizeForDisplay
     let aspectRatio = NSSize(width: videoSize.0, height: videoSize.1)
-    let useAnimation = Preference.bool(for: .legacyFullScreenAnimation)
-    if useAnimation {
-      // firstly resize to a big frame with same aspect ratio for better visual experience
-      let aspectFrame = aspectRatio.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
-      updateVideoAspectRatioConstraint(w: aspectFrame.width, h: aspectFrame.height)
-      window.setFrame(aspectFrame, display: true, animate: false)
-    }
     // then animate to the original frame
-    window.setFrame(framePriorToBeingInFullscreen, display: true, animate: useAnimation)
+    window.setFrame(framePriorToBeingInFullscreen, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     updateVideoAspectRatioConstraint(w: aspectRatio.width, h: aspectRatio.height)
     window.aspectRatio = aspectRatio
     // call delegate
