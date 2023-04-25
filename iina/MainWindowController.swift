@@ -672,7 +672,8 @@ class MainWindowController: PlayerWindowController {
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
   private var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
-  private var videoViewCenterConstraints: [NSLayoutConstraint] = []
+  private var videoViewCenterXConstraint: NSLayoutConstraint? = nil
+  private var videoViewCenterYConstraint: NSLayoutConstraint? = nil
   private var videoAspectRatioConstraint: NSLayoutConstraint!
 
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
@@ -940,24 +941,19 @@ class MainWindowController: PlayerWindowController {
   //   allows black bars to appear on the sides of the video. This most likely indicates a bug in IINA or some rare
   //   corner case which wasn't planned for. But it's probably better than the built-in default, which is to break the aspect ratio.
   private func addCenterConstraintsToVideoView() {
-    guard videoViewCenterConstraints.isEmpty else { return }
-
-    var constraint = videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor)
-    constraint.priority = .required
-    constraint.isActive = true
-    videoViewCenterConstraints.append(constraint)
-
-    constraint = videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
-    constraint.priority = .required
-    constraint.isActive = true
-    videoViewCenterConstraints.append(constraint)
-  }
-
-  private func removeCenterConstraintsFromVideoView() {
-    for constraint in videoViewCenterConstraints {
-      constraint.isActive = false
+    if videoViewCenterXConstraint == nil {
+      let constraint = videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor)
+      constraint.priority = .required
+      constraint.isActive = true
+      videoViewCenterXConstraint = constraint
     }
-    videoViewCenterConstraints.removeAll()
+
+    if videoViewCenterYConstraint == nil {
+      let constraint = videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
+      constraint.priority = .required
+      constraint.isActive = true
+      videoViewCenterYConstraint = constraint
+    }
   }
 
   /** Set material for OSC and title bar */
@@ -2692,7 +2688,7 @@ class MainWindowController: PlayerWindowController {
   // Shows fadeableViews and titlebar via fade
   private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true,
                                  completionHandler: (() -> Void)? = nil) {
-    guard !player.disableUI else { return }
+    guard !player.disableUI && !isInInteractiveMode else { return }
 
     animationState = .willShow
     // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
@@ -2886,7 +2882,7 @@ class MainWindowController: PlayerWindowController {
 
   // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
-    guard player.displayOSD && !isShowingPersistentOSD else { return }
+    guard player.displayOSD && !isShowingPersistentOSD && !isInInteractiveMode else { return }
 
     if hideOSDTimer != nil {
       hideOSDTimer!.invalidate()
@@ -2979,8 +2975,11 @@ class MainWindowController: PlayerWindowController {
 
   @objc
   func hideOSD() {
+    osdAnimationState = .willHide
+    isShowingPersistentOSD = false
+    osdContext = nil
+
     UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
-      self.osdAnimationState = .willHide
       osdVisualEffectView.alphaValue = 0
     }, completionHandler: {
       if self.osdAnimationState == .willHide {
@@ -2988,8 +2987,6 @@ class MainWindowController: PlayerWindowController {
         self.osdStackView.views(in: .bottom).forEach { self.osdStackView.removeView($0) }
       }
     })
-    isShowingPersistentOSD = false
-    osdContext = nil
   }
 
   func updateAdditionalInfo() {
@@ -3022,12 +3019,13 @@ class MainWindowController: PlayerWindowController {
       return
     }
 
-    isPausedPriorToInteractiveMode = player.info.isPaused
-    player.pause()
-    // FIXME: add key binding interceptor to block key bindings & add ESC key
     isInInteractiveMode = true
     hideFadeableViews()
     hideOSD()
+
+    isPausedPriorToInteractiveMode = player.info.isPaused
+    player.pause()
+    // FIXME: add key binding interceptor to block key bindings & add ESC key
 
     if fsState.isFullscreen {
       let aspect: NSSize
@@ -3061,15 +3059,19 @@ class MainWindowController: PlayerWindowController {
     bottomView.isHidden = false
     bottomView.addSubview(controlView.view)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.view])
-    removeCenterConstraintsFromVideoView()
+
+    // Remove center Y constraint; fall back on fixed offset
+    videoViewCenterYConstraint?.isActive = false
+    videoViewCenterYConstraint = nil
 
     let origVideoSize = NSSize(width: ow, height: oh)
     // the max region that the video view can occupy
     let bezelSize = CropBoxViewController.bezelSize
     let newVideoViewBounds = NSRect(x: bezelSize,
-                                    y: InteractiveModeBottomViewHeight,
+                                    y: InteractiveModeBottomViewHeight + bezelSize,
                                     width: window.frame.width - (bezelSize + bezelSize),
-                                    height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize)
+                                    // Subtract 2*2 to account for the box frame
+                                    height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize - bezelSize - 4)
     let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
     let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
