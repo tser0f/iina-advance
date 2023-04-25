@@ -2398,6 +2398,7 @@ class MainWindowController: PlayerWindowController {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return frameSize }
     Logger.log("WindowWillResize requested with desired size: \(frameSize)", level: .verbose, subsystem: player.subsystem)
+
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
       Logger.log("WindowWillResize: requested size is too small; will change to minimum (\(minSize))", level: .verbose, subsystem: player.subsystem)
       let frameSizeNew = window.aspectRatio.grow(toSize: minSize)
@@ -2529,6 +2530,10 @@ class MainWindowController: PlayerWindowController {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
+
+    // This method can be called as a side effect of the animation. If so, ignore.
+    guard fsState == .windowed else { return }
+
     let newSize = window!.convertToBacking(videoView.bounds).size
     let videoSizeStr = videoView.videoSize != nil ? "\(videoView.videoSize!)" : "nil"
     Logger.log("WindowDidEndLiveResize(): videoView.videoSize: \(videoSizeStr) -> backingVideoSize: \(newSize)",
@@ -3106,23 +3111,15 @@ class MainWindowController: PlayerWindowController {
   }
 
   func exitInteractiveMode(immediately: Bool = false, then: @escaping () -> Void = {}) {
-    window?.backgroundColor = .black
-
-    if !isPausedPriorToInteractiveMode {
-      player.resume()
-    }
-    isInInteractiveMode = false
-    cropSettingsView?.cropBoxView.isHidden = true
-
     // if exit without animation
     let duration: CGFloat = immediately ? 0 : UIAnimation.CropAnimationDuration
+    cropSettingsView?.cropBoxView.isHidden = true
 
     // if with animation
     UIAnimation.run(withDuration: duration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
       // Restore prev constraints:
-      updateBottomOSCHeight(to: currentLayout.bottomOSCHeight, placement: currentLayout.bottomPanelPlacement)
+      bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
       addCenterConstraintsToVideoView()
       setOffsetConstraintsForVideoView()
     }, completionHandler: { [self] in
@@ -3131,6 +3128,12 @@ class MainWindowController: PlayerWindowController {
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       self.showFadeableViews()
+      window?.backgroundColor = .black
+
+      if !isPausedPriorToInteractiveMode {
+        player.resume()
+      }
+      isInInteractiveMode = false
       then()
     })
   }
