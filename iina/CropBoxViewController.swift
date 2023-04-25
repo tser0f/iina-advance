@@ -10,7 +10,6 @@ import Cocoa
 
 /** The generic view controller of `CropBoxView`. */
 class CropBoxViewController: NSViewController {
-  static let bezelSize: CGFloat = 20
 
   weak var mainWindow: MainWindowController!
 

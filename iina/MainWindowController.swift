@@ -3070,13 +3070,14 @@ class MainWindowController: PlayerWindowController {
     videoViewCenterYConstraint = nil
 
     let origVideoSize = NSSize(width: ow, height: oh)
+    // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
+    let bezelSize = StandardTitleBarHeight
+    let yAdjustment: CGFloat = 4  // Amount of space to reduce between VideoView and bottom controls
     // the max region that the video view can occupy
-    let bezelSize = CropBoxViewController.bezelSize
     let newVideoViewBounds = NSRect(x: bezelSize,
-                                    y: InteractiveModeBottomViewHeight + bezelSize,
-                                    width: window.frame.width - (bezelSize + bezelSize),
-                                    // Subtract 2*2 to account for the box frame
-                                    height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize - bezelSize - 4)
+                                    y: InteractiveModeBottomViewHeight + bezelSize - 2 - yAdjustment,
+                                    width: window.frame.width - bezelSize - bezelSize,
+                                    height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize - bezelSize - 2 + yAdjustment)
     let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
     let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
