@@ -35,7 +35,7 @@ struct UIAnimation {
   }
 
   /// Convenience function. Same as `run([AnimationBlock])`, but for a single animation.
-  static func run(withDuration duration: CGFloat = UIAnimationDuration, _ animationBlock: @escaping AnimationBlock,
+  static func run(withDuration duration: CGFloat? = nil, _ animationBlock: @escaping AnimationBlock,
                   completionHandler: (() -> Void)? = nil) {
     run(withDuration: duration, [animationBlock], completionHandler: completionHandler)
   }
@@ -43,7 +43,7 @@ struct UIAnimation {
   /// Recursive function which executes each of the given `AnimationBlock`s one after another.
   /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `UIAnimation.disableAnimation()`.
   /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `UIAnimation.UIAnimationDuration`.
-  static func run(withDuration duration: CGFloat = UIAnimationDuration, _ animationBlocks: [AnimationBlock], index: Int = 0,
+  static func run(withDuration duration: CGFloat? = nil, _ animationBlocks: [AnimationBlock], index: Int = 0,
                   completionHandler: (() -> Void)? = nil) {
     guard index < animationBlocks.count else {
       if let completionHandler = completionHandler {
@@ -53,8 +53,17 @@ struct UIAnimation {
     }
 
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = isAnimationEnabled ? AccessibilityPreferences.adjustedDuration(duration) : 0
-      context.allowsImplicitAnimation = isAnimationEnabled
+      let disableAnimation = !isAnimationEnabled || AccessibilityPreferences.motionReductionEnabled
+      if disableAnimation {
+        context.duration = 0
+      } else if let duration = duration {
+        context.duration = AccessibilityPreferences.adjustedDuration(duration)
+      } else {
+        context.duration = UIAnimationDuration
+      }
+
+      context.allowsImplicitAnimation = !disableAnimation
+
       animationBlocks[index](context)
     }, completionHandler: {
       self.run(withDuration: duration, animationBlocks, index: index + 1, completionHandler: completionHandler)

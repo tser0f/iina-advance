@@ -31,7 +31,6 @@
                 <outlet property="controlBarTop" destination="pgt-r3-Vbf" id="dqS-nQ-If8"/>
                 <outlet property="fragPlaybackControlButtonsView" destination="Yv6-0K-6E4" id="8vA-vh-qiH"/>
                 <outlet property="fragPositionSliderView" destination="BE1-yC-oJL" id="KXu-MZ-mx8"/>
-                <outlet property="fragToolbarView" destination="KfP-G9-8pD" id="R84-gZ-D93"/>
                 <outlet property="fragVolumeView" destination="N3B-DL-XOA" id="4VW-Wa-AD7"/>
                 <outlet property="leadingSidebarToOSDSpaceConstraint" destination="LBY-By-mfi" id="bna-VC-p0r"/>
                 <outlet property="leadingSidebarToggleButton" destination="zkB-jk-l3c" id="lcY-wv-u4x"/>
@@ -742,11 +741,6 @@
             </constraints>
             <point key="canvasLocation" x="-166" y="453"/>
         </customView>
-        <stackView identifier="OSC-Fragment-Toolbar-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" id="KfP-G9-8pD" userLabel="OSC Fragment: Toolbar">
-            <rect key="frame" x="0.0" y="0.0" width="106" height="24"/>
-            <autoresizingMask key="autoresizingMask"/>
-            <point key="canvasLocation" x="499" y="584"/>
-        </stackView>
         <customView identifier="Leading-TitleBarAccessoryView" id="LFL-4a-93B" userLabel="Leading Title Bar Accessory View">
             <rect key="frame" x="0.0" y="0.0" width="28" height="50"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES" flexibleMaxY="YES"/>

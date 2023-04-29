@@ -593,7 +593,6 @@ class PlayerCore: NSObject {
     mainWindow.playlistView.view.removeFromSuperview()
     mainWindow.playlistView.useCompactTabHeight = false
     // add back video view
-    let mainWindowContentView = mainWindow.window!.contentView
     miniPlayer.videoViewAspectConstraint?.isActive = false
     miniPlayer.videoViewAspectConstraint = nil
     mainWindow.videoView.removeFromSuperview()
