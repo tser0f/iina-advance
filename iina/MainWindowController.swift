@@ -998,6 +998,7 @@ class MainWindowController: PlayerWindowController {
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
   private func updateTopPanelPlacement(placement: Preference.PanelPlacement) {
+    Logger.log("Updating top panel placement to: \(placement)", level: .verbose)
     guard let window = window, let contentView = window.contentView else { return }
     contentView.removeConstraint(topPanelLeadingSpaceConstraint)
     contentView.removeConstraint(topPanelTrailingSpaceConstraint)
@@ -1043,6 +1044,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updateBottomPanelPlacement(placement: Preference.PanelPlacement) {
+    Logger.log("Updating bottom panel placement to: \(placement)", level: .verbose, subsystem: player.subsystem)
     guard let window = window, let contentView = window.contentView else { return }
     contentView.removeConstraint(bottomPanelLeadingSpaceConstraint)
     contentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
@@ -1122,14 +1124,20 @@ class MainWindowController: PlayerWindowController {
     let toolbarView = NSStackView(views: toolButtons)
     toolbarView.orientation = .horizontal
 
+    for button in toolButtons {
+      toolbarView.setVisibilityPriority(.detachOnlyIfNecessary, for: button)
+    }
+
+    // FIXME: this causes a crash due to conflicting constraints
     // It's not possible to control the icon padding from inside the buttons in all cases.
     // Instead we can get the same effect with a little more work, by controlling the stack view:
-    if !toolButtons.isEmpty {
-      let button = toolButtons[0]
-      toolbarView.spacing = 2 * button.iconPadding
-      toolbarView.edgeInsets = .init(top: button.iconPadding, left: button.iconPadding,
-                                     bottom: button.iconPadding, right: button.iconPadding)
-    }
+//    if !toolButtons.isEmpty {
+//      let button = toolButtons[0]
+//      toolbarView.spacing = 2 * button.iconPadding
+//      toolbarView.edgeInsets = .init(top: button.iconPadding, left: button.iconPadding,
+//                                     bottom: button.iconPadding, right: button.iconPadding)
+//      Logger.log("Toolbar spacing: \(toolbarView.spacing), edgeInsets: \(toolbarView.edgeInsets)", level: .verbose, subsystem: player.subsystem)
+//    }
     return toolbarView
   }
 
@@ -1201,8 +1209,8 @@ class MainWindowController: PlayerWindowController {
     static func initFromPreferences(isFullScreen: Bool) -> LayoutPlan {
       // If in fullscreen, top & bottom panels are always .insideVideo
       return LayoutPlan(isFullScreen: isFullScreen,
-                        topPanelPlacement: isFullScreen ? .insideVideo : Preference.enum(for: .topPanelPlacement),
-                        bottomPanelPlacement: isFullScreen ? .insideVideo : Preference.enum(for: .bottomPanelPlacement),
+                        topPanelPlacement: Preference.enum(for: .topPanelPlacement),
+                        bottomPanelPlacement: Preference.enum(for: .bottomPanelPlacement),
                         titleBarStyle: Preference.enum(for: .titleBarStyle),
                         enableOSC: Preference.bool(for: .enableOSC),
                         oscPosition: Preference.enum(for: .oscPosition))
@@ -1218,7 +1226,7 @@ class MainWindowController: PlayerWindowController {
                         oscPosition: .floating)
     }
 
-    func hasTitleBarOSC() -> Bool {
+    var hasTitleBarOSC: Bool {
       return !isFullScreen && enableOSC && oscPosition == .top && titleBarStyle == .minimal
     }
 
@@ -1226,9 +1234,13 @@ class MainWindowController: PlayerWindowController {
       return enableOSC && oscPosition == .floating
     }
 
+    var hasTopOSC: Bool {
+      return enableOSC && oscPosition == .top
+    }
+
     var hasPermanentOSC: Bool {
-      return enableOSC && !isFullScreen &&
-        ((oscPosition == .top && topPanelPlacement == .outsideVideo) || (oscPosition == .bottom && bottomPanelPlacement == .outsideVideo))
+      return enableOSC && ((oscPosition == .top && topPanelPlacement == .outsideVideo) ||
+                           (oscPosition == .bottom && bottomPanelPlacement == .outsideVideo))
     }
 
     /// If true:
@@ -1300,73 +1312,90 @@ class MainWindowController: PlayerWindowController {
   }
 
   class LayoutTransition {
-    let futureLayout: LayoutPlan
+    let fromLayout: LayoutPlan
+    let toLayout: LayoutPlan
 
     var startingAnimationSequence: [AnimationBlock] = []
     var endingAnimationSequence: [AnimationBlock] = []
 
-    init(to futureLayout: LayoutPlan) {
-      self.futureLayout = futureLayout
+    init(from fromLayout: LayoutPlan, to toLayout: LayoutPlan) {
+      self.fromLayout = fromLayout
+      self.toLayout = toLayout
+    }
+
+    var isTogglingFullScreen: Bool {
+      return self.fromLayout.isFullScreen != self.toLayout.isFullScreen
     }
   }
 
   private func buildLayoutTransition(fullScreen: Bool,
-                                     totalStartingDuration: CGFloat = 2 * UIAnimation.UIAnimationDuration,
-                                     totalEndingDuration: CGFloat = 2 * UIAnimation.UIAnimationDuration) -> LayoutTransition {
+                                     totalStartingDuration: CGFloat? = nil,
+                                     totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
 
-    let futureLayout = computeFutureLayut(fullScreen: fullScreen)
-    let transition = LayoutTransition(to: futureLayout)
+    let futureLayout = buildFutureLayoutPlan(fullScreen: fullScreen)
+    let transition = LayoutTransition(from: currentLayout, to: futureLayout)
 
+    let startingAnimationCount: CGFloat = 3
+    let endingAnimationCount: CGFloat = 2
+
+    let totalStartingDuration = totalStartingDuration ?? UIAnimation.UIAnimationDuration
+
+    let startingAnimationDuration: CGFloat = (totalStartingDuration ?? (UIAnimation.UIAnimationDuration * startingAnimationCount)) / startingAnimationCount
+    let endingAnimationDuration: CGFloat = (totalEndingDuration ?? (UIAnimation.UIAnimationDuration * endingAnimationCount)) / endingAnimationCount
+
+    // Set initial var
     transition.startingAnimationSequence.append{ [self] context in
       context.duration = 0
       controlBarFloating.isDragging = false
     }
-    for fadeAnimation in buildFadeableViewsAnimation(restartFadeTimer: false) {
+
+    // StartingAnimation 1: show fadeable views from current layout
+    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration) {
       transition.startingAnimationSequence.append(fadeAnimation)
     }
 
-    // 1: Animation: Fade out views which no longer will be shown but aren't enclosed in a panel
+    // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel
     transition.startingAnimationSequence.append{ [self] context in
-      context.duration = totalStartingDuration / 2
+      context.duration = startingAnimationDuration
       fadeOutOldViews(futureLayout)
     }
 
-    // 2: Animation: Minimize panels which are no longer needed
+    // StartingAnimation 3: Minimize panels which are no longer needed
     transition.startingAnimationSequence.append{ [self] context in
-      context.duration = totalStartingDuration / 2
+      context.duration = startingAnimationDuration
       /// Need to use `linear` or else panels of different sizes won't line up as they move
       context.timingFunction = CAMediaTimingFunction(name: .linear)
       closeOldPanels(futureLayout)
     }
 
 
-    // 3: Not animated: Update constraints. Should have no visible changes
+    // Not animated: Update constraints. Should have no visible changes
     transition.endingAnimationSequence.append{ [self] context in
       context.duration = 0
       updateHiddenViewsAndConstraints(futureLayout)
     }
 
-    // 4: Animation: Open new panels
+    // EndingAnimation 1: Open new panels
     transition.endingAnimationSequence.append{ [self] context in
       if futureLayout.isFullScreen {
         context.duration = 0
       } else {
         context.timingFunction = CAMediaTimingFunction(name: .linear)
-        context.duration = totalEndingDuration / 2
+        context.duration = endingAnimationDuration
       }
       openNewPanels(futureLayout)
     }
 
-    // 5: Animation: Fade in remaining views
+    // EndingAnimation 2: Fade in remaining views
     transition.endingAnimationSequence.append{ [self] context in
-      context.duration = totalEndingDuration / 2
+      context.duration = endingAnimationDuration
 
       fadeInNewViews(futureLayout)
       currentLayout = futureLayout
     }
 
-    // 6: After animations all finish, start fade timer
+    // After animations all finish, start fade timer
     transition.endingAnimationSequence.append{ [self] context in
       context.duration = 0
 
@@ -1380,6 +1409,8 @@ class MainWindowController: PlayerWindowController {
   private func fadeOutOldViews(_ futureLayout: LayoutPlan) {
     animationState = .willHide
     Logger.log("FadeOutOldViews", level: .verbose, subsystem: player.subsystem)
+
+    let isFullScreenChanging = currentLayout.isFullScreen != futureLayout.isFullScreen
 
     // Title bar & title bar accessories:
 
@@ -1442,7 +1473,8 @@ class MainWindowController: PlayerWindowController {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
 
-    if futureLayout.topPanelPlacement != currentLayout.topPanelPlacement {
+    let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
+    if isTopPanelPlacementChanging {
       // close completely. will animate reopening if needed later
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
       videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0)
@@ -1456,7 +1488,8 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    if futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement {
+    let isBottomPanelPlacementChanging = futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement
+    if isBottomPanelPlacementChanging {
       // close completely. will animate reopening if needed later
       updateBottomOSCHeight(to: 0, placement: futureLayout.bottomPanelPlacement)
     } else if futureLayout.bottomOSCHeight == 0 {
@@ -1587,21 +1620,16 @@ class MainWindowController: PlayerWindowController {
   }
 
   // This method should only make a layout plan. It should not alter the current layout.
-  private func computeFutureLayut(fullScreen: Bool) -> LayoutPlan {
+  private func buildFutureLayoutPlan(fullScreen: Bool) -> LayoutPlan {
     let window = window!
 
     let futureLayout = LayoutPlan.initFromPreferences(isFullScreen: fullScreen)
-    /// `fullScreenOverride`: futureLayout full screen state, but should be used in present calculations
-    let isFullScreen: Bool = futureLayout.isFullScreen
-    let hasNoTitleBar = futureLayout.hasNoTitleBar()
-    let hasTitleBarOSC = futureLayout.hasTitleBarOSC()
-    let hasTopOSC = futureLayout.enableOSC && futureLayout.oscPosition == .top
-
 
     /// For fullscreen, skip handling`titleTextField` and title bar buttons - they will be shown when transition
     /// to fullscreen is done
-    if !isFullScreen && !hasNoTitleBar {
+    if !futureLayout.isFullScreen && !futureLayout.hasNoTitleBar() {
       let visibleState: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
+      let hasTopOSC = futureLayout.hasTopOSC
 
       futureLayout.topPanelView = visibleState
       futureLayout.trafficLightButtons = visibleState
@@ -1672,7 +1700,7 @@ class MainWindowController: PlayerWindowController {
           playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
         }
       case .top:
-        if !isFullScreen {
+        if !futureLayout.isFullScreen {
           switch futureLayout.titleBarStyle {
           case .full:
             futureLayout.titleBarHeight = reducedTitleBarHeight
@@ -1687,8 +1715,8 @@ class MainWindowController: PlayerWindowController {
         let visibility: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
         futureLayout.topPanelView = visibility
 
-        if hasTitleBarOSC {
-          assert(!isFullScreen)
+        if futureLayout.hasTitleBarOSC {
+          assert(!futureLayout.isFullScreen)
           futureLayout.controlBarTitleBar = visibility
 
           futureLayout.setupControlBarInternalViews = { [self] in
@@ -1711,7 +1739,7 @@ class MainWindowController: PlayerWindowController {
 
       case .bottom:
         futureLayout.bottomOSCHeight = oscBarHeight
-        futureLayout.controlBarBottom = (isFullScreen || futureLayout.bottomPanelPlacement == .insideVideo) ? .showFadeable : .showAlways
+        futureLayout.controlBarBottom = (futureLayout.bottomPanelPlacement == .insideVideo) ? .showFadeable : .showAlways
 
         futureLayout.setupControlBarInternalViews = { [self] in
           currentControlBar = controlBarBottom
@@ -2167,12 +2195,6 @@ class MainWindowController: PlayerWindowController {
     let priorWindowedFrame = window!.frame
     fsState.startAnimatingToFullScreen(legacy: isLegacyFullScreen, priorWindowedFrame: priorWindowedFrame)
 
-    let transition = buildLayoutTransition(fullScreen: true, totalStartingDuration: 0)
-    layoutTransition = transition
-
-    // Run these two animations in *parallel*, with matching durations
-    UIAnimation.run(transition.startingAnimationSequence)
-
     Logger.log("windowWillEnterFullScreen priorWindowedFrame is \(fsState.priorWindowedFrame!)", level: .verbose)
 
     resetViewsForFullScreenTransition()
@@ -2197,6 +2219,12 @@ class MainWindowController: PlayerWindowController {
 
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToEnterFullScreenOn duration: \(duration)", level: .verbose)
+
+    // Just set duration to 0, and avoid headaches from bouncing sidebars and such
+    let transition = buildLayoutTransition(fullScreen: true, totalStartingDuration: 0)
+    layoutTransition = transition
+    // Run these two animations in *parallel*, with matching durations
+    UIAnimation.run(transition.startingAnimationSequence)
 
     UIAnimation.run{ context in
       context.duration = duration
@@ -2272,10 +2300,6 @@ class MainWindowController: PlayerWindowController {
 
     fsState.startAnimatingToWindow()
 
-    let transition = buildLayoutTransition(fullScreen: false)
-    layoutTransition = transition
-    UIAnimation.run(transition.startingAnimationSequence)
-
     // If a window is closed while in full screen mode (control-w pressed) AppKit will still call
     // this method. Because windows are tied to player cores and cores are cached and reused some
     // processing must be performed to leave the window in a consistent state for reuse. However
@@ -2290,6 +2314,10 @@ class MainWindowController: PlayerWindowController {
 
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToExitFullScreenWithDuration setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose)
+
+    let transition = buildLayoutTransition(fullScreen: false, totalStartingDuration: duration, totalEndingDuration: UIAnimation.UIAnimationDuration)
+    layoutTransition = transition
+    UIAnimation.run(transition.startingAnimationSequence)
 
     UIAnimation.run{ [self] context in
       window.setFrame(fsState.priorWindowedFrame!, display: true)
@@ -2744,7 +2772,7 @@ class MainWindowController: PlayerWindowController {
                                  completionHandler: (() -> Void)? = nil) {
     guard !player.disableUI && !isInInteractiveMode else { return }
 
-    var animationBlocks: [AnimationBlock] = buildFadeableViewsAnimation(restartFadeTimer: restartFadeTimer)
+    var animationBlocks: [AnimationBlock] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
 
     if let completionHandler = completionHandler {
       animationBlocks.append{ _ in
@@ -2755,7 +2783,7 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(animationBlocks)
   }
 
-  private func buildFadeableViewsAnimation(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.UIAnimationDuration) -> [AnimationBlock] {
+  private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.UIAnimationDuration) -> [AnimationBlock] {
     var animationBlocks: [AnimationBlock] = []
 
     animationBlocks.append{ [self] context in
@@ -2854,7 +2882,7 @@ class MainWindowController: PlayerWindowController {
     let trailingSpaceUsed = updateSpacingForTrailingTitleBarAccessory(layout)
 
     let widthOfTitleBarOSC: CGFloat
-    if layout.hasTitleBarOSC() {
+    if layout.hasTitleBarOSC {
       // Title bar accessories don't seem to like attaching to other views via constraints.
       // So the next best option is to programmatically update the constraint's constant any time anything changes.
       // Fortunately, this doesn't happen very often and is not a very intensive calculation.
