@@ -245,7 +245,7 @@ class MPVController: NSObject {
     }
 
     chkErr(mpv_set_option_string(mpv, "watch-later-directory", Utility.watchLaterURL.path))
-    setUserOption(PK.resumeLastPosition, type: .bool, forName: MPVOption.ProgramBehavior.savePositionOnQuit)
+    setUserOption(PK.resumeLastPosition, type: .bool, forName: MPVOption.WatchLater.savePositionOnQuit)
     setUserOption(PK.resumeLastPosition, type: .bool, forName: "resume-playback")
 
     setUserOption(.initialWindowSizePosition, type: .string, forName: MPVOption.Window.geometry)
@@ -422,13 +422,13 @@ class MPVController: NSObject {
     // sub-visibility, but the option secondary-sub-visibility is missing. This inconsistency is
     // likely to confuse users, so insure the visibility setting for secondary subtitles is also
     // saved in watch later files.
-    if  let watchLaterOptions = getString(MPVOption.ProgramBehavior.watchLaterOptions),
+    if  let watchLaterOptions = getString(MPVOption.WatchLater.watchLaterOptions),
         watchLaterOptions.contains(MPVOption.Subtitles.subVisibility),
         !watchLaterOptions.contains(MPVOption.Subtitles.secondarySubVisibility) {
-      setString(MPVOption.ProgramBehavior.watchLaterOptions, watchLaterOptions + "," +
+      setString(MPVOption.WatchLater.watchLaterOptions, watchLaterOptions + "," +
                 MPVOption.Subtitles.secondarySubVisibility)
     }
-    if let watchLaterOptions = getString(MPVOption.ProgramBehavior.watchLaterOptions) {
+    if let watchLaterOptions = getString(MPVOption.WatchLater.watchLaterOptions) {
       Logger.log("Options mpv is configured to save in watch later files: \(watchLaterOptions)")
     }
 

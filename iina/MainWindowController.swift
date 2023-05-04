@@ -1803,7 +1803,7 @@ class MainWindowController: PlayerWindowController {
   /// This erroneous behavior has been reported to Apple as: "Regression in NSCursor.setHiddenUntilMouseMoves"
   /// Feedback number FB11963121
   private func workaroundCursorDefect() {
-    guard #available(macOS 11, *), animationState == .hidden || animationState == .willHide else { return }
+    guard #available(macOS 11, *) else { return }
     NSCursor.setHiddenUntilMouseMoves(true)
   }
 
@@ -1811,6 +1811,7 @@ class MainWindowController: PlayerWindowController {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
       Logger.log("MainWindow mouseDown @ \(event.locationInWindow)", level: .verbose, subsystem: player.subsystem)
     }
+    workaroundCursorDefect()
     // do nothing if it's related to floating OSC
     guard !controlBarFloating.isDragging else { return }
     // record current mouse pos
@@ -1849,7 +1850,7 @@ class MainWindowController: PlayerWindowController {
       Logger.log("MainWindow mouseUp @ \(event.locationInWindow), isDragging: \(isDragging), clickCount: \(event.clickCount)",
                  level: .verbose, subsystem: player.subsystem)
     }
-
+    workaroundCursorDefect()
     mousePosRelatedToWindow = nil
     if isDragging {
       // if it's a mouseup after dragging window
