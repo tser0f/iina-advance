@@ -1410,8 +1410,6 @@ class MainWindowController: PlayerWindowController {
     animationState = .willHide
     Logger.log("FadeOutOldViews", level: .verbose, subsystem: player.subsystem)
 
-    let isFullScreenChanging = currentLayout.isFullScreen != futureLayout.isFullScreen
-
     // Title bar & title bar accessories:
 
     // Hide all title bar items if top panel placement is changing
@@ -2487,36 +2485,10 @@ class MainWindowController: PlayerWindowController {
 
   func windowDidResize(_ notification: Notification) {
     guard let window = window else { return }
-    // This method can be called as a side effect of the animation. If so, ignore.
-    guard fsState == .windowed else { return }
+    // Remember, this method can be called as a side effect of an animation
     Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
 
     UIAnimation.disableAnimation {
-      // The `videoView` is not updated during full screen animation (unless using a custom one, however it could be
-      // unbearably laggy under current render mechanism). Thus when entering full screen, we should keep `videoView`'s
-      // aspect ratio. Otherwise, when entered full screen, there will be an awkward animation that looks like
-      // `videoView` "resized" to screen size suddenly when mpv redraws the video content in correct aspect ratio.
-      if case let .animating(toFullScreen, _, _) = fsState {
-        let aspect: NSSize
-        let targetFrame: NSRect
-        if toFullScreen {
-          aspect = window.aspectRatio == .zero ? window.frame.size : window.aspectRatio
-          targetFrame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.contentView!.frame)
-        } else {
-          aspect = window.screen?.frame.size ?? NSScreen.main!.frame.size
-          targetFrame = aspect.grow(toSize: window.frame.size).centeredRect(in: window.contentView!.frame)
-        }
-
-        updateVideoAspectRatioConstraint(w: targetFrame.width, h: targetFrame.height)
-
-        setOffsetConstraintsForVideoView(
-          left: targetFrame.minX,
-          right:  targetFrame.maxX - window.frame.width,
-          bottom: -targetFrame.minY,
-          top: window.frame.height - targetFrame.maxY
-        )
-      }
-
       if isInInteractiveMode {
         // interactive mode
         cropSettingsView?.cropBoxView.resized(with: videoView.frame)
