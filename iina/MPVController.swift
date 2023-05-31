@@ -637,18 +637,6 @@ class MPVController: NSObject {
     return str
   }
 
-  func getScreenshot(_ arg: String) -> NSImage? {
-    var args = try! MPVNode.create(["screenshot-raw", arg])
-    defer {
-      MPVNode.free(args)
-    }
-    var result = mpv_node()
-    mpv_command_node(self.mpv, &args, &result)
-    let image = ObjcUtils.getImageFrom(&result)
-    mpv_free_node_contents(&result)
-    return image;
-  }
-
   func getInputBindings(filterCommandsBy filter: ((Substring) -> Bool)? = nil) -> [KeyMapping] {
     Logger.log("Requesting from mpv: \(MPVProperty.inputBindings)", level: .verbose)
     let parsed = getNode(MPVProperty.inputBindings)
@@ -1376,7 +1364,7 @@ class MPVController: NSObject {
         player.info.isIdle = true
         if fileLoaded {
           fileLoaded = false
-          player.closeMainWindow()
+          player.closeWindow()
         }
         receivedEndFileWhileLoading = false
       }

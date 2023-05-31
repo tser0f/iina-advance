@@ -329,8 +329,6 @@
 		E3CB258F222799B800A62C47 /* MPVHook.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3CB258E222799B800A62C47 /* MPVHook.swift */; };
 		E3CB75BB1FD998F5004DB10A /* Regex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A886F21E26CA24008755BB /* Regex.swift */; };
 		E3CB75BD1FDACB82004DB10A /* SavedFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3CB75BC1FDACB82004DB10A /* SavedFilter.swift */; };
-		E3DBD239218B057A00B3AFBF /* Translators.json in Resources */ = {isa = PBXBuildFile; fileRef = E3DBD238218B057A00B3AFBF /* Translators.json */; };
-		E3DBD23B218B199700B3AFBF /* Translators.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3DBD23A218B199700B3AFBF /* Translators.swift */; };
 		E3DBD23E218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3DBD23C218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift */; };
 		E3DBD23F218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3DBD23D218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.xib */; };
 		E3DE8DCD1FD8166A0021921C /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3DE8DCC1FD8166A0021921C /* main.swift */; };
@@ -338,6 +336,7 @@
 		E3ECC89E1FE9A6D900BED8C7 /* GeometryDef.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3ECC89D1FE9A6D900BED8C7 /* GeometryDef.swift */; };
 		E3F698872120D878005792C9 /* ExtendedColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F698862120D878005792C9 /* ExtendedColors.swift */; };
 		E3FC31461FE1501E00B9B86F /* PowerSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3FC31451FE1501E00B9B86F /* PowerSource.swift */; };
+		E3FF5AC02938582F0019CE45 /* JavascriptDevTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3FF5ABF2938582F0019CE45 /* JavascriptDevTool.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -915,6 +914,7 @@
 		496B19911E2968530035AF10 /* PIP.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PIP.framework; path = /System/Library/PrivateFrameworks/PIP.framework; sourceTree = "<group>"; };
 		49F7E3BF2920D65C002DA28E /* Availability.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Availability.xcconfig; sourceTree = "<group>"; };
 		513A4FF929B53F8100A8EA7D /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
+		51537C7229FA26DD00F9A472 /* Nightly.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Nightly.xcconfig; sourceTree = "<group>"; };
 		5158FAB429F881B000F626E6 /* mem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mem.h; sourceTree = "<group>"; };
 		5158FAB529F8822F00F626E6 /* hwcontext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hwcontext.h; sourceTree = "<group>"; };
 		5158FAB629F8827400F626E6 /* mastering_display_metadata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mastering_display_metadata.h; sourceTree = "<group>"; };
@@ -930,6 +930,7 @@
 		51626CBA29F1CEFB0000CCC9 /* version_major.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version_major.h; sourceTree = "<group>"; };
 		5196819929EC963F00B05D55 /* CoreDisplay.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreDisplay.framework; path = /System/Library/Frameworks/CoreDisplay.framework; sourceTree = "<group>"; };
 		519872FE26879B9B00F84BCC /* AccessibilityPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityPreferences.swift; sourceTree = "<group>"; };
+		51A0F0F629FA2C8E000130CF /* Beta.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Beta.xcconfig; sourceTree = "<group>"; };
 		51C1BA39291CA76700C1208A /* InfoDictionary.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InfoDictionary.swift; sourceTree = "<group>"; };
 		51CACB9429D500290034CEE5 /* VideoPIPViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPIPViewController.swift; sourceTree = "<group>"; };
 		51E63DFA29CFB031008AFC20 /* PlaySlider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaySlider.swift; sourceTree = "<group>"; };
@@ -1722,8 +1723,6 @@
 		E3CB258A2222885E00A62C47 /* JavascriptAPIOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JavascriptAPIOverlay.swift; sourceTree = "<group>"; };
 		E3CB258E222799B800A62C47 /* MPVHook.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MPVHook.swift; sourceTree = "<group>"; };
 		E3CB75BC1FDACB82004DB10A /* SavedFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedFilter.swift; sourceTree = "<group>"; };
-		E3DBD238218B057A00B3AFBF /* Translators.json */ = {isa = PBXFileReference; indentWidth = 4; lastKnownFileType = text.json; path = Translators.json; sourceTree = "<group>"; tabWidth = 4; };
-		E3DBD23A218B199700B3AFBF /* Translators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translators.swift; sourceTree = "<group>"; };
 		E3DBD23C218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowContributorAvatarItem.swift; sourceTree = "<group>"; };
 		E3DBD23D218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = AboutWindowContributorAvatarItem.xib; sourceTree = "<group>"; };
 		E3DE8DCA1FD8166A0021921C /* iina-cli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "iina-cli"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1731,6 +1730,7 @@
 		E3ECC89D1FE9A6D900BED8C7 /* GeometryDef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryDef.swift; sourceTree = "<group>"; };
 		E3F698862120D878005792C9 /* ExtendedColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtendedColors.swift; sourceTree = "<group>"; };
 		E3FC31451FE1501E00B9B86F /* PowerSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSource.swift; sourceTree = "<group>"; };
+		E3FF5ABF2938582F0019CE45 /* JavascriptDevTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JavascriptDevTool.swift; sourceTree = "<group>"; };
 		E53BAB3F1F1692B700D2609F /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InitialWindowController.strings; sourceTree = "<group>"; };
 		E53EB2A7205A865D003F34A0 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/PrefOSCToolbarSettingsSheetController.strings; sourceTree = "<group>"; };
 		E5436AA61E844761005BEB5C /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = fr; path = fr.lproj/Contribution.rtf; sourceTree = "<group>"; };
@@ -1884,13 +1884,15 @@
 			isa = PBXGroup;
 			children = (
 				49F7E3BF2920D65C002DA28E /* Availability.xcconfig */,
-				4964988C2919E47900CD61A5 /* Debug.xcconfig */,
 				496498892919E47900CD61A5 /* Deployment.xcconfig */,
 				4964988B2919E47900CD61A5 /* iina-cli.xcconfig */,
 				496498882919E47900CD61A5 /* iina.xcconfig */,
 				4964988E2919E47900CD61A5 /* OpenInIINA.xcconfig */,
-				4964988D2919E47900CD61A5 /* Release.xcconfig */,
 				4964988A2919E47900CD61A5 /* Shared.xcconfig */,
+				4964988C2919E47900CD61A5 /* Debug.xcconfig */,
+				4964988D2919E47900CD61A5 /* Release.xcconfig */,
+				51537C7229FA26DD00F9A472 /* Nightly.xcconfig */,
+				51A0F0F629FA2C8E000130CF /* Beta.xcconfig */,
 			);
 			path = Configs;
 			sourceTree = "<group>";
@@ -2069,8 +2071,6 @@
 				845AC09E1E1AE6C10080B614 /* Localizable.strings */,
 				84AF03D41E67492C003E3753 /* Contribution.rtf */,
 				8483FAFF1EDFF325000F55D6 /* Credits.rtf */,
-				E3DBD238218B057A00B3AFBF /* Translators.json */,
-				E3DBD23A218B199700B3AFBF /* Translators.swift */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -2496,6 +2496,7 @@
 				E3965E192487C99900607EB4 /* JavascriptPluginSubtitle.swift */,
 				E32693F824BA138000BF7ADC /* JavascriptPluginSubtitleItem.swift */,
 				E38BA1C3254110BD000B551D /* JavascriptMessageHub.swift */,
+				E3FF5ABF2938582F0019CE45 /* JavascriptDevTool.swift */,
 			);
 			name = Javascript;
 			sourceTree = "<group>";
@@ -2695,7 +2696,6 @@
 				84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */,
 				8400D5D81E1AB31B006785F5 /* AboutWindowController.xib in Resources */,
 				8400D5F31E1AB348006785F5 /* PrefSubViewController.xib in Resources */,
-				E3DBD239218B057A00B3AFBF /* Translators.json in Resources */,
 				84D0FB821F5E6A3800C6A6A7 /* FreeSelectingViewController.xib in Resources */,
 				8400D5E11E1AB32F006785F5 /* PrefUIViewController.xib in Resources */,
 				E338368A202651CF00ABC812 /* PrefOSCToolbarDraggingItemViewController.xib in Resources */,
@@ -2854,7 +2854,6 @@
 				E3CB75BD1FDACB82004DB10A /* SavedFilter.swift in Sources */,
 				E337D5E4241C12BE00B5729A /* PrefPluginPermissionListView.swift in Sources */,
 				E342832F20B7149800139865 /* Logger.swift in Sources */,
-				E3DBD23B218B199700B3AFBF /* Translators.swift in Sources */,
 				84F725561D4783EE000DEF1B /* VolumeSliderCell.swift in Sources */,
 				845040401E0ACADD0079C194 /* MPVNode.swift in Sources */,
 				84795C3A1E083EE30059A648 /* PrefControlViewController.swift in Sources */,
@@ -2910,6 +2909,7 @@
 				E32712B024EAA14500359DAB /* ScreenshootOSDView.swift in Sources */,
 				D11AB83628EEE72A00673A90 /* EditableTableViewDelegate.swift in Sources */,
 				E3BA79EE2131443A00529D99 /* OpenURLWindowController.swift in Sources */,
+				E3FF5AC02938582F0019CE45 /* JavascriptDevTool.swift in Sources */,
 				84FBCB381EEACDDD0076C77C /* FFmpegController.m in Sources */,
 				84879A981E0FFC7E0004F894 /* PrefUIViewController.swift in Sources */,
 				84C6D3641EB276E9009BF721 /* PlaybackHistory.swift in Sources */,
@@ -4254,6 +4254,70 @@
 			};
 			name = Release;
 		};
+		51537C6E29FA25D000F9A472 /* Nightly */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 51537C7229FA26DD00F9A472 /* Nightly.xcconfig */;
+			buildSettings = {
+			};
+			name = Nightly;
+		};
+		51537C6F29FA25D000F9A472 /* Nightly */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 496498882919E47900CD61A5 /* iina.xcconfig */;
+			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/deps/lib",
+				);
+			};
+			name = Nightly;
+		};
+		51537C7029FA25D000F9A472 /* Nightly */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4964988B2919E47900CD61A5 /* iina-cli.xcconfig */;
+			buildSettings = {
+			};
+			name = Nightly;
+		};
+		51537C7129FA25D000F9A472 /* Nightly */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4964988E2919E47900CD61A5 /* OpenInIINA.xcconfig */;
+			buildSettings = {
+			};
+			name = Nightly;
+		};
+		51A0F0F229FA2C65000130CF /* Beta */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 51A0F0F629FA2C8E000130CF /* Beta.xcconfig */;
+			buildSettings = {
+			};
+			name = Beta;
+		};
+		51A0F0F329FA2C65000130CF /* Beta */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 496498882919E47900CD61A5 /* iina.xcconfig */;
+			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/deps/lib",
+				);
+			};
+			name = Beta;
+		};
+		51A0F0F429FA2C65000130CF /* Beta */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4964988B2919E47900CD61A5 /* iina-cli.xcconfig */;
+			buildSettings = {
+			};
+			name = Beta;
+		};
+		51A0F0F529FA2C65000130CF /* Beta */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4964988E2919E47900CD61A5 /* OpenInIINA.xcconfig */;
+			buildSettings = {
+			};
+			name = Beta;
+		};
 		84EB1EF71D2F51D3004FA5A1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988C2919E47900CD61A5 /* Debug.xcconfig */;
@@ -4312,6 +4376,8 @@
 			buildConfigurations = (
 				49542987216C34960058F680 /* Debug */,
 				49542988216C34960058F680 /* Release */,
+				51A0F0F529FA2C65000130CF /* Beta */,
+				51537C7129FA25D000F9A472 /* Nightly */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -4321,6 +4387,8 @@
 			buildConfigurations = (
 				84EB1EF71D2F51D3004FA5A1 /* Debug */,
 				84EB1EF81D2F51D3004FA5A1 /* Release */,
+				51A0F0F229FA2C65000130CF /* Beta */,
+				51537C6E29FA25D000F9A472 /* Nightly */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -4330,6 +4398,8 @@
 			buildConfigurations = (
 				84EB1EFA1D2F51D3004FA5A1 /* Debug */,
 				84EB1EFB1D2F51D3004FA5A1 /* Release */,
+				51A0F0F329FA2C65000130CF /* Beta */,
+				51537C6F29FA25D000F9A472 /* Nightly */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -4339,6 +4409,8 @@
 			buildConfigurations = (
 				E3DE8DCE1FD8166A0021921C /* Debug */,
 				E3DE8DCF1FD8166A0021921C /* Release */,
+				51A0F0F429FA2C65000130CF /* Beta */,
+				51537C7029FA25D000F9A472 /* Nightly */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

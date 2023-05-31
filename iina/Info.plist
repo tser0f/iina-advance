@@ -6,6 +6,8 @@
 	<string>IINA_BUILD_BRANCH</string>
 	<key>com.colliderli.iina.build.commit</key>
 	<string>IINA_BUILD_COMMIT</string>
+	<key>com.colliderli.iina.build.configuration</key>
+	<string>$(CONFIGURATION)</string>
 	<key>com.colliderli.iina.build.date</key>
 	<string>IINA_BUILD_DATE</string>
 	<key>CFBundleDevelopmentRegion</key>
@@ -134,6 +136,26 @@
 			<integer>0</integer>
 			<key>CFBundleTypeName</key>
 			<string>Flash Video file</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>LSTypeIsPackage</key>
+			<false/>
+			<key>NSPersistentStoreTypeKey</key>
+			<string>XML</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>gif</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>doc_gif.icns</string>
+			<key>CFBundleTypeIconSystemGenerated</key>
+			<integer>0</integer>
+			<key>CFBundleTypeName</key>
+			<string>GIF image</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
@@ -1333,6 +1355,31 @@ Released under GPLv3.</string>
 				<array>
 					<string>m3u8</string>
 					<string>m3u</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>com.compuserve.gif</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>GIF image</string>
+			<key>UTTypeIconFile</key>
+			<string>doc_gif</string>
+			<key>UTTypeIcons</key>
+			<dict/>
+			<key>UTTypeIdentifier</key>
+			<string>io.iina.gif</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>gif</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>image/gif</string>
 				</array>
 			</dict>
 		</dict>

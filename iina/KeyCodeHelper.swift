@@ -303,7 +303,11 @@ class KeyCodeHelper {
       /// The char in `charactersIgnoringModifiers` will be either uppercase or lowercase,
       /// so remove the redundant modifier flag so we don't print an extra "SHIFT+"
       modifiers.remove(.shift)
+      /// The char in `charactersIgnoringModifiers` will be either uppercase or lowercase,
+      /// so remove the redundant modifier flag so we don't print an extra "SHIFT+"
+      modifiers.remove(.shift)
     } else {
+      // Is probably an unprintable char such as KP_ENTER.
       // Is probably an unprintable char such as KP_ENTER.
       guard let keyName = KeyCodeHelper.keyMap[keyCode] else {
         Logger.log("Undefined key code: \"\(keyCode)\"", level: .warning)
@@ -311,6 +315,7 @@ class KeyCodeHelper {
       }
       keyChar = keyName.0
     }
+    /// Modifiers: use the same order as `KeyCodeHelper.modifiersInOrder`
     /// Modifiers: use the same order as `KeyCodeHelper.modifiersInOrder`
     if modifiers.contains(.control) {
       keyString += "\(CTRL_KEY)+"

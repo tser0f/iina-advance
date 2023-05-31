@@ -88,7 +88,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   /// Whether the shutdown sequence timed out.
   private var timedOut = false
 
-  @IBOutlet weak var menuController: MenuController!
+  @IBOutlet var menuController: MenuController!
 
   @IBOutlet weak var dockMenu: NSMenu!
 
@@ -153,7 +153,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
 
   // MARK: - SPUUpdaterDelegate
-  @IBOutlet weak var updaterController: SPUStandardUpdaterController!
+  @IBOutlet var updaterController: SPUStandardUpdaterController!
 
   func feedURLString(for updater: SPUUpdater) -> String? {
     return Preference.bool(for: .receiveBetaUpdate) ? AppData.appcastBetaLink : AppData.appcastLink
@@ -171,7 +171,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     // Start the log file by logging the version of IINA producing the log file.
     let (version, build) = InfoDictionary.shared.version
-    Logger.log("IINA \(version) Build \(build)")
+    let type = InfoDictionary.shared.buildTypeIdentifier
+    Logger.log("IINA \(version) Build \(build)" + (type == nil ? "" : " " + type!))
 
     // The copyright is used in the Finder "Get Info" window which is a narrow window so the
     // copyright consists of multiple lines.

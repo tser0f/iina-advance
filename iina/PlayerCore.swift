@@ -575,6 +575,9 @@ class PlayerCore: NSObject {
     if needRestoreLayout {
       if !Preference.bool(for: .musicModeShowAlbumArt) {
         miniPlayer.toggleVideoView(self)
+        if let origin = miniPlayer.window?.frame.origin {
+          miniPlayer.window?.setFrameOrigin(.init(x: origin.x, y: origin.y + miniPlayer.videoView.frame.height))
+        }
       }
       if Preference.bool(for: .musicModeShowPlaylist) {
         miniPlayer.togglePlaylist(self)
@@ -1807,7 +1810,8 @@ class PlayerCore: NSObject {
   func syncUI(_ option: SyncUIOption) {
     // if window not loaded, ignore
     guard mainWindow.loaded else { return }
-//    Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
+    // This is too noisy and making verbose logs unreadable. Please uncomment when debugging syncing releated issues.
+    // Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
 
     switch option {
 
@@ -1939,10 +1943,14 @@ class PlayerCore: NSObject {
     }
   }
 
-  func closeMainWindow() {
+  func closeWindow() {
     DispatchQueue.main.async {
       self.isStopped = true
-      self.mainWindow.close()
+      if self.isInMiniPlayer {
+        self.miniPlayer.close()
+      } else {
+        self.mainWindow.close()
+      }
     }
   }
 

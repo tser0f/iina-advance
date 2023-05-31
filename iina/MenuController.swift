@@ -585,36 +585,51 @@ class MenuController: NSObject, NSMenuDelegate {
     pluginMenu.addItem(withTitle: "Manage Plugins…")
     pluginMenu.addItem(.separator())
 
-    for (index, plugin) in PlayerCore.active.plugins.enumerated() {
+    let developerTool = NSMenuItem()
+    developerTool.title = "Developer Tool"
+    developerTool.submenu = NSMenu()
+
+    for (index, instance) in PlayerCore.active.plugins.enumerated() {
       var counter = 0
       var rootMenu: NSMenu! = pluginMenu
-      let menuItems = (plugin.plugin.globalInstance?.menuItems ?? []) + plugin.menuItems
+      let menuItems = (instance.plugin.globalInstance?.menuItems ?? []) + instance.menuItems
       if menuItems.isEmpty { continue }
       
       if index != 0 {
         pluginMenu.addItem(.separator())
       }
-      pluginMenu.addItem(withTitle: plugin.plugin.name, enabled: false)
+      pluginMenu.addItem(withTitle: instance.plugin.name, enabled: false)
       
       for item in menuItems {
         if counter == 5 {
           Logger.log("Please avoid adding too many first-level menu items. IINA will only display the first 5 of them.",
-                     level: .warning, subsystem: plugin.subsystem)
+                     level: .warning, subsystem: instance.subsystem)
           let moreItem = NSMenuItem()
           moreItem.title = "More…"
           rootMenu = NSMenu()
           moreItem.submenu = rootMenu
           pluginMenu.addItem(moreItem)
         }
-        add(menuItemDef: item, to: rootMenu, for: plugin, keyMappings: &keyMappings)
+        add(menuItemDef: item, to: rootMenu, for: instance, keyMappings: &keyMappings)
         counter += 1
+      }
+
+      if #available(macOS 12.0, *) {
+        let devToolItem = NSMenuItem()
+        devToolItem.title = instance.plugin.name
+        developerTool.submenu?.addItem(
+          menuItem(forPluginInstance: instance, tag: JavasctiptDevTool.JSMenuItemInstance))
+        if let globalInst = instance.plugin.globalInstance {
+          developerTool.submenu?.addItem(
+            menuItem(forPluginInstance: globalInst, tag: JavasctiptDevTool.JSMenuItemInstance))
+        }
       }
     }
 
-    Logger.log("Found \(keyMappings.count) key equivalents in Plugin menu items", level: .verbose)
-
-    // This will kick off a series of updates set any key equivalents and update them as needed
-    AppInputConfig.replaceMappings(forSharedSectionName: SharedInputSection.PLUGINS_SECTION_NAME, with: keyMappings, onlyIfDifferent: true)
+    if #available(macOS 12.0, *) {
+      pluginMenu.addItem(.separator())
+      pluginMenu.addItem(developerTool)
+    }
   }
 
   @discardableResult
