@@ -1307,9 +1307,11 @@ class MPVController: NSObject {
     // following properties may change before file loaded
 
     case MPVProperty.playlistCount:
+      Logger.log("Playlist changed in mpv", level: .verbose, subsystem: player.subsystem)
       player.postNotification(.iinaPlaylistChanged)
 
     case MPVProperty.trackList:
+      Logger.log("Track list changed in mpv", level: .verbose, subsystem: player.subsystem)
       player.trackListChanged()
 
     case MPVProperty.vf:
