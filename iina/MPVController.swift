@@ -1350,6 +1350,7 @@ class MPVController: NSObject {
       if needsUpdate {
         DispatchQueue.main.async {
           self.player.mainWindow.setWindowScale(windowScale)
+          self.player.info.cachedWindowScale = windowScale
         }
       }
 

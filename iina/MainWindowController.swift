@@ -190,6 +190,8 @@ class MainWindowController: PlayerWindowController {
 
   var lastMagnification: CGFloat = 0.0
 
+  var denyNextWindowResize = false
+
   /** Views that will show/hide when cursor moving in/out the window. */
   var fadeableViews = Set<NSView>()
 
@@ -880,6 +882,9 @@ class MainWindowController: PlayerWindowController {
   // Finishes transition into windowed mode:
   func addVideoViewToWindow() {
     videoContainerView.addSubview(videoView)
+    if let window = window {
+      videoView.videoLayer.contentsScale = window.backingScaleFactor
+    }
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
     // FIXME: figure out why this 2px adjustment is necessary
@@ -2467,11 +2472,16 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Window delegate: Resize
 
-  func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
-    guard let window = window else { return frameSize }
+  func windowWillResize(_ window: NSWindow, to frameSize: NSSize) -> NSSize {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return frameSize }
-    Logger.log("WindowWillResize requested with desired size: \(frameSize)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowWillResize called with requested size: \(frameSize)", level: .verbose, subsystem: player.subsystem)
+    if denyNextWindowResize {
+      let oldSize = window.frame.size
+      Logger.log("WindowWillResize: forcing size to stay at \(oldSize)", level: .verbose, subsystem: player.subsystem)
+      denyNextWindowResize = false
+      return oldSize
+    }
 
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
       Logger.log("WindowWillResize: requested size is too small; will change to minimum (\(minSize))", level: .verbose, subsystem: player.subsystem)
@@ -2584,11 +2594,6 @@ class MainWindowController: PlayerWindowController {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return }
 
-    let newSize = window!.convertToBacking(videoView.bounds).size
-    let videoSizeStr = videoView.videoSize != nil ? "\(videoView.videoSize!)" : "nil"
-    Logger.log("WindowDidEndLiveResize(): videoView.videoSize: \(videoSizeStr) -> backingVideoSize: \(newSize)",
-               level: .verbose, subsystem: player.subsystem)
-    videoView.videoSize = newSize
     updateWindowParametersForMPV()
   }
 
@@ -2600,8 +2605,10 @@ class MainWindowController: PlayerWindowController {
                  level: .verbose, subsystem: player.subsystem)
       // FIXME: more needs to be changed than just this
       videoView.videoLayer.contentsScale = window.backingScaleFactor
+      denyNextWindowResize = true
     }
   }
+
   
   override func windowDidChangeScreen(_ notification: Notification) {
     super.windowDidChangeScreen(notification)
@@ -3380,9 +3387,8 @@ class MainWindowController: PlayerWindowController {
 
     let newSize = window.convertToBacking(videoView.frame).size
     Logger.log("AdjustFrameByVideoSize: videoView.frame: \(videoView.frame) -> backingVideoSize: \(newSize)", level: .verbose)
-    videoView.videoSize = newSize
 
-    var rect: NSRect
+    var newWindowFrame: NSRect
     let needResizeWindow: Bool
 
     let frame = fsState.priorWindowedFrame ?? window.frame
@@ -3442,14 +3448,14 @@ class MainWindowController: PlayerWindowController {
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: videoSize) {
         Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
-        rect = wfg
+        newWindowFrame = wfg
       } else {
         if player.info.justStartedFile, resizeRatio < 0, let screenRect = screenRect {
-          rect = screenRect.centeredResize(to: videoSize)
-          Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(rect)", level: .verbose)
+          newWindowFrame = screenRect.centeredResize(to: videoSize)
+          Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(newWindowFrame)", level: .verbose)
         } else {
-          rect = frame.centeredResize(to: videoSize)
-          Logger.log("Did a centered resize using prior frame \(frame); resulting windowFrame: \(rect)", level: .verbose)
+          newWindowFrame = frame.centeredResize(to: videoSize)
+          Logger.log("Did a centered resize using prior frame \(frame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
         }
       }
 
@@ -3457,8 +3463,8 @@ class MainWindowController: PlayerWindowController {
       // user is navigating in playlist. remain same window width.
       let newHeight = frame.width / CGFloat(width) * CGFloat(height)
       let newSize = NSSize(width: frame.width, height: newHeight).satisfyMinSizeWithSameAspectRatio(minSize)
-      rect = NSRect(origin: frame.origin, size: newSize)
-      Logger.log("Using same width, with new height (\(newHeight)) \(frame); resulting windowFrame: \(rect)", level: .verbose)
+      newWindowFrame = NSRect(origin: frame.origin, size: newSize)
+      Logger.log("Using same width, with new height (\(newHeight)) \(frame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
     }
 
     // FIXME: examine this
@@ -3468,27 +3474,22 @@ class MainWindowController: PlayerWindowController {
     shouldApplyInitialWindowSize = false
 
     if fsState.isFullscreen {
-      Logger.log("Window is in fullscreen; setting priorWindowedFrame to: \(rect)", level: .verbose)
-      fsState.priorWindowedFrame = rect
+      Logger.log("Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
+      fsState.priorWindowedFrame = newWindowFrame
     } else {
       if let screenFrame = window.screen?.frame {
-        rect = rect.constrain(in: screenFrame)
+        newWindowFrame = newWindowFrame.constrain(in: screenFrame)
       }
-      Logger.log("Updating windowFrame to: \(rect). animate: \(!player.disableWindowAnimation)", level: .verbose)
-      if player.disableWindowAnimation {
-        window.setFrame(rect, display: true, animate: false)
-      } else {
-        // animated `setFrame` can be inaccurate!
-        window.setFrame(rect, display: true, animate: true)
-//        window.setFrame(rect, display: true)
-      }
-      updateWindowParametersForMPV(withFrame: rect)
+      let animate = UIAnimation.isAnimationEnabled && !player.disableWindowAnimation
+      Logger.log("Updating windowFrame to: \(newWindowFrame). animate: \(animate)", level: .verbose)
+      window.setFrame(newWindowFrame, display: true, animate: animate)
+      updateWindowParametersForMPV(withFrame: newWindowFrame)
     }
-    Logger.log("AdjustFrameByVideoSize done; resulting windowFrame: \(rect)", level: .verbose)
+    Logger.log("AdjustFrameByVideoSize done; resulting windowFrame: \(newWindowFrame)", level: .verbose)
 
     // UI and slider
     updatePlayTime(withDuration: true, andProgressBar: true)
-    player.events.emit(.windowSizeAdjusted, data: rect)
+    player.events.emit(.windowSizeAdjusted, data: newWindowFrame)
   }
 
   func updateWindowParametersForMPV(withFrame frame: NSRect? = nil) {
@@ -3526,7 +3527,7 @@ class MainWindowController: PlayerWindowController {
       newFrame = window.frame.centeredResize(to: finalSize.satisfyMinSizeWithSameAspectRatio(minSize)).constrain(in: screenFrame)
     }
     Logger.log("Setting windowScale to: \(scale) -> newFrame: \(newFrame)")
-    window.setFrame(newFrame, display: true, animate: true)
+    window.setFrame(newFrame, display: true, animate: UIAnimation.isAnimationEnabled)
   }
 
   // MARK: - UI: Others
