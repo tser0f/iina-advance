@@ -9,7 +9,8 @@
 import Cocoa
 
 fileprivate let DefaultPlaylistHeight: CGFloat = 300
-fileprivate let AutoHidePlaylistThreshold: CGFloat = 200
+// Hide playlist if its height is too small to display at least 4 items:
+fileprivate let AutoHidePlaylistThreshold: CGFloat = 144
 fileprivate let AnimationDurationShowControl: TimeInterval = 0.2
 
 class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
@@ -199,6 +200,28 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     originalWindowFrame = window!.frame
   }
 
+  func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
+    guard let screen = window.screen else { return requestedSize }
+
+    /// The window has the same width as the album art, and the album art is square,
+    /// so when the window's width is expanded, the art's height also expands,
+    /// and the control bar (`backgroundView`) and playlist are pushed down.
+    /// Calculate the maximum width/height the art can grow to so that the
+    /// control bar is not pushed off the screen.
+    let visibleScreenSize = screen.visibleFrame.size
+    let usableScreenHeight = visibleScreenSize.height
+    let maxArtSize = min(usableScreenHeight - backgroundView.frame.height,
+                         visibleScreenSize.width)
+
+    let requestedArtSize = requestedSize.width
+    if requestedArtSize > maxArtSize {
+      let clampedSize = NSSize(width: maxArtSize, height: maxArtSize + backgroundView.frame.height)
+//      Logger.log("Clamped requested size (\(requestedSize)) to: \(clampedSize)")
+      return clampedSize
+    }
+//    Logger.log("Returning requested size (\(requestedSize))")
+    return requestedSize
+  }
   func windowDidResize(_ notification: Notification) {
     guard let window = window, !window.inLiveResize else { return }
     videoView.videoLayer.draw()
@@ -207,17 +230,13 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   func windowDidEndLiveResize(_ notification: Notification) {
     guard let window = window else { return }
     let windowHeight = normalWindowHeight()
-    if isPlaylistVisible {
-      // hide
-      if window.frame.height < windowHeight + AutoHidePlaylistThreshold {
+    if window.frame.height < windowHeight + AutoHidePlaylistThreshold {
+      if isPlaylistVisible {
+        // hide playlist
         isPlaylistVisible = false
         setToInitialWindowSize()
-      }
-    } else {
-      // show
-      if window.frame.height < windowHeight + AutoHidePlaylistThreshold {
-        setToInitialWindowSize()
       } else {
+        // show playlist
         isPlaylistVisible = true
       }
     }
@@ -324,7 +343,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   func setToInitialWindowSize(display: Bool = true, animate: Bool = true) {
     guard let window = window else { return }
-    window.setFrame(window.frame.rectWithoutPlaylistHeight(providedWindowHeight: normalWindowHeight()), display: display, animate: animate)
+
+    let normalWindowHeight = normalWindowHeight()
+//    Logger.log("HEIGHT: \(normalWindowHeight)")
+    window.setFrame(window.frame.rectWithoutPlaylistHeight(providedWindowHeight: normalWindowHeight), display: display, animate: animate)
   }
 
   // MARK: - NSPopoverDelegate
@@ -421,8 +443,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // MARK: - Utils
 
+  // Returns the current height of the window,
+  // including the album art, but not including the playlist.
   private func normalWindowHeight() -> CGFloat {
-    return 72 + (isVideoVisible ? videoWrapperView.frame.height : 0)
+    return backgroundView.frame.height + (isVideoVisible ? videoWrapperView.frame.height : 0)
   }
 
   internal override func handleIINACommand(_ cmd: IINACommand) {
