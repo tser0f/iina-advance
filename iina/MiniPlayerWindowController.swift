@@ -52,8 +52,13 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBOutlet weak var defaultAlbumArt: NSView!
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
-  
-  var isPlaylistVisible = false
+
+  // The window size determines whether the playlist is shown or not.
+  var isPlaylistVisible: Bool {
+    guard let window = window else { return false }
+    return window.frame.height >= windowHeightWithoutPlaylist() + AutoHidePlaylistThreshold
+  }
+
   var isVideoVisible = true
 
   var videoViewAspectConstraint: NSLayoutConstraint?
@@ -89,8 +94,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       // FIXME: Not a perfect solution. It should respond to the first click.
       button?.frame.size = .zero
     }
-
-    setToInitialWindowSize(display: false, animate: false)
 
     controlViewTopConstraint.isActive = false
 
@@ -228,17 +231,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   }
 
   func windowDidEndLiveResize(_ notification: Notification) {
+    Logger.log("windowDidEndLiveResize")
     guard let window = window else { return }
-    let windowHeight = normalWindowHeight()
-    if window.frame.height < windowHeight + AutoHidePlaylistThreshold {
-      if isPlaylistVisible {
-        // hide playlist
-        isPlaylistVisible = false
-        setToInitialWindowSize()
-      } else {
-        // show playlist
-        isPlaylistVisible = true
-      }
+    if window.frame.height < windowHeightWithoutPlaylist() + AutoHidePlaylistThreshold {
+      // hide playlist
+      resizeWindowToHidePlaylist()
     }
   }
 
@@ -341,12 +338,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     videoViewAspectConstraint?.isActive = true
   }
 
-  func setToInitialWindowSize(display: Bool = true, animate: Bool = true) {
+  // Hides the playlist
+  func resizeWindowToHidePlaylist(display: Bool = true, animate: Bool = true) {
     guard let window = window else { return }
 
-    let normalWindowHeight = normalWindowHeight()
-//    Logger.log("HEIGHT: \(normalWindowHeight)")
-    window.setFrame(window.frame.rectWithoutPlaylistHeight(providedWindowHeight: normalWindowHeight), display: display, animate: animate)
+    window.setFrame(window.frame.rectWithoutPlaylistHeight(providedWindowHeight: windowHeightWithoutPlaylist()), display: display, animate: animate)
   }
 
   // MARK: - NSPopoverDelegate
@@ -386,11 +382,9 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     guard let window = window else { return }
     if isPlaylistVisible {
       // hide
-      isPlaylistVisible = false
-      setToInitialWindowSize()
+      resizeWindowToHidePlaylist()
     } else {
       // show
-      isPlaylistVisible = true
       player.mainWindow.playlistView.reloadData(playlist: true, chapters: true)
 
       var newFrame = window.frame
@@ -398,6 +392,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       newFrame.size.height += DefaultPlaylistHeight
       window.setFrame(newFrame, display: true, animate: true)
     }
+    // We already use autosave to save the window frame across launches.
+    // Most of the time we can easily derive whether the playlist is visible just by
+    // inspecting the window's size.
+    // But we'll still save this info and check it in case IINA is later relaunched using
+    // some very different display/resolution which changes the window size.
     Preference.set(isPlaylistVisible, for: .musicModeShowPlaylist)
   }
 
@@ -445,7 +444,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // Returns the current height of the window,
   // including the album art, but not including the playlist.
-  private func normalWindowHeight() -> CGFloat {
+  private func windowHeightWithoutPlaylist() -> CGFloat {
     return backgroundView.frame.height + (isVideoVisible ? videoWrapperView.frame.height : 0)
   }
 

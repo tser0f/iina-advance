@@ -527,6 +527,7 @@ class PlayerCore: NSObject {
     switchedBackFromMiniPlayerManually = false
 
     let needRestoreLayout = !miniPlayer.loaded
+
     miniPlayer.showWindow(self)
 
     miniPlayer.updateTitle()
@@ -565,9 +566,9 @@ class PlayerCore: NSObject {
     if info.vid != 0 {
       miniPlayer.defaultAlbumArt.isHidden = true
     }
-    // in case of video size changed, reset mini player window size if playlist is folded
-    if !miniPlayer.isPlaylistVisible {
-      miniPlayer.setToInitialWindowSize(display: true, animate: false)
+    // in case video size changed, make sure playlist keeps visible state
+    if miniPlayer.isPlaylistVisible != Preference.bool(for: .musicModeShowPlaylist) {
+      miniPlayer.togglePlaylist(self)
     }
 
     // hide main window
@@ -583,9 +584,6 @@ class PlayerCore: NSObject {
         if let origin = miniPlayer.window?.frame.origin {
           miniPlayer.window?.setFrameOrigin(.init(x: origin.x, y: origin.y + miniPlayer.videoView.frame.height))
         }
-      }
-      if Preference.bool(for: .musicModeShowPlaylist) {
-        miniPlayer.togglePlaylist(self)
       }
     }
     
