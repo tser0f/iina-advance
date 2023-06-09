@@ -606,7 +606,12 @@ extension SidebarTabGroupViewController {
     let layout = futureLayout ?? mainWindow.currentLayout
     let downshift: CGFloat
     var tabHeight: CGFloat
-    if !layout.isFullScreen && layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
+    if mainWindow.player.isInMiniPlayer {
+      downshift = defaultDownshift
+      tabHeight = defaultTabHeight
+      Logger.log("MainWindow is using miniplayer; using default downshift (\(downshift)) and tab height (\(tabHeight))",
+                 level: .verbose, subsystem: mainWindow.player.subsystem)
+    } else if !layout.isFullScreen && layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
       downshift = defaultDownshift
       tabHeight = defaultTabHeight
       Logger.log("MainWindow top panel is outside video; using default downshift (\(downshift)) and tab height (\(tabHeight))",
