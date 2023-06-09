@@ -532,7 +532,6 @@ class PlayerCore: NSObject {
     switchedBackFromMiniPlayerManually = false
 
     let needRestoreLayout = !miniPlayer.loaded
-
     miniPlayer.showWindow(self)
 
     miniPlayer.updateTitle()

@@ -53,7 +53,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
 
-  // The window size determines whether the playlist is shown or not.
   var isPlaylistVisible: Bool {
     get {
       Preference.bool(for: .musicModeShowPlaylist)
@@ -235,23 +234,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     videoView.videoLayer.draw()
   }
 
-  func windowDidEndLiveResize(_ notification: Notification) {
-    guard let window = window else { return }
-    let windowHeight = window.frame.height
-    let minHeightForPlaylist = windowHeightWithoutPlaylist() + PlaylistMinHeight
-    let shouldShowPlaylist = windowHeight >= minHeightForPlaylist
-    Logger.log("WindowDidEndLiveResize: windowHeight=\(windowHeight) minHeightForPlaylist=\(minHeightForPlaylist) shouldShowPlaylist=\(shouldShowPlaylist), isPlaylistVisible=\(isPlaylistVisible)", level: .verbose)
-    if shouldShowPlaylist {
-      // save playlist height
-      if playlistWrapperView.frame.height >= PlaylistMinHeight {
-        Preference.set(playlistWrapperView.frame.height, for: .musicModePlaylistHeight)
-      }
-    } else {
-      resizeWindowToHidePlaylist()
-    }
-    isPlaylistVisible = shouldShowPlaylist
-  }
-
   // MARK: - Window delegate: Activeness status
 
   override func windowDidBecomeMain(_ notification: Notification) {
@@ -351,14 +333,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     videoViewAspectConstraint?.isActive = true
   }
 
-  // Hides the playlist
-  private func resizeWindowToHidePlaylist() {
-    guard let window = window else { return }
-
-    let newFrame = window.frame.rectWithoutPlaylistHeight(providedWindowHeight: windowHeightWithoutPlaylist())
-    window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-  }
-
   // MARK: - NSPopoverDelegate
 
   func popoverWillClose(_ notification: Notification) {
@@ -398,17 +372,17 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     let showPlaylist = !isPlaylistVisible
     Logger.log("Toggling playlist visibility from \(!showPlaylist) to \(showPlaylist)", level: .verbose)
     self.isPlaylistVisible = showPlaylist
+    let heightWithoutPlaylist = windowHeightWithoutPlaylist()
+    var newFrame = window.frame
 
     if showPlaylist {
       player.mainWindow.playlistView.reloadData(playlist: true, chapters: true)
 
-      // show playlist using previous height
+      // Try to show playlist using previous height
       let playlistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
       // The window may be in the middle of a previous toggle, so we can't just assume window's current frame
       // represents a state where the playlist is fully shown or fully hidden. Instead, start by computing the height
       // we want to set, and then figure out the changes needed to the window's existing frame.
-      var newFrame = window.frame
-      let heightWithoutPlaylist = windowHeightWithoutPlaylist()
       let heightToAdd = playlistHeight - (newFrame.size.height - heightWithoutPlaylist)
       // Fill up screen if needed
       newFrame.origin.y = max(newFrame.origin.y - heightToAdd, screen.visibleFrame.origin.y)
@@ -416,13 +390,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
       // May need to reduce size of album art to fit playlist on screen, or other adjustments:
       newFrame.size = adjustWindowSize(newFrame.size)
+    } else { // hide playlist
+      newFrame = newFrame.rectWithoutPlaylistHeight(providedWindowHeight: heightWithoutPlaylist)
+    }
 
-      window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    }
-    else {
-      // hide playlist
-      resizeWindowToHidePlaylist()
-    }
+    window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
