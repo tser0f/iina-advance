@@ -14,6 +14,7 @@ fileprivate let AnimationDurationShowControl: TimeInterval = 0.2
 fileprivate let MiniPlayerMinWidth: CGFloat = 300
 
 class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
+  let playlistShowHideQueue = DispatchQueue(label: "com.colliderli.iina.miniPlayer.playlist", qos: .userInteractive)
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MiniPlayerWindowController")
@@ -55,8 +56,16 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // The window size determines whether the playlist is shown or not.
   var isPlaylistVisible: Bool {
-    guard let window = window else { return false }
-    return window.frame.height >= windowHeightWithoutPlaylist() + AutoHidePlaylistHeightThreshold
+    get {
+      Preference.bool(for: .musicModeShowPlaylist)
+    }
+    set {
+      // We already use autosave to save the window frame across launches, so one would think we could
+      // determinte whether the playlist is visible just by inspecting the window's size.
+      // But we still need to save this info and restore it in case IINA is later relaunched using
+      // some very different display/resolution which changes the window size.
+      Preference.set(newValue, for: .musicModeShowPlaylist)
+    }
   }
 
   var isVideoVisible = true
@@ -231,7 +240,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 //      let prevWindowHeight = window.frame.height
 //      let requestedWindowHeight = requestedSize.height
 //      let usableHeightForPlaylist = usableScreenHeight - backgroundView.frame.height - requestedArtSize
-
+      // TODO WIP
     }
 //    Logger.log("Returning requested size (\(requestedSize))")
     return requestedSize
@@ -242,22 +251,20 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   }
 
   func windowDidEndLiveResize(_ notification: Notification) {
-    let isPlaylistVisible = self.isPlaylistVisible
-    Preference.set(isPlaylistVisible, for: .musicModeShowPlaylist)
-    if isPlaylistVisible {
+    guard let window = window else { return }
+    let windowHeight = window.frame.height
+    let minHeightForPlaylist = windowHeightWithoutPlaylist() + AutoHidePlaylistHeightThreshold
+    let shouldShowPlaylist = windowHeight >= minHeightForPlaylist
+//    Logger.log("windowDidEndLiveResize: windowHeight=\(windowHeight) minHeightForPlaylist=\(minHeightForPlaylist) shouldShowPlaylist=\(shouldShowPlaylist), isPlaylistVisible=\(isPlaylistVisible)")
+    if shouldShowPlaylist {
       // save playlist height
       if playlistWrapperView.frame.height > AutoHidePlaylistHeightThreshold {
         Preference.set(playlistWrapperView.frame.height, for: .musicModePlaylistHeight)
       }
+    } else {
+      resizeWindowToHidePlaylist()
     }
-
-    // Need animation block here to guarantee hide playlist is animated
-    NSAnimationContext.runAnimationGroup({ context in
-      // hide playlist if height is less than threshold
-      if !isPlaylistVisible {
-        resizeWindowToHidePlaylist()
-      }
-    }, completionHandler: nil)
+    isPlaylistVisible = shouldShowPlaylist
   }
 
   // MARK: - Window delegate: Activeness status
@@ -401,32 +408,32 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - IBActions
 
   @IBAction func togglePlaylist(_ sender: Any) {
-    DispatchQueue.main.async { [self] in  // prevent race conditions when user clicks too fast
-      guard let window = window else { return }
-      let isPlaylistVisible = isPlaylistVisible
+    guard let window = window else { return }
+    let showPlaylist = !isPlaylistVisible
+    Logger.log("Toggling playlist visibility from \(!showPlaylist) to \(showPlaylist)", level: .verbose)
 
-      // We already use autosave to save the window frame across launches.
-      // Most of the time we can easily derive whether the playlist is visible just by
-      // inspecting the window's size.
-      // But we'll still save this info and check it in case IINA is later relaunched using
-      // some very different display/resolution which changes the window size.
-      // Make sure we
-      Preference.set(!isPlaylistVisible, for: .musicModeShowPlaylist)
+    if showPlaylist {
+      player.mainWindow.playlistView.reloadData(playlist: true, chapters: true)
 
-      if isPlaylistVisible {
-        // hide playlist
-        resizeWindowToHidePlaylist()
-      } else {
-        player.mainWindow.playlistView.reloadData(playlist: true, chapters: true)
+      // show playlist using previous height
+      let playlistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
+      assert(playlistHeight > AutoHidePlaylistHeightThreshold)
+      // The window may be in the middle of a previous toggle, so we can't just assume window's current frame
+      // represents a state where the playlist is fully shown or fully hidden. Instead, start by computing the height
+      // we want to set, and then figure out the changes needed to the window's existing frame.
+      var newFrame = window.frame
+      let heightWithoutPlaylist = windowHeightWithoutPlaylist()
+      let heightToAdd = playlistHeight - (newFrame.size.height - heightWithoutPlaylist)
+      newFrame.origin.y -= heightToAdd
+      newFrame.size.height = windowHeightWithoutPlaylist() + playlistHeight
 
-        // show playlist using previous height
-        let playlistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
-        var newFrame = window.frame
-        newFrame.origin.y -= playlistHeight
-        newFrame.size.height += playlistHeight
-        window.setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-      }
+      window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     }
+    else {
+      // hide playlist
+      resizeWindowToHidePlaylist()
+    }
+    self.isPlaylistVisible = showPlaylist
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
