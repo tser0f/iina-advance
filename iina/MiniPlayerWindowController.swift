@@ -14,7 +14,6 @@ fileprivate let AnimationDurationShowControl: TimeInterval = 0.2
 fileprivate let MiniPlayerMinWidth: CGFloat = 300
 
 class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
-  let playlistShowHideQueue = DispatchQueue(label: "com.colliderli.iina.miniPlayer.playlist", qos: .userInteractive)
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MiniPlayerWindowController")

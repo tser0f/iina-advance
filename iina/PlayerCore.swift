@@ -566,10 +566,6 @@ class PlayerCore: NSObject {
     if info.vid != 0 {
       miniPlayer.defaultAlbumArt.isHidden = true
     }
-    // in case video size changed, make sure playlist keeps visible state
-    if miniPlayer.isPlaylistVisible != Preference.bool(for: .musicModeShowPlaylist) {
-      miniPlayer.togglePlaylist(self)
-    }
 
     // hide main window
     mainWindow.window?.orderOut(self)
