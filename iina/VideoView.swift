@@ -32,6 +32,8 @@ class VideoView: NSView {
 
   var hasPlayableFiles: Bool = false
 
+  private var aspectRatioConstraint: NSLayoutConstraint!
+
   // cached indicator to prevent unnecessary updates of DisplayLink
   var currentDisplay: UInt32?
 
@@ -94,6 +96,19 @@ class VideoView: NSView {
 
   override func draw(_ dirtyRect: NSRect) {
     // do nothing
+  }
+
+  func updateAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
+    let newMultiplier: CGFloat = width == 0 || height == 0 ? 1 : height / width
+    if let aspectRatioConstraint = aspectRatioConstraint {
+      guard aspectRatioConstraint.multiplier != newMultiplier else {
+        return
+      }
+      removeConstraint(aspectRatioConstraint)
+    }
+    Logger.log("Updating videoView aspect ratio constraint to \(newMultiplier)")
+    aspectRatioConstraint = heightAnchor.constraint(equalTo: widthAnchor, multiplier: newMultiplier)
+    aspectRatioConstraint.isActive = true
   }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {

@@ -558,8 +558,7 @@ class PlayerCore: NSObject {
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": videoView])
 
     let (width, height) = originalVideoSize
-    let aspect = (width == 0 || height == 0) ? 1 : CGFloat(width) / CGFloat(height)
-    miniPlayer.updateVideoViewAspectConstraint(withAspect: aspect)
+    videoView.updateAspectRatioConstraint(w: CGFloat(width), h: CGFloat(height))
     miniPlayer.window?.layoutIfNeeded()
 
     // if received video size before switching to music mode, hide default album art
@@ -596,18 +595,11 @@ class PlayerCore: NSObject {
     mainWindow.playlistView.view.removeFromSuperview()
     mainWindow.playlistView.useCompactTabHeight = false
     // add back video view
-    miniPlayer.videoViewAspectConstraint?.isActive = false
-    miniPlayer.videoViewAspectConstraint = nil
     mainWindow.videoView.removeFromSuperview()
     mainWindow.addVideoViewToWindow()
     // show main window
     if showMainWindow {
       mainWindow.window?.makeKeyAndOrderFront(self)
-    }
-    // if aspect ratio is not set
-    let (width, height) = originalVideoSize
-    if width == 0 && height == 0 {
-      mainWindow.window?.aspectRatio = AppData.sizeWhenNoVideo
     }
     // hide mini player
     miniPlayer.window?.orderOut(nil)
@@ -1775,9 +1767,6 @@ class PlayerCore: NSObject {
   func notifyMainWindowVideoSizeChanged() {
     Logger.log("notifyMainWindowVideoSizeChanged() entered")
     mainWindow.adjustFrameByVideoSize()
-    if isInMiniPlayer {
-      miniPlayer.updateVideoSize()
-    }
   }
 
   // difficult to use option set

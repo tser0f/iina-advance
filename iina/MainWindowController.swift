@@ -670,10 +670,9 @@ class MainWindowController: PlayerWindowController {
 
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
-  private var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
+  private var videoViewOffsetConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
   private var videoViewCenterXConstraint: NSLayoutConstraint? = nil
   private var videoViewCenterYConstraint: NSLayoutConstraint? = nil
-  private var videoAspectRatioConstraint: NSLayoutConstraint!
 
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
@@ -752,8 +751,6 @@ class MainWindowController: PlayerWindowController {
     if let wf = windowFrameFromGeometry() {
       window.setFrame(wf, display: false)
     }
-
-    window.aspectRatio = AppData.sizeWhenNoVideo
 
     // osc views
     oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
@@ -892,19 +889,6 @@ class MainWindowController: PlayerWindowController {
     addCenterConstraintsToVideoView()
   }
 
-  private func updateVideoAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
-    let newMultiplier: CGFloat = height / width
-    if let videoAspectRatioConstraint = videoAspectRatioConstraint {
-      guard videoAspectRatioConstraint.multiplier != newMultiplier else {
-        return
-      }
-      videoView.removeConstraint(videoAspectRatioConstraint)
-    }
-    videoAspectRatioConstraint = videoView.heightAnchor.constraint(equalTo: videoView.widthAnchor, multiplier: height / width)
-    videoAspectRatioConstraint.isActive = true
-    videoView.addConstraint(videoAspectRatioConstraint)
-  }
-
   private func addOffsetConstraintsToVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
     addVideoViewOffsetConstraint(.left, left)
     addVideoViewOffsetConstraint(.right, right)
@@ -913,14 +897,14 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func addVideoViewOffsetConstraint(_ attr: NSLayoutConstraint.Attribute, _ constantAdustment: CGFloat) {
-    videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
+    videoViewOffsetConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
                                                     attribute: attr, multiplier: 1, constant: constantAdustment)
-    videoViewConstraints[attr]!.priority = .defaultLow
-    videoViewConstraints[attr]!.isActive = true
+    videoViewOffsetConstraints[attr]!.priority = .defaultLow
+    videoViewOffsetConstraints[attr]!.isActive = true
   }
 
-  private func setOffsetConstraintsForVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
-    for (attr, constraint) in videoViewConstraints {
+  private func updateVideoViewOffsetConstraints(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
+    for (attr, constraint) in videoViewOffsetConstraints {
       switch attr {
       case .left:
         constraint.animateToConstant(left)
@@ -2036,6 +2020,7 @@ class MainWindowController: PlayerWindowController {
         lastMagnification = recognizer.magnification
       } else if recognizer.state == .changed {
         // changed
+        // FIXME! aspectRatio shouldn't be used
         let offset = recognizer.magnification - lastMagnification + 1.0;
         let newWidth = window.frame.width * offset
         let newHeight = newWidth / window.aspectRatio.aspect
@@ -2045,7 +2030,6 @@ class MainWindowController: PlayerWindowController {
           Logger.log("Magnifying window to \(recognizer.magnification)x; new size will be: \(Int(newWidth))x\(Int(newHeight))",
                      level: .verbose, subsystem: player.subsystem)
           let newSize = NSSize(width: newWidth, height: newHeight);
-          updateVideoAspectRatioConstraint(w: newWidth, h: newHeight)
           window.setFrame(window.frame.centeredResize(to: newSize), display: true)
         }
 
@@ -2243,7 +2227,7 @@ class MainWindowController: PlayerWindowController {
     }
     fsState.finishAnimating()
 
-    setOffsetConstraintsForVideoView()
+    updateVideoViewOffsetConstraints()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
@@ -2356,7 +2340,7 @@ class MainWindowController: PlayerWindowController {
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
 
-    setOffsetConstraintsForVideoView()
+    updateVideoViewOffsetConstraints()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
@@ -2422,11 +2406,8 @@ class MainWindowController: PlayerWindowController {
     restoreDockSettings()
     // restore window frame and aspect ratio
     let videoSize = player.videoSizeForDisplay
-    let aspectRatio = NSSize(width: videoSize.0, height: videoSize.1)
     // then animate to the original frame
     window.setFrame(framePriorToBeingInFullscreen, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    updateVideoAspectRatioConstraint(w: aspectRatio.width, h: aspectRatio.height)
-    window.aspectRatio = aspectRatio
     // call delegate
     windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
   }
@@ -2472,25 +2453,25 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Window delegate: Resize
 
-  func windowWillResize(_ window: NSWindow, to frameSize: NSSize) -> NSSize {
+  func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     // This method can be called as a side effect of the animation. If so, ignore.
-    guard fsState == .windowed else { return frameSize }
-    Logger.log("WindowWillResize called with requested size: \(frameSize)", level: .verbose, subsystem: player.subsystem)
+    guard fsState == .windowed else { return requestedSize }
+    Logger.log("WindowWillResize called with requested size: \(requestedSize)", level: .verbose, subsystem: player.subsystem)
     if denyNextWindowResize {
-      let oldSize = window.frame.size
-      Logger.log("WindowWillResize: forcing size to stay at \(oldSize)", level: .verbose, subsystem: player.subsystem)
+      let currentSize = window.frame.size
+      Logger.log("WindowWillResize: forcing size to stay at \(currentSize)", level: .verbose, subsystem: player.subsystem)
       denyNextWindowResize = false
-      return oldSize
+      return currentSize
     }
 
-    if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
+    let newSize: NSSize
+    if requestedSize.height <= minSize.height || requestedSize.width <= minSize.width {
       Logger.log("WindowWillResize: requested size is too small; will change to minimum (\(minSize))", level: .verbose, subsystem: player.subsystem)
-      let frameSizeNew = window.aspectRatio.grow(toSize: minSize)
-      updateVideoAspectRatioConstraint(w: frameSizeNew.width, h: frameSizeNew.height)
-      return frameSizeNew
+      newSize = window.aspectRatio.grow(toSize: minSize)
+    } else {
+      newSize = requestedSize
     }
-    updateVideoAspectRatioConstraint(w: frameSize.width, h: frameSize.height)
-    return frameSize
+    return newSize
   }
 
   func windowDidResize(_ notification: Notification) {
@@ -3099,6 +3080,7 @@ class MainWindowController: PlayerWindowController {
 
     if fsState.isFullscreen {
       let aspect: NSSize
+      // FIXME: probably don't need aspectRatio
       if window.aspectRatio == .zero {
         let dsize = player.videoSizeForDisplay
         aspect = NSSize(width: dsize.0, height: dsize.1)
@@ -3107,7 +3089,7 @@ class MainWindowController: PlayerWindowController {
       }
       let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
       UIAnimation.disableAnimation { [self] in
-        setOffsetConstraintsForVideoView(
+        updateVideoViewOffsetConstraints(
           left: frame.minX,
           right: window.frame.width - frame.maxX,  /// `frame.x` should also work
           bottom: -frame.minY,
@@ -3162,7 +3144,7 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(0)
-      setOffsetConstraintsForVideoView(
+      updateVideoViewOffsetConstraints(
         left: newVideoViewFrame.minX,
         right: newVideoViewFrame.maxX - window.frame.width,
         bottom: -newVideoViewFrame.minY,
@@ -3187,7 +3169,7 @@ class MainWindowController: PlayerWindowController {
       // Restore prev constraints:
       bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
       addCenterConstraintsToVideoView()
-      setOffsetConstraintsForVideoView()
+      updateVideoViewOffsetConstraints()
     }, completionHandler: { [self] in
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)
@@ -3379,8 +3361,7 @@ class MainWindowController: PlayerWindowController {
 
     // set aspect ratio
     let originalVideoSize = NSSize(width: width, height: height)
-    updateVideoAspectRatioConstraint(w: originalVideoSize.width, h: originalVideoSize.height)
-    window.aspectRatio = originalVideoSize
+    videoView.updateAspectRatioConstraint(w: originalVideoSize.width, h: originalVideoSize.height)
     if #available(macOS 10.12, *) {
       pip.aspectRatio = originalVideoSize
     }

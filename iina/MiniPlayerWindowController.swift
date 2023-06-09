@@ -68,8 +68,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   var isVideoVisible = true
 
-  var videoViewAspectConstraint: NSLayoutConstraint?
-
   private var originalWindowFrame: NSRect!
 
   lazy var hideVolumePopover: DispatchWorkItem = {
@@ -316,21 +314,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     let aspect = (width == 0 || height == 0) ? 1 : CGFloat(width) / CGFloat(height)
     let currentHeight = videoView.frame.height
     let newHeight = videoView.frame.width / aspect
-    updateVideoViewAspectConstraint(withAspect: aspect)
     // resize window
     guard isVideoVisible else { return }
     var frame = window.frame
     frame.size.height += newHeight - currentHeight - 0.5
     window.setFrame(frame, display: true, animate: false)
-  }
-
-  func updateVideoViewAspectConstraint(withAspect aspect: CGFloat) {
-    if let constraint = videoViewAspectConstraint {
-      constraint.isActive = false
-    }
-    videoViewAspectConstraint = NSLayoutConstraint(item: videoView, attribute: .width, relatedBy: .equal,
-                                                   toItem: videoView, attribute: .height, multiplier: aspect, constant: 0)
-    videoViewAspectConstraint?.isActive = true
   }
 
   // MARK: - NSPopoverDelegate
