@@ -580,6 +580,7 @@ class PlayerCore: NSObject {
     // restore layout
     if needRestoreLayout {
       if !Preference.bool(for: .musicModeShowAlbumArt) {
+        // FIXME: height and Y-offset are wrong
         miniPlayer.toggleVideoView(self)
         if let origin = miniPlayer.window?.frame.origin {
           miniPlayer.window?.setFrameOrigin(.init(x: origin.x, y: origin.y + miniPlayer.videoView.frame.height))
