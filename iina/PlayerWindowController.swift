@@ -57,6 +57,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .verticalScrollAction,
     .playlistShowMetadata,
     .playlistShowMetadataInMusicMode,
+    .autoSwitchToMusicMode,
   ]
 
   var observedPrefKeys: [Preference.Key] {
@@ -112,6 +113,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if player.isPlaylistVisible {
         player.mainWindow.playlistView.playlistTableView.reloadData()
       }
+    case PK.autoSwitchToMusicMode.rawValue:
+      player.overrideAutoSwitchToMusicMode = false
     default:
       return
     }
