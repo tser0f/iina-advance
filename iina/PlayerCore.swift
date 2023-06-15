@@ -537,6 +537,7 @@ class PlayerCore: NSObject {
 
     // build mini player window offscreen for now
     miniPlayer.window?.orderOut(self)
+    isInMiniPlayer = true
 
     miniPlayer.updateVideoViewLayout()
     miniPlayer.updateTitle()
@@ -554,6 +555,7 @@ class PlayerCore: NSObject {
 
     // move playist view
     playlistView.removeFromSuperview()
+    // make sure isInMiniPlayer==true before setting this:
     mainWindow.playlistView.useCompactTabHeight = true
     miniPlayer.playlistWrapperView.addSubview(playlistView)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": playlistView])
@@ -574,7 +576,6 @@ class PlayerCore: NSObject {
     // hide main window, and show mini player window
     mainWindow.window?.orderOut(self)
     miniPlayer.window?.makeKeyAndOrderFront(self)
-    isInMiniPlayer = true
 
     videoView.videoLayer.draw(forced: true)
     
