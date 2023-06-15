@@ -535,9 +535,10 @@ class PlayerCore: NSObject {
                  level: .verbose, subsystem: subsystem)
     }
 
-    let needRestoreLayout = !miniPlayer.loaded
-    miniPlayer.showWindow(self)
+    // build mini player window offscreen for now
+    miniPlayer.window?.orderOut(self)
 
+    miniPlayer.updateVideoViewLayout()
     miniPlayer.updateTitle()
     syncUITime()
     // When not in the mini player the timer that updates the OSC may be stopped to conserve energy
@@ -570,22 +571,12 @@ class PlayerCore: NSObject {
       miniPlayer.defaultAlbumArt.isHidden = true
     }
 
-    // hide main window
+    // hide main window, and show mini player window
     mainWindow.window?.orderOut(self)
+    miniPlayer.window?.makeKeyAndOrderFront(self)
     isInMiniPlayer = true
 
     videoView.videoLayer.draw(forced: true)
-
-    // restore layout
-    if needRestoreLayout {
-      if !Preference.bool(for: .musicModeShowAlbumArt) {
-        // FIXME: height and Y-offset are wrong
-        miniPlayer.toggleVideoView(self)
-        if let origin = miniPlayer.window?.frame.origin {
-          miniPlayer.window?.setFrameOrigin(.init(x: origin.x, y: origin.y + miniPlayer.videoView.frame.height))
-        }
-      }
-    }
     
     events.emit(.musicModeChanged, data: true)
   }

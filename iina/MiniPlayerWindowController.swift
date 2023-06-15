@@ -66,9 +66,14 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
   }
 
-  var isVideoVisible = true
-
-  private var originalWindowFrame: NSRect!
+  var isVideoVisible: Bool {
+    get {
+      Preference.bool(for: .musicModeShowAlbumArt)
+    }
+    set {
+      Preference.set(newValue, for: .musicModeShowAlbumArt)
+    }
+  }
 
   lazy var hideVolumePopover: DispatchWorkItem = {
     DispatchWorkItem {
@@ -94,7 +99,8 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   override func windowDidLoad() {
     super.windowDidLoad()
 
-    guard let window = window else { return }
+    guard let window = window,
+          let contentView = window.contentView else { return }
 
     window.styleMask = [.fullSizeContentView, .titled, .resizable, .closable]
     window.isMovableByWindowBackground = true
@@ -110,9 +116,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       button?.frame.size = .zero
     }
 
-    playlistWrapperView.widthAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerMinWidth).isActive = true
+    contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerMinWidth).isActive = true
     let maxWidth = CGFloat(Preference.float(for: .musicModeMaxWidth))
-    playlistWrapperView.widthAnchor.constraint(lessThanOrEqualToConstant: maxWidth).isActive = true
+    contentView.widthAnchor.constraint(lessThanOrEqualToConstant: maxWidth).isActive = true
+
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: PlaylistMinHeight).isActive = true
 
     controlViewTopConstraint.isActive = false
@@ -120,7 +127,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     // tracking area
     let trackingView = NSView()
     trackingView.translatesAutoresizingMaskIntoConstraints = false
-    window.contentView?.addSubview(trackingView, positioned: .above, relativeTo: nil)
+    contentView.addSubview(trackingView, positioned: .above, relativeTo: nil)
     Utility.quickConstraints(["H:|[v]|"], ["v": trackingView])
     NSLayoutConstraint.activate([
       NSLayoutConstraint(item: trackingView, attribute: .bottom, relatedBy: .equal, toItem: backgroundView, attribute: .bottom, multiplier: 1, constant: 0),
@@ -129,7 +136,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     trackingView.addTrackingArea(NSTrackingArea(rect: trackingView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
 
     // default album art
-    defaultAlbumArt.isHidden = false
     defaultAlbumArt.wantsLayer = true
     defaultAlbumArt.layer?.contents = #imageLiteral(resourceName: "default-album-art")
 
@@ -217,10 +223,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   }
 
   // MARK: - Window delegate: Size
-
-  func windowWillStartLiveResize(_ notification: Notification) {
-    originalWindowFrame = window!.frame
-  }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     return adjustWindowSize(requestedSize)
@@ -402,10 +404,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBAction func toggleVideoView(_ sender: Any) {
     guard let window = window else { return }
     isVideoVisible = !isVideoVisible
-    videoWrapperViewBottomConstraint.isActive = isVideoVisible
-    controlViewTopConstraint.isActive = !isVideoVisible
-    closeButtonBackgroundViewVE.isHidden = !isVideoVisible
-    closeButtonBackgroundViewBox.isHidden = isVideoVisible
+    updateVideoViewLayout()
     let videoViewHeight = round(videoView.frame.height)
     if isVideoVisible {
       var frame = window.frame
@@ -416,7 +415,13 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       frame.size.height -= videoViewHeight
       window.setFrame(frame, display: true, animate: false)
     }
-    Preference.set(isVideoVisible, for: .musicModeShowAlbumArt)
+  }
+
+  func updateVideoViewLayout() {
+    videoWrapperViewBottomConstraint.isActive = isVideoVisible
+    controlViewTopConstraint.isActive = !isVideoVisible
+    closeButtonBackgroundViewVE.isHidden = !isVideoVisible
+    closeButtonBackgroundViewBox.isHidden = isVideoVisible
   }
 
   @IBAction func backBtnAction(_ sender: NSButton) {
