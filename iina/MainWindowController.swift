@@ -671,6 +671,7 @@ class MainWindowController: PlayerWindowController {
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
   private var videoViewOffsetConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
+  private var videoViewOffsetConstraintsGT: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
   private var videoViewCenterXConstraint: NSLayoutConstraint? = nil
   private var videoViewCenterYConstraint: NSLayoutConstraint? = nil
 
@@ -894,17 +895,53 @@ class MainWindowController: PlayerWindowController {
     addVideoViewOffsetConstraint(.right, right)
     addVideoViewOffsetConstraint(.bottom, bottom)
     addVideoViewOffsetConstraint(.top, top)
+
+    videoViewOffsetConstraintsGT[.left] = NSLayoutConstraint(item: videoView, attribute: .left, relatedBy: .greaterThanOrEqual, toItem: videoContainerView,
+                                                            attribute: .left, multiplier: 1, constant: left)
+    videoViewOffsetConstraintsGT[.left]!.priority = .required
+    videoViewOffsetConstraintsGT[.left]!.isActive = true
+
+    videoViewOffsetConstraintsGT[.right] = NSLayoutConstraint(item: videoView, attribute: .right, relatedBy: .lessThanOrEqual, toItem: videoContainerView,
+                                                            attribute: .right, multiplier: 1, constant: right)
+    videoViewOffsetConstraintsGT[.right]!.priority = .required
+    videoViewOffsetConstraintsGT[.right]!.isActive = true
+
+    videoViewOffsetConstraintsGT[.bottom] = NSLayoutConstraint(item: videoView, attribute: .bottom, relatedBy: .lessThanOrEqual, toItem: videoContainerView,
+                                                            attribute: .bottom, multiplier: 1, constant: bottom)
+    videoViewOffsetConstraintsGT[.bottom]!.priority = .required
+    videoViewOffsetConstraintsGT[.bottom]!.isActive = true
+
+    videoViewOffsetConstraintsGT[.top] = NSLayoutConstraint(item: videoView, attribute: .top, relatedBy: .greaterThanOrEqual, toItem: videoContainerView,
+                                                            attribute: .top, multiplier: 1, constant: top)
+    videoViewOffsetConstraintsGT[.top]!.priority = .required
+    videoViewOffsetConstraintsGT[.top]!.isActive = true
   }
 
   private func addVideoViewOffsetConstraint(_ attr: NSLayoutConstraint.Attribute, _ constantAdustment: CGFloat) {
     videoViewOffsetConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
                                                     attribute: attr, multiplier: 1, constant: constantAdustment)
     videoViewOffsetConstraints[attr]!.priority = .defaultLow
+    // TODO: In windowed mode only: make offset constraints required, remove center & GT
     videoViewOffsetConstraints[attr]!.isActive = true
   }
 
   private func updateVideoViewOffsetConstraints(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
     for (attr, constraint) in videoViewOffsetConstraints {
+      switch attr {
+      case .left:
+        constraint.animateToConstant(left)
+      case .right:
+        constraint.animateToConstant(right)
+      case .bottom:
+        constraint.animateToConstant(bottom)
+      case .top:
+        constraint.animateToConstant(top)
+      default:
+        break
+      }
+    }
+
+    for (attr, constraint) in videoViewOffsetConstraintsGT {
       switch attr {
       case .left:
         constraint.animateToConstant(left)
@@ -2227,7 +2264,6 @@ class MainWindowController: PlayerWindowController {
     }
     fsState.finishAnimating()
 
-    updateVideoViewOffsetConstraints()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
@@ -2340,7 +2376,6 @@ class MainWindowController: PlayerWindowController {
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
 
-    updateVideoViewOffsetConstraints()
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.resume()
