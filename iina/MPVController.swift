@@ -453,7 +453,7 @@ class MPVController: NSObject {
       ]
       mpv_render_context_create(&mpvRenderContext, mpv, &params)
       openGLContext = CGLGetCurrentContext()
-      mpv_render_context_set_update_callback(mpvRenderContext!, mpvUpdateCallback, mutableRawPointerOf(obj: player.mainWindow.videoView.videoLayer))
+      mpv_render_context_set_update_callback(mpvRenderContext!, mpvUpdateCallback, mutableRawPointerOf(obj: player.videoView.videoLayer))
     }
   }
 
@@ -962,7 +962,7 @@ class MPVController: NSObject {
         // When playback is paused the display link may be shutdown in order to not waste energy.
         // It must be running when seeking to avoid slowdowns caused by mpv waiting for IINA to call
         // mpv_render_report_swap.
-        player.mainWindow.videoView.displayActive()
+        player.videoView.displayActive()
       }
       if needRecordSeekTime {
         recordedSeekStartTime = CACurrentMediaTime()
@@ -982,7 +982,7 @@ class MPVController: NSObject {
         // The display link will be restarted while seeking. If playback is paused shut it down
         // again.
         if player.info.isPaused {
-          player.mainWindow.videoView.displayIdle()
+          player.videoView.displayIdle()
         }
       }
       if needRecordSeekTime {
@@ -1133,9 +1133,9 @@ class MPVController: NSObject {
           // the timer that synchronizes the UI and the high priority display link thread.
           if paused {
             player.invalidateTimer()
-            player.mainWindow.videoView.displayIdle()
+            player.videoView.displayIdle()
           } else {
-            player.mainWindow.videoView.displayActive()
+            player.videoView.displayActive()
             player.createSyncUITimer()
           }
           if #available(macOS 10.12, *), player.mainWindow.pipStatus == .inPIP {

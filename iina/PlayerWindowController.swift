@@ -13,7 +13,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   unowned var player: PlayerCore
 
   var videoView: VideoView {
-    fatalError("Subclass must implement")
+    return player.videoView
   }
 
   var isOntop = false {

@@ -64,9 +64,6 @@ fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
 /** For Force Touch. */
 fileprivate let minimumPressDuration: TimeInterval = 0.5
 
-/** Minimum window size. */
-fileprivate let minWindowSize = NSMakeSize(285, 120)
-
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 800)
@@ -95,15 +92,9 @@ class MainWindowController: PlayerWindowController {
     return StandardTitleBarHeight
   }()
 
-  var minSize: NSSize { return minWindowSize }
+  var minSize: NSSize { return PlayerCore.minVideoSize }
 
   // MARK: - Objects, Views
-
-  override var videoView: VideoView {
-    return _videoView
-  }
-
-  lazy private var _videoView: VideoView = VideoView(frame: window!.contentView!.bounds, player: player)
 
   /** The quick setting sidebar (video, audio, subtitles). */
   lazy var quickSettingView: QuickSettingViewController = {
@@ -748,7 +739,7 @@ class MainWindowController: PlayerWindowController {
 
     // FIXME: do not do this here
     // size
-    window.minSize = minSize
+    window.minSize = PlayerCore.minVideoSize
     if let wf = windowFrameFromGeometry() {
       window.setFrame(wf, display: false)
     }

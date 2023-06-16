@@ -19,6 +19,8 @@ class PlayerCore: NSObject {
   /// restored when the movies is played again. Using the following value as the minimum for loop points avoids this issue.
   static private let minLoopPointTime = 0.000001
 
+  static let minVideoSize = NSMakeSize(285, 120)
+
   // MARK: - Multiple instances
 
   static private let first: PlayerCore = createAndStartPlayerCore()
@@ -157,6 +159,7 @@ class PlayerCore: NSObject {
   var miniPlayer: MiniPlayerWindowController!
 
   var mpv: MPVController!
+  lazy var videoView: VideoView = VideoView(frame: NSRect(origin: CGPointZero, size: PlayerCore.minVideoSize), player: self)
 
   var bindingController: PlayerBindingController!
 
@@ -472,16 +475,16 @@ class PlayerCore: NSObject {
   func initVideo() {
     // init mpv render context.
     // The video layer must be displayed once to get the OpenGL context initialized.
-    mainWindow.videoView.videoLayer.display()
+    videoView.videoLayer.display()
     mpv.mpvInitRendering()
-    mainWindow.videoView.startDisplayLink()
+    videoView.startDisplayLink()
   }
 
   // unload main window video view
   func uninitVideo() {
     guard mainWindow.loaded else { return }
-    mainWindow.videoView.stopDisplayLink()
-    mainWindow.videoView.uninit()
+    videoView.stopDisplayLink()
+    videoView.uninit()
   }
 
   private func savePlayerState() {
@@ -549,7 +552,7 @@ class PlayerCore: NSObject {
       createSyncUITimer()
     }
     let playlistView = mainWindow.playlistView.view
-    let videoView = mainWindow.videoView
+    let videoView = videoView
     // hide sidebars
     mainWindow.hideSidebars(animate: false)
 
@@ -592,7 +595,7 @@ class PlayerCore: NSObject {
     mainWindow.playlistView.view.removeFromSuperview()
     mainWindow.playlistView.useCompactTabHeight = false
     // add back video view
-    mainWindow.videoView.removeFromSuperview()
+    videoView.removeFromSuperview()
     mainWindow.addVideoViewToWindow()
     // show main window
     if showMainWindow {
@@ -602,7 +605,7 @@ class PlayerCore: NSObject {
     miniPlayer.window?.orderOut(nil)
     isInMiniPlayer = false
 
-    mainWindow.videoView.videoLayer.draw(forced: true)
+    videoView.videoLayer.draw(forced: true)
 
     mainWindow.updateTitle()
     
@@ -635,7 +638,7 @@ class PlayerCore: NSObject {
 
     savePlaybackPosition()
 
-    mainWindow.videoView.stopDisplayLink()
+    videoView.stopDisplayLink()
     invalidateTimer()
 
     info.currentFolder = nil
@@ -716,7 +719,7 @@ class PlayerCore: NSObject {
     // When playback is paused the display link is stopped in order to avoid wasting energy on
     // It must be running when stepping to avoid slowdowns caused by mpv waiting for IINA to call
     // mpv_render_report_swap.
-    mainWindow.videoView.displayActive()
+    videoView.displayActive()
     if backwards {
       mpv.command(.frameBackStep)
     } else {
@@ -1587,7 +1590,7 @@ class PlayerCore: NSObject {
   func playbackRestarted() {
     Logger.log("Playback restarted", subsystem: subsystem)
     reloadSavedIINAfilters()
-    mainWindow.videoView.videoLayer.draw(forced: true)
+    videoView.videoLayer.draw(forced: true)
 
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
       DispatchQueue.main.sync {
@@ -1606,7 +1609,7 @@ class PlayerCore: NSObject {
       // No need to refresh if playback is being stopped. Must not attempt to refresh if mpv is
       // terminating as accessing mpv once shutdown has been initiated can trigger a crash.
       guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-      mainWindow.videoView.refreshEdrMode()
+      videoView.refreshEdrMode()
     }
   }
 

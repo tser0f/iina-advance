@@ -24,10 +24,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     return NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
   }()
 
-  override var videoView: VideoView {
-    return player.mainWindow.videoView
-  }
-
   @IBOutlet weak var volumeButton: NSButton!
   @IBOutlet var volumePopover: NSPopover!
   @IBOutlet weak var volumeSliderView: NSView!
