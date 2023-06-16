@@ -661,10 +661,22 @@ class MainWindowController: PlayerWindowController {
 
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
-  private var videoViewOffsetConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
-  private var videoViewOffsetConstraintsGT: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
-  private var videoViewCenterXConstraint: NSLayoutConstraint? = nil
-  private var videoViewCenterYConstraint: NSLayoutConstraint? = nil
+  struct VideoViewConstraints {
+    let eqOffsetTop: NSLayoutConstraint
+    let eqOffsetRight: NSLayoutConstraint
+    let eqOffsetBottom: NSLayoutConstraint
+    let eqOffsetLeft: NSLayoutConstraint
+
+    let gtOffsetTop: NSLayoutConstraint
+    let gtOffsetRight: NSLayoutConstraint
+    let gtOffsetBottom: NSLayoutConstraint
+    let gtOffsetLeft: NSLayoutConstraint
+
+    let centerX: NSLayoutConstraint
+    let centerY: NSLayoutConstraint
+  }
+
+  private var videoViewConstraints: VideoViewConstraints? = nil
 
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
@@ -868,106 +880,92 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  // Finishes transition into windowed mode:
+  // Entering windowed mode (either initial:
   func addVideoViewToWindow() {
     videoContainerView.addSubview(videoView)
-    if let window = window {
-      videoView.videoLayer.contentsScale = window.backingScaleFactor
-    }
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
-    // FIXME: figure out why this 2px adjustment is necessary
-    addOffsetConstraintsToVideoView(left: -2, right: 0, bottom: 0, top: -2)
-    addCenterConstraintsToVideoView()
+    constrainVideoViewForWindowedMode()
   }
 
-  private func addOffsetConstraintsToVideoView(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
-    addVideoViewOffsetConstraint(.left, left)
-    addVideoViewOffsetConstraint(.right, right)
-    addVideoViewOffsetConstraint(.bottom, bottom)
-    addVideoViewOffsetConstraint(.top, top)
+  // - MARK: VideoView Constraints
 
-    videoViewOffsetConstraintsGT[.left] = NSLayoutConstraint(item: videoView, attribute: .left, relatedBy: .greaterThanOrEqual, toItem: videoContainerView,
-                                                            attribute: .left, multiplier: 1, constant: left)
-    videoViewOffsetConstraintsGT[.left]!.priority = .required
-    videoViewOffsetConstraintsGT[.left]!.isActive = true
-
-    videoViewOffsetConstraintsGT[.right] = NSLayoutConstraint(item: videoView, attribute: .right, relatedBy: .lessThanOrEqual, toItem: videoContainerView,
-                                                            attribute: .right, multiplier: 1, constant: right)
-    videoViewOffsetConstraintsGT[.right]!.priority = .required
-    videoViewOffsetConstraintsGT[.right]!.isActive = true
-
-    videoViewOffsetConstraintsGT[.bottom] = NSLayoutConstraint(item: videoView, attribute: .bottom, relatedBy: .lessThanOrEqual, toItem: videoContainerView,
-                                                            attribute: .bottom, multiplier: 1, constant: bottom)
-    videoViewOffsetConstraintsGT[.bottom]!.priority = .required
-    videoViewOffsetConstraintsGT[.bottom]!.isActive = true
-
-    videoViewOffsetConstraintsGT[.top] = NSLayoutConstraint(item: videoView, attribute: .top, relatedBy: .greaterThanOrEqual, toItem: videoContainerView,
-                                                            attribute: .top, multiplier: 1, constant: top)
-    videoViewOffsetConstraintsGT[.top]!.priority = .required
-    videoViewOffsetConstraintsGT[.top]!.isActive = true
+  private func addOrUpdate(_ existing: NSLayoutConstraint?,
+                           _ attr: NSLayoutConstraint.Attribute, _ relation: NSLayoutConstraint.Relation, _ constant: CGFloat,
+                           _ priority: NSLayoutConstraint.Priority) -> NSLayoutConstraint {
+    let constraint: NSLayoutConstraint
+    if let existing = existing {
+      constraint = existing
+      constraint.animateToConstant(constant)
+    } else {
+      constraint = existing ?? NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: relation, toItem: videoContainerView,
+                                                  attribute: attr, multiplier: 1, constant: constant)
+    }
+    constraint.priority = priority
+    return constraint
   }
 
-  private func addVideoViewOffsetConstraint(_ attr: NSLayoutConstraint.Attribute, _ constantAdustment: CGFloat) {
-    videoViewOffsetConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal, toItem: videoContainerView,
-                                                    attribute: attr, multiplier: 1, constant: constantAdustment)
-    videoViewOffsetConstraints[attr]!.priority = .defaultLow
-    // TODO: In windowed mode only: make offset constraints required, remove center & GT
-    videoViewOffsetConstraints[attr]!.isActive = true
+  private func rebuildVideoViewConstraints(top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0,
+                                           eqPriority: NSLayoutConstraint.Priority,
+                                           gtPriority: NSLayoutConstraint.Priority,
+                                           centerPriority: NSLayoutConstraint.Priority) -> VideoViewConstraints {
+    let existing = self.videoViewConstraints
+    let newConstraints = VideoViewConstraints(
+      eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
+      eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
+      eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
+      eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
+
+      gtOffsetTop: addOrUpdate(existing?.gtOffsetTop, .top, .greaterThanOrEqual, top, gtPriority),
+      gtOffsetRight: addOrUpdate(existing?.gtOffsetRight, .right, .lessThanOrEqual, right, gtPriority),
+      gtOffsetBottom: addOrUpdate(existing?.gtOffsetBottom, .bottom, .lessThanOrEqual, bottom, gtPriority),
+      gtOffsetLeft: addOrUpdate(existing?.gtOffsetLeft, .left, .greaterThanOrEqual, left, gtPriority),
+
+      centerX: existing?.centerX ?? videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor),
+      centerY: existing?.centerY ?? videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
+    )
+    newConstraints.centerX.priority = centerPriority
+    newConstraints.centerY.priority = centerPriority
+    return newConstraints
   }
 
-  private func updateVideoViewOffsetConstraints(left: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, top: CGFloat = 0) {
-    for (attr, constraint) in videoViewOffsetConstraints {
-      switch attr {
-      case .left:
-        constraint.animateToConstant(left)
-      case .right:
-        constraint.animateToConstant(right)
-      case .bottom:
-        constraint.animateToConstant(bottom)
-      case .top:
-        constraint.animateToConstant(top)
-      default:
-        break
-      }
-    }
+  // TODO: figure out why this 2px adjustment is necessary
+  private func constrainVideoViewForWindowedMode(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
+    // Remove GT & center constraints. Use only EQ
+    let existing = self.videoViewConstraints
+    if let existing = existing {
+      existing.gtOffsetTop.isActive = false
+      existing.gtOffsetRight.isActive = false
+      existing.gtOffsetBottom.isActive = false
+      existing.gtOffsetLeft.isActive = false
 
-    for (attr, constraint) in videoViewOffsetConstraintsGT {
-      switch attr {
-      case .left:
-        constraint.animateToConstant(left)
-      case .right:
-        constraint.animateToConstant(right)
-      case .bottom:
-        constraint.animateToConstant(bottom)
-      case .top:
-        constraint.animateToConstant(top)
-      default:
-        break
-      }
+      existing.centerX.isActive = false
+      existing.centerY.isActive = false
     }
+    let newConstraints = rebuildVideoViewConstraints(top: top, right: right, bottom: bottom, left: left,
+                                                     eqPriority: .required,
+                                                     gtPriority: .defaultLow,
+                                                     centerPriority: .defaultLow)
+    newConstraints.eqOffsetTop.isActive = true
+    newConstraints.eqOffsetRight.isActive = true
+    newConstraints.eqOffsetBottom.isActive = true
+    newConstraints.eqOffsetLeft.isActive = true
+    videoViewConstraints = newConstraints
   }
 
-  // Adding these center constraints:
-  // • In fullscreen mode, needed to center the video on screen
-  // • In windowed mode, if for some reason all other layout constraints cannot be met
-  //   (if the aspect ratio is too extreme and/or window too small to allow all OSC / title bar controls to fit)
-  //   allows black bars to appear on the sides of the video. This most likely indicates a bug in IINA or some rare
-  //   corner case which wasn't planned for. But it's probably better than the built-in default, which is to break the aspect ratio.
-  private func addCenterConstraintsToVideoView() {
-    if videoViewCenterXConstraint == nil {
-      let constraint = videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor)
-      constraint.priority = .required
-      constraint.isActive = true
-      videoViewCenterXConstraint = constraint
-    }
+  private func constrainVideoViewForFullScreen() {
+    // GT + center constraints are main priority, but include EQ as hint for ideal placement
+    let newConstraints = rebuildVideoViewConstraints(eqPriority: .defaultLow,
+                                                     gtPriority: .required,
+                                                     centerPriority: .required)
+    newConstraints.gtOffsetTop.isActive = true
+    newConstraints.gtOffsetRight.isActive = true
+    newConstraints.gtOffsetBottom.isActive = true
+    newConstraints.gtOffsetLeft.isActive = true
 
-    if videoViewCenterYConstraint == nil {
-      let constraint = videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
-      constraint.priority = .required
-      constraint.isActive = true
-      videoViewCenterYConstraint = constraint
-    }
+    newConstraints.centerX.isActive = true
+    newConstraints.centerY.isActive = true
+    videoViewConstraints = newConstraints
   }
 
   /** Set material for OSC and title bar */
@@ -1158,12 +1156,12 @@ class MainWindowController: PlayerWindowController {
     return toolbarView
   }
 
-  // FIXME: BUG: volume slider has wrong colors (theme?) in Top+Minimal
-  // FIXME: BUG: prevent sidebars from opening if not enough space
-  // FIXME: show title when option key depressed
-  // FIXME: disable prefs for titlebar buttons when titlebar hidden
-
-  // FIXME: BUG BUG BUG: window resize is all screwed up when windowSize != videoSize
+  // FIXME: CropBoxView Y origin is incorrect when top or bottom panels are "Outside Video"
+  // FIXME: Bottom panel color is incorrect in fullscreen mode when it is "Outside Video"
+  // FIXME: Completely remove title bar OSC code since it does not use proper APIs
+  // FIXME: Rework prefs: remove "minimal" option, change "no title bar" to "show only on click"
+  // TODO: Include title bar in animation out of fullscreen
+  // TODO: Prevent sidebars from opening if not enough space?
 
   enum Visibility {
     case hidden
@@ -2236,6 +2234,8 @@ class MainWindowController: PlayerWindowController {
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToEnterFullScreenOn duration: \(duration)", level: .verbose)
 
+    constrainVideoViewForFullScreen()
+
     // Just set duration to 0, and avoid headaches from bouncing sidebars and such
     let transition = buildLayoutTransition(fullScreen: true, totalStartingDuration: 0)
     layoutTransition = transition
@@ -2332,6 +2332,7 @@ class MainWindowController: PlayerWindowController {
 
     let transition = buildLayoutTransition(fullScreen: false, totalStartingDuration: duration, totalEndingDuration: UIAnimation.UIAnimationDuration)
     layoutTransition = transition
+    constrainVideoViewForWindowedMode()
     UIAnimation.run(transition.startingAnimationSequence)
 
     UIAnimation.run{ [self] context in
@@ -3111,15 +3112,15 @@ class MainWindowController: PlayerWindowController {
       } else {
         aspect = window.aspectRatio
       }
-      let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
-      UIAnimation.disableAnimation { [self] in
-        updateVideoViewOffsetConstraints(
-          left: frame.minX,
-          right: window.frame.width - frame.maxX,  /// `frame.x` should also work
-          bottom: -frame.minY,
-          top: window.frame.height - frame.maxY    /// `frame.y` should also work
-        )
-      }
+//      let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
+//      UIAnimation.disableAnimation { [self] in
+////        updateVideoViewConstraints_prepareInteractiveModeFromFullscreen(
+////          left: frame.minX,
+////          right: window.frame.width - frame.maxX,  /// `frame.x` should also work
+////          bottom: -frame.minY,
+////          top: window.frame.height - frame.maxY    /// `frame.y` should also work
+////        )
+//      }
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
       // force rerender a frame
@@ -3135,10 +3136,6 @@ class MainWindowController: PlayerWindowController {
     bottomView.isHidden = false
     bottomView.addSubview(controlView.view)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.view])
-
-    // Remove center Y constraint; fall back on fixed offset
-    videoViewCenterYConstraint?.isActive = false
-    videoViewCenterYConstraint = nil
 
     let origVideoSize = NSSize(width: ow, height: oh)
     // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
@@ -3168,11 +3165,12 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(0)
-      updateVideoViewOffsetConstraints(
-        left: newVideoViewFrame.minX,
+      constrainVideoViewForWindowedMode(
+        top: window.frame.height - newVideoViewFrame.maxY,
         right: newVideoViewFrame.maxX - window.frame.width,
         bottom: -newVideoViewFrame.minY,
-        top: window.frame.height - newVideoViewFrame.maxY)
+        left: newVideoViewFrame.minX
+      )
     }, completionHandler: { [self] in
       self.cropSettingsView?.cropBoxView.isHidden = false
       self.videoView.layer?.shadowColor = .black
@@ -3192,8 +3190,7 @@ class MainWindowController: PlayerWindowController {
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       // Restore prev constraints:
       bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
-      addCenterConstraintsToVideoView()
-      updateVideoViewOffsetConstraints()
+      constrainVideoViewForWindowedMode()
     }, completionHandler: { [self] in
       self.cropSettingsView?.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)

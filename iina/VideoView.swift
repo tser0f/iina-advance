@@ -66,8 +66,8 @@ class VideoView: NSView {
     registerForDraggedTypes([.nsFilenames, .nsURL, .string])
   }
 
-  convenience init(frame: CGRect, player: PlayerCore) {
-    self.init(frame: frame)
+  convenience init(player: PlayerCore) {
+    self.init(frame: NSRect(origin: CGPointZero, size: PlayerCore.minVideoSize))
     self.player = player
   }
 

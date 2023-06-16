@@ -159,7 +159,7 @@ class PlayerCore: NSObject {
   var miniPlayer: MiniPlayerWindowController!
 
   var mpv: MPVController!
-  lazy var videoView: VideoView = VideoView(frame: NSRect(origin: CGPointZero, size: PlayerCore.minVideoSize), player: self)
+  lazy var videoView: VideoView = VideoView(player: self)
 
   var bindingController: PlayerBindingController!
 
