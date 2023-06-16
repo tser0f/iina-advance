@@ -2440,7 +2440,6 @@ class MainWindowController: PlayerWindowController {
  
     restoreDockSettings()
     // restore window frame and aspect ratio
-    let videoSize = player.videoSizeForDisplay
     // then animate to the original frame
     window.setFrame(framePriorToBeingInFullscreen, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     // call delegate
@@ -3111,7 +3110,6 @@ class MainWindowController: PlayerWindowController {
 
     isPausedPriorToInteractiveMode = player.info.isPaused
     player.pause()
-    // FIXME: add key binding interceptor to block key bindings & add ESC key
 
     if fsState.isFullscreen {
       let aspect: NSSize

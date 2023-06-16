@@ -126,11 +126,10 @@ class AutoFileMatcher {
         let current = player.mpv.getInt(MPVProperty.playlistPos)
         try checkTicket()
         player.addToPlaylist(video.path, silent: true)
-        player.mpv.command(.playlistMove, args: ["\(count)", "\(current)"], checkError: false) { err in
-          if err == MPV_ERROR_COMMAND.rawValue { needQuit = true }
-          if err != 0 {
-            Logger.log("Error \(err) when adding files to playlist", level: .error, subsystem: subsystem)
-          }
+        let err = player.mpv.command(.playlistMove, args: ["\(count)", "\(current)"], checkError: false)
+        if err == MPV_ERROR_COMMAND.rawValue { needQuit = true }
+        if err != 0 {
+          Logger.log("Error \(err) when adding files to playlist", level: .error, subsystem: subsystem)
         }
       }
       if needQuit { break }

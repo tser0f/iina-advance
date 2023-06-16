@@ -246,11 +246,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       switch keyBinding.action.first! {
         // TODO: replace this with a key binding interceptor
       case MPVCommand.abLoop.rawValue:
-        abLoop()
-        returnValue = 0
+        returnValue = abLoop()
       default:
         returnValue = player.mpv.command(rawString: keyBinding.rawAction)
       }
+
       if returnValue == 0 {
         return true
       } else {
@@ -260,9 +260,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func abLoop() {
-    player.abLoop()
-    syncSlider()
+  @discardableResult
+  func abLoop() -> Int32 {
+    let returnValue = player.abLoop()
+    if returnValue == 0 {
+      syncSlider()
+    }
+    return returnValue
   }
 
   func syncSlider() {

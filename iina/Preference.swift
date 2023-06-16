@@ -996,7 +996,7 @@ struct Preference {
     .musicModeShowPlaylist: false,
     .musicModePlaylistHeight: 300,
     .musicModeShowAlbumArt: true,
-    .musicModeMaxWidth: 700,
+    .musicModeMaxWidth: 800,
     .displayTimeAndBatteryInFullScreen: false,
 
     .windowBehaviorWhenPip: WindowBehaviorWhenPip.doNothing.rawValue,

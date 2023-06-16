@@ -532,9 +532,9 @@ class MPVController: NSObject {
     return strArgs
   }
 
-  // Send arbitrary mpv command.
-  func command(_ command: MPVCommand, args: [String?] = [], checkError: Bool = true, returnValueCallback: ((Int32) -> Void)? = nil) {
-    guard mpv != nil else { return }
+  /// Send arbitrary mpv command. Returns mpv return code.
+  @discardableResult
+  func command(_ command: MPVCommand, args: [String?] = [], checkError: Bool = true) -> Int32 {
     Logger.log("Sending mpv cmd: \(command.rawValue.quoted), args: \(args.compactMap{$0})", level: .verbose, subsystem: player.subsystem)
     var cargs = makeCArgs(command, args).map { $0.flatMap { UnsafePointer<CChar>(strdup($0)) } }
     defer {
@@ -547,9 +547,8 @@ class MPVController: NSObject {
     let returnValue = mpv_command(self.mpv, &cargs)
     if checkError {
       chkErr(returnValue)
-    } else if let cb = returnValueCallback {
-      cb(returnValue)
     }
+    return returnValue
   }
 
   func command(rawString: String) -> Int32 {
@@ -783,12 +782,11 @@ class MPVController: NSObject {
     let cmd = name == MPVProperty.vf ? MPVCommand.vf : MPVCommand.af
 
     let str = filters.map { $0.stringFormat }.joined(separator: ",")
-    command(cmd, args: ["set", str], checkError: false) { returnValue in
-      if returnValue < 0 {
-        Utility.showAlert("filter.incorrect")
-        // reload data in filter setting window
-        self.player.postNotification(.iinaVFChanged)
-      }
+    let returnValue = command(cmd, args: ["set", str], checkError: false)
+    if returnValue < 0 {
+      Utility.showAlert("filter.incorrect")
+      // reload data in filter setting window
+      self.player.postNotification(.iinaVFChanged)
     }
   }
 

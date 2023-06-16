@@ -777,11 +777,14 @@ class PlayerCore: NSObject {
   /// When the command is first invoked it sets the A loop point to the timestamp of the current frame. When the command is invoked
   /// a second time it sets the B loop point to the timestamp of the current frame, activating looping and causing mpv to seek back to
   /// the A loop point. When the command is invoked again both loop points are cleared (set to zero) and looping stops.
-  func abLoop() {
+  func abLoop() -> Int32 {
     // may subject to change
-    mpv.command(.abLoop)
-    syncAbLoop()
-    sendOSD(.abLoop(info.abLoopStatus))
+    let returnValue = mpv.command(.abLoop)
+    if returnValue == 0 {
+      syncAbLoop()
+      sendOSD(.abLoop(info.abLoopStatus))
+    }
+    return returnValue
   }
 
   /// Synchronize IINA with the state of the [mpv](https://mpv.io/manual/stable/) A-B loop command.
@@ -955,23 +958,21 @@ class PlayerCore: NSObject {
   }
   
   func loadExternalVideoFile(_ url: URL) {
-    mpv.command(.videoAdd, args: [url.path], checkError: false) { code in
-      if code < 0 {
-        Logger.log("Unsupported video: \(url.path)", level: .error, subsystem: self.subsystem)
-        DispatchQueue.main.async {
-          Utility.showAlert("unsupported_audio")
-        }
+    let code = mpv.command(.videoAdd, args: [url.path], checkError: false)
+    if code < 0 {
+      Logger.log("Unsupported video: \(url.path)", level: .error, subsystem: self.subsystem)
+      DispatchQueue.main.async {
+        Utility.showAlert("unsupported_audio")
       }
     }
   }
 
   func loadExternalAudioFile(_ url: URL) {
-    mpv.command(.audioAdd, args: [url.path], checkError: false) { code in
-      if code < 0 {
-        Logger.log("Unsupported audio: \(url.path)", level: .error, subsystem: self.subsystem)
-        DispatchQueue.main.async {
-          Utility.showAlert("unsupported_audio")
-        }
+    let code = mpv.command(.audioAdd, args: [url.path], checkError: false)
+    if code < 0 {
+      Logger.log("Unsupported audio: \(url.path)", level: .error, subsystem: self.subsystem)
+      DispatchQueue.main.async {
+        Utility.showAlert("unsupported_audio")
       }
     }
   }
@@ -990,18 +991,17 @@ class PlayerCore: NSObject {
       return
     }
 
-    mpv.command(.subAdd, args: [url.path], checkError: false) { code in
-      if code < 0 {
-        Logger.log("Unsupported sub: \(url.path)", level: .error, subsystem: self.subsystem)
-        // if another modal panel is shown, popping up an alert now will cause some infinite loop.
-        if delay {
-          DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
-            Utility.showAlert("unsupported_sub")
-          }
-        } else {
-          DispatchQueue.main.async {
-            Utility.showAlert("unsupported_sub")
-          }
+    let code = mpv.command(.subAdd, args: [url.path], checkError: false)
+    if code < 0 {
+      Logger.log("Unsupported sub: \(url.path)", level: .error, subsystem: self.subsystem)
+      // if another modal panel is shown, popping up an alert now will cause some infinite loop.
+      if delay {
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
+          Utility.showAlert("unsupported_sub")
+        }
+      } else {
+        DispatchQueue.main.async {
+          Utility.showAlert("unsupported_sub")
         }
       }
     }
@@ -1010,10 +1010,9 @@ class PlayerCore: NSObject {
   func reloadAllSubs() {
     let currentSubName = info.currentTrack(.sub)?.externalFilename
     for subTrack in info.subTracks {
-      mpv.command(.subReload, args: ["\(subTrack.id)"], checkError: false) { code in
-        if code < 0 {
-          Logger.log("Failed reloading subtitles: error code \(code)", level: .error, subsystem: self.subsystem)
-        }
+      let code = mpv.command(.subReload, args: ["\(subTrack.id)"], checkError: false)
+      if code < 0 {
+        Logger.log("Failed reloading subtitles: error code \(code)", level: .error, subsystem: self.subsystem)
       }
     }
     reloadTrackInfo()
@@ -1208,7 +1207,7 @@ class PlayerCore: NSObject {
     }
     // try apply filter
     var result = true
-    mpv.command(.vf, args: ["add", filter], checkError: false) { result = $0 >= 0 }
+    result = mpv.command(.vf, args: ["add", filter], checkError: false) >= 0
     Logger.log(result ? "Succeeded" : "Failed", subsystem: self.subsystem)
     return result
   }
@@ -1265,7 +1264,7 @@ class PlayerCore: NSObject {
   func removeVideoFilter(_ filter: String) -> Bool {
     Logger.log("Removing video filter \(filter)...", subsystem: subsystem)
     var result = true
-    mpv.command(.vf, args: ["remove", filter], checkError: false) { result = $0 >= 0 }
+    result = mpv.command(.vf, args: ["remove", filter], checkError: false) >= 0
     Logger.log(result ? "Succeeded" : "Failed", subsystem: self.subsystem)
     return result
   }
@@ -1281,7 +1280,7 @@ class PlayerCore: NSObject {
   func addAudioFilter(_ filter: String) -> Bool {
     Logger.log("Adding audio filter \(filter)...", subsystem: subsystem)
     var result = true
-    mpv.command(.af, args: ["add", filter], checkError: false) { result = $0 >= 0 }
+    result = mpv.command(.af, args: ["add", filter], checkError: false) >= 0
     Logger.log(result ? "Succeeded" : "Failed", subsystem: self.subsystem)
     return result
   }
@@ -1332,10 +1331,9 @@ class PlayerCore: NSObject {
   /// - Returns: `true` if the filter was successfully removed, `false` otherwise.
   func removeAudioFilter(_ filter: String) -> Bool {
     Logger.log("Removing audio filter \(filter)...", subsystem: subsystem)
-    var result = true
-    mpv.command(.af, args: ["remove", filter], checkError: false)  { result = $0 >= 0 }
-    Logger.log(result ? "Succeeded" : "Failed", subsystem: self.subsystem)
-    return result
+    let returnCode = mpv.command(.af, args: ["remove", filter], checkError: false) >= 0
+    Logger.log(returnCode ? "Succeeded" : "Failed", subsystem: self.subsystem)
+    return returnCode
   }
 
   func getAudioDevices() -> [[String: String]] {
@@ -1398,10 +1396,9 @@ class PlayerCore: NSObject {
   }
 
   func execKeyCode(_ code: String) {
-    mpv.command(.keypress, args: [code], checkError: false) { errCode in
-      if errCode < 0 {
-        Logger.log("Error when executing key code (\(errCode))", level: .error, subsystem: self.subsystem)
-      }
+    let errCode = mpv.command(.keypress, args: [code], checkError: false)
+    if errCode < 0 {
+      Logger.log("Error when executing key code (\(errCode))", level: .error, subsystem: self.subsystem)
     }
   }
 
