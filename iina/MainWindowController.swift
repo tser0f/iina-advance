@@ -1020,8 +1020,6 @@ class MainWindowController: PlayerWindowController {
 
     switch placement {
     case .outsideVideo:
-      topPanelView.blendingMode = .behindWindow
-
       // Align left & right sides with window (sidebars go below top panel)
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
       topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
@@ -1031,8 +1029,6 @@ class MainWindowController: PlayerWindowController {
       /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
       contentView.addSubview(topPanelView, positioned: .above, relativeTo: trailingSidebarView)
     case .insideVideo:
-      topPanelView.blendingMode = .withinWindow
-
       // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
@@ -1066,7 +1062,6 @@ class MainWindowController: PlayerWindowController {
 
     switch placement {
     case .outsideVideo:
-      controlBarBottom.blendingMode = .behindWindow
       controlBarBottomTopBorder.isHidden = false
 
       // Align left & right sides with window (sidebars go below top panel)
@@ -1078,7 +1073,6 @@ class MainWindowController: PlayerWindowController {
       /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
       contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: trailingSidebarView)
     case .insideVideo:
-      controlBarBottom.blendingMode = .withinWindow
       controlBarBottomTopBorder.isHidden = true
 
       // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
@@ -1156,6 +1150,7 @@ class MainWindowController: PlayerWindowController {
     return toolbarView
   }
 
+  // FIXME: Pinch to zoom is completely broken
   // FIXME: CropBoxView Y origin is incorrect when top or bottom panels are "Outside Video"
   // FIXME: Bottom panel color is incorrect in fullscreen mode when it is "Outside Video"
   // FIXME: Completely remove title bar OSC code since it does not use proper APIs
@@ -1552,9 +1547,27 @@ class MainWindowController: PlayerWindowController {
       updateTopPanelPlacement(placement: futureLayout.topPanelPlacement)
     }
 
+    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    if futureLayout.topPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+      topPanelView.blendingMode = .withinWindow
+    } else {
+      topPanelView.blendingMode = .behindWindow
+    }
+
     if futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement {
       updateBottomPanelPlacement(placement: futureLayout.bottomPanelPlacement)
     }
+
+    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    if futureLayout.bottomPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+      controlBarBottom.blendingMode = .withinWindow
+    } else {
+      controlBarBottom.blendingMode = .behindWindow
+    }
+
+    // May need to fix blending mode for "outside" sidebars
+    updateSidebarBlendingMode(leadingSidebar.locationID, layout: futureLayout)
+    updateSidebarBlendingMode(trailingSidebar.locationID, layout: futureLayout)
 
     /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
     /// cause `window.performMiniaturize()` to be ignored. So MUST use `isHidden=true` + `alphaValue=1` instead.

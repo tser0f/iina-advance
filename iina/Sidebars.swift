@@ -290,17 +290,14 @@ extension MainWindowController {
     let sidebarView: NSVisualEffectView
     switch sidebar.locationID {
     case .leadingSidebar:
-      sidebarView = leadingSidebarView
       leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
-      if show {
-        leadingSidebarView.blendingMode = leadingSidebar.placement == .outsideVideo ? .behindWindow : .withinWindow
-      }
+      sidebarView = leadingSidebarView
     case .trailingSidebar:
-      sidebarView = trailingSidebarView
       trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
-      if show {
-        trailingSidebarView.blendingMode = trailingSidebar.placement == .outsideVideo ? .behindWindow : .withinWindow
-      }
+      sidebarView = trailingSidebarView
+    }
+    if show {
+      updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
     }
 
     animationBlocks.append{ [self] context in
@@ -379,6 +376,24 @@ extension MainWindowController {
     }
 
     UIAnimation.run(animationBlocks)
+  }
+
+  func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
+    switch sidebarID {
+    case .leadingSidebar:
+      // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+      if Preference.enum(for: .leadingSidebarPlacement) == Preference.PanelPlacement.insideVideo || layout.isFullScreen {
+        leadingSidebarView.blendingMode = .withinWindow
+      } else {
+        leadingSidebarView.blendingMode = .behindWindow
+      }
+    case .trailingSidebar:
+      if Preference.enum(for: .trailingSidebarPlacement) == Preference.PanelPlacement.insideVideo || layout.isFullScreen {
+        trailingSidebarView.blendingMode = .withinWindow
+      } else {
+        leadingSidebarView.blendingMode = .behindWindow
+      }
+    }
   }
 
   private func updateLeadingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
