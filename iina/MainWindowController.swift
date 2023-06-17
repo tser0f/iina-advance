@@ -1151,8 +1151,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   // FIXME: Pinch to zoom is completely broken
-  // FIXME: CropBoxView Y origin is incorrect when top or bottom panels are "Outside Video"
-  // FIXME: Bottom panel color is incorrect in fullscreen mode when it is "Outside Video"
   // FIXME: Completely remove title bar OSC code since it does not use proper APIs
   // FIXME: Rework prefs: remove "minimal" option, change "no title bar" to "show only on click"
   // TODO: Include title bar in animation out of fullscreen
@@ -3111,38 +3109,11 @@ class MainWindowController: PlayerWindowController {
 
     isInInteractiveMode = true
     hideFadeableViews()
+    // TODO: hide "outside" OSCs too
     hideOSD()
 
     isPausedPriorToInteractiveMode = player.info.isPaused
     player.pause()
-
-    if fsState.isFullscreen {
-      let aspect: NSSize
-      // FIXME: probably don't need aspectRatio
-      if window.aspectRatio == .zero {
-        let dsize = player.videoSizeForDisplay
-        aspect = NSSize(width: dsize.0, height: dsize.1)
-      } else {
-        aspect = window.aspectRatio
-      }
-//      let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
-//      UIAnimation.disableAnimation { [self] in
-////        updateVideoViewConstraints_prepareInteractiveModeFromFullscreen(
-////          left: frame.minX,
-////          right: window.frame.width - frame.maxX,  /// `frame.x` should also work
-////          bottom: -frame.minY,
-////          top: window.frame.height - frame.maxY    /// `frame.y` should also work
-////        )
-//      }
-      videoView.needsLayout = true
-      videoView.layoutSubtreeIfNeeded()
-      // force rerender a frame
-      videoView.videoLayer.mpvGLQueue.async {
-        DispatchQueue.main.sync {
-          self.videoView.videoLayer.draw()
-        }
-      }
-    }
 
     let controlView = mode.viewController()
     controlView.mainWindow = self
@@ -3153,19 +3124,18 @@ class MainWindowController: PlayerWindowController {
     let origVideoSize = NSSize(width: ow, height: oh)
     // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
     let bezelSize = StandardTitleBarHeight
-    let yAdjustment: CGFloat = 4  // Amount of space to reduce between VideoView and bottom controls
     // the max region that the video view can occupy
     let newVideoViewBounds = NSRect(x: bezelSize,
-                                    y: InteractiveModeBottomViewHeight + bezelSize - 2 - yAdjustment,
+                                    y: InteractiveModeBottomViewHeight + bezelSize,
                                     width: window.frame.width - bezelSize - bezelSize,
-                                    height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize - bezelSize - 2 + yAdjustment)
+                                    height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize - bezelSize)
     let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
     let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
     let selectedRect: NSRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
 
     // add crop setting view
-    window.contentView!.addSubview(controlView.cropBoxView)
+    videoContainerView.addSubview(controlView.cropBoxView)
     controlView.cropBoxView.selectedRect = selectedRect
     controlView.cropBoxView.actualSize = origVideoSize
     controlView.cropBoxView.resized(with: newVideoViewFrame)
@@ -3185,11 +3155,11 @@ class MainWindowController: PlayerWindowController {
         left: newVideoViewFrame.minX
       )
     }, completionHandler: { [self] in
-      self.cropSettingsView?.cropBoxView.isHidden = false
-      self.videoView.layer?.shadowColor = .black
-      self.videoView.layer?.shadowOpacity = 1
-      self.videoView.layer?.shadowOffset = .zero
-      self.videoView.layer?.shadowRadius = 3
+      cropSettingsView?.cropBoxView.isHidden = false
+      videoContainerView.layer?.shadowColor = .black
+      videoContainerView.layer?.shadowOpacity = 1
+      videoContainerView.layer?.shadowOffset = .zero
+      videoContainerView.layer?.shadowRadius = 3
     })
   }
 
