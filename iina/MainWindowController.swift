@@ -180,6 +180,8 @@ class MainWindowController: PlayerWindowController {
   var isPausedPriorToInteractiveMode: Bool = false
 
   var lastMagnification: CGFloat = 0.0
+  var windowFrameAtMagnificationBegin = NSRect()
+  var videoContainerFrameAtMagnificationBegin = NSRect()
 
   var denyNextWindowResize = false
 
@@ -513,13 +515,14 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint: NSLayoutConstraint!
 
-  /** OSD: shown here in "upper-left" configuration.
-      For "upper-right" config: swap OSD & AdditionalInfo anchors in A & C, and invert all the params of C.
-      ┌──────────────────────┐
-      │ A ┌────┐ B  ┌────┐ C │  A: leadingSidebarToOSDSpaceConstraint
-      │◄─►│ OSD│◄──►│ Add│◄─►│  B: additionalInfoToOSDSpaceConstraint
-      │   └────┘    └────┘   │  C: trailingSidebarToOSDSpaceConstraint
-      └──────────────────────┘
+  /**
+   OSD: shown here in "upper-left" configuration.
+   For "upper-right" config: swap OSD & AdditionalInfo anchors in A & C, and invert all the params of C.
+   ┌──────────────────────┐
+   │ A ┌────┐ B  ┌────┐ C │  A: leadingSidebarToOSDSpaceConstraint
+   │◄─►│ OSD│◄──►│ Add│◄─►│  B: additionalInfoToOSDSpaceConstraint
+   │   └────┘    └────┘   │  C: trailingSidebarToOSDSpaceConstraint
+   └──────────────────────┘
    */
   @IBOutlet weak var leadingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var additionalInfoToOSDSpaceConstraint: NSLayoutConstraint!
@@ -2034,7 +2037,7 @@ class MainWindowController: PlayerWindowController {
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
     guard pinchAction != .none else { return }
-    guard !isInInteractiveMode, let window = window, let screenFrame = NSScreen.main?.visibleFrame else { return }
+    guard !isInInteractiveMode, let window = window else { return }
 
     switch pinchAction {
     case .none:
@@ -2052,28 +2055,53 @@ class MainWindowController: PlayerWindowController {
       if fsState.isFullscreen { return }
 
       // adjust window size
-      if recognizer.state == .began {
-        // began
-        lastMagnification = recognizer.magnification
-      } else if recognizer.state == .changed {
-        // changed
-        // FIXME! aspectRatio shouldn't be used
-        let offset = recognizer.magnification - lastMagnification + 1.0;
-        let newWidth = window.frame.width * offset
-        let newHeight = newWidth / window.aspectRatio.aspect
-
-        //Check against max & min threshold
-        if newHeight < screenFrame.height && newHeight > minSize.height && newWidth > minSize.width {
-          Logger.log("Magnifying window to \(recognizer.magnification)x; new size will be: \(Int(newWidth))x\(Int(newHeight))",
-                     level: .verbose, subsystem: player.subsystem)
-          let newSize = NSSize(width: newWidth, height: newHeight);
-          window.setFrame(window.frame.centeredResize(to: newSize), display: true)
-        }
-
-        lastMagnification = recognizer.magnification
-      } else if recognizer.state == .ended {
+      switch recognizer.state {
+      case .began:
+        // FIXME: confirm reset on video size change due to track change
+        windowFrameAtMagnificationBegin = window.frame
+        videoContainerFrameAtMagnificationBegin = videoContainerView.frame
+        scaleVideoFromPinchGesture(to: recognizer.magnification + 1.0)
+      case .changed:
+        scaleVideoFromPinchGesture(to: recognizer.magnification + 1.0)
+      case .ended:
+        scaleVideoFromPinchGesture(to: recognizer.magnification + 1.0)
         updateWindowParametersForMPV()
+      case .cancelled, .failed:
+        scaleVideoFromPinchGesture(to: 1.0)
+        break
+      default:
+        return
       }
+
+    }
+  }
+
+  private func scaleVideoFromPinchGesture(to scale: CGFloat) {
+    scaleVideo(to: scale, fromWindowFrame: windowFrameAtMagnificationBegin, fromVideoSize: videoContainerFrameAtMagnificationBegin.size)
+  }
+
+  private func scaleVideo(to scale: CGFloat,
+                          fromWindowFrame origWindowFrame: CGRect,
+                          fromVideoSize origVideoSize: CGSize) {
+    guard !isInInteractiveMode, let window = window, let screenFrame = NSScreen.main?.visibleFrame else { return }
+
+    // Scale only the video. Panels outside the video do not change size
+    let currentOutsideVideoWidth = origWindowFrame.width - origVideoSize.width
+    let currentOutsideVideoHeight = origWindowFrame.height - origVideoSize.height
+    let newVideoWidth = origVideoSize.width * scale
+    let newVideoHeight = origVideoSize.height * scale
+
+    let newWindowWidth = currentOutsideVideoWidth + newVideoWidth
+    let newWindowHeight = currentOutsideVideoHeight + newVideoHeight
+    Logger.log("Scaling x\(scale) from \(origWindowFrame.width)x\(origWindowFrame.height) to \(newWindowWidth)x\(newWindowHeight)",
+               level: .verbose, subsystem: player.subsystem)
+    // Check against max & min threshold
+    if newWindowHeight <= screenFrame.height && newWindowHeight >= minSize.height
+        && newWindowWidth <= screenFrame.width && newWindowWidth >= minSize.width {
+      let newWindowSize = NSSize(width: newWindowWidth, height: newWindowHeight);
+      let newWindowFrame = window.frame.centeredResize(to: newWindowSize)
+      Logger.log("New frame after scaling: \(newWindowFrame)", level: .verbose, subsystem: player.subsystem)
+      window.setFrame(newWindowFrame, display: true)
     }
   }
 
@@ -3107,6 +3135,7 @@ class MainWindowController: PlayerWindowController {
       return
     }
 
+    // TODO: use key interceptor to support ESC and ENTER keys
     isInInteractiveMode = true
     hideFadeableViews()
     // TODO: hide "outside" OSCs too
