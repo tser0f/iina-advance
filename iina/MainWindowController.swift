@@ -2086,21 +2086,20 @@ class MainWindowController: PlayerWindowController {
     guard !isInInteractiveMode, let window = window, let screenFrame = NSScreen.main?.visibleFrame else { return }
 
     // Scale only the video. Panels outside the video do not change size
-    let currentOutsideVideoWidth = origWindowFrame.width - origVideoSize.width
-    let currentOutsideVideoHeight = origWindowFrame.height - origVideoSize.height
+    let outsidePanelsWidth = origWindowFrame.width - origVideoSize.width
+    let outsidePanelsHeight = origWindowFrame.height - origVideoSize.height
     let newVideoWidth = origVideoSize.width * scale
     let newVideoHeight = origVideoSize.height * scale
 
-    let newWindowWidth = currentOutsideVideoWidth + newVideoWidth
-    let newWindowHeight = currentOutsideVideoHeight + newVideoHeight
-    Logger.log("Scaling x\(scale) from \(origWindowFrame.width)x\(origWindowFrame.height) to \(newWindowWidth)x\(newWindowHeight)",
-               level: .verbose, subsystem: player.subsystem)
+    let newWindowWidth = outsidePanelsWidth + newVideoWidth
+    let newWindowHeight = outsidePanelsHeight + newVideoHeight
     // Check against max & min threshold
     if newWindowHeight <= screenFrame.height && newWindowHeight >= minSize.height
         && newWindowWidth <= screenFrame.width && newWindowWidth >= minSize.width {
       let newWindowSize = NSSize(width: newWindowWidth, height: newWindowHeight);
       let newWindowFrame = window.frame.centeredResize(to: newWindowSize)
-      Logger.log("New frame after scaling: \(newWindowFrame)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Scaling video x\(scale) from \(origVideoSize.width)x\(origVideoSize.height) to \(newWindowWidth)x\(newWindowHeight); setFrame to: \(newWindowFrame)",
+                 level: .verbose, subsystem: player.subsystem)
       window.setFrame(newWindowFrame, display: true)
     }
   }
@@ -2114,6 +2113,7 @@ class MainWindowController: PlayerWindowController {
   func windowWillOpen() {
     Logger.log("WindowWillOpen", level: .verbose, subsystem: player.subsystem)
     isClosing = false
+    guard let window = window else { return }
     // Must workaround an AppKit defect in some versions of macOS. This defect is known to exist in
     // Catalina and Big Sur. The problem was not reproducible in early versions of Monterey. It
     // reappeared in Ventura. The status of other versions of macOS is unknown, however the
@@ -2127,9 +2127,9 @@ class MainWindowController: PlayerWindowController {
     // icon in the dock. As a workaround reset the window's title to "Window" before it is reused.
     // This is the default title AppKit assigns to a window when it is first created. Surprising and
     // rather disturbing this works as a workaround, but it does.
-    window!.title = "Window"
+    window.title = "Window"
 
-    let currentScreen = window!.selectDefaultScreen()
+    let currentScreen = window.selectDefaultScreen()
     NSScreen.screens.enumerated().forEach { (screenIndex, screen) in
       let currentString = (screen == currentScreen) ? " (current)" : ""
       NSScreen.log("Screen\(screenIndex)\(currentString)" , screen)
@@ -2137,13 +2137,10 @@ class MainWindowController: PlayerWindowController {
 
     let useAnimation = !AccessibilityPreferences.motionReductionEnabled
     if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: currentScreen) {
-      Logger.log("WindowWillOpen using initial geometry; setting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
-      window!.setFrame(windowFrame, display: true, animate: useAnimation)
+      Logger.log("WindowWillOpen using initial geometry; setFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
+      window.setFrame(windowFrame, display: true, animate: useAnimation)
     } else {
-      let screenFrame = currentScreen.visibleFrame
-      let windowFrame = AppData.sizeWhenNoVideo.centeredRect(in: screenFrame)
-      Logger.log("WindowWillOpen centering in screen \(screenFrame); setting windowFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
-      window!.setFrame(screenFrame, display: true, animate: useAnimation)
+      scaleVideo(to: 1.0, fromWindowFrame: window.frame, fromVideoSize: AppData.sizeWhenNoVideo)
     }
 
     videoView.videoLayer.draw(forced: true)
@@ -2283,6 +2280,7 @@ class MainWindowController: PlayerWindowController {
 
     UIAnimation.run{ context in
       context.duration = duration
+      Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
       window.setFrame(screen.frame, display: true)
     }
   }
@@ -2367,7 +2365,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
-    Logger.log("window startCustomAnimationToExitFullScreenWithDuration setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose)
+    Logger.log("window startCustomAnimationToExitFullScreenWithDuration setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose, subsystem: player.subsystem)
 
     let transition = buildLayoutTransition(fullScreen: false, totalStartingDuration: duration, totalEndingDuration: UIAnimation.UIAnimationDuration)
     layoutTransition = transition
@@ -2375,6 +2373,8 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(transition.startingAnimationSequence)
 
     UIAnimation.run{ [self] context in
+      Logger.log("Window exiting full screen; setFrame to: \(fsState.priorWindowedFrame!)",
+                 level: .verbose, subsystem: player.subsystem)
       window.setFrame(fsState.priorWindowedFrame!, display: true)
     }
   }
@@ -2437,9 +2437,9 @@ class MainWindowController: PlayerWindowController {
       } else {
         window.toggleFullScreen(self)
       }
-    case let .fullscreen(legacy, oldFrame):
+    case let .fullscreen(legacy, priorWindowedFrame):
       if legacy {
-        self.legacyAnimateToWindowed(framePriorToBeingInFullscreen: oldFrame)
+        self.legacyAnimateToWindowed(framePriorToBeingInFullscreen: priorWindowedFrame)
       } else {
         window.toggleFullScreen(self)
       }
@@ -2453,12 +2453,13 @@ class MainWindowController: PlayerWindowController {
     NSApp.presentationOptions.remove(.autoHideDock)
   }
 
-  private func legacyAnimateToWindowed(framePriorToBeingInFullscreen: NSRect) {
+  private func legacyAnimateToWindowed(framePriorToBeingInFullscreen priorWindowedFrame: NSRect) {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
     Logger.log("legacyAnimateToWindowed", level: .verbose, subsystem: player.subsystem)
 
     // call delegate
     windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
+
     // stylemask
     window.styleMask.remove(.borderless)
     if #available(macOS 10.16, *) {
@@ -2472,7 +2473,11 @@ class MainWindowController: PlayerWindowController {
     restoreDockSettings()
     // restore window frame and aspect ratio
     // then animate to the original frame
-    window.setFrame(framePriorToBeingInFullscreen, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+    Logger.log("Window exiting legacy full screen; setFrame to: \(priorWindowedFrame)",
+               level: .verbose, subsystem: player.subsystem)
+    window.setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+    constrainVideoViewForWindowedMode()
+    window.layoutIfNeeded()
     // call delegate
     windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
   }
@@ -2483,12 +2488,18 @@ class MainWindowController: PlayerWindowController {
   private func setWindowFrameForLegacyFullScreen() {
     guard let window = self.window else { return }
     let screen = window.screen ?? NSScreen.main!
-    window.setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    guard let unusable = screen.cameraHousingHeight else { return }
-    // This screen contains an embedded camera. Shorten the height of the window's content view's
-    // frame to avoid having part of the window obscured by the camera housing.
-    let view = window.contentView!
-    view.setFrameSize(NSMakeSize(view.frame.width, screen.frame.height - unusable))
+    var newWindowFrame = screen.visibleFrame
+    if let unusableHeight = screen.cameraHousingHeight {
+      // This screen contains an embedded camera. Shorten the height of the window's content view's
+      // frame to avoid having part of the window obscured by the camera housing.
+//      Logger.log("Window entering legacy full screen; setFrame to: \(screen.frame)",
+//                 level: .verbose, subsystem: player.subsystem)
+//      let view = window.contentView!
+//      view.setFrameSize(NSMakeSize(view.frame.width, screen.frame.height - unusableHeight))
+    }
+    Logger.log("Window entering legacy full screen; setFrame to: \(newWindowFrame)",
+               level: .verbose, subsystem: player.subsystem)
+    window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
   }
 
   private func legacyAnimateToFullscreen() {
@@ -2496,6 +2507,9 @@ class MainWindowController: PlayerWindowController {
     Logger.log("legacyAnimateToFullscreen", level: .verbose, subsystem: player.subsystem)
     // call delegate
     windowWillEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
+    constrainVideoViewForFullScreen()
+    window.layoutIfNeeded()
+
     // stylemask
     window.styleMask.insert(.borderless)
     if #available(macOS 10.16, *) {
