@@ -1352,8 +1352,8 @@ class MainWindowController: PlayerWindowController {
 
     let totalStartingDuration = totalStartingDuration ?? UIAnimation.UIAnimationDuration
 
-    let startingAnimationDuration: CGFloat = (totalStartingDuration ?? (UIAnimation.UIAnimationDuration * startingAnimationCount)) / startingAnimationCount
-    let endingAnimationDuration: CGFloat = (totalEndingDuration ?? (UIAnimation.UIAnimationDuration * endingAnimationCount)) / endingAnimationCount
+    let startingAnimationDuration: CGFloat = ((totalStartingDuration ?? UIAnimation.UIAnimationDuration) * startingAnimationCount) / startingAnimationCount
+    let endingAnimationDuration: CGFloat = ((totalEndingDuration ?? UIAnimation.UIAnimationDuration) * endingAnimationCount) / endingAnimationCount
 
     // Set initial var
     transition.startingAnimationSequence.append{ [self] context in
@@ -1389,12 +1389,7 @@ class MainWindowController: PlayerWindowController {
 
     // EndingAnimation 1: Open new panels
     transition.endingAnimationSequence.append{ [self] context in
-      if futureLayout.isFullScreen {
-        context.duration = 0
-      } else {
-        context.timingFunction = CAMediaTimingFunction(name: .linear)
-        context.duration = endingAnimationDuration
-      }
+      context.duration = endingAnimationDuration
       openNewPanels(futureLayout)
     }
 
@@ -1470,7 +1465,7 @@ class MainWindowController: PlayerWindowController {
 
   private func closeOldPanels(_ futureLayout: LayoutPlan) {
     guard let window = window else { return }
-    Logger.log("CloseOldPanels", level: .verbose, subsystem: player.subsystem)
+    Logger.log("CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)", level: .verbose, subsystem: player.subsystem)
 
     if futureLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
@@ -2272,12 +2267,15 @@ class MainWindowController: PlayerWindowController {
 
     constrainVideoViewForFullScreen()
 
-    // Just set duration to 0, and avoid headaches from bouncing sidebars and such
-    let transition = buildLayoutTransition(fullScreen: true, totalStartingDuration: 0)
+    let transition = buildLayoutTransition(fullScreen: true, totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
     layoutTransition = transition
-    // Run these two animations in *parallel*, with matching durations
-    UIAnimation.run(transition.startingAnimationSequence)
 
+    // Run these two animations in *parallel*, with matching durations
+    UIAnimation.run(transition.startingAnimationSequence, completionHandler: {
+      UIAnimation.run(transition.endingAnimationSequence)
+    })
+
+    // Run in parallel with above
     UIAnimation.run{ context in
       context.duration = duration
       Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
@@ -2287,9 +2285,6 @@ class MainWindowController: PlayerWindowController {
 
   func windowDidEnterFullScreen(_ notification: Notification) {
     Logger.log("windowDidEnterFullScreen", level: .verbose)
-    if let layoutTransition = layoutTransition {
-      UIAnimation.run(layoutTransition.endingAnimationSequence)
-    }
     fsState.finishAnimating()
 
     videoView.needsLayout = true
@@ -2367,24 +2362,28 @@ class MainWindowController: PlayerWindowController {
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToExitFullScreenWithDuration setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose, subsystem: player.subsystem)
 
-    let transition = buildLayoutTransition(fullScreen: false, totalStartingDuration: duration, totalEndingDuration: UIAnimation.UIAnimationDuration)
-    layoutTransition = transition
     constrainVideoViewForWindowedMode()
-    UIAnimation.run(transition.startingAnimationSequence)
 
-    UIAnimation.run{ [self] context in
+    let transition = buildLayoutTransition(fullScreen: false, totalStartingDuration: 0, totalEndingDuration: duration)
+    layoutTransition = transition
+
+    // Run in parallel with above
+    UIAnimation.run({ [self] context in
+      context.duration = duration
       Logger.log("Window exiting full screen; setFrame to: \(fsState.priorWindowedFrame!)",
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(fsState.priorWindowedFrame!, display: true)
-    }
+    })
+
+    // Run these two animations in *parallel*, with matching durations
+    UIAnimation.run(transition.startingAnimationSequence, completionHandler: {
+      UIAnimation.run(transition.endingAnimationSequence)
+    })
+
   }
 
   func windowDidExitFullScreen(_ notification: Notification) {
     Logger.log("windowDidExitFullScreen", level: .verbose)
-
-    if let layoutTransition = layoutTransition {
-      UIAnimation.run(layoutTransition.endingAnimationSequence)
-    }
 
     fsState.finishAnimating()
 
