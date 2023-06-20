@@ -1043,17 +1043,17 @@ class MainWindowController: PlayerWindowController {
     topPanelTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement) {
+  private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement, extraOffset: CGFloat = 0) {
     Logger.log("TopPanel height: \(topPanelHeight) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
     switch placement {
     case .outsideVideo:
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
       videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(topPanelHeight)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topPanelHeight)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topPanelHeight + extraOffset)
     case .insideVideo:
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(-topPanelHeight)
       videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(extraOffset)
     }
   }
 
@@ -2462,6 +2462,7 @@ class MainWindowController: PlayerWindowController {
 
     // stylemask
     window.styleMask.remove(.borderless)
+    window.styleMask.insert(.resizable)
     if #available(macOS 10.16, *) {
       window.styleMask.insert(.titled)
       (window as! MainWindow).forceKeyAndMain = false
@@ -2475,6 +2476,8 @@ class MainWindowController: PlayerWindowController {
     // then animate to the original frame
     Logger.log("Window exiting legacy full screen; setFrame to: \(priorWindowedFrame)",
                level: .verbose, subsystem: player.subsystem)
+    // If extra space was added for camera housing, remove it
+    updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement)
     window.setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     constrainVideoViewForWindowedMode()
     window.layoutIfNeeded()
@@ -2492,10 +2495,13 @@ class MainWindowController: PlayerWindowController {
     if let unusableHeight = screen.cameraHousingHeight {
       // This screen contains an embedded camera. Shorten the height of the window's content view's
       // frame to avoid having part of the window obscured by the camera housing.
-//      Logger.log("Window entering legacy full screen; setFrame to: \(screen.frame)",
-//                 level: .verbose, subsystem: player.subsystem)
-//      let view = window.contentView!
-//      view.setFrameSize(NSMakeSize(view.frame.width, screen.frame.height - unusableHeight))
+      Logger.log("Window entering legacy full screen; setFrame to: \(screen.frame)",
+                 level: .verbose, subsystem: player.subsystem)
+      newWindowFrame = NSRect(origin: screen.visibleFrame.origin, size: NSMakeSize(screen.visibleFrame.width, screen.visibleFrame.height + unusableHeight))
+
+      if currentLayout.hasTopOSC {
+        updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement, extraOffset: unusableHeight)
+      }
     }
     Logger.log("Window entering legacy full screen; setFrame to: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
@@ -2512,6 +2518,7 @@ class MainWindowController: PlayerWindowController {
 
     // stylemask
     window.styleMask.insert(.borderless)
+    window.styleMask.remove(.resizable)
     if #available(macOS 10.16, *) {
       window.styleMask.remove(.titled)
       (window as! MainWindow).forceKeyAndMain = true
