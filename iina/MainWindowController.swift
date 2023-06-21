@@ -223,8 +223,6 @@ class MainWindowController: PlayerWindowController {
 
   var currentLayout = LayoutPlan(spec: LayoutSpec.initial())
 
-  private var layoutTransition: LayoutTransition? = nil
-
   enum FullScreenState: Equatable {
     case windowed
     case animating(toFullscreen: Bool, legacy: Bool, priorWindowedFrame: NSRect)
@@ -1043,7 +1041,8 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement, extraOffset: CGFloat = 0) {
-    Logger.log("TopPanel height: \(topPanelHeight) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement), extraOffset: \(extraOffset)",
+               level: .verbose, subsystem: player.subsystem)
     switch placement {
     case .outsideVideo:
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
@@ -1195,6 +1194,15 @@ class MainWindowController: PlayerWindowController {
                         enableOSC: false,
                         oscPosition: .floating)
     }
+
+    func clone(fullScreen: Bool) -> LayoutSpec {
+      return LayoutSpec(isFullScreen: fullScreen,
+                        titleBarStyle: self.titleBarStyle,
+                        topPanelPlacement: self.topPanelPlacement,
+                        bottomPanelPlacement: self.bottomPanelPlacement,
+                        enableOSC: self.enableOSC,
+                        oscPosition: self.oscPosition)
+    }
   }
 
   /// "Layout" would be a better name for this class, but it's already taken by AppKit.
@@ -1335,8 +1343,13 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updateTitleBarAndOSC(fullScreen: Bool) {
+    guard !isInInteractiveMode else {
+      Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
+      return
+    }
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
-    let layoutTransition = buildLayoutTransition(fullScreen: fullScreen)
+    let newLayout = LayoutSpec.fromPreferences(isFullScreen: false)
+    let layoutTransition = buildLayoutTransition(to: newLayout)
 
     UIAnimation.run(layoutTransition.startingAnimationSequence, completionHandler: {
       UIAnimation.run(layoutTransition.endingAnimationSequence)
@@ -1362,12 +1375,13 @@ class MainWindowController: PlayerWindowController {
 
   // FIXME: bug: color of "outside" panels flickers during FS transitions
   // FIXME: bug: sidebars bounch during FS transitions for some layout types
-  private func buildLayoutTransition(fullScreen: Bool,
+  /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
+  /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
+  private func buildLayoutTransition(to layoutSpec: LayoutSpec,
                                      totalStartingDuration: CGFloat? = nil,
                                      totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
 
-    let layoutSpec = LayoutSpec.fromPreferences(isFullScreen: fullScreen)
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
     let transition = LayoutTransition(from: currentLayout, to: futureLayout)
 
@@ -2292,15 +2306,8 @@ class MainWindowController: PlayerWindowController {
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToEnterFullScreenOn duration: \(duration)", level: .verbose)
 
-    constrainVideoViewForFullScreen()
-
-    let transition = buildLayoutTransition(fullScreen: true, totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
-    layoutTransition = transition
-
-    // Run these two animations in *parallel*, with matching durations
-    UIAnimation.run(transition.startingAnimationSequence, completionHandler: {
-      UIAnimation.run(transition.endingAnimationSequence)
-    })
+    // Run this animation in *parallel* with below, with matching duration
+    animateEnterIntoFullScreen(withDuration: duration)
 
     // Run in parallel with above
     UIAnimation.run{ context in
@@ -2309,6 +2316,20 @@ class MainWindowController: PlayerWindowController {
       window.setFrame(screen.frame, display: true)
     }
   }
+
+  private func animateEnterIntoFullScreen(withDuration duration: TimeInterval) {
+    constrainVideoViewForFullScreen()
+
+    // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
+    let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
+
+    let layoutTransition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
+
+    UIAnimation.run(layoutTransition.startingAnimationSequence, completionHandler: {
+      UIAnimation.run(layoutTransition.endingAnimationSequence)
+    })
+  }
+  
 
   func windowDidEnterFullScreen(_ notification: Notification) {
     Logger.log("windowDidEnterFullScreen", level: .verbose)
@@ -2390,9 +2411,8 @@ class MainWindowController: PlayerWindowController {
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToExitFullScreenWithDuration setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose, subsystem: player.subsystem)
 
-    /// Split the duration 50/50 between `openNewPanels` animation and `fadeInNewViews` animation
-    let transition = buildLayoutTransition(fullScreen: false, totalStartingDuration: 0, totalEndingDuration: duration)
-    layoutTransition = transition
+    // Run this animation in *parallel* with below, with matching duration
+    animateExitFromFullScreen(withDuration: duration)
 
     // Run in parallel with above
     UIAnimation.run({ [self] context in
@@ -2403,12 +2423,20 @@ class MainWindowController: PlayerWindowController {
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(fsState.priorWindowedFrame!, display: true)
     })
+  }
 
-    // Run these two animations in *parallel*, with matching durations
+  private func animateExitFromFullScreen(withDuration duration: TimeInterval) {
+    guard let window = window else { return }
+
+    // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
+    let windowedLayout = currentLayout.spec.clone(fullScreen: false)
+
+    /// Split the duration 50/50 between `openNewPanels` animation and `fadeInNewViews` animation
+    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
+
     UIAnimation.run(transition.startingAnimationSequence, completionHandler: {
       UIAnimation.run(transition.endingAnimationSequence)
     })
-
   }
 
   func windowDidExitFullScreen(_ notification: Notification) {
@@ -2500,19 +2528,27 @@ class MainWindowController: PlayerWindowController {
     } else {
       window.styleMask.remove(.fullScreen)
     }
- 
-    restoreDockSettings()
-    // restore window frame and aspect ratio
-    // then animate to the original frame
-    Logger.log("Window exiting legacy full screen; setFrame to: \(priorWindowedFrame)",
-               level: .verbose, subsystem: player.subsystem)
-    // If extra space was added for camera housing, remove it
-    updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement)
-    window.setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    constrainVideoViewForWindowedMode()
-    window.layoutIfNeeded()
-    // call delegate
-    windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
+
+    let duration = UIAnimation.UIAnimationDuration
+    animateExitFromFullScreen(withDuration: duration)
+
+    UIAnimation.run({ [self] context in
+      context.timingFunction = CAMediaTimingFunction(name: .linear)
+      context.duration = duration * 0.5
+      // restore window frame and aspect ratio
+      // then animate to the original frame
+      Logger.log("Window exiting legacy full screen; setFrame to: \(priorWindowedFrame)",
+                 level: .verbose, subsystem: player.subsystem)
+      // If extra space was added for camera housing, remove it
+      updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement)
+      window.setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+      window.layoutIfNeeded()
+    }, completionHandler: { [self] in
+      restoreDockSettings()
+      // call delegate
+      windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
+    })
+
   }
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
@@ -2525,13 +2561,9 @@ class MainWindowController: PlayerWindowController {
     if let unusableHeight = screen.cameraHousingHeight {
       // This screen contains an embedded camera. Shorten the height of the window's content view's
       // frame to avoid having part of the window obscured by the camera housing.
-      Logger.log("Window entering legacy full screen; setFrame to: \(screen.frame)",
-                 level: .verbose, subsystem: player.subsystem)
       newWindowFrame = NSRect(origin: screen.visibleFrame.origin, size: NSMakeSize(screen.visibleFrame.width, screen.visibleFrame.height + unusableHeight))
 
-      if currentLayout.hasTopOSC {
-        updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement, extraOffset: unusableHeight)
-      }
+      updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement, extraOffset: unusableHeight)
     }
     Logger.log("Window entering legacy full screen; setFrame to: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
@@ -2561,10 +2593,18 @@ class MainWindowController: PlayerWindowController {
     // auto hide menubar and dock
     NSApp.presentationOptions.insert(.autoHideMenuBar)
     NSApp.presentationOptions.insert(.autoHideDock)
-    // set window frame and in some cases content view frame
-    setWindowFrameForLegacyFullScreen()
-    // call delegate
-    windowDidEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
+
+    let duration = UIAnimation.UIAnimationDuration
+    animateEnterIntoFullScreen(withDuration: duration)
+
+    UIAnimation.run({ [self] context in
+      context.duration = duration
+      // set window frame and in some cases content view frame
+      setWindowFrameForLegacyFullScreen()
+    }, completionHandler: { [self] in
+      // call delegate
+      windowDidEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
+    })
   }
 
   // MARK: - Window delegate: Resize
