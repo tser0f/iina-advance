@@ -221,7 +221,7 @@ class MainWindowController: PlayerWindowController {
 
   // Window state
 
-  var currentLayout = LayoutPlan.initialLayout()
+  var currentLayout = LayoutPlan(spec: LayoutSpec.initial())
 
   private var layoutTransition: LayoutTransition? = nil
 
@@ -1168,15 +1168,39 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  class LayoutPlan {
-    // Cached user prefs:
+  struct LayoutSpec {
+    let isFullScreen:  Bool
     let titleBarStyle: Preference.TitleBarStyle
     let topPanelPlacement: Preference.PanelPlacement
     let bottomPanelPlacement: Preference.PanelPlacement
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
 
-    let isFullScreen:  Bool
+    static func fromPreferences(isFullScreen: Bool) -> LayoutSpec {
+      // If in fullscreen, top & bottom panels are always .insideVideo
+      return LayoutSpec(isFullScreen: isFullScreen,
+                        titleBarStyle: Preference.enum(for: .titleBarStyle),
+                        topPanelPlacement: Preference.enum(for: .topPanelPlacement),
+                        bottomPanelPlacement: Preference.enum(for: .bottomPanelPlacement),
+                        enableOSC: Preference.bool(for: .enableOSC),
+                        oscPosition: Preference.enum(for: .oscPosition))
+    }
+
+    // Matches what is shown in the XIB
+    static func initial() -> LayoutSpec {
+      return LayoutSpec(isFullScreen: false,
+                        titleBarStyle: .full,
+                        topPanelPlacement:.insideVideo,
+                        bottomPanelPlacement: .insideVideo,
+                        enableOSC: false,
+                        oscPosition: .floating)
+    }
+  }
+
+  /// "Layout" would be a better name for this class, but it's already taken by AppKit.
+  class LayoutPlan {
+    // All other variables in this class are derived from this spec:
+    let spec: LayoutSpec
 
     // Visiblity of views/categories:
 
@@ -1206,34 +1230,32 @@ class MainWindowController: PlayerWindowController {
 
     var setupControlBarInternalViews: (() -> Void)? = nil
 
-    // Don't call this directly. Call one of the static methods below
-    private init(isFullScreen: Bool, topPanelPlacement: Preference.PanelPlacement, bottomPanelPlacement: Preference.PanelPlacement, titleBarStyle: Preference.TitleBarStyle, enableOSC: Bool, oscPosition: Preference.OSCPosition) {
-      self.isFullScreen = isFullScreen
-      self.topPanelPlacement = topPanelPlacement
-      self.bottomPanelPlacement = bottomPanelPlacement
-      self.titleBarStyle = titleBarStyle
-      self.enableOSC = enableOSC
-      self.oscPosition = oscPosition
+    init(spec: LayoutSpec) {
+      self.spec = spec
     }
 
-    static func initFromPreferences(isFullScreen: Bool) -> LayoutPlan {
-      // If in fullscreen, top & bottom panels are always .insideVideo
-      return LayoutPlan(isFullScreen: isFullScreen,
-                        topPanelPlacement: Preference.enum(for: .topPanelPlacement),
-                        bottomPanelPlacement: Preference.enum(for: .bottomPanelPlacement),
-                        titleBarStyle: Preference.enum(for: .titleBarStyle),
-                        enableOSC: Preference.bool(for: .enableOSC),
-                        oscPosition: Preference.enum(for: .oscPosition))
+    var isFullScreen: Bool {
+      return spec.isFullScreen
     }
 
-    static func initialLayout() -> LayoutPlan {
-      // Match what is shown in the XIB
-      return LayoutPlan(isFullScreen: false,
-                        topPanelPlacement:.insideVideo,
-                        bottomPanelPlacement: .insideVideo,
-                        titleBarStyle: .full,
-                        enableOSC: false,
-                        oscPosition: .floating)
+    var enableOSC: Bool {
+      return spec.enableOSC
+    }
+
+    var oscPosition: Preference.OSCPosition {
+      return spec.oscPosition
+    }
+
+    var titleBarStyle: Preference.TitleBarStyle {
+      return spec.titleBarStyle
+    }
+
+    var topPanelPlacement: Preference.PanelPlacement {
+      return spec.topPanelPlacement
+    }
+
+    var bottomPanelPlacement: Preference.PanelPlacement {
+      return spec.bottomPanelPlacement
     }
 
     var hasTitleBarOSC: Bool {
@@ -1345,7 +1367,8 @@ class MainWindowController: PlayerWindowController {
                                      totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
 
-    let futureLayout = buildFutureLayoutPlan(fullScreen: fullScreen)
+    let layoutSpec = LayoutSpec.fromPreferences(isFullScreen: fullScreen)
+    let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
     let transition = LayoutTransition(from: currentLayout, to: futureLayout)
 
     let startingAnimationCount: CGFloat = 3
@@ -1645,10 +1668,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   // This method should only make a layout plan. It should not alter the current layout.
-  private func buildFutureLayoutPlan(fullScreen: Bool) -> LayoutPlan {
+  private func buildFutureLayoutPlan(from layoutSpec: LayoutSpec) -> LayoutPlan {
     let window = window!
 
-    let futureLayout = LayoutPlan.initFromPreferences(isFullScreen: fullScreen)
+    let futureLayout = LayoutPlan(spec: layoutSpec)
 
     /// For fullscreen, skip handling`titleTextField` and title bar buttons - they will be shown when transition
     /// to fullscreen is done
@@ -3166,7 +3189,6 @@ class MainWindowController: PlayerWindowController {
     // TODO: use key interceptor to support ESC and ENTER keys
     isInInteractiveMode = true
     hideFadeableViews()
-    // TODO: hide "outside" OSCs too
     hideOSD()
 
     isPausedPriorToInteractiveMode = player.info.isPaused
@@ -3201,8 +3223,15 @@ class MainWindowController: PlayerWindowController {
 
     self.cropSettingsView = controlView
 
-    // show crop settings view
-    UIAnimation.run(withDuration: UIAnimation.CropAnimationDuration, { [self] (context) in
+    var animationBlocks: [AnimationBlock] = []
+
+    animationBlocks.append{ [self] context in
+      // TODO: hide "outside" OSCs too
+
+    }
+
+    animationBlocks.append{ [self] context in
+      context.duration = UIAnimation.CropAnimationDuration
       context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(0)
       constrainVideoViewForWindowedMode(
@@ -3211,7 +3240,10 @@ class MainWindowController: PlayerWindowController {
         bottom: -newVideoViewFrame.minY,
         left: newVideoViewFrame.minX
       )
-    }, completionHandler: { [self] in
+    }
+
+    // show crop settings view
+    UIAnimation.run(animationBlocks, completionHandler: { [self] in
       cropSettingsView?.cropBoxView.isHidden = false
       videoContainerView.layer?.shadowColor = .black
       videoContainerView.layer?.shadowOpacity = 1
