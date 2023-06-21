@@ -1150,8 +1150,6 @@ class MainWindowController: PlayerWindowController {
     return toolbarView
   }
 
-  // TODO: Prevent sidebars from opening if not enough space?
-
   enum Visibility {
     case hidden
     case showAlways
@@ -1253,7 +1251,8 @@ class MainWindowController: PlayerWindowController {
       return spec.bottomPanelPlacement
     }
 
-    var hasTitleBarOSC: Bool {  // TODO: remove this entirely
+    var hasTitleBarOSC: Bool {
+      // TODO: reimplment this
       return false
     }
 
@@ -1328,8 +1327,8 @@ class MainWindowController: PlayerWindowController {
     let newLayout = LayoutSpec.fromPreferences(isFullScreen: false)
     let layoutTransition = buildLayoutTransition(to: newLayout)
 
-    UIAnimation.run(layoutTransition.startingAnimationSequence, completionHandler: {
-      UIAnimation.run(layoutTransition.endingAnimationSequence)
+    UIAnimation.run(layoutTransition.animationBlocks, completionHandler: {
+      UIAnimation.run(layoutTransition.animationBlocks)
     })
   }
 
@@ -1337,8 +1336,7 @@ class MainWindowController: PlayerWindowController {
     let fromLayout: LayoutPlan
     let toLayout: LayoutPlan
 
-    var startingAnimationSequence: [AnimationBlock] = []
-    var endingAnimationSequence: [AnimationBlock] = []
+    var animationBlocks: [AnimationBlock] = []
 
     init(from fromLayout: LayoutPlan, to toLayout: LayoutPlan) {
       self.fromLayout = fromLayout
@@ -1350,9 +1348,10 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  // FIXME: Document icon visibility is sometimes wrong (check again after adding timing queue)
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: color of "outside" panels flickers during FS transitions
-  // FIXME: bug: sidebars bounch during FS transitions for some layout types
+  // FIXME: bug: sidebars bounch during FS transitions for some layout types: do not close panel unnecessarily during FS animations
   // FIXME: update constraints to black out camera housing for legacy fullscreen
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
@@ -1372,40 +1371,43 @@ class MainWindowController: PlayerWindowController {
     let startingAnimationDuration: CGFloat = ((totalStartingDuration ?? UIAnimation.UIAnimationDuration) * startingAnimationCount) / startingAnimationCount
     let endingAnimationDuration: CGFloat = ((totalEndingDuration ?? UIAnimation.UIAnimationDuration) * endingAnimationCount) / endingAnimationCount
 
+    // Starting animations:
+
     // Set initial var
-    transition.startingAnimationSequence.append{ [self] context in
+    transition.animationBlocks.append{ [self] context in
       context.duration = 0
       controlBarFloating.isDragging = false
     }
 
     // StartingAnimation 1: show fadeable views from current layout
     for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration) {
-      transition.startingAnimationSequence.append(fadeAnimation)
+      transition.animationBlocks.append(fadeAnimation)
     }
 
     // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel
-    transition.startingAnimationSequence.append{ [self] context in
+    transition.animationBlocks.append{ [self] context in
       context.duration = startingAnimationDuration
       fadeOutOldViews(futureLayout)
     }
 
     // StartingAnimation 3: Minimize panels which are no longer needed
-    transition.startingAnimationSequence.append{ [self] context in
+    transition.animationBlocks.append{ [self] context in
       context.duration = startingAnimationDuration
       /// Need to use `linear` or else panels of different sizes won't line up as they move
       context.timingFunction = CAMediaTimingFunction(name: .linear)
       closeOldPanels(futureLayout)
     }
 
+    // Ending animations:
 
     // Not animated: Update constraints. Should have no visible changes
-    transition.endingAnimationSequence.append{ [self] context in
+    transition.animationBlocks.append{ [self] context in
       context.duration = 0
       updateHiddenViewsAndConstraints(futureLayout)
     }
 
     // EndingAnimation 1: Open new panels
-    transition.endingAnimationSequence.append{ [self] context in
+    transition.animationBlocks.append{ [self] context in
       context.duration = endingAnimationDuration
       /// Need to use `linear` or else panels of different sizes won't line up as they move
       context.timingFunction = CAMediaTimingFunction(name: .linear)
@@ -1413,7 +1415,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // EndingAnimation 2: Fade in remaining views
-    transition.endingAnimationSequence.append{ [self] context in
+    transition.animationBlocks.append{ [self] context in
       context.duration = endingAnimationDuration
 
       fadeInNewViews(futureLayout)
@@ -1421,7 +1423,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // After animations all finish, start fade timer
-    transition.endingAnimationSequence.append{ [self] context in
+    transition.animationBlocks.append{ [self] context in
       context.duration = 0
 
       animationState = .shown
@@ -2270,19 +2272,14 @@ class MainWindowController: PlayerWindowController {
 
   // Animation: Enter FullScreen
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
-    // Run this animation in *parallel* with below, with matching duration
-    animateEntryIntoFullScreen(withDuration: duration)
-
-    // Run in parallel with above
-    UIAnimation.run{ context in
-      context.duration = duration
-      Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
-      window.setFrame(screen.frame, display: true)
-    }
+    animateEntryIntoFullScreen(withDuration: duration, isLegacy: false)
   }
 
-  private func animateEntryIntoFullScreen(withDuration duration: TimeInterval) {
-    Logger.log("Animating entry into full screen, duration: \(duration)", level: .verbose, subsystem: player.subsystem)
+  private func animateEntryIntoFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
+    guard let window = window,
+          let screen = window.screen else { return }
+    Logger.log("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
+               level: .verbose, subsystem: player.subsystem)
     constrainVideoViewForFullScreen()
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
@@ -2290,8 +2287,26 @@ class MainWindowController: PlayerWindowController {
 
     let layoutTransition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
 
-    UIAnimation.run(layoutTransition.startingAnimationSequence, completionHandler: {
-      UIAnimation.run(layoutTransition.endingAnimationSequence)
+    // Run this animation in *parallel* with below, with matching duration
+    UIAnimation.run(layoutTransition.animationBlocks)
+
+    // Run in parallel with above
+    UIAnimation.run({ [self] context in
+      context.duration = duration
+
+      if isLegacy {
+        // set window frame and in some cases content view frame
+        setWindowFrameForLegacyFullScreen()
+      } else {
+        Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
+        window.setFrame(screen.frame, display: true)
+      }
+
+    }, completionHandler: { [self] in
+      if isLegacy {
+        // call delegate
+        windowDidEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
+      }
     })
   }
 
@@ -2373,22 +2388,13 @@ class MainWindowController: PlayerWindowController {
 
   // Animation: Exit FullScreen
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
-    // Run this animation in *parallel* with below, with matching duration
-    animateExitFromFullScreen(withDuration: duration)
-
-    // Run in parallel with above
-    UIAnimation.run({ [self] context in
-      /// Timing function & duration must exactly match that of `openNewPanels()` so that black areas don't appear during animation
-      context.timingFunction = CAMediaTimingFunction(name: .linear)
-      context.duration = duration * 0.5
-      Logger.log("Window exiting full screen; setFrame to: \(fsState.priorWindowedFrame!)",
-                 level: .verbose, subsystem: player.subsystem)
-      window.setFrame(fsState.priorWindowedFrame!, display: true)
-    })
+    animateExitFromFullScreen(withDuration: duration, isLegacy: false)
   }
 
-  private func animateExitFromFullScreen(withDuration duration: TimeInterval) {
-    Logger.log("Animating exit from full screen, duration: \(duration)", level: .verbose, subsystem: player.subsystem)
+  private func animateExitFromFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
+    guard let window = window else { return }
+    Logger.log("Animating exit from \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
+               level: .verbose, subsystem: player.subsystem)
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let windowedLayout = currentLayout.spec.clone(fullScreen: false)
@@ -2396,8 +2402,41 @@ class MainWindowController: PlayerWindowController {
     /// Split the duration 50/50 between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
 
-    UIAnimation.run(transition.startingAnimationSequence, completionHandler: {
-      UIAnimation.run(transition.endingAnimationSequence)
+    // Run this animation in *parallel* with below, with matching duration
+    UIAnimation.run(transition.animationBlocks)
+
+    // Run in parallel with above
+    UIAnimation.run({ [self] context in
+      /// Timing function & duration must exactly match that of `openNewPanels()` so that black areas don't appear during animation
+      context.timingFunction = CAMediaTimingFunction(name: .linear)
+      context.duration = duration * 0.5
+
+      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setFrame to: \(fsState.priorWindowedFrame!)",
+                 level: .verbose, subsystem: player.subsystem)
+      window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+
+    }, completionHandler: { [self] in
+
+      if isLegacy {
+        // If extra space was added for camera housing, remove it
+        // TODO: add this back
+
+        // reset stylemask at the end
+        window.styleMask.remove(.borderless)
+        window.styleMask.insert(.resizable)
+        if #available(macOS 10.16, *) {
+          window.styleMask.insert(.titled)
+          (window as! MainWindow).forceKeyAndMain = false
+          window.level = .normal
+        } else {
+          window.styleMask.remove(.fullScreen)
+        }
+
+        restoreDockSettings()
+        // call delegate
+        windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
+      }
+
     })
   }
 
@@ -2457,9 +2496,11 @@ class MainWindowController: PlayerWindowController {
       } else {
         window.toggleFullScreen(self)
       }
-    case let .fullscreen(legacy, priorWindowedFrame):
+    case let .fullscreen(legacy, _):
       if legacy {
-        self.legacyAnimateToWindowed(framePriorToBeingInFullscreen: priorWindowedFrame)
+        // call delegate
+        windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
+        animateExitFromFullScreen(withDuration: UIAnimation.UIAnimationDuration * 2, isLegacy: true)
       } else {
         window.toggleFullScreen(self)
       }
@@ -2471,45 +2512,6 @@ class MainWindowController: PlayerWindowController {
   private func restoreDockSettings() {
     NSApp.presentationOptions.remove(.autoHideMenuBar)
     NSApp.presentationOptions.remove(.autoHideDock)
-  }
-
-  private func legacyAnimateToWindowed(framePriorToBeingInFullscreen priorWindowedFrame: NSRect) {
-    guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    Logger.log("legacyAnimateToWindowed", level: .verbose, subsystem: player.subsystem)
-
-    // call delegate
-    windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
-
-    let duration = UIAnimation.UIAnimationDuration * 2
-
-    UIAnimation.run({ [self] context in
-      context.timingFunction = CAMediaTimingFunction(name: .linear)
-      context.duration = duration * 0.5
-      // restore window frame and aspect ratio
-      // then animate to the original frame
-      Logger.log("Window exiting legacy full screen; setFrame to: \(priorWindowedFrame)",
-                 level: .verbose, subsystem: player.subsystem)
-      // If extra space was added for camera housing, remove it
-      // TODO: add this back
-      window.setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    }, completionHandler: { [self] in
-      // reset stylemask at the end
-      window.styleMask.remove(.borderless)
-      window.styleMask.insert(.resizable)
-      if #available(macOS 10.16, *) {
-        window.styleMask.insert(.titled)
-        (window as! MainWindow).forceKeyAndMain = false
-        window.level = .normal
-      } else {
-        window.styleMask.remove(.fullScreen)
-      }
-
-      restoreDockSettings()
-      // call delegate
-      windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
-    })
-
-    animateExitFromFullScreen(withDuration: duration)
   }
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
@@ -2533,9 +2535,9 @@ class MainWindowController: PlayerWindowController {
 
   private func legacyAnimateToFullscreen() {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    Logger.log("legacyAnimateToFullscreen", level: .verbose, subsystem: player.subsystem)
     // call delegate
     windowWillEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
+
     constrainVideoViewForFullScreen()
     window.layoutIfNeeded()
 
@@ -2553,17 +2555,7 @@ class MainWindowController: PlayerWindowController {
     NSApp.presentationOptions.insert(.autoHideMenuBar)
     NSApp.presentationOptions.insert(.autoHideDock)
 
-    let duration = UIAnimation.UIAnimationDuration
-    animateEntryIntoFullScreen(withDuration: duration)
-
-    UIAnimation.run({ [self] context in
-      context.duration = duration
-      // set window frame and in some cases content view frame
-      setWindowFrameForLegacyFullScreen()
-    }, completionHandler: { [self] in
-      // call delegate
-      windowDidEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
-    })
+    animateEntryIntoFullScreen(withDuration: UIAnimation.UIAnimationDuration, isLegacy: true)
   }
 
   // MARK: - Window delegate: Resize
@@ -3221,6 +3213,14 @@ class MainWindowController: PlayerWindowController {
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.cropBoxView])
 
     self.cropSettingsView = controlView
+
+    // Same layout, but hide OSC
+    let interactiveModeLayout = LayoutSpec(isFullScreen: currentLayout.isFullScreen,
+                                           topPanelPlacement: currentLayout.topPanelPlacement,
+                                           bottomPanelPlacement: currentLayout.bottomPanelPlacement,
+                                           enableOSC: false,
+                                           oscPosition: currentLayout.oscPosition)
+    let transition = buildLayoutTransition(to: interactiveModeLayout)
 
     var animationBlocks: [AnimationBlock] = []
 
