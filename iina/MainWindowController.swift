@@ -340,7 +340,6 @@ class MainWindowController: PlayerWindowController {
 
   private static let mainWindowPrefKeys: [Preference.Key] = PlayerWindowController.playerWindowPrefKeys + [
     .osdPosition,
-    .titleBarStyle,
     .enableOSC,
     .oscPosition,
     .topPanelPlacement,
@@ -380,7 +379,6 @@ class MainWindowController: PlayerWindowController {
     switch keyPath {
     case PK.enableOSC.rawValue,
       PK.oscPosition.rawValue,
-      PK.titleBarStyle.rawValue,
       PK.topPanelPlacement.rawValue,
       PK.bottomPanelPlacement.rawValue,
       PK.oscBarHeight.rawValue,
@@ -1042,18 +1040,17 @@ class MainWindowController: PlayerWindowController {
     topPanelTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement, extraOffset: CGFloat = 0) {
-    Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement), extraOffset: \(extraOffset)",
-               level: .verbose, subsystem: player.subsystem)
+  private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement) {
+    Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
     switch placement {
     case .outsideVideo:
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
       videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(topPanelHeight)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topPanelHeight + extraOffset)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topPanelHeight)
     case .insideVideo:
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(-topPanelHeight)
       videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(extraOffset)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0)
     }
   }
 
@@ -1153,10 +1150,6 @@ class MainWindowController: PlayerWindowController {
     return toolbarView
   }
 
-  // FIXME: Pinch to zoom is completely broken
-  // FIXME: Completely remove title bar OSC code since it does not use proper APIs
-  // FIXME: Rework prefs: remove "minimal" option, change "no title bar" to "show only on click"
-  // TODO: Include title bar in animation out of fullscreen
   // TODO: Prevent sidebars from opening if not enough space?
 
   enum Visibility {
@@ -1171,7 +1164,6 @@ class MainWindowController: PlayerWindowController {
 
   struct LayoutSpec {
     let isFullScreen:  Bool
-    let titleBarStyle: Preference.TitleBarStyle
     let topPanelPlacement: Preference.PanelPlacement
     let bottomPanelPlacement: Preference.PanelPlacement
     let enableOSC: Bool
@@ -1180,7 +1172,6 @@ class MainWindowController: PlayerWindowController {
     static func fromPreferences(isFullScreen: Bool) -> LayoutSpec {
       // If in fullscreen, top & bottom panels are always .insideVideo
       return LayoutSpec(isFullScreen: isFullScreen,
-                        titleBarStyle: Preference.enum(for: .titleBarStyle),
                         topPanelPlacement: Preference.enum(for: .topPanelPlacement),
                         bottomPanelPlacement: Preference.enum(for: .bottomPanelPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
@@ -1190,7 +1181,6 @@ class MainWindowController: PlayerWindowController {
     // Matches what is shown in the XIB
     static func initial() -> LayoutSpec {
       return LayoutSpec(isFullScreen: false,
-                        titleBarStyle: .full,
                         topPanelPlacement:.insideVideo,
                         bottomPanelPlacement: .insideVideo,
                         enableOSC: false,
@@ -1199,7 +1189,6 @@ class MainWindowController: PlayerWindowController {
 
     func clone(fullScreen: Bool) -> LayoutSpec {
       return LayoutSpec(isFullScreen: fullScreen,
-                        titleBarStyle: self.titleBarStyle,
                         topPanelPlacement: self.topPanelPlacement,
                         bottomPanelPlacement: self.bottomPanelPlacement,
                         enableOSC: self.enableOSC,
@@ -1256,10 +1245,6 @@ class MainWindowController: PlayerWindowController {
       return spec.oscPosition
     }
 
-    var titleBarStyle: Preference.TitleBarStyle {
-      return spec.titleBarStyle
-    }
-
     var topPanelPlacement: Preference.PanelPlacement {
       return spec.topPanelPlacement
     }
@@ -1268,8 +1253,8 @@ class MainWindowController: PlayerWindowController {
       return spec.bottomPanelPlacement
     }
 
-    var hasTitleBarOSC: Bool {
-      return !isFullScreen && enableOSC && oscPosition == .top && titleBarStyle == .minimal
+    var hasTitleBarOSC: Bool {  // TODO: remove this entirely
+      return false
     }
 
     var hasFloatingOSC: Bool {
@@ -1285,19 +1270,9 @@ class MainWindowController: PlayerWindowController {
                            (oscPosition == .bottom && bottomPanelPlacement == .outsideVideo))
     }
 
-    /// If true:
-    /// • Traffic buttons should not be displayed
-    /// • `titleBarView` should have zero height
-    func hasNoTitleBar() -> Bool {
-      if topPanelPlacement == .outsideVideo && (!enableOSC || oscPosition != .top) {
-        return false
-      }
-      return titleBarStyle == .none
-    }
-
     func computePinToTopButtonVisibility(isOnTop: Bool) -> Visibility {
       let showOnTopStatus = Preference.bool(for: .alwaysShowOnTopIcon) || isOnTop
-      if isFullScreen || hasNoTitleBar() || !showOnTopStatus {
+      if isFullScreen || !showOnTopStatus {
         return .hidden
       }
 
@@ -1375,8 +1350,10 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: color of "outside" panels flickers during FS transitions
   // FIXME: bug: sidebars bounch during FS transitions for some layout types
+  // FIXME: update constraints to black out camera housing for legacy fullscreen
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
@@ -1691,22 +1668,17 @@ class MainWindowController: PlayerWindowController {
 
     /// For fullscreen, skip handling`titleTextField` and title bar buttons - they will be shown when transition
     /// to fullscreen is done
-    if !futureLayout.isFullScreen && !futureLayout.hasNoTitleBar() {
+    if !futureLayout.isFullScreen {
       let visibleState: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
       let hasTopOSC = futureLayout.hasTopOSC
 
       futureLayout.topPanelView = visibleState
       futureLayout.trafficLightButtons = visibleState
+      futureLayout.titleIconAndText = visibleState
+      futureLayout.titleBarHeight = StandardTitleBarHeight  // may be overridden by OSC layout
 
-      if futureLayout.topPanelPlacement == .insideVideo && futureLayout.titleBarStyle == .minimal && !hasTopOSC {
+      if futureLayout.topPanelPlacement == .insideVideo {
         futureLayout.osdMinOffsetFromTop = StandardTitleBarHeight + 8
-      } else {
-        futureLayout.titleBarHeight = StandardTitleBarHeight  // may be overridden by OSC layout
-      }
-
-      // Force "full" title bar style if outside video & no top OSC
-      if futureLayout.titleBarStyle == .full || (futureLayout.topPanelPlacement == .outsideVideo && !hasTopOSC) {
-        futureLayout.titleIconAndText = visibleState
       }
 
       futureLayout.titlebarAccessoryViewControllers = visibleState
@@ -1765,14 +1737,7 @@ class MainWindowController: PlayerWindowController {
         }
       case .top:
         if !futureLayout.isFullScreen {
-          switch futureLayout.titleBarStyle {
-          case .full:
-            futureLayout.titleBarHeight = reducedTitleBarHeight
-          case .minimal:
-            futureLayout.titleBarHeight = StandardTitleBarHeight
-          case .none:
-            break
-          }
+          futureLayout.titleBarHeight = reducedTitleBarHeight
         }
 
         /// For `controlBarTitleBar`, use top panel to provide a visual effects background (it is otherwise unaffiliated with OSC)
@@ -2277,7 +2242,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowWillEnterFullScreen(_ notification: Notification) {
-
     let isLegacyFullScreen = notification.name == .iinaLegacyFullScreen
     let priorWindowedFrame = window!.frame
     fsState.startAnimatingToFullScreen(legacy: isLegacyFullScreen, priorWindowedFrame: priorWindowedFrame)
@@ -2306,7 +2270,6 @@ class MainWindowController: PlayerWindowController {
 
   // Animation: Enter FullScreen
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
-
     // Run this animation in *parallel* with below, with matching duration
     animateEntryIntoFullScreen(withDuration: duration)
 
@@ -2331,7 +2294,6 @@ class MainWindowController: PlayerWindowController {
       UIAnimation.run(layoutTransition.endingAnimationSequence)
     })
   }
-  
 
   func windowDidEnterFullScreen(_ notification: Notification) {
     Logger.log("windowDidEnterFullScreen", level: .verbose)
@@ -2528,8 +2490,7 @@ class MainWindowController: PlayerWindowController {
       Logger.log("Window exiting legacy full screen; setFrame to: \(priorWindowedFrame)",
                  level: .verbose, subsystem: player.subsystem)
       // If extra space was added for camera housing, remove it
-      // FIXME: this is broken
-//      updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement)
+      // TODO: add this back
       window.setFrame(priorWindowedFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     }, completionHandler: { [self] in
       // reset stylemask at the end
@@ -2557,15 +2518,14 @@ class MainWindowController: PlayerWindowController {
   private func setWindowFrameForLegacyFullScreen() {
     guard let window = self.window else { return }
     let screen = window.screen ?? NSScreen.main!
-    var newWindowFrame = screen.visibleFrame
-    /* FIXME: this is broken
+    let newWindowFrame = screen.frame
+
     if let unusableHeight = screen.cameraHousingHeight {
       // This screen contains an embedded camera. Shorten the height of the window's content view's
       // frame to avoid having part of the window obscured by the camera housing.
-      newWindowFrame = NSRect(origin: screen.visibleFrame.origin, size: NSMakeSize(screen.visibleFrame.width, screen.visibleFrame.height + unusableHeight))
-
-      updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement, extraOffset: unusableHeight)
-    }*/
+      // FIXME: this doesn't work
+//      updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement, extraOffset: unusableHeight)
+    }
     Logger.log("Window entering legacy full screen; setFrame to: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)

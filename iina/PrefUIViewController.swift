@@ -56,7 +56,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet var sectionPictureInPictureView: NSView!
 
   @IBOutlet weak var themeMenu: NSMenu!
-  @IBOutlet weak var titleBarStyleContainerView: NSView!
+  @IBOutlet weak var showTitleBarTriggerContainerView: NSView!
   @IBOutlet weak var windowPreviewImageView: NSImageView!
   @IBOutlet weak var oscBottomPlacementContainerView: NSView!
   @IBOutlet weak var oscSnapToCenterCheckboxContainerView: NSView!
@@ -90,7 +90,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var pipMinimizeWindow: NSButton!
 
   private let observedPrefKeys: [Preference.Key] = [
-    .titleBarStyle,
+    .showTitleBarTrigger,
     .topPanelPlacement,
     .bottomPanelPlacement,
     .enableOSC,
@@ -152,7 +152,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
-    case PK.titleBarStyle.rawValue,
+    case PK.showTitleBarTrigger.rawValue,
       PK.enableOSC.rawValue,
       PK.topPanelPlacement.rawValue,
       PK.bottomPanelPlacement.rawValue,
@@ -183,7 +183,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   private func refreshTitleBarAndOSCSection(animate: Bool = true) {
     let ib = PlayerWindowPreviewImageBuilder()
 
-    let titleBarIsOverlay = ib.titleBarStyle != .none && ib.topPanelPlacement == .insideVideo
+    let titleBarIsOverlay = ib.topPanelPlacement == .insideVideo
     let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .floating ||
                                          (ib.oscPosition == .top && ib.topPanelPlacement == .insideVideo) ||
                                          (ib.oscPosition == .bottom && ib.bottomPanelPlacement == .insideVideo))
@@ -211,9 +211,10 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         viewHidePairs.append((oscBottomPlacementContainerView, !oscIsBottom))
       }
 
-      let showTitleBarStyle = ib.topPanelPlacement == .insideVideo || ib.oscPosition == .top
-      if titleBarStyleContainerView.isHidden != !showTitleBarStyle {
-        viewHidePairs.append((titleBarStyleContainerView, !showTitleBarStyle))
+//      let showShowTitleBarTrigger = ib.topPanelPlacement == .insideVideo
+      let showShowTitleBarTrigger = false // TODO: implement showing title bar on click
+      if showTitleBarTriggerContainerView.isHidden != !showShowTitleBarTrigger {
+        viewHidePairs.append((showTitleBarTriggerContainerView, !showShowTitleBarTrigger))
       }
 
       for (view, shouldHide) in viewHidePairs {

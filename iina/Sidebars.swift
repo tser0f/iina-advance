@@ -633,7 +633,7 @@ extension SidebarTabGroupViewController {
                  level: .verbose, subsystem: mainWindow.player.subsystem)
     } else {
       // Downshift: try to match title bar height
-      if layout.isFullScreen || layout.hasNoTitleBar() {
+      if layout.isFullScreen {
         downshift = defaultDownshift
       } else {
         // Need to adjust if has title bar, but it's style .minimal

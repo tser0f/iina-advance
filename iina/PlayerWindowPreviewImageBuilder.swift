@@ -50,7 +50,6 @@ class PlayerWindowPreviewImageBuilder {
 
   let oscEnabled = Preference.bool(for: .enableOSC)
   let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
-  let titleBarStyle: Preference.TitleBarStyle = Preference.enum(for: .titleBarStyle)
   let topPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .topPanelPlacement)
   let bottomPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomPanelPlacement)
 
@@ -117,17 +116,8 @@ class PlayerWindowPreviewImageBuilder {
       switch oscPosition {
 
       case .top:
-
-        switch titleBarStyle {
-        case .full:
-          let adjustment = oscFullWidthHeight / 8 // remove some space between controller & title bar
-          oscHeight = oscFullWidthHeight - adjustment
-        case .minimal:
-          // Special in-title accessory controller
-          oscHeight = titleBarHeight
-        case .none:
-          oscHeight = oscFullWidthHeight
-        }  // end switch titleBarStyle
+        let adjustment = oscFullWidthHeight / 8 // remove some space between controller & title bar
+        oscHeight = oscFullWidthHeight - adjustment
 
         switch topPanelPlacement {
 
@@ -137,14 +127,7 @@ class PlayerWindowPreviewImageBuilder {
 
         case .insideVideo:
           oscAlpha = overlayAlpha
-
-          switch titleBarStyle {
-          case .full:
-            oscOffsetY = videoViewOffsetY + videoHeight - oscHeight - titleBarHeight
-          case .minimal,
-              .none:
-            oscOffsetY = videoViewOffsetY + videoHeight - oscHeight
-          }  // end switch titleBarStyle
+          oscOffsetY = videoViewOffsetY + videoHeight - oscHeight - titleBarHeight
 
         }  // end switch topPanelPlacement
 
@@ -178,12 +161,8 @@ class PlayerWindowPreviewImageBuilder {
     if topPanelPlacement == .outsideVideo {
       if oscEnabled && oscPosition == .top {
         winHeight += oscHeight
-        if titleBarStyle == .full {
-          winHeight += titleBarHeight
-        }
-      } else {
-        winHeight += titleBarHeight
       }
+      winHeight += titleBarHeight
     }
     let winOriginX: Int = (outputImgWidth - videoWidth) / 2
     let winOriginY: Int = (outputImgHeight - winHeight - menuBarHeight) / 2
@@ -273,12 +252,7 @@ class PlayerWindowPreviewImageBuilder {
 
           iconGroupCenterY = oscRect.origin.y + (CGFloat(oscHeight) * 0.5)
           nextIconMinX = oscRect.origin.x
-          if oscPosition == .top && titleBarStyle == .minimal {
-            // Special case: OSC is inside title bar. Add space for traffic light buttons
-            nextIconMinX += titleBarButtonsWidth
-          } else {
-            nextIconMinX += spacingH
-          }
+          nextIconMinX += spacingH
         }
 
         nextIconMinX += drawIconVCenter(leftArrowImage, in: cgContext, originX: nextIconMinX, centerY: iconGroupCenterY, iconHeight: iconHeight)
@@ -329,7 +303,7 @@ class PlayerWindowPreviewImageBuilder {
       if topPanelPlacement == .insideVideo {
         titleBarOffsetY -= titleBarHeight
       } else {  // outside
-        if oscEnabled && oscPosition == .top && titleBarStyle == .full {
+        if oscEnabled && oscPosition == .top {
           titleBarOffsetY += oscHeight
         }
       }
@@ -337,12 +311,7 @@ class PlayerWindowPreviewImageBuilder {
       let isTitleBarInside = topPanelPlacement == .insideVideo
       let drawTitleBarBackground: Bool
       if isTitleBarInside || (oscEnabled && oscPosition == .top) {
-        switch titleBarStyle {
-        case .none, .minimal:
-          drawTitleBarBackground = false
-        case .full:
-          drawTitleBarBackground = true
-        }
+        drawTitleBarBackground = true
       } else {
         drawTitleBarBackground = true
       }
@@ -356,10 +325,7 @@ class PlayerWindowPreviewImageBuilder {
       }
 
       // Draw traffic light buttons
-      let drawTitleBarButtons = (!isTitleBarInside && (!oscEnabled || oscPosition != .top))  || titleBarStyle != .none
-      if drawTitleBarButtons {
-        draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY, width: Int(titleBarButtonsWidth), height: titleBarHeight)
-      }
+      draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY, width: Int(titleBarButtonsWidth), height: titleBarHeight)
     }  // drawingCalls
 
     let previewImage = drawImageInBitmapImageContext(width: outputImgWidth, height: outputImgHeight, drawingCalls: drawingCalls)?
