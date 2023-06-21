@@ -766,7 +766,6 @@ class MainWindowController: PlayerWindowController {
 
     // video view
     guard let cv = window.contentView else { return }
-    cv.autoresizesSubviews = false
     addVideoViewToWindow()
     window.setIsVisible(true)
 
@@ -883,7 +882,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  // Entering windowed mode (either initial:
+  // Entering windowed mode either from initial load, PIP, or music mode
   func addVideoViewToWindow() {
     videoContainerView.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
@@ -1339,6 +1338,8 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  // FIXME: bug: color of "outside" panels flickers during FS transitions
+  // FIXME: bug: sidebars bounch during FS transitions for some layout types
   private func buildLayoutTransition(fullScreen: Bool,
                                      totalStartingDuration: CGFloat? = nil,
                                      totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
@@ -1390,6 +1391,8 @@ class MainWindowController: PlayerWindowController {
     // EndingAnimation 1: Open new panels
     transition.endingAnimationSequence.append{ [self] context in
       context.duration = endingAnimationDuration
+      /// Need to use `linear` or else panels of different sizes won't line up as they move
+      context.timingFunction = CAMediaTimingFunction(name: .linear)
       openNewPanels(futureLayout)
     }
 
@@ -2262,6 +2265,7 @@ class MainWindowController: PlayerWindowController {
     player.mpv.setFlag(MPVOption.Window.keepaspect, true)
   }
 
+  // Animation: Enter FullScreen
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToEnterFullScreenOn duration: \(duration)", level: .verbose)
 
@@ -2359,17 +2363,19 @@ class MainWindowController: PlayerWindowController {
     player.mpv.setFlag(MPVOption.Window.keepaspect, false)
   }
 
+  // Animation: Exit FullScreen
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
     Logger.log("window startCustomAnimationToExitFullScreenWithDuration setting priorWindowedFrame to \(fsState.priorWindowedFrame!)", level: .verbose, subsystem: player.subsystem)
 
-    constrainVideoViewForWindowedMode()
-
+    /// Split the duration 50/50 between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(fullScreen: false, totalStartingDuration: 0, totalEndingDuration: duration)
     layoutTransition = transition
 
     // Run in parallel with above
     UIAnimation.run({ [self] context in
-      context.duration = duration
+      /// Timing function & duration must exactly match that of `openNewPanels()` so that black areas don't appear during animation
+      context.timingFunction = CAMediaTimingFunction(name: .linear)
+      context.duration = duration * 0.5
       Logger.log("Window exiting full screen; setFrame to: \(fsState.priorWindowedFrame!)",
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(fsState.priorWindowedFrame!, display: true)
@@ -2384,12 +2390,14 @@ class MainWindowController: PlayerWindowController {
 
   func windowDidExitFullScreen(_ notification: Notification) {
     Logger.log("windowDidExitFullScreen", level: .verbose)
+    constrainVideoViewForWindowedMode()
 
-    fsState.finishAnimating()
 
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()
     }
+
+    fsState.finishAnimating()
 
     if player.info.isPaused {
       // When playback is paused the display link is stopped in order to avoid wasting energy on
