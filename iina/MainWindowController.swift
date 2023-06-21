@@ -951,6 +951,7 @@ class MainWindowController: PlayerWindowController {
     newConstraints.eqOffsetBottom.isActive = true
     newConstraints.eqOffsetLeft.isActive = true
     videoViewConstraints = newConstraints
+    window?.layoutIfNeeded()
   }
 
   private func constrainVideoViewForFullScreen() {
@@ -966,6 +967,7 @@ class MainWindowController: PlayerWindowController {
     newConstraints.centerX.isActive = true
     newConstraints.centerY.isActive = true
     videoViewConstraints = newConstraints
+    window?.layoutIfNeeded()
   }
 
   /** Set material for OSC and title bar */
@@ -2442,7 +2444,6 @@ class MainWindowController: PlayerWindowController {
   func windowDidExitFullScreen(_ notification: Notification) {
     Logger.log("windowDidExitFullScreen", level: .verbose)
     constrainVideoViewForWindowedMode()
-
 
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()
