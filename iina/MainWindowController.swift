@@ -3221,11 +3221,11 @@ class MainWindowController: PlayerWindowController {
       isPausedPriorToInteractiveMode = player.info.isPaused
       player.pause()
 
-      let controller = mode.viewController()
-      controller.mainWindow = self
+      let cropController = mode.viewController()
+      cropController.mainWindow = self
       bottomView.isHidden = false
-      bottomView.addSubview(controller.view)
-      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controller.view])
+      bottomView.addSubview(cropController.view)
+      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.view])
 
       isInInteractiveMode = true
       let origVideoSize = NSSize(width: ow, height: oh)
@@ -3247,35 +3247,39 @@ class MainWindowController: PlayerWindowController {
       )
 
       // add crop setting view
-      videoContainerView.addSubview(controller.cropBoxView)
-      controller.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-      controller.cropBoxView.actualSize = origVideoSize
-      controller.cropBoxView.resized(with: newVideoViewFrame)
-      controller.cropBoxView.isHidden = true
-      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controller.cropBoxView])
+      videoContainerView.addSubview(cropController.cropBoxView)
+      cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
+      cropController.cropBoxView.actualSize = origVideoSize
+      cropController.cropBoxView.resized(with: newVideoViewFrame)
+      cropController.cropBoxView.isHidden = true
+      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.cropBoxView])
 
-      self.cropSettingsView = controller
-      controller.cropBoxView.layoutSubtreeIfNeeded()
+      self.cropSettingsView = cropController
     })
 
     animationBlocks.append({ [self] context in
       context.duration = 0
 
+      guard let cropController = cropSettingsView else { return }
       // show crop settings view
-      cropSettingsView?.cropBoxView.isHidden = false
+      cropController.cropBoxView.isHidden = false
       videoContainerView.layer?.shadowColor = .black
       videoContainerView.layer?.shadowOpacity = 1
       videoContainerView.layer?.shadowOffset = .zero
       videoContainerView.layer?.shadowRadius = 3
+
+      cropController.cropBoxView.resized(with: videoView.frame)
+      cropController.cropBoxView.layoutSubtreeIfNeeded()
     })
 
     UIAnimation.run(animationBlocks)
   }
 
   func exitInteractiveMode(immediately: Bool = false, then: @escaping () -> Void = {}) {
+    guard let cropController = cropSettingsView else { return }
     // if exit without animation
     let duration: CGFloat = immediately ? 0 : UIAnimation.CropAnimationDuration
-    cropSettingsView?.cropBoxView.isHidden = true
+    cropController.cropBoxView.isHidden = true
 
     var animationBlocks: [AnimationBlock] = []
     animationBlocks.append{ [self] context in
@@ -3288,7 +3292,7 @@ class MainWindowController: PlayerWindowController {
 
     animationBlocks.append{ [self] context in
       context.duration = 0
-      self.cropSettingsView?.cropBoxView.removeFromSuperview()
+      cropController.cropBoxView.removeFromSuperview()
       self.hideSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
@@ -3299,6 +3303,7 @@ class MainWindowController: PlayerWindowController {
         player.resume()
       }
       isInInteractiveMode = false
+      self.cropSettingsView = nil
     }
 
     let transition = buildLayoutTransition(to: LayoutSpec.fromPreferences(isFullScreen: currentLayout.isFullScreen),
