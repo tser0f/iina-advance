@@ -123,6 +123,7 @@ class PlayerCore: NSObject {
   var userLabel: String?
   var disableUI = false
   var disableWindowAnimation = false
+  private var didInitVideo = false
 
   @available(macOS 10.12.2, *)
   var touchBarSupport: TouchBarSupport {
@@ -467,6 +468,9 @@ class PlayerCore: NSObject {
   }
 
   func initVideo() {
+    guard !didInitVideo else { return }
+    didInitVideo = true
+
     // init mpv render context.
     // The video layer must be displayed once to get the OpenGL context initialized.
     videoView.videoLayer.display()
@@ -476,9 +480,10 @@ class PlayerCore: NSObject {
 
   // unload main window video view
   func uninitVideo() {
-    guard mainWindow.loaded else { return }
+    guard didInitVideo else { return }
     videoView.stopDisplayLink()
     videoView.uninit()
+    didInitVideo = false
   }
 
   private func savePlayerState() {

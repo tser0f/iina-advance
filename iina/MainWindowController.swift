@@ -750,12 +750,8 @@ class MainWindowController: PlayerWindowController {
     trailingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
     trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight).isActive = true
 
-    // FIXME: do not do this here
     // size
     window.minSize = PlayerCore.minVideoSize
-    if let wf = windowFrameFromGeometry() {
-      window.setFrame(wf, display: false)
-    }
 
     // osc views
     oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
@@ -808,8 +804,6 @@ class MainWindowController: PlayerWindowController {
     }
     updateBufferIndicatorView()
     updateOSDPosition()
-    // Set layout from prefs. Do not animate:
-    updateTitleBarAndOSC(disableAnimation: true)
     
     if player.disableUI { hideFadeableViews() }
 
@@ -857,10 +851,6 @@ class MainWindowController: PlayerWindowController {
       self.player.sendOSD(.abLoopUpdate(.bSet, VideoTime(seconds).stringRepresentation))
     }
 
-    addVideoViewToWindow()
-    window.setIsVisible(true)
-    player.initVideo()
-
     player.events.emit(.windowLoaded)
   }
 
@@ -882,8 +872,10 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  // Entering windowed mode either from initial load, PIP, or music mode
+  /// When entering "windowed" mode (either from initial load, PIP, or music mode), call this to add/return `videoView`
+  /// to this window. Will do nothing if it's already there.
   func addVideoViewToWindow() {
+    guard !videoContainerView.subviews.contains(videoView) else { return }
     videoContainerView.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
@@ -1332,9 +1324,7 @@ class MainWindowController: PlayerWindowController {
     let durationOverride: CGFloat? = disableAnimation ? 0 : nil
     let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: durationOverride, totalEndingDuration: durationOverride)
 
-    UIAnimation.run(layoutTransition.animationBlocks, completionHandler: {
-      UIAnimation.run(layoutTransition.animationBlocks)
-    })
+    UIAnimation.run(layoutTransition.animationBlocks)
   }
 
   class LayoutTransition {
@@ -2182,9 +2172,15 @@ class MainWindowController: PlayerWindowController {
       attrTitle.addAttribute(.paragraphStyle, value: p, range: NSRange(location: 0, length: attrTitle.length))
     }
     updateTitle()  // Need to call this here, or else when opening directly to fullscreen, window title is just "Window"
+    addVideoViewToWindow()
+    // Set layout from prefs. Do not animate:
     updateTitleBarAndOSC(disableAnimation: true)
     // update timer
     resetFadeTimer()
+
+    window.setIsVisible(true)
+    player.initVideo()
+
     videoView.videoLayer.draw(forced: true)
   }
 
