@@ -120,13 +120,13 @@ extension NSSize {
       return size
     }
     let sizeAspect = size.aspect
-    let newSize: NSSize
+    var newSize: NSSize
     if aspect > sizeAspect {  // self is wider, grow to meet height
       newSize = NSSize(width: size.height * aspect, height: size.height)
     } else {
       newSize = NSSize(width: size.width, height: size.width / aspect)
     }
-    Logger.log("Growing window to size \(size). Derived aspect: \(sizeAspect); result: \(newSize)")
+    Logger.log("Growing \(self) to size \(size). Derived aspect: \(sizeAspect); result: \(newSize)", level: .verbose)
     return newSize
   }
 
@@ -152,11 +152,14 @@ extension NSSize {
       return size
     }
     let sizeAspect = size.aspect
+    var newSize: NSSize
     if aspect < sizeAspect { // self is taller, shrink to meet height
-      return NSSize(width: size.height * aspect, height: size.height)
+      newSize = NSSize(width: size.height * aspect, height: size.height)
     } else {
-      return NSSize(width: size.width, height: size.width / aspect)
+      newSize = NSSize(width: size.width, height: size.width / aspect)
     }
+    Logger.log("Shrinking \(self) to size \(size). Derived aspect: \(sizeAspect); result: \(newSize)", level: .verbose)
+    return newSize
   }
 
   func centeredRect(in rect: NSRect) -> NSRect {

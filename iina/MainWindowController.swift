@@ -2058,11 +2058,11 @@ class MainWindowController: PlayerWindowController {
         // FIXME: confirm reset on video size change due to track change
         windowFrameAtMagnificationBegin = window.frame
         videoContainerFrameAtMagnificationBegin = videoContainerView.frame
-        scaleVideoFromPinchGesture(to: recognizer.magnification + 1.0)
+        scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
-        scaleVideoFromPinchGesture(to: recognizer.magnification + 1.0)
+        scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .ended:
-        scaleVideoFromPinchGesture(to: recognizer.magnification + 1.0)
+        scaleVideoFromPinchGesture(to: recognizer.magnification)
         updateWindowParametersForMPV()
       case .cancelled, .failed:
         scaleVideoFromPinchGesture(to: 1.0)
@@ -2074,32 +2074,60 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func scaleVideoFromPinchGesture(to scale: CGFloat) {
+  private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
+    // avoid zero and negative numbers because they will cause problems
+    let scale = max(0.0001, magnification + 1.0)
     scaleVideo(to: scale, fromWindowFrame: windowFrameAtMagnificationBegin, fromVideoSize: videoContainerFrameAtMagnificationBegin.size)
   }
 
   private func scaleVideo(to scale: CGFloat,
                           fromWindowFrame origWindowFrame: CGRect,
                           fromVideoSize origVideoSize: CGSize) {
-    guard !isInInteractiveMode, let window = window, let screenFrame = NSScreen.main?.visibleFrame else { return }
+    guard scale > 0 else {
+      Logger.log("Cannot scale video: scale (\(scale)) must be larger than 0", level: .error, subsystem: player.subsystem)
+      return
+    }
+    guard !isInInteractiveMode, let window = window, let screen = window.screen else { return }
+    let screenVisibleFrame = screen.visibleFrame
 
     // Scale only the video. Panels outside the video do not change size
     let outsidePanelsWidth = origWindowFrame.width - origVideoSize.width
     let outsidePanelsHeight = origWindowFrame.height - origVideoSize.height
-    let newVideoWidth = origVideoSize.width * scale
-    let newVideoHeight = origVideoSize.height * scale
 
-    let newWindowWidth = outsidePanelsWidth + newVideoWidth
-    let newWindowHeight = outsidePanelsHeight + newVideoHeight
-    // Check against max & min threshold
-    if newWindowHeight <= screenFrame.height && newWindowHeight >= minSize.height
-        && newWindowWidth <= screenFrame.width && newWindowWidth >= minSize.width {
-      let newWindowSize = NSSize(width: newWindowWidth, height: newWindowHeight);
-      let newWindowFrame = window.frame.centeredResize(to: newWindowSize)
-      Logger.log("Scaling video x\(scale) from \(origVideoSize.width)x\(origVideoSize.height) to \(newWindowWidth)x\(newWindowHeight); setFrame to: \(newWindowFrame)",
-                 level: .verbose, subsystem: player.subsystem)
-      window.setFrame(newWindowFrame, display: true)
+    var newVideoSize = NSSize(width: origVideoSize.width * scale,
+                              height: origVideoSize.height * scale);
+
+    let maxVideoSize = NSSize(width: screenVisibleFrame.width - outsidePanelsWidth,
+                              height: screenVisibleFrame.height - outsidePanelsHeight)
+    let minVideoSize = NSSize(width: minSize.width,
+                              height: minSize.height)
+
+    if newVideoSize.height > maxVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
     }
+    if newVideoSize.width > maxVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+    }
+
+    if newVideoSize.height < minVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+    if newVideoSize.width < minVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+
+    let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
+                               height: newVideoSize.height + outsidePanelsHeight)
+
+    var deltaX = round(newVideoSize.width - origVideoSize.width) / 2
+    var deltaY = round(newVideoSize.height - origVideoSize.height) / 2
+    let newWindowOrigin = NSPoint(x: origWindowFrame.origin.x - deltaX,
+                                  y: origWindowFrame.origin.y - deltaY)
+
+    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
+    Logger.log("Scaling video x\(scale) from \(origVideoSize.width)x\(origVideoSize.height) to \(newWindowSize.width)x\(newWindowSize.height); setFrame to: \(newWindowFrame)",
+               level: .verbose, subsystem: player.subsystem)
+    window.setFrame(newWindowFrame, display: true)
   }
 
   @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
@@ -2137,8 +2165,6 @@ class MainWindowController: PlayerWindowController {
     if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: currentScreen) {
       Logger.log("WindowWillOpen using initial geometry; setFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
       window.setFrame(windowFrame, display: true, animate: useAnimation)
-    } else {
-      scaleVideo(to: 1.0, fromWindowFrame: window.frame, fromVideoSize: AppData.sizeWhenNoVideo)
     }
 
     resetCollectionBehavior()
