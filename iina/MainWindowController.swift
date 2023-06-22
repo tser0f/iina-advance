@@ -390,7 +390,7 @@ class MainWindowController: PlayerWindowController {
       PK.oscBarToolbarButtonPadding.rawValue,
       PK.controlBarToolbarButtons.rawValue:
 
-      updateTitleBarAndOSC(fullScreen: fsState.isFullscreen)
+      updateTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) {
@@ -715,6 +715,8 @@ class MainWindowController: PlayerWindowController {
 
     guard let window = window else { return }
 
+    window.orderOut(self)
+
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
 
@@ -762,8 +764,6 @@ class MainWindowController: PlayerWindowController {
 
     // video view
     guard let cv = window.contentView else { return }
-    addVideoViewToWindow()
-    window.setIsVisible(true)
 
     // gesture recognizers
     rotationHandler.mainWindowController = self
@@ -782,8 +782,6 @@ class MainWindowController: PlayerWindowController {
       view.layer?.opacity = 0.01
       cv.addSubview(view)
     }
-
-    player.initVideo()
 
     let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius))
 
@@ -810,6 +808,8 @@ class MainWindowController: PlayerWindowController {
     }
     updateBufferIndicatorView()
     updateOSDPosition()
+    // Set layout from prefs. Do not animate:
+    updateTitleBarAndOSC(durationOverride: 0)
     
     if player.disableUI { hideFadeableViews() }
 
@@ -856,6 +856,10 @@ class MainWindowController: PlayerWindowController {
       self.player.abLoopB = seconds
       self.player.sendOSD(.abLoopUpdate(.bSet, VideoTime(seconds).stringRepresentation))
     }
+
+    addVideoViewToWindow()
+    window.setIsVisible(true)
+    player.initVideo()
 
     player.events.emit(.windowLoaded)
   }
@@ -1318,14 +1322,14 @@ class MainWindowController: PlayerWindowController {
     apply(visibility: visibility, view)
   }
 
-  private func updateTitleBarAndOSC(fullScreen: Bool) {
+  private func updateTitleBarAndOSC(durationOverride: CGFloat? = nil) {
     guard !isInInteractiveMode else {
       Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
       return
     }
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
-    let newLayout = LayoutSpec.fromPreferences(isFullScreen: false)
-    let layoutTransition = buildLayoutTransition(to: newLayout)
+    let newLayout = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
+    let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: durationOverride, totalEndingDuration: durationOverride)
 
     UIAnimation.run(layoutTransition.animationBlocks, completionHandler: {
       UIAnimation.run(layoutTransition.animationBlocks)
@@ -1672,7 +1676,6 @@ class MainWindowController: PlayerWindowController {
     /// to fullscreen is done
     if !futureLayout.isFullScreen {
       let visibleState: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
-      let hasTopOSC = futureLayout.hasTopOSC
 
       futureLayout.topPanelView = visibleState
       futureLayout.trafficLightButtons = visibleState
@@ -2188,7 +2191,7 @@ class MainWindowController: PlayerWindowController {
       attrTitle.addAttribute(.paragraphStyle, value: p, range: NSRange(location: 0, length: attrTitle.length))
     }
     updateTitle()  // Need to call this here, or else when opening directly to fullscreen, window title is just "Window"
-    updateTitleBarAndOSC(fullScreen: fsState.isFullscreen)
+    updateTitleBarAndOSC()
     // update timer
     resetFadeTimer()
   }
@@ -2498,9 +2501,7 @@ class MainWindowController: PlayerWindowController {
       }
     case let .fullscreen(legacy, _):
       if legacy {
-        // call delegate
-        windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
-        animateExitFromFullScreen(withDuration: UIAnimation.UIAnimationDuration * 2, isLegacy: true)
+        legacyAnimateToWindowed()
       } else {
         window.toggleFullScreen(self)
       }
@@ -2512,6 +2513,12 @@ class MainWindowController: PlayerWindowController {
   private func restoreDockSettings() {
     NSApp.presentationOptions.remove(.autoHideMenuBar)
     NSApp.presentationOptions.remove(.autoHideDock)
+  }
+
+  private func legacyAnimateToWindowed() {
+    // call delegate
+    windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
+    animateExitFromFullScreen(withDuration: UIAnimation.UIAnimationDuration * 2, isLegacy: true)
   }
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
