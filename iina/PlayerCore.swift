@@ -415,20 +415,14 @@ class PlayerCore: NSObject {
     // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
     info.currentFolder = nil
 
-    let isFirstLoad = !mainWindow.loaded
-    let _ = mainWindow.window
+    let _ = mainWindow.window  /// Kicks off `windowDidLoad()`
     (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningMainWindow()
 
     // FIXME: delay until after fileLoaded. We don't know the video dimensions yet!
     if isInMiniPlayer {
       miniPlayer.showWindow(nil)
     } else {
-      // we only want to call windowWillOpen when the window is currently closed.
-      // if the window is opened for the first time, it will become visible in windowDidLoad, so we need to check isFirstLoad.
-      // window.isVisible will work from the second time.
-      if isFirstLoad || !mainWindow.window!.isVisible {
-        mainWindow.windowWillOpen()
-      }
+      mainWindow.windowWillOpen()
       mainWindow.showWindow(nil)
       mainWindow.windowDidOpen()
     }

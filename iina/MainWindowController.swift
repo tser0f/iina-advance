@@ -809,7 +809,7 @@ class MainWindowController: PlayerWindowController {
     updateBufferIndicatorView()
     updateOSDPosition()
     // Set layout from prefs. Do not animate:
-    updateTitleBarAndOSC(durationOverride: 0)
+    updateTitleBarAndOSC(disableAnimation: true)
     
     if player.disableUI { hideFadeableViews() }
 
@@ -1322,13 +1322,14 @@ class MainWindowController: PlayerWindowController {
     apply(visibility: visibility, view)
   }
 
-  private func updateTitleBarAndOSC(durationOverride: CGFloat? = nil) {
+  private func updateTitleBarAndOSC(disableAnimation: Bool = false) {
     guard !isInInteractiveMode else {
       Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
       return
     }
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
     let newLayout = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
+    let durationOverride: CGFloat? = disableAnimation ? 0 : nil
     let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: durationOverride, totalEndingDuration: durationOverride)
 
     UIAnimation.run(layoutTransition.animationBlocks, completionHandler: {
@@ -2120,7 +2121,7 @@ class MainWindowController: PlayerWindowController {
   func windowWillOpen() {
     Logger.log("WindowWillOpen", level: .verbose, subsystem: player.subsystem)
     isClosing = false
-    guard let window = window else { return }
+    guard let window = self.window, let cv = window.contentView else { return }
     // Must workaround an AppKit defect in some versions of macOS. This defect is known to exist in
     // Catalina and Big Sur. The problem was not reproducible in early versions of Monterey. It
     // reappeared in Ventura. The status of other versions of macOS is unknown, however the
@@ -2150,20 +2151,10 @@ class MainWindowController: PlayerWindowController {
       scaleVideo(to: 1.0, fromWindowFrame: window.frame, fromVideoSize: AppData.sizeWhenNoVideo)
     }
 
-    videoView.videoLayer.draw(forced: true)
-  }
-
-  /** A method being called when window open. Pretend to be a window delegate. */
-  override func windowDidOpen() {
-    Logger.log("MainWindowController: WindowDidOpen", level: .verbose, subsystem: player.subsystem)
-    super.windowDidOpen()
-    guard let window = self.window, let cv = window.contentView else { return }
-
-    window.makeMain()
-    window.makeKeyAndOrderFront(nil)
     resetCollectionBehavior()
     // update buffer indicator view
     updateBufferIndicatorView()
+
     // start tracking mouse event
     if cv.trackingAreas.isEmpty {
       cv.addTrackingArea(NSTrackingArea(rect: cv.bounds,
@@ -2191,9 +2182,10 @@ class MainWindowController: PlayerWindowController {
       attrTitle.addAttribute(.paragraphStyle, value: p, range: NSRange(location: 0, length: attrTitle.length))
     }
     updateTitle()  // Need to call this here, or else when opening directly to fullscreen, window title is just "Window"
-    updateTitleBarAndOSC()
+    updateTitleBarAndOSC(disableAnimation: true)
     // update timer
     resetFadeTimer()
+    videoView.videoLayer.draw(forced: true)
   }
 
   func windowWillClose(_ notification: Notification) {
