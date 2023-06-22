@@ -3183,13 +3183,10 @@ class MainWindowController: PlayerWindowController {
 
 
   func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
-    // prerequisites
-    guard let window = window else { return }
-
     if #available(macOS 10.14, *) {
-      window.backgroundColor = .windowBackgroundColor
+      window?.backgroundColor = .windowBackgroundColor
     } else {
-      window.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1)
+      window?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1)
     }
 
     let (ow, oh) = player.originalVideoSize
@@ -3203,7 +3200,7 @@ class MainWindowController: PlayerWindowController {
     /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
     /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
     let interactiveModeLayout = LayoutSpec(isFullScreen: currentLayout.isFullScreen,
-                                           topPanelPlacement: .outsideVideo,
+                                           topPanelPlacement: .insideVideo,
                                            bottomPanelPlacement: currentLayout.bottomPanelPlacement,
                                            enableOSC: false,
                                            oscPosition: currentLayout.oscPosition)
@@ -3214,6 +3211,9 @@ class MainWindowController: PlayerWindowController {
     // Now animate into Interactive Mode:
     animationBlocks.append({ [self] context in
       context.duration = UIAnimation.CropAnimationDuration
+      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+
+      guard let window = self.window else { return }
 
       hideFadeableViews()
       hideOSD()
@@ -3221,37 +3221,23 @@ class MainWindowController: PlayerWindowController {
       isPausedPriorToInteractiveMode = player.info.isPaused
       player.pause()
 
-      let controlView = mode.viewController()
-      controlView.mainWindow = self
+      let controller = mode.viewController()
+      controller.mainWindow = self
       bottomView.isHidden = false
-      bottomView.addSubview(controlView.view)
-      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.view])
+      bottomView.addSubview(controller.view)
+      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controller.view])
 
       isInInteractiveMode = true
       let origVideoSize = NSSize(width: ow, height: oh)
       // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
-      let bezelSize = StandardTitleBarHeight
       // the max region that the video view can occupy
-      let newVideoViewBounds = NSRect(x: bezelSize,
-                                      y: InteractiveModeBottomViewHeight + bezelSize,
-                                      width: window.frame.width - bezelSize - bezelSize,
-                                      height: window.frame.height - InteractiveModeBottomViewHeight - bezelSize - bezelSize)
+      let newVideoViewBounds = NSRect(x: StandardTitleBarHeight,
+                                      y: InteractiveModeBottomViewHeight + StandardTitleBarHeight,
+                                      width: window.frame.width - StandardTitleBarHeight - StandardTitleBarHeight,
+                                      height: window.frame.height - InteractiveModeBottomViewHeight - StandardTitleBarHeight - StandardTitleBarHeight)
       let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
       let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
-      let selectedRect: NSRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-
-      // add crop setting view
-      videoContainerView.addSubview(controlView.cropBoxView)
-      controlView.cropBoxView.selectedRect = selectedRect
-      controlView.cropBoxView.actualSize = origVideoSize
-      controlView.cropBoxView.resized(with: newVideoViewFrame)
-      controlView.cropBoxView.isHidden = true
-      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.cropBoxView])
-
-      self.cropSettingsView = controlView
-
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
       bottomPanelBottomConstraint.animateToConstant(0)
       constrainVideoViewForWindowedMode(
         top: window.frame.height - newVideoViewFrame.maxY,
@@ -3259,6 +3245,17 @@ class MainWindowController: PlayerWindowController {
         bottom: -newVideoViewFrame.minY,
         left: newVideoViewFrame.minX
       )
+
+      // add crop setting view
+      videoContainerView.addSubview(controller.cropBoxView)
+      controller.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
+      controller.cropBoxView.actualSize = origVideoSize
+      controller.cropBoxView.resized(with: newVideoViewFrame)
+      controller.cropBoxView.isHidden = true
+      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controller.cropBoxView])
+
+      self.cropSettingsView = controller
+      controller.cropBoxView.layoutSubtreeIfNeeded()
     })
 
     animationBlocks.append({ [self] context in
