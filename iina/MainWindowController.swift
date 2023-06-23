@@ -2107,12 +2107,14 @@ class MainWindowController: PlayerWindowController {
 
     scaleVideo(toVideoSize: newVideoSize,
                fromVideoSize: videoContainerFrameAtMagnificationBegin.size,
-               fromWindowFrame: windowFrameAtMagnificationBegin)
+               fromWindowFrame: windowFrameAtMagnificationBegin,
+               animate: false)
   }
 
   func scaleVideo(toVideoSize desiredVideoSize: CGSize,
                   fromVideoSize: CGSize? = nil,
-                  fromWindowFrame: CGRect? = nil) {
+                  fromWindowFrame: CGRect? = nil,
+                  animate: Bool = true) {
     guard !isInInteractiveMode, let window = window else { return }
     let screen = bestScreen
 
@@ -2158,7 +2160,7 @@ class MainWindowController: PlayerWindowController {
     let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
     Logger.log("Scaling video from \(origVideoSize) to \(newVideoSize), actualScale: \(actualScale)x, screenVisibleSize: \(screenVisibleFrame.size), newWindowFrame: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
-    window.setFrame(newWindowFrame, display: true)
+    window.setFrame(newWindowFrame, display: true, animate: animate)
   }
 
   @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
