@@ -46,7 +46,7 @@ extension MainWindowController {
       let (videoWidth, videoHeight) = player.videoSizeForDisplay
       let desiredVideoSize = CGSize(width: CGFloat(videoWidth), height: CGFloat(videoHeight)).satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
       Logger.log("Scaling video to fit screen (calculated size: \(desiredVideoSize))", level: .verbose, subsystem: player.subsystem)
-      scaleVideo(toVideoSize: desiredVideoSize)
+      resizeVideo(toVideoSize: desiredVideoSize)
     case 10:  // smaller size
       scaleVideoByIncrement(-AppData.scaleStep)
     case 11:  // bigger size
@@ -62,7 +62,7 @@ extension MainWindowController {
     let newHeight = newWidth / currentVideoSize.aspect
     let desiredVideoSize = CGSize(width: currentVideoSize.width + step, height: newHeight)
     Logger.log("Incrementing video width by \(step), to desired size \(desiredVideoSize)", level: .verbose, subsystem: player.subsystem)
-    scaleVideo(toVideoSize: desiredVideoSize)
+    resizeVideo(toVideoSize: desiredVideoSize)
   }
 
   @objc func menuAlwaysOnTop(_ sender: AnyObject) {

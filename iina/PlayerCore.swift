@@ -1674,7 +1674,7 @@ class PlayerCore: NSObject {
       info.displayWidth = dwidth
       info.displayHeight = dheight
       DispatchQueue.main.sync {
-        notifyMainWindowVideoSizeChanged()
+        self.mainWindow.adjustFrameAfterVideoReconfig()
       }
     }
   }
@@ -1757,11 +1757,6 @@ class PlayerCore: NSObject {
       userInfo: nil,
       repeats: true
     )
-  }
-
-  func notifyMainWindowVideoSizeChanged() {
-    Logger.log("notifyMainWindowVideoSizeChanged() entered")
-    mainWindow.adjustFrameByVideoSize()
   }
 
   // difficult to use option set

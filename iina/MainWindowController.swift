@@ -186,6 +186,7 @@ class MainWindowController: PlayerWindowController {
   var isPausedDueToMiniaturization: Bool = false
   var isPausedPriorToInteractiveMode: Bool = false
 
+  // For PinchAction:
   var lastMagnification: CGFloat = 0.0
   var windowFrameAtMagnificationBegin = NSRect()
   var videoContainerFrameAtMagnificationBegin = NSRect()
@@ -1643,25 +1644,73 @@ class MainWindowController: PlayerWindowController {
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
-  // TODO: remove when sure this isn't needed
-  private func addTitleBarAccessoryViews() {
+  func updateSpacingForTitleBarAccessories(_ layout: LayoutPlan? = nil) {
     guard let window = window else { return }
-    leadingTitleBarAccessoryView.isHidden = false
-    if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
-      window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
-      window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+    let layout = layout ?? self.currentLayout
+
+    let leadingSpaceUsed = updateSpacingForLeadingTitleBarAccessory(layout)
+    let trailingSpaceUsed = updateSpacingForTrailingTitleBarAccessory(layout)
+
+    let widthOfTitleBarOSC: CGFloat
+    if layout.hasTitleBarOSC {
+      // Title bar accessories don't seem to like attaching to other views via constraints.
+      // So the next best option is to programmatically update the constraint's constant any time anything changes.
+      // Fortunately, this doesn't happen very often and is not a very intensive calculation.
+      let totalSpace = window.frame.width
+      widthOfTitleBarOSC = max(0, totalSpace - leadingSpaceUsed - trailingSpaceUsed - 12 - (trailingSpaceUsed > 0 ? 4 : 0))
+    } else {
+      widthOfTitleBarOSC = 0
     }
+    oscTitleBarWidthConstraint.animateToConstant(widthOfTitleBarOSC)
+    //    Logger.log("Updated title bar spacing. LeadingSpaceUsed: \(leadingSpaceUsed), TrailingSpaceUsed: \(trailingSpaceUsed), TitleBarOSCWidth: \(widthOfTitleBarOSC)", level: .verbose, subsystem: player.subsystem)
   }
 
-  // TODO: remove when sure this isn't needed
-  private func removeTitleBarAccessoryViews() {
-    guard let window = window else { return }
-    if window.styleMask.contains(.titled) {
-      /// Note: `window.titlebarAccessoryViewControllers` will crash if `styleMask` doesn't contain `.titled`
-      for index in (0 ..< window.titlebarAccessoryViewControllers.count).reversed() {
-        window.removeTitlebarAccessoryViewController(at: index)
-      }
+  // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
+  // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
+  private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutPlan) -> CGFloat {
+    var trailingSpace: CGFloat = 8  // Add standard space before title text by default
+
+    let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
+
+    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo
+    && (leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown)
+    if isSpaceNeededForSidebar {
+      // Subtract space taken by the 3 standard buttons + other visible buttons
+      trailingSpace = max(0, leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
     }
+    leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
+
+    let totalSpaceOccupied = trailingSpace + sidebarButtonSpace + trafficLightButtonsWidth
+    return totalSpaceOccupied
+  }
+
+  // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
+  // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
+  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutPlan) -> CGFloat {
+    var leadingSpace: CGFloat = 0
+    var spaceForButtons: CGFloat = 0
+
+    if layout.trailingSidebarToggleButton.isShowable {
+      spaceForButtons += trailingSidebarToggleButton.frame.width
+    }
+    if layout.pinToTopButton.isShowable {
+      spaceForButtons += pinToTopButton.frame.width
+    }
+
+    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo
+    && (trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown)
+    if isSpaceNeededForSidebar {
+      leadingSpace = max(0, trailingSidebar.currentWidth - spaceForButtons)
+    }
+    trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
+
+    // Add padding to the side for buttons
+    let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || layout.pinToTopButton.isShowable
+    let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
+    trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
+
+    let totalSpaceOccupied = leadingSpace + spaceForButtons + buttonMargin
+    return totalSpaceOccupied
   }
 
   // This method should only make a layout plan. It should not alter the current layout.
@@ -1803,6 +1852,8 @@ class MainWindowController: PlayerWindowController {
     playbackButtonsSquareWidthConstraint.constant = playBtnSize
     playbackButtonsHorizontalPaddingConstraint.constant = playBtnHPad
   }
+
+  // MARK: - Key events
 
   @discardableResult
   override func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
@@ -2095,72 +2146,6 @@ class MainWindowController: PlayerWindowController {
       }
 
     }
-  }
-
-  private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
-    // avoid zero and negative numbers because they will cause problems
-    let scale = max(0.0001, magnification + 1.0)
-
-    let origVideoSize = videoContainerFrameAtMagnificationBegin.size
-    let newVideoSize = NSSize(width: origVideoSize.width * scale,
-                              height: origVideoSize.height * scale);
-
-    scaleVideo(toVideoSize: newVideoSize,
-               fromVideoSize: videoContainerFrameAtMagnificationBegin.size,
-               fromWindowFrame: windowFrameAtMagnificationBegin,
-               animate: false)
-  }
-
-  func scaleVideo(toVideoSize desiredVideoSize: CGSize,
-                  fromVideoSize: CGSize? = nil,
-                  fromWindowFrame: CGRect? = nil,
-                  animate: Bool = true) {
-    guard !isInInteractiveMode, let window = window else { return }
-    let screen = bestScreen
-
-    let origVideoSize = fromVideoSize ?? videoView.frame.size
-    let origWindowFrame = fromWindowFrame ?? window.frame
-
-    // Scale only the video. Panels outside the video do not change size
-    let outsidePanelsWidth = origWindowFrame.width - origVideoSize.width
-    let outsidePanelsHeight = origWindowFrame.height - origVideoSize.height
-
-    let screenVisibleFrame = screen.visibleFrame
-    let maxVideoSize = NSSize(width: screenVisibleFrame.width - outsidePanelsWidth,
-                              height: screenVisibleFrame.height - outsidePanelsHeight)
-    let minVideoSize = minSize
-    var newVideoSize = desiredVideoSize
-
-    if newVideoSize.height > maxVideoSize.height {
-      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-    }
-    if newVideoSize.width > maxVideoSize.width {
-      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-    }
-
-    if newVideoSize.height < minVideoSize.height {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
-    }
-    if newVideoSize.width < minVideoSize.width {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
-    }
-
-    let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
-                               height: newVideoSize.height + outsidePanelsHeight)
-
-    // Round the results to prevent visible window drift when already at min size
-    let deltaX = round((newVideoSize.width - origVideoSize.width) / 2)
-    let deltaY = round((newVideoSize.height - origVideoSize.height) / 2)
-    let newWindowOrigin = NSPoint(x: origWindowFrame.origin.x - deltaX,
-                                  y: origWindowFrame.origin.y - deltaY)
-
-    let (videoWidth, _) = player.videoSizeForDisplay
-    let actualScale = String(format: "%.2f", newVideoSize.width / CGFloat(videoWidth))
-
-    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
-    Logger.log("Scaling video from \(origVideoSize) to \(newVideoSize), actualScale: \(actualScale)x, screenVisibleSize: \(screenVisibleFrame.size), newWindowFrame: \(newWindowFrame)",
-               level: .verbose, subsystem: player.subsystem)
-    window.setFrame(newWindowFrame, display: true, animate: animate)
   }
 
   @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {
@@ -2996,75 +2981,6 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  func updateSpacingForTitleBarAccessories(_ layout: LayoutPlan? = nil) {
-    guard let window = window else { return }
-    let layout = layout ?? self.currentLayout
-
-    let leadingSpaceUsed = updateSpacingForLeadingTitleBarAccessory(layout)
-    let trailingSpaceUsed = updateSpacingForTrailingTitleBarAccessory(layout)
-
-    let widthOfTitleBarOSC: CGFloat
-    if layout.hasTitleBarOSC {
-      // Title bar accessories don't seem to like attaching to other views via constraints.
-      // So the next best option is to programmatically update the constraint's constant any time anything changes.
-      // Fortunately, this doesn't happen very often and is not a very intensive calculation.
-      let totalSpace = window.frame.width
-      widthOfTitleBarOSC = max(0, totalSpace - leadingSpaceUsed - trailingSpaceUsed - 12 - (trailingSpaceUsed > 0 ? 4 : 0))
-    } else {
-      widthOfTitleBarOSC = 0
-    }
-    oscTitleBarWidthConstraint.animateToConstant(widthOfTitleBarOSC)
-//    Logger.log("Updated title bar spacing. LeadingSpaceUsed: \(leadingSpaceUsed), TrailingSpaceUsed: \(trailingSpaceUsed), TitleBarOSCWidth: \(widthOfTitleBarOSC)", level: .verbose, subsystem: player.subsystem)
-  }
-
-  // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
-  // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
-  private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutPlan) -> CGFloat {
-    var trailingSpace: CGFloat = 8  // Add standard space before title text by default
-
-    let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
-
-    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo
-      && (leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown)
-    if isSpaceNeededForSidebar {
-      // Subtract space taken by the 3 standard buttons + other visible buttons
-      trailingSpace = max(0, leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
-    }
-    leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
-
-    let totalSpaceOccupied = trailingSpace + sidebarButtonSpace + trafficLightButtonsWidth
-    return totalSpaceOccupied
-  }
-
-  // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
-  // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
-  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutPlan) -> CGFloat {
-    var leadingSpace: CGFloat = 0
-    var spaceForButtons: CGFloat = 0
-
-    if layout.trailingSidebarToggleButton.isShowable {
-      spaceForButtons += trailingSidebarToggleButton.frame.width
-    }
-    if layout.pinToTopButton.isShowable {
-      spaceForButtons += pinToTopButton.frame.width
-    }
-
-    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo
-      && (trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown)
-    if isSpaceNeededForSidebar {
-      leadingSpace = max(0, trailingSidebar.currentWidth - spaceForButtons)
-    }
-    trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
-
-    // Add padding to the side for buttons
-    let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || layout.pinToTopButton.isShowable
-    let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
-    trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
-
-    let totalSpaceOccupied = leadingSpace + spaceForButtons + buttonMargin
-    return totalSpaceOccupied
-  }
-
   // MARK: - UI: OSD
 
   private func updateOSDPosition() {
@@ -3514,102 +3430,85 @@ class MainWindowController: PlayerWindowController {
   }
 
   /** Set window size when info available, or video size changed. Called in response to receiving 'video-reconfig' msg  */
-  func adjustFrameByVideoSize() {
+  func adjustFrameAfterVideoReconfig() {
     guard let window = window else { return }
-    Logger.log("AdjustFrameByVideoSize() entered", level: .verbose)
 
-    let (width, height) = player.videoSizeForDisplay
-    if width != player.info.displayWidth || height != player.info.displayHeight {
-      Logger.log("adjustFrameByVideoSize: videoSizeForDisplay (W: \(width), H: \(height)) does not match PlayerInfo (W: \(player.info.displayWidth!), H: \(player.info.displayHeight!) Rot: \(player.info.userRotation)°)", level: .error)
-    }
+    let vsfd = player.videoSizeForDisplay
+    let videoNativeSize = NSSize(width: vsfd.0, height: vsfd.1)
 
     // set aspect ratio
-    let originalVideoSize = NSSize(width: width, height: height)
-    videoView.updateAspectRatioConstraint(w: originalVideoSize.width, h: originalVideoSize.height)
+    videoView.updateAspectRatioConstraint(w: videoNativeSize.width, h: videoNativeSize.height)
     if #available(macOS 10.12, *) {
-      pip.aspectRatio = originalVideoSize
+      pip.aspectRatio = videoNativeSize
     }
 
-    let newSize = window.convertToBacking(videoView.frame).size
-    Logger.log("AdjustFrameByVideoSize: videoView.frame: \(videoView.frame) -> backingVideoSize: \(newSize)", level: .verbose)
+    // Scale only the video. Panels outside the video do not change size
+    let oldVideoSize = videoView.frame.size
+    let outsidePanelsWidth = window.frame.width - oldVideoSize.width
+    let outsidePanelsHeight = window.frame.height - oldVideoSize.height
 
+    let screenRect = bestScreen.visibleFrame
+    let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
+                              height: screenRect.height - outsidePanelsHeight)
+
+    let windowFrame = fsState.priorWindowedFrame ?? window.frame  // FIXME: need to save more information
+    var newVideoSize: NSSize
     var newWindowFrame: NSRect
-    let needResizeWindow: Bool
 
-    let frame = fsState.priorWindowedFrame ?? window.frame
-
-    // FIXME: this looks wrong, but what is the actual intent?
-    if player.info.justStartedFile {
-      // resize option applies
-      let resizeTiming = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
-      switch resizeTiming {
-      case .always:
-        needResizeWindow = true
-      case .onlyWhenOpen:
-        needResizeWindow = player.info.justOpenedFile
-      case .never:
-        needResizeWindow = false
-      }
-    } else {
-      // video size changed during playback
-      needResizeWindow = true
-    }
-
-    Logger.log("From videoSizeForDisplay (\(width)x\(height)), setting frameSize: \(newSize.width)x\(newSize.height); willResizeWindow: \(needResizeWindow)", level: .verbose)
-
-    if needResizeWindow {
+    if shouldResizeWindowAfterVideoReconfig() {
       let resizeRatio = (Preference.enum(for: .resizeWindowOption) as Preference.ResizeWindowOption).ratio
+
+      Logger.log("Starting resizeWindow calculations. OriginalVideoSize: \(videoNativeSize)", level: .verbose)
+
       // get videoSize on screen
-      var videoSize = originalVideoSize
-      let screenRect = window.screen?.visibleFrame
-
-      Logger.log("Starting resizeWindow calculations. OriginalVideoSize: \(videoSize)", level: .verbose)
-
+      newVideoSize = videoNativeSize
       if Preference.bool(for: .usePhysicalResolution) {
-        videoSize = window.convertFromBacking(
-          NSMakeRect(window.frame.origin.x, window.frame.origin.y, CGFloat(width), CGFloat(height))).size
-        Logger.log("Converted to physical resolution, result: \(videoSize)", level: .verbose)
+        newVideoSize = window.convertFromBacking(
+          NSMakeRect(window.frame.origin.x, window.frame.origin.y, videoNativeSize.width, videoNativeSize.height)).size
+        Logger.log("Converted to physical resolution, result: \(newVideoSize)", level: .verbose)
       }
+
       if player.info.justStartedFile {
         if resizeRatio < 0 {
-          if let screenSize = screenRect?.size {
-            videoSize = videoSize.shrink(toSize: screenSize)
-            Logger.log("Shrinking videoSize to fit in screenSize: \(screenSize), result: \(videoSize)", level: .verbose)
-          }
+          newVideoSize = newVideoSize.shrink(toSize: maxVideoSize)
+          Logger.log("Shrinking videoSize to fit in maxVideoSize: \(maxVideoSize), result: \(newVideoSize)", level: .verbose)
         } else {
-          videoSize = videoSize.multiply(CGFloat(resizeRatio))
+          newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
         }
-        Logger.log("Applied resizeRatio: (\(resizeRatio)), result: \(videoSize)", level: .verbose)
+        Logger.log("Applied resizeRatio: (\(resizeRatio)), result: \(newVideoSize)", level: .verbose)
       }
+
       // check screen size
-      if let screenSize = screenRect?.size {
-        videoSize = videoSize.satisfyMaxSizeWithSameAspectRatio(screenSize)
-        Logger.log("Constrained max size to screenSize: \(screenSize), result: \(videoSize)", level: .verbose)
-      }
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+      Logger.log("Constrained max size to maxVideoSize: \(maxVideoSize), result: \(newVideoSize)", level: .verbose)
       // guard min size
       // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
-      videoSize = videoSize.satisfyMinSizeWithSameAspectRatio(minSize)
-      Logger.log("Constrained min size: \(minSize). Final result for videoSize: \(videoSize)", level: .verbose)
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minSize)
+      Logger.log("Constrained min size: \(minSize). Final result for videoSize: \(newVideoSize)", level: .verbose)
       // check if have geometry set (initial window position/size)
-      if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: videoSize) {
+      if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: newVideoSize) {
         Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
         newWindowFrame = wfg
       } else {
-        if player.info.justStartedFile, resizeRatio < 0, let screenRect = screenRect {
-          newWindowFrame = screenRect.centeredResize(to: videoSize)
+        let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
+                                   height: newVideoSize.height + outsidePanelsHeight)
+        if player.info.justStartedFile, resizeRatio < 0 {
+          newWindowFrame = screenRect.centeredResize(to: newWindowSize)
           Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(newWindowFrame)", level: .verbose)
         } else {
-          newWindowFrame = frame.centeredResize(to: videoSize)
-          Logger.log("Did a centered resize using prior frame \(frame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
+          newWindowFrame = windowFrame.centeredResize(to: newWindowSize)
+          Logger.log("Did a centered resize using prior frame \(windowFrame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
         }
       }
 
     } else {
-      // user is navigating in playlist. remain same window width.
-      let newHeight = frame.width / CGFloat(width) * CGFloat(height)
-      let newSize = NSSize(width: frame.width, height: newHeight).satisfyMinSizeWithSameAspectRatio(minSize)
-      newWindowFrame = NSRect(origin: frame.origin, size: newSize)
-      Logger.log("Using same width, with new height (\(newHeight)) \(frame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
+      // FIXME: this gets messed up by vertical videos. Investigate organizing per aspect ratio
+      // user is navigating in playlist. retain same window width.
+      let newVideoWidth = oldVideoSize.width
+      let newVideoHeight = newVideoWidth / videoNativeSize.aspect
+      newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
+      Logger.log("Using same width, with new height (\(newVideoHeight)) -> newVideoSize: \(newVideoSize)", level: .verbose)
+      newWindowFrame = computeWindowFrameFromVideoResize(toVideoSize: newVideoSize)
     }
 
     // FIXME: examine this
@@ -3619,31 +3518,46 @@ class MainWindowController: PlayerWindowController {
     shouldApplyInitialWindowSize = false
 
     if fsState.isFullscreen {
-      Logger.log("Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
+      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
       fsState.priorWindowedFrame = newWindowFrame
     } else {
-      if let screenFrame = window.screen?.frame {
-        newWindowFrame = newWindowFrame.constrain(in: screenFrame)
-      }
-      let animate = UIAnimation.isAnimationEnabled && !player.disableWindowAnimation
-      Logger.log("Updating windowFrame from \(window.frame) to: \(newWindowFrame), animate: \(animate)", level: .verbose)
-      window.setFrame(newWindowFrame, display: true, animate: animate)
-      updateWindowParametersForMPV(withFrame: newWindowFrame)
+      Logger.log("AdjustFrameAfterVideoReconfig: Updating videoSize from: \(oldVideoSize) to: \(newVideoSize); newWindowFrame: \(newWindowFrame)",
+                 level: .verbose, subsystem: player.subsystem)
+      window.setFrame(newWindowFrame, display: true, animate: true)
+      updateWindowParametersForMPV(withSize: newVideoSize)
     }
-    Logger.log("AdjustFrameByVideoSize done; resulting windowFrame: \(newWindowFrame)", level: .verbose)
 
     // UI and slider
     updatePlayTime(withDuration: true, andProgressBar: true)
     player.events.emit(.windowSizeAdjusted, data: newWindowFrame)
   }
 
-  func updateWindowParametersForMPV(withFrame frame: NSRect? = nil) {
-    guard let window = self.window else { return }
+  private func shouldResizeWindowAfterVideoReconfig() -> Bool {
+    if player.info.justStartedFile {
+      // resize option applies
+      let resizeTiming = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
+      switch resizeTiming {
+      case .always:
+        return true
+      case .onlyWhenOpen:
+        return player.info.justOpenedFile
+      case .never:
+        return false
+      }
+    }
+    // video size changed during playback
+    return true
+  }
+
+  func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
     if let videoWidth = player.info.videoWidth {
-      let windowScale = Double((frame ?? window.frame).width) / Double(videoWidth)
-      Logger.log("Updating mpv windowScale to: \(windowScale) (prev: \(player.info.cachedWindowScale))")
-      player.info.cachedWindowScale = windowScale
-      player.mpv.setDouble(MPVProperty.windowScale, windowScale)
+      let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
+      let prevVideoScale = player.info.cachedWindowScale
+      if videoScale != prevVideoScale {
+        Logger.log("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")
+        player.info.cachedWindowScale = videoScale
+        player.mpv.setDouble(MPVProperty.windowScale, videoScale)
+      }
     }
   }
 
@@ -3661,7 +3575,80 @@ class MainWindowController: PlayerWindowController {
 //    var finalSize = (Preference.bool(for: .usePhysicalResolution) ? window.convertFromBacking(logicalFrame) : logicalFrame).size
 
     Logger.log("Setting window scale to \(scale)x -> desiredVideoSize: \(videoDesiredSize)")
-    scaleVideo(toVideoSize: videoDesiredSize)
+    resizeVideo(toVideoSize: videoDesiredSize)
+  }
+
+  private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
+    // avoid zero and negative numbers because they will cause problems
+    let scale = max(0.0001, magnification + 1.0)
+
+    let origVideoSize = videoContainerFrameAtMagnificationBegin.size
+    let newVideoSize = NSSize(width: origVideoSize.width * scale,
+                              height: origVideoSize.height * scale);
+
+    resizeVideo(toVideoSize: newVideoSize,
+               fromVideoSize: videoContainerFrameAtMagnificationBegin.size,
+               fromWindowFrame: windowFrameAtMagnificationBegin,
+               animate: false)
+  }
+
+  func resizeVideo(toVideoSize desiredVideoSize: CGSize,
+                  fromVideoSize: CGSize? = nil, fromWindowFrame: CGRect? = nil,
+                  animate: Bool = true) {
+    guard !isInInteractiveMode, let window = window else { return }
+    let newWindowFrame = computeWindowFrameFromVideoResize(toVideoSize: desiredVideoSize,
+                                                           fromVideoSize: fromVideoSize, fromWindowFrame: fromWindowFrame)
+    window.setFrame(newWindowFrame, display: true, animate: animate)
+  }
+
+  private func computeWindowFrameFromVideoResize(toVideoSize desiredVideoSize: CGSize,
+                                         fromVideoSize: CGSize? = nil, fromWindowFrame: CGRect? = nil) -> NSRect {
+    let screen = bestScreen
+    let window = window!
+
+    let origVideoSize = fromVideoSize ?? videoView.frame.size
+    let origWindowFrame = fromWindowFrame ?? window.frame
+
+    // Resize only the video. Panels outside the video do not change size
+    let outsidePanelsWidth = origWindowFrame.width - origVideoSize.width
+    let outsidePanelsHeight = origWindowFrame.height - origVideoSize.height
+
+    let screenVisibleFrame = screen.visibleFrame
+    let maxVideoSize = NSSize(width: screenVisibleFrame.width - outsidePanelsWidth,
+                              height: screenVisibleFrame.height - outsidePanelsHeight)
+    var newVideoSize = desiredVideoSize
+
+    if newVideoSize.height > maxVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+    }
+    if newVideoSize.width > maxVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+    }
+
+    let minVideoSize = minSize
+    if newVideoSize.height < minVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+    if newVideoSize.width < minVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+
+    let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
+                               height: newVideoSize.height + outsidePanelsHeight)
+
+    // Round the results to prevent visible window drift when already at min size
+    let deltaX = round((newVideoSize.width - origVideoSize.width) / 2)
+    let deltaY = round((newVideoSize.height - origVideoSize.height) / 2)
+    let newWindowOrigin = NSPoint(x: origWindowFrame.origin.x - deltaX,
+                                  y: origWindowFrame.origin.y - deltaY)
+
+    let (videoWidth, _) = player.videoSizeForDisplay
+    let actualScale = String(format: "%.2f", newVideoSize.width / CGFloat(videoWidth))
+
+    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
+    Logger.log("Resizing video from \(origVideoSize) to \(newVideoSize) (\(actualScale)x scale), screenVisibleSize: \(screenVisibleFrame.size), newWindowFrame: \(newWindowFrame)",
+               level: .verbose, subsystem: player.subsystem)
+    return newWindowFrame
   }
 
   // MARK: - UI: Others
