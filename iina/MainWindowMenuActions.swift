@@ -31,40 +31,38 @@ extension MainWindowController {
   }
 
   @objc func menuChangeWindowSize(_ sender: NSMenuItem) {
-    // -1: normal(non-retina), same as 1 when on non-retina screen
-    //  0: half
-    //  1: normal
-    //  2: double
-    //  3: fit screen
-    //  10: smaller size
-    //  11: bigger size
     let size = sender.tag
     guard let window = window, !fsState.isFullscreen else { return }
 
-    let screenFrame = (window.screen ?? NSScreen.main!).visibleFrame
-    let newFrame: NSRect
-    let sizeMap: [CGFloat] = [0.5, 1, 2]
-    let scaleStep: CGFloat = 25
-
     switch size {
-    // scale
-    case 0, 1, 2:
-      setWindowScale(sizeMap[size])
-      return
-    // fit screen
-    case 3:
+    case 0:  //  0: half
+      setWindowScale(0.5)
+    case 1:  //  1: normal
+      setWindowScale(1)
+    case 2:  //  2: double
+      setWindowScale(2)
+    case 3:  // fit screen
       window.center()
-      newFrame = window.frame.centeredResize(to: window.frame.size.shrink(toSize: screenFrame.size))
-    // bigger size
-    case 10, 11:
-      let newWidth = window.frame.width + scaleStep * (size == 10 ? -1 : 1)
-      let newHeight = newWidth / (window.aspectRatio.width / window.aspectRatio.height)
-      newFrame = window.frame.centeredResize(to: NSSize(width: newWidth, height: newHeight).satisfyMinSizeWithSameAspectRatio(minSize))
+      let (videoWidth, videoHeight) = player.videoSizeForDisplay
+      let desiredVideoSize = CGSize(width: CGFloat(videoWidth), height: CGFloat(videoHeight)).satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
+      Logger.log("Scaling video to fit screen (calculated size: \(desiredVideoSize))", level: .verbose, subsystem: player.subsystem)
+      scaleVideo(toVideoSize: desiredVideoSize)
+    case 10:  // smaller size
+      scaleVideoByIncrement(-AppData.scaleStep)
+    case 11:  // bigger size
+      scaleVideoByIncrement(AppData.scaleStep)
     default:
       return
     }
+  }
 
-    window.setFrame(newFrame, display: true, animate: true)
+  func scaleVideoByIncrement(_ step: CGFloat) {
+    let currentVideoSize = videoView.frame.size
+    let newWidth = currentVideoSize.width + step
+    let newHeight = newWidth / currentVideoSize.aspect
+    let desiredVideoSize = CGSize(width: currentVideoSize.width + step, height: newHeight)
+    Logger.log("Incrementing video width by \(step), to desired size \(desiredVideoSize)", level: .verbose, subsystem: player.subsystem)
+    scaleVideo(toVideoSize: desiredVideoSize)
   }
 
   @objc func menuAlwaysOnTop(_ sender: AnyObject) {

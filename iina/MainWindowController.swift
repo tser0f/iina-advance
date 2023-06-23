@@ -136,6 +136,10 @@ class MainWindowController: PlayerWindowController {
   // Current rotation of videoView: see MainWindowRotationGesture
   let rotationHandler = VideoRotationHandler()
 
+  var bestScreen: NSScreen {
+    window?.screen ?? NSScreen.main!
+  }
+
   // MARK: - Status
 
   override var isOntop: Bool {
@@ -2098,18 +2102,22 @@ class MainWindowController: PlayerWindowController {
     let scale = max(0.0001, magnification + 1.0)
 
     let origVideoSize = videoContainerFrameAtMagnificationBegin.size
-    var newVideoSize = NSSize(width: origVideoSize.width * scale,
+    let newVideoSize = NSSize(width: origVideoSize.width * scale,
                               height: origVideoSize.height * scale);
 
-    scaleVideo(fromVideoSize: videoContainerFrameAtMagnificationBegin.size,
-               toVideoSize: newVideoSize,
+    scaleVideo(toVideoSize: newVideoSize,
+               fromVideoSize: videoContainerFrameAtMagnificationBegin.size,
                fromWindowFrame: windowFrameAtMagnificationBegin)
   }
 
-  private func scaleVideo(fromVideoSize origVideoSize: CGSize,
-                          toVideoSize desiredVideoSize: CGSize,
-                          fromWindowFrame origWindowFrame: CGRect) {
-    guard !isInInteractiveMode, let window = window, let screen = window.screen else { return }
+  func scaleVideo(toVideoSize desiredVideoSize: CGSize,
+                  fromVideoSize: CGSize? = nil,
+                  fromWindowFrame: CGRect? = nil) {
+    guard !isInInteractiveMode, let window = window else { return }
+    let screen = bestScreen
+
+    let origVideoSize = fromVideoSize ?? videoView.frame.size
+    let origWindowFrame = fromWindowFrame ?? window.frame
 
     // Scale only the video. Panels outside the video do not change size
     let outsidePanelsWidth = origWindowFrame.width - origVideoSize.width
@@ -2148,7 +2156,7 @@ class MainWindowController: PlayerWindowController {
     let actualScale = String(format: "%.2f", newVideoSize.width / CGFloat(videoWidth))
 
     let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
-    Logger.log("Will scale video \(actualScale)x, from: \(origVideoSize.width)x\(origVideoSize.height) to: \(newVideoSize.width)x\(newVideoSize.height), newWindowFrame: \(newWindowFrame)",
+    Logger.log("Scaling video from \(origVideoSize) to \(newVideoSize), actualScale: \(actualScale)x, screenVisibleSize: \(screenVisibleFrame.size), newWindowFrame: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     window.setFrame(newWindowFrame, display: true)
   }
@@ -3638,7 +3646,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func setWindowScale(_ scale: CGFloat) {
-    guard let window = window, fsState == .windowed else { return }
+    guard fsState == .windowed else { return }
 
     let (videoWidth, videoHeight) = player.videoSizeForDisplay
     let videoDesiredSize = CGSize(width: CGFloat(videoWidth) * scale, height: CGFloat(videoHeight) * scale)
@@ -3651,7 +3659,7 @@ class MainWindowController: PlayerWindowController {
 //    var finalSize = (Preference.bool(for: .usePhysicalResolution) ? window.convertFromBacking(logicalFrame) : logicalFrame).size
 
     Logger.log("Setting window scale to \(scale)x -> desiredVideoSize: \(videoDesiredSize)")
-    scaleVideo(fromVideoSize: videoView.frame.size, toVideoSize: videoDesiredSize, fromWindowFrame: window.frame)
+    scaleVideo(toVideoSize: videoDesiredSize)
   }
 
   // MARK: - UI: Others

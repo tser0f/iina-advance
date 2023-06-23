@@ -31,6 +31,7 @@ struct AppData {
   static let cropsInPanel: [String] = ["None", "4:3", "16:9", "16:10", "21:9", "5:4"]
 
   static let rotations: [Int] = [0, 90, 180, 270]
+  static let scaleStep: CGFloat = 25
 
   /** Seek amount */
   static let seekAmountMap = [0, 0.05, 0.1, 0.25, 0.5]
