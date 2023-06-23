@@ -15,7 +15,7 @@ fileprivate let PlaylistMaxWidth: CGFloat = 500
 fileprivate let SidebarAnimationDuration = 0.2
 
 // How close the cursor has to be horizontally to the edge of the sidebar in order to trigger its resize:
-fileprivate let sidebarResizeActivationRadius = 5.0
+fileprivate let sidebarResizeActivationRadius = 10.0
 
 /** Enapsulates code relating to leading & trailing sidebars in MainWindow. */
 extension MainWindowController {
@@ -506,25 +506,41 @@ extension MainWindowController {
 
   // MARK: - Mouse events
 
-  func startResizingSidebar(with event: NSEvent) {
+  func isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: NSPoint) -> Bool {
     if leadingSidebar.visibleTab == .playlist {
       let sf = leadingSidebarView.frame
       let dragRectCenterX: CGFloat = sf.origin.x + sf.width
 
-      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
-      if NSPointInRect(mousePosRelatedToWindow!, activationRect) {
-        Logger.log("User started resize of leading sidebar", level: .verbose, subsystem: player.subsystem)
-        leadingSidebar.isResizing = true
+      // FIXME: need to find way to resize from inside of sidebar
+      let activationRect = NSMakeRect(dragRectCenterX, sf.origin.y, sidebarResizeActivationRadius, sf.height)
+      if NSPointInRect(mousePositionInWindow, activationRect) {
+        return true
       }
-    } else if trailingSidebar.visibleTab == .playlist {
+    }
+    return false
+  }
+
+  func isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: NSPoint) -> Bool {
+    if trailingSidebar.visibleTab == .playlist {
       let sf = trailingSidebarView.frame
       let dragRectCenterX: CGFloat = sf.origin.x
 
-      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, 2 * sidebarResizeActivationRadius, sf.height)
-      if NSPointInRect(mousePosRelatedToWindow!, activationRect) {
-        Logger.log("User started resize of trailing sidebar", level: .verbose, subsystem: player.subsystem)
-        trailingSidebar.isResizing = true
+      // FIXME: need to find way to resize from inside of sidebar
+      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, sidebarResizeActivationRadius, sf.height)
+      if NSPointInRect(mousePositionInWindow, activationRect) {
+        return true
       }
+    }
+    return false
+  }
+
+  func startResizingSidebar(with event: NSEvent) {
+    if isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
+      Logger.log("User started resize of leading sidebar", level: .verbose, subsystem: player.subsystem)
+      leadingSidebar.isResizing = true
+    } else if isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
+      Logger.log("User started resize of trailing sidebar", level: .verbose, subsystem: player.subsystem)
+      trailingSidebar.isResizing = true
     }
   }
 

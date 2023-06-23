@@ -94,6 +94,9 @@ class MainWindowController: PlayerWindowController {
 
   var minSize: NSSize { return PlayerCore.minVideoSize }
 
+  // Is non-nil if within the activation rect of one of the sidebars
+  var sidebarResizeCursor: NSCursor? = nil
+
   // MARK: - Objects, Views
 
   /** The quick setting sidebar (video, audio, subtitles). */
@@ -2018,6 +2021,22 @@ class MainWindowController: PlayerWindowController {
 
   override func mouseMoved(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
+
+    /// Set or unset the cursor to `resizeLeftRight` if able to resize the sidebar
+    if isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: event.locationInWindow) ||
+        isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: event.locationInWindow) {
+      if sidebarResizeCursor == nil {
+        let newCursor = NSCursor.resizeLeftRight
+        newCursor.push()
+        sidebarResizeCursor = newCursor
+      }
+    } else {
+      if let currentCursor = sidebarResizeCursor {
+        currentCursor.pop()
+        sidebarResizeCursor = nil
+      }
+    }
+
     let mousePos = playSlider.convert(event.locationInWindow, from: nil)
     if isMouseInSlider {
       updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
