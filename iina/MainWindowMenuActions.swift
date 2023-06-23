@@ -43,7 +43,7 @@ extension MainWindowController {
 
     let screenFrame = (window.screen ?? NSScreen.main!).visibleFrame
     let newFrame: NSRect
-    let sizeMap: [Double] = [0.5, 1, 2]
+    let sizeMap: [CGFloat] = [0.5, 1, 2]
     let scaleStep: CGFloat = 25
 
     switch size {

@@ -2096,29 +2096,30 @@ class MainWindowController: PlayerWindowController {
   private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
-    scaleVideo(to: scale, fromWindowFrame: windowFrameAtMagnificationBegin, fromVideoSize: videoContainerFrameAtMagnificationBegin.size)
+
+    let origVideoSize = videoContainerFrameAtMagnificationBegin.size
+    var newVideoSize = NSSize(width: origVideoSize.width * scale,
+                              height: origVideoSize.height * scale);
+
+    scaleVideo(fromVideoSize: videoContainerFrameAtMagnificationBegin.size,
+               toVideoSize: newVideoSize,
+               fromWindowFrame: windowFrameAtMagnificationBegin)
   }
 
-  private func scaleVideo(to scale: CGFloat,
-                          fromWindowFrame origWindowFrame: CGRect,
-                          fromVideoSize origVideoSize: CGSize) {
-    guard scale > 0 else {
-      Logger.log("Cannot scale video: scale (\(scale)) must be larger than 0", level: .error, subsystem: player.subsystem)
-      return
-    }
+  private func scaleVideo(fromVideoSize origVideoSize: CGSize,
+                          toVideoSize desiredVideoSize: CGSize,
+                          fromWindowFrame origWindowFrame: CGRect) {
     guard !isInInteractiveMode, let window = window, let screen = window.screen else { return }
-    let screenVisibleFrame = screen.visibleFrame
 
     // Scale only the video. Panels outside the video do not change size
     let outsidePanelsWidth = origWindowFrame.width - origVideoSize.width
     let outsidePanelsHeight = origWindowFrame.height - origVideoSize.height
 
-    var newVideoSize = NSSize(width: origVideoSize.width * scale,
-                              height: origVideoSize.height * scale);
-
+    let screenVisibleFrame = screen.visibleFrame
     let maxVideoSize = NSSize(width: screenVisibleFrame.width - outsidePanelsWidth,
                               height: screenVisibleFrame.height - outsidePanelsHeight)
     let minVideoSize = minSize
+    var newVideoSize = desiredVideoSize
 
     if newVideoSize.height > maxVideoSize.height {
       newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
@@ -2143,8 +2144,11 @@ class MainWindowController: PlayerWindowController {
     let newWindowOrigin = NSPoint(x: origWindowFrame.origin.x - deltaX,
                                   y: origWindowFrame.origin.y - deltaY)
 
+    let (videoWidth, _) = player.videoSizeForDisplay
+    let actualScale = String(format: "%.2f", newVideoSize.width / CGFloat(videoWidth))
+
     let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
-    Logger.log("Scaling video x\(scale) from \(origVideoSize.width)x\(origVideoSize.height) to \(newWindowSize.width)x\(newWindowSize.height); setFrame to: \(newWindowFrame)",
+    Logger.log("Will scale video \(actualScale)x, from: \(origVideoSize.width)x\(origVideoSize.height) to: \(newVideoSize.width)x\(newVideoSize.height), newWindowFrame: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     window.setFrame(newWindowFrame, display: true)
   }
@@ -3612,7 +3616,7 @@ class MainWindowController: PlayerWindowController {
         newWindowFrame = newWindowFrame.constrain(in: screenFrame)
       }
       let animate = UIAnimation.isAnimationEnabled && !player.disableWindowAnimation
-      Logger.log("Updating windowFrame to: \(newWindowFrame). animate: \(animate)", level: .verbose)
+      Logger.log("Updating windowFrame from \(window.frame) to: \(newWindowFrame), animate: \(animate)", level: .verbose)
       window.setFrame(newWindowFrame, display: true, animate: animate)
       updateWindowParametersForMPV(withFrame: newWindowFrame)
     }
@@ -3633,32 +3637,21 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  func setWindowScale(_ scale: Double) {
+  func setWindowScale(_ scale: CGFloat) {
     guard let window = window, fsState == .windowed else { return }
-    let screenFrame = (window.screen ?? NSScreen.main!).visibleFrame
+
     let (videoWidth, videoHeight) = player.videoSizeForDisplay
-    let newFrame: NSRect
-    // calculate 1x size
-    let useRetinaSize = Preference.bool(for: .usePhysicalResolution)
-    let logicalFrame = NSRect(x: window.frame.origin.x,
-                             y: window.frame.origin.y,
-                             width: CGFloat(videoWidth),
-                             height: CGFloat(videoHeight))
-    var finalSize = (useRetinaSize ? window.convertFromBacking(logicalFrame) : logicalFrame).size
-    // calculate scaled size
-    let scalef = CGFloat(scale)
-    finalSize.width *= scalef
-    finalSize.height *= scalef
-    // set size
-    if finalSize.width > screenFrame.size.width || finalSize.height > screenFrame.size.height {
-      // if final size is bigger than screen
-      newFrame = window.frame.centeredResize(to: window.frame.size.shrink(toSize: screenFrame.size)).constrain(in: screenFrame)
-    } else {
-      // otherwise, resize the window normally
-      newFrame = window.frame.centeredResize(to: finalSize.satisfyMinSizeWithSameAspectRatio(minSize)).constrain(in: screenFrame)
-    }
-    Logger.log("Setting windowScale to: \(scale) -> newFrame: \(newFrame)")
-    window.setFrame(newFrame, display: true, animate: UIAnimation.isAnimationEnabled)
+    let videoDesiredSize = CGSize(width: CGFloat(videoWidth) * scale, height: CGFloat(videoHeight) * scale)
+
+    // FIXME: "Use physical resolution" never worked properly
+//    let logicalFrame = NSRect(x: window.frame.origin.x,
+//                              y: window.frame.origin.y,
+//                              width: CGFloat(videoWidth),
+//                              height: CGFloat(videoHeight))
+//    var finalSize = (Preference.bool(for: .usePhysicalResolution) ? window.convertFromBacking(logicalFrame) : logicalFrame).size
+
+    Logger.log("Setting window scale to \(scale)x -> desiredVideoSize: \(videoDesiredSize)")
+    scaleVideo(fromVideoSize: videoView.frame.size, toVideoSize: videoDesiredSize, fromWindowFrame: window.frame)
   }
 
   // MARK: - UI: Others
