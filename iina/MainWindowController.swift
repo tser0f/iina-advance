@@ -2602,28 +2602,28 @@ class MainWindowController: PlayerWindowController {
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return requestedSize }
-    Logger.log("WindowWillResize called with requested size: \(requestedSize)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowWillResize: requestedSize: \(requestedSize)", level: .verbose, subsystem: player.subsystem)
+    
     if denyNextWindowResize {
       let currentSize = window.frame.size
-      Logger.log("WindowWillResize: forcing size to stay at \(currentSize)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("WindowWillResize: denying this resize; will stay at \(currentSize)",
+                 level: .verbose, subsystem: player.subsystem)
       denyNextWindowResize = false
       return currentSize
     }
 
-    let newSize: NSSize
     if requestedSize.height <= minSize.height || requestedSize.width <= minSize.width {
-      Logger.log("WindowWillResize: requested size is too small; will change to minimum (\(minSize))", level: .verbose, subsystem: player.subsystem)
-      newSize = window.aspectRatio.grow(toSize: minSize)
-    } else {
-      newSize = requestedSize
+      Logger.log("WindowWillResize: requestedSize too small; changing to min \(minSize)", level: .verbose, subsystem: player.subsystem)
+      return window.aspectRatio.grow(toSize: minSize)
     }
-    return newSize
+
+    return requestedSize
   }
 
   func windowDidResize(_ notification: Notification) {
-    guard let window = window else { return }
+    guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
-    Logger.log("WindowDidResize: \((notification.object as! NSWindow).frame)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowDidResize: \(window.frame)", level: .verbose, subsystem: player.subsystem)
 
     UIAnimation.disableAnimation {
       if isInInteractiveMode {
@@ -3080,19 +3080,10 @@ class MainWindowController: PlayerWindowController {
       osdStackView.addView(accessoryView, in: .bottom)
       Utility.quickConstraints(["H:|-0-[v(>=240)]-0-|"], ["v": accessoryView])
 
-      // FIXME: do not do this here
-      // enlarge window if too small
-      let winFrame = window!.frame
-      var newFrame = winFrame
-      if (winFrame.height < 300) {
-        newFrame = winFrame.centeredResize(to: winFrame.size.satisfyMinSizeWithSameAspectRatio(NSSize(width: 500, height: 300)))
-      }
-
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0
 
       UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
-        window!.setFrame(newFrame, display: true)
         osdVisualEffectView.layoutSubtreeIfNeeded()
       }, completionHandler: {
         accessoryView.layer?.opacity = 1
@@ -3633,20 +3624,22 @@ class MainWindowController: PlayerWindowController {
       newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
     }
 
+    newVideoSize = NSSize(width: round(newVideoSize.width), height: round(newVideoSize.height))
+
     let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
                                height: newVideoSize.height + outsidePanelsHeight)
 
     // Round the results to prevent visible window drift when already at min size
-    let deltaX = round((newVideoSize.width - origVideoSize.width) / 2)
-    let deltaY = round((newVideoSize.height - origVideoSize.height) / 2)
+    let deltaX = (newVideoSize.width - origVideoSize.width) / 2
+    let deltaY = (newVideoSize.height - origVideoSize.height) / 2
     let newWindowOrigin = NSPoint(x: origWindowFrame.origin.x - deltaX,
                                   y: origWindowFrame.origin.y - deltaY)
 
     let (videoWidth, _) = player.videoSizeForDisplay
     let actualScale = String(format: "%.2f", newVideoSize.width / CGFloat(videoWidth))
 
-    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
-    Logger.log("Resizing video from \(origVideoSize) to \(newVideoSize) (\(actualScale)x scale), screenVisibleSize: \(screenVisibleFrame.size), newWindowFrame: \(newWindowFrame)",
+    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: screenVisibleFrame)
+    Logger.log("Resizing video from \(origVideoSize) to \(newVideoSize) (\(actualScale)x scale), moving: (\(deltaX), \(deltaY)), screenVisibleSize: \(screenVisibleFrame.size), newWindowFrame: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     return newWindowFrame
   }
