@@ -1044,8 +1044,23 @@ class MainWindowController: PlayerWindowController {
     topPanelTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement) {
+  private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement,
+                                    isTogglingFullScreen: Bool, isInitialLayout: Bool) {
     Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    guard let window = window else { return }
+
+    // By default, when the window size changes, the system will add or subtract space from the bottom of the window.
+    // Override this behavior to expand/contract upwards.
+    // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
+    // Also do not apply when toggling fullscreen because it is not relevant and will cause glitches in the animation.
+    if !isInitialLayout && !isTogglingFullScreen {
+      let yOffsetOld = videoContainerTopOffsetFromContentViewTopConstraint.constant
+      let yOffsetNew = placement == .outsideVideo ? topPanelHeight : 0
+      let newWindowSize = CGSize(width: window.frame.width, height: window.frame.height + yOffsetNew - yOffsetOld)
+      let newWindowFrame = NSRect(origin: window.frame.origin, size: newWindowSize)
+      window.setFrame(newWindowFrame, display: true, animate: true)
+    }
+
     switch placement {
     case .outsideVideo:
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
@@ -1322,15 +1337,15 @@ class MainWindowController: PlayerWindowController {
     apply(visibility: visibility, view)
   }
 
-  private func updateTitleBarAndOSC(disableAnimation: Bool = false) {
+  private func updateTitleBarAndOSC(isInitialLayout: Bool = false) {
     guard !isInInteractiveMode else {
       Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
       return
     }
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
     let newLayout = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
-    let durationOverride: CGFloat? = disableAnimation ? 0 : nil
-    let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: durationOverride, totalEndingDuration: durationOverride)
+    let durationOverride: CGFloat? = isInitialLayout ? 0 : nil
+    let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: durationOverride, totalEndingDuration: durationOverride, isInitialLayout: isInitialLayout)
 
     UIAnimation.run(layoutTransition.animationBlocks)
   }
@@ -1338,12 +1353,14 @@ class MainWindowController: PlayerWindowController {
   class LayoutTransition {
     let fromLayout: LayoutPlan
     let toLayout: LayoutPlan
+    let isInitialLayout: Bool
 
     var animationBlocks: [AnimationBlock] = []
 
-    init(from fromLayout: LayoutPlan, to toLayout: LayoutPlan) {
+    init(from fromLayout: LayoutPlan, to toLayout: LayoutPlan, isInitialLayout: Bool = false) {
       self.fromLayout = fromLayout
       self.toLayout = toLayout
+      self.isInitialLayout = isInitialLayout
     }
 
     var isTogglingFullScreen: Bool {
@@ -1360,11 +1377,12 @@ class MainWindowController: PlayerWindowController {
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
                                      totalStartingDuration: CGFloat? = nil,
-                                     totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
+                                     totalEndingDuration: CGFloat? = nil,
+                                     isInitialLayout: Bool = false) -> LayoutTransition {
     Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
 
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
-    let transition = LayoutTransition(from: currentLayout, to: futureLayout)
+    let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: isInitialLayout)
 
     let startingAnimationCount: CGFloat = 3
     let endingAnimationCount: CGFloat = 2
@@ -1398,7 +1416,7 @@ class MainWindowController: PlayerWindowController {
       context.duration = startingAnimationDuration
       /// Need to use `linear` or else panels of different sizes won't line up as they move
       context.timingFunction = CAMediaTimingFunction(name: .linear)
-      closeOldPanels(futureLayout)
+      closeOldPanels(transition)
     }
 
     // Ending animations:
@@ -1414,7 +1432,7 @@ class MainWindowController: PlayerWindowController {
       context.duration = endingAnimationDuration
       /// Need to use `linear` or else panels of different sizes won't line up as they move
       context.timingFunction = CAMediaTimingFunction(name: .linear)
-      openNewPanels(futureLayout)
+      openNewPanels(transition)
     }
 
     // EndingAnimation 2: Fade in remaining views
@@ -1487,8 +1505,9 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func closeOldPanels(_ futureLayout: LayoutPlan) {
+  private func closeOldPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
+    let futureLayout = transition.toLayout
     Logger.log("CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)", level: .verbose, subsystem: player.subsystem)
 
     if futureLayout.titleBarHeight == 0 {
@@ -1504,12 +1523,11 @@ class MainWindowController: PlayerWindowController {
     let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
     if isTopPanelPlacementChanging {
       // close completely. will animate reopening if needed later
-      videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0)
-      updateTopPanelHeight(to: 0, placement: futureLayout.topPanelPlacement)
+      updateTopPanelHeight(to: 0, placement: futureLayout.topPanelPlacement, isTogglingFullScreen: transition.isTogglingFullScreen, isInitialLayout: transition.isInitialLayout)
     } else {
       if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
-        updateTopPanelHeight(to: futureLayout.topPanelHeight, placement: futureLayout.topPanelPlacement)
+        updateTopPanelHeight(to: futureLayout.topPanelHeight, placement: futureLayout.topPanelPlacement,
+                             isTogglingFullScreen: transition.isTogglingFullScreen, isInitialLayout: transition.isInitialLayout)
         // Update sidebar vertical alignments to match
         quickSettingView.refreshVerticalConstraints(layout: futureLayout)
         playlistView.refreshVerticalConstraints(layout: futureLayout)
@@ -1598,15 +1616,17 @@ class MainWindowController: PlayerWindowController {
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
-  private func openNewPanels(_ futureLayout: LayoutPlan) {
+  private func openNewPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
+    let futureLayout = transition.toLayout
     Logger.log("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)", level: .verbose, subsystem: player.subsystem)
 
     // Update heights to their final values:
     titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
     topOSCPreferredHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
     osdMinOffsetFromTopConstraint.animateToConstant(futureLayout.osdMinOffsetFromTop)
-    updateTopPanelHeight(to: futureLayout.topPanelHeight, placement: futureLayout.topPanelPlacement)
+    updateTopPanelHeight(to: futureLayout.topPanelHeight, placement: futureLayout.topPanelPlacement,
+                         isTogglingFullScreen: transition.isTogglingFullScreen, isInitialLayout: transition.isInitialLayout)
     updateBottomOSCHeight(to: futureLayout.bottomOSCHeight, placement: futureLayout.bottomPanelPlacement)
 
     // Update sidebar vertical alignments
@@ -2218,7 +2238,7 @@ class MainWindowController: PlayerWindowController {
     updateTitle()  // Need to call this here, or else when opening directly to fullscreen, window title is just "Window"
     addVideoViewToWindow()
     // Set layout from prefs. Do not animate:
-    updateTitleBarAndOSC(disableAnimation: true)
+    updateTitleBarAndOSC(isInitialLayout: true)
     // update timer
     resetFadeTimer()
 
@@ -2603,7 +2623,7 @@ class MainWindowController: PlayerWindowController {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return requestedSize }
     Logger.log("WindowWillResize: requestedSize: \(requestedSize)", level: .verbose, subsystem: player.subsystem)
-    
+
     if denyNextWindowResize {
       let currentSize = window.frame.size
       Logger.log("WindowWillResize: denying this resize; will stay at \(currentSize)",
@@ -3583,6 +3603,15 @@ class MainWindowController: PlayerWindowController {
                animate: false)
   }
 
+  /**
+   Resizes and repositions the window, attempting to match `desiredVideoSize`, but the actual resulting
+   video size will be scaled if needed so it is`>= minSize` and `<= bestScreen.visibleFrame`.
+   The window's position will also be updated to maintain its current center if possible, but also to
+   ensure it is placed entirely inside `bestScreen.visibleFrame`. The aspect ratio of `desiredVideoSize`
+   does not need to match the aspect ratio of `fromVideoSize`.
+   • If `fromVideoSize` is not provided, it will default to `videoView.frame.size`.
+   • If `fromWindowFrame` is not provided, it will default to `window.frame`
+   */
   func resizeVideo(toVideoSize desiredVideoSize: CGSize,
                   fromVideoSize: CGSize? = nil, fromWindowFrame: CGRect? = nil,
                   animate: Bool = true) {
@@ -3592,21 +3621,13 @@ class MainWindowController: PlayerWindowController {
     window.setFrame(newWindowFrame, display: true, animate: animate)
   }
 
-  private func computeWindowFrameFromVideoResize(toVideoSize desiredVideoSize: CGSize,
-                                         fromVideoSize: CGSize? = nil, fromWindowFrame: CGRect? = nil) -> NSRect {
-    let screen = bestScreen
-    let window = window!
-
-    let origVideoSize = fromVideoSize ?? videoView.frame.size
-    let origWindowFrame = fromWindowFrame ?? window.frame
-
+  /// `desiredVideoSize` must be correct aspect ratio
+  private func constrainToValidSize(origWindowFrame: NSRect, origVideoSize: NSSize, desiredVideoSize: NSSize, maxSize: NSSize) -> NSSize {
     // Resize only the video. Panels outside the video do not change size
-    let outsidePanelsWidth = origWindowFrame.width - origVideoSize.width
-    let outsidePanelsHeight = origWindowFrame.height - origVideoSize.height
+    let outsidePanelsSize = deriveOutsidePanelsSize(forWindowFrame: origWindowFrame, andVideoSize: origVideoSize)
 
-    let screenVisibleFrame = screen.visibleFrame
-    let maxVideoSize = NSSize(width: screenVisibleFrame.width - outsidePanelsWidth,
-                              height: screenVisibleFrame.height - outsidePanelsHeight)
+    let maxVideoSize = NSSize(width: maxSize.width - outsidePanelsSize.width,
+                              height: maxSize.height - outsidePanelsSize.height)
     var newVideoSize = desiredVideoSize
 
     if newVideoSize.height > maxVideoSize.height {
@@ -3625,9 +3646,30 @@ class MainWindowController: PlayerWindowController {
     }
 
     newVideoSize = NSSize(width: round(newVideoSize.width), height: round(newVideoSize.height))
+    return newVideoSize
+  }
 
-    let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
-                               height: newVideoSize.height + outsidePanelsHeight)
+  private func deriveOutsidePanelsSize(forWindowFrame windowFrame: NSRect, andVideoSize videoSize: NSSize) -> NSSize {
+    return NSSize(width: windowFrame.width - videoSize.width, height: windowFrame.height - videoSize.height)
+  }
+
+  /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
+  private func computeWindowFrameFromVideoResize(toVideoSize desiredVideoSize: CGSize,
+                                                 fromVideoSize: CGSize? = nil, fromWindowFrame: CGRect? = nil) -> NSRect {
+    let window = window!
+
+    let origVideoSize = fromVideoSize ?? videoView.frame.size
+    let origWindowFrame = fromWindowFrame ?? window.frame
+
+    let screenVisibleFrame = bestScreen.visibleFrame
+    let newVideoSize = constrainToValidSize(origWindowFrame: origWindowFrame, origVideoSize: origVideoSize,
+                                            desiredVideoSize: desiredVideoSize,
+                                            maxSize: screenVisibleFrame.size)
+
+    // Resize only the video. Panels outside the video do not change size
+    let outsidePanelsSize = deriveOutsidePanelsSize(forWindowFrame: origWindowFrame, andVideoSize: origVideoSize)
+    let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsSize.width,
+                               height: newVideoSize.height + outsidePanelsSize.height)
 
     // Round the results to prevent visible window drift when already at min size
     let deltaX = (newVideoSize.width - origVideoSize.width) / 2
@@ -3639,7 +3681,7 @@ class MainWindowController: PlayerWindowController {
     let actualScale = String(format: "%.2f", newVideoSize.width / CGFloat(videoWidth))
 
     let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: screenVisibleFrame)
-    Logger.log("Resizing video from \(origVideoSize) to \(newVideoSize) (\(actualScale)x scale), moving: (\(deltaX), \(deltaY)), screenVisibleSize: \(screenVisibleFrame.size), newWindowFrame: \(newWindowFrame)",
+    Logger.log("Resizing video from \(origVideoSize) to \(newVideoSize) (\(actualScale)x scale), moving: (\(deltaX), \(deltaY)), newWindowFrame: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     return newWindowFrame
   }
