@@ -1370,7 +1370,8 @@ class MainWindowController: PlayerWindowController {
 
   // FIXME: Document icon visibility is sometimes wrong (check again after adding timing queue)
   // TODO: Prevent sidebars from opening if not enough space?
-  // FIXME: bug: sidebars bounch during FS transitions for some layout types: do not close panel unnecessarily during FS animations
+  // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
+  // FIXME: bug: sidebars bounce during FS transitions for some layout types: do not close panel unnecessarily during FS animations
   // FIXME: update constraints to black out camera housing for legacy fullscreen
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
@@ -1407,7 +1408,7 @@ class MainWindowController: PlayerWindowController {
     // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel
     transition.animationBlocks.append{ [self] context in
       context.duration = startingAnimationDuration
-      fadeOutOldViews(futureLayout)
+      fadeOutOldViews(transition)
     }
 
     // StartingAnimation 3: Minimize panels which are no longer needed
@@ -1438,7 +1439,7 @@ class MainWindowController: PlayerWindowController {
     transition.animationBlocks.append{ [self] context in
       context.duration = endingAnimationDuration
 
-      fadeInNewViews(futureLayout)
+      fadeInNewViews(transition)
       currentLayout = futureLayout
     }
 
@@ -1453,8 +1454,9 @@ class MainWindowController: PlayerWindowController {
     return transition
   }
 
-  private func fadeOutOldViews(_ futureLayout: LayoutPlan) {
+  private func fadeOutOldViews(_ transition: LayoutTransition) {
     animationState = .willHide
+    let futureLayout = transition.toLayout
     Logger.log("FadeOutOldViews", level: .verbose, subsystem: player.subsystem)
 
     // Title bar & title bar accessories:
@@ -1504,24 +1506,15 @@ class MainWindowController: PlayerWindowController {
     }
 
     // Change blending modes
-
-    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.topPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+    if transition.isTogglingFullScreen {
+      /// Need to use `.withinWindow` during animation or else panel tint can change in odd ways
       topPanelView.blendingMode = .withinWindow
-    } else {
-      topPanelView.blendingMode = .behindWindow
-    }
-
-    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.bottomPanelPlacement == .insideVideo || futureLayout.isFullScreen {
       controlBarBottom.blendingMode = .withinWindow
+      leadingSidebarView.blendingMode = .withinWindow
+      trailingSidebarView.blendingMode = .withinWindow
     } else {
-      controlBarBottom.blendingMode = .behindWindow
+      updatePanelBlendingModes(to: futureLayout)
     }
-
-    // May need to fix blending mode for "outside" sidebars
-    updateSidebarBlendingMode(leadingSidebar.locationID, layout: futureLayout)
-    updateSidebarBlendingMode(trailingSidebar.locationID, layout: futureLayout)
   }
 
   private func closeOldPanels(_ transition: LayoutTransition) {
@@ -1638,8 +1631,9 @@ class MainWindowController: PlayerWindowController {
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
-  private func fadeInNewViews(_ futureLayout: LayoutPlan) {
+  private func fadeInNewViews(_ transition: LayoutTransition) {
     guard let window = window else { return }
+    let futureLayout = transition.toLayout
     Logger.log("FadeInNewViews", level: .verbose, subsystem: player.subsystem)
 
     applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
@@ -1662,7 +1656,29 @@ class MainWindowController: PlayerWindowController {
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
 
+    // Update blending mode:
+    updatePanelBlendingModes(to: futureLayout)
+
     window.contentView?.layoutSubtreeIfNeeded()
+  }
+
+  private func updatePanelBlendingModes(to futureLayout: LayoutPlan) {
+    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    if futureLayout.topPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+      topPanelView.blendingMode = .withinWindow
+    } else {
+      topPanelView.blendingMode = .behindWindow
+    }
+
+    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    if futureLayout.bottomPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+      controlBarBottom.blendingMode = .withinWindow
+    } else {
+      controlBarBottom.blendingMode = .behindWindow
+    }
+
+    updateSidebarBlendingMode(leadingSidebar.locationID, layout: futureLayout)
+    updateSidebarBlendingMode(trailingSidebar.locationID, layout: futureLayout)
   }
 
   func updateSpacingForTitleBarAccessories(_ layout: LayoutPlan? = nil) {
