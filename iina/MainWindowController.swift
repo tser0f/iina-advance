@@ -1050,7 +1050,7 @@ class MainWindowController: PlayerWindowController {
     guard let window = window else { return }
 
     // By default, when the window size changes, the system will add or subtract space from the bottom of the window.
-    // Override this behavior to expand/contract upwards.
+    // Override this behavior to expand/contract upwards instead.
     // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
     // Also do not apply when toggling fullscreen because it is not relevant and will cause glitches in the animation.
     if !isInitialLayout && !isTogglingFullScreen {
@@ -1370,7 +1370,6 @@ class MainWindowController: PlayerWindowController {
 
   // FIXME: Document icon visibility is sometimes wrong (check again after adding timing queue)
   // TODO: Prevent sidebars from opening if not enough space?
-  // FIXME: bug: color of "outside" panels flickers during FS transitions
   // FIXME: bug: sidebars bounch during FS transitions for some layout types: do not close panel unnecessarily during FS animations
   // FIXME: update constraints to black out camera housing for legacy fullscreen
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
@@ -1503,6 +1502,26 @@ class MainWindowController: PlayerWindowController {
         fadeableViews.remove(pinToTopButton)
       }
     }
+
+    // Change blending modes
+
+    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    if futureLayout.topPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+      topPanelView.blendingMode = .withinWindow
+    } else {
+      topPanelView.blendingMode = .behindWindow
+    }
+
+    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    if futureLayout.bottomPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+      controlBarBottom.blendingMode = .withinWindow
+    } else {
+      controlBarBottom.blendingMode = .behindWindow
+    }
+
+    // May need to fix blending mode for "outside" sidebars
+    updateSidebarBlendingMode(leadingSidebar.locationID, layout: futureLayout)
+    updateSidebarBlendingMode(trailingSidebar.locationID, layout: futureLayout)
   }
 
   private func closeOldPanels(_ transition: LayoutTransition) {
@@ -1585,27 +1604,9 @@ class MainWindowController: PlayerWindowController {
       updateTopPanelPlacement(placement: futureLayout.topPanelPlacement)
     }
 
-    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.topPanelPlacement == .insideVideo || futureLayout.isFullScreen {
-      topPanelView.blendingMode = .withinWindow
-    } else {
-      topPanelView.blendingMode = .behindWindow
-    }
-
     if futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement {
       updateBottomPanelPlacement(placement: futureLayout.bottomPanelPlacement)
     }
-
-    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.bottomPanelPlacement == .insideVideo || futureLayout.isFullScreen {
-      controlBarBottom.blendingMode = .withinWindow
-    } else {
-      controlBarBottom.blendingMode = .behindWindow
-    }
-
-    // May need to fix blending mode for "outside" sidebars
-    updateSidebarBlendingMode(leadingSidebar.locationID, layout: futureLayout)
-    updateSidebarBlendingMode(trailingSidebar.locationID, layout: futureLayout)
 
     /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
     /// cause `window.performMiniaturize()` to be ignored. So MUST use `isHidden=true` + `alphaValue=1` instead.
@@ -1692,8 +1693,8 @@ class MainWindowController: PlayerWindowController {
 
     let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
 
-    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo
-    && (leadingSidebar.animationState == .willShow || leadingSidebar.animationState == .shown)
+    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo && (leadingSidebar.animationState == .willShow
+                                                                               || leadingSidebar.animationState == .shown)
     if isSpaceNeededForSidebar {
       // Subtract space taken by the 3 standard buttons + other visible buttons
       trailingSpace = max(0, leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
@@ -1717,8 +1718,8 @@ class MainWindowController: PlayerWindowController {
       spaceForButtons += pinToTopButton.frame.width
     }
 
-    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo
-    && (trailingSidebar.animationState == .willShow || trailingSidebar.animationState == .shown)
+    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo && (trailingSidebar.animationState == .willShow
+                                                                               || trailingSidebar.animationState == .shown)
     if isSpaceNeededForSidebar {
       leadingSpace = max(0, trailingSidebar.currentWidth - spaceForButtons)
     }
@@ -2451,7 +2452,8 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Animating exit from \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
                level: .verbose, subsystem: player.subsystem)
 
-    // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
+    // May be in interactive mode, with some panels hidden (overriding stored preferences).
+    // Honor existing layout but change value of isFullScreen:
     let windowedLayout = currentLayout.spec.clone(fullScreen: false)
 
     /// Split the duration 50/50 between `openNewPanels` animation and `fadeInNewViews` animation
