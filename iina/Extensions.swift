@@ -747,6 +747,10 @@ extension NSScreen {
     }
   }
 
+  var displayId: UInt32 {
+    return deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
+  }
+
   /// Log the given `NSScreen` object.
   ///
   /// Due to issues with multiple monitors and how the screen to use for a window is selected detailed logging has been added in this

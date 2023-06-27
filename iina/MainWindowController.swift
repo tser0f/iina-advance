@@ -129,8 +129,7 @@ class MainWindowController: PlayerWindowController {
   var hideOSDTimer: Timer?
 
   /** For blacking out other screens. */
-  var screens: [NSScreen] = []
-  var cachedScreenCount = 0
+  var cachedScreenIDs = Set<UInt32>()
   var blackWindows: [NSWindow] = []
 
   // Current rotation of videoView: see MainWindowRotationGesture
@@ -797,7 +796,10 @@ class MainWindowController: PlayerWindowController {
     if #available(macOS 10.14, *) {
       topPanelBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     }
-    cachedScreenCount = NSScreen.screens.count
+    cachedScreenIDs.removeAll()
+    for screen in NSScreen.screens {
+      cachedScreenIDs.insert(screen.displayId)
+    }
     // Do not make visual effects views opaque when window is not in focus
     for view in [topPanelView, osdVisualEffectView, controlBarBottom, controlBarFloating,
                  leadingSidebarView, trailingSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
@@ -822,20 +824,22 @@ class MainWindowController: PlayerWindowController {
     }
 
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
-      // This observer handles a situation that the user connected a new screen or removed a screen
+      // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
 
-      // FIXME: this also handles the case where existing screen was resized, including if the Dock was shown/hidden!
-      // Need to update window sizes accordingly
+      // FIXME: this also handles the case where Dock was shown/hidden! Need to update window sizes accordingly
 
-      // FIXME: Change to use displayIDs as VideoView does. Scren count alone should not be relied upon
-      let screenCount = NSScreen.screens.count
-      Logger.log("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screen count was: \(self.cachedScreenCount), is now: \(screenCount)", subsystem: player.subsystem)
-      if self.fsState.isFullscreen && Preference.bool(for: .blackOutMonitor) && self.cachedScreenCount != screenCount {
+      var screenIDs = Set<UInt32>()
+      for screen in NSScreen.screens {
+        screenIDs.insert(screen.displayId)
+      }
+      Logger.log("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)", subsystem: player.subsystem)
+      if self.fsState.isFullscreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
         self.removeBlackWindows()
         self.blackOutOtherMonitors()
       }
       // Update the cached value
-      self.cachedScreenCount = screenCount
+      self.cachedScreenIDs = screenIDs
+      
       self.videoView.updateDisplayLink()
       // In normal full screen mode AppKit will automatically adjust the window frame if the window
       // is moved to a new screen such as when the window is on an external display and that display
@@ -3707,7 +3711,7 @@ class MainWindowController: PlayerWindowController {
   // MARK: - UI: Others
 
   private func blackOutOtherMonitors() {
-    screens = NSScreen.screens.filter { $0 != window?.screen }
+    let screens = NSScreen.screens.filter { $0 != window?.screen }
 
     blackWindows = []
 

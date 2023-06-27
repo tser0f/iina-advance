@@ -231,7 +231,7 @@ class VideoView: NSView {
   // This should only be called if the window has changed displays
   func updateDisplayLink() {
     guard let window = window, let link = link, let screen = window.screen else { return }
-    let displayId = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
+    let displayId = screen.displayId
 
     // Do nothing if on the same display
     if (currentDisplay == displayId) {
