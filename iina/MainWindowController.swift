@@ -743,6 +743,9 @@ class MainWindowController: PlayerWindowController {
 
     // Titlebar accessories
 
+    // Update this here to reduce animation jitter on older versions of MacOS:
+    videoContainerTopOffsetFromTopPanelTopConstraint.constant = StandardTitleBarHeight
+
     leadingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     leadingTitlebarAccesoryViewController.view = leadingTitleBarAccessoryView
     leadingTitlebarAccesoryViewController.layoutAttribute = .leading
@@ -839,7 +842,7 @@ class MainWindowController: PlayerWindowController {
       }
       // Update the cached value
       self.cachedScreenIDs = screenIDs
-      
+
       self.videoView.updateDisplayLink()
       // In normal full screen mode AppKit will automatically adjust the window frame if the window
       // is moved to a new screen such as when the window is on an external display and that display
@@ -1388,6 +1391,24 @@ class MainWindowController: PlayerWindowController {
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
     let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: isInitialLayout)
 
+    if isInitialLayout {
+      // For initial layout (when window is first shown), to reduce jitteriness when drawing,
+      // do all the layout in a single animation block
+      transition.animationBlocks.append{ [self] context in
+        context.duration = 0
+        controlBarFloating.isDragging = false
+        fadeOutOldViews(transition)
+        closeOldPanels(transition)
+        updateHiddenViewsAndConstraints(futureLayout)
+        openNewPanels(transition)
+        fadeInNewViews(transition)
+        currentLayout = futureLayout
+        animationState = .shown
+        resetFadeTimer()
+      }
+      return transition
+    }
+
     let startingAnimationCount: CGFloat = 3
     let endingAnimationCount: CGFloat = 2
 
@@ -1537,7 +1558,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
-    if isTopPanelPlacementChanging {
+    if !transition.isInitialLayout && isTopPanelPlacementChanging {
       // close completely. will animate reopening if needed later
       updateTopPanelHeight(to: 0, placement: futureLayout.topPanelPlacement, isTogglingFullScreen: transition.isTogglingFullScreen, isInitialLayout: transition.isInitialLayout)
     } else {
@@ -2137,15 +2158,21 @@ class MainWindowController: PlayerWindowController {
     if isMouseInSlider {
       updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
     }
+    var animationBlocks: [AnimationBlock] = []
+
     if isMouseInWindow {
-      showFadeableViews()
+      animationBlocks.append(contentsOf: buildAnimationToShowFadeableViews())
     }
-    // Check whether mouse is in OSC
-    if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
-      destroyFadeTimer()
-    } else {
-      resetFadeTimer()
+    animationBlocks.append{ [self] context in
+      // Check whether mouse is in OSC
+      if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
+        destroyFadeTimer()
+      } else {
+        resetFadeTimer()
+      }
     }
+
+    UIAnimation.run(animationBlocks)
   }
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
@@ -2223,7 +2250,7 @@ class MainWindowController: PlayerWindowController {
     let useAnimation = !AccessibilityPreferences.motionReductionEnabled
     if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: currentScreen) {
       Logger.log("WindowWillOpen using initial geometry; setFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
-      window.setFrame(windowFrame, display: true, animate: useAnimation)
+      window.setFrame(windowFrame, display: false, animate: useAnimation)
     }
 
     resetCollectionBehavior()
@@ -2257,16 +2284,17 @@ class MainWindowController: PlayerWindowController {
       attrTitle.addAttribute(.paragraphStyle, value: p, range: NSRange(location: 0, length: attrTitle.length))
     }
     updateTitle()  // Need to call this here, or else when opening directly to fullscreen, window title is just "Window"
-    addVideoViewToWindow()
-    // Set layout from prefs. Do not animate:
-    updateTitleBarAndOSC(isInitialLayout: true)
-    // update timer
-    resetFadeTimer()
 
+    addVideoViewToWindow()
     window.setIsVisible(true)
     player.initVideo()
-
     videoView.videoLayer.draw(forced: true)
+
+    // Set layout from prefs. Do not animate:
+    Logger.log("Init title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
+    let newLayout = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
+    let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: 0, totalEndingDuration: 0, isInitialLayout: true)
+    UIAnimation.run(layoutTransition.animationBlocks)
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -2917,18 +2945,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   // Shows fadeableViews and titlebar via fade
-  private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true,
-                                 completionHandler: (() -> Void)? = nil) {
+  private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true) {
     guard !player.disableUI && !isInInteractiveMode else { return }
 
     var animationBlocks: [AnimationBlock] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
-
-    if let completionHandler = completionHandler {
-      animationBlocks.append{ _ in
-        completionHandler()
-      }
-    }
-
     UIAnimation.run(animationBlocks)
   }
 
