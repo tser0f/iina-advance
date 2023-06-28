@@ -116,12 +116,12 @@ struct Preference {
 
     // The following apply only to "bar"-type OSCs (i.e. not floating or title bar):
     static let oscBarHeight = Key("oscBarHeight")
-    static let oscBarPlaybackButtonsIconSize = Key("oscBarPlaybackButtonsIconSize")
-    static let oscBarPlayBtnsHPadding = Key("oscBarPlayBtnsHPadding")
+    static let oscBarPlaybackIconSize = Key("oscBarPlaybackIconSize")
+    static let oscBarPlaybackIconSpacing = Key("oscBarPlaybackIconSpacing")
     /// Size of one side of a (square) OSC toolbar button
-    static let oscBarToolbarButtonIconSize = Key("oscBarToolbarButtonIconSize")
+    static let oscBarToolbarIconSize = Key("oscBarToolbarIconSize")
     /// The space added around all the sides of each button
-    static let oscBarToolbarButtonPadding = Key("oscBarToolbarButtonPadding")
+    static let oscBarToolbarIconSpacing = Key("oscBarToolbarIconSpacing")
 
     /// OSC toolbar
     /** Horizontal position of control bar. (float, 0 - 1) */
@@ -930,15 +930,15 @@ struct Preference {
     .controlBarStickToCenter: true,
     .controlBarAutoHideTimeout: Float(2.5),
     .controlBarToolbarButtons: [ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
-    .oscBarToolbarButtonIconSize: 14,
-    .oscBarToolbarButtonPadding: 5,  // spacing between icons is x2 this number
+    .oscBarToolbarIconSize: 14,
+    .oscBarToolbarIconSpacing: 5,  // spacing between icons is x2 this number
     .enableOSC: true,
     .showTitleBarTrigger: ShowTitleBarTrigger.onWindowHover.rawValue,
     .topPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .bottomPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .oscBarHeight: 44,
-    .oscBarPlaybackButtonsIconSize: 24,
-    .oscBarPlayBtnsHPadding: 12,
+    .oscBarPlaybackIconSize: 24,
+    .oscBarPlaybackIconSpacing: 16,
     .oscPosition: OSCPosition.floating.rawValue,
     .hideFadeableViewsWhenOutsideWindow: true,
     .playlistWidth: 270,

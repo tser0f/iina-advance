@@ -18,22 +18,27 @@ class OSCToolbarButton: NSButton {
   }
 
   func setStyle(buttonType: Preference.ToolBarButton, iconSize: CGFloat? = nil, iconPadding: CGFloat? = nil) {
-    let iconSize = iconSize ?? max(0, CGFloat(Preference.float(for: .oscBarToolbarButtonIconSize)))
-    let iconPadding = iconPadding ?? max(0, CGFloat(Preference.float(for: .oscBarToolbarButtonPadding)))
+    let iconSize = iconSize ?? OSCToolbarButton.iconSize
+    let iconPadding = iconPadding ?? max(0, CGFloat(Preference.float(for: .oscBarToolbarIconSpacing)))
     OSCToolbarButton.setStyle(of: self, buttonType: buttonType, iconSize: iconSize)
     self.iconSize = iconSize
     self.iconPadding = iconPadding
   }
 
   static var iconSize: CGFloat {
-    max(0, CGFloat(Preference.integer(for: .oscBarToolbarButtonIconSize)))
+    return CGFloat(Preference.float(for: .oscBarToolbarIconSize)).clamped(to: 8...barHeight)
   }
+
   static var buttonSize: CGFloat {
-    return iconSize + (2 * max(0, CGFloat(Preference.integer(for: .oscBarToolbarButtonPadding))))
+    return iconSize + max(0, 2 * CGFloat(Preference.integer(for: .oscBarToolbarIconSpacing)))
+  }
+
+  static var barHeight: CGFloat {
+    return max(16, CGFloat(Preference.integer(for: .oscBarHeight)))
   }
 
   static func setStyle(of toolbarButton: NSButton, buttonType: Preference.ToolBarButton, iconSize: CGFloat? = nil) {
-    let iconSize = iconSize ?? max(0, CGFloat(Preference.float(for: .oscBarToolbarButtonIconSize)))
+    let iconSize = iconSize ?? OSCToolbarButton.iconSize
 
     toolbarButton.translatesAutoresizingMaskIntoConstraints = false
     toolbarButton.bezelStyle = .regularSquare

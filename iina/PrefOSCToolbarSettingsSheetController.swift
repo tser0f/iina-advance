@@ -130,7 +130,7 @@ class PrefOSCToolbarCurrentItemsView: NSStackView, NSDraggingSource {
       let button = PrefOSCToolbarCurrentItem(buttonType: buttonType, superView: self)
       self.addView(button, in: .trailing)
     }
-    let btnPad = CGFloat(Preference.float(for: .oscBarToolbarButtonPadding))
+    let btnPad = CGFloat(Preference.float(for: .oscBarToolbarIconSpacing))
     self.spacing = 2 * btnPad
     self.edgeInsets = .init(top: btnPad, left: btnPad, bottom: btnPad, right: btnPad)
   }

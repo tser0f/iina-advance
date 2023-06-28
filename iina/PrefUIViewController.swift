@@ -99,8 +99,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .settingsTabGroupLocation,
     .playlistTabGroupLocation,
     .controlBarToolbarButtons,
-    .oscBarToolbarButtonIconSize,
-    .oscBarToolbarButtonPadding,
+    .oscBarToolbarIconSize,
+    .oscBarToolbarIconSpacing,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -162,8 +162,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     case PK.settingsTabGroupLocation.rawValue, PK.playlistTabGroupLocation.rawValue:
       refreshSidebarSection()
     case PK.controlBarToolbarButtons.rawValue,
-      PK.oscBarToolbarButtonIconSize.rawValue,
-      PK.oscBarToolbarButtonPadding.rawValue:
+      PK.oscBarToolbarIconSize.rawValue,
+      PK.oscBarToolbarIconSpacing.rawValue:
 
       updateOSCToolbarButtons()
     default:

@@ -41,12 +41,12 @@ fileprivate var oscBarHeight: CGFloat {
 }
 
 /// Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
-fileprivate var oscBarPlayBtnsSize: CGFloat {
-  max(8, CGFloat(Preference.integer(for: .oscBarPlaybackButtonsIconSize)))
+fileprivate var oscBarPlaybackIconSize: CGFloat {
+  CGFloat(Preference.integer(for: .oscBarPlaybackIconSize)).clamped(to: 8...oscBarHeight)
 }
 /// Scale of spacing to the left & right of each playback button (for top/bottom OSC):
-fileprivate var oscBarPlayBtnsHPadding: CGFloat {
-  max(0, CGFloat(Preference.integer(for: .oscBarPlayBtnsHPadding)))
+fileprivate var oscBarPlaybackIconSpacing: CGFloat {
+  max(0, CGFloat(Preference.integer(for: .oscBarPlaybackIconSpacing)))
 }
 
 fileprivate let oscFloatingPlayBtnsSize: CGFloat = 24
@@ -352,11 +352,11 @@ class MainWindowController: PlayerWindowController {
     .topPanelPlacement,
     .bottomPanelPlacement,
     .oscBarHeight,
-    .oscBarPlaybackButtonsIconSize,
-    .oscBarPlayBtnsHPadding,
+    .oscBarPlaybackIconSize,
+    .oscBarPlaybackIconSpacing,
     .controlBarToolbarButtons,
-    .oscBarToolbarButtonIconSize,
-    .oscBarToolbarButtonPadding,
+    .oscBarToolbarIconSize,
+    .oscBarToolbarIconSpacing,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
@@ -389,12 +389,12 @@ class MainWindowController: PlayerWindowController {
       PK.topPanelPlacement.rawValue,
       PK.bottomPanelPlacement.rawValue,
       PK.oscBarHeight.rawValue,
-      PK.oscBarPlaybackButtonsIconSize.rawValue,
-      PK.oscBarPlayBtnsHPadding.rawValue,
+      PK.oscBarPlaybackIconSize.rawValue,
+      PK.oscBarPlaybackIconSpacing.rawValue,
       PK.showLeadingSidebarToggleButton.rawValue,
       PK.showTrailingSidebarToggleButton.rawValue,
-      PK.oscBarToolbarButtonIconSize.rawValue,
-      PK.oscBarToolbarButtonPadding.rawValue,
+      PK.oscBarToolbarIconSize.rawValue,
+      PK.oscBarToolbarIconSpacing.rawValue,
       PK.controlBarToolbarButtons.rawValue:
 
       updateTitleBarAndOSC()
@@ -1154,7 +1154,7 @@ class MainWindowController: PlayerWindowController {
       toolbarView.setVisibilityPriority(.detachOnlyIfNecessary, for: button)
     }
 
-    // FIXME: this causes a crash due to conflicting constraints
+    // FIXME: this causes a crash due to conflicting constraints. Need to rewrite layout for toolbar button spacing!
     // It's not possible to control the icon padding from inside the buttons in all cases.
     // Instead we can get the same effect with a little more work, by controlling the stack view:
 //    if !toolButtons.isEmpty {
@@ -1946,9 +1946,9 @@ class MainWindowController: PlayerWindowController {
             currentControlBar = controlBarTitleBar
             addControlBarViews(to: oscTitleBarMainView,
                                playBtnSize: oscTitleBarPlayBtnsSize,
-                               playBtnHPad: oscTitleBarPlayBtnsHPad,
+                               playBtnSpacing: oscTitleBarPlayBtnsHPad,
                                toolbarIconSize: oscTitleBarToolbarButtonIconSize,
-                               toolbarIconPadding: oscTitleBarToolbarButtonIconPadding)
+                               toolbarIconSpacing: oscTitleBarToolbarButtonIconPadding)
           }
         } else {
           futureLayout.topOSCHeight = oscBarHeight
@@ -1956,7 +1956,7 @@ class MainWindowController: PlayerWindowController {
           futureLayout.setupControlBarInternalViews = { [self] in
             currentControlBar = controlBarTop
             addControlBarViews(to: oscTopMainView,
-                               playBtnSize: oscBarPlayBtnsSize, playBtnHPad: oscBarPlayBtnsHPadding)
+                               playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
           }
         }
 
@@ -1967,7 +1967,7 @@ class MainWindowController: PlayerWindowController {
         futureLayout.setupControlBarInternalViews = { [self] in
           currentControlBar = controlBarBottom
           addControlBarViews(to: oscBottomMainView,
-                             playBtnSize: oscBarPlayBtnsSize, playBtnHPad: oscBarPlayBtnsHPadding)
+                             playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
         }
       }
     } else {  // No OSC
@@ -1977,9 +1977,9 @@ class MainWindowController: PlayerWindowController {
     return futureLayout
   }
 
-  private func addControlBarViews(to containerView: NSStackView, playBtnSize: CGFloat, playBtnHPad: CGFloat,
-                                  toolbarIconSize: CGFloat? = nil, toolbarIconPadding: CGFloat? = nil) {
-    let toolbarView = rebuildToolbar(iconSize: toolbarIconSize, iconPadding: toolbarIconPadding)
+  private func addControlBarViews(to containerView: NSStackView, playBtnSize: CGFloat, playBtnSpacing: CGFloat,
+                                  toolbarIconSize: CGFloat? = nil, toolbarIconSpacing: CGFloat? = nil) {
+    let toolbarView = rebuildToolbar(iconSize: toolbarIconSize, iconPadding: toolbarIconSpacing)
     containerView.addView(fragPlaybackControlButtonsView, in: .leading)
     containerView.addView(fragPositionSliderView, in: .leading)
     containerView.addView(fragVolumeView, in: .leading)
@@ -1992,7 +1992,7 @@ class MainWindowController: PlayerWindowController {
     containerView.setVisibilityPriority(.detachEarlier, for: toolbarView)
 
     playbackButtonsSquareWidthConstraint.constant = playBtnSize
-    playbackButtonsHorizontalPaddingConstraint.constant = playBtnHPad
+    playbackButtonsHorizontalPaddingConstraint.constant = playBtnSpacing
   }
 
   // MARK: - Key events

@@ -59,7 +59,7 @@
                 <outlet property="pipOverlayView" destination="Nrz-jZ-Luf" id="EU7-oY-Bwp"/>
                 <outlet property="playButton" destination="gxw-pJ-Lcg" id="t9H-xd-uqj"/>
                 <outlet property="playSlider" destination="eBP-6g-bAT" id="lGv-18-YeQ"/>
-                <outlet property="playbackButtonsHorizontalPaddingConstraint" destination="Rlb-yb-jOY" id="q7Z-Ov-Hd9"/>
+                <outlet property="playbackButtonsHorizontalPaddingConstraint" destination="V3v-73-S9H" id="N0E-eR-w7j"/>
                 <outlet property="playbackButtonsSquareWidthConstraint" destination="7xv-qQ-n43" id="Bu6-zH-TFP"/>
                 <outlet property="rightArrowButton" destination="EIi-qd-glM" id="U46-Gl-e8D"/>
                 <outlet property="rightArrowLabel" destination="QTI-wi-oyB" id="icX-KI-Muj"/>
@@ -644,9 +644,6 @@
             <subviews>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="siV-cJ-huN" userLabel="Left-most Spacer">
                     <rect key="frame" x="0.0" y="0.0" width="12" height="24"/>
-                    <constraints>
-                        <constraint firstAttribute="width" constant="12" identifier="playbackButtonsHorizontalPaddingConstraint" id="Rlb-yb-jOY"/>
-                    </constraints>
                 </customView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="10x-bg-xlj" userLabel="Left Arrow Button">
                     <rect key="frame" x="12" y="0.0" width="24" height="24"/>
@@ -663,6 +660,9 @@
                 </button>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="I07-AH-cjL" userLabel="Left-Middle Spacer">
                     <rect key="frame" x="36" y="0.0" width="24" height="24"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="24" identifier="playbackButtonsHorizontalPaddingConstraint" id="V3v-73-S9H"/>
+                    </constraints>
                 </customView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="gxw-pJ-Lcg" userLabel="Play/Pause Button">
                     <rect key="frame" x="60" y="0.0" width="24" height="24"/>
@@ -704,7 +704,7 @@
                 <constraint firstItem="EIi-qd-glM" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="38o-Pf-efg"/>
                 <constraint firstItem="I07-AH-cjL" firstAttribute="leading" secondItem="10x-bg-xlj" secondAttribute="trailing" id="4Tm-Rh-0Wm"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="top" secondItem="10x-bg-xlj" secondAttribute="top" id="AAD-eB-VaM"/>
-                <constraint firstItem="I07-AH-cjL" firstAttribute="width" secondItem="siV-cJ-huN" secondAttribute="width" multiplier="2" id="Bmz-N9-sPf"/>
+                <constraint firstItem="siV-cJ-huN" firstAttribute="width" secondItem="I07-AH-cjL" secondAttribute="width" multiplier="0.5" id="Bmz-N9-sPf"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="width" secondItem="10x-bg-xlj" secondAttribute="width" id="Bv9-hu-ezm"/>
                 <constraint firstItem="06z-vV-Q73" firstAttribute="top" secondItem="10x-bg-xlj" secondAttribute="top" id="BzG-HR-13P"/>
                 <constraint firstItem="X5y-IG-ngq" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="CZR-av-xKk"/>
