@@ -1051,22 +1051,10 @@ class MainWindowController: PlayerWindowController {
     topPanelTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateTopPanelHeight(to topPanelHeight: CGFloat, placement: Preference.PanelPlacement,
-                                    isTogglingFullScreen: Bool, isInitialLayout: Bool) {
+  private func updateTopPanelHeight(to topPanelHeight: CGFloat, transition: LayoutTransition) {
+    let placement = transition.toLayout.topPanelPlacement
     Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
     guard let window = window else { return }
-
-    // By default, when the window size changes, the system will add or subtract space from the bottom of the window.
-    // Override this behavior to expand/contract upwards instead.
-    // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
-    // Also do not apply when toggling fullscreen because it is not relevant and will cause glitches in the animation.
-    if !isInitialLayout && !isTogglingFullScreen {
-      let yOffsetOld = videoContainerTopOffsetFromContentViewTopConstraint.constant
-      let yOffsetNew = placement == .outsideVideo ? topPanelHeight : 0
-      let newWindowSize = CGSize(width: window.frame.width, height: window.frame.height + yOffsetNew - yOffsetOld)
-      let newWindowFrame = NSRect(origin: window.frame.origin, size: newWindowSize)
-      window.setFrame(newWindowFrame, display: true, animate: true)
-    }
 
     switch placement {
     case .outsideVideo:
@@ -1112,8 +1100,11 @@ class MainWindowController: PlayerWindowController {
     bottomPanelTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateBottomOSCHeight(to bottomOSCHeight: CGFloat, placement: Preference.PanelPlacement) {
+  private func updateBottomPanelHeight(to bottomOSCHeight: CGFloat, transition: LayoutTransition) {
+    guard let window = window else { return }
+    let placement = transition.toLayout.bottomPanelPlacement
     Logger.log("Updating bottomOSC height to: \(bottomOSCHeight) (given placement: \(placement))", level: .verbose, subsystem: player.subsystem)
+
     switch placement {
     case .outsideVideo:
       videoContainerBottomOffsetFromBottomPanelTopConstraint.animateToConstant(0)
@@ -1373,12 +1364,19 @@ class MainWindowController: PlayerWindowController {
     var isTogglingFullScreen: Bool {
       return self.fromLayout.isFullScreen != self.toLayout.isFullScreen
     }
+
+    var isTogglingToFullScreen: Bool {
+      return !self.fromLayout.isFullScreen && self.toLayout.isFullScreen
+    }
+
+    var isTogglingFromFullScreen: Bool {
+      return self.fromLayout.isFullScreen && !self.toLayout.isFullScreen
+    }
   }
 
   // FIXME: Document icon visibility is sometimes wrong (check again after adding timing queue)
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
-  // FIXME: bug: sidebars bounce during FS transitions for some layout types: do not close panel unnecessarily during FS animations
   // FIXME: update constraints to black out camera housing for legacy fullscreen
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
@@ -1557,26 +1555,80 @@ class MainWindowController: PlayerWindowController {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
 
+    // Update heights of top & bottom panels:
+
+    let windowFrame = window.frame
+    var windowYDelta: CGFloat = 0
+    var windowHeightDelta: CGFloat = 0
+
+    var needsTopPanelHeightUpdate = false
+    var newTopPanelHeight: CGFloat = 0
     let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
     if !transition.isInitialLayout && isTopPanelPlacementChanging {
+      needsTopPanelHeightUpdate = true
       // close completely. will animate reopening if needed later
-      updateTopPanelHeight(to: 0, placement: futureLayout.topPanelPlacement, isTogglingFullScreen: transition.isTogglingFullScreen, isInitialLayout: transition.isInitialLayout)
-    } else {
-      if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
-        updateTopPanelHeight(to: futureLayout.topPanelHeight, placement: futureLayout.topPanelPlacement,
-                             isTogglingFullScreen: transition.isTogglingFullScreen, isInitialLayout: transition.isInitialLayout)
-        // Update sidebar vertical alignments to match
+      newTopPanelHeight = 0
+    } else if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
+      needsTopPanelHeightUpdate = true
+      newTopPanelHeight = futureLayout.topPanelHeight
+    }
+
+    if needsTopPanelHeightUpdate {
+      // By default, when the window size changes, the system will add or subtract space from the bottom of the window.
+      // Override this behavior to expand/contract upwards instead.
+      if transition.fromLayout.topPanelPlacement == .outsideVideo {
+        windowHeightDelta -= videoContainerTopOffsetFromContentViewTopConstraint.constant
+      }
+      if transition.toLayout.topPanelPlacement == .outsideVideo {
+        windowHeightDelta += newTopPanelHeight
+      }
+
+      updateTopPanelHeight(to: newTopPanelHeight, transition: transition)
+    }
+
+    var needsBottomPanelHeightUpdate = false
+    var newBottomPanelHeight: CGFloat = 0
+    let isBottomPanelPlacementChanging = futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement
+    if !transition.isInitialLayout && isBottomPanelPlacementChanging {
+      needsBottomPanelHeightUpdate = true
+      // close completely. will animate reopening if needed later
+      newBottomPanelHeight = 0
+    } else if futureLayout.bottomOSCHeight < currentLayout.bottomOSCHeight {
+      needsBottomPanelHeightUpdate = true
+      newBottomPanelHeight = futureLayout.bottomOSCHeight
+    }
+
+    if needsBottomPanelHeightUpdate {
+      /// Because we are calling `setFrame()` to update the top panel, we also need to take the bottom panel into
+      /// account. Otherwise the system may choose to move the window in an unwanted arbitrary direction.
+      /// We want the bottom panel, if "outside" the video, to expand/collapse on the bottom side.
+      if transition.fromLayout.bottomPanelPlacement == .outsideVideo {
+        windowHeightDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
+        windowYDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
+      }
+      if transition.toLayout.bottomPanelPlacement == .outsideVideo {
+        windowHeightDelta += newBottomPanelHeight
+        windowYDelta += newBottomPanelHeight
+      }
+
+      updateBottomPanelHeight(to: newBottomPanelHeight, transition: transition)
+    }
+
+    // Update sidebar vertical alignments to match:
+    if !transition.isTogglingToFullScreen { // never when going into fullscreen - causes unpleasant bouncing animation
+      if transition.isTogglingFromFullScreen || futureLayout.topPanelHeight < currentLayout.topPanelHeight {
         quickSettingView.refreshVerticalConstraints(layout: futureLayout)
         playlistView.refreshVerticalConstraints(layout: futureLayout)
       }
     }
 
-    let isBottomPanelPlacementChanging = futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement
-    if isBottomPanelPlacementChanging {
-      // close completely. will animate reopening if needed later
-      updateBottomOSCHeight(to: 0, placement: futureLayout.bottomPanelPlacement)
-    } else if futureLayout.bottomOSCHeight == 0 {
-      updateBottomOSCHeight(to: futureLayout.bottomOSCHeight, placement: futureLayout.bottomPanelPlacement)
+    // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
+    // Also do not apply when toggling fullscreen because it is not relevant and will cause glitches in the animation.
+    if !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
+      let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
+      let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
+      let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
+      window.setFrame(newWindowFrame, display: true, animate: true)
     }
 
     if currentLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
@@ -1644,9 +1696,37 @@ class MainWindowController: PlayerWindowController {
     titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
     topOSCPreferredHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
     osdMinOffsetFromTopConstraint.animateToConstant(futureLayout.osdMinOffsetFromTop)
-    updateTopPanelHeight(to: futureLayout.topPanelHeight, placement: futureLayout.topPanelPlacement,
-                         isTogglingFullScreen: transition.isTogglingFullScreen, isInitialLayout: transition.isInitialLayout)
-    updateBottomOSCHeight(to: futureLayout.bottomOSCHeight, placement: futureLayout.bottomPanelPlacement)
+
+    // Update heights of top & bottom panels:
+
+    let windowFrame = window.frame
+    var windowYDelta: CGFloat = 0
+    var windowHeightDelta: CGFloat = 0
+
+    if transition.fromLayout.topPanelPlacement == .outsideVideo {
+      windowHeightDelta -= videoContainerTopOffsetFromContentViewTopConstraint.constant
+    }
+    if transition.toLayout.topPanelPlacement == .outsideVideo {
+      windowHeightDelta += futureLayout.topPanelHeight
+    }
+    updateTopPanelHeight(to: futureLayout.topPanelHeight, transition: transition)
+
+    if transition.fromLayout.bottomPanelPlacement == .outsideVideo {
+      windowHeightDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
+      windowYDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
+    }
+    if transition.toLayout.bottomPanelPlacement == .outsideVideo {
+      windowHeightDelta += futureLayout.bottomOSCHeight
+      windowYDelta += futureLayout.bottomOSCHeight
+    }
+    updateBottomPanelHeight(to: futureLayout.bottomOSCHeight, transition: transition)
+
+    if !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
+      let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
+      let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
+      let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
+      window.setFrame(newWindowFrame, display: true, animate: true)
+    }
 
     // Update sidebar vertical alignments
     quickSettingView.refreshVerticalConstraints(layout: futureLayout)
