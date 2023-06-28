@@ -303,6 +303,7 @@
                         </subviews>
                         <constraints>
                             <constraint firstItem="g0j-zS-jKv" firstAttribute="leading" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="16" id="C3A-d2-EBc"/>
+                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="115" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>
                             <constraint firstItem="g0j-zS-jKv" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" constant="8" id="Pt2-sQ-VPI"/>
                             <constraint firstAttribute="bottom" secondItem="g0j-zS-jKv" secondAttribute="bottom" constant="8" id="Vjj-vg-tA7"/>
                             <constraint firstAttribute="trailing" secondItem="g0j-zS-jKv" secondAttribute="trailing" constant="16" id="WKr-7v-aYn"/>
