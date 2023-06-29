@@ -1369,15 +1369,17 @@ class MainWindowController: PlayerWindowController {
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
 
-    controlBarFloating.isDragging = false
-    fadeOutOldViews(transition)
-    closeOldPanels(transition)
-    updateHiddenViewsAndConstraints(initialLayout)
-    openNewPanels(transition)
-    fadeInNewViews(transition)
-    currentLayout = initialLayout
-    animationState = .shown
-    resetFadeTimer()
+    UIAnimation.disableAnimation{
+      controlBarFloating.isDragging = false
+      fadeOutOldViews(transition)
+      closeOldPanels(transition)
+      updateHiddenViewsAndConstraints(initialLayout)
+      openNewPanels(transition)
+      fadeInNewViews(transition)
+      currentLayout = initialLayout
+      animationState = .shown
+      resetFadeTimer()
+    }
   }
 
   private func updateTitleBarAndOSC() {
@@ -1406,7 +1408,7 @@ class MainWindowController: PlayerWindowController {
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
     let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: false)
 
-    let startingAnimationCount: CGFloat = 3
+    let startingAnimationCount: CGFloat = 2
     let endingAnimationCount: CGFloat = 2
 
     let startingAnimationDuration: CGFloat
@@ -1442,20 +1444,22 @@ class MainWindowController: PlayerWindowController {
       fadeOutOldViews(transition)
     }
 
-    // StartingAnimation 3: Minimize panels which are no longer needed
-    transition.animationBlocks.append{ [self] context in
-      context.duration = startingAnimationDuration
-      /// Need to use `linear` or else panels of different sizes won't line up as they move
-      context.timingFunction = CAMediaTimingFunction(name: .linear)
-      closeOldPanels(transition)
-    }
+    if transition.isInitialLayout || !transition.isTogglingFullScreen {
+      // StartingAnimation 3: Minimize panels which are no longer needed
+      transition.animationBlocks.append{ [self] context in
+        context.duration = startingAnimationDuration
+        /// Need to use `linear` or else panels of different sizes won't line up as they move
+        context.timingFunction = CAMediaTimingFunction(name: .linear)
+        closeOldPanels(transition)
+      }
 
-    // Ending animations:
+      // Ending animations:
 
-    // Not animated: Update constraints. Should have no visible changes
-    transition.animationBlocks.append{ [self] context in
-      context.duration = 0
-      updateHiddenViewsAndConstraints(futureLayout)
+      // Not animated: Update constraints. Should have no visible changes
+      transition.animationBlocks.append{ [self] context in
+        context.duration = 0
+        updateHiddenViewsAndConstraints(futureLayout)
+      }
     }
 
     // EndingAnimation 1: Open new panels
@@ -2475,7 +2479,7 @@ class MainWindowController: PlayerWindowController {
     let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
 
     // Run this animation in *parallel* with below, with matching duration
-    let layoutTransition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
+    let layoutTransition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
 
     // Launch this asynchronously
     UIAnimation.run(layoutTransition.animationBlocks)
@@ -2592,7 +2596,7 @@ class MainWindowController: PlayerWindowController {
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation, but total animation needs to exceed duration
     /// due to bug...
-    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration * 2)
+    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
 
     // Launch this asynchronously:
     UIAnimation.run(transition.animationBlocks)
@@ -2601,7 +2605,7 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run({ [self] context in
       /// Timing function & duration must exactly match that of `openNewPanels()` so that black areas don't appear during animation
       context.timingFunction = CAMediaTimingFunction(name: .linear)
-      context.duration = duration
+      context.duration = duration * 0.5
 
       Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(fsState.priorWindowedFrame!)",
                  level: .verbose, subsystem: player.subsystem)
