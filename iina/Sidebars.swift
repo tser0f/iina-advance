@@ -400,7 +400,7 @@ extension MainWindowController {
       if Preference.enum(for: .trailingSidebarPlacement) == Preference.PanelPlacement.insideVideo || layout.isFullScreen {
         trailingSidebarView.blendingMode = .withinWindow
       } else {
-        leadingSidebarView.blendingMode = .behindWindow
+        trailingSidebarView.blendingMode = .behindWindow
       }
     }
   }
