@@ -36,18 +36,18 @@ struct UIAnimation {
 
   /// Convenience function. Same as `run([AnimationBlock])`, but for a single animation.
   static func run(withDuration duration: CGFloat? = nil, _ animationBlock: @escaping AnimationBlock,
-                  completionHandler: (() -> Void)? = nil) {
-    run(withDuration: duration, [animationBlock], completionHandler: completionHandler)
+                  then doAfter: (() -> Void)? = nil) {
+    run(withDuration: duration, [animationBlock], then: doAfter)
   }
 
   /// Recursive function which executes each of the given `AnimationBlock`s one after another.
   /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `UIAnimation.disableAnimation()`.
   /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `UIAnimation.UIAnimationDuration`.
   static func run(withDuration duration: CGFloat? = nil, _ animationBlocks: [AnimationBlock], index: Int = 0,
-                  completionHandler: (() -> Void)? = nil) {
+                  then doAfter: (() -> Void)? = nil) {
     guard index < animationBlocks.count else {
-      if let completionHandler = completionHandler {
-        completionHandler()
+      if let doAfter = doAfter {
+        doAfter()
       }
       return
     }
@@ -66,7 +66,7 @@ struct UIAnimation {
 
       animationBlocks[index](context)
     }, completionHandler: {
-      self.run(withDuration: duration, animationBlocks, index: index + 1, completionHandler: completionHandler)
+      self.run(withDuration: duration, animationBlocks, index: index + 1, then: doAfter)
     })
   }
 }

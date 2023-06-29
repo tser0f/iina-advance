@@ -1054,7 +1054,6 @@ class MainWindowController: PlayerWindowController {
   private func updateTopPanelHeight(to topPanelHeight: CGFloat, transition: LayoutTransition) {
     let placement = transition.toLayout.topPanelPlacement
     Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
-    guard let window = window else { return }
 
     switch placement {
     case .outsideVideo:
@@ -1101,7 +1100,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updateBottomPanelHeight(to bottomOSCHeight: CGFloat, transition: LayoutTransition) {
-    guard let window = window else { return }
     let placement = transition.toLayout.bottomPanelPlacement
     Logger.log("Updating bottomOSC height to: \(bottomOSCHeight) (given placement: \(placement))", level: .verbose, subsystem: player.subsystem)
 
@@ -2486,7 +2484,7 @@ class MainWindowController: PlayerWindowController {
         window.setFrame(screen.frame, display: true)
       }
 
-    }, completionHandler: { [self] in
+    }, then: { [self] in
       if isLegacy {
         // call delegate
         windowDidEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
@@ -2600,7 +2598,7 @@ class MainWindowController: PlayerWindowController {
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
 
-    }, completionHandler: { [self] in
+    }, then: { [self] in
 
       if isLegacy {
         // If extra space was added for camera housing, remove it
@@ -3028,7 +3026,7 @@ class MainWindowController: PlayerWindowController {
   private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true) {
     guard !player.disableUI && !isInInteractiveMode else { return }
 
-    var animationBlocks: [AnimationBlock] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
+    let animationBlocks: [AnimationBlock] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
     UIAnimation.run(animationBlocks)
   }
 
@@ -3227,7 +3225,7 @@ class MainWindowController: PlayerWindowController {
 
       UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
         osdVisualEffectView.layoutSubtreeIfNeeded()
-      }, completionHandler: {
+      }, then: {
         accessoryView.layer?.opacity = 1
       })
     }
@@ -3242,7 +3240,7 @@ class MainWindowController: PlayerWindowController {
 
     UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
       osdVisualEffectView.alphaValue = 0
-    }, completionHandler: {
+    }, then: {
       if self.osdAnimationState == .willHide {
         self.osdAnimationState = .hidden
         self.osdVisualEffectView.isHidden = true
@@ -3358,7 +3356,7 @@ class MainWindowController: PlayerWindowController {
     UIAnimation.run(animationBlocks)
   }
 
-  func exitInteractiveMode(immediately: Bool = false, then: @escaping () -> Void = {}) {
+  func exitInteractiveMode(immediately: Bool = false, then doAfter: @escaping () -> Void = {}) {
     guard let cropController = cropSettingsView else { return }
     // if exit without animation
     let duration: CGFloat = immediately ? 0 : UIAnimation.CropAnimationDuration
@@ -3394,9 +3392,7 @@ class MainWindowController: PlayerWindowController {
 
     animationBlocks.append(contentsOf: transition.animationBlocks)
 
-    UIAnimation.run(animationBlocks, completionHandler: {
-      then()
-    })
+    UIAnimation.run(animationBlocks, then: doAfter)
   }
 
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..

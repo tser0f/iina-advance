@@ -245,8 +245,6 @@ extension MainWindowController {
 
     let group = tab.group
     guard let sidebar = getConfiguredSidebar(forTabGroup: group) else { return }
-    let currentWidth = group.width()
-    Logger.log("New sidebar width for group \(group.rawValue.quoted): \(currentWidth)", level: .verbose, subsystem: player.subsystem)
 
     var nothingToDo = false
     if show && sidebar.isVisible {
@@ -275,17 +273,28 @@ extension MainWindowController {
       nothingToDo = true
     }
 
+    var animationBlocks: [AnimationBlock]
+    if nothingToDo {
+      animationBlocks = []
+    } else {
+      animationBlocks = changeVisibility(forSidebar: sidebar, tab: tab, to: show)
+    }
+
+    if let doAfter = doAfter {
+      animationBlocks.append{ context in
+        doAfter()
+      }
+    }
+
+    UIAnimation.run(animationBlocks)
+  }
+
+  func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [AnimationBlock] {
     var animationBlocks: [AnimationBlock] = []
 
-    if nothingToDo {
-      if let doAfter = doAfter {
-        animationBlocks.append{ context in
-          doAfter()
-        }
-        UIAnimation.run(animationBlocks)
-      }
-      return
-    }
+    let group = tab.group
+    let currentWidth = group.width()
+    Logger.log("Latest sidebar width for group \(group.rawValue.quoted): \(currentWidth)", level: .verbose, subsystem: player.subsystem)
 
     let sidebarView: NSVisualEffectView
     switch sidebar.locationID {
@@ -296,17 +305,19 @@ extension MainWindowController {
       trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
       sidebarView = trailingSidebarView
     }
-    if show {
-      updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
-    }
 
+    // This code block needs to be an AnimationBlock because it needs to follow precedence rules.
+    // But there is no visible animation.
     animationBlocks.append{ [self] context in
-      // This code block needs to be an AnimationBlock because it goes in the middle of the chain, but there is no visible animation.
       // Set duration to 0, or else it will look like a pause:
       context.duration = 0
 
       if show {
         sidebar.animationState = .willShow
+
+        // Update blending mode instantaneously. It doesn't animate well
+        updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
+
         // Make it the active tab in its parent tab group (can do this whether or not it's shown):
         switch tab.group {
         case .playlist:
@@ -357,7 +368,9 @@ extension MainWindowController {
       contentView.layoutSubtreeIfNeeded()
     }
 
+    // Update state
     animationBlocks.append{ [self] context in
+      context.duration = 0
       if show {
         sidebar.animationState = .shown
         sidebar.visibleTab = tab
@@ -368,15 +381,11 @@ extension MainWindowController {
         sidebar.animationState = .hidden
       }
       Logger.log("Sidebar animationState is now: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
-      if let doAfter = doAfter {
-        doAfter()
-      } else {
-        context.duration = 0
-      }
     }
 
-    UIAnimation.run(animationBlocks)
+    return animationBlocks
   }
+
 
   func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
     switch sidebarID {
