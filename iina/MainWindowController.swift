@@ -92,12 +92,21 @@ class MainWindowController: PlayerWindowController {
     return StandardTitleBarHeight
   }()
 
+  /// Minimum allowed video size. Does not include any panels which are outside the video.
   var minSize: NSSize { return PlayerCore.minVideoSize }
+
+  // MARK: - Objects, Views
+
+  var bestScreen: NSScreen {
+    window?.screen ?? NSScreen.main!
+  }
+
+  /** For blacking out other screens. */
+  var cachedScreenIDs = Set<UInt32>()
+  var blackWindows: [NSWindow] = []
 
   // Is non-nil if within the activation rect of one of the sidebars
   var sidebarResizeCursor: NSCursor? = nil
-
-  // MARK: - Objects, Views
 
   /** The quick setting sidebar (video, audio, subtitles). */
   lazy var quickSettingView: QuickSettingViewController = {
@@ -116,10 +125,17 @@ class MainWindowController: PlayerWindowController {
   /** The control view for interactive mode. */
   var cropSettingsView: CropBoxViewController?
 
+  // For Pinch To Magnify gesture:
+  var lastMagnification: CGFloat = 0.0
+  var windowFrameAtMagnificationBegin = NSRect()
+  var videoContainerFrameAtMagnificationBegin = NSRect()
   private lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
   }()
 
+  // For Rotate gesture:
+  /// Current rotation of `self.videoView`: see `VideoRotationHandler`
+  let rotationHandler = VideoRotationHandler()
   private lazy var rotationGestureRecognizer: NSRotationGestureRecognizer = {
     return NSRotationGestureRecognizer(target: self, action: #selector(MainWindowController.handleRotationGesture(recognizer:)))
   }()
@@ -128,16 +144,7 @@ class MainWindowController: PlayerWindowController {
   var hideFadeableViewsTimer: Timer?
   var hideOSDTimer: Timer?
 
-  /** For blacking out other screens. */
-  var cachedScreenIDs = Set<UInt32>()
-  var blackWindows: [NSWindow] = []
-
-  // Current rotation of videoView: see MainWindowRotationGesture
-  let rotationHandler = VideoRotationHandler()
-
-  var bestScreen: NSScreen {
-    window?.screen ?? NSScreen.main!
-  }
+  let animationQueue = AnimationQueue()
 
   // MARK: - Status
 
@@ -156,6 +163,7 @@ class MainWindowController: PlayerWindowController {
     // Also check if hidden due to PIP
     return window.isVisible || isWindowHidden
   }
+  private var isWindowHidden: Bool = false
 
   var hasKeyboardFocus: Bool {
     window?.isKeyWindow ?? false
@@ -172,8 +180,8 @@ class MainWindowController: PlayerWindowController {
   var isInInteractiveMode: Bool = false
 
   var shouldApplyInitialWindowSize = true
-  var isWindowHidden: Bool = false
   var isWindowMiniaturizedDueToPip = false
+  var denyNextWindowResize = false
 
   // might use another obj to handle slider?
   var isMouseInWindow: Bool = false
@@ -184,13 +192,6 @@ class MainWindowController: PlayerWindowController {
   var isPausedDueToInactive: Bool = false
   var isPausedDueToMiniaturization: Bool = false
   var isPausedPriorToInteractiveMode: Bool = false
-
-  // For PinchAction:
-  var lastMagnification: CGFloat = 0.0
-  var windowFrameAtMagnificationBegin = NSRect()
-  var videoContainerFrameAtMagnificationBegin = NSRect()
-
-  var denyNextWindowResize = false
 
   /** Views that will show/hide when cursor moving in/out the window. */
   var fadeableViews = Set<NSView>()
@@ -1333,19 +1334,6 @@ class MainWindowController: PlayerWindowController {
     apply(visibility: visibility, view)
   }
 
-  private func updateTitleBarAndOSC(isInitialLayout: Bool = false) {
-    guard !isInInteractiveMode else {
-      Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
-      return
-    }
-    Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
-    let newLayout = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
-    let durationOverride: CGFloat? = isInitialLayout ? 0 : nil
-    let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: durationOverride, totalEndingDuration: durationOverride, isInitialLayout: isInitialLayout)
-
-    UIAnimation.run(layoutTransition.animationBlocks)
-  }
-
   class LayoutTransition {
     let fromLayout: LayoutPlan
     let toLayout: LayoutPlan
@@ -1372,6 +1360,39 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  private func transitionToInitialLayout() {
+    Logger.log("Setting initial layout", level: .verbose, subsystem: player.subsystem)
+    let initialLayoutSpec = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
+    let initialLayout = buildFutureLayoutPlan(from: initialLayoutSpec)
+
+    let transition = LayoutTransition(from: currentLayout, to: initialLayout, isInitialLayout: true)
+    // For initial layout (when window is first shown), to reduce jitteriness when drawing,
+    // do all the layout in a single animation block
+
+    controlBarFloating.isDragging = false
+    fadeOutOldViews(transition)
+    closeOldPanels(transition)
+    updateHiddenViewsAndConstraints(initialLayout)
+    openNewPanels(transition)
+    fadeInNewViews(transition)
+    currentLayout = initialLayout
+    animationState = .shown
+    resetFadeTimer()
+  }
+
+  private func updateTitleBarAndOSC() {
+    guard !isInInteractiveMode else {
+      Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
+      return
+    }
+    Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
+    let futureLayoutSpec = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
+    let transition = buildLayoutTransition(to: futureLayoutSpec)
+    UIAnimation.run(transition.animationBlocks)
+  }
+
+  // TODO: create AnimationQueue
+
   // FIXME: Document icon visibility is sometimes wrong (check again after adding timing queue)
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
@@ -1380,38 +1401,27 @@ class MainWindowController: PlayerWindowController {
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
                                      totalStartingDuration: CGFloat? = nil,
-                                     totalEndingDuration: CGFloat? = nil,
-                                     isInitialLayout: Bool = false) -> LayoutTransition {
-    Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
+                                     totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
 
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
-    let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: isInitialLayout)
-
-    if isInitialLayout {
-      // For initial layout (when window is first shown), to reduce jitteriness when drawing,
-      // do all the layout in a single animation block
-      transition.animationBlocks.append{ [self] context in
-        context.duration = 0
-        controlBarFloating.isDragging = false
-        fadeOutOldViews(transition)
-        closeOldPanels(transition)
-        updateHiddenViewsAndConstraints(futureLayout)
-        openNewPanels(transition)
-        fadeInNewViews(transition)
-        currentLayout = futureLayout
-        animationState = .shown
-        resetFadeTimer()
-      }
-      return transition
-    }
+    let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: false)
 
     let startingAnimationCount: CGFloat = 3
     let endingAnimationCount: CGFloat = 2
 
-    let totalStartingDuration = totalStartingDuration ?? UIAnimation.UIAnimationDuration
-
-    let startingAnimationDuration: CGFloat = ((totalStartingDuration ?? UIAnimation.UIAnimationDuration) * startingAnimationCount) / startingAnimationCount
-    let endingAnimationDuration: CGFloat = ((totalEndingDuration ?? UIAnimation.UIAnimationDuration) * endingAnimationCount) / endingAnimationCount
+    let startingAnimationDuration: CGFloat
+    let endingAnimationDuration: CGFloat
+    if let totalStartingDuration = totalStartingDuration {
+      startingAnimationDuration = totalStartingDuration / startingAnimationCount
+    } else {
+      startingAnimationDuration = UIAnimation.UIAnimationDuration
+    }
+    if let totalEndingDuration = totalEndingDuration {
+      endingAnimationDuration = totalEndingDuration / endingAnimationCount
+    } else {
+      endingAnimationDuration = UIAnimation.UIAnimationDuration
+    }
+    Logger.log("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)", level: .verbose, subsystem: player.subsystem)
 
     // Starting animations:
 
@@ -2369,10 +2379,7 @@ class MainWindowController: PlayerWindowController {
     videoView.videoLayer.draw(forced: true)
 
     // Set layout from prefs. Do not animate:
-    Logger.log("Init title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
-    let newLayout = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
-    let layoutTransition = buildLayoutTransition(to: newLayout, totalStartingDuration: 0, totalEndingDuration: 0, isInitialLayout: true)
-    UIAnimation.run(layoutTransition.animationBlocks)
+    transitionToInitialLayout()
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -2467,9 +2474,10 @@ class MainWindowController: PlayerWindowController {
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
 
+    // Run this animation in *parallel* with below, with matching duration
     let layoutTransition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
 
-    // Run this animation in *parallel* with below, with matching duration
+    // Launch this asynchronously
     UIAnimation.run(layoutTransition.animationBlocks)
 
     // Run in parallel with above
@@ -2481,7 +2489,7 @@ class MainWindowController: PlayerWindowController {
         setWindowFrameForLegacyFullScreen()
       } else {
         Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
-        window.setFrame(screen.frame, display: true)
+        window.setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
       }
 
     }, then: { [self] in
@@ -2582,19 +2590,20 @@ class MainWindowController: PlayerWindowController {
     // Honor existing layout but change value of isFullScreen:
     let windowedLayout = currentLayout.spec.clone(fullScreen: false)
 
-    /// Split the duration 50/50 between `openNewPanels` animation and `fadeInNewViews` animation
-    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
+    /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation, but total animation needs to exceed duration
+    /// due to bug...
+    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration * 2)
 
-    // Run this animation in *parallel* with below, with matching duration
+    // Launch this asynchronously:
     UIAnimation.run(transition.animationBlocks)
 
     // Run in parallel with above
     UIAnimation.run({ [self] context in
       /// Timing function & duration must exactly match that of `openNewPanels()` so that black areas don't appear during animation
       context.timingFunction = CAMediaTimingFunction(name: .linear)
-      context.duration = duration * 0.5
+      context.duration = duration
 
-      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setFrame to: \(fsState.priorWindowedFrame!)",
+      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(fsState.priorWindowedFrame!)",
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
 
@@ -3374,7 +3383,7 @@ class MainWindowController: PlayerWindowController {
     animationBlocks.append{ [self] context in
       context.duration = 0
       cropController.cropBoxView.removeFromSuperview()
-      self.hideSidebars(animate: false)
+      self.hideAllSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       self.showFadeableViews()

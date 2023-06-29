@@ -202,7 +202,7 @@ class VideoView: NSView {
 
   override func draggingEnded(_ sender: NSDraggingInfo) {
     if playlistShown {
-      player.mainWindow.hideSidebars()
+      player.mainWindow.hideAllSidebars()
     }
     playlistShown = false
     lastMousePosition = nil

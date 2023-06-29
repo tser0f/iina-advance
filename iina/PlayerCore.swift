@@ -553,7 +553,7 @@ class PlayerCore: NSObject {
     let playlistView = mainWindow.playlistView.view
     let videoView = videoView
     // hide sidebars
-    mainWindow.hideSidebars(animate: false)
+    mainWindow.hideAllSidebars(animate: false)
 
     // move playist view
     playlistView.removeFromSuperview()

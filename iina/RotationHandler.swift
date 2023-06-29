@@ -1,5 +1,5 @@
 //
-//  MainWindowRotationGesture.swift
+//  VideoRotationHandler.swift
 //  iina
 //
 //  Created by Matt Svoboda on 2023-03-26.

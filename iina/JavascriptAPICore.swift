@@ -291,7 +291,7 @@ fileprivate class WindowAPI: JavascriptAPI, CoreSubAPIExportable {
           log("core.window.sidebar: Unknown sidebar name \"\(name)\"", level: .error)
         }
       } else {
-        window.hideSidebars(animate: true)
+        window.hideAllSidebars(animate: true)
       }
     default:
       log("core.window: \(prop) is not accessible", level: .warning)

@@ -213,7 +213,7 @@ extension MainWindowController {
   }
 
   // Hides any visible sidebars
-  func hideSidebars(animate: Bool = true, then: (() -> Void)? = nil) {
+  func hideAllSidebars(animate: Bool = true, then: (() -> Void)? = nil) {
     Logger.log("Hiding all sidebars", level: .verbose)
     // Need to make sure that completionHandler (1) runs after animations, or (2) runs at all
     var completionHandler: (() -> Void)? = then
@@ -289,7 +289,7 @@ extension MainWindowController {
     UIAnimation.run(animationBlocks)
   }
 
-  func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [AnimationBlock] {
+  private func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [AnimationBlock] {
     var animationBlocks: [AnimationBlock] = []
 
     let group = tab.group
@@ -380,7 +380,7 @@ extension MainWindowController {
         sidebarView.isHidden = true
         sidebar.animationState = .hidden
       }
-      Logger.log("Sidebar animationState is now: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Animation done: changed animationState of \(sidebar.locationID) to: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
     }
 
     return animationBlocks

@@ -41,7 +41,7 @@ class JavascriptAPISidebarView: JavascriptAPI, JavascriptAPISidebarViewExportabl
   }
 
   func hide() {
-    player!.mainWindow.hideSidebars()
+    player!.mainWindow.hideAllSidebars()
   }
 
   func postMessage(_ name: String, _ data: JSValue) {

@@ -96,7 +96,7 @@ extension MainWindowController {
         player.info.delogoFilter = nil
       }
     } else {
-      self.hideSidebars {
+      self.hideAllSidebars {
         self.enterInteractiveMode(.freeSelecting)
       }
     }

@@ -10,6 +10,14 @@ import Foundation
 
 typealias AnimationBlock = (NSAnimationContext) -> Void
 
+class AnimationQueue {
+  class AnimationTask {
+    
+  }
+  let dq = DispatchQueue(label: "AnimationQueue", qos: .userInteractive)
+
+}
+
 struct UIAnimation {
   // Constants
   static let UIAnimationDuration = 0.25
