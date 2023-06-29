@@ -673,7 +673,7 @@ extension SidebarTabGroupViewController {
       tabHeight = customTabHeight
     }
     Logger.log("Sidebar downshift: \(downshift), TabHeight: \(tabHeight)", level: .verbose, subsystem: mainWindow.player.subsystem)
-    getTopOfTabsConstraint()?.constant = downshift
-    getHeightOfTabsConstraint()?.constant = tabHeight
+    getTopOfTabsConstraint()?.animateToConstant(downshift)
+    getHeightOfTabsConstraint()?.animateToConstant(tabHeight)
   }
 }

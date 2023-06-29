@@ -1627,11 +1627,11 @@ class MainWindowController: PlayerWindowController {
     }
 
     // Update sidebar vertical alignments to match:
-    if !transition.isTogglingToFullScreen { // never when going into fullscreen - causes unpleasant bouncing animation
-      if transition.isTogglingFromFullScreen || futureLayout.topPanelHeight < currentLayout.topPanelHeight {
-        quickSettingView.refreshVerticalConstraints(layout: futureLayout)
-        playlistView.refreshVerticalConstraints(layout: futureLayout)
-      }
+    if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
+      quickSettingView.refreshVerticalConstraints(layout: futureLayout)
+      playlistView.refreshVerticalConstraints(layout: futureLayout)
+      quickSettingView.view.layoutSubtreeIfNeeded()
+      playlistView.view.layoutSubtreeIfNeeded()
     }
 
     // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
@@ -1743,6 +1743,8 @@ class MainWindowController: PlayerWindowController {
     // Update sidebar vertical alignments
     quickSettingView.refreshVerticalConstraints(layout: futureLayout)
     playlistView.refreshVerticalConstraints(layout: futureLayout)
+    quickSettingView.view.layoutSubtreeIfNeeded()
+    playlistView.view.layoutSubtreeIfNeeded()
 
     controlBarBottom.layoutSubtreeIfNeeded()
     window.contentView?.layoutSubtreeIfNeeded()
