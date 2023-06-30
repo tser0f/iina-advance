@@ -213,6 +213,7 @@ extension MainWindowController {
   }
 
   // Hides any visible sidebars
+  // TODO: refactor this so that they run in the same animation
   func hideAllSidebars(animate: Bool = true, then: TaskFunc? = nil) {
     Logger.log("Hiding all sidebars", level: .verbose)
     // Need to make sure that completionHandler (1) runs after animations, or (2) runs at all
@@ -273,28 +274,24 @@ extension MainWindowController {
       nothingToDo = true
     }
 
-    var animationBlocks: [AnimationBlock]
+    var animationTasks: [AnimationQueue.Task]
     if nothingToDo {
-      animationBlocks = []
+      animationTasks = []
     } else {
-      animationBlocks = changeVisibility(forSidebar: sidebar, tab: tab, to: show)
+      animationTasks = changeVisibility(forSidebar: sidebar, tab: tab, to: show)
     }
 
     if let doAfter = doAfter {
-      animationBlocks.append{ context in
+      animationTasks.append(AnimationQueue.TaskFactory.zeroDuration {
         doAfter()
-      }
+      })
     }
 
-    UIAnimation.run(animationBlocks)
+    animationQueue.run(animationTasks)
   }
 
-  private func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [AnimationBlock] {
-    var animationBlocks: [AnimationBlock] = []
-
-    let group = tab.group
-    let currentWidth = group.width()
-    Logger.log("Latest sidebar width for group \(group.rawValue.quoted): \(currentWidth)", level: .verbose, subsystem: player.subsystem)
+  private func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [AnimationQueue.Task] {
+    var animationTasks: [AnimationQueue.Task] = []
 
     let sidebarView: NSVisualEffectView
     switch sidebar.locationID {
@@ -308,9 +305,7 @@ extension MainWindowController {
 
     // This code block needs to be an AnimationBlock because it needs to follow precedence rules.
     // But there is no visible animation.
-    animationBlocks.append{ [self] context in
-      // Set duration to 0, or else it will look like a pause:
-      context.duration = 0
+    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
 
       if show {
         sidebar.animationState = .willShow
@@ -339,7 +334,7 @@ extension MainWindowController {
         sidebarView.isHidden = false
 
         // add view and constraints
-        let viewController = (group == .playlist) ? playlistView : quickSettingView
+        let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
         let tabGroupView = viewController.view
         sidebarView.addSubview(tabGroupView)
         tabGroupView.heightAnchor.constraint(equalTo: sidebarView.heightAnchor).isActive = true
@@ -349,12 +344,15 @@ extension MainWindowController {
       }
 
       Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
-    }
+    })
 
     // Animate the showing/hiding:
-    animationBlocks.append{ [self] context in
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+    animationTasks.append(AnimationQueue.Task(duration: UIAnimation.UIAnimationDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
+                                              { [self] in
       guard let contentView = window?.contentView else { return }
+
+      let currentWidth = tab.group.width()
+      Logger.log("Latest sidebar width for group \(tab.group.rawValue.quoted): \(currentWidth)", level: .verbose, subsystem: player.subsystem)
 
       switch sidebar.locationID {
       case .leadingSidebar:
@@ -366,11 +364,10 @@ extension MainWindowController {
 
       updateSpacingForTitleBarAccessories()
       contentView.layoutSubtreeIfNeeded()
-    }
+    }))
 
     // Update state
-    animationBlocks.append{ [self] context in
-      context.duration = 0
+    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
       if show {
         sidebar.animationState = .shown
         sidebar.visibleTab = tab
@@ -381,9 +378,9 @@ extension MainWindowController {
         sidebar.animationState = .hidden
       }
       Logger.log("Animation done: changed animationState of \(sidebar.locationID) to: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
-    }
+    })
 
-    return animationBlocks
+    return animationTasks
   }
 
 

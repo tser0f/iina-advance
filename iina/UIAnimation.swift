@@ -72,7 +72,6 @@ class AnimationQueue {
     }
     if !zeroDurationTasks.isEmpty {
       nextTask = AnimationQueue.TaskFactory.zeroDuration{
-        Logger.log("Combined \(zeroDurationTasks.count) animation tasks into one")
         for task in zeroDurationTasks {
           task.runFunc()
         }

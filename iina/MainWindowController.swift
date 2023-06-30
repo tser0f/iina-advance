@@ -1106,7 +1106,7 @@ class MainWindowController: PlayerWindowController {
 
   private func updateBottomPanelHeight(to bottomOSCHeight: CGFloat, transition: LayoutTransition) {
     let placement = transition.toLayout.bottomPanelPlacement
-    Logger.log("Updating bottomOSC height to: \(bottomOSCHeight) (given placement: \(placement))", level: .verbose, subsystem: player.subsystem)
+    Logger.log("Updating bottomOSC height to: \(bottomOSCHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
 
     switch placement {
     case .outsideVideo:
@@ -1399,7 +1399,6 @@ class MainWindowController: PlayerWindowController {
       Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
       return
     }
-    Logger.log("Refreshing title bar & OSC layout", level: .verbose, subsystem: player.subsystem)
     let futureLayoutSpec = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
     let transition = buildLayoutTransition(to: futureLayoutSpec)
     animationQueue.run(transition.animationTasks)
@@ -1413,7 +1412,8 @@ class MainWindowController: PlayerWindowController {
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
                                      totalStartingDuration: CGFloat? = nil,
-                                     totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
+                                     totalEndingDuration: CGFloat? = nil,
+                                     extraTaskFunc: TaskFunc? = nil) -> LayoutTransition {
 
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
     let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: false)
@@ -1476,6 +1476,10 @@ class MainWindowController: PlayerWindowController {
     transition.animationTasks.append(AnimationQueue.Task(duration: endingAnimationDuration,
                                                          timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
       openNewPanels(transition)
+
+      if let extraTaskFunc = extraTaskFunc {
+        extraTaskFunc()
+      }
     }))
 
     // EndingAnimation 2: Fade in remaining views
@@ -1576,8 +1580,7 @@ class MainWindowController: PlayerWindowController {
 
     var needsTopPanelHeightUpdate = false
     var newTopPanelHeight: CGFloat = 0
-    let isTopPanelPlacementChanging = transition.fromLayout.topPanelPlacement != transition.toLayout.topPanelPlacement
-    if !transition.isInitialLayout && isTopPanelPlacementChanging {
+    if !transition.isInitialLayout && transition.isTopPanelPlacementChanging {
       needsTopPanelHeightUpdate = true
       // close completely. will animate reopening if needed later
       newTopPanelHeight = 0
@@ -1601,8 +1604,7 @@ class MainWindowController: PlayerWindowController {
 
     var needsBottomPanelHeightUpdate = false
     var newBottomPanelHeight: CGFloat = 0
-    let isBottomPanelPlacementChanging = futureLayout.bottomPanelPlacement != transition.fromLayout.bottomPanelPlacement
-    if !transition.isInitialLayout && isBottomPanelPlacementChanging {
+    if !transition.isInitialLayout && transition.isBottomPanelPlacementChanging {
       needsBottomPanelHeightUpdate = true
       // close completely. will animate reopening if needed later
       newBottomPanelHeight = 0
@@ -2512,29 +2514,16 @@ class MainWindowController: PlayerWindowController {
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
-
-    var animationTasks: [AnimationQueue.Task] = []
-
-    // Wrap in a zero-duration task and run it before the complex block
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration {
-      // Launch this asynchronously so it runs (roughly) in parallel with below
-      UIAnimation.run({ [self] context in
-        context.duration = duration
-
-        if isLegacy {
-          // set window frame and in some cases content view frame
-          setWindowFrameForLegacyFullScreen()
-        } else {
-          Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
-          window.setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-        }
-
-      })
+    let transition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
+      if isLegacy {
+        // set window frame and in some cases content view frame
+        setWindowFrameForLegacyFullScreen()
+      } else {
+        Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
+        window.setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+      }
     })
-
-    // Run this animation in *parallel* with above, with matching duration
-    let layoutTransition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
-    animationTasks.append(contentsOf: layoutTransition.animationTasks)
+    var animationTasks = transition.animationTasks
 
     if isLegacy {
       // Make sure this doesn't happen until after animation finishes
@@ -2637,27 +2626,13 @@ class MainWindowController: PlayerWindowController {
     // Honor existing layout but change value of isFullScreen:
     let windowedLayout = currentLayout.spec.clone(fullScreen: false)
 
-    var animationTasks: [AnimationQueue.Task] = []
-
-    // Wrap in a zero-duration task and run it before the complex block
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration {
-      // Launch async so it runs (roughly) in parallel with above
-      UIAnimation.run({ [self] context in
-        /// Timing function & duration must exactly match that of `openNewPanels()` so that black areas don't appear during animation
-        context.timingFunction = CAMediaTimingFunction(name: .linear)
-        context.duration = duration * 0.5
-
-        Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(fsState.priorWindowedFrame!)",
-                   level: .verbose, subsystem: player.subsystem)
-        window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-
-      })
+    /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
+    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
+      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(fsState.priorWindowedFrame!)",
+                 level: .verbose, subsystem: player.subsystem)
+      window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     })
-
-    /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation, but total animation needs to exceed duration
-    /// due to bug...
-    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
-    animationTasks.append(contentsOf: transition.animationTasks)
+    var animationTasks = transition.animationTasks
 
     if isLegacy {
       // Make sure this doesn't happen until after animation finishes
@@ -2833,7 +2808,7 @@ class MainWindowController: PlayerWindowController {
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
-    Logger.log("WindowDidResize: \(window.frame)", level: .verbose, subsystem: player.subsystem)
+//    Logger.log("WindowDidResize: \(window.frame)", level: .verbose, subsystem: player.subsystem)
 
     UIAnimation.disableAnimation {
       if isInInteractiveMode {
