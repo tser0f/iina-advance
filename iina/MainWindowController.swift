@@ -1358,6 +1358,14 @@ class MainWindowController: PlayerWindowController {
     var isTogglingFromFullScreen: Bool {
       return self.fromLayout.isFullScreen && !self.toLayout.isFullScreen
     }
+
+    var isTopPanelPlacementChanging: Bool {
+      return self.fromLayout.topPanelPlacement != self.toLayout.topPanelPlacement
+    }
+
+    var isBottomPanelPlacementChanging: Bool {
+      return self.fromLayout.bottomPanelPlacement != self.toLayout.bottomPanelPlacement
+    }
   }
 
   private func transitionToInitialLayout() {
@@ -1371,12 +1379,12 @@ class MainWindowController: PlayerWindowController {
 
     UIAnimation.disableAnimation{
       controlBarFloating.isDragging = false
+      currentLayout = initialLayout
       fadeOutOldViews(transition)
       closeOldPanels(transition)
-      updateHiddenViewsAndConstraints(initialLayout)
+      updateHiddenViewsAndConstraints(transition)
       openNewPanels(transition)
       fadeInNewViews(transition)
-      currentLayout = initialLayout
       animationState = .shown
       resetFadeTimer()
     }
@@ -1431,6 +1439,9 @@ class MainWindowController: PlayerWindowController {
     transition.animationBlocks.append{ [self] context in
       context.duration = 0
       controlBarFloating.isDragging = false
+      /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
+      /// To avoid possible bugs as a result, let's update this at the very beginning.
+      currentLayout = futureLayout
     }
 
     // StartingAnimation 1: show fadeable views from current layout
@@ -1458,7 +1469,7 @@ class MainWindowController: PlayerWindowController {
       // Not animated: Update constraints. Should have no visible changes
       transition.animationBlocks.append{ [self] context in
         context.duration = 0
-        updateHiddenViewsAndConstraints(futureLayout)
+        updateHiddenViewsAndConstraints(transition)
       }
     }
 
@@ -1473,9 +1484,7 @@ class MainWindowController: PlayerWindowController {
     // EndingAnimation 2: Fade in remaining views
     transition.animationBlocks.append{ [self] context in
       context.duration = endingAnimationDuration
-
       fadeInNewViews(transition)
-      currentLayout = futureLayout
     }
 
     // After animations all finish, start fade timer
@@ -1497,9 +1506,7 @@ class MainWindowController: PlayerWindowController {
     // Title bar & title bar accessories:
 
     // Hide all title bar items if top panel placement is changing
-    let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
-
-    if futureLayout.titleIconAndText == .hidden || isTopPanelPlacementChanging {
+    if futureLayout.titleIconAndText == .hidden || transition.isTopPanelPlacementChanging {
       let docHidden = documentIconButton?.isHidden ?? false
       let titleHidden = titleTextField?.isHidden ?? false
       apply(visibility: .hidden, documentIconButton, titleTextField)
@@ -1507,7 +1514,7 @@ class MainWindowController: PlayerWindowController {
       titleTextField?.isHidden = titleHidden
     }
 
-    if futureLayout.trafficLightButtons == .hidden || isTopPanelPlacementChanging {
+    if futureLayout.trafficLightButtons == .hidden || transition.isTopPanelPlacementChanging {
       for button in trafficLightButtons {
         apply(visibility: .hidden, to: button)
       }
@@ -1515,7 +1522,7 @@ class MainWindowController: PlayerWindowController {
 
     applyHiddenOnly(visibility: futureLayout.controlBarTitleBar, to: controlBarTitleBar)
 
-    if isTopPanelPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
+    if transition.isTopPanelPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
       // Hide all title bar accessories (if needed):
       leadingTitleBarAccessoryView.alphaValue = 0
       fadeableViews.remove(leadingTitleBarAccessoryView)
@@ -1575,12 +1582,12 @@ class MainWindowController: PlayerWindowController {
 
     var needsTopPanelHeightUpdate = false
     var newTopPanelHeight: CGFloat = 0
-    let isTopPanelPlacementChanging = futureLayout.topPanelPlacement != currentLayout.topPanelPlacement
+    let isTopPanelPlacementChanging = transition.fromLayout.topPanelPlacement != transition.toLayout.topPanelPlacement
     if !transition.isInitialLayout && isTopPanelPlacementChanging {
       needsTopPanelHeightUpdate = true
       // close completely. will animate reopening if needed later
       newTopPanelHeight = 0
-    } else if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
+    } else if futureLayout.topPanelHeight < transition.fromLayout.topPanelHeight {
       needsTopPanelHeightUpdate = true
       newTopPanelHeight = futureLayout.topPanelHeight
     }
@@ -1600,12 +1607,12 @@ class MainWindowController: PlayerWindowController {
 
     var needsBottomPanelHeightUpdate = false
     var newBottomPanelHeight: CGFloat = 0
-    let isBottomPanelPlacementChanging = futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement
+    let isBottomPanelPlacementChanging = futureLayout.bottomPanelPlacement != transition.fromLayout.bottomPanelPlacement
     if !transition.isInitialLayout && isBottomPanelPlacementChanging {
       needsBottomPanelHeightUpdate = true
       // close completely. will animate reopening if needed later
       newBottomPanelHeight = 0
-    } else if futureLayout.bottomOSCHeight < currentLayout.bottomOSCHeight {
+    } else if futureLayout.bottomOSCHeight < transition.fromLayout.bottomOSCHeight {
       needsBottomPanelHeightUpdate = true
       newBottomPanelHeight = futureLayout.bottomOSCHeight
     }
@@ -1627,7 +1634,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // Update sidebar vertical alignments to match:
-    if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
+    if futureLayout.topPanelHeight < transition.fromLayout.topPanelHeight {
       quickSettingView.refreshVerticalConstraints(layout: futureLayout)
       playlistView.refreshVerticalConstraints(layout: futureLayout)
     }
@@ -1641,7 +1648,7 @@ class MainWindowController: PlayerWindowController {
       window.setFrame(newWindowFrame, display: true, animate: true)
     }
 
-    if currentLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
+    if transition.fromLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
       // Hide floating OSC
       apply(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
     }
@@ -1649,8 +1656,9 @@ class MainWindowController: PlayerWindowController {
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
-  private func updateHiddenViewsAndConstraints(_ futureLayout: LayoutPlan) {
+  private func updateHiddenViewsAndConstraints(_ transition: LayoutTransition) {
     guard let window = window else { return }
+    let futureLayout = transition.toLayout
     Logger.log("UpdateHiddenViewsAndConstraints", level: .verbose, subsystem: player.subsystem)
 
     applyHiddenOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
@@ -1659,14 +1667,14 @@ class MainWindowController: PlayerWindowController {
 
     updateSpacingForTitleBarAccessories(futureLayout)
 
-    if futureLayout.titleIconAndText == .hidden || futureLayout.topPanelPlacement != currentLayout.topPanelPlacement {
+    if futureLayout.titleIconAndText == .hidden || transition.isTopPanelPlacementChanging {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
       /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
       /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
       window.titleVisibility = .hidden
     }
 
-    /// These should all be either 0 height or unchanged from `currentLayout`
+    /// These should all be either 0 height or unchanged from `transition.fromLayout`
     apply(visibility: futureLayout.controlBarBottom, to: controlBarBottom)
     apply(visibility: futureLayout.topPanelView, to: topPanelView)
 
@@ -1680,11 +1688,11 @@ class MainWindowController: PlayerWindowController {
       setupControlBarInternalViews()
     }
 
-    if futureLayout.topPanelPlacement != currentLayout.topPanelPlacement {
+    if transition.isTopPanelPlacementChanging {
       updateTopPanelPlacement(placement: futureLayout.topPanelPlacement)
     }
 
-    if futureLayout.bottomPanelPlacement != currentLayout.bottomPanelPlacement {
+    if transition.isBottomPanelPlacementChanging {
       updateBottomPanelPlacement(placement: futureLayout.bottomPanelPlacement)
     }
 
@@ -1815,6 +1823,8 @@ class MainWindowController: PlayerWindowController {
     }
     oscTitleBarWidthConstraint.animateToConstant(widthOfTitleBarOSC)
     //    Logger.log("Updated title bar spacing. LeadingSpaceUsed: \(leadingSpaceUsed), TrailingSpaceUsed: \(trailingSpaceUsed), TitleBarOSCWidth: \(widthOfTitleBarOSC)", level: .verbose, subsystem: player.subsystem)
+    leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
+    trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
