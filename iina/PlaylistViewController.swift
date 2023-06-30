@@ -97,11 +97,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
   }
 
-  var useCompactTabHeight = false {
-    didSet {
-      refreshVerticalConstraints()
-    }
-  }
+  var useCompactTabHeight = false
 
   var customTabHeight: CGFloat? {
     return useCompactTabHeight ? 32 : nil
@@ -128,7 +124,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     removeBtn.toolTip = NSLocalizedString("mini_player.remove", comment: "remove")
 
     hideTotalLength()
-    refreshVerticalConstraints()
 
     // colors
     if #available(macOS 10.14, *) {

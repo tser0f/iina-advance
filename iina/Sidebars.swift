@@ -654,16 +654,16 @@ extension SidebarTabGroupViewController {
                  level: .verbose, subsystem: mainWindow.player.subsystem)
     } else {
       // Downshift: try to match title bar height
-      if layout.isFullScreen {
+      if layout.isFullScreen || layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
         downshift = defaultDownshift
       } else {
-        // Need to adjust if has title bar, but it's style .minimal
+        // Need to adjust if has title bar
         downshift = mainWindow.reducedTitleBarHeight
       }
 
       tabHeight = layout.topOSCHeight
       // Put some safeguards in place:
-      if tabHeight <= 0 || tabHeight > 70 {
+      if tabHeight <= 16 || tabHeight > 70 {
         tabHeight = defaultTabHeight
       }
     }
@@ -672,8 +672,11 @@ extension SidebarTabGroupViewController {
       // customTabHeight overrides any other height value
       tabHeight = customTabHeight
     }
-    Logger.log("Sidebar downshift: \(downshift), TabHeight: \(tabHeight)", level: .verbose, subsystem: mainWindow.player.subsystem)
+    Logger.log("Sidebar downshift: \(downshift), TabHeight: \(tabHeight) (fullScreen: \(layout.isFullScreen), topPanel: \(layout.topPanelPlacement))",
+               level: .verbose, subsystem: mainWindow.player.subsystem)
     getTopOfTabsConstraint()?.animateToConstant(downshift)
     getHeightOfTabsConstraint()?.animateToConstant(tabHeight)
+
+    (self as! NSViewController).view.layoutSubtreeIfNeeded()
   }
 }

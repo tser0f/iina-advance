@@ -192,8 +192,6 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       view.superview?.superview?.layer?.cornerRadius = 4
     }
 
-    refreshVerticalConstraints()
-
     // colors
     if #available(macOS 10.14, *) {
       withAllTableViews { tableView, _ in tableView.backgroundColor = NSColor(named: .sidebarTableBackground)! }

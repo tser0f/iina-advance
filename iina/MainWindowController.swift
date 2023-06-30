@@ -1630,8 +1630,6 @@ class MainWindowController: PlayerWindowController {
     if futureLayout.topPanelHeight < currentLayout.topPanelHeight {
       quickSettingView.refreshVerticalConstraints(layout: futureLayout)
       playlistView.refreshVerticalConstraints(layout: futureLayout)
-      quickSettingView.view.layoutSubtreeIfNeeded()
-      playlistView.view.layoutSubtreeIfNeeded()
     }
 
     // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
@@ -1743,8 +1741,6 @@ class MainWindowController: PlayerWindowController {
     // Update sidebar vertical alignments
     quickSettingView.refreshVerticalConstraints(layout: futureLayout)
     playlistView.refreshVerticalConstraints(layout: futureLayout)
-    quickSettingView.view.layoutSubtreeIfNeeded()
-    playlistView.view.layoutSubtreeIfNeeded()
 
     controlBarBottom.layoutSubtreeIfNeeded()
     window.contentView?.layoutSubtreeIfNeeded()
