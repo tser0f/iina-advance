@@ -146,6 +146,12 @@ public final class LinkedList<T> {
     }
   }
 
+  public func appendAll(_ list: [T]) {
+    for value in list {
+      append(value)
+    }
+  }
+
   /// Insert a value at a specific index. Crashes if index is out of bounds (0...self.count)
   ///
   /// - Parameters:
@@ -289,6 +295,16 @@ public final class LinkedList<T> {
     return node.value
   }
 
+  /// Function to remove the first node/value in the list. Returns nil if the list is empty
+  /// - Returns: The data value contained in the deleted node.
+  @discardableResult
+  public func removeFirst() -> T? {
+    guard !isEmpty else {
+      return nil
+    }
+    return remove(node: firstNode!)
+  }
+  
   /// Function to remove the last node/value in the list. Returns nil if the list is empty
   /// - Returns: The data value contained in the deleted node.
   @discardableResult

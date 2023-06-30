@@ -213,10 +213,10 @@ extension MainWindowController {
   }
 
   // Hides any visible sidebars
-  func hideAllSidebars(animate: Bool = true, then: (() -> Void)? = nil) {
+  func hideAllSidebars(animate: Bool = true, then: TaskFunc? = nil) {
     Logger.log("Hiding all sidebars", level: .verbose)
     // Need to make sure that completionHandler (1) runs after animations, or (2) runs at all
-    var completionHandler: (() -> Void)? = then
+    var completionHandler: TaskFunc? = then
     if let visibleTab = leadingSidebar.visibleTab {
       changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
       completionHandler = nil
@@ -238,7 +238,7 @@ extension MainWindowController {
     })
   }
 
-  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, then doAfter: (() -> Void)? = nil) {
+  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, then doAfter: TaskFunc? = nil) {
     guard !isInInteractiveMode else { return }
     Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show ? "SHOW" : "HIDE")",
                level: .verbose, subsystem: player.subsystem)
