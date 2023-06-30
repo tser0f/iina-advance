@@ -31,7 +31,6 @@ class AnimationQueue {
   }
 
   private var isRunning = false
-  private let lock = Lock()
   private var queue = LinkedList<Task>()
 
   /// Convenience function. Same as `run([AnimationBlock])`, but for a single animation.
@@ -45,18 +44,16 @@ class AnimationQueue {
   func run(_ tasks: [Task], then doAfter: TaskFunc? = nil) {
 
     var needsLaunch = false
-    lock.withLock{
-      queue.appendAll(tasks)
-      if let doAfter = doAfter {
-        queue.append(TaskFactory.zeroDuration(doAfter))
-      }
+    queue.appendAll(tasks)
+    if let doAfter = doAfter {
+      queue.append(TaskFactory.zeroDuration(doAfter))
+    }
 
-      if isRunning {
-        // Let existing chain pick up the new animations
-      } else {
-        isRunning = true
-        needsLaunch = true
-      }
+    if isRunning {
+      // Let existing chain pick up the new animations
+    } else {
+      isRunning = true
+      needsLaunch = true
     }
 
     if needsLaunch {
@@ -67,24 +64,23 @@ class AnimationQueue {
   private func runTasks() {
     var nextTask: AnimationQueue.Task? = nil
 
-    self.lock.withLock{
-      // Group zero-duration tasks together if possible
-      var zeroDurationTasks: [AnimationQueue.Task] = []
-      while let task = self.queue.first, task.duration == 0 {
-        self.queue.removeFirst()
-        zeroDurationTasks.append(task)
-      }
-      if !zeroDurationTasks.isEmpty {
-        nextTask = AnimationQueue.TaskFactory.zeroDuration{
-          for task in zeroDurationTasks {
-            task.runFunc()
-          }
+    // Group zero-duration tasks together if possible
+    var zeroDurationTasks: [AnimationQueue.Task] = []
+    while let task = self.queue.first, task.duration == 0 {
+      self.queue.removeFirst()
+      zeroDurationTasks.append(task)
+    }
+    if !zeroDurationTasks.isEmpty {
+      nextTask = AnimationQueue.TaskFactory.zeroDuration{
+        Logger.log("Combined \(zeroDurationTasks.count) animation tasks into one")
+        for task in zeroDurationTasks {
+          task.runFunc()
         }
-      } else if let poppedTask = queue.removeFirst() {
-        nextTask = poppedTask
-      } else {
-        self.isRunning = false
       }
+    } else if let poppedTask = queue.removeFirst() {
+      nextTask = poppedTask
+    } else {
+      self.isRunning = false
     }
 
     guard let nextTask = nextTask else { return }
