@@ -97,6 +97,32 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
   }
 
+  private var downshift: CGFloat = 0
+  private var tabHeight: CGFloat = 0
+
+  func setVerticalConstraints(downshift: CGFloat, tabHeight requestedTabHeight: CGFloat) {
+    let tabHeight: CGFloat
+    if let customTabHeight = customTabHeight {
+      // customTabHeight overrides any other height value
+      tabHeight = customTabHeight
+    } else {
+      tabHeight = requestedTabHeight
+    }
+
+    if self.downshift != downshift || self.tabHeight != tabHeight {
+      self.downshift = downshift
+      self.tabHeight = tabHeight
+      updateVerticalConstraints()
+    }
+  }
+
+  private func updateVerticalConstraints() {
+    // may not be available until after load
+    self.buttonTopConstraint?.animateToConstant(downshift)
+    self.tabHeightConstraint?.animateToConstant(tabHeight)
+    view.layoutSubtreeIfNeeded()
+  }
+
   var useCompactTabHeight = false
 
   var customTabHeight: CGFloat? {
@@ -139,6 +165,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       updateTabButtons(activeTab: currentTab)
     }
 
+    updateVerticalConstraints()
+
     observedPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
@@ -166,6 +194,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
                                                  options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
                                                  owner: mainWindow, userInfo: ["obj": 0]))
     }
+    view.layoutSubtreeIfNeeded()
   }
 
   override func viewDidAppear() {

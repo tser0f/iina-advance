@@ -35,6 +35,10 @@ fileprivate let StandardTitleBarHeight: CGFloat = {
   return titleBarHeight
 }()
 
+/// Sidebar tab buttons
+private let defaultDownshift: CGFloat = 0
+private let defaultTabHeight: CGFloat = 48
+
 /// Preferred height for "full-width" OSCs (i.e. top and bottom, not floating or in title bar)
 fileprivate var oscBarHeight: CGFloat {
   max(16, CGFloat(Preference.integer(for: .oscBarHeight)))
@@ -1625,8 +1629,7 @@ class MainWindowController: PlayerWindowController {
 
     // Update sidebar vertical alignments to match:
     if futureLayout.topPanelHeight < transition.fromLayout.topPanelHeight {
-      quickSettingView.refreshVerticalConstraints(layout: futureLayout)
-      playlistView.refreshVerticalConstraints(layout: futureLayout)
+      refreshSidebarVerticalConstraints(layout: futureLayout)
     }
 
     // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
@@ -1737,8 +1740,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // Update sidebar vertical alignments
-    quickSettingView.refreshVerticalConstraints(layout: futureLayout)
-    playlistView.refreshVerticalConstraints(layout: futureLayout)
+    refreshSidebarVerticalConstraints(layout: futureLayout)
 
     controlBarBottom.layoutSubtreeIfNeeded()
     window.contentView?.layoutSubtreeIfNeeded()
@@ -1794,6 +1796,38 @@ class MainWindowController: PlayerWindowController {
     updateSidebarBlendingMode(trailingSidebar.locationID, layout: futureLayout)
   }
 
+  /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
+  func refreshSidebarVerticalConstraints(layout futureLayout: LayoutPlan? = nil) {
+    let layout = futureLayout ?? currentLayout
+    let downshift: CGFloat
+    var tabHeight: CGFloat
+    if player.isInMiniPlayer || (!layout.isFullScreen && layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo) {
+      downshift = defaultDownshift
+      tabHeight = defaultTabHeight
+      Logger.log("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))",
+                 level: .verbose, subsystem: player.subsystem)
+    } else {
+      // Downshift: try to match title bar height
+      if layout.isFullScreen || layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
+        downshift = defaultDownshift
+      } else {
+        // Need to adjust if has title bar
+        downshift = reducedTitleBarHeight
+      }
+
+      tabHeight = layout.topOSCHeight
+      // Put some safeguards in place:
+      if tabHeight <= 16 || tabHeight > 70 {
+        tabHeight = defaultTabHeight
+      }
+    }
+
+    Logger.log("Sidebar downshift: \(downshift), TabHeight: \(tabHeight) (fullScreen: \(layout.isFullScreen), topPanel: \(layout.topPanelPlacement))",
+               level: .verbose, subsystem: player.subsystem)
+    quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+    playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+  }
+  
   func updateSpacingForTitleBarAccessories(_ layout: LayoutPlan? = nil) {
     guard let window = window else { return }
     let layout = layout ?? self.currentLayout
@@ -2257,10 +2291,10 @@ class MainWindowController: PlayerWindowController {
     animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
       // Check whether mouse is in OSC
       if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
-        Logger.log("mouseMoved: destroying fade timer", level: .verbose, subsystem: player.subsystem)
+//        Logger.log("mouseMoved: destroying fade timer", level: .verbose, subsystem: player.subsystem)
         destroyFadeTimer()
       } else {
-        Logger.log("mouseMoved: resetting fade timer", level: .verbose, subsystem: player.subsystem)
+//        Logger.log("mouseMoved: resetting fade timer", level: .verbose, subsystem: player.subsystem)
         resetFadeTimer()
       }
     })

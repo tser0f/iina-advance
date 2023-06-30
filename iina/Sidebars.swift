@@ -623,60 +623,15 @@ extension MainWindowController {
 
 // MARK: - SidebarTabGroupViewController
 
-private let defaultDownshift: CGFloat = 0
-private let defaultTabHeight: CGFloat = 48
-
 protocol SidebarTabGroupViewController {
   var mainWindow: MainWindowController! { get }
-  func getTopOfTabsConstraint() -> NSLayoutConstraint?
-  func getHeightOfTabsConstraint() -> NSLayoutConstraint?
-
   var customTabHeight: CGFloat? { get }
 
-  // Implementing classes should call this, but do not need to define it (see below)
-  func refreshVerticalConstraints(layout futureLayout: MainWindowController.LayoutPlan?)
+  // Implementing classes need to define this
+  func setVerticalConstraints(downshift: CGFloat, tabHeight: CGFloat)
 }
 
 extension SidebarTabGroupViewController {
 
   var customTabHeight: CGFloat? { return nil }
-
-  /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
-  func refreshVerticalConstraints(layout futureLayout: MainWindowController.LayoutPlan? = nil) {
-    let layout = futureLayout ?? mainWindow.currentLayout
-    let downshift: CGFloat
-    var tabHeight: CGFloat
-    if mainWindow.player.isInMiniPlayer
-        || (!layout.isFullScreen && layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo) {
-      downshift = defaultDownshift
-      tabHeight = defaultTabHeight
-      Logger.log("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))",
-                 level: .verbose, subsystem: mainWindow.player.subsystem)
-    } else {
-      // Downshift: try to match title bar height
-      if layout.isFullScreen || layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
-        downshift = defaultDownshift
-      } else {
-        // Need to adjust if has title bar
-        downshift = mainWindow.reducedTitleBarHeight
-      }
-
-      tabHeight = layout.topOSCHeight
-      // Put some safeguards in place:
-      if tabHeight <= 16 || tabHeight > 70 {
-        tabHeight = defaultTabHeight
-      }
-    }
-
-    if let customTabHeight = customTabHeight {
-      // customTabHeight overrides any other height value
-      tabHeight = customTabHeight
-    }
-    Logger.log("Sidebar downshift: \(downshift), TabHeight: \(tabHeight) (fullScreen: \(layout.isFullScreen), topPanel: \(layout.topPanelPlacement))",
-               level: .verbose, subsystem: mainWindow.player.subsystem)
-    getTopOfTabsConstraint()?.animateToConstant(downshift)
-    getHeightOfTabsConstraint()?.animateToConstant(tabHeight)
-
-    (self as! NSViewController).view.layoutSubtreeIfNeeded()
-  }
 }

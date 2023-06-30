@@ -175,12 +175,21 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     }
   }
 
-  func getTopOfTabsConstraint() -> NSLayoutConstraint? {
-    return self.buttonTopConstraint
+  private var downshift: CGFloat = 0
+  private var tabHeight: CGFloat = 0
+
+  func setVerticalConstraints(downshift: CGFloat, tabHeight: CGFloat) {
+    if self.downshift != downshift || self.tabHeight != tabHeight {
+      self.downshift = downshift
+      self.tabHeight = tabHeight
+      updateVerticalConstraints()
+    }
   }
 
-  func getHeightOfTabsConstraint() -> NSLayoutConstraint? {
-    return self.tabHeightConstraint
+  private func updateVerticalConstraints() {
+    self.buttonTopConstraint?.animateToConstant(downshift)
+    self.tabHeightConstraint?.animateToConstant(tabHeight)
+    view.layoutSubtreeIfNeeded()
   }
 
   override func viewDidLoad() {
@@ -211,6 +220,8 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     switchHorizontalLine2.wantsLayer = true
     switchHorizontalLine2.layer?.opacity = 0.5
 
+    updateVerticalConstraints()
+
     observedPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
@@ -229,6 +240,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       self.subTableView.reloadData()
       self.secSubTableView.reloadData()
     }
+    view.layoutSubtreeIfNeeded()
   }
 
   // MARK: - Validate UI
