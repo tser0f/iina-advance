@@ -274,7 +274,7 @@ extension MainWindowController {
       nothingToDo = true
     }
 
-    var animationTasks: [AnimationQueue.Task]
+    var animationTasks: [UIAnimation.Task]
     if nothingToDo {
       animationTasks = []
     } else {
@@ -282,7 +282,7 @@ extension MainWindowController {
     }
 
     if let doAfter = doAfter {
-      animationTasks.append(AnimationQueue.TaskFactory.zeroDuration {
+      animationTasks.append(UIAnimation.zeroDurationTask {
         doAfter()
       })
     }
@@ -290,8 +290,8 @@ extension MainWindowController {
     animationQueue.run(animationTasks)
   }
 
-  private func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [AnimationQueue.Task] {
-    var animationTasks: [AnimationQueue.Task] = []
+  private func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [UIAnimation.Task] {
+    var animationTasks: [UIAnimation.Task] = []
 
     let sidebarView: NSVisualEffectView
     switch sidebar.locationID {
@@ -305,7 +305,7 @@ extension MainWindowController {
 
     // This code block needs to be an AnimationBlock because it needs to follow precedence rules.
     // But there is no visible animation.
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
 
       if show {
         sidebar.animationState = .willShow
@@ -347,7 +347,7 @@ extension MainWindowController {
     })
 
     // Animate the showing/hiding:
-    animationTasks.append(AnimationQueue.Task(duration: UIAnimation.UIAnimationDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
+    animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
                                               { [self] in
       guard let contentView = window?.contentView else { return }
 
@@ -367,7 +367,7 @@ extension MainWindowController {
     }))
 
     // Update state
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       if show {
         sidebar.animationState = .shown
         sidebar.visibleTab = tab

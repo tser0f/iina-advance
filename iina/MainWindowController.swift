@@ -148,7 +148,7 @@ class MainWindowController: PlayerWindowController {
   var hideFadeableViewsTimer: Timer?
   var hideOSDTimer: Timer?
 
-  let animationQueue = AnimationQueue()
+  let animationQueue = UIAnimation.Queue()
 
   // MARK: - Status
 
@@ -475,7 +475,7 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
-      animationQueue.run(AnimationQueue.TaskFactory.zeroDuration {
+      animationQueue.run(UIAnimation.zeroDurationTask {
         self.updateOSDPosition()
       })
     default:
@@ -1343,7 +1343,7 @@ class MainWindowController: PlayerWindowController {
     let toLayout: LayoutPlan
     let isInitialLayout: Bool
 
-    var animationTasks: [AnimationQueue.Task] = []
+    var animationTasks: [UIAnimation.Task] = []
 
     init(from fromLayout: LayoutPlan, to toLayout: LayoutPlan, isInitialLayout: Bool = false) {
       self.fromLayout = fromLayout
@@ -1426,19 +1426,19 @@ class MainWindowController: PlayerWindowController {
     if let totalStartingDuration = totalStartingDuration {
       startingAnimationDuration = totalStartingDuration / startingAnimationCount
     } else {
-      startingAnimationDuration = UIAnimation.UIAnimationDuration
+      startingAnimationDuration = UIAnimation.DefaultDuration
     }
     if let totalEndingDuration = totalEndingDuration {
       endingAnimationDuration = totalEndingDuration / endingAnimationCount
     } else {
-      endingAnimationDuration = UIAnimation.UIAnimationDuration
+      endingAnimationDuration = UIAnimation.DefaultDuration
     }
     Logger.log("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)", level: .verbose, subsystem: player.subsystem)
 
     // Starting animations:
 
     // Set initial var
-    transition.animationTasks.append(AnimationQueue.TaskFactory.zeroDuration{ [self] in
+    transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
       controlBarFloating.isDragging = false
       /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
       /// To avoid possible bugs as a result, let's update this at the very beginning.
@@ -1451,14 +1451,14 @@ class MainWindowController: PlayerWindowController {
     }
 
     // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel
-    transition.animationTasks.append(AnimationQueue.Task(duration: startingAnimationDuration, { [self] in
+    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, { [self] in
       fadeOutOldViews(transition)
     }))
 
     if transition.isInitialLayout || !transition.isTogglingFullScreen {
       // StartingAnimation 3: Minimize panels which are no longer needed
       /// Need to use `linear` `timingFunction` or else panels of different sizes won't line up as they move
-      transition.animationTasks.append(AnimationQueue.Task(duration: startingAnimationDuration,
+      transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration,
                                                            timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
         closeOldPanels(transition)
       }))
@@ -1466,14 +1466,14 @@ class MainWindowController: PlayerWindowController {
       // Ending animations:
 
       // Not animated: Update constraints. Should have no visible changes
-      transition.animationTasks.append(AnimationQueue.TaskFactory.zeroDuration{ [self] in
+      transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
         updateHiddenViewsAndConstraints(transition)
       })
     }
 
     // EndingAnimation 1: Open new panels
     /// Need to use `linear` or else panels of different sizes won't line up as they move
-    transition.animationTasks.append(AnimationQueue.Task(duration: endingAnimationDuration,
+    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration,
                                                          timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
       openNewPanels(transition)
 
@@ -1483,12 +1483,12 @@ class MainWindowController: PlayerWindowController {
     }))
 
     // EndingAnimation 2: Fade in remaining views
-    transition.animationTasks.append(AnimationQueue.Task(duration: endingAnimationDuration, { [self] in
+    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, { [self] in
       fadeInNewViews(transition)
     }))
 
     // After animations all finish, start fade timer
-    transition.animationTasks.append(AnimationQueue.TaskFactory.zeroDuration{ [self] in
+    transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
       animationState = .shown
       resetFadeTimer()
     })
@@ -2284,13 +2284,13 @@ class MainWindowController: PlayerWindowController {
     if isMouseInSlider {
       updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
     }
-    var animationTasks: [AnimationQueue.Task] = []
+    var animationTasks: [UIAnimation.Task] = []
 
     // FIXME: this is a huge waste of CPU
     if isMouseInWindow {
       animationTasks.append(contentsOf: buildAnimationToShowFadeableViews())
     }
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       // Check whether mouse is in OSC
       if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
 //        Logger.log("mouseMoved: destroying fade timer", level: .verbose, subsystem: player.subsystem)
@@ -2527,7 +2527,7 @@ class MainWindowController: PlayerWindowController {
 
     if isLegacy {
       // Make sure this doesn't happen until after animation finishes
-      animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+      animationTasks.append(UIAnimation.zeroDurationTask { [self] in
         // call delegate
         windowDidEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
       })
@@ -2636,7 +2636,7 @@ class MainWindowController: PlayerWindowController {
 
     if isLegacy {
       // Make sure this doesn't happen until after animation finishes
-      animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+      animationTasks.append(UIAnimation.zeroDurationTask { [self] in
         // If extra space was added for camera housing, remove it
         // TODO: add this back
 
@@ -2735,7 +2735,7 @@ class MainWindowController: PlayerWindowController {
   private func legacyAnimateToWindowed() {
     // call delegate
     windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
-    animateExitFromFullScreen(withDuration: UIAnimation.UIAnimationDuration, isLegacy: true)
+    animateExitFromFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
   }
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
@@ -2779,7 +2779,7 @@ class MainWindowController: PlayerWindowController {
     NSApp.presentationOptions.insert(.autoHideMenuBar)
     NSApp.presentationOptions.insert(.autoHideDock)
 
-    animateEntryIntoFullScreen(withDuration: UIAnimation.UIAnimationDuration, isLegacy: true)
+    animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
   }
 
   // MARK: - Window delegate: Resize
@@ -3038,15 +3038,15 @@ class MainWindowController: PlayerWindowController {
     destroyFadeTimer()
     animationState = .willHide
 
-    var animationTasks: [AnimationQueue.Task] = []
+    var animationTasks: [UIAnimation.Task] = []
 
-    animationTasks.append(AnimationQueue.Task{ [self] in
+    animationTasks.append(UIAnimation.Task{ [self] in
       for v in fadeableViews {
         v.animator().alphaValue = 0
       }
     })
 
-    animationTasks.append(AnimationQueue.Task{ [self] in
+    animationTasks.append(UIAnimation.Task{ [self] in
       // if no interrupt then hide animation
       if animationState == .willHide {
         animationState = .hidden
@@ -3063,14 +3063,14 @@ class MainWindowController: PlayerWindowController {
   private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true) {
     guard !player.disableUI && !isInInteractiveMode else { return }
 
-    let animationTasks: [AnimationQueue.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
+    let animationTasks: [UIAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
     animationQueue.run(animationTasks)
   }
 
-  private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.UIAnimationDuration) -> [AnimationQueue.Task] {
-    var animationTasks: [AnimationQueue.Task] = []
+  private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration) -> [UIAnimation.Task] {
+    var animationTasks: [UIAnimation.Task] = []
 
-    animationTasks.append(AnimationQueue.Task(duration: duration, { [self] in
+    animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
       animationState = .willShow
       // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
       player.syncUITime()
@@ -3085,7 +3085,7 @@ class MainWindowController: PlayerWindowController {
     }))
 
     // Not animated, but needs to wait until after fade is done
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       // if no interrupt then hide animation
       if animationState == .willShow {
         animationState = .shown
@@ -3109,8 +3109,8 @@ class MainWindowController: PlayerWindowController {
     // Create new timer.
     // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
     var timeout = Double(Preference.float(for: .controlBarAutoHideTimeout))
-    if timeout < UIAnimation.UIAnimationDuration {
-      timeout = UIAnimation.UIAnimationDuration
+    if timeout < UIAnimation.DefaultDuration {
+      timeout = UIAnimation.DefaultDuration
     }
     hideFadeableViewsTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideFadeableViewsAndCursor), userInfo: nil, repeats: false)
   }
@@ -3258,9 +3258,9 @@ class MainWindowController: PlayerWindowController {
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0
 
-      UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
+      UIAnimation.runAsync(UIAnimation.Task(duration: UIAnimation.OSDAnimationDuration, { [self] in
         osdVisualEffectView.layoutSubtreeIfNeeded()
-      }, then: {
+      }), then: {
         accessoryView.layer?.opacity = 1
       })
     }
@@ -3273,9 +3273,9 @@ class MainWindowController: PlayerWindowController {
     isShowingPersistentOSD = false
     osdContext = nil
 
-    UIAnimation.run(withDuration: UIAnimation.OSDAnimationDuration, { [self] context in
+    UIAnimation.runAsync(UIAnimation.Task(duration: UIAnimation.OSDAnimationDuration, { [self] in
       osdVisualEffectView.alphaValue = 0
-    }, then: {
+    }), then: {
       if self.osdAnimationState == .willHide {
         self.osdAnimationState = .hidden
         self.osdVisualEffectView.isHidden = true
@@ -3322,10 +3322,10 @@ class MainWindowController: PlayerWindowController {
                                            oscPosition: currentLayout.oscPosition)
 
     let transition = buildLayoutTransition(to: interactiveModeLayout, totalEndingDuration: 0)
-    var animationTasks: [AnimationQueue.Task] = transition.animationTasks
+    var animationTasks: [UIAnimation.Task] = transition.animationTasks
 
     // Now animate into Interactive Mode:
-    animationTasks.append(AnimationQueue.Task(duration: UIAnimation.CropAnimationDuration,
+    animationTasks.append(UIAnimation.Task(duration: UIAnimation.CropAnimationDuration,
                                               timingFunction: CAMediaTimingFunction(name: .easeIn), { [self] in
       guard let window = self.window else { return }
 
@@ -3371,7 +3371,7 @@ class MainWindowController: PlayerWindowController {
       self.cropSettingsView = cropController
     }))
 
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       guard let cropController = cropSettingsView else { return }
       // show crop settings view
       cropController.cropBoxView.isHidden = false
@@ -3393,15 +3393,15 @@ class MainWindowController: PlayerWindowController {
     let duration: CGFloat = immediately ? 0 : UIAnimation.CropAnimationDuration
     cropController.cropBoxView.isHidden = true
 
-    var animationTasks: [AnimationQueue.Task] = []
+    var animationTasks: [UIAnimation.Task] = []
 
-    animationTasks.append(AnimationQueue.Task(duration: duration, timingFunction: CAMediaTimingFunction(name: .easeIn), { [self] in
+    animationTasks.append(UIAnimation.Task(duration: duration, timingFunction: CAMediaTimingFunction(name: .easeIn), { [self] in
       // Restore prev constraints:
       bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
       constrainVideoViewForWindowedMode()
     }))
 
-    animationTasks.append(AnimationQueue.TaskFactory.zeroDuration { [self] in
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       cropController.cropBoxView.removeFromSuperview()
       self.hideAllSidebars(animate: false)
       self.bottomView.subviews.removeAll()
