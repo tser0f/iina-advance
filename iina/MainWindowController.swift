@@ -1407,7 +1407,6 @@ class MainWindowController: PlayerWindowController {
   // FIXME: Document icon visibility is sometimes wrong (check again after adding timing queue)
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
-  // FIXME: update constraints to black out camera housing for legacy fullscreen
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
@@ -2538,7 +2537,11 @@ class MainWindowController: PlayerWindowController {
       resetViewsForFullScreenTransition()
 
       constrainVideoViewForFullScreen()
-      videoView.videoLayer.suspend()
+      if isLegacy {
+        // Legacy fullscreen cannot handle transition while playing and will result in a black flash or jittering.
+        // This will briefly freeze the video output, which is slightly better
+        videoView.videoLayer.suspend()
+      }
       // Let mpv decide the correct render region in full screen
       player.mpv.setFlag(MPVOption.Window.keepaspect, true)
     })
@@ -2550,8 +2553,8 @@ class MainWindowController: PlayerWindowController {
         // set window frame and in some cases content view frame
         setWindowFrameForLegacyFullScreen()
       } else {
-        Logger.log("Window entering full screen; setFrame to: \(screen.frame)", level: .verbose)
-        window.setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+        Logger.log("Window entering full screen; setFrame to: \(screen.visibleFrame)", level: .verbose)
+        window.setFrame(screen.frameWithoutCameraHousing, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
       }
     })
     animationTasks.append(contentsOf: transition.animationTasks)
@@ -2563,7 +2566,9 @@ class MainWindowController: PlayerWindowController {
 
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
-      videoView.videoLayer.resume()
+      if isLegacy {
+        videoView.videoLayer.resume()
+      }
 
       if Preference.bool(for: .blackOutMonitor) {
         blackOutOtherMonitors()
@@ -2598,13 +2603,6 @@ class MainWindowController: PlayerWindowController {
     animationQueue.run(animationTasks)
   }
 
-  func windowDidEnterFullScreen(_ notification: Notification) {
-  }
-
-  func windowWillExitFullScreen(_ notification: Notification) {
-    Logger.log("windowWillExitFullScreen", level: .verbose)
-  }
-
   // Animation: Exit FullScreen
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
     animateExitFromFullScreen(withDuration: duration, isLegacy: false)
@@ -2624,17 +2622,6 @@ class MainWindowController: PlayerWindowController {
     // asynchronously processing stop and quit commands.
     guard !isClosing else { return }
 
-    // May be in interactive mode, with some panels hidden (overriding stored preferences).
-    // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = currentLayout.spec.clone(fullScreen: false)
-
-    /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
-    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
-      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(fsState.priorWindowedFrame!)",
-                 level: .verbose, subsystem: player.subsystem)
-      window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-    })
-
     var animationTasks: [UIAnimation.Task] = []
 
     // Before animating the transition:
@@ -2652,8 +2639,22 @@ class MainWindowController: PlayerWindowController {
 
       fsState.startAnimatingToWindow()
 
-      videoView.videoLayer.suspend()
+      if isLegacy {
+        videoView.videoLayer.suspend()
+      }
       player.mpv.setFlag(MPVOption.Window.keepaspect, false)
+    })
+
+    // May be in interactive mode, with some panels hidden (overriding stored preferences).
+    // Honor existing layout but change value of isFullScreen:
+    let windowedLayout = currentLayout.spec.clone(fullScreen: false)
+
+    /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
+    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
+      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(fsState.priorWindowedFrame!)",
+                 level: .verbose, subsystem: player.subsystem)
+      // FIXME: with motion reduction enabled, this does not restore previous size properly
+      window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     })
 
     animationTasks.append(contentsOf: transition.animationTasks)
@@ -2703,7 +2704,9 @@ class MainWindowController: PlayerWindowController {
 
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
-      videoView.videoLayer.resume()
+      if isLegacy {
+        videoView.videoLayer.resume()
+      }
 
       if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
         player.pause()
@@ -2723,9 +2726,6 @@ class MainWindowController: PlayerWindowController {
     animationQueue.run(animationTasks)
   }
 
-  func windowDidExitFullScreen(_ notification: Notification) {
-  }
-
   func toggleWindowFullScreen() {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
 
@@ -2734,13 +2734,13 @@ class MainWindowController: PlayerWindowController {
       // FIXME: need to make sure previous animation finishes before continuing
       guard !player.isInMiniPlayer else { return }
       if Preference.bool(for: .useLegacyFullScreen) {
-        self.legacyAnimateToFullscreen()
+        animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration * 2, isLegacy: true)
       } else {
         window.toggleFullScreen(self)
       }
     case let .fullscreen(legacy, _):
       if legacy {
-        legacyAnimateToWindowed()
+        animateExitFromFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
       } else {
         window.toggleFullScreen(self)
       }
@@ -2754,12 +2754,6 @@ class MainWindowController: PlayerWindowController {
     NSApp.presentationOptions.remove(.autoHideDock)
   }
 
-  private func legacyAnimateToWindowed() {
-    // call delegate
-    windowWillExitFullScreen(Notification(name: .iinaLegacyFullScreen))
-    animateExitFromFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
-  }
-
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
   ///
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
@@ -2768,21 +2762,16 @@ class MainWindowController: PlayerWindowController {
     let screen = window.screen ?? NSScreen.main!
     let newWindowFrame = screen.frame
 
-    if let unusableHeight = screen.cameraHousingHeight {
-      // This screen contains an embedded camera. Shorten the height of the window's content view's
-      // frame to avoid having part of the window obscured by the camera housing.
-      // FIXME: this doesn't work
-//      updateTopPanelHeight(to: currentLayout.topPanelHeight, placement: currentLayout.topPanelPlacement, extraOffset: unusableHeight)
-    }
     Logger.log("Window entering legacy full screen; setFrame to: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-  }
 
-  private func legacyAnimateToFullscreen() {
-    guard let window = self.window else { fatalError("make sure the window exists before animating") }
-
-    animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration * 2, isLegacy: true)
+    if let unusableHeight = screen.cameraHousingHeight {
+      // This screen contains an embedded camera. Shorten the height of the window's content view's
+      // frame to avoid having part of the window obscured by the camera housing.
+      let view = window.contentView!
+      view.setFrameSize(NSMakeSize(view.frame.width, screen.frame.height - unusableHeight))
+    }
   }
 
   // MARK: - Window delegate: Resize

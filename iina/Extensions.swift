@@ -747,6 +747,15 @@ extension NSScreen {
     }
   }
 
+  var frameWithoutCameraHousing: NSRect {
+    if #available(macOS 12.0, *) {
+      let frame = self.frame
+      return NSRect(origin: frame.origin, size: CGSize(width: frame.width, height: frame.height - safeAreaInsets.top))
+    } else {
+      return self.frame
+    }
+  }
+
   var displayId: UInt32 {
     return deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
   }
