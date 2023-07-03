@@ -1761,8 +1761,19 @@ class MainWindowController: PlayerWindowController {
       window.titleVisibility = .visible
     }
 
-    for button in trafficLightButtons {
-      applyShowableOnly(visibility: futureLayout.trafficLightButtons, to: button)
+    if futureLayout.isFullScreen {
+      // FIXME: figure out how to toggle these back on without the brief flash of visibility
+      for button in trafficLightButtons {
+        apply(visibility: .showAlways, to: button)
+      }
+
+      if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
+        apply(visibility: .showFadeable, to: additionalInfoView)
+      }
+    } else {
+      for button in trafficLightButtons {
+        applyShowableOnly(visibility: futureLayout.trafficLightButtons, to: button)
+      }
     }
 
     applyShowableOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
@@ -2474,30 +2485,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowWillEnterFullScreen(_ notification: Notification) {
-    let isLegacyFullScreen = notification.name == .iinaLegacyFullScreen
-    let priorWindowedFrame = window!.frame
-    fsState.startAnimatingToFullScreen(legacy: isLegacyFullScreen, priorWindowedFrame: priorWindowedFrame)
-
-    Logger.log("WindowWillEnterFullScreen: set priorWindowedFrame to \(priorWindowedFrame)", level: .verbose)
-
-    resetViewsForFullScreenTransition()
-
-    // Set the appearance to match the theme so the title bar matches the theme
-    let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
-    if #available(macOS 10.14, *) {
-      window?.appearance = NSAppearance(iinaTheme: iinaTheme)
-    } else {
-      switch(iinaTheme) {
-      case .dark, .ultraDark: window!.appearance = NSAppearance(named: .vibrantDark)
-      default: window!.appearance = NSAppearance(named: .vibrantLight)
-      }
-    }
-
-    setWindowFloatingOnTop(false, updateOnTopStatus: false)
-
-    videoView.videoLayer.suspend()
-    // Let mpv decide the correct render region in full screen
-    player.mpv.setFlag(MPVOption.Window.keepaspect, true)
   }
 
   // Animation: Enter FullScreen
@@ -2510,7 +2497,51 @@ class MainWindowController: PlayerWindowController {
           let screen = window.screen else { return }
     Logger.log("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
                level: .verbose, subsystem: player.subsystem)
-    constrainVideoViewForFullScreen()
+
+    var animationTasks: [UIAnimation.Task] = []
+
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+      let priorWindowedFrame = window.frame
+      fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedFrame)
+      Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedFrame)", level: .verbose)
+
+      // FIXME: this causes a large hiccup/delay
+      if isLegacy {
+        // stylemask
+        window.styleMask.insert(.borderless)
+        window.styleMask.remove(.resizable)
+        if #available(macOS 10.16, *) {
+          window.styleMask.remove(.titled)
+          (window as! MainWindow).forceKeyAndMain = true
+          window.level = .floating
+        } else {
+          window.styleMask.insert(.fullScreen)
+        }
+        // auto hide menubar and dock
+        NSApp.presentationOptions.insert(.autoHideMenuBar)
+        NSApp.presentationOptions.insert(.autoHideDock)
+      }
+
+      // Set the appearance to match the theme so the title bar matches the theme
+      let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
+      if #available(macOS 10.14, *) {
+        window.appearance = NSAppearance(iinaTheme: iinaTheme)
+      } else {
+        switch(iinaTheme) {
+        case .dark, .ultraDark: window.appearance = NSAppearance(named: .vibrantDark)
+        default: window.appearance = NSAppearance(named: .vibrantLight)
+        }
+      }
+
+      setWindowFloatingOnTop(false, updateOnTopStatus: false)
+
+      resetViewsForFullScreenTransition()
+
+      constrainVideoViewForFullScreen()
+      videoView.videoLayer.suspend()
+      // Let mpv decide the correct render region in full screen
+      player.mpv.setFlag(MPVOption.Window.keepaspect, true)
+    })
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
@@ -2523,93 +2554,55 @@ class MainWindowController: PlayerWindowController {
         window.setFrame(screen.frame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
       }
     })
-    var animationTasks = transition.animationTasks
+    animationTasks.append(contentsOf: transition.animationTasks)
 
-    if isLegacy {
-      // Make sure this doesn't happen until after animation finishes
-      animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-        // call delegate
-        windowDidEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
-      })
-    }
+    // Make sure this doesn't happen until after animation finishes
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+      Logger.log("windowDidEnterFullScreen", level: .verbose)
+      fsState.finishAnimating()
+
+      videoView.needsLayout = true
+      videoView.layoutSubtreeIfNeeded()
+      videoView.videoLayer.resume()
+
+      if Preference.bool(for: .blackOutMonitor) {
+        blackOutOtherMonitors()
+      }
+
+      if player.info.isPaused {
+        if Preference.bool(for: .playWhenEnteringFullScreen) {
+          player.resume()
+        } else {
+          // When playback is paused the display link is stopped in order to avoid wasting energy on
+          // needless processing. It must be running while transitioning to full screen mode. Now that
+          // the transition has completed it can be stopped.
+          videoView.displayIdle()
+        }
+      }
+
+      if #available(macOS 10.12.2, *) {
+        player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: true)
+      }
+
+      updateWindowParametersForMPV()
+
+      // Exit PIP if necessary
+      if pipStatus == .inPIP,
+         #available(macOS 10.12, *) {
+        exitPIP()
+      }
+
+      player.events.emit(.windowFullscreenChanged, data: true)
+    })
 
     animationQueue.run(animationTasks)
   }
 
   func windowDidEnterFullScreen(_ notification: Notification) {
-    Logger.log("windowDidEnterFullScreen", level: .verbose)
-    fsState.finishAnimating()
-
-    videoView.needsLayout = true
-    videoView.layoutSubtreeIfNeeded()
-    videoView.videoLayer.resume()
-
-    // Show these after fullscreen animation has finished, so they don't pop up during the animation:
-    apply(visibility: .showAlways, documentIconButton, titleTextField)
-    for button in trafficLightButtons {
-      apply(visibility: .showAlways, to: button)
-    }
-    window?.titleVisibility = .visible
-
-    if Preference.bool(for: .blackOutMonitor) {
-      blackOutOtherMonitors()
-    }
-
-    if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
-      fadeableViews.insert(additionalInfoView)
-    }
-
-    if player.info.isPaused {
-      if Preference.bool(for: .playWhenEnteringFullScreen) {
-        player.resume()
-      } else {
-        // When playback is paused the display link is stopped in order to avoid wasting energy on
-        // needless processing. It must be running while transitioning to full screen mode. Now that
-        // the transition has completed it can be stopped.
-        videoView.displayIdle()
-      }
-    }
-
-    if #available(macOS 10.12.2, *) {
-      player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: true)
-    }
-
-    updateWindowParametersForMPV()
-
-    // Exit PIP if necessary
-    if pipStatus == .inPIP,
-      #available(macOS 10.12, *) {
-      exitPIP()
-    }
-    
-    player.events.emit(.windowFullscreenChanged, data: true)
   }
 
   func windowWillExitFullScreen(_ notification: Notification) {
     Logger.log("windowWillExitFullScreen", level: .verbose)
-    resetViewsForFullScreenTransition()
-
-    apply(visibility: .hidden, to: additionalInfoView)
-
-    // Hide during the animation:
-    apply(visibility: .hidden, documentIconButton, titleTextField)
-    for button in trafficLightButtons {
-      apply(visibility: .hidden, button)
-    }
-    window?.titleVisibility = .hidden
-
-    fsState.startAnimatingToWindow()
-
-    // If a window is closed while in full screen mode (control-w pressed) AppKit will still call
-    // this method. Because windows are tied to player cores and cores are cached and reused some
-    // processing must be performed to leave the window in a consistent state for reuse. However
-    // the windowWillClose method will have initiated unloading of the file being played. That
-    // operation is processed asynchronously by mpv. If the window is being closed due to IINA
-    // quitting then mpv could be in the process of shutting down. Must not access mpv while it is
-    // asynchronously processing stop and quit commands.
-    guard !isClosing else { return }
-    videoView.videoLayer.suspend()
-    player.mpv.setFlag(MPVOption.Window.keepaspect, false)
   }
 
   // Animation: Exit FullScreen
@@ -2622,6 +2615,15 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Animating exit from \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
                level: .verbose, subsystem: player.subsystem)
 
+    // If a window is closed while in full screen mode (control-w pressed) AppKit will still call
+    // this method. Because windows are tied to player cores and cores are cached and reused some
+    // processing must be performed to leave the window in a consistent state for reuse. However
+    // the windowWillClose method will have initiated unloading of the file being played. That
+    // operation is processed asynchronously by mpv. If the window is being closed due to IINA
+    // quitting then mpv could be in the process of shutting down. Must not access mpv while it is
+    // asynchronously processing stop and quit commands.
+    guard !isClosing else { return }
+
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
     let windowedLayout = currentLayout.spec.clone(fullScreen: false)
@@ -2632,11 +2634,33 @@ class MainWindowController: PlayerWindowController {
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     })
-    var animationTasks = transition.animationTasks
 
-    if isLegacy {
-      // Make sure this doesn't happen until after animation finishes
-      animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+    var animationTasks: [UIAnimation.Task] = []
+
+    // Before animating the transition:
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+      resetViewsForFullScreenTransition()
+
+      apply(visibility: .hidden, to: additionalInfoView)
+
+      // Hide during the animation:
+      apply(visibility: .hidden, documentIconButton, titleTextField)
+      for button in trafficLightButtons {
+        apply(visibility: .hidden, button)
+      }
+      window.titleVisibility = .hidden
+
+      fsState.startAnimatingToWindow()
+
+      videoView.videoLayer.suspend()
+      player.mpv.setFlag(MPVOption.Window.keepaspect, false)
+    })
+
+    animationTasks.append(contentsOf: transition.animationTasks)
+
+    // Make sure this doesn't happen until after animation finishes
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+      if isLegacy {
         // If extra space was added for camera housing, remove it
         // TODO: add this back
 
@@ -2652,56 +2676,54 @@ class MainWindowController: PlayerWindowController {
         }
 
         restoreDockSettings()
-        // call delegate
-        windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
-      })
-    }
+      }
+
+      constrainVideoViewForWindowedMode()
+
+      if Preference.bool(for: .blackOutMonitor) {
+        removeBlackWindows()
+      }
+
+      fsState.finishAnimating()
+
+      if player.info.isPaused {
+        // When playback is paused the display link is stopped in order to avoid wasting energy on
+        // needless processing. It must be running while transitioning from full screen mode. Now that
+        // the transition has completed it can be stopped.
+        videoView.displayIdle()
+      }
+
+      if #available(macOS 10.12.2, *) {
+        player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
+      }
+
+      // Must not access mpv while it is asynchronously processing stop and quit commands.
+      // See comments in windowWillExitFullScreen for details.
+      guard !isClosing else { return }
+
+      videoView.needsLayout = true
+      videoView.layoutSubtreeIfNeeded()
+      videoView.videoLayer.resume()
+
+      if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
+        player.pause()
+      }
+
+      // restore ontop status
+      if player.info.isPlaying {
+        setWindowFloatingOnTop(isOntop, updateOnTopStatus: false)
+      }
+
+      resetCollectionBehavior()
+      updateWindowParametersForMPV()
+
+      player.events.emit(.windowFullscreenChanged, data: false)
+    })
 
     animationQueue.run(animationTasks)
   }
 
   func windowDidExitFullScreen(_ notification: Notification) {
-    Logger.log("windowDidExitFullScreen", level: .verbose)
-    constrainVideoViewForWindowedMode()
-
-    if Preference.bool(for: .blackOutMonitor) {
-      removeBlackWindows()
-    }
-
-    fsState.finishAnimating()
-
-    if player.info.isPaused {
-      // When playback is paused the display link is stopped in order to avoid wasting energy on
-      // needless processing. It must be running while transitioning from full screen mode. Now that
-      // the transition has completed it can be stopped.
-      videoView.displayIdle()
-    }
-
-    if #available(macOS 10.12.2, *) {
-      player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
-    }
-
-    // Must not access mpv while it is asynchronously processing stop and quit commands.
-    // See comments in windowWillExitFullScreen for details.
-    guard !isClosing else { return }
-
-    videoView.needsLayout = true
-    videoView.layoutSubtreeIfNeeded()
-    videoView.videoLayer.resume()
-
-    if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
-      player.pause()
-    }
-
-    // restore ontop status
-    if player.info.isPlaying {
-      setWindowFloatingOnTop(isOntop, updateOnTopStatus: false)
-    }
-
-    resetCollectionBehavior()
-    updateWindowParametersForMPV()
-    
-    player.events.emit(.windowFullscreenChanged, data: false)
   }
 
   func toggleWindowFullScreen() {
@@ -2759,27 +2781,8 @@ class MainWindowController: PlayerWindowController {
 
   private func legacyAnimateToFullscreen() {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    // call delegate
-    windowWillEnterFullScreen(Notification(name: .iinaLegacyFullScreen))
 
-    constrainVideoViewForFullScreen()
-    window.layoutIfNeeded()
-
-    // stylemask
-    window.styleMask.insert(.borderless)
-    window.styleMask.remove(.resizable)
-    if #available(macOS 10.16, *) {
-      window.styleMask.remove(.titled)
-      (window as! MainWindow).forceKeyAndMain = true
-      window.level = .floating
-    } else {
-      window.styleMask.insert(.fullScreen)
-    }
-    // auto hide menubar and dock
-    NSApp.presentationOptions.insert(.autoHideMenuBar)
-    NSApp.presentationOptions.insert(.autoHideDock)
-
-    animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
+    animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration * 2, isLegacy: true)
   }
 
   // MARK: - Window delegate: Resize
