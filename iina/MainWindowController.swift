@@ -1520,7 +1520,6 @@ class MainWindowController: PlayerWindowController {
       /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
       for button in trafficLightButtons {
         button.isHidden = true
-        fadeableViews.remove(button)
       }
     }
 
@@ -1767,7 +1766,6 @@ class MainWindowController: PlayerWindowController {
     /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
     for button in trafficLightButtons {
       button.alphaValue = 1
-      fadeableViews.remove(button)
     }
 
     if futureLayout.isFullScreen {
@@ -2516,7 +2514,6 @@ class MainWindowController: PlayerWindowController {
       /// but should be ok during this brief animation:
       for button in trafficLightButtons {
         button.alphaValue = 0
-        fadeableViews.remove(button)
       }
 
       // FIXME: this causes a large hiccup/delay
@@ -2582,7 +2579,6 @@ class MainWindowController: PlayerWindowController {
       /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
       for button in trafficLightButtons {
         button.isHidden = false
-        fadeableViews.remove(button)
       }
 
       videoView.needsLayout = true
@@ -2656,7 +2652,6 @@ class MainWindowController: PlayerWindowController {
       for button in trafficLightButtons {
         button.alphaValue = 0
         button.isHidden = false
-        fadeableViews.remove(button)
       }
       window.titleVisibility = .hidden
 
@@ -3055,24 +3050,21 @@ class MainWindowController: PlayerWindowController {
 
     var animationTasks: [UIAnimation.Task] = []
 
-    if currentLayout.trafficLightButtons == .showFadeable {
-      animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-        for button in trafficLightButtons {
-          button.alphaValue = 1
-          button.isHidden = false
-        }
-      })
-    }
-
     animationTasks.append(UIAnimation.Task{ [self] in
       for v in fadeableViews {
         v.animator().alphaValue = 0
       }
-      /// Special case for `trafficLightButtons` due to quirks
+      /// Quirk 1: special handling for `trafficLightButtons`
       if currentLayout.trafficLightButtons == .showFadeable {
         for button in trafficLightButtons {
           button.alphaValue = 0
         }
+      }
+      /// Quirk 2: MUST set `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
+      /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
+      /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
+      if currentLayout.titleIconAndText == .showFadeable {
+        window?.titleVisibility = .hidden
       }
     })
 
@@ -3083,10 +3075,11 @@ class MainWindowController: PlayerWindowController {
         for v in fadeableViews {
           v.isHidden = true
         }
+        /// Quirk 1: need to set `alphaValue` back to `1` so that each button's corresponding menu items still work
         if currentLayout.trafficLightButtons == .showFadeable {
           for button in trafficLightButtons {
             button.isHidden = true
-            button.alphaValue = 1  /// need to set this back to `1` so that corresponding menu items still work
+            button.alphaValue = 1
           }
         }
       }
@@ -3133,11 +3126,15 @@ class MainWindowController: PlayerWindowController {
         if restartFadeTimer {
           resetFadeTimer()
         }
-        /// Special case for `trafficLightButtons` due to quirks
+        /// Special case for `trafficLightButtons` due to Apple quirk
         if currentLayout.trafficLightButtons == .showFadeable {
           for button in trafficLightButtons {
             button.isHidden = false
           }
+        }
+        /// Special case for title icon and text due to Apple quirk
+        if currentLayout.titleIconAndText == .showFadeable {
+          window?.titleVisibility = .visible
         }
       }
     })
