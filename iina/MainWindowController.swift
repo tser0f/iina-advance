@@ -200,6 +200,8 @@ class MainWindowController: PlayerWindowController {
   /** Views that will show/hide when cursor moving in/out the window. */
   var fadeableViews = Set<NSView>()
 
+  var systemFadeableViews = Set<NSView>()
+
   // Left and right arrow buttons
 
   /** The maximum pressure recorded when clicking on the arrow buttons. */
@@ -1406,7 +1408,6 @@ class MainWindowController: PlayerWindowController {
 
   // FIXME: Title bar icons permanently disappear when toggling legacy fullscreen
   // FIXME: Legacy fullscreen hiccups while changing window style, ruining the animation
-  // FIXME: Traffic light buttons visibility flash while entering fullscreen
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "reduce motion" is enabled
@@ -1515,8 +1516,11 @@ class MainWindowController: PlayerWindowController {
     }
 
     if futureLayout.trafficLightButtons == .hidden || transition.isTopPanelPlacementChanging {
+      /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
+      /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
       for button in trafficLightButtons {
-        apply(visibility: .hidden, to: button)
+        button.isHidden = true
+        fadeableViews.remove(button)
       }
     }
 
@@ -1691,12 +1695,6 @@ class MainWindowController: PlayerWindowController {
       updateBottomPanelPlacement(placement: futureLayout.bottomPanelPlacement)
     }
 
-    /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
-    /// cause `window.performMiniaturize()` to be ignored. So MUST use `isHidden=true` + `alphaValue=1` instead.
-    for button in trafficLightButtons {
-      button.alphaValue = 1
-    }
-
     // So that panels toggling between "inside" and "outside" don't change until they need to (different strategy than fullscreen)
     if !transition.isTogglingFullScreen {
       updatePanelBlendingModes(to: futureLayout)
@@ -1766,18 +1764,21 @@ class MainWindowController: PlayerWindowController {
       window.titleVisibility = .visible
     }
 
-    if futureLayout.isFullScreen {
-      // FIXME: figure out how to toggle these back on without the brief flash of visibility
-      for button in trafficLightButtons {
-        apply(visibility: .showAlways, to: button)
-      }
+    /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
+    for button in trafficLightButtons {
+      button.alphaValue = 1
+      fadeableViews.remove(button)
+    }
 
+    if futureLayout.isFullScreen {
       if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
         apply(visibility: .showFadeable, to: additionalInfoView)
       }
     } else {
-      for button in trafficLightButtons {
-        applyShowableOnly(visibility: futureLayout.trafficLightButtons, to: button)
+      if futureLayout.trafficLightButtons != .hidden {
+        for button in trafficLightButtons {
+          button.isHidden = false
+        }
       }
     }
 
@@ -2510,6 +2511,14 @@ class MainWindowController: PlayerWindowController {
       fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedFrame)
       Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedFrame)", level: .verbose)
 
+      /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
+      /// In most cases it is best to avoid setting `alphaValue = 0` for these due to the unwanted side effect of disabling menu items,
+      /// but should be ok during this brief animation:
+      for button in trafficLightButtons {
+        button.alphaValue = 0
+        fadeableViews.remove(button)
+      }
+
       // FIXME: this causes a large hiccup/delay
       if isLegacy {
         // stylemask
@@ -2569,6 +2578,12 @@ class MainWindowController: PlayerWindowController {
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       Logger.log("windowDidEnterFullScreen", level: .verbose)
       fsState.finishAnimating()
+
+      /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
+      for button in trafficLightButtons {
+        button.isHidden = false
+        fadeableViews.remove(button)
+      }
 
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
@@ -2639,7 +2654,9 @@ class MainWindowController: PlayerWindowController {
       // Hide during the animation:
       apply(visibility: .hidden, documentIconButton, titleTextField)
       for button in trafficLightButtons {
-        apply(visibility: .hidden, button)
+        button.alphaValue = 0
+        button.isHidden = false
+        fadeableViews.remove(button)
       }
       window.titleVisibility = .hidden
 
@@ -3038,18 +3055,39 @@ class MainWindowController: PlayerWindowController {
 
     var animationTasks: [UIAnimation.Task] = []
 
+    if currentLayout.trafficLightButtons == .showFadeable {
+      animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+        for button in trafficLightButtons {
+          button.alphaValue = 1
+          button.isHidden = false
+        }
+      })
+    }
+
     animationTasks.append(UIAnimation.Task{ [self] in
       for v in fadeableViews {
         v.animator().alphaValue = 0
       }
+      /// Special case for `trafficLightButtons` due to quirks
+      if currentLayout.trafficLightButtons == .showFadeable {
+        for button in trafficLightButtons {
+          button.alphaValue = 0
+        }
+      }
     })
 
-    animationTasks.append(UIAnimation.Task{ [self] in
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       // if no interrupt then hide animation
       if animationState == .willHide {
         animationState = .hidden
         for v in fadeableViews {
           v.isHidden = true
+        }
+        if currentLayout.trafficLightButtons == .showFadeable {
+          for button in trafficLightButtons {
+            button.isHidden = true
+            button.alphaValue = 1  /// need to set this back to `1` so that corresponding menu items still work
+          }
         }
       }
     })
@@ -3067,6 +3105,8 @@ class MainWindowController: PlayerWindowController {
 
   private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration) -> [UIAnimation.Task] {
     var animationTasks: [UIAnimation.Task] = []
+
+    let currentLayout = self.currentLayout
 
     animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
       animationState = .willShow
@@ -3092,6 +3132,12 @@ class MainWindowController: PlayerWindowController {
         }
         if restartFadeTimer {
           resetFadeTimer()
+        }
+        /// Special case for `trafficLightButtons` due to quirks
+        if currentLayout.trafficLightButtons == .showFadeable {
+          for button in trafficLightButtons {
+            button.isHidden = false
+          }
         }
       }
     })
