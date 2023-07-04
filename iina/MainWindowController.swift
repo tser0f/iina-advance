@@ -1404,9 +1404,12 @@ class MainWindowController: PlayerWindowController {
     animationQueue.run(transition.animationTasks)
   }
 
-  // FIXME: Document icon visibility is sometimes wrong (check again after adding timing queue)
+  // FIXME: Title bar icons permanently disappear when toggling legacy fullscreen
+  // FIXME: Legacy fullscreen hiccups while changing window style, ruining the animation
+  // FIXME: Traffic light buttons visibility flash while entering fullscreen
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
+  // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "reduce motion" is enabled
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
@@ -1551,8 +1554,6 @@ class MainWindowController: PlayerWindowController {
       controlBarBottom.blendingMode = .withinWindow
       leadingSidebarView.blendingMode = .withinWindow
       trailingSidebarView.blendingMode = .withinWindow
-    } else {
-      updatePanelBlendingModes(to: futureLayout)
     }
   }
 
@@ -1694,6 +1695,11 @@ class MainWindowController: PlayerWindowController {
     /// cause `window.performMiniaturize()` to be ignored. So MUST use `isHidden=true` + `alphaValue=1` instead.
     for button in trafficLightButtons {
       button.alphaValue = 1
+    }
+
+    // So that panels toggling between "inside" and "outside" don't change until they need to (different strategy than fullscreen)
+    if !transition.isTogglingFullScreen {
+      updatePanelBlendingModes(to: futureLayout)
     }
 
     window.contentView?.layoutSubtreeIfNeeded()
