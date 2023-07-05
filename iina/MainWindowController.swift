@@ -1383,6 +1383,7 @@ class MainWindowController: PlayerWindowController {
       updateHiddenViewsAndConstraints(transition)
       openNewPanels(transition)
       fadeInNewViews(transition)
+      updatePanelBlendingModes(to: transition.toLayout)
       animationState = .shown
       resetFadeTimer()
     }
@@ -1414,19 +1415,13 @@ class MainWindowController: PlayerWindowController {
     let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: false)
 
     let startingAnimationCount: CGFloat = 2
-    let endingAnimationCount: CGFloat = 2
 
     let startingAnimationDuration: CGFloat
-    let endingAnimationDuration: CGFloat
+    let endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
     if let totalStartingDuration = totalStartingDuration {
       startingAnimationDuration = totalStartingDuration / startingAnimationCount
     } else {
       startingAnimationDuration = UIAnimation.DefaultDuration
-    }
-    if let totalEndingDuration = totalEndingDuration {
-      endingAnimationDuration = totalEndingDuration / endingAnimationCount
-    } else {
-      endingAnimationDuration = UIAnimation.DefaultDuration
     }
     Logger.log("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)", level: .verbose, subsystem: player.subsystem)
 
@@ -1451,9 +1446,7 @@ class MainWindowController: PlayerWindowController {
     }))
 
     // StartingAnimation 3: Minimize panels which are no longer needed.
-    /// Need to use `linear` `timingFunction` or else panels of different sizes won't line up as they move.
-    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration,
-                                                         timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
+    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, { [self] in
       closeOldPanels(transition)
     }))
 
@@ -1464,24 +1457,21 @@ class MainWindowController: PlayerWindowController {
       updateHiddenViewsAndConstraints(transition)
     })
 
-    // EndingAnimation 1: Open new panels
-    /// Need to use `linear` or else panels of different sizes won't line up as they move.
-    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration,
-                                                         timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
+    // EndingAnimation: Open new panels and fade in new views
+    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, { [self] in
       openNewPanels(transition)
+      fadeInNewViews(transition)
 
       if let extraTaskFunc = extraTaskFunc {
         extraTaskFunc()
       }
     }))
 
-    // EndingAnimation 2: Fade in remaining views
-    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, { [self] in
-      fadeInNewViews(transition)
-    }))
-
     // After animations all finish, start fade timer
     transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
+      // Update blending mode:
+      updatePanelBlendingModes(to: futureLayout)
+
       animationState = .shown
       resetFadeTimer()
     })
@@ -1774,11 +1764,6 @@ class MainWindowController: PlayerWindowController {
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
-
-    // Update blending mode:
-    updatePanelBlendingModes(to: futureLayout)
-
-    window.contentView?.layoutSubtreeIfNeeded()
   }
 
   private func updatePanelBlendingModes(to futureLayout: LayoutPlan) {
@@ -2624,7 +2609,6 @@ class MainWindowController: PlayerWindowController {
         Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(priorFrame)",
                    level: .verbose, subsystem: player.subsystem)
         // FIXME: this does not restore previous size properly with motion reduction enabled
-        // or after changing OSC layout while in fullscreen
         window.setFrame(priorFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
       }
     })
