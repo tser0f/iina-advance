@@ -58,6 +58,7 @@ fileprivate let oscFloatingPlayBtnsHPad: CGFloat = 8
 fileprivate let oscFloatingToolbarButtonIconSize: CGFloat = 14
 fileprivate let oscFloatingToolbarButtonIconPadding: CGFloat = 5
 
+// TODO: reimplement OSC title bar feature
 fileprivate let oscTitleBarPlayBtnsSize: CGFloat = 18
 fileprivate let oscTitleBarPlayBtnsHPad: CGFloat = 6
 fileprivate let oscTitleBarToolbarButtonIconSize: CGFloat = 14
@@ -528,16 +529,15 @@ class MainWindowController: PlayerWindowController {
   /**
    OSD: shown here in "upper-left" configuration.
    For "upper-right" config: swap OSD & AdditionalInfo anchors in A & B, and invert all the params of B.
-   ┌──────────────────────┐
-   │ A ┌────┐    ┌────┐ B │  A: leadingSidebarToOSDSpaceConstraint
-   │◄─►│ OSD│◄──►│ Add│◄─►│  B: trailingSidebarToOSDSpaceConstraint
-   │   └────┘    └────┘   │
-   └──────────────────────┘
+   ┌───────────────────────┐
+   │ A ┌────┐  ┌───────┐ B │  A: leadingSidebarToOSDSpaceConstraint
+   │◄─►│ OSD│  │ AddNfo│◄─►│  B: trailingSidebarToOSDSpaceConstraint
+   │   └────┘  └───────┘   │
+   └───────────────────────┘
    */
   @IBOutlet weak var leadingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var oscTitleBarWidthConstraint: NSLayoutConstraint!
   // The OSD should always be below the top panel + 8. But if top panel/title bar is transparent, we need this constraint
   @IBOutlet weak var osdMinOffsetFromTopConstraint: NSLayoutConstraint!
 
@@ -548,7 +548,7 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var playbackButtonsSquareWidthConstraint: NSLayoutConstraint!
   /// Space added to the left and right of *each* of the 3 square playback buttons:
   @IBOutlet weak var playbackButtonsHorizontalPaddingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var topOSCPreferredHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var topOSCHeightConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var timePreviewWhenSeekHorizontalCenterConstraint: NSLayoutConstraint!
 
@@ -597,7 +597,6 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var oscFloatingLowerView: NSStackView!
   @IBOutlet weak var oscBottomMainView: NSStackView!
   @IBOutlet weak var oscTopMainView: NSStackView!
-  @IBOutlet weak var oscTitleBarMainView: NSStackView!
 
   private var fragToolbarView: NSStackView? = nil
   @IBOutlet weak var fragVolumeView: NSView!
@@ -1230,7 +1229,6 @@ class MainWindowController: PlayerWindowController {
     var trailingSidebarToggleButton: Visibility = .hidden
     var pinToTopButton: Visibility = .hidden
 
-    var controlBarTitleBar: Visibility = .hidden
     var controlBarFloating: Visibility = .hidden
     var controlBarBottom: Visibility = .hidden
     var topPanelView: Visibility = .hidden
@@ -1270,11 +1268,6 @@ class MainWindowController: PlayerWindowController {
 
     var bottomPanelPlacement: Preference.PanelPlacement {
       return spec.bottomPanelPlacement
-    }
-
-    var hasTitleBarOSC: Bool {
-      // TODO: reimplment this
-      return false
     }
 
     var hasFloatingOSC: Bool {
@@ -1522,8 +1515,6 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    applyHiddenOnly(visibility: futureLayout.controlBarTitleBar, to: controlBarTitleBar)
-
     if transition.isTopPanelPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
       // Hide all title bar accessories (if needed):
       leadingTitleBarAccessoryView.alphaValue = 0
@@ -1568,7 +1559,7 @@ class MainWindowController: PlayerWindowController {
       titleBarHeightConstraint.animateToConstant(0)
     }
     if futureLayout.topOSCHeight == 0 {
-      topOSCPreferredHeightConstraint.animateToConstant(0)
+      topOSCHeightConstraint.animateToConstant(0)
     }
     if futureLayout.osdMinOffsetFromTop == 0 {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
@@ -1708,7 +1699,7 @@ class MainWindowController: PlayerWindowController {
 
     // Update heights to their final values:
     titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
-    topOSCPreferredHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
+    topOSCHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
     osdMinOffsetFromTopConstraint.animateToConstant(futureLayout.osdMinOffsetFromTop)
 
     // Update heights of top & bottom panels:
@@ -1755,7 +1746,6 @@ class MainWindowController: PlayerWindowController {
     Logger.log("FadeInNewViews", level: .verbose, subsystem: player.subsystem)
 
     applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
-    applyShowableOnly(visibility: futureLayout.controlBarTitleBar, to: controlBarTitleBar)
 
     if futureLayout.titleIconAndText.isShowable {
       apply(visibility: futureLayout.titleIconAndText, documentIconButton, titleTextField)
@@ -1851,18 +1841,6 @@ class MainWindowController: PlayerWindowController {
     let leadingSpaceUsed = updateSpacingForLeadingTitleBarAccessory(layout)
     let trailingSpaceUsed = updateSpacingForTrailingTitleBarAccessory(layout)
 
-    let widthOfTitleBarOSC: CGFloat
-    if layout.hasTitleBarOSC {
-      // Title bar accessories don't seem to like attaching to other views via constraints.
-      // So the next best option is to programmatically update the constraint's constant any time anything changes.
-      // Fortunately, this doesn't happen very often and is not a very intensive calculation.
-      let totalSpace = window.frame.width
-      widthOfTitleBarOSC = max(0, totalSpace - leadingSpaceUsed - trailingSpaceUsed - 12 - (trailingSpaceUsed > 0 ? 4 : 0))
-    } else {
-      widthOfTitleBarOSC = 0
-    }
-    oscTitleBarWidthConstraint.animateToConstant(widthOfTitleBarOSC)
-    //    Logger.log("Updated title bar spacing. LeadingSpaceUsed: \(leadingSpaceUsed), TrailingSpaceUsed: \(trailingSpaceUsed), TitleBarOSCWidth: \(widthOfTitleBarOSC)", level: .verbose, subsystem: player.subsystem)
     leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
     trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
@@ -1994,30 +1972,14 @@ class MainWindowController: PlayerWindowController {
           futureLayout.titleBarHeight = reducedTitleBarHeight
         }
 
-        /// For `controlBarTitleBar`, use top panel to provide a visual effects background (it is otherwise unaffiliated with OSC)
         let visibility: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
         futureLayout.topPanelView = visibility
+        futureLayout.topOSCHeight = oscBarHeight
 
-        if futureLayout.hasTitleBarOSC {
-          assert(!futureLayout.isFullScreen)
-          futureLayout.controlBarTitleBar = visibility
-
-          futureLayout.setupControlBarInternalViews = { [self] in
-            currentControlBar = controlBarTitleBar
-            addControlBarViews(to: oscTitleBarMainView,
-                               playBtnSize: oscTitleBarPlayBtnsSize,
-                               playBtnSpacing: oscTitleBarPlayBtnsHPad,
-                               toolbarIconSize: oscTitleBarToolbarButtonIconSize,
-                               toolbarIconSpacing: oscTitleBarToolbarButtonIconPadding)
-          }
-        } else {
-          futureLayout.topOSCHeight = oscBarHeight
-
-          futureLayout.setupControlBarInternalViews = { [self] in
-            currentControlBar = controlBarTop
-            addControlBarViews(to: oscTopMainView,
-                               playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
-          }
+        futureLayout.setupControlBarInternalViews = { [self] in
+          currentControlBar = controlBarTop
+          addControlBarViews(to: oscTopMainView,
+                             playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
         }
 
       case .bottom:
