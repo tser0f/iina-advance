@@ -1445,29 +1445,27 @@ class MainWindowController: PlayerWindowController {
       transition.animationTasks.append(fadeAnimation)
     }
 
-    // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel
+    // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
     transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, { [self] in
       fadeOutOldViews(transition)
     }))
 
-    if transition.isInitialLayout || !transition.isTogglingFullScreen {
-      // StartingAnimation 3: Minimize panels which are no longer needed
-      /// Need to use `linear` `timingFunction` or else panels of different sizes won't line up as they move
-      transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration,
-                                                           timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
-        closeOldPanels(transition)
-      }))
+    // StartingAnimation 3: Minimize panels which are no longer needed.
+    /// Need to use `linear` `timingFunction` or else panels of different sizes won't line up as they move.
+    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration,
+                                                         timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
+      closeOldPanels(transition)
+    }))
 
-      // Ending animations:
+    // Ending animations:
 
-      // Not animated: Update constraints. Should have no visible changes
-      transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
-        updateHiddenViewsAndConstraints(transition)
-      })
-    }
+    // Not animated: Update constraints. Should have no visible changes.
+    transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
+      updateHiddenViewsAndConstraints(transition)
+    })
 
     // EndingAnimation 1: Open new panels
-    /// Need to use `linear` or else panels of different sizes won't line up as they move
+    /// Need to use `linear` or else panels of different sizes won't line up as they move.
     transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration,
                                                          timingFunction: CAMediaTimingFunction(name: .linear), { [self] in
       openNewPanels(transition)
@@ -1698,8 +1696,8 @@ class MainWindowController: PlayerWindowController {
     Logger.log("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)", level: .verbose, subsystem: player.subsystem)
 
     // Update heights to their final values:
-    titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
     topOSCHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
+    titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
     osdMinOffsetFromTopConstraint.animateToConstant(futureLayout.osdMinOffsetFromTop)
 
     // Update heights of top & bottom panels:
@@ -2622,10 +2620,13 @@ class MainWindowController: PlayerWindowController {
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
-      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(fsState.priorWindowedFrame!)",
-                 level: .verbose, subsystem: player.subsystem)
-      // FIXME: with motion reduction enabled, this does not restore previous size properly
-      window.setFrame(fsState.priorWindowedFrame!, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+      if let priorFrame = fsState.priorWindowedFrame {
+        Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(priorFrame)",
+                   level: .verbose, subsystem: player.subsystem)
+        // FIXME: this does not restore previous size properly with motion reduction enabled
+        // or after changing OSC layout while in fullscreen
+        window.setFrame(priorFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+      }
     })
 
     animationTasks.append(contentsOf: transition.animationTasks)
