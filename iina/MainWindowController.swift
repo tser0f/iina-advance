@@ -527,15 +527,14 @@ class MainWindowController: PlayerWindowController {
 
   /**
    OSD: shown here in "upper-left" configuration.
-   For "upper-right" config: swap OSD & AdditionalInfo anchors in A & C, and invert all the params of C.
+   For "upper-right" config: swap OSD & AdditionalInfo anchors in A & B, and invert all the params of B.
    ┌──────────────────────┐
-   │ A ┌────┐ B  ┌────┐ C │  A: leadingSidebarToOSDSpaceConstraint
-   │◄─►│ OSD│◄──►│ Add│◄─►│  B: additionalInfoToOSDSpaceConstraint
-   │   └────┘    └────┘   │  C: trailingSidebarToOSDSpaceConstraint
+   │ A ┌────┐    ┌────┐ B │  A: leadingSidebarToOSDSpaceConstraint
+   │◄─►│ OSD│◄──►│ Add│◄─►│  B: trailingSidebarToOSDSpaceConstraint
+   │   └────┘    └────┘   │
    └──────────────────────┘
    */
   @IBOutlet weak var leadingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
-  @IBOutlet weak var additionalInfoToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var oscTitleBarWidthConstraint: NSLayoutConstraint!
@@ -3205,7 +3204,7 @@ class MainWindowController: PlayerWindowController {
 
   private func updateOSDPosition() {
     guard let contentView = window?.contentView else { return }
-    contentView.removeConstraint(additionalInfoToOSDSpaceConstraint)
+//    contentView.removeConstraint(additionalInfoToOSDSpaceConstraint)
     contentView.removeConstraint(leadingSidebarToOSDSpaceConstraint)
     contentView.removeConstraint(trailingSidebarToOSDSpaceConstraint)
     let osdPosition: Preference.OSDPosition = Preference.enum(for: .osdPosition)
@@ -3214,17 +3213,14 @@ class MainWindowController: PlayerWindowController {
       // OSD on left, AdditionalInfo on right
       leadingSidebarToOSDSpaceConstraint = leadingSidebarView.trailingAnchor.constraint(equalTo: osdVisualEffectView.leadingAnchor, constant: -8.0)
       trailingSidebarToOSDSpaceConstraint = trailingSidebarView.leadingAnchor.constraint(equalTo: additionalInfoView.trailingAnchor, constant: 8.0)
-      additionalInfoToOSDSpaceConstraint = additionalInfoView.leadingAnchor.constraint(greaterThanOrEqualTo: osdVisualEffectView.trailingAnchor, constant: 8.0)
     case .topRight:
       // AdditionalInfo on left, OSD on right
       leadingSidebarToOSDSpaceConstraint = leadingSidebarView.trailingAnchor.constraint(equalTo: additionalInfoView.leadingAnchor, constant: -8.0)
       trailingSidebarToOSDSpaceConstraint = trailingSidebarView.leadingAnchor.constraint(equalTo: osdVisualEffectView.trailingAnchor, constant: 8.0)
-      additionalInfoToOSDSpaceConstraint = additionalInfoView.trailingAnchor.constraint(lessThanOrEqualTo: osdVisualEffectView.leadingAnchor, constant: -8.0)
     }
 
     leadingSidebarToOSDSpaceConstraint.isActive = true
     trailingSidebarToOSDSpaceConstraint.isActive = true
-    additionalInfoToOSDSpaceConstraint.isActive = true
     contentView.layoutSubtreeIfNeeded()
   }
 
