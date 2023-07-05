@@ -2301,20 +2301,12 @@ class MainWindowController: PlayerWindowController {
     }
     var animationTasks: [UIAnimation.Task] = []
 
-    // FIXME: this is a huge waste of CPU
     if isMouseInWindow {
-      animationTasks.append(contentsOf: buildAnimationToShowFadeableViews())
-    }
-    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       // Check whether mouse is in OSC
-      if isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView]) {
-//        Logger.log("mouseMoved: destroying fade timer", level: .verbose, subsystem: player.subsystem)
-        destroyFadeTimer()
-      } else {
-//        Logger.log("mouseMoved: resetting fade timer", level: .verbose, subsystem: player.subsystem)
-        resetFadeTimer()
-      }
-    })
+      let restartFadeTimer = !isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView])
+
+      animationTasks.append(contentsOf: buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: 0))
+    }
 
     animationQueue.run(animationTasks)
   }
@@ -3015,83 +3007,8 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Show / Hide Fadeable Views
 
-  @objc func hideFadeableViewsAndCursor() {
-    // don't hide UI when dragging control bar
-    if controlBarFloating.isDragging { return }
-    hideFadeableViews()
-    NSCursor.setHiddenUntilMouseMoves(true)
-  }
-
-  private func hideFadeableViews() {
-    // Don't hide overlays when in PIP
-    guard pipStatus == .notInPIP && animationState == .shown else {
-      return
-    }
-
-    Logger.log("Hiding fadeable views", level: .verbose, subsystem: player.subsystem)
-
-    // Follow energy efficiency best practices and stop the timer that updates the OSC while it is
-    // hidden. However the timer can't be stopped if the mini player is being used as it always
-    // displays the the OSC or the timer is also updating the information being displayed in the
-    // touch bar. Does this host have a touch bar? Is the touch bar configured to show app controls?
-    // Is the touch bar awake? Is the host being operated in closed clamshell mode? This is the kind
-    // of information needed to avoid running the timer and updating controls that are not visible.
-    // Unfortunately in the documentation for NSTouchBar Apple indicates "There’s no need, and no
-    // API, for your app to know whether or not there’s a Touch Bar available". So this code keys
-    // off whether AppKit has requested that a NSTouchBar object be created. This avoids running the
-    // timer on Macs that do not have a touch bar. It also may avoid running the timer when a
-    // MacBook with a touch bar is being operated in closed clameshell mode.
-    if !player.isInMiniPlayer && !player.needsTouchBar && !currentLayout.hasPermanentOSC {
-      player.invalidateTimer()
-    }
-
-    destroyFadeTimer()
-    animationState = .willHide
-
-    var animationTasks: [UIAnimation.Task] = []
-
-    animationTasks.append(UIAnimation.Task{ [self] in
-      for v in fadeableViews {
-        v.animator().alphaValue = 0
-      }
-      /// Quirk 1: special handling for `trafficLightButtons`
-      if currentLayout.trafficLightButtons == .showFadeable {
-        for button in trafficLightButtons {
-          button.alphaValue = 0
-        }
-      }
-      /// Quirk 2: MUST set `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
-      /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
-      /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
-      if currentLayout.titleIconAndText == .showFadeable {
-        window?.titleVisibility = .hidden
-      }
-    })
-
-    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      // if no interrupt then hide animation
-      if animationState == .willHide {
-        animationState = .hidden
-        for v in fadeableViews {
-          v.isHidden = true
-        }
-        /// Quirk 1: need to set `alphaValue` back to `1` so that each button's corresponding menu items still work
-        if currentLayout.trafficLightButtons == .showFadeable {
-          for button in trafficLightButtons {
-            button.isHidden = true
-            button.alphaValue = 1
-          }
-        }
-      }
-    })
-
-    animationQueue.run(animationTasks)
-  }
-
   // Shows fadeableViews and titlebar via fade
   private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true) {
-    guard !player.disableUI && !isInInteractiveMode else { return }
-
     let animationTasks: [UIAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
     animationQueue.run(animationTasks)
   }
@@ -3099,9 +3016,23 @@ class MainWindowController: PlayerWindowController {
   private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration) -> [UIAnimation.Task] {
     var animationTasks: [UIAnimation.Task] = []
 
+    guard !player.disableUI && !isInInteractiveMode else {
+      return animationTasks
+    }
+
+    guard animationState == .hidden else {
+      if restartFadeTimer {
+        resetFadeTimer()
+      } else {
+        destroyFadeTimer()
+      }
+      return animationTasks
+    }
+
     let currentLayout = self.currentLayout
 
     animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
+      Logger.log("Showing fadeable views", level: .verbose, subsystem: player.subsystem)
       animationState = .willShow
       // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
       player.syncUITime()
@@ -3139,6 +3070,79 @@ class MainWindowController: PlayerWindowController {
       }
     })
     return animationTasks
+  }
+
+  @objc func hideFadeableViewsAndCursor() {
+    // don't hide UI when dragging control bar
+    if controlBarFloating.isDragging { return }
+    hideFadeableViews()
+    NSCursor.setHiddenUntilMouseMoves(true)
+  }
+
+  private func hideFadeableViews() {
+    guard pipStatus == .notInPIP && animationState == .shown else {
+      return
+    }
+
+    var animationTasks: [UIAnimation.Task] = []
+
+    animationTasks.append(UIAnimation.Task{ [self] in
+      // Don't hide overlays when in PIP or when they are not actually shown
+      Logger.log("Hiding fadeable views", level: .verbose, subsystem: player.subsystem)
+
+      // Follow energy efficiency best practices and stop the timer that updates the OSC while it is
+      // hidden. However the timer can't be stopped if the mini player is being used as it always
+      // displays the the OSC or the timer is also updating the information being displayed in the
+      // touch bar. Does this host have a touch bar? Is the touch bar configured to show app controls?
+      // Is the touch bar awake? Is the host being operated in closed clamshell mode? This is the kind
+      // of information needed to avoid running the timer and updating controls that are not visible.
+      // Unfortunately in the documentation for NSTouchBar Apple indicates "There’s no need, and no
+      // API, for your app to know whether or not there’s a Touch Bar available". So this code keys
+      // off whether AppKit has requested that a NSTouchBar object be created. This avoids running the
+      // timer on Macs that do not have a touch bar. It also may avoid running the timer when a
+      // MacBook with a touch bar is being operated in closed clameshell mode.
+      if !player.isInMiniPlayer && !player.needsTouchBar && !currentLayout.hasPermanentOSC {
+        player.invalidateTimer()
+      }
+
+      destroyFadeTimer()
+      animationState = .willHide
+
+      for v in fadeableViews {
+        v.animator().alphaValue = 0
+      }
+      /// Quirk 1: special handling for `trafficLightButtons`
+      if currentLayout.trafficLightButtons == .showFadeable {
+        for button in trafficLightButtons {
+          button.alphaValue = 0
+        }
+      }
+      /// Quirk 2: MUST set `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
+      /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
+      /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
+      if currentLayout.titleIconAndText == .showFadeable {
+        window?.titleVisibility = .hidden
+      }
+    })
+
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+      // if no interrupt then hide animation
+      guard animationState == .willHide else { return }
+
+      animationState = .hidden
+      for v in fadeableViews {
+        v.isHidden = true
+      }
+      /// Quirk 1: need to set `alphaValue` back to `1` so that each button's corresponding menu items still work
+      if currentLayout.trafficLightButtons == .showFadeable {
+        for button in trafficLightButtons {
+          button.isHidden = true
+          button.alphaValue = 1
+        }
+      }
+    })
+
+    animationQueue.run(animationTasks)
   }
 
   // MARK: - UI: Show / Hide Fadeable Views Timer
