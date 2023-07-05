@@ -1423,6 +1423,12 @@ class MainWindowController: PlayerWindowController {
     } else {
       startingAnimationDuration = UIAnimation.DefaultDuration
     }
+
+    /// When toggling panel layout configurations, need to use `linear` or else panels of different sizes
+    /// won't line up as they move. But during the fullscreen transition, this looks tediously slow.
+    /// Fortunately, we don't need `linear` for the fullscreen transition.
+    let panelTimingFunction = transition.isTogglingFullScreen ? nil : CAMediaTimingFunction(name: .linear)
+
     Logger.log("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)", level: .verbose, subsystem: player.subsystem)
 
     // Starting animations:
@@ -1446,7 +1452,7 @@ class MainWindowController: PlayerWindowController {
     }))
 
     // StartingAnimation 3: Minimize panels which are no longer needed.
-    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, { [self] in
+    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, timingFunction: panelTimingFunction, { [self] in
       closeOldPanels(transition)
     }))
 
@@ -1458,7 +1464,7 @@ class MainWindowController: PlayerWindowController {
     })
 
     // EndingAnimation: Open new panels and fade in new views
-    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, { [self] in
+    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timingFunction: panelTimingFunction, { [self] in
       openNewPanels(transition)
       fadeInNewViews(transition)
 
