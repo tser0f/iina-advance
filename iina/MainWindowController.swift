@@ -1384,6 +1384,7 @@ class MainWindowController: PlayerWindowController {
       openNewPanels(transition)
       fadeInNewViews(transition)
       updatePanelBlendingModes(to: transition.toLayout)
+      apply(visibility: transition.toLayout.titleIconAndText, titleTextField, documentIconButton)
       animationState = .shown
       resetFadeTimer()
     }
@@ -1403,7 +1404,6 @@ class MainWindowController: PlayerWindowController {
   // FIXME: Legacy fullscreen hiccups while changing window style, ruining the animation
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
-  // FIXME: bug: document icon doesn't disappear
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
@@ -1477,6 +1477,8 @@ class MainWindowController: PlayerWindowController {
     transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
       // Update blending mode:
       updatePanelBlendingModes(to: futureLayout)
+      /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fading out
+      apply(visibility: futureLayout.titleIconAndText, titleTextField, documentIconButton)
 
       animationState = .shown
       resetFadeTimer()
@@ -1737,21 +1739,16 @@ class MainWindowController: PlayerWindowController {
 
     applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
 
-    apply(visibility: futureLayout.titleIconAndText, documentIconButton, titleTextField)
-    if futureLayout.titleIconAndText.isShowable {
-      window.titleVisibility = .visible
-    }
-
-    /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
-    for button in trafficLightButtons {
-      button.alphaValue = 1
-    }
-
     if futureLayout.isFullScreen {
       if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
         apply(visibility: .showFadeable, to: additionalInfoView)
       }
     } else {
+      /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
+      for button in trafficLightButtons {
+        button.alphaValue = 1
+      }
+
       if futureLayout.trafficLightButtons != .hidden {
         for button in trafficLightButtons {
           button.isHidden = false
@@ -1766,6 +1763,10 @@ class MainWindowController: PlayerWindowController {
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
+
+    if futureLayout.titleIconAndText.isShowable {
+      window.titleVisibility = .visible
+    }
   }
 
   private func updatePanelBlendingModes(to futureLayout: LayoutPlan) {
