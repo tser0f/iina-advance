@@ -1404,6 +1404,7 @@ class MainWindowController: PlayerWindowController {
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "reduce motion" is enabled
+  // FIXME: bug: document icon doesn't disappear
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
@@ -1494,11 +1495,7 @@ class MainWindowController: PlayerWindowController {
 
     // Hide all title bar items if top panel placement is changing
     if futureLayout.titleIconAndText == .hidden || transition.isTopPanelPlacementChanging {
-      let docHidden = documentIconButton?.isHidden ?? false
-      let titleHidden = titleTextField?.isHidden ?? false
       apply(visibility: .hidden, documentIconButton, titleTextField)
-      documentIconButton?.isHidden = docHidden
-      titleTextField?.isHidden = titleHidden
     }
 
     if futureLayout.trafficLightButtons == .hidden || transition.isTopPanelPlacementChanging {
@@ -1741,8 +1738,8 @@ class MainWindowController: PlayerWindowController {
 
     applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
 
+    apply(visibility: futureLayout.titleIconAndText, documentIconButton, titleTextField)
     if futureLayout.titleIconAndText.isShowable {
-      apply(visibility: futureLayout.titleIconAndText, documentIconButton, titleTextField)
       window.titleVisibility = .visible
     }
 
@@ -1824,11 +1821,10 @@ class MainWindowController: PlayerWindowController {
   }
   
   func updateSpacingForTitleBarAccessories(_ layout: LayoutPlan? = nil) {
-    guard let window = window else { return }
     let layout = layout ?? self.currentLayout
 
-    let leadingSpaceUsed = updateSpacingForLeadingTitleBarAccessory(layout)
-    let trailingSpaceUsed = updateSpacingForTrailingTitleBarAccessory(layout)
+    updateSpacingForLeadingTitleBarAccessory(layout)
+    updateSpacingForTrailingTitleBarAccessory(layout)
 
     leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
     trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
@@ -1836,7 +1832,7 @@ class MainWindowController: PlayerWindowController {
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
-  private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutPlan) -> CGFloat {
+  private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutPlan) {
     var trailingSpace: CGFloat = 8  // Add standard space before title text by default
 
     let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
@@ -1848,14 +1844,11 @@ class MainWindowController: PlayerWindowController {
       trailingSpace = max(0, leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
     }
     leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
-
-    let totalSpaceOccupied = trailingSpace + sidebarButtonSpace + trafficLightButtonsWidth
-    return totalSpaceOccupied
   }
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
-  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutPlan) -> CGFloat {
+  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutPlan) {
     var leadingSpace: CGFloat = 0
     var spaceForButtons: CGFloat = 0
 
@@ -1877,9 +1870,6 @@ class MainWindowController: PlayerWindowController {
     let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || layout.pinToTopButton.isShowable
     let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
     trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
-
-    let totalSpaceOccupied = leadingSpace + spaceForButtons + buttonMargin
-    return totalSpaceOccupied
   }
 
   // This method should only make a layout plan. It should not alter the current layout.
@@ -2187,7 +2177,7 @@ class MainWindowController: PlayerWindowController {
     if obj == 0 {
       // main window
       isMouseInWindow = true
-      showFadeableViews()
+      showFadeableViews(duration: 0)
     } else if obj == 1 {
       if controlBarFloating.isDragging { return }
       // slider
@@ -2249,16 +2239,12 @@ class MainWindowController: PlayerWindowController {
     if isMouseInSlider {
       updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
     }
-    var animationTasks: [UIAnimation.Task] = []
 
     if isMouseInWindow {
       // Check whether mouse is in OSC
-      let restartFadeTimer = !isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView])
-
-      animationTasks.append(contentsOf: buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: 0))
+      let shouldRestartFadeTimer = !isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView])
+      showFadeableViews(thenRestartFadeTimer: shouldRestartFadeTimer, duration: 0)
     }
-
-    animationQueue.run(animationTasks)
   }
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
@@ -2592,6 +2578,7 @@ class MainWindowController: PlayerWindowController {
       // Hide during the animation:
       apply(visibility: .hidden, documentIconButton, titleTextField)
       for button in trafficLightButtons {
+        // Use alpha value alone for these buttons
         button.alphaValue = 0
         button.isHidden = false
       }
@@ -2622,11 +2609,9 @@ class MainWindowController: PlayerWindowController {
     animationTasks.append(contentsOf: transition.animationTasks)
 
     // Make sure this doesn't happen until after animation finishes
+    // FIXME: investigate animation transaction
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       if isLegacy {
-        // If extra space was added for camera housing, remove it
-        // TODO: add this back
-
         // reset stylemask at the end
         window.styleMask.remove(.borderless)
         window.styleMask.insert(.resizable)
@@ -2753,7 +2738,8 @@ class MainWindowController: PlayerWindowController {
 
     if requestedSize.height <= minSize.height || requestedSize.width <= minSize.width {
       Logger.log("WindowWillResize: requestedSize too small; changing to min \(minSize)", level: .verbose, subsystem: player.subsystem)
-      return window.aspectRatio.grow(toSize: minSize)
+      let newVideoSize = videoContainerView.frame.size.shrink(toSize: minSize)
+      return computeWindowFrameFromVideoResize(toVideoSize: newVideoSize).size
     }
 
     return requestedSize
@@ -2960,8 +2946,8 @@ class MainWindowController: PlayerWindowController {
   // MARK: - UI: Show / Hide Fadeable Views
 
   // Shows fadeableViews and titlebar via fade
-  private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true) {
-    let animationTasks: [UIAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer)
+  private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration) {
+    let animationTasks: [UIAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: duration)
     animationQueue.run(animationTasks)
   }
 
@@ -3400,7 +3386,7 @@ class MainWindowController: PlayerWindowController {
       self.hideAllSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
-      self.showFadeableViews()
+      self.showFadeableViews(duration: 0)
       window?.backgroundColor = .black
 
       if !isPausedPriorToInteractiveMode {
@@ -3762,38 +3748,6 @@ class MainWindowController: PlayerWindowController {
     window.setFrame(newWindowFrame, display: true, animate: animate)
   }
 
-  /// `desiredVideoSize` must be correct aspect ratio
-  private func constrainToValidSize(origWindowFrame: NSRect, origVideoSize: NSSize, desiredVideoSize: NSSize, maxSize: NSSize) -> NSSize {
-    // Resize only the video. Panels outside the video do not change size
-    let outsidePanelsSize = deriveOutsidePanelsSize(forWindowFrame: origWindowFrame, andVideoSize: origVideoSize)
-
-    let maxVideoSize = NSSize(width: maxSize.width - outsidePanelsSize.width,
-                              height: maxSize.height - outsidePanelsSize.height)
-    var newVideoSize = desiredVideoSize
-
-    if newVideoSize.height > maxVideoSize.height {
-      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-    }
-    if newVideoSize.width > maxVideoSize.width {
-      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-    }
-
-    let minVideoSize = minSize
-    if newVideoSize.height < minVideoSize.height {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
-    }
-    if newVideoSize.width < minVideoSize.width {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
-    }
-
-    newVideoSize = NSSize(width: round(newVideoSize.width), height: round(newVideoSize.height))
-    return newVideoSize
-  }
-
-  private func deriveOutsidePanelsSize(forWindowFrame windowFrame: NSRect, andVideoSize videoSize: NSSize) -> NSSize {
-    return NSSize(width: windowFrame.width - videoSize.width, height: windowFrame.height - videoSize.height)
-  }
-
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
   private func computeWindowFrameFromVideoResize(toVideoSize desiredVideoSize: CGSize,
                                                  fromVideoSize: CGSize? = nil, fromWindowFrame: CGRect? = nil) -> NSRect {
@@ -3825,6 +3779,38 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Resizing video from \(origVideoSize) to \(newVideoSize) (\(actualScale)x scale), moving: (\(deltaX), \(deltaY)), newWindowFrame: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     return newWindowFrame
+  }
+
+  /// `desiredVideoSize` must be correct aspect ratio
+  private func constrainToValidSize(origWindowFrame: NSRect, origVideoSize: NSSize, desiredVideoSize: NSSize, maxSize: NSSize) -> NSSize {
+    // Resize only the video. Panels outside the video do not change size
+    let outsidePanelsSize = deriveOutsidePanelsSize(forWindowFrame: origWindowFrame, andVideoSize: origVideoSize)
+
+    let maxVideoSize = NSSize(width: maxSize.width - outsidePanelsSize.width,
+                              height: maxSize.height - outsidePanelsSize.height)
+    var newVideoSize = desiredVideoSize
+
+    if newVideoSize.height > maxVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+    }
+    if newVideoSize.width > maxVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+    }
+
+    let minVideoSize = minSize
+    if newVideoSize.height < minVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+    if newVideoSize.width < minVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+
+    newVideoSize = NSSize(width: round(newVideoSize.width), height: round(newVideoSize.height))
+    return newVideoSize
+  }
+
+  private func deriveOutsidePanelsSize(forWindowFrame windowFrame: NSRect, andVideoSize videoSize: NSSize) -> NSSize {
+    return NSSize(width: windowFrame.width - videoSize.width, height: windowFrame.height - videoSize.height)
   }
 
   // MARK: - UI: Others
