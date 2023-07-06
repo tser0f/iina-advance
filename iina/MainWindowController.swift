@@ -1467,12 +1467,12 @@ class MainWindowController: PlayerWindowController {
 
     // EndingAnimation: Open new panels and fade in new views
     transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timingFunction: panelTimingFunction, { [self] in
-      openNewPanels(transition)
-      fadeInNewViews(transition)
-
       if let extraTaskFunc = extraTaskFunc {
         extraTaskFunc()
       }
+
+      openNewPanels(transition)
+      fadeInNewViews(transition)
     }))
 
     // After animations all finish, start fade timer
@@ -2432,10 +2432,11 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
                level: .verbose, subsystem: player.subsystem)
 
+    let priorWindowedFrame = window.frame
+
     var animationTasks: [UIAnimation.Task] = []
 
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      let priorWindowedFrame = window.frame
       fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedFrame)
       Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedFrame)", level: .verbose)
 
@@ -2560,7 +2561,7 @@ class MainWindowController: PlayerWindowController {
   /// There does not appear to be any similar problem when entering fullscreen.
   func windowDidExitFullScreen(_ notification: Notification) {
     if AccessibilityPreferences.motionReductionEnabled {
-      animateExitFromFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: false)
+      animateExitFromFullScreen(withDuration: UIAnimation.FullScreenTransitionDuration, isLegacy: false)
     }
   }
 
@@ -2690,13 +2691,13 @@ class MainWindowController: PlayerWindowController {
     case .windowed:
       guard !player.isInMiniPlayer else { return }
       if Preference.bool(for: .useLegacyFullScreen) {
-        animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
+        animateEntryIntoFullScreen(withDuration: UIAnimation.FullScreenTransitionDuration, isLegacy: true)
       } else {
         window.toggleFullScreen(self)
       }
     case let .fullscreen(legacy, _):
       if legacy {
-        animateExitFromFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
+        animateExitFromFullScreen(withDuration: UIAnimation.FullScreenTransitionDuration, isLegacy: true)
       } else {
         window.toggleFullScreen(self)
       }
