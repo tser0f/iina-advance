@@ -1400,8 +1400,6 @@ class MainWindowController: PlayerWindowController {
     animationQueue.run(transition.animationTasks)
   }
 
-  // FIXME: Title bar icons permanently disappear when toggling legacy fullscreen
-  // FIXME: Legacy fullscreen hiccups while changing window style, ruining the animation
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
@@ -1769,6 +1767,14 @@ class MainWindowController: PlayerWindowController {
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
+  }
+
+  private func addTitleBarAccessoryViews() {
+    guard let window = window else { return }
+    if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
+      window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
+      window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+    }
   }
 
   private func updatePanelBlendingModes(to futureLayout: LayoutPlan) {
@@ -2637,6 +2643,9 @@ class MainWindowController: PlayerWindowController {
         }
 
         restoreDockSettings()
+
+        // Title bar accessories get removed by legacy fullscreen. Add them back:
+        addTitleBarAccessoryViews()
       }
 
       constrainVideoViewForWindowedMode()
