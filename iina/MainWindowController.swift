@@ -1414,7 +1414,7 @@ class MainWindowController: PlayerWindowController {
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
     let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: false)
 
-    let startingAnimationCount: CGFloat = 2
+    let startingAnimationCount: CGFloat = 3
 
     let startingAnimationDuration: CGFloat
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
@@ -1451,10 +1451,12 @@ class MainWindowController: PlayerWindowController {
       fadeOutOldViews(transition)
     }))
 
-    // StartingAnimation 3: Minimize panels which are no longer needed.
-    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, timingFunction: panelTimingFunction, { [self] in
-      closeOldPanels(transition)
-    }))
+    if !transition.isTogglingToFullScreen {  // Avoid bounciness and possible unwanted video scaling animation (not needed for ->FS anyway)
+      // StartingAnimation 3: Minimize panels which are no longer needed.
+      transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, timingFunction: panelTimingFunction, { [self] in
+        closeOldPanels(transition)
+      }))
+    }
 
     // Ending animations:
 
@@ -1737,6 +1739,10 @@ class MainWindowController: PlayerWindowController {
     let futureLayout = transition.toLayout
     Logger.log("FadeInNewViews", level: .verbose, subsystem: player.subsystem)
 
+    if futureLayout.titleIconAndText.isShowable {
+      window.titleVisibility = .visible
+    }
+
     applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
 
     if futureLayout.isFullScreen {
@@ -1763,10 +1769,6 @@ class MainWindowController: PlayerWindowController {
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
-
-    if futureLayout.titleIconAndText.isShowable {
-      window.titleVisibility = .visible
-    }
   }
 
   private func updatePanelBlendingModes(to futureLayout: LayoutPlan) {
@@ -2444,8 +2446,25 @@ class MainWindowController: PlayerWindowController {
         button.alphaValue = 0
       }
 
-      // FIXME: this causes a large hiccup/delay
+      // Set the appearance to match the theme so the title bar matches the theme
+      let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
+      if #available(macOS 10.14, *) {
+        window.appearance = NSAppearance(iinaTheme: iinaTheme)
+      } else {
+        switch(iinaTheme) {
+        case .dark, .ultraDark: window.appearance = NSAppearance(named: .vibrantDark)
+        default: window.appearance = NSAppearance(named: .vibrantLight)
+        }
+      }
+
+      setWindowFloatingOnTop(false, updateOnTopStatus: false)
+
       if isLegacy {
+        // Legacy fullscreen cannot handle transition while playing and will result in a black flash or jittering.
+        // This will briefly freeze the video output, which is slightly better
+        videoView.videoLayer.suspend()
+
+        // FIXME: this causes a large hiccup/delay in the animation. Find workaround
         // stylemask
         window.styleMask.insert(.borderless)
         window.styleMask.remove(.resizable)
@@ -2460,31 +2479,12 @@ class MainWindowController: PlayerWindowController {
         NSApp.presentationOptions.insert(.autoHideMenuBar)
         NSApp.presentationOptions.insert(.autoHideDock)
       }
-
-      // Set the appearance to match the theme so the title bar matches the theme
-      let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
-      if #available(macOS 10.14, *) {
-        window.appearance = NSAppearance(iinaTheme: iinaTheme)
-      } else {
-        switch(iinaTheme) {
-        case .dark, .ultraDark: window.appearance = NSAppearance(named: .vibrantDark)
-        default: window.appearance = NSAppearance(named: .vibrantLight)
-        }
-      }
-
-      setWindowFloatingOnTop(false, updateOnTopStatus: false)
-
-      resetViewsForFullScreenTransition()
-
-      constrainVideoViewForFullScreen()
-      if isLegacy {
-        // Legacy fullscreen cannot handle transition while playing and will result in a black flash or jittering.
-        // This will briefly freeze the video output, which is slightly better
-        videoView.videoLayer.suspend()
-      }
       // Let mpv decide the correct render region in full screen
       player.mpv.setFlag(MPVOption.Window.keepaspect, true)
     })
+
+    resetViewsForFullScreenTransition()
+    constrainVideoViewForFullScreen()
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
@@ -2502,7 +2502,6 @@ class MainWindowController: PlayerWindowController {
     // Make sure this doesn't happen until after animation finishes
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       Logger.log("windowDidEnterFullScreen", level: .verbose)
-      fsState.finishAnimating()
 
       /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
       for button in trafficLightButtons {
@@ -2542,6 +2541,7 @@ class MainWindowController: PlayerWindowController {
         exitPIP()
       }
 
+      fsState.finishAnimating()
       player.events.emit(.windowFullscreenChanged, data: true)
     })
 
@@ -2690,7 +2690,7 @@ class MainWindowController: PlayerWindowController {
     case .windowed:
       guard !player.isInMiniPlayer else { return }
       if Preference.bool(for: .useLegacyFullScreen) {
-        animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration * 2, isLegacy: true)
+        animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: true)
       } else {
         window.toggleFullScreen(self)
       }
@@ -3022,13 +3022,15 @@ class MainWindowController: PlayerWindowController {
   @objc func hideFadeableViewsAndCursor() {
     // don't hide UI when dragging control bar
     if controlBarFloating.isDragging { return }
-    hideFadeableViews()
-    NSCursor.setHiddenUntilMouseMoves(true)
+    if hideFadeableViews() {
+      NSCursor.setHiddenUntilMouseMoves(true)
+    }
   }
 
-  private func hideFadeableViews() {
+  @discardableResult
+  private func hideFadeableViews() -> Bool {
     guard pipStatus == .notInPIP && animationState == .shown else {
-      return
+      return false
     }
 
     var animationTasks: [UIAnimation.Task] = []
@@ -3090,6 +3092,7 @@ class MainWindowController: PlayerWindowController {
     })
 
     animationQueue.run(animationTasks)
+    return true
   }
 
   // MARK: - UI: Show / Hide Fadeable Views Timer
