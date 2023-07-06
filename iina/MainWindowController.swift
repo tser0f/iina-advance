@@ -2465,20 +2465,12 @@ class MainWindowController: PlayerWindowController {
         // This will briefly freeze the video output, which is slightly better
         videoView.videoLayer.suspend()
 
-        // FIXME: this causes a large hiccup/delay in the animation. Find workaround
         // stylemask
-        window.styleMask.insert(.borderless)
-        window.styleMask.remove(.resizable)
         if #available(macOS 10.16, *) {
           window.styleMask.remove(.titled)
-          (window as! MainWindow).forceKeyAndMain = true
-          window.level = .floating
         } else {
           window.styleMask.insert(.fullScreen)
         }
-        // auto hide menubar and dock
-        NSApp.presentationOptions.insert(.autoHideMenuBar)
-        NSApp.presentationOptions.insert(.autoHideDock)
       }
       // Let mpv decide the correct render region in full screen
       player.mpv.setFlag(MPVOption.Window.keepaspect, true)
@@ -2502,7 +2494,17 @@ class MainWindowController: PlayerWindowController {
 
     // Make sure this doesn't happen until after animation finishes
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      Logger.log("windowDidEnterFullScreen", level: .verbose)
+      if isLegacy {
+        window.styleMask.insert(.borderless)
+        window.styleMask.remove(.resizable)
+
+        // auto hide menubar and dock
+        NSApp.presentationOptions.insert(.autoHideMenuBar)
+        NSApp.presentationOptions.insert(.autoHideDock)
+
+        (window as! MainWindow).forceKeyAndMain = true
+        window.level = .floating
+      }
 
       /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
       for button in trafficLightButtons {
