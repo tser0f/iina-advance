@@ -1403,7 +1403,6 @@ class MainWindowController: PlayerWindowController {
   // FIXME: Legacy fullscreen hiccups while changing window style, ruining the animation
   // TODO: Prevent sidebars from opening if not enough space?
   // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
-  // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "reduce motion" is enabled
   // FIXME: bug: document icon doesn't disappear
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
@@ -2419,11 +2418,11 @@ class MainWindowController: PlayerWindowController {
   func windowWillEnterFullScreen(_ notification: Notification) {
   }
 
-  // Animation: Enter FullScreen
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
     animateEntryIntoFullScreen(withDuration: duration, isLegacy: false)
   }
 
+  // Animation: Enter FullScreen
   private func animateEntryIntoFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
     guard let window = window,
           let screen = window.screen else { return }
@@ -2548,11 +2547,23 @@ class MainWindowController: PlayerWindowController {
     animationQueue.run(animationTasks)
   }
 
-  // Animation: Exit FullScreen
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
-    animateExitFromFullScreen(withDuration: duration, isLegacy: false)
+    if !AccessibilityPreferences.motionReductionEnabled {  /// see note in `windowDidExitFullScreen()`
+      animateExitFromFullScreen(withDuration: duration, isLegacy: false)
+    }
   }
 
+  /// Workaround for Apple quirk. When exiting fullscreen, MacOS uses a relatively slow animation to open the Dock and fade in other windows.
+  /// It appears we cannot call `setFrame()` (or more precisely, we must make sure any `setFrame()` animation does not end) until after this
+  /// animation completes, or the window size will be incorrectly set to the same size of the screen.
+  /// There does not appear to be any similar problem when entering fullscreen.
+  func windowDidExitFullScreen(_ notification: Notification) {
+    if AccessibilityPreferences.motionReductionEnabled {
+      animateExitFromFullScreen(withDuration: UIAnimation.DefaultDuration, isLegacy: false)
+    }
+  }
+
+  // Animation: Exit FullScreen
   private func animateExitFromFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
     guard let window = window else { return }
     Logger.log("Animating exit from \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
@@ -2566,6 +2577,8 @@ class MainWindowController: PlayerWindowController {
     // quitting then mpv could be in the process of shutting down. Must not access mpv while it is
     // asynchronously processing stop and quit commands.
     guard !isClosing else { return }
+
+    guard let priorFrame = fsState.priorWindowedFrame else { return }
 
     var animationTasks: [UIAnimation.Task] = []
 
@@ -2598,18 +2611,14 @@ class MainWindowController: PlayerWindowController {
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
-      if let priorFrame = fsState.priorWindowedFrame {
-        Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(priorFrame)",
-                   level: .verbose, subsystem: player.subsystem)
-        // FIXME: this does not restore previous size properly with motion reduction enabled
-        window.setFrame(priorFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-      }
+      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(priorFrame)",
+                 level: .verbose, subsystem: player.subsystem)
+      window.setFrame(priorFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     })
 
     animationTasks.append(contentsOf: transition.animationTasks)
 
     // Make sure this doesn't happen until after animation finishes
-    // FIXME: investigate animation transaction
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       if isLegacy {
         // reset stylemask at the end
@@ -2646,7 +2655,7 @@ class MainWindowController: PlayerWindowController {
       }
 
       // Must not access mpv while it is asynchronously processing stop and quit commands.
-      // See comments in windowWillExitFullScreen for details.
+      // See comments in resetViewsForFullScreenTransition for details.
       guard !isClosing else { return }
 
       videoView.needsLayout = true
@@ -2678,7 +2687,6 @@ class MainWindowController: PlayerWindowController {
 
     switch fsState {
     case .windowed:
-      // FIXME: need to make sure previous animation finishes before continuing
       guard !player.isInMiniPlayer else { return }
       if Preference.bool(for: .useLegacyFullScreen) {
         animateEntryIntoFullScreen(withDuration: UIAnimation.DefaultDuration * 2, isLegacy: true)
