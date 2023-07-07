@@ -213,23 +213,12 @@ extension MainWindowController {
   }
 
   // Hides any visible sidebars
-  // TODO: refactor this so that they run in the same animation
-  func hideAllSidebars(animate: Bool = true, then: TaskFunc? = nil) {
-    Logger.log("Hiding all sidebars", level: .verbose)
-    // Need to make sure that completionHandler (1) runs after animations, or (2) runs at all
-    var completionHandler: TaskFunc? = then
-    if let visibleTab = leadingSidebar.visibleTab {
-      changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
-      completionHandler = nil
-    }
-    if let visibleTab = trailingSidebar.visibleTab {
-      changeVisibility(forTab: visibleTab, to: false, then: completionHandler)
-      completionHandler = nil
-    }
-    // Run completion handler, only if it hasn't been scheduled to run already:
-    if let completionHandler = completionHandler {
-      completionHandler()
-    }
+  func hideAllSidebars(animate: Bool = true, then doAfter: TaskFunc? = nil) {
+    Logger.log("Hiding all sidebars", level: .verbose, subsystem: player.subsystem)
+
+    changeVisibilityForSidebars(changeLeading: true, leadingVisible: false,
+                                changeTrailing: true, trailingVisibile: false,
+                                then: doAfter)
   }
 
   func hideSidebarThenShowAgain(_ sidebarID: Preference.SidebarLocation) {
@@ -274,26 +263,107 @@ extension MainWindowController {
       nothingToDo = true
     }
 
-    var animationTasks: [UIAnimation.Task]
     if nothingToDo {
-      animationTasks = []
-    } else {
-      animationTasks = changeVisibility(forSidebar: sidebar, tab: tab, to: show)
+      return
     }
+
+    let tabGroup = tab.group
+    if leadingSidebar.tabGroups.contains(tabGroup) {
+      changeVisibilityForSidebars(changeLeading: true, leadingVisible: show, setLeadingTab: tab, then: doAfter)
+    } else if trailingSidebar.tabGroups.contains(tabGroup) {
+      changeVisibilityForSidebars(changeTrailing: true, trailingVisibile: show, setTrailingTab: tab, then: doAfter)
+    } else {
+      // Should never happen
+      Logger.log("Cannot change sidebar tab visibility: could not find tab for tabGroup: \(tabGroup.rawValue)", level: .error, subsystem: player.subsystem)
+    }
+  }
+
+  /**
+   In one case it is desired to closed both sidebars simultaneously. To do this safely, we need to add logic for both sidebars
+   to each animation block.
+   */
+  private func changeVisibilityForSidebars(changeLeading: Bool = false, leadingVisible: Bool = false, setLeadingTab: SidebarTab? = nil,
+                                           changeTrailing: Bool = false, trailingVisibile: Bool = false, setTrailingTab: SidebarTab? = nil,
+                                           then doAfter: TaskFunc? = nil) {
+    var animationTasks: [UIAnimation.Task] = []
+
+    let leadingTab = setLeadingTab ?? leadingSidebar.defaultTabToShow
+    assert(!changeLeading || !leadingVisible || leadingTab != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
+    let trailingTab = setTrailingTab ?? trailingSidebar.defaultTabToShow
+    assert(!changeTrailing || !trailingVisibile || trailingTab != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
+
+    // This code block needs to be an AnimationBlock because it needs to follow precedence rules.
+    // But there is no visible animation.
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+      if changeLeading {
+        if let leadingTab = leadingTab, leadingVisible {
+          show(sidebar: leadingSidebar, tab: leadingTab)
+        } else {
+          leadingSidebar.animationState = .willHide
+        }
+      }
+      if changeTrailing {
+        if let trailingTab = trailingTab, trailingVisibile {
+          show(sidebar: trailingSidebar, tab: trailingTab)
+        } else {
+          trailingSidebar.animationState = .willHide
+        }
+      }
+    })
+
+    // Animate the showing/hiding:
+    animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
+                                           { [self] in
+      if let leadingTab = leadingTab, changeLeading {
+        doAnimationTask(forSidebar: leadingSidebar, tab: leadingTab, to: leadingVisible)
+      }
+      if let trailingTab = trailingTab, changeTrailing {
+        doAnimationTask(forSidebar: trailingSidebar, tab: trailingTab, to: trailingVisibile)
+      }
+    }))
+
+    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+      if let leadingTab = leadingTab, changeLeading {
+        doPostAnimationTask(forSidebar: leadingSidebar, tab: leadingTab, to: leadingVisible)
+      }
+      if let trailingTab = trailingTab, changeTrailing {
+        doPostAnimationTask(forSidebar: trailingSidebar, tab: trailingTab, to: trailingVisibile)
+      }
+    })
 
     if let doAfter = doAfter {
       animationTasks.append(UIAnimation.zeroDurationTask {
         doAfter()
       })
     }
-
     animationQueue.run(animationTasks)
   }
 
-  private func changeVisibility(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) -> [UIAnimation.Task] {
-    var animationTasks: [UIAnimation.Task] = []
+  private func show(sidebar: Sidebar, tab: SidebarTab) {
+    sidebar.animationState = .willShow
 
-    let sidebarView: NSVisualEffectView
+    // Update blending mode instantaneously. It doesn't animate well
+    updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
+
+    // Make it the active tab in its parent tab group (can do this whether or not it's shown):
+    switch tab.group {
+    case .playlist:
+      guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.playlistView.pleaseSwitchToTab(tabType)
+    case .settings:
+      guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.quickSettingView.pleaseSwitchToTab(tabType)
+    }
+
+    let sidebarView: NSView
     switch sidebar.locationID {
     case .leadingSidebar:
       leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
@@ -303,86 +373,57 @@ extension MainWindowController {
       sidebarView = trailingSidebarView
     }
 
-    // This code block needs to be an AnimationBlock because it needs to follow precedence rules.
-    // But there is no visible animation.
-    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+    sidebarView.isHidden = false
 
-      if show {
-        sidebar.animationState = .willShow
+    // add view and constraints
+    let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
+    let tabGroupView = viewController.view
+    sidebarView.addSubview(tabGroupView)
+    tabGroupView.heightAnchor.constraint(equalTo: sidebarView.heightAnchor).isActive = true
+    tabGroupView.widthAnchor.constraint(equalTo: sidebarView.widthAnchor).isActive = true
 
-        // Update blending mode instantaneously. It doesn't animate well
-        updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
-
-        // Make it the active tab in its parent tab group (can do this whether or not it's shown):
-        switch tab.group {
-        case .playlist:
-          guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
-            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
-                       level: .error, subsystem: player.subsystem)
-            return
-          }
-          self.playlistView.pleaseSwitchToTab(tabType)
-        case .settings:
-          guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
-            Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
-                       level: .error, subsystem: player.subsystem)
-            return
-          }
-          self.quickSettingView.pleaseSwitchToTab(tabType)
-        }
-
-        sidebarView.isHidden = false
-
-        // add view and constraints
-        let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
-        let tabGroupView = viewController.view
-        sidebarView.addSubview(tabGroupView)
-        tabGroupView.heightAnchor.constraint(equalTo: sidebarView.heightAnchor).isActive = true
-        tabGroupView.widthAnchor.constraint(equalTo: sidebarView.widthAnchor).isActive = true
-      } else {
-        sidebar.animationState = .willHide
-      }
-
-      Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
-    })
-
-    // Animate the showing/hiding:
-    animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
-                                              { [self] in
-      guard let contentView = window?.contentView else { return }
-
-      let currentWidth = tab.group.width()
-      Logger.log("Latest sidebar width for group \(tab.group.rawValue.quoted): \(currentWidth)", level: .verbose, subsystem: player.subsystem)
-
-      switch sidebar.locationID {
-      case .leadingSidebar:
-        updateLeadingSidebarWidth(to: currentWidth, show: show, placement: leadingSidebar.placement)
-
-      case .trailingSidebar:
-        updateTrailingSidebarWidth(to: currentWidth, show: show, placement: trailingSidebar.placement)
-      }
-
-      updateSpacingForTitleBarAccessories()
-      contentView.layoutSubtreeIfNeeded()
-    }))
-
-    // Update state
-    animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      if show {
-        sidebar.animationState = .shown
-        sidebar.visibleTab = tab
-      } else {  // hide
-        sidebar.visibleTab = nil
-        sidebarView.subviews.removeAll()
-        sidebarView.isHidden = true
-        sidebar.animationState = .hidden
-      }
-      Logger.log("Animation done: changed animationState of \(sidebar.locationID) to: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
-    })
-
-    return animationTasks
+    Logger.log("Changed animationState of \(sidebar.locationID) to \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
   }
 
+  private func doAnimationTask(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) {
+    guard let contentView = window?.contentView else { return }
+
+    let currentWidth = tab.group.width()
+    Logger.log("Latest sidebar width for group \(tab.group.rawValue.quoted): \(currentWidth)", level: .verbose, subsystem: player.subsystem)
+
+    switch sidebar.locationID {
+    case .leadingSidebar:
+      updateLeadingSidebarWidth(to: currentWidth, show: show, placement: leadingSidebar.placement)
+
+    case .trailingSidebar:
+      updateTrailingSidebarWidth(to: currentWidth, show: show, placement: trailingSidebar.placement)
+    }
+
+    updateSpacingForTitleBarAccessories()
+    contentView.layoutSubtreeIfNeeded()
+  }
+
+  private func doPostAnimationTask(forSidebar sidebar: Sidebar, tab: SidebarTab, to show: Bool) {
+    let sidebarView: NSView
+    switch sidebar.locationID {
+    case .leadingSidebar:
+      sidebarView = leadingSidebarView
+    case .trailingSidebar:
+      sidebarView = trailingSidebarView
+    }
+
+    // Update state
+    if show {
+      sidebar.animationState = .shown
+      sidebar.visibleTab = tab
+    } else {  // hide
+      sidebar.visibleTab = nil
+      sidebarView.subviews.removeAll()
+      sidebarView.isHidden = true
+      sidebar.animationState = .hidden
+    }
+    Logger.log("Animation done: changed animationState of \(sidebar.locationID) to: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
+  }
 
   func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
     switch sidebarID {
@@ -468,7 +509,6 @@ extension MainWindowController {
     removingFromSidebar.tabGroups.remove(tabGroup)
 
     // Sidebar buttons may have changed:
-    updateSpacingForTitleBarAccessories()
     updateSpacingForTitleBarAccessories()
   }
 
