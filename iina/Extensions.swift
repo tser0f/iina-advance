@@ -201,7 +201,7 @@ extension NSRect {
   }
 
   func constrain(in biggerRect: NSRect) -> NSRect {
-    // new size
+    // new size, keeping aspect ratio
     var newSize = size
     if newSize.width > biggerRect.width || newSize.height > biggerRect.height {
       newSize = size.shrink(toSize: biggerRect.size)

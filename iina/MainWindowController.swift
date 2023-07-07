@@ -3787,14 +3787,16 @@ class MainWindowController: PlayerWindowController {
 
     let origVideoSize = fromVideoSize ?? videoView.frame.size
     let origWindowFrame = fromWindowFrame ?? window.frame
-
     let screenVisibleFrame = bestScreen.visibleFrame
-    let newVideoSize = constrainToValidSize(origWindowFrame: origWindowFrame, origVideoSize: origVideoSize,
-                                            desiredVideoSize: desiredVideoSize,
-                                            maxSize: screenVisibleFrame.size)
 
     // Resize only the video. Panels outside the video do not change size
-    let outsidePanelsSize = deriveOutsidePanelsSize(forWindowFrame: origWindowFrame, andVideoSize: origVideoSize)
+    let outsidePanelsSize = deriveOutsidePanelsSize(fromWindowFrame: origWindowFrame, andVideoSize: origVideoSize)
+    let maxVideoSize = NSSize(width: screenVisibleFrame.size.width - outsidePanelsSize.width,
+                              height: screenVisibleFrame.size.height - outsidePanelsSize.height)
+    let newVideoSize = constrainToValidSize(desiredVideoSize: desiredVideoSize,
+                                            minVideoSize: PlayerCore.minVideoSize,
+                                            maxVideoSize: maxVideoSize)
+
     let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsSize.width,
                                height: newVideoSize.height + outsidePanelsSize.height)
 
@@ -3813,13 +3815,11 @@ class MainWindowController: PlayerWindowController {
     return newWindowFrame
   }
 
-  /// `desiredVideoSize` must be correct aspect ratio
-  private func constrainToValidSize(origWindowFrame: NSRect, origVideoSize: NSSize, desiredVideoSize: NSSize, maxSize: NSSize) -> NSSize {
-    // Resize only the video. Panels outside the video do not change size
-    let outsidePanelsSize = deriveOutsidePanelsSize(forWindowFrame: origWindowFrame, andVideoSize: origVideoSize)
-
-    let maxVideoSize = NSSize(width: maxSize.width - outsidePanelsSize.width,
-                              height: maxSize.height - outsidePanelsSize.height)
+  /// Clamp video between max and min video sizes, maintaining its aspect ratio.
+  /// `desiredVideoSize` is assumed to be correct aspect ratio of the video.
+  private func constrainToValidSize(desiredVideoSize: NSSize,
+                                    minVideoSize: NSSize,
+                                    maxVideoSize: NSSize) -> NSSize {
     var newVideoSize = desiredVideoSize
 
     if newVideoSize.height > maxVideoSize.height {
@@ -3829,7 +3829,6 @@ class MainWindowController: PlayerWindowController {
       newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
     }
 
-    let minVideoSize = minSize
     if newVideoSize.height < minVideoSize.height {
       newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
     }
@@ -3841,7 +3840,7 @@ class MainWindowController: PlayerWindowController {
     return newVideoSize
   }
 
-  private func deriveOutsidePanelsSize(forWindowFrame windowFrame: NSRect, andVideoSize videoSize: NSSize) -> NSSize {
+  private func deriveOutsidePanelsSize(fromWindowFrame windowFrame: NSRect, andVideoSize videoSize: NSSize) -> NSSize {
     return NSSize(width: windowFrame.width - videoSize.width, height: windowFrame.height - videoSize.height)
   }
 
