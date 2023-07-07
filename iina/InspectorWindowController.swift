@@ -109,6 +109,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
   func updateInfo(dynamic: Bool = false) {
     let player = PlayerCore.lastActive
+    guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else { return }
     let controller = player.mpv!
     let info = player.info
 
