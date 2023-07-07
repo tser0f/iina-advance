@@ -1477,7 +1477,7 @@ class MainWindowController: PlayerWindowController {
     transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
       // Update blending mode:
       updatePanelBlendingModes(to: futureLayout)
-      /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fading out
+      /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out
       apply(visibility: futureLayout.titleIconAndText, titleTextField, documentIconButton)
 
       animationState = .shown
@@ -1886,9 +1886,12 @@ class MainWindowController: PlayerWindowController {
 
     let futureLayout = LayoutPlan(spec: layoutSpec)
 
-    /// For fullscreen, skip handling`titleTextField` and title bar buttons - they will be shown when transition
-    /// to fullscreen is done
-    if !futureLayout.isFullScreen {
+    // Title bar & title bar accessories:
+
+    if futureLayout.isFullScreen {
+      futureLayout.titleIconAndText = .showAlways
+      futureLayout.trafficLightButtons = .showAlways
+    } else {
       let visibleState: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
 
       futureLayout.topPanelView = visibleState
@@ -2446,12 +2449,8 @@ class MainWindowController: PlayerWindowController {
       fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedFrame)
       Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedFrame)", level: .verbose)
 
-      /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
-      /// In most cases it is best to avoid setting `alphaValue = 0` for these due to the unwanted side effect of disabling menu items,
-      /// but should be ok during this brief animation:
-      for button in trafficLightButtons {
-        button.alphaValue = 0
-      }
+      // Hide traffic light buttons & title during the animation:
+      hideBuiltInTitleBarItems()
 
       // Set the appearance to match the theme so the title bar matches the theme
       let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
@@ -2573,6 +2572,21 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  private func hideBuiltInTitleBarItems() {
+    apply(visibility: .hidden, documentIconButton, titleTextField)
+    for button in trafficLightButtons {
+      /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
+      /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
+      /// but should be ok for brief animations
+      for button in trafficLightButtons {
+        button.alphaValue = 0
+      }
+      button.alphaValue = 0
+      button.isHidden = false
+    }
+    window?.titleVisibility = .hidden
+  }
+
   // Animation: Exit FullScreen
   private func animateExitFromFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
     guard let window = window else { return }
@@ -2598,14 +2612,8 @@ class MainWindowController: PlayerWindowController {
 
       apply(visibility: .hidden, to: additionalInfoView)
 
-      // Hide during the animation:
-      apply(visibility: .hidden, documentIconButton, titleTextField)
-      for button in trafficLightButtons {
-        // Use alpha value alone for these buttons
-        button.alphaValue = 0
-        button.isHidden = false
-      }
-      window.titleVisibility = .hidden
+      // Hide traffic light buttons & title during the animation:
+      hideBuiltInTitleBarItems()
 
       fsState.startAnimatingToWindow()
 
