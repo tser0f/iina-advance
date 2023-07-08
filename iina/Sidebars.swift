@@ -317,7 +317,8 @@ extension MainWindowController {
 
       // TODO: finish sidebar window adjustments
 //      if let window = window, ΔW != 0 {
-//        let oldWindowFrame = window.frame
+//        let oldScaleFrame = ScalableWindowFrame(windowFrame: window.frame,
+//                                                videoSize: videoView.frame.size)
 //        let newWindowFrame = CGRect(x: oldWindowFrame.origin.x + ΔX, y: oldWindowFrame.origin.y,
 //                                    width: oldWindowFrame.width + ΔW, height: oldWindowFrame.height)
 //        window.setFrame(newWindowFrame, display: true, animate: true)
