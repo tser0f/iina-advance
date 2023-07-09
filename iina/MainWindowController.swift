@@ -2449,14 +2449,14 @@ class MainWindowController: PlayerWindowController {
       fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedFrame)
       Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedFrame)", level: .verbose)
 
-      // Hide traffic light buttons & title during the animation:
-      hideBuiltInTitleBarItems()
+      if !isLegacy {
+        // Hide traffic light buttons & title during the animation:
+        hideBuiltInTitleBarItems()
+      }
 
-      // Set the appearance to match the theme so the title bar matches the theme
-      let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
-      if #available(macOS 10.14, *) {
-        window.appearance = NSAppearance(iinaTheme: iinaTheme)
-      } else {
+      if #unavailable(macOS 10.14) {
+        // Set the appearance to match the theme so the title bar matches the theme
+        let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
         switch(iinaTheme) {
         case .dark, .ultraDark: window.appearance = NSAppearance(named: .vibrantDark)
         default: window.appearance = NSAppearance(named: .vibrantLight)
@@ -2578,9 +2578,6 @@ class MainWindowController: PlayerWindowController {
       /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
       /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
       /// but should be ok for brief animations
-      for button in trafficLightButtons {
-        button.alphaValue = 0
-      }
       button.alphaValue = 0
       button.isHidden = false
     }
@@ -2612,8 +2609,10 @@ class MainWindowController: PlayerWindowController {
 
       apply(visibility: .hidden, to: additionalInfoView)
 
-      // Hide traffic light buttons & title during the animation:
-      hideBuiltInTitleBarItems()
+      if !isLegacy {
+        // Hide traffic light buttons & title during the animation:
+        hideBuiltInTitleBarItems()
+      }
 
       fsState.startAnimatingToWindow()
 
@@ -2696,6 +2695,19 @@ class MainWindowController: PlayerWindowController {
 
       resetCollectionBehavior()
       updateWindowParametersForMPV()
+
+      if isLegacy {
+        // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
+        apply(visibility: transition.toLayout.titleIconAndText, documentIconButton, titleTextField)
+        for button in trafficLightButtons {
+          /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
+          /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
+          /// but should be ok for brief animations
+          button.alphaValue = 1
+          button.isHidden = true
+        }
+        window.titleVisibility = .visible
+      }
 
       player.events.emit(.windowFullscreenChanged, data: false)
     })
@@ -3024,15 +3036,11 @@ class MainWindowController: PlayerWindowController {
         if restartFadeTimer {
           resetFadeTimer()
         }
-        /// Special case for `trafficLightButtons` due to Apple quirk
+        /// Special case for `trafficLightButtons` due to AppKit quirk
         if currentLayout.trafficLightButtons == .showFadeable {
           for button in trafficLightButtons {
             button.isHidden = false
           }
-        }
-        /// Special case for title icon and text due to Apple quirk
-        if currentLayout.titleIconAndText == .showFadeable {
-          window?.titleVisibility = .visible
         }
       }
     })
@@ -3086,12 +3094,6 @@ class MainWindowController: PlayerWindowController {
           button.alphaValue = 0
         }
       }
-      /// Quirk 2: MUST set `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
-      /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
-      /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
-      if currentLayout.titleIconAndText == .showFadeable {
-        window?.titleVisibility = .hidden
-      }
     })
 
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
@@ -3141,41 +3143,34 @@ class MainWindowController: PlayerWindowController {
 
   @objc
   override func updateTitle() {
-    // Workaround for AppKit quirk: need to have title visible while changing title, or else document icon button can go missing.
-    var tasks = buildAnimationToShowFadeableViews()
-
-    tasks.append(UIAnimation.zeroDurationTask{ [self] in
-      if player.info.isNetworkResource {
-        window?.title = player.getMediaTitle()
+    if player.info.isNetworkResource {
+      window?.title = player.getMediaTitle()
+    } else {
+      window?.representedURL = player.info.currentURL
+      // Workaround for issue #3543, IINA crashes reporting:
+      // NSInvalidArgumentException [NSNextStepFrame _displayName]: unrecognized selector
+      // When running on an M1 under Big Sur and using legacy full screen.
+      //
+      // Changes in Big Sur broke the legacy full screen feature. The MainWindowController method
+      // legacyAnimateToFullscreen had to be changed to get this feature working again. Under Big
+      // Sur that method now calls "window.styleMask.remove(.titled)". Removing titled from the
+      // style mask causes the AppKit method NSWindow.setTitleWithRepresentedFilename to trigger the
+      // exception listed above. This appears to be a defect in the Cocoa framework. The window's
+      // title can still be set directly without triggering the exception. The problem seems to be
+      // isolated to the setTitleWithRepresentedFilename method, possibly only when running on an
+      // Apple Silicon based Mac. Based on the Apple documentation setTitleWithRepresentedFilename
+      // appears to be a convenience method. As a workaround for the issue directly set the window
+      // title.
+      //
+      // This problem has been reported to Apple as:
+      // "setTitleWithRepresentedFilename throws NSInvalidArgumentException: NSNextStepFrame _displayName"
+      // Feedback number FB9789129
+      if Preference.bool(for: .useLegacyFullScreen), #available(macOS 11, *) {
+        window?.title = player.info.currentURL?.lastPathComponent ?? ""
       } else {
-        window?.representedURL = player.info.currentURL
-        // Workaround for issue #3543, IINA crashes reporting:
-        // NSInvalidArgumentException [NSNextStepFrame _displayName]: unrecognized selector
-        // When running on an M1 under Big Sur and using legacy full screen.
-        //
-        // Changes in Big Sur broke the legacy full screen feature. The MainWindowController method
-        // legacyAnimateToFullscreen had to be changed to get this feature working again. Under Big
-        // Sur that method now calls "window.styleMask.remove(.titled)". Removing titled from the
-        // style mask causes the AppKit method NSWindow.setTitleWithRepresentedFilename to trigger the
-        // exception listed above. This appears to be a defect in the Cocoa framework. The window's
-        // title can still be set directly without triggering the exception. The problem seems to be
-        // isolated to the setTitleWithRepresentedFilename method, possibly only when running on an
-        // Apple Silicon based Mac. Based on the Apple documentation setTitleWithRepresentedFilename
-        // appears to be a convenience method. As a workaround for the issue directly set the window
-        // title.
-        //
-        // This problem has been reported to Apple as:
-        // "setTitleWithRepresentedFilename throws NSInvalidArgumentException: NSNextStepFrame _displayName"
-        // Feedback number FB9789129
-        if Preference.bool(for: .useLegacyFullScreen), #available(macOS 11, *) {
-          window?.title = player.info.currentURL?.lastPathComponent ?? ""
-        } else {
-          window?.setTitleWithRepresentedFilename(player.info.currentURL?.path ?? "")
-        }
+        window?.setTitleWithRepresentedFilename(player.info.currentURL?.path ?? "")
       }
-    })
-
-    animationQueue.run(tasks)
+    }
   }
 
   // MARK: - UI: OSD
