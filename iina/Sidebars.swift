@@ -444,7 +444,7 @@ extension MainWindowController {
   }
 
   private func updateLeadingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
-    Logger.log("LeadingSidebar showing: \(show) width: \(newWidth) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("\(show ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
     if show {
       switch placement {
       case .outsideVideo:
@@ -466,7 +466,7 @@ extension MainWindowController {
   }
 
   private func updateTrailingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
-    Logger.log("TrailingSidebar showing: \(show) width: \(newWidth) placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("\(show ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
     if show {
       switch placement {
       case .outsideVideo:

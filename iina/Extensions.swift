@@ -200,6 +200,7 @@ extension NSRect {
                   height: newSize.height)
   }
 
+  // TODO: find source of imprecision here
   func constrain(in biggerRect: NSRect) -> NSRect {
     // new size, keeping aspect ratio
     var newSize = size

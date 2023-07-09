@@ -3868,12 +3868,7 @@ class MainWindowController: PlayerWindowController {
       let newWindowOrigin = NSPoint(x: windowFrame.origin.x - deltaX,
                                     y: windowFrame.origin.y - deltaY)
 
-      /// If no change in size, skip changes to origin (also prevents window drift due to small imprecisions in `constrain()`)
-      if newWindowSize == self.windowFrame.size && (deltaX < 2 || deltaY < 2) {
-        return self
-      }
-
-      // Make sure the window is not offscreen
+      // Move window if needed to make sure the window is not offscreen
       let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: containerFrame)
       return self.clone(windowFrame: newWindowFrame)
     }
