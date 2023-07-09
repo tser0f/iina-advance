@@ -3763,38 +3763,55 @@ class MainWindowController: PlayerWindowController {
   }
 
   /**
-   ┌─────────────────────────────────────┐
-   │ `windowFrame`      ▲                │
-   │                    │`outsideTop`    │
-   │                    ▼                │
-   │             ┌───────┐               │
-   │◄───────────►│ Video │◄─────────────►│
-   │`outsideLeft`│ Frame │`outsideRight `│
-   │             └───────┘               │
-   │               ▲                     │
-   │               │ `outsideBottom`     │
-   │               ▼                     │
-   └─────────────────────────────────────┘
+   ┌───────────────────────────────────────────┐
+   │ `windowFrame`      ▲                      │
+   │                    │`topPanelHeight`      │
+   │                    ▼                      │
+   │                ┌───────┐                  │
+   │◄──────────────►│ Video │◄────────────────►│
+   │`leftPanelWidth`│ Frame │`rightPanelWidth `│
+   │                └───────┘                  │
+   │                  ▲                        │
+   │                  │ `bottomPanelHeight`    │
+   │                  ▼                        │
+   └───────────────────────────────────────────┘
    */
   struct ScalableWindowFrame {
     let windowFrame: NSRect
 
-    let outsideTop: CGFloat
-    let outsideRight: CGFloat
-    let outsideBottom: CGFloat
-    let outsideLeft: CGFloat
+    // Outside panels
+    let topPanelHeight: CGFloat
+    let rightPanelWidth: CGFloat
+    let bottomPanelHeight: CGFloat
+    let leftPanelWidth: CGFloat
 
     var videoSize: NSSize {
-      return NSSize(width: windowFrame.width - outsideRight - outsideLeft,
-                    height: windowFrame.height - outsideTop - outsideBottom)
+      assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
+      assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+      assert(bottomPanelHeight >= 0, "Expected bottomPanelHeight > 0, found \(bottomPanelHeight)")
+      assert(leftPanelWidth >= 0, "Expected leftPanelWidth > 0, found \(leftPanelWidth)")
+      assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+      return NSSize(width: windowFrame.width - rightPanelWidth - leftPanelWidth,
+                    height: windowFrame.height - topPanelHeight - bottomPanelHeight)
     }
 
     var outsidePanelsTotalSize: NSSize {
-      return NSSize(width: abs(windowFrame.width - videoSize.width), height: abs(windowFrame.height - videoSize.height))
+      return NSSize(width: rightPanelWidth + leftPanelWidth, height: topPanelHeight + bottomPanelHeight)
     }
 
     var minVideoSize: NSSize {
       return PlayerCore.minVideoSize
+    }
+
+    func clone(windowFrame: NSRect? = nil,
+               topPanelHeight: CGFloat? = nil, rightPanelWidth: CGFloat? = nil,
+               bottomPanelHeight: CGFloat? = nil, leftPanelWidth: CGFloat? = nil) -> ScalableWindowFrame {
+
+      return ScalableWindowFrame(windowFrame: windowFrame ?? self.windowFrame,
+                                 topPanelHeight: topPanelHeight ?? self.topPanelHeight,
+                                 rightPanelWidth: rightPanelWidth ?? self.rightPanelWidth,
+                                 bottomPanelHeight: bottomPanelHeight ?? self.bottomPanelHeight,
+                                 leftPanelWidth: leftPanelWidth ?? self.leftPanelWidth)
     }
 
     private func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
@@ -3803,6 +3820,10 @@ class MainWindowController: PlayerWindowController {
       let outsidePanelsSize = self.outsidePanelsTotalSize
       return NSSize(width: containerSize.width - outsidePanelsSize.width,
                     height: containerSize.height - outsidePanelsSize.height)
+    }
+
+    func constrainWithin(_ containerFrame: NSRect) -> ScalableWindowFrame {
+      return scale(desiredVideoSize: self.videoSize, constrainedWithin: containerFrame)
     }
 
     func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect) -> ScalableWindowFrame {
@@ -3834,17 +3855,55 @@ class MainWindowController: PlayerWindowController {
       let newWindowSize = NSSize(width: round(newVideoSize.width + outsidePanelsSize.width),
                                  height: round(newVideoSize.height + outsidePanelsSize.height))
 
-      // Round the results to prevent visible window drift when already at min size
+      // Round the results to prevent excessive window drift due to small imprecisions in calculation
       let deltaX = round((newVideoSize.width - videoSize.width) / 2)
       let deltaY = round((newVideoSize.height - videoSize.height) / 2)
       let newWindowOrigin = NSPoint(x: windowFrame.origin.x - deltaX,
                                     y: windowFrame.origin.y - deltaY)
 
+      /// If no change in size, skip changes to origin (also prevents window drift due to small imprecisions in `constrain()`)
+      if newWindowSize == self.windowFrame.size && (deltaX < 2 || deltaY < 2) {
+        return self
+      }
+
       // Make sure the window is not offscreen
       let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: containerFrame)
+      return self.clone(windowFrame: newWindowFrame)
+    }
+
+    func resizeOutsidePanels(newTopHeight: CGFloat? = nil, newRightWidth: CGFloat? = nil, newBottomHeight: CGFloat? = nil, newLeftWidth: CGFloat? = nil) -> ScalableWindowFrame {
+
+      var ΔW: CGFloat = 0
+      var ΔH: CGFloat = 0
+      var ΔX: CGFloat = 0
+      var ΔY: CGFloat = 0
+      if let newTopHeight = newTopHeight {
+        let ΔTop = abs(newTopHeight) - self.topPanelHeight
+        ΔH += ΔTop
+      }
+      if let newRightWidth = newRightWidth {
+        let ΔRight = abs(newRightWidth) - self.rightPanelWidth
+        ΔW += ΔRight
+      }
+      if let newBottomHeight = newBottomHeight {
+        let ΔBottom = abs(newBottomHeight) - self.bottomPanelHeight
+        ΔH += ΔBottom
+        ΔY -= ΔBottom
+      }
+      if let newLeftWidth = newLeftWidth {
+        let ΔLeft = abs(newLeftWidth) - self.leftPanelWidth
+        ΔW += ΔLeft
+        ΔX -= ΔLeft
+      }
+      let newWindowFrame = CGRect(x: windowFrame.origin.x + ΔX,
+                                  y: windowFrame.origin.y + ΔY,
+                                  width: windowFrame.width + ΔW,
+                                  height: windowFrame.height + ΔH)
       return ScalableWindowFrame(windowFrame: newWindowFrame,
-                                 outsideTop: self.outsideTop, outsideRight: self.outsideRight,
-                                 outsideBottom: self.outsideBottom, outsideLeft: self.outsideLeft)
+                                 topPanelHeight: newTopHeight ?? self.topPanelHeight,
+                                 rightPanelWidth: newRightWidth ?? self.rightPanelWidth,
+                                 bottomPanelHeight: newBottomHeight ?? self.bottomPanelHeight,
+                                 leftPanelWidth: newLeftWidth ?? self.leftPanelWidth)
     }
   }
 
@@ -3865,22 +3924,15 @@ class MainWindowController: PlayerWindowController {
                                                           fromVideoSize: fromVideoSize, fromWindowFrame: fromWindowFrame)
     window.setFrame(newWindowFrame, display: true, animate: animate)
   }
+  
 
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
   private func computeWindowFrameForVideoResize(toVideoSize desiredVideoSize: CGSize,
-                                                fromVideoSize: CGSize? = nil, fromWindowFrame: CGRect? = nil) -> NSRect {
+                                                fromVideoSize oldVideoSize: CGSize? = nil,
+                                                fromWindowFrame oldWindowFrame: CGRect? = nil) -> NSRect {
 
-    let oldWindowFrame = fromWindowFrame ?? window!.frame
-    let oldVideoSize = fromVideoSize ?? videoView.frame.size
-    /// `ScalableWindowFrame` wants to know space used by each outside panel individually.
-    /// We can't get that detail from the video size alone; we can only get their sum. But we don't really care because
-    /// we are just adjusting the center of the video anyway. Divide width and height by 2 to get the same result.
-    let halfOutsideWidth = (oldWindowFrame.width - oldVideoSize.width) / 2
-    let halfOutsideHeight = (oldWindowFrame.height - oldVideoSize.height) / 2
-
-    let oldScaleFrame = ScalableWindowFrame(windowFrame: oldWindowFrame,
-                                            outsideTop: halfOutsideHeight, outsideRight: halfOutsideWidth,
-                                            outsideBottom: halfOutsideHeight, outsideLeft: halfOutsideWidth)
+    let oldScaleFrame = buildScalableFrame(fromVideoSize: oldVideoSize ?? self.videoContainerView.frame.size,
+                                           fromWindowFrame: oldWindowFrame ?? self.window!.frame)
     let newScaleFrame = oldScaleFrame.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
 
     if Logger.isEnabled(.verbose) {
@@ -3889,6 +3941,32 @@ class MainWindowController: PlayerWindowController {
                  level: .verbose, subsystem: player.subsystem)
     }
     return newScaleFrame.windowFrame
+  }
+
+  func buildScalableFrame(fromVideoSize videoSize: CGSize, fromWindowFrame windowFrame: CGRect) -> ScalableWindowFrame {
+    /// `ScalableWindowFrame` wants to know space used by each outside panel individually.
+    /// We can't get that detail from the video size alone; we can only get their sum. But we don't really care because
+    /// we are just adjusting the center of the video anyway. Divide width and height by 2 to get the same result.
+    let halfOutsideWidth = abs(windowFrame.width - videoSize.width) / 2
+    let halfOutsideHeight = abs(windowFrame.height - videoSize.height) / 2
+
+    return ScalableWindowFrame(windowFrame: windowFrame,
+                               topPanelHeight: halfOutsideHeight, rightPanelWidth: halfOutsideWidth,
+                               bottomPanelHeight: halfOutsideHeight, leftPanelWidth: halfOutsideWidth)
+  }
+
+  func buildScalableFrame() -> ScalableWindowFrame {
+    let windowFrame = window!.frame
+    let videoFrame = videoContainerView.frame
+
+    let leftPanelWidth = videoContainerView.frame.origin.x
+    let bottomPanelHeight = videoContainerView.frame.origin.y
+    let rightPanelWidth = windowFrame.width - videoFrame.width - leftPanelWidth
+    let topPanelHeight = windowFrame.height - videoFrame.height - bottomPanelHeight
+
+    return ScalableWindowFrame(windowFrame: windowFrame,
+                               topPanelHeight: topPanelHeight, rightPanelWidth: rightPanelWidth,
+                               bottomPanelHeight: bottomPanelHeight, leftPanelWidth: leftPanelWidth)
   }
 
   // MARK: - UI: Others

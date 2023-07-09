@@ -304,34 +304,53 @@ extension MainWindowController {
     animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
                                            { [self] in
 
-      var ΔX: CGFloat = 0
-      var ΔW: CGFloat = 0
+      guard let window = window else { return }
+
+      var ΔLeft: CGFloat = 0
       if let leadingTab = leadingTab, changeLeading {
-        ΔW = executeChangeVisibilityTask2(forSidebar: leadingSidebar, tab: leadingTab, targetVisibility: leadingVisible)
-        ΔX = -ΔW
-
+        let currentWidth = leadingTab.group.width()
+        updateLeadingSidebarWidth(to: currentWidth, show: leadingVisible, placement: leadingSidebar.placement)
+        if leadingSidebar.placement == .outsideVideo {
+          ΔLeft = leadingVisible ? currentWidth : -currentWidth
+        }
+        /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
+        leadingSidebar.animationState = leadingVisible ? .willShow : .willHide
       }
+
+      var ΔRight: CGFloat = 0
       if let trailingTab = trailingTab, changeTrailing {
-        ΔW += executeChangeVisibilityTask2(forSidebar: trailingSidebar, tab: trailingTab, targetVisibility: trailingVisibile)
+        let currentWidth = trailingTab.group.width()
+        updateTrailingSidebarWidth(to: currentWidth, show: trailingVisibile, placement: trailingSidebar.placement)
+        if trailingSidebar.placement == .outsideVideo {
+          ΔRight = trailingVisibile ? currentWidth : -currentWidth
+        }
+        /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
+        trailingSidebar.animationState = trailingVisibile ? .willShow : .willHide
       }
 
-      // TODO: finish sidebar window adjustments
-//      if let window = window, ΔW != 0 {
-//        let oldScaleFrame = ScalableWindowFrame(windowFrame: window.frame,
-//                                                videoSize: videoView.frame.size)
-//        let newWindowFrame = CGRect(x: oldWindowFrame.origin.x + ΔX, y: oldWindowFrame.origin.y,
-//                                    width: oldWindowFrame.width + ΔW, height: oldWindowFrame.height)
-//        window.setFrame(newWindowFrame, display: true, animate: true)
-//      }
+      if ΔLeft != 0 || ΔRight != 0 {
+        // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
+        // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
+        // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
+        // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
+        let oldScaleFrame = buildScalableFrame()
+        let newScaleFrame = oldScaleFrame.resizeOutsidePanels(newRightWidth: oldScaleFrame.rightPanelWidth + ΔRight,
+                                                              newLeftWidth: oldScaleFrame.leftPanelWidth + ΔLeft)
+        let newWindowFrame = newScaleFrame.constrainWithin(bestScreen.visibleFrame).windowFrame
+
+        window.setFrame(newWindowFrame, display: true, animate: true)
+      }
+      updateSpacingForTitleBarAccessories()
+      window.contentView?.layoutSubtreeIfNeeded()
     }))
 
     // Task 3: Finish up state changes:
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       if let leadingTab = leadingTab, changeLeading {
-        executeChangeVisibilityTask3(forSidebar: leadingSidebar, tab: leadingTab, targetVisibility: leadingVisible)
+        executeChangeVisibilityTask3(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tab: leadingTab, targetVisibility: leadingVisible)
       }
       if let trailingTab = trailingTab, changeTrailing {
-        executeChangeVisibilityTask3(forSidebar: trailingSidebar, tab: trailingTab, targetVisibility: trailingVisibile)
+        executeChangeVisibilityTask3(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tab: trailingTab, targetVisibility: trailingVisibile)
       }
     })
 
@@ -391,43 +410,9 @@ extension MainWindowController {
     Logger.log("Pre-animation: intent is to \(show ? "show " : "hide ") \(sidebar.locationID)", level: .verbose, subsystem: player.subsystem)
   }
 
-  // Task 2: animate the change
-  private func executeChangeVisibilityTask2(forSidebar sidebar: Sidebar, tab: SidebarTab, targetVisibility show: Bool) -> CGFloat {
-    guard let contentView = window?.contentView else { return 0 }
-
-    let currentWidth = tab.group.width()
-    Logger.log("Latest sidebar width for group \(tab.group.rawValue.quoted): \(currentWidth)", level: .verbose, subsystem: player.subsystem)
-
-    var ΔW: CGFloat = 0
-    switch sidebar.locationID {
-    case .leadingSidebar:
-      updateLeadingSidebarWidth(to: currentWidth, show: show, placement: leadingSidebar.placement)
-      if leadingSidebar.placement == .outsideVideo {
-        ΔW = show ? currentWidth : -currentWidth
-      }
-
-    case .trailingSidebar:
-      updateTrailingSidebarWidth(to: currentWidth, show: show, placement: trailingSidebar.placement)
-      if trailingSidebar.placement == .outsideVideo {
-        ΔW = show ? currentWidth : -currentWidth
-      }
-    }
-
-    updateSpacingForTitleBarAccessories()
-    contentView.layoutSubtreeIfNeeded()
-    return ΔW
-  }
-
-  // Task 3: post-animation
-  private func executeChangeVisibilityTask3(forSidebar sidebar: Sidebar, tab: SidebarTab, targetVisibility show: Bool) {
-    let sidebarView: NSView
-    switch sidebar.locationID {
-    case .leadingSidebar:
-      sidebarView = leadingSidebarView
-    case .trailingSidebar:
-      sidebarView = trailingSidebarView
-    }
-
+  /// Task 3: post-animation
+  /// `sidebarView` should correspond to same side as `sidebar`
+  private func executeChangeVisibilityTask3(forSidebar sidebar: Sidebar, sidebarView: NSView, tab: SidebarTab, targetVisibility show: Bool) {
     if show {
       sidebar.animationState = .shown
       sidebar.visibleTab = tab
