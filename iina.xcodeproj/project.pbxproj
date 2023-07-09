@@ -1231,7 +1231,6 @@
 		8482985323C384A40088E223 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/PreferenceWindowController.strings; sourceTree = "<group>"; };
 		8482985523C384A80088E223 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/SubChooseViewController.strings; sourceTree = "<group>"; };
 		8482985623C384B00088E223 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		8482985723C384B70088E223 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		8482985823C384BA0088E223 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Contribution.rtf; sourceTree = "<group>"; };
 		8482985923C384CE0088E223 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/FilterPresets.strings; sourceTree = "<group>"; };
 		8482985A23C384F10088E223 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/KeyBinding.strings; sourceTree = "<group>"; };
@@ -3754,7 +3753,6 @@
 				5EF9F80121FB438200748374 /* pt-BR */,
 				845900DD220E134400B4A7C4 /* cs */,
 				84CE10B922E6EAA1008ED3AC /* pl */,
-				8482985723C384B70088E223 /* en */,
 				84B3B20723C0CEA200340754 /* tr */,
 				84EA52DF2404E83C00F7617A /* ca */,
 				348BFF4928DC5F2E0045F683 /* af */,
