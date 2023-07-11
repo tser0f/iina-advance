@@ -26,7 +26,6 @@
                 <outlet property="sectionWindowView" destination="D77-Iw-nrY" id="qGB-hx-chL"/>
                 <outlet property="showTitleBarTriggerContainerView" destination="yqi-SP-x25" id="dMG-VQ-dEu"/>
                 <outlet property="themeMenu" destination="Cpu-U2-hGC" id="jer-bS-DhW"/>
-                <outlet property="topPanelPlacementContainerView" destination="TRL-kd-T5g" id="IgL-Fu-uaM"/>
                 <outlet property="trailingSidebarBox" destination="4b0-vT-JOG" id="dyy-6J-QPV"/>
                 <outlet property="view" destination="Hz6-mo-xeY" id="0bl-1N-x8E"/>
                 <outlet property="windowPosBox" destination="Mye-uz-WUr" id="lyj-Yi-EMu"/>

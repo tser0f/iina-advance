@@ -213,14 +213,22 @@ extension MainWindowController {
   func hideAllSidebars(animate: Bool = true, then doAfter: TaskFunc? = nil) {
     Logger.log("Hiding all sidebars", level: .verbose, subsystem: player.subsystem)
 
-    changeVisibilityForSidebars(changeLeading: true, leadingVisible: false,
-                                changeTrailing: true, trailingVisibile: false,
+    changeVisibilityForSidebars(changeLeading: true, showLeading: false,
+                                changeTrailing: true, showTrailing: false,
                                 then: doAfter)
   }
 
-  func hideSidebarThenShowAgain(_ sidebarID: Preference.SidebarLocation) {
-    guard let sidebar = sidebarsByID[sidebarID], let tab = sidebar.visibleTab else { return }
-    changeVisibility(forTab: tab, to: false, then: {
+  func hideSidebarThenShowAgain(_ sidebar: Sidebar) {
+    guard let tab = sidebar.visibleTab else { return }
+
+    changeVisibility(forTab: tab, to: false, then: { [self] in
+      /// careful to update placement *AFTER* closing sidebar with old placement!
+      if sidebar.locationID == .leadingSidebar {
+        sidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
+      } else if sidebar.locationID == .trailingSidebar {
+        sidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
+      }
+
       self.changeVisibility(forTab: tab, to: true)
     })
   }
@@ -266,9 +274,9 @@ extension MainWindowController {
 
     let tabGroup = tab.group
     if leadingSidebar.tabGroups.contains(tabGroup) {
-      changeVisibilityForSidebars(changeLeading: true, leadingVisible: show, setLeadingTab: tab, then: doAfter)
+      changeVisibilityForSidebars(changeLeading: true, showLeading: show, setLeadingTab: tab, then: doAfter)
     } else if trailingSidebar.tabGroups.contains(tabGroup) {
-      changeVisibilityForSidebars(changeTrailing: true, trailingVisibile: show, setTrailingTab: tab, then: doAfter)
+      changeVisibilityForSidebars(changeTrailing: true, showTrailing: show, setTrailingTab: tab, then: doAfter)
     } else {
       // Should never happen
       Logger.log("Cannot change sidebar tab visibility: could not find tab for tabGroup: \(tabGroup.rawValue)", level: .error, subsystem: player.subsystem)
@@ -279,53 +287,108 @@ extension MainWindowController {
    In one case it is desired to closed both sidebars simultaneously. To do this safely, we need to add logic for both sidebars
    to each animation block.
    */
-  private func changeVisibilityForSidebars(changeLeading: Bool = false, leadingVisible: Bool = false, setLeadingTab: SidebarTab? = nil,
-                                           changeTrailing: Bool = false, trailingVisibile: Bool = false, setTrailingTab: SidebarTab? = nil,
+  private func changeVisibilityForSidebars(changeLeading: Bool = false, showLeading: Bool = false, setLeadingTab: SidebarTab? = nil,
+                                           changeTrailing: Bool = false, showTrailing: Bool = false, setTrailingTab: SidebarTab? = nil,
                                            then doAfter: TaskFunc? = nil) {
-    var animationTasks: [UIAnimation.Task] = []
+    guard let window = window else { return }
 
     let leadingTab = setLeadingTab ?? leadingSidebar.defaultTabToShow
-    assert(!changeLeading || !leadingVisible || leadingTab != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
+    assert(!changeLeading || !showLeading || leadingTab != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
     let trailingTab = setTrailingTab ?? trailingSidebar.defaultTabToShow
-    assert(!changeTrailing || !trailingVisibile || trailingTab != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
-    Logger.log("Changing visible state of sidebars. Leading:(change=\(changeLeading),visible=\(leadingVisible),tab=\(leadingTab != nil)), Trailing:(change=\(changeTrailing),visible=\(trailingVisibile),tab=\(trailingTab != nil)", level: .verbose, subsystem: player.subsystem)
+    assert(!changeTrailing || !showTrailing || trailingTab != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
+    Logger.log("Changing visibility of sidebars. Leading:(change=\(changeLeading),show=\(showLeading),hasTab=\(leadingTab != nil),placement=\(leadingSidebar.placement)), Trailing:(change=\(changeTrailing),show=\(showTrailing),hasTab=\(trailingTab != nil),placement=\(trailingSidebar.placement))", level: .verbose, subsystem: player.subsystem)
+
+    var animationTasks: [UIAnimation.Task] = []
 
     // Task 1: Needs to be in an animation task to make sure precedence rules are followed. But there is no visible animation.
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      if let leadingTab = leadingTab, changeLeading {
-        executeChangeVisibilityTask1(forSidebar: leadingSidebar, tab: leadingTab, targetVisibility: leadingVisible)
+      if let leadingTab = leadingTab, changeLeading && showLeading {  // PRE: LEADING
+        // - Remove old:
+
+        for constraint in [videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
+                           videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint,
+                           videoContainerLeadingToLeadingSidebarCropTrailingConstraint] {
+          if let constraint = constraint {
+            window.contentView?.removeConstraint(constraint)
+          }
+        }
+
+        for subview in leadingSidebarView.subviews {
+          // remove cropView without keeping a reference to it
+          if subview != leadingSidebarTrailingBorder {
+            subview.removeFromSuperview()
+          }
+        }
+
+        // - Add new:
+        let sidebarWidth = leadingTab.group.width()
+        let tabContainerView: NSView
+
+        if leadingSidebar.placement == .insideVideo {
+          tabContainerView = leadingSidebarView
+
+          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor)
+          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
+
+          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: sidebarWidth)
+          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
+        } else {
+          assert(leadingSidebar.placement == .outsideVideo)
+          let cropView = NSView()
+          leadingSidebarView.addSubview(cropView)
+          cropView.translatesAutoresizingMaskIntoConstraints = false
+          // Cling to superview for all sides but trailing:
+          cropView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor).isActive = true
+          cropView.topAnchor.constraint(equalTo: leadingSidebarView.topAnchor).isActive = true
+          cropView.bottomAnchor.constraint(equalTo: leadingSidebarView.bottomAnchor).isActive = true
+
+          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.trailingAnchor, constant: -sidebarWidth)
+          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
+
+          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.leadingAnchor, constant: 0)
+          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
+
+          // extra constraint for cropView:
+          videoContainerLeadingToLeadingSidebarCropTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+          videoContainerLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
+
+          tabContainerView = cropView
+        }
+
+        showSidebarPreAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTab)
       }
-      if let trailingTab = trailingTab, changeTrailing {
-        executeChangeVisibilityTask1(forSidebar: trailingSidebar, tab: trailingTab, targetVisibility: trailingVisibile)
+
+      if let trailingTab = trailingTab, changeTrailing && showTrailing {  // PRE: TRAILING
+        showSidebarPreAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: trailingSidebarView, tab: trailingTab)
       }
+
     })
 
     // Task 2: Animate the showing/hiding:
     animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
                                            { [self] in
-
-      guard let window = window else { return }
-
       var ΔLeft: CGFloat = 0
       if let leadingTab = leadingTab, changeLeading {
         let currentWidth = leadingTab.group.width()
-        updateLeadingSidebarWidth(to: currentWidth, show: leadingVisible, placement: leadingSidebar.placement)
+        updateLeadingSidebarWidth(to: currentWidth, show: showLeading, placement: leadingSidebar.placement)
         if leadingSidebar.placement == .outsideVideo {
-          ΔLeft = leadingVisible ? currentWidth : -currentWidth
+          leadingSidebarTrailingBorder.isHidden = !showLeading
+          ΔLeft = showLeading ? currentWidth : -currentWidth
         }
         /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
-        leadingSidebar.animationState = leadingVisible ? .willShow : .willHide
+        leadingSidebar.animationState = showLeading ? .willShow : .willHide
       }
 
       var ΔRight: CGFloat = 0
       if let trailingTab = trailingTab, changeTrailing {
         let currentWidth = trailingTab.group.width()
-        updateTrailingSidebarWidth(to: currentWidth, show: trailingVisibile, placement: trailingSidebar.placement)
+        updateTrailingSidebarWidth(to: currentWidth, show: showTrailing, placement: trailingSidebar.placement)
         if trailingSidebar.placement == .outsideVideo {
-          ΔRight = trailingVisibile ? currentWidth : -currentWidth
+          trailingSidebarLeadingBorder.isHidden = !showTrailing
+          ΔRight = showTrailing ? currentWidth : -currentWidth
         }
         /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
-        trailingSidebar.animationState = trailingVisibile ? .willShow : .willHide
+        trailingSidebar.animationState = showTrailing ? .willShow : .willHide
       }
 
       if ΔLeft != 0 || ΔRight != 0 {
@@ -347,10 +410,10 @@ extension MainWindowController {
     // Task 3: Finish up state changes:
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       if let leadingTab = leadingTab, changeLeading {
-        executeChangeVisibilityTask3(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tab: leadingTab, targetVisibility: leadingVisible)
+        changeVisibilityPostAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tab: leadingTab, show: showLeading)
       }
       if let trailingTab = trailingTab, changeTrailing {
-        executeChangeVisibilityTask3(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tab: trailingTab, targetVisibility: trailingVisibile)
+        changeVisibilityPostAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tab: trailingTab, show: showTrailing)
       }
     })
 
@@ -363,79 +426,86 @@ extension MainWindowController {
   }
 
   // Task 1: pre-animation
-  private func executeChangeVisibilityTask1(forSidebar sidebar: Sidebar, tab: SidebarTab, targetVisibility show: Bool) {
-    if show {
+  private func showSidebarPreAnimation(forSidebar sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: SidebarTab) {
+    Logger.log("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab",
+               level: .error, subsystem: player.subsystem)
 
-      // Update blending mode instantaneously. It doesn't animate well
-      updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
 
-      // Make it the active tab in its parent tab group (can do this whether or not it's shown):
-      switch tab.group {
-      case .playlist:
-        guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
-          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
-                     level: .error, subsystem: player.subsystem)
-          return
-        }
-        self.playlistView.pleaseSwitchToTab(tabType)
-      case .settings:
-        guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
-          Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
-                     level: .error, subsystem: player.subsystem)
-          return
-        }
-        self.quickSettingView.pleaseSwitchToTab(tabType)
-      }
+    let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
+    let tabGroupView = viewController.view
 
-      let sidebarView: NSView
-      switch sidebar.locationID {
-      case .leadingSidebar:
-        leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
-        sidebarView = leadingSidebarView
-      case .trailingSidebar:
-        trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
-        sidebarView = trailingSidebarView
-      }
+    tabContainerView.addSubview(tabGroupView)
+    tabGroupView.leadingAnchor.constraint(equalTo: tabContainerView.leadingAnchor).isActive = true
+    tabGroupView.trailingAnchor.constraint(equalTo: tabContainerView.trailingAnchor).isActive = true
+    tabGroupView.topAnchor.constraint(equalTo: tabContainerView.topAnchor).isActive = true
+    tabGroupView.bottomAnchor.constraint(equalTo: tabContainerView.bottomAnchor).isActive = true
 
-      sidebarView.isHidden = false
 
-      // add view and constraints
-      let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
-      let tabGroupView = viewController.view
-      sidebarView.addSubview(tabGroupView)
-      tabGroupView.heightAnchor.constraint(equalTo: sidebarView.heightAnchor).isActive = true
-      tabGroupView.widthAnchor.constraint(equalTo: sidebarView.widthAnchor).isActive = true
+    sidebarView.isHidden = false
+
+    if sidebar.placement == .outsideVideo {
+      // Put behind video so that:
+      // (1) Sidebar doesn't cast a shadow on the video, and
+      // (2) Avoids ghosting effect during "slide in" / "slide out" for sidebar open/close
+      window!.contentView!.addSubview(sidebarView, positioned: .below, relativeTo: videoContainerView)
+    } else {
+      // Cast shadow over the video to indicate it is on top of it
+      window!.contentView!.addSubview(sidebarView, positioned: .above, relativeTo: videoContainerView)
     }
-    
-    Logger.log("Pre-animation: intent is to \(show ? "show " : "hide ") \(sidebar.locationID)", level: .verbose, subsystem: player.subsystem)
+
+    // Update blending mode instantaneously. It doesn't animate well
+    updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
+
+    // Make it the active tab in its parent tab group (can do this whether or not it's shown):
+    switch tab.group {
+    case .playlist:
+      guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.playlistView.pleaseSwitchToTab(tabType)
+    case .settings:
+      guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.quickSettingView.pleaseSwitchToTab(tabType)
+    }
+
+
+    window?.layoutIfNeeded()
   }
 
   /// Task 3: post-animation
   /// `sidebarView` should correspond to same side as `sidebar`
-  private func executeChangeVisibilityTask3(forSidebar sidebar: Sidebar, sidebarView: NSView, tab: SidebarTab, targetVisibility show: Bool) {
+  private func changeVisibilityPostAnimation(forSidebar sidebar: Sidebar, sidebarView: NSView, tab: SidebarTab, show: Bool) {
+    Logger.log("ChangeVisibility post-animation: finishing setting \(sidebar.locationID) to: \(show)", level: .verbose, subsystem: player.subsystem)
     if show {
       sidebar.animationState = .shown
       sidebar.visibleTab = tab
     } else {  // hide
       sidebar.visibleTab = nil
-      sidebarView.subviews.removeAll()
+      /// Remove `tabGroupView` from its parent (also removes constraints):
+      let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
+      viewController.view.removeFromSuperview()
       sidebarView.isHidden = true
       sidebar.animationState = .hidden
     }
-    Logger.log("Animation done: changed animationState of \(sidebar.locationID) to: \(sidebar.animationState)", level: .verbose, subsystem: player.subsystem)
   }
 
   func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
     switch sidebarID {
     case .leadingSidebar:
       // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-      if Preference.enum(for: .leadingSidebarPlacement) == Preference.PanelPlacement.insideVideo || layout.isFullScreen {
+      if leadingSidebar.placement == .insideVideo || layout.isFullScreen {
         leadingSidebarView.blendingMode = .withinWindow
       } else {
         leadingSidebarView.blendingMode = .behindWindow
       }
     case .trailingSidebar:
-      if Preference.enum(for: .trailingSidebarPlacement) == Preference.PanelPlacement.insideVideo || layout.isFullScreen {
+      if trailingSidebar.placement == .insideVideo || layout.isFullScreen {
         trailingSidebarView.blendingMode = .withinWindow
       } else {
         trailingSidebarView.blendingMode = .behindWindow
@@ -445,23 +515,28 @@ extension MainWindowController {
 
   private func updateLeadingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
     Logger.log("\(show ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
-    if show {
-      switch placement {
-      case .outsideVideo:
+
+    switch placement {
+    case .insideVideo:
+      if show {
+        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(0)
+        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(-newWidth)
+        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
+      } else {
+        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
+        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(0)
+        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
+      }
+    case .outsideVideo:
+      if show {
         videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
         videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(0)
         videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(newWidth)
-      case .insideVideo:
+      } else {
         videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(0)
         videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(-newWidth)
         videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
       }
-    } else {
-      /// Slide left to hide
-      videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
-      // FIXME: add superview for sidebars
-      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(0)
-      videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
     }
   }
 
@@ -469,19 +544,22 @@ extension MainWindowController {
     Logger.log("\(show ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
     if show {
       switch placement {
-      case .outsideVideo:
-        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
-        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
-        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(-newWidth)
       case .insideVideo:
         videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
         videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(0)
         videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
+        //        trailingSidebarLeadingToContentViewTrailingConstraint.animateToConstant(-newWidth)
+      case .outsideVideo:
+        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
+        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
+        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(-newWidth)
+//        trailingSidebarLeadingToContentViewTrailingConstraint.animateToConstant(-newWidth)
       }
     } else {
-      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
+      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
       videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
       videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
+//      trailingSidebarLeadingToContentViewTrailingConstraint.animateToConstant(0)
     }
   }
 

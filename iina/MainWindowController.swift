@@ -462,11 +462,15 @@ class MainWindowController: PlayerWindowController {
     case PK.leadingSidebarPlacement.rawValue:
       if leadingSidebar.isVisible {
         // Close whatever is showing, then open with new placement:
-        hideSidebarThenShowAgain(leadingSidebar.locationID)
+        hideSidebarThenShowAgain(leadingSidebar)
+      } else {
+        leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
       }
     case PK.trailingSidebarPlacement.rawValue:
       if trailingSidebar.isVisible {
-        hideSidebarThenShowAgain(trailingSidebar.locationID)
+        hideSidebarThenShowAgain(trailingSidebar)
+      } else {
+        trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
       }
     case PK.settingsTabGroupLocation.rawValue:
       if let newRawValue = change[.newKey] as? Int, let newLocationID = Preference.SidebarLocation(rawValue: newRawValue) {
@@ -520,6 +524,9 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var videoContainerLeadingOffsetFromContentViewLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint: NSLayoutConstraint!
+
+  @IBOutlet weak var videoContainerLeadingToLeadingSidebarCropTrailingConstraint: NSLayoutConstraint!
+
 
   // - Trailing sidebar constraints
   @IBOutlet weak var videoContainerTrailingOffsetFromContentViewTrailingConstraint: NSLayoutConstraint!
@@ -578,7 +585,9 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var leftArrowButton: NSButton!
   @IBOutlet weak var rightArrowButton: NSButton!
   @IBOutlet weak var leadingSidebarView: NSVisualEffectView!
+  @IBOutlet weak var leadingSidebarTrailingBorder: NSBox!  // shown if leading sidebar is "outside"
   @IBOutlet weak var trailingSidebarView: NSVisualEffectView!
+  @IBOutlet weak var trailingSidebarLeadingBorder: NSBox!  // shown if trailing sidebar is "outside"
   @IBOutlet weak var bottomView: NSView!
   @IBOutlet weak var bufferIndicatorView: NSVisualEffectView!
   @IBOutlet weak var bufferProgressLabel: NSTextField!
@@ -1035,6 +1044,13 @@ class MainWindowController: PlayerWindowController {
     contentView.removeConstraint(topPanelTrailingSpaceConstraint)
 
     switch placement {
+    case .insideVideo:
+      // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
+      topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+      topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+
+      // Sidebars cast shadow on top panel
+      contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
     case .outsideVideo:
       // Align left & right sides with window (sidebars go below top panel)
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
@@ -1044,13 +1060,6 @@ class MainWindowController: PlayerWindowController {
       /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
       /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
       contentView.addSubview(topPanelView, positioned: .above, relativeTo: trailingSidebarView)
-    case .insideVideo:
-      // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
-      topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-      topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
-
-      // Sidebars cast shadow on top panel
-      contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
     }
     topPanelLeadingSpaceConstraint.isActive = true
     topPanelTrailingSpaceConstraint.isActive = true
@@ -1061,14 +1070,14 @@ class MainWindowController: PlayerWindowController {
     Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
 
     switch placement {
-    case .outsideVideo:
-      videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(topPanelHeight)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topPanelHeight)
     case .insideVideo:
       videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(-topPanelHeight)
       videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(0)
       videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0)
+    case .outsideVideo:
+      videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
+      videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(topPanelHeight)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topPanelHeight)
     }
   }
 
@@ -1079,6 +1088,15 @@ class MainWindowController: PlayerWindowController {
     contentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
 
     switch placement {
+    case .insideVideo:
+      controlBarBottomTopBorder.isHidden = true
+
+      // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
+      bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+      bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+
+      // Sidebars cast shadow on bottom OSC
+      contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
     case .outsideVideo:
       controlBarBottomTopBorder.isHidden = false
 
@@ -1090,15 +1108,6 @@ class MainWindowController: PlayerWindowController {
       /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
       /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
       contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: trailingSidebarView)
-    case .insideVideo:
-      controlBarBottomTopBorder.isHidden = true
-
-      // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
-      bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-      bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
-
-      // Sidebars cast shadow on bottom OSC
-      contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
     }
     bottomPanelLeadingSpaceConstraint.isActive = true
     bottomPanelTrailingSpaceConstraint.isActive = true
@@ -1109,14 +1118,14 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Updating bottomOSC height to: \(bottomOSCHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
 
     switch placement {
-    case .outsideVideo:
-      videoContainerBottomOffsetFromBottomPanelTopConstraint.animateToConstant(0)
-      videoContainerBottomOffsetFromBottomPanelBottomConstraint.animateToConstant(-bottomOSCHeight)
-      videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomOSCHeight)
     case .insideVideo:
       videoContainerBottomOffsetFromBottomPanelTopConstraint.animateToConstant(bottomOSCHeight)
       videoContainerBottomOffsetFromBottomPanelBottomConstraint.animateToConstant(0)
       videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(0)
+    case .outsideVideo:
+      videoContainerBottomOffsetFromBottomPanelTopConstraint.animateToConstant(0)
+      videoContainerBottomOffsetFromBottomPanelBottomConstraint.animateToConstant(-bottomOSCHeight)
+      videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomOSCHeight)
     }
   }
 
