@@ -449,10 +449,7 @@
                     <visualEffectView identifier="Leading-Sidebar-View" wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="XBs-34-TIm" userLabel="Leading-Sidebar View">
                         <rect key="frame" x="-360" y="0.0" width="360" height="400"/>
                         <subviews>
-                            <customView identifier="Leading-Sidebar-Crop-View" translatesAutoresizingMaskIntoConstraints="NO" id="Niy-td-VFk" userLabel="Leading-SIdebar-Crop View">
-                                <rect key="frame" x="0.0" y="0.0" width="360" height="400"/>
-                            </customView>
-                            <box identifier="LeadingSidebaTrailingBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="b0r-Lt-vGM" userLabel="Leading-Sidebar-Trailing-Border Box">
+                            <box identifier="LeadingSidebaTrailingBorder" hidden="YES" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="b0r-Lt-vGM" userLabel="Leading-Sidebar-Trailing-Border Box">
                                 <rect key="frame" x="359" y="0.0" width="1" height="400"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="1" id="Nrg-ko-Ehg"/>
@@ -463,9 +460,6 @@
                         </subviews>
                         <constraints>
                             <constraint firstItem="b0r-Lt-vGM" firstAttribute="top" secondItem="XBs-34-TIm" secondAttribute="top" id="0t5-Ws-sUl"/>
-                            <constraint firstItem="Niy-td-VFk" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="leading" id="Bco-8d-IsA"/>
-                            <constraint firstItem="Niy-td-VFk" firstAttribute="top" secondItem="XBs-34-TIm" secondAttribute="top" id="Dua-l7-jFe"/>
-                            <constraint firstAttribute="bottom" secondItem="Niy-td-VFk" secondAttribute="bottom" id="YXl-1n-UIC"/>
                             <constraint firstItem="b0r-Lt-vGM" firstAttribute="bottom" secondItem="XBs-34-TIm" secondAttribute="bottom" id="vgH-Cz-bFf"/>
                             <constraint firstItem="b0r-Lt-vGM" firstAttribute="trailing" secondItem="XBs-34-TIm" secondAttribute="trailing" id="wW0-Ry-p6J"/>
                         </constraints>
@@ -476,30 +470,19 @@
                     <visualEffectView identifier="Trailing-Sidebar-View" wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="epo-S6-QVB" userLabel="Trailing-Sidebar View">
                         <rect key="frame" x="640" y="0.0" width="360" height="400"/>
                         <subviews>
-                            <customView identifier="Trailing-Sidebar-Crop-View" translatesAutoresizingMaskIntoConstraints="NO" id="cld-fb-Srh" userLabel="Trailing-SIdebar-Crop View">
-                                <rect key="frame" x="0.0" y="0.0" width="360" height="400"/>
-                                <subviews>
-                                    <box identifier="TrailingSidebarLeadingBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="exJ-CB-MoS" userLabel="Trailing-Sidebar-Leading-Border Box">
-                                        <rect key="frame" x="0.0" y="0.0" width="1" height="400"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="1" id="7ax-5F-2KJ"/>
-                                        </constraints>
-                                        <color key="borderColor" red="0.48627450979999998" green="0.48627450979999998" blue="0.48627450979999998" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                        <color key="fillColor" name="quaternaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                    </box>
-                                </subviews>
+                            <box identifier="TrailingSidebarLeadingBorder" hidden="YES" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="exJ-CB-MoS" userLabel="Trailing-Sidebar-Leading-Border Box">
+                                <rect key="frame" x="0.0" y="0.0" width="1" height="400"/>
                                 <constraints>
-                                    <constraint firstItem="exJ-CB-MoS" firstAttribute="top" secondItem="cld-fb-Srh" secondAttribute="top" id="P3t-Az-5lt"/>
-                                    <constraint firstItem="exJ-CB-MoS" firstAttribute="leading" secondItem="cld-fb-Srh" secondAttribute="leading" id="PPT-yj-cPy"/>
-                                    <constraint firstAttribute="bottom" secondItem="exJ-CB-MoS" secondAttribute="bottom" id="ccM-xz-oc9"/>
+                                    <constraint firstAttribute="width" constant="1" id="7ax-5F-2KJ"/>
                                 </constraints>
-                            </customView>
+                                <color key="borderColor" red="0.48627450979999998" green="0.48627450979999998" blue="0.48627450979999998" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="fillColor" name="quaternaryLabelColor" catalog="System" colorSpace="catalog"/>
+                            </box>
                         </subviews>
                         <constraints>
-                            <constraint firstItem="cld-fb-Srh" firstAttribute="top" secondItem="epo-S6-QVB" secondAttribute="top" id="7RI-0F-ICE"/>
-                            <constraint firstItem="cld-fb-Srh" firstAttribute="leading" secondItem="epo-S6-QVB" secondAttribute="leading" id="9ke-5i-JFn"/>
-                            <constraint firstAttribute="trailing" secondItem="cld-fb-Srh" secondAttribute="trailing" id="XrU-RW-7bg"/>
-                            <constraint firstAttribute="bottom" secondItem="cld-fb-Srh" secondAttribute="bottom" id="lIc-eB-loG"/>
+                            <constraint firstItem="exJ-CB-MoS" firstAttribute="top" secondItem="epo-S6-QVB" secondAttribute="top" id="Wmi-nN-kAu"/>
+                            <constraint firstItem="exJ-CB-MoS" firstAttribute="leading" secondItem="epo-S6-QVB" secondAttribute="leading" id="jCv-Ul-U1b"/>
+                            <constraint firstAttribute="bottom" secondItem="exJ-CB-MoS" secondAttribute="bottom" id="szs-cQ-8Cu"/>
                         </constraints>
                         <shadow key="shadow" blurRadius="12">
                             <color key="color" white="0.0" alpha="0.5" colorSpace="calibratedWhite"/>
@@ -547,10 +530,10 @@
                     <constraint firstItem="XBs-34-TIm" firstAttribute="trailing" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="-8" identifier="leadingSidebarToOSDSpaceConstraint" id="LBY-By-mfi"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Tdb-EA-alw" secondAttribute="trailing" id="Mqd-Wb-vqq"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="trailing" constant="-360" identifier="videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint" id="PAj-s6-32e"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="Niy-td-VFk" secondAttribute="leading" constant="360" identifier="videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint" id="PMP-ks-GY2"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="leading" constant="360" identifier="videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint" id="PMP-ks-GY2"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" id="RFd-ZJ-29u"/>
                     <constraint firstItem="Qbi-jx-9pO" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="RUl-l8-s3i"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="Niy-td-VFk" secondAttribute="trailing" identifier="videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint" id="Uue-Qa-4ao"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint" id="Uue-Qa-4ao"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="Vtd-0f-x7p"/>
                     <constraint firstItem="DFb-1L-U9o" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="bottomPanelLeadingSpaceConstraint" id="Wkx-hm-sJ4"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerY" secondItem="3nL-Ky-Hfa" secondAttribute="centerY" id="XlV-7n-jPb"/>

@@ -302,7 +302,8 @@ extension MainWindowController {
 
     // Task 1: Needs to be in an animation task to make sure precedence rules are followed. But there is no visible animation.
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      if let leadingTab = leadingTab, changeLeading && showLeading {  // PRE: LEADING
+      // PRE: LEADING
+      if let leadingTab = leadingTab, changeLeading && showLeading {
         // - Remove old:
 
         for constraint in [videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
@@ -328,10 +329,8 @@ extension MainWindowController {
           tabContainerView = leadingSidebarView
 
           videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor)
-          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
 
           videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: sidebarWidth)
-          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
         } else {
           assert(leadingSidebar.placement == .outsideVideo)
           let cropView = NSView()
@@ -342,23 +341,27 @@ extension MainWindowController {
           cropView.topAnchor.constraint(equalTo: leadingSidebarView.topAnchor).isActive = true
           cropView.bottomAnchor.constraint(equalTo: leadingSidebarView.bottomAnchor).isActive = true
 
+          tabContainerView = cropView
+
           videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.trailingAnchor, constant: -sidebarWidth)
-          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
 
           videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.leadingAnchor, constant: 0)
-          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
 
           // extra constraint for cropView:
           videoContainerLeadingToLeadingSidebarCropTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
           videoContainerLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
-
-          tabContainerView = cropView
         }
+        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
+        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
 
         showSidebarPreAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTab)
       }
 
-      if let trailingTab = trailingTab, changeTrailing && showTrailing {  // PRE: TRAILING
+      // PRE: TRAILING
+      if let trailingTab = trailingTab, changeTrailing && showTrailing {
+
+
+        
         showSidebarPreAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: trailingSidebarView, tab: trailingTab)
       }
 

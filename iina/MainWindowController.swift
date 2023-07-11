@@ -1049,8 +1049,10 @@ class MainWindowController: PlayerWindowController {
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
 
-      // Sidebars cast shadow on top panel
-      contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
+      if leadingSidebar.placement == .insideVideo {
+        // Sidebars cast shadow on top panel
+        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
+      }
     case .outsideVideo:
       // Align left & right sides with window (sidebars go below top panel)
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
@@ -1095,8 +1097,10 @@ class MainWindowController: PlayerWindowController {
       bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
 
-      // Sidebars cast shadow on bottom OSC
-      contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
+      if leadingSidebar.placement == .insideVideo {
+        // Sidebars cast shadow on bottom OSC
+        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
+      }
     case .outsideVideo:
       controlBarBottomTopBorder.isHidden = false
 
