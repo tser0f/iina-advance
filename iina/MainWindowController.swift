@@ -527,11 +527,12 @@ class MainWindowController: PlayerWindowController {
 
   @IBOutlet weak var videoContainerLeadingToLeadingSidebarCropTrailingConstraint: NSLayoutConstraint!
 
-
   // - Trailing sidebar constraints
   @IBOutlet weak var videoContainerTrailingOffsetFromContentViewTrailingConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint: NSLayoutConstraint!
+
+  @IBOutlet weak var videoContainerTrailingToTrailingSidebarCropLeadingConstraint: NSLayoutConstraint!
 
   /**
    OSD: shown here in "upper-left" configuration.
@@ -1051,6 +1052,8 @@ class MainWindowController: PlayerWindowController {
 
       if leadingSidebar.placement == .insideVideo {
         // Sidebars cast shadow on top panel
+        /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
+        /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
         contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
       }
     case .outsideVideo:
@@ -1099,6 +1102,8 @@ class MainWindowController: PlayerWindowController {
 
       if leadingSidebar.placement == .insideVideo {
         // Sidebars cast shadow on bottom OSC
+        /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
+        /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
         contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
       }
     case .outsideVideo:

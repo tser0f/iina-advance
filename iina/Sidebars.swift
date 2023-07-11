@@ -300,71 +300,18 @@ extension MainWindowController {
 
     var animationTasks: [UIAnimation.Task] = []
 
-    // Task 1: Needs to be in an animation task to make sure precedence rules are followed. But there is no visible animation.
+    // Task 1: No visible animation, but if opening the sidebar, need to modify layout
+    // (will be very different for "insideVideo" vs "outsideVideo" placement)
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      // PRE: LEADING
+      // Leading
       if let leadingTab = leadingTab, changeLeading && showLeading {
-        // - Remove old:
-
-        for constraint in [videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
-                           videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint,
-                           videoContainerLeadingToLeadingSidebarCropTrailingConstraint] {
-          if let constraint = constraint {
-            window.contentView?.removeConstraint(constraint)
-          }
-        }
-
-        for subview in leadingSidebarView.subviews {
-          // remove cropView without keeping a reference to it
-          if subview != leadingSidebarTrailingBorder {
-            subview.removeFromSuperview()
-          }
-        }
-
-        // - Add new:
-        let sidebarWidth = leadingTab.group.width()
-        let tabContainerView: NSView
-
-        if leadingSidebar.placement == .insideVideo {
-          tabContainerView = leadingSidebarView
-
-          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor)
-
-          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: sidebarWidth)
-        } else {
-          assert(leadingSidebar.placement == .outsideVideo)
-          let cropView = NSView()
-          leadingSidebarView.addSubview(cropView)
-          cropView.translatesAutoresizingMaskIntoConstraints = false
-          // Cling to superview for all sides but trailing:
-          cropView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor).isActive = true
-          cropView.topAnchor.constraint(equalTo: leadingSidebarView.topAnchor).isActive = true
-          cropView.bottomAnchor.constraint(equalTo: leadingSidebarView.bottomAnchor).isActive = true
-
-          tabContainerView = cropView
-
-          videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.trailingAnchor, constant: -sidebarWidth)
-
-          videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.leadingAnchor, constant: 0)
-
-          // extra constraint for cropView:
-          videoContainerLeadingToLeadingSidebarCropTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-          videoContainerLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
-        }
-        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
-        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
-
-        showSidebarPreAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTab)
+        prepareLayoutForOpeningLeadingSidebar(toTab: leadingTab)
       }
 
-      // PRE: TRAILING
+      // Trailing
       if let trailingTab = trailingTab, changeTrailing && showTrailing {
-
-
-        
-        showSidebarPreAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: trailingSidebarView, tab: trailingTab)
+        prepareLayoutForOpeningTrailingSidebar(toTab: trailingTab)
       }
-
     })
 
     // Task 2: Animate the showing/hiding:
@@ -428,8 +375,120 @@ extension MainWindowController {
     animationQueue.run(animationTasks)
   }
 
+  /// Should be called prior to opening the "leading" sidebar
+  private func prepareLayoutForOpeningLeadingSidebar(toTab leadingTab: SidebarTab) {
+    guard let window = window else { return }
+
+    // - Remove old:
+    for constraint in [videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
+                       videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint,
+                       videoContainerLeadingToLeadingSidebarCropTrailingConstraint] {
+      if let constraint = constraint {
+        window.contentView?.removeConstraint(constraint)
+      }
+    }
+
+    for subview in leadingSidebarView.subviews {
+      // remove cropView without keeping a reference to it
+      if subview != leadingSidebarTrailingBorder {
+        subview.removeFromSuperview()
+      }
+    }
+
+    // - Add new:
+    let sidebarWidth = leadingTab.group.width()
+    let tabContainerView: NSView
+
+    if leadingSidebar.placement == .insideVideo {
+      tabContainerView = leadingSidebarView
+
+      // Same as in the XIB
+      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor)
+      videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: sidebarWidth)
+    } else {
+      assert(leadingSidebar.placement == .outsideVideo)
+      let cropView = NSView()
+      cropView.identifier = NSUserInterfaceItemIdentifier(rawValue: "leadingSidebarCropView")
+      leadingSidebarView.addSubview(cropView)
+      cropView.translatesAutoresizingMaskIntoConstraints = false
+      // Cling to superview for all sides but trailing:
+      cropView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor).isActive = true
+      cropView.topAnchor.constraint(equalTo: leadingSidebarView.topAnchor).isActive = true
+      cropView.bottomAnchor.constraint(equalTo: leadingSidebarView.bottomAnchor).isActive = true
+
+      tabContainerView = cropView
+
+      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.trailingAnchor, constant: -sidebarWidth)
+      videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.leadingAnchor, constant: 0)
+
+      // extra constraint for cropView:
+      videoContainerLeadingToLeadingSidebarCropTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+      videoContainerLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
+    }
+    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
+    videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
+
+    prepareLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTab)
+  }
+
+  /// Should be called prior to opening the "trailing" sidebar
+  private func prepareLayoutForOpeningTrailingSidebar(toTab trailingTab: SidebarTab) {
+    guard let window = window else { return }
+
+    // - Remove old:
+    for constraint in [videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint,
+                       videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint,
+                       videoContainerTrailingToTrailingSidebarCropLeadingConstraint] {
+      if let constraint = constraint {
+        window.contentView?.removeConstraint(constraint)
+      }
+    }
+
+    for subview in trailingSidebarView.subviews {
+      // remove cropView without keeping a reference to it
+      if subview != trailingSidebarLeadingBorder {
+        subview.removeFromSuperview()
+      }
+    }
+
+    // - Add new:
+    let sidebarWidth = trailingTab.group.width()
+    let tabContainerView: NSView
+
+    if trailingSidebar.placement == .insideVideo {
+      tabContainerView = trailingSidebarView
+
+      // Same as in the XIB
+      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+      videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.trailingAnchor, constant: -sidebarWidth)
+    } else {
+      assert(trailingSidebar.placement == .outsideVideo)
+      let cropView = NSView()
+      cropView.identifier = NSUserInterfaceItemIdentifier(rawValue: "trailingSidebarCropView")
+      trailingSidebarView.addSubview(cropView)
+      cropView.translatesAutoresizingMaskIntoConstraints = false
+      // Cling to superview for all sides but leading:
+      cropView.trailingAnchor.constraint(equalTo: trailingSidebarView.trailingAnchor).isActive = true
+      cropView.topAnchor.constraint(equalTo: trailingSidebarView.topAnchor).isActive = true
+      cropView.bottomAnchor.constraint(equalTo: trailingSidebarView.bottomAnchor).isActive = true
+
+      tabContainerView = cropView
+
+      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: cropView.leadingAnchor, constant: sidebarWidth)
+      videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: cropView.trailingAnchor, constant: 0)
+
+      // extra constraint for cropView:
+      videoContainerTrailingToTrailingSidebarCropLeadingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+      videoContainerTrailingToTrailingSidebarCropLeadingConstraint.isActive = true
+    }
+    videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.isActive = true
+    videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.isActive = true
+
+    prepareLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: trailingTab)
+  }
+
   // Task 1: pre-animation
-  private func showSidebarPreAnimation(forSidebar sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: SidebarTab) {
+  private func prepareLayoutForOpening(sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: SidebarTab) {
     Logger.log("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab",
                level: .error, subsystem: player.subsystem)
 
@@ -545,24 +604,27 @@ extension MainWindowController {
 
   private func updateTrailingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
     Logger.log("\(show ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
-    if show {
-      switch placement {
-      case .insideVideo:
+    switch placement {
+    case .insideVideo:
+      if show {
         videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
         videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(0)
         videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
-        //        trailingSidebarLeadingToContentViewTrailingConstraint.animateToConstant(-newWidth)
-      case .outsideVideo:
+      } else {
+        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
+        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
+        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
+      }
+    case .outsideVideo:
+      if show {
         videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
         videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
         videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(-newWidth)
-//        trailingSidebarLeadingToContentViewTrailingConstraint.animateToConstant(-newWidth)
+      } else {
+        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
+        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(0)
+        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
       }
-    } else {
-      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
-      videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
-      videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
-//      trailingSidebarLeadingToContentViewTrailingConstraint.animateToConstant(0)
     }
   }
 
