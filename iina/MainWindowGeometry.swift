@@ -1,0 +1,167 @@
+//
+//  MainWindowGeometry.swift
+//  iina
+//
+//  Created by Matt Svoboda on 7/11/23.
+//  Copyright © 2023 lhc. All rights reserved.
+//
+
+import Foundation
+
+/**
+ ┌───────────────────────────────────────────┐
+ │ `windowFrame`      ▲                      │
+ │                    │`topPanelHeight`      │
+ │                    ▼                      │
+ │                ┌───────┐                  │
+ │◄──────────────►│ Video │◄────────────────►│
+ │`leftPanelWidth`│ Frame │`rightPanelWidth `│
+ │                └───────┘                  │
+ │                  ▲                        │
+ │                  │ `bottomPanelHeight`    │
+ │                  ▼                        │
+ └───────────────────────────────────────────┘
+ */
+struct MainWindowGeometry {
+  let windowFrame: NSRect
+
+  // Outside panels
+  let topPanelHeight: CGFloat
+  let rightPanelWidth: CGFloat
+  let bottomPanelHeight: CGFloat
+  let leftPanelWidth: CGFloat
+
+  var videoSize: NSSize {
+    assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
+    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+    assert(bottomPanelHeight >= 0, "Expected bottomPanelHeight > 0, found \(bottomPanelHeight)")
+    assert(leftPanelWidth >= 0, "Expected leftPanelWidth > 0, found \(leftPanelWidth)")
+    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+    return NSSize(width: windowFrame.width - rightPanelWidth - leftPanelWidth,
+                  height: windowFrame.height - topPanelHeight - bottomPanelHeight)
+  }
+
+  var outsidePanelsTotalSize: NSSize {
+    return NSSize(width: rightPanelWidth + leftPanelWidth, height: topPanelHeight + bottomPanelHeight)
+  }
+
+  var minVideoSize: NSSize {
+    return PlayerCore.minVideoSize
+  }
+
+  init(windowFrame: NSRect, topPanelHeight: CGFloat, rightPanelWidth: CGFloat, bottomPanelHeight: CGFloat, leftPanelWidth: CGFloat) {
+    self.windowFrame = windowFrame
+    self.topPanelHeight = topPanelHeight
+    self.rightPanelWidth = rightPanelWidth
+    self.bottomPanelHeight = bottomPanelHeight
+    self.leftPanelWidth = leftPanelWidth
+  }
+
+  init(windowFrame: CGRect, videoFrame: CGRect) {
+    let leftPanelWidth = videoFrame.origin.x
+    let bottomPanelHeight = videoFrame.origin.y
+    let rightPanelWidth = windowFrame.width - videoFrame.width - leftPanelWidth
+    let topPanelHeight = windowFrame.height - videoFrame.height - bottomPanelHeight
+    self.init(windowFrame: windowFrame,
+              topPanelHeight: topPanelHeight, rightPanelWidth: rightPanelWidth,
+              bottomPanelHeight: bottomPanelHeight, leftPanelWidth: leftPanelWidth)
+  }
+
+  func clone(windowFrame: NSRect? = nil,
+             topPanelHeight: CGFloat? = nil, rightPanelWidth: CGFloat? = nil,
+             bottomPanelHeight: CGFloat? = nil, leftPanelWidth: CGFloat? = nil) -> MainWindowGeometry {
+
+    return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
+                           topPanelHeight: topPanelHeight ?? self.topPanelHeight,
+                           rightPanelWidth: rightPanelWidth ?? self.rightPanelWidth,
+                           bottomPanelHeight: bottomPanelHeight ?? self.bottomPanelHeight,
+                           leftPanelWidth: leftPanelWidth ?? self.leftPanelWidth)
+  }
+
+  private func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
+    // Resize only the video. Panels outside the video do not change size.
+    // To do this, subtract the "outside" panels from the container frame
+    let outsidePanelsSize = self.outsidePanelsTotalSize
+    return NSSize(width: containerSize.width - outsidePanelsSize.width,
+                  height: containerSize.height - outsidePanelsSize.height)
+  }
+
+  func constrainWithin(_ containerFrame: NSRect) -> MainWindowGeometry {
+    return scale(desiredVideoSize: self.videoSize, constrainedWithin: containerFrame)
+  }
+
+  func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect) -> MainWindowGeometry {
+    var newVideoSize = desiredVideoSize
+
+    /// Clamp video between max and min video sizes, maintaining its aspect ratio.
+    /// (`desiredVideoSize` is assumed to be correct aspect ratio of the video.)
+
+    // Max
+    let maxVideoSize = computeMaxVideoSize(in: containerFrame.size)
+    if newVideoSize.height > maxVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+    }
+    if newVideoSize.width > maxVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+    }
+
+    // Min
+    if newVideoSize.height < minVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+    if newVideoSize.width < minVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    }
+
+    newVideoSize = NSSize(width: newVideoSize.width, height: newVideoSize.height)
+
+    let outsidePanelsSize = self.outsidePanelsTotalSize
+    let newWindowSize = NSSize(width: round(newVideoSize.width + outsidePanelsSize.width),
+                               height: round(newVideoSize.height + outsidePanelsSize.height))
+
+    // Round the results to prevent excessive window drift due to small imprecisions in calculation
+    let deltaX = round((newVideoSize.width - videoSize.width) / 2)
+    let deltaY = round((newVideoSize.height - videoSize.height) / 2)
+    let newWindowOrigin = NSPoint(x: windowFrame.origin.x - deltaX,
+                                  y: windowFrame.origin.y - deltaY)
+
+    // Move window if needed to make sure the window is not offscreen
+    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: containerFrame)
+    return self.clone(windowFrame: newWindowFrame)
+  }
+
+  func resizeOutsidePanels(newTopHeight: CGFloat? = nil, newRightWidth: CGFloat? = nil, newBottomHeight: CGFloat? = nil, newLeftWidth: CGFloat? = nil) -> MainWindowGeometry {
+
+    var ΔW: CGFloat = 0
+    var ΔH: CGFloat = 0
+    var ΔX: CGFloat = 0
+    var ΔY: CGFloat = 0
+    if let newTopHeight = newTopHeight {
+      let ΔTop = abs(newTopHeight) - self.topPanelHeight
+      ΔH += ΔTop
+    }
+    if let newRightWidth = newRightWidth {
+      let ΔRight = abs(newRightWidth) - self.rightPanelWidth
+      ΔW += ΔRight
+    }
+    if let newBottomHeight = newBottomHeight {
+      let ΔBottom = abs(newBottomHeight) - self.bottomPanelHeight
+      ΔH += ΔBottom
+      ΔY -= ΔBottom
+    }
+    if let newLeftWidth = newLeftWidth {
+      let ΔLeft = abs(newLeftWidth) - self.leftPanelWidth
+      ΔW += ΔLeft
+      ΔX -= ΔLeft
+    }
+    let newWindowFrame = CGRect(x: windowFrame.origin.x + ΔX,
+                                y: windowFrame.origin.y + ΔY,
+                                width: windowFrame.width + ΔW,
+                                height: windowFrame.height + ΔH)
+    return MainWindowGeometry(windowFrame: newWindowFrame,
+                           topPanelHeight: newTopHeight ?? self.topPanelHeight,
+                           rightPanelWidth: newRightWidth ?? self.rightPanelWidth,
+                           bottomPanelHeight: newBottomHeight ?? self.bottomPanelHeight,
+                           leftPanelWidth: newLeftWidth ?? self.leftPanelWidth)
+  }
+}

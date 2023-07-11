@@ -346,7 +346,7 @@ extension MainWindowController {
         // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
         // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
         // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-        let oldScaleFrame = buildScalableFrame()
+        let oldScaleFrame = buildMainWindowGeometryForCurrentLayout()
         let newScaleFrame = oldScaleFrame.resizeOutsidePanels(newRightWidth: oldScaleFrame.rightPanelWidth + ΔRight,
                                                               newLeftWidth: oldScaleFrame.leftPanelWidth + ΔLeft)
         let newWindowFrame = newScaleFrame.constrainWithin(bestScreen.visibleFrame).windowFrame
