@@ -409,7 +409,7 @@ extension MainWindowController {
       assert(leadingSidebar.placement == .outsideVideo)
       let cropView = NSView()
       cropView.identifier = NSUserInterfaceItemIdentifier(rawValue: "leadingSidebarCropView")
-      leadingSidebarView.addSubview(cropView)
+      leadingSidebarView.addSubview(cropView, positioned: .below, relativeTo: leadingSidebarTrailingBorder)
       cropView.translatesAutoresizingMaskIntoConstraints = false
       // Cling to superview for all sides but trailing:
       cropView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor).isActive = true
@@ -465,7 +465,7 @@ extension MainWindowController {
       assert(trailingSidebar.placement == .outsideVideo)
       let cropView = NSView()
       cropView.identifier = NSUserInterfaceItemIdentifier(rawValue: "trailingSidebarCropView")
-      trailingSidebarView.addSubview(cropView)
+      trailingSidebarView.addSubview(cropView, positioned: .below, relativeTo: trailingSidebarLeadingBorder)
       cropView.translatesAutoresizingMaskIntoConstraints = false
       // Cling to superview for all sides but leading:
       cropView.trailingAnchor.constraint(equalTo: trailingSidebarView.trailingAnchor).isActive = true
