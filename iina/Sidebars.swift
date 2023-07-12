@@ -303,7 +303,7 @@ extension MainWindowController {
     var changeLeading = leading
     if changeLeading {
       if (showLeading && leadingSidebar.animationState != .hidden) || (!showLeading && leadingSidebar.animationState != .shown) {
-        Logger.log("Cannot \(showLeading ? "show" : "hide") leadingSidebar when it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+        Logger.log("Skipping \(showLeading ? "show" : "hide") of leadingSidebar: it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
         changeLeading = false
       } else {
         leadingSidebar.animationState = showLeading ? .willShow : .willHide
@@ -312,7 +312,7 @@ extension MainWindowController {
     var changeTrailing = trailing
     if changeTrailing {
       if (showTrailing && trailingSidebar.animationState != .hidden) || (!showTrailing && trailingSidebar.animationState != .shown) {
-        Logger.log("Cannot \(showTrailing ? "show" : "hide") trailingSidebar when it is in state \(trailingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+        Logger.log("Skipping \(showTrailing ? "show" : "hide") of trailingSidebar: it is in state \(trailingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
         changeTrailing = false
       } else {
         trailingSidebar.animationState = showTrailing ? .willShow : .willHide
@@ -423,10 +423,6 @@ extension MainWindowController {
 
     if leadingSidebar.placement == .insideVideo {
       tabContainerView = leadingSidebarView
-
-      // Same as in the XIB
-      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-      videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: sidebarWidth)
     } else {
       assert(leadingSidebar.placement == .outsideVideo)
       let cropView = NSView()
@@ -440,15 +436,21 @@ extension MainWindowController {
 
       tabContainerView = cropView
 
-      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.trailingAnchor, constant: -sidebarWidth)
-      videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: cropView.leadingAnchor, constant: 0)
-
       // extra constraint for cropView:
-      videoContainerLeadingToLeadingSidebarCropTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+      videoContainerLeadingToLeadingSidebarCropTrailingConstraint = videoContainerView.leadingAnchor.constraint(
+        equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       videoContainerLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
     }
-    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
+
+    let coefficients = getLeadingSidebarCoefficients(show: false, placement: leadingSidebar.placement)
+
+    videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(
+      equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
     videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
+
+    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(
+      equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
+    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
 
     prepareLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTab)
   }
@@ -479,10 +481,6 @@ extension MainWindowController {
 
     if trailingSidebar.placement == .insideVideo {
       tabContainerView = trailingSidebarView
-
-      // Same as in the XIB
-      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
-      videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.trailingAnchor, constant: -sidebarWidth)
     } else {
       assert(trailingSidebar.placement == .outsideVideo)
       let cropView = NSView()
@@ -493,17 +491,22 @@ extension MainWindowController {
       cropView.trailingAnchor.constraint(equalTo: trailingSidebarView.trailingAnchor).isActive = true
       cropView.topAnchor.constraint(equalTo: trailingSidebarView.topAnchor).isActive = true
       cropView.bottomAnchor.constraint(equalTo: trailingSidebarView.bottomAnchor).isActive = true
-
       tabContainerView = cropView
 
-      videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: cropView.leadingAnchor, constant: sidebarWidth)
-      videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: cropView.trailingAnchor, constant: 0)
-
       // extra constraint for cropView:
-      videoContainerTrailingToTrailingSidebarCropLeadingConstraint = videoContainerView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+      videoContainerTrailingToTrailingSidebarCropLeadingConstraint = videoContainerView.trailingAnchor.constraint(
+        equalTo: trailingSidebarView.leadingAnchor, constant: 0)
       videoContainerTrailingToTrailingSidebarCropLeadingConstraint.isActive = true
     }
+
+    let coefficients = getTrailingSidebarCoefficients(show: false, placement: trailingSidebar.placement)
+
+    videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint = videoContainerView.trailingAnchor.constraint(
+      equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
     videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.isActive = true
+
+    videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint = videoContainerView.trailingAnchor.constraint(
+      equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
     videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.isActive = true
 
     prepareLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: trailingTab)
@@ -597,57 +600,77 @@ extension MainWindowController {
     }
   }
 
-  private func updateLeadingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
-    Logger.log("\(show ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
-
+  /**
+   For opening/closing `leadingSidebar` via constraints, multiply each times the sidebar width
+   Correesponding to:
+   (videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint,
+   videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
+   videoContainerLeadingOffsetFromContentViewLeadingConstraint)
+   */
+  private func getLeadingSidebarCoefficients(show: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
     case .insideVideo:
       if show {
-        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(0)
-        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(-newWidth)
-        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
+        return (0, -1, 0)
       } else {
-        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
-        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(0)
-        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
+        return (1, 0, 0)
       }
     case .outsideVideo:
       if show {
-        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(newWidth)
-        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(0)
-        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(newWidth)
+        return (1, 0, 1)
       } else {
-        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(0)
-        videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(-newWidth)
-        videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(0)
+        if currentLayout.isFullScreen {
+          return (1, 0, 0)
+        } else {
+          return (0, -1, 0)
+        }
+      }
+    }
+  }
+
+  private func updateLeadingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
+    Logger.log("\(show ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
+
+    let coefficients = getLeadingSidebarCoefficients(show: show, placement: placement)
+    videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
+    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
+    videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(coefficients.2 * newWidth)
+  }
+
+  /**
+   For opening/closing `trailingSidebar` via constraints, multiply each times the sidebar width
+   Correesponding to:
+   (videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint,
+   videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint,
+   videoContainerTrailingOffsetFromContentViewTrailingConstraint)
+   */
+  private func getTrailingSidebarCoefficients(show: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
+    switch placement {
+    case .insideVideo:
+      if show {
+        return (1, 0, 0)
+      } else {
+        return (0, -1, 0)
+      }
+    case .outsideVideo:
+      if show {
+        return (0, -1, -1)
+      } else {
+        if currentLayout.isFullScreen {
+          return (0, -1, 0)
+        } else {
+          return (1, 0, 0)
+        }
       }
     }
   }
 
   private func updateTrailingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
     Logger.log("\(show ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
-    switch placement {
-    case .insideVideo:
-      if show {
-        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
-        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(0)
-        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
-      } else {
-        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
-        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
-        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
-      }
-    case .outsideVideo:
-      if show {
-        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(0)
-        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(-newWidth)
-        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(-newWidth)
-      } else {
-        videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(newWidth)
-        videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(0)
-        videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(0)
-      }
-    }
+    let coefficients = getTrailingSidebarCoefficients(show: show, placement: placement)
+    videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
+    videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
+    videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(coefficients.2 * newWidth)
   }
 
   // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that
