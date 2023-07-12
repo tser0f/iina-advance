@@ -1090,19 +1090,8 @@ class MainWindowController: PlayerWindowController {
       contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: videoContainerView)
     }
 
-    if topPanel == .insideVideo {
-      contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
-    }
-    if bottomPanel == .insideVideo {
-      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
-    }
-
-    if bottomPanel == .outsideVideo {
-      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
-    }
-    if topPanel == .outsideVideo {
-      contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
-    }
+    contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
+    contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
 
     if leadingSidebar == .insideVideo {
       contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
@@ -2157,7 +2146,8 @@ class MainWindowController: PlayerWindowController {
 
       /// Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
       /// but we will only count it as a drag if `isDragging==true`
-      if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView]) {
+      if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView,
+                                                                 topPanelView, controlBarBottom]) {
         if hideSidebarsOnClick() {
           return
         }
