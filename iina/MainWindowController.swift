@@ -1680,7 +1680,9 @@ class MainWindowController: PlayerWindowController {
 
     /// These should all be either 0 height or unchanged from `transition.fromLayout`
     apply(visibility: futureLayout.controlBarBottom, to: controlBarBottom)
-    apply(visibility: futureLayout.topPanelView, to: topPanelView)
+    if !transition.isTogglingToFullScreen {
+      apply(visibility: futureLayout.topPanelView, to: topPanelView)
+    }
 
     // Remove subviews from OSC
     for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
