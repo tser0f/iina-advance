@@ -36,6 +36,11 @@ struct MainWindowGeometry: Equatable {
   // - MARK: Initializers
 
   init(windowFrame: NSRect, topPanelHeight: CGFloat, rightPanelWidth: CGFloat, bottomPanelHeight: CGFloat, leftPanelWidth: CGFloat) {
+    assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
+    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+    assert(bottomPanelHeight >= 0, "Expected bottomPanelHeight > 0, found \(bottomPanelHeight)")
+    assert(leftPanelWidth >= 0, "Expected leftPanelWidth > 0, found \(leftPanelWidth)")
+    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
     self.windowFrame = windowFrame
     self.topPanelHeight = topPanelHeight
     self.rightPanelWidth = rightPanelWidth
@@ -56,11 +61,6 @@ struct MainWindowGeometry: Equatable {
   // - MARK: Derived properties
 
   var videoSize: NSSize {
-    assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
-    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
-    assert(bottomPanelHeight >= 0, "Expected bottomPanelHeight > 0, found \(bottomPanelHeight)")
-    assert(leftPanelWidth >= 0, "Expected leftPanelWidth > 0, found \(leftPanelWidth)")
-    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
     return NSSize(width: windowFrame.width - rightPanelWidth - leftPanelWidth,
                   height: windowFrame.height - topPanelHeight - bottomPanelHeight)
   }
@@ -169,9 +169,9 @@ struct MainWindowGeometry: Equatable {
                                 width: windowFrame.width + ΔW,
                                 height: windowFrame.height + ΔH)
     return MainWindowGeometry(windowFrame: newWindowFrame,
-                           topPanelHeight: newTopHeight ?? self.topPanelHeight,
-                           rightPanelWidth: newTrailingWidth ?? self.rightPanelWidth,
-                           bottomPanelHeight: newBottomHeight ?? self.bottomPanelHeight,
-                           leftPanelWidth: newLeadingWidth ?? self.leftPanelWidth)
+                              topPanelHeight: newTopHeight ?? self.topPanelHeight,
+                              rightPanelWidth: newTrailingWidth ?? self.rightPanelWidth,
+                              bottomPanelHeight: newBottomHeight ?? self.bottomPanelHeight,
+                              leftPanelWidth: newLeadingWidth ?? self.leftPanelWidth)
   }
 }

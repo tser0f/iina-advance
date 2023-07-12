@@ -198,15 +198,17 @@ extension MainWindowController {
     Logger.log("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)",
                level: .verbose, subsystem: player.subsystem)
 
-    guard let destinationSidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
+    animationQueue.run(UIAnimation.zeroDurationTask { [self] in
+      guard let destinationSidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
 
-    if destinationSidebar.visibleTab == tab && hideIfAlreadyShown {
-      changeVisibility(forTab: tab, to: false)
-      return
-    }
+      if destinationSidebar.visibleTab == tab && hideIfAlreadyShown {
+        changeVisibility(forTab: tab, to: false)
+        return
+      }
 
-    // This will change the sidebar to the displayed tab group if needed:
-    changeVisibility(forTab: tab, to: true)
+      // This will change the sidebar to the displayed tab group if needed:
+      changeVisibility(forTab: tab, to: true)
+    })
   }
 
   // Hides any visible sidebars
@@ -296,7 +298,23 @@ extension MainWindowController {
     assert(!changeLeading || !showLeading || leadingTab != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
     let trailingTab = setTrailingTab ?? trailingSidebar.defaultTabToShow
     assert(!changeTrailing || !showTrailing || trailingTab != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
-    Logger.log("Changing visibility of sidebars. Leading:(change=\(changeLeading),show=\(showLeading),hasTab=\(leadingTab != nil),placement=\(leadingSidebar.placement)), Trailing:(change=\(changeTrailing),show=\(showTrailing),hasTab=\(trailingTab != nil),placement=\(trailingSidebar.placement))", level: .verbose, subsystem: player.subsystem)
+    Logger.log("Changing visibility of sidebars: Leading:(change=\(changeLeading),show=\(showLeading),placement=\(leadingSidebar.placement)), Trailing:(change=\(changeTrailing),show=\(showTrailing),placement=\(trailingSidebar.placement))", level: .verbose, subsystem: player.subsystem)
+
+    if changeLeading {
+      guard (showLeading && leadingSidebar.animationState == .hidden) || (!showLeading && leadingSidebar.animationState == .shown) else {
+        Logger.log("Cannot \(showLeading ? "show" : "hide") leadingSidebar when it is in state \(leadingSidebar.animationState); returning", level: .debug, subsystem: player.subsystem)
+        return
+      }
+      /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
+      leadingSidebar.animationState = showLeading ? .willShow : .willHide
+    }
+    if changeTrailing {
+      guard (showTrailing && trailingSidebar.animationState == .hidden) || (!showTrailing && trailingSidebar.animationState == .shown) else {
+        Logger.log("Cannot \(showTrailing ? "show" : "hide") trailingSidebar when it is in state \(trailingSidebar.animationState); returning", level: .debug, subsystem: player.subsystem)
+        return
+      }
+      trailingSidebar.animationState = showTrailing ? .willShow : .willHide
+    }
 
     var animationTasks: [UIAnimation.Task] = []
 
@@ -304,18 +322,24 @@ extension MainWindowController {
     // (will be very different for "insideVideo" vs "outsideVideo" placement)
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       // Leading
-      if let leadingTab = leadingTab, changeLeading && showLeading {
-        prepareLayoutForOpeningLeadingSidebar(toTab: leadingTab)
+      if let leadingTab = leadingTab, changeLeading {
+        if showLeading {
+          prepareLayoutForOpeningLeadingSidebar(toTab: leadingTab)
+        }
       }
 
       // Trailing
-      if let trailingTab = trailingTab, changeTrailing && showTrailing {
-        prepareLayoutForOpeningTrailingSidebar(toTab: trailingTab)
+      if let trailingTab = trailingTab, changeTrailing {
+        if showTrailing {
+          prepareLayoutForOpeningTrailingSidebar(toTab: trailingTab)
+        }
       }
     })
 
     // Task 2: Animate the showing/hiding:
     animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timing: .easeIn, { [self] in
+      let oldGeometry = buildMainWindowGeometryFromCurrentLayout()
+
       var ΔLeft: CGFloat = 0
       if let leadingTab = leadingTab, changeLeading {
         let currentWidth = leadingTab.group.width()
@@ -324,8 +348,6 @@ extension MainWindowController {
           leadingSidebarTrailingBorder.isHidden = !showLeading
           ΔLeft = showLeading ? currentWidth : -currentWidth
         }
-        /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
-        leadingSidebar.animationState = showLeading ? .willShow : .willHide
       }
 
       var ΔRight: CGFloat = 0
@@ -336,19 +358,16 @@ extension MainWindowController {
           trailingSidebarLeadingBorder.isHidden = !showTrailing
           ΔRight = showTrailing ? currentWidth : -currentWidth
         }
-        /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
-        trailingSidebar.animationState = showTrailing ? .willShow : .willHide
       }
 
-      if ΔLeft != 0 || ΔRight != 0 {
+      if !currentLayout.isFullScreen && (ΔLeft != 0 || ΔRight != 0) {
         // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
         // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
         // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
         // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-        let oldScaleFrame = buildMainWindowGeometryFromCurrentLayout()
-        let newScaleFrame = oldScaleFrame.resizeOutsidePanels(newTrailingWidth: oldScaleFrame.rightPanelWidth + ΔRight,
-                                                              newLeadingWidth: oldScaleFrame.leftPanelWidth + ΔLeft)
-        let newWindowFrame = newScaleFrame.constrainWithin(bestScreen.visibleFrame).windowFrame
+        let newGeometry = oldGeometry.resizeOutsidePanels(newTrailingWidth: oldGeometry.rightPanelWidth + ΔRight,
+                                                          newLeadingWidth: oldGeometry.leftPanelWidth + ΔLeft)
+        let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
 
         window.setFrame(newWindowFrame, display: true, animate: true)
       }
@@ -358,6 +377,7 @@ extension MainWindowController {
 
     // Task 3: Finish up state changes:
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+
       if let leadingTab = leadingTab, changeLeading {
         changeVisibilityPostAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tab: leadingTab, show: showLeading)
       }
@@ -402,7 +422,7 @@ extension MainWindowController {
       tabContainerView = leadingSidebarView
 
       // Same as in the XIB
-      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor)
+      videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor, constant: sidebarWidth)
     } else {
       assert(leadingSidebar.placement == .outsideVideo)
