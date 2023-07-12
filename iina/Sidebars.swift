@@ -338,7 +338,6 @@ extension MainWindowController {
 
     // Task 2: Animate the showing/hiding:
     animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timing: .easeIn, { [self] in
-      let oldGeometry = buildMainWindowGeometryFromCurrentLayout()
 
       var ΔLeft: CGFloat = 0
       if let leadingTab = leadingTab, changeLeading {
@@ -361,6 +360,7 @@ extension MainWindowController {
       }
 
       if !currentLayout.isFullScreen && (ΔLeft != 0 || ΔRight != 0) {
+        let oldGeometry = buildMainWindowGeometryFromCurrentLayout()
         // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
         // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
         // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
