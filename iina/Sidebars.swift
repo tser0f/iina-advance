@@ -433,7 +433,6 @@ extension MainWindowController {
       cropView.leadingAnchor.constraint(equalTo: leadingSidebarView.leadingAnchor).isActive = true
       cropView.topAnchor.constraint(equalTo: leadingSidebarView.topAnchor).isActive = true
       cropView.bottomAnchor.constraint(equalTo: leadingSidebarView.bottomAnchor).isActive = true
-
       tabContainerView = cropView
 
       // extra constraint for cropView:
@@ -527,18 +526,10 @@ extension MainWindowController {
     tabGroupView.topAnchor.constraint(equalTo: tabContainerView.topAnchor).isActive = true
     tabGroupView.bottomAnchor.constraint(equalTo: tabContainerView.bottomAnchor).isActive = true
 
-
     sidebarView.isHidden = false
 
-    if sidebar.placement == .outsideVideo {
-      // Put behind video so that:
-      // (1) Sidebar doesn't cast a shadow on the video, and
-      // (2) Avoids ghosting effect during "slide in" / "slide out" for sidebar open/close
-      window!.contentView!.addSubview(sidebarView, positioned: .below, relativeTo: videoContainerView)
-    } else {
-      // Cast shadow over the video to indicate it is on top of it
-      window!.contentView!.addSubview(sidebarView, positioned: .above, relativeTo: videoContainerView)
-    }
+    updateDepthOrderOfPanels(topPanel: currentLayout.topPanelPlacement, bottomPanel: currentLayout.bottomPanelPlacement,
+                             leadingSidebar: leadingSidebar.placement, trailingSidebar: trailingSidebar.placement)
 
     // Update blending mode instantaneously. It doesn't animate well
     updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)

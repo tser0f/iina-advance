@@ -1050,21 +1050,11 @@ class MainWindowController: PlayerWindowController {
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
 
-      if leadingSidebar.placement == .insideVideo {
-        // Sidebars cast shadow on top panel
-        /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
-        /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
-        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
-      }
     case .outsideVideo:
       // Align left & right sides with window (sidebars go below top panel)
       topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
       topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
 
-      // No shadow when outside
-      /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
-      /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
-      contentView.addSubview(topPanelView, positioned: .above, relativeTo: trailingSidebarView)
     }
     topPanelLeadingSpaceConstraint.isActive = true
     topPanelTrailingSpaceConstraint.isActive = true
@@ -1086,6 +1076,64 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  func updateDepthOrderOfPanels(topPanel: Preference.PanelPlacement, bottomPanel: Preference.PanelPlacement,
+                                leadingSidebar: Preference.PanelPlacement, trailingSidebar: Preference.PanelPlacement) {
+    guard let window = window, let contentView = window.contentView else { return }
+
+    contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
+    contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
+
+    if leadingSidebar == .insideVideo {
+      // Cast shadow over the video to indicate it is on top of it
+      contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
+
+      if bottomPanel == .insideVideo {
+        // Sidebars cast shadow on bottom OSC
+        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
+      }
+
+      if topPanel == .insideVideo {
+        // Sidebars cast shadow on top panel
+        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
+      }
+    } else {
+      // Put behind video so that:
+      // (1) Sidebar doesn't cast a shadow on the video, and
+      // (2) Avoids ghosting effect during "slide in" / "slide out" for sidebar open/close
+      contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: videoContainerView)
+    }
+
+    if trailingSidebar == .insideVideo {
+      // Cast shadow over the video to indicate it is on top of it
+      contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: videoContainerView)
+
+      if bottomPanel == .insideVideo {
+        // Sidebars cast shadow on bottom OSC
+        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: trailingSidebarView)
+      }
+
+      if topPanel == .insideVideo {
+        // Sidebars cast shadow on top panel
+        contentView.addSubview(topPanelView, positioned: .below, relativeTo: trailingSidebarView)
+      }
+    } else {
+      // Put behind video so that:
+      // (1) Sidebar doesn't cast a shadow on the video, and
+      // (2) Avoids ghosting effect during "slide in" / "slide out" for sidebar open/close
+      contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: videoContainerView)
+    }
+
+    if bottomPanel == .outsideVideo {
+      // No shadow (because bottom panel does not cast a shadow)
+      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: leadingSidebarView)
+    }
+
+    if topPanel == .outsideVideo {
+      // No shadow when outside
+      contentView.addSubview(topPanelView, positioned: .above, relativeTo: leadingSidebarView)
+    }
+  }
+
   private func updateBottomPanelPlacement(placement: Preference.PanelPlacement) {
     Logger.log("Updating bottom panel placement to: \(placement)", level: .verbose, subsystem: player.subsystem)
     guard let window = window, let contentView = window.contentView else { return }
@@ -1099,24 +1147,12 @@ class MainWindowController: PlayerWindowController {
       // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
       bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
-
-      if leadingSidebar.placement == .insideVideo {
-        // Sidebars cast shadow on bottom OSC
-        /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
-        /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
-        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
-      }
     case .outsideVideo:
       controlBarBottomTopBorder.isHidden = false
 
       // Align left & right sides with window (sidebars go below top panel)
       bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
       bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
-
-      // No shadow (because bottom panel does not cast a shadow)
-      /// NOTE: in order to do less work, these assume `trailingSidebarView` is above `leadingSidebarView`
-      /// (i.e. comes after it in the list of `contentView`'s subviews in the XIB)
-      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: trailingSidebarView)
     }
     bottomPanelLeadingSpaceConstraint.isActive = true
     bottomPanelTrailingSpaceConstraint.isActive = true
@@ -1701,6 +1737,9 @@ class MainWindowController: PlayerWindowController {
     if transition.isBottomPanelPlacementChanging {
       updateBottomPanelPlacement(placement: futureLayout.bottomPanelPlacement)
     }
+
+    updateDepthOrderOfPanels(topPanel: futureLayout.topPanelPlacement, bottomPanel: futureLayout.bottomPanelPlacement,
+                             leadingSidebar: leadingSidebar.placement, trailingSidebar: trailingSidebar.placement)
 
     // So that panels toggling between "inside" and "outside" don't change until they need to (different strategy than fullscreen)
     if !transition.isTogglingFullScreen {
