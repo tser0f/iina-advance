@@ -289,31 +289,34 @@ extension MainWindowController {
    In one case it is desired to closed both sidebars simultaneously. To do this safely, we need to add logic for both sidebars
    to each animation block.
    */
-  private func changeVisibilityForSidebars(changeLeading: Bool = false, showLeading: Bool = false, setLeadingTab: SidebarTab? = nil,
-                                           changeTrailing: Bool = false, showTrailing: Bool = false, setTrailingTab: SidebarTab? = nil,
+  private func changeVisibilityForSidebars(changeLeading leading: Bool = false, showLeading: Bool = false, setLeadingTab: SidebarTab? = nil,
+                                           changeTrailing trailing: Bool = false, showTrailing: Bool = false, setTrailingTab: SidebarTab? = nil,
                                            then doAfter: TaskFunc? = nil) {
     guard let window = window else { return }
 
     let leadingTab = setLeadingTab ?? leadingSidebar.defaultTabToShow
-    assert(!changeLeading || !showLeading || leadingTab != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
+    assert(!leading || !showLeading || leadingTab != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
     let trailingTab = setTrailingTab ?? trailingSidebar.defaultTabToShow
-    assert(!changeTrailing || !showTrailing || trailingTab != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
-    Logger.log("Changing visibility of sidebars: Leading:(change=\(changeLeading),show=\(showLeading),placement=\(leadingSidebar.placement)), Trailing:(change=\(changeTrailing),show=\(showTrailing),placement=\(trailingSidebar.placement))", level: .verbose, subsystem: player.subsystem)
+    assert(!trailing || !showTrailing || trailingTab != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
+    Logger.log("Changing visibility of sidebars: Leading:(change=\(leading),show=\(showLeading),placement=\(leadingSidebar.placement)), Trailing:(change=\(trailing),show=\(showTrailing),placement=\(trailingSidebar.placement))", level: .verbose, subsystem: player.subsystem)
 
+    var changeLeading = leading
     if changeLeading {
-      guard (showLeading && leadingSidebar.animationState == .hidden) || (!showLeading && leadingSidebar.animationState == .shown) else {
-        Logger.log("Cannot \(showLeading ? "show" : "hide") leadingSidebar when it is in state \(leadingSidebar.animationState); returning", level: .debug, subsystem: player.subsystem)
-        return
+      if (showLeading && leadingSidebar.animationState != .hidden) || (!showLeading && leadingSidebar.animationState != .shown) {
+        Logger.log("Cannot \(showLeading ? "show" : "hide") leadingSidebar when it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+        changeLeading = false
+      } else {
+        leadingSidebar.animationState = showLeading ? .willShow : .willHide
       }
-      /// Must set this for `updateSpacingForTitleBarAccessories()` to work properly
-      leadingSidebar.animationState = showLeading ? .willShow : .willHide
     }
+    var changeTrailing = trailing
     if changeTrailing {
-      guard (showTrailing && trailingSidebar.animationState == .hidden) || (!showTrailing && trailingSidebar.animationState == .shown) else {
-        Logger.log("Cannot \(showTrailing ? "show" : "hide") trailingSidebar when it is in state \(trailingSidebar.animationState); returning", level: .debug, subsystem: player.subsystem)
-        return
+      if (showTrailing && trailingSidebar.animationState != .hidden) || (!showTrailing && trailingSidebar.animationState != .shown) {
+        Logger.log("Cannot \(showTrailing ? "show" : "hide") trailingSidebar when it is in state \(trailingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+        changeTrailing = false
+      } else {
+        trailingSidebar.animationState = showTrailing ? .willShow : .willHide
       }
-      trailingSidebar.animationState = showTrailing ? .willShow : .willHide
     }
 
     var animationTasks: [UIAnimation.Task] = []
