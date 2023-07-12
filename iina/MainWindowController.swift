@@ -1080,57 +1080,50 @@ class MainWindowController: PlayerWindowController {
                                 leadingSidebar: Preference.PanelPlacement, trailingSidebar: Preference.PanelPlacement) {
     guard let window = window, let contentView = window.contentView else { return }
 
-    contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
-    contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
-
-    if leadingSidebar == .insideVideo {
-      // Cast shadow over the video to indicate it is on top of it
-      contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
-
-      if bottomPanel == .insideVideo {
-        // Sidebars cast shadow on bottom OSC
-        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
-      }
-
-      if topPanel == .insideVideo {
-        // Sidebars cast shadow on top panel
-        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
-      }
-    } else {
-      // Put behind video so that:
-      // (1) Sidebar doesn't cast a shadow on the video, and
-      // (2) Avoids ghosting effect during "slide in" / "slide out" for sidebar open/close
+    // If a sidebar is "outsideVideo", need to put it behind the video because:
+    // (1) Don't want sidebar to cast a shadow on the video
+    // (2) Animate sidebar open/close with "slide in" / "slide out" from behind the video
+    if leadingSidebar == .outsideVideo {
       contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: videoContainerView)
     }
-
-    if trailingSidebar == .insideVideo {
-      // Cast shadow over the video to indicate it is on top of it
-      contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: videoContainerView)
-
-      if bottomPanel == .insideVideo {
-        // Sidebars cast shadow on bottom OSC
-        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: trailingSidebarView)
-      }
-
-      if topPanel == .insideVideo {
-        // Sidebars cast shadow on top panel
-        contentView.addSubview(topPanelView, positioned: .below, relativeTo: trailingSidebarView)
-      }
-    } else {
-      // Put behind video so that:
-      // (1) Sidebar doesn't cast a shadow on the video, and
-      // (2) Avoids ghosting effect during "slide in" / "slide out" for sidebar open/close
+    if trailingSidebar == .outsideVideo {
       contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: videoContainerView)
     }
 
-    if bottomPanel == .outsideVideo {
-      // No shadow (because bottom panel does not cast a shadow)
-      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: leadingSidebarView)
+    if topPanel == .insideVideo {
+      contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
+    }
+    if bottomPanel == .insideVideo {
+      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
     }
 
+    if bottomPanel == .outsideVideo {
+      contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
+    }
     if topPanel == .outsideVideo {
-      // No shadow when outside
-      contentView.addSubview(topPanelView, positioned: .above, relativeTo: leadingSidebarView)
+      contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
+    }
+
+    if leadingSidebar == .insideVideo {
+      contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
+
+      if topPanel == .insideVideo {
+        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
+      }
+      if bottomPanel == .insideVideo {
+        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
+      }
+    }
+
+    if trailingSidebar == .insideVideo {
+      contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: videoContainerView)
+
+      if topPanel == .insideVideo {
+        contentView.addSubview(topPanelView, positioned: .below, relativeTo: trailingSidebarView)
+      }
+      if bottomPanel == .insideVideo {
+        contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: trailingSidebarView)
+      }
     }
   }
 
