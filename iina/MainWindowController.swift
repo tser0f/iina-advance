@@ -240,8 +240,8 @@ class MainWindowController: PlayerWindowController {
 
   enum FullScreenState: Equatable {
     case windowed
-    case animating(toFullscreen: Bool, legacy: Bool, priorWindowedFrame: NSRect)
-    case fullscreen(legacy: Bool, priorWindowedFrame: NSRect)
+    case animating(toFullscreen: Bool, legacy: Bool, priorWindowedFrame: MainWindowGeometry)
+    case fullscreen(legacy: Bool, priorWindowedFrame: MainWindowGeometry)
 
     var isFullscreen: Bool {
       switch self {
@@ -251,7 +251,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    var priorWindowedFrame: NSRect? {
+    var priorWindowedFrame: MainWindowGeometry? {
       get {
         switch self {
         case .windowed: return nil
@@ -260,18 +260,18 @@ class MainWindowController: PlayerWindowController {
         }
       }
       set {
-        guard let newRect = newValue else { return }
+        guard let newGeo = newValue else { return }
         switch self {
         case .windowed: return
         case let .animating(toFullscreen, legacy, _):
-          self = .animating(toFullscreen: toFullscreen, legacy: legacy, priorWindowedFrame: newRect)
+          self = .animating(toFullscreen: toFullscreen, legacy: legacy, priorWindowedFrame: newGeo)
         case let .fullscreen(legacy, _):
-          self = .fullscreen(legacy: legacy, priorWindowedFrame: newRect)
+          self = .fullscreen(legacy: legacy, priorWindowedFrame: newGeo)
         }
       }
     }
 
-    mutating func startAnimatingToFullScreen(legacy: Bool, priorWindowedFrame: NSRect) {
+    mutating func startAnimatingToFullScreen(legacy: Bool, priorWindowedFrame: MainWindowGeometry) {
       self = .animating(toFullscreen: true, legacy: legacy, priorWindowedFrame: priorWindowedFrame)
     }
 
@@ -1262,6 +1262,13 @@ class MainWindowController: PlayerWindowController {
     /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
     var osdMinOffsetFromTop: CGFloat = 8
 
+    var topPanelOutsideHeight: CGFloat {
+      return topPanelPlacement == .outsideVideo ? topPanelHeight : 0
+    }
+    var bottomPanelOutsideHeight: CGFloat {
+      return bottomPanelPlacement == .outsideVideo ? bottomOSCHeight : 0
+    }
+
     var setupControlBarInternalViews: TaskFunc? = nil
 
     init(spec: LayoutSpec) {
@@ -1419,13 +1426,12 @@ class MainWindowController: PlayerWindowController {
   }
 
   // TODO: Prevent sidebars from opening if not enough space?
-  // FIXME: bug: size of window is not restored properly during fullscreen exit animation if "outside" sidebars opened/closed
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
   private func buildLayoutTransition(to layoutSpec: LayoutSpec,
                                      totalStartingDuration: CGFloat? = nil,
                                      totalEndingDuration: CGFloat? = nil,
-                                     extraTaskFunc: TaskFunc? = nil) -> LayoutTransition {
+                                     extraTaskFunc: ((LayoutTransition) -> Void)? = nil) -> LayoutTransition {
 
     let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
     let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: false)
@@ -1443,7 +1449,7 @@ class MainWindowController: PlayerWindowController {
     /// When toggling panel layout configurations, need to use `linear` or else panels of different sizes
     /// won't line up as they move. But during the fullscreen transition, this looks tediously slow.
     /// Fortunately, we don't need `linear` for the fullscreen transition.
-    let panelTimingFunction = transition.isTogglingFullScreen ? nil : CAMediaTimingFunction(name: .linear)
+    let panelTimingName = transition.isTogglingFullScreen ? nil : CAMediaTimingFunctionName.linear
 
     Logger.log("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)", level: .verbose, subsystem: player.subsystem)
 
@@ -1469,7 +1475,7 @@ class MainWindowController: PlayerWindowController {
 
     if !transition.isTogglingToFullScreen {  // Avoid bounciness and possible unwanted video scaling animation (not needed for ->FS anyway)
       // StartingAnimation 3: Minimize panels which are no longer needed.
-      transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, timingFunction: panelTimingFunction, { [self] in
+      transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
       }))
     }
@@ -1482,9 +1488,9 @@ class MainWindowController: PlayerWindowController {
     })
 
     // EndingAnimation: Open new panels and fade in new views
-    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timingFunction: panelTimingFunction, { [self] in
+    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
       if let extraTaskFunc = extraTaskFunc {
-        extraTaskFunc()
+        extraTaskFunc(transition)
       }
 
       openNewPanels(transition)
@@ -2459,14 +2465,14 @@ class MainWindowController: PlayerWindowController {
     Logger.log("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
                level: .verbose, subsystem: player.subsystem)
 
-    // FIXME: use video container instead
-    let priorWindowedFrame = buildMainWindowGeometryForCurrentLayout().windowFrame
+    // Because the outside panels can change while in fullscreen, use the coords of the video frame instead
+    let priorWindowedGeometry = buildMainWindowGeometryFromCurrentLayout()
 
     var animationTasks: [UIAnimation.Task] = []
 
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
-      fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedFrame)
-      Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedFrame)", level: .verbose)
+      fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedGeometry)
+      Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)", level: .verbose)
 
       if !isLegacy {
         // Hide traffic light buttons & title during the animation:
@@ -2505,7 +2511,7 @@ class MainWindowController: PlayerWindowController {
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
-    let transition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
+    let transition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
       if isLegacy {
         // set window frame and in some cases content view frame
         setWindowFrameForLegacyFullScreen()
@@ -2618,7 +2624,7 @@ class MainWindowController: PlayerWindowController {
     // asynchronously processing stop and quit commands.
     guard !isClosing else { return }
 
-    guard let priorFrame = fsState.priorWindowedFrame else { return }
+    guard let priorWindowedFrame = fsState.priorWindowedFrame else { return }
 
     var animationTasks: [UIAnimation.Task] = []
 
@@ -2646,10 +2652,20 @@ class MainWindowController: PlayerWindowController {
     let windowedLayout = currentLayout.spec.clone(fullScreen: false)
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
-    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] in
-      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(priorFrame)",
+    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
+      let topHeight = transition.toLayout.topPanelOutsideHeight
+      let bottomHeight = transition.toLayout.bottomPanelOutsideHeight
+      let leadingWidth = leadingSidebar.isVisible && leadingSidebar.placement == .outsideVideo ? leadingSidebar.currentWidth : 0
+      let trailingWidth = trailingSidebar.isVisible && trailingSidebar.placement == .outsideVideo ? trailingSidebar.currentWidth : 0
+
+      let priorWindowFrame = priorWindowedFrame.resizeOutsidePanels(newTopHeight: topHeight,
+                                                                            newTrailingWidth: trailingWidth,
+                                                                            newBottomHeight: bottomHeight,
+                                                                            newLeadingWidth: leadingWidth).windowFrame
+
+      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(priorWindowFrame)",
                  level: .verbose, subsystem: player.subsystem)
-      window.setFrame(priorFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+      window.setFrame(priorWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     })
 
     animationTasks.append(contentsOf: transition.animationTasks)
@@ -2799,7 +2815,7 @@ class MainWindowController: PlayerWindowController {
     if requestedSize.height <= minSize.height || requestedSize.width <= minSize.width {
       Logger.log("WindowWillResize: requestedSize too small; changing to min \(minSize)", level: .verbose, subsystem: player.subsystem)
       let newVideoSize = videoContainerView.frame.size.shrink(toSize: minSize)
-      return computeWindowFrameForVideoResize(toVideoSize: newVideoSize).size
+      return computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame.size
     }
 
     return requestedSize
@@ -3358,8 +3374,7 @@ class MainWindowController: PlayerWindowController {
     var animationTasks: [UIAnimation.Task] = transition.animationTasks
 
     // Now animate into Interactive Mode:
-    animationTasks.append(UIAnimation.Task(duration: UIAnimation.CropAnimationDuration,
-                                              timingFunction: CAMediaTimingFunction(name: .easeIn), { [self] in
+    animationTasks.append(UIAnimation.Task(duration: UIAnimation.CropAnimationDuration, timing: .easeIn, { [self] in
       guard let window = self.window else { return }
 
       hideFadeableViews()
@@ -3428,7 +3443,7 @@ class MainWindowController: PlayerWindowController {
 
     var animationTasks: [UIAnimation.Task] = []
 
-    animationTasks.append(UIAnimation.Task(duration: duration, timingFunction: CAMediaTimingFunction(name: .easeIn), { [self] in
+    animationTasks.append(UIAnimation.Task(duration: duration, timing: .easeIn, { [self] in
       // Restore prev constraints:
       bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
       constrainVideoViewForWindowedMode()
@@ -3549,6 +3564,7 @@ class MainWindowController: PlayerWindowController {
     Logger.log("WindowFrameFromGeometry: using \(geometry), screenFrame: \(screenFrame)", level: .verbose, subsystem: player.subsystem)
 
     cachedGeometry = geometry
+    // FIXME: should not use this
     var winFrame = window!.frame
     if let ns = newSize {
       winFrame.size.width = ns.width
@@ -3642,7 +3658,7 @@ class MainWindowController: PlayerWindowController {
     let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
                               height: screenRect.height - outsidePanelsHeight)
 
-    let windowFrame = fsState.priorWindowedFrame ?? window.frame  // FIXME: need to save more information
+    let windowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
     var newVideoSize: NSSize
     var newWindowFrame: NSRect
 
@@ -3654,6 +3670,7 @@ class MainWindowController: PlayerWindowController {
       // get videoSize on screen
       newVideoSize = videoNativeSize
       if Preference.bool(for: .usePhysicalResolution) {
+        // FIXME: this is wrong
         newVideoSize = window.convertFromBacking(
           NSMakeRect(window.frame.origin.x, window.frame.origin.y, videoNativeSize.width, videoNativeSize.height)).size
         Logger.log("Converted to physical resolution, result: \(newVideoSize)", level: .verbose)
@@ -3699,7 +3716,7 @@ class MainWindowController: PlayerWindowController {
       let newVideoHeight = newVideoWidth / videoNativeSize.aspect
       newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
       Logger.log("Using same width, with new height (\(newVideoHeight)) -> newVideoSize: \(newVideoSize)", level: .verbose)
-      newWindowFrame = computeWindowFrameForVideoResize(toVideoSize: newVideoSize)
+      newWindowFrame = computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame
     }
 
     // FIXME: examine this
@@ -3709,8 +3726,8 @@ class MainWindowController: PlayerWindowController {
     shouldApplyInitialWindowSize = false
 
     if fsState.isFullscreen {
-      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
-      fsState.priorWindowedFrame = newWindowFrame
+//      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
+//      fsState.priorWindowedFrame = newWindowFrame
     } else {
       Logger.log("AdjustFrameAfterVideoReconfig: Updating videoSize from: \(oldVideoSize) to: \(newVideoSize); newWindowFrame: \(newWindowFrame)",
                  level: .verbose, subsystem: player.subsystem)
@@ -3796,15 +3813,15 @@ class MainWindowController: PlayerWindowController {
                    fromVideoFrame: CGRect? = nil, fromWindowFrame: CGRect? = nil,
                    animate: Bool = true) {
     guard !isInInteractiveMode, let window = window else { return }
-    let newWindowFrame = computeWindowFrameForVideoResize(toVideoSize: desiredVideoSize,
-                                                          fromVideoFrame: fromVideoFrame, fromWindowFrame: fromWindowFrame)
-    window.setFrame(newWindowFrame, display: true, animate: animate)
+    let newWindowGeo = computeWindowGeometryForVideoResize(toVideoSize: desiredVideoSize,
+                                                           fromVideoFrame: fromVideoFrame, fromWindowFrame: fromWindowFrame)
+    window.setFrame(newWindowGeo.windowFrame, display: true, animate: animate)
   }
 
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
-  private func computeWindowFrameForVideoResize(toVideoSize desiredVideoSize: CGSize,
+  private func computeWindowGeometryForVideoResize(toVideoSize desiredVideoSize: CGSize,
                                                 fromVideoFrame oldVideoFrame: CGRect? = nil,
-                                                fromWindowFrame oldWindowFrame: CGRect? = nil) -> NSRect {
+                                                fromWindowFrame oldWindowFrame: CGRect? = nil) -> MainWindowGeometry {
 
     let oldScaleGeo = MainWindowGeometry(windowFrame: oldWindowFrame ?? self.window!.frame,
                                         videoFrame: oldVideoFrame ?? self.videoContainerView.frame)
@@ -3815,10 +3832,10 @@ class MainWindowController: PlayerWindowController {
       Logger.log("Resizing video from \(oldScaleGeo.videoSize) to \(newScaleGeo.videoSize) (\(actualScale)x scale), newWindowFrame: \(newScaleGeo.windowFrame)",
                  level: .verbose, subsystem: player.subsystem)
     }
-    return newScaleGeo.windowFrame
+    return newScaleGeo
   }
 
-  func buildMainWindowGeometryForCurrentLayout() -> MainWindowGeometry {
+  func buildMainWindowGeometryFromCurrentLayout() -> MainWindowGeometry {
     return MainWindowGeometry(windowFrame: window!.frame, videoFrame: videoContainerView.frame)
   }
 

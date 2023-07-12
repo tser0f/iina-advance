@@ -22,7 +22,9 @@ import Foundation
  │                  ▼                        │
  └───────────────────────────────────────────┘
  */
-struct MainWindowGeometry {
+struct MainWindowGeometry: Equatable {
+  // - MARK: Stored properties
+
   let windowFrame: NSRect
 
   // Outside panels
@@ -31,23 +33,7 @@ struct MainWindowGeometry {
   let bottomPanelHeight: CGFloat
   let leftPanelWidth: CGFloat
 
-  var videoSize: NSSize {
-    assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
-    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
-    assert(bottomPanelHeight >= 0, "Expected bottomPanelHeight > 0, found \(bottomPanelHeight)")
-    assert(leftPanelWidth >= 0, "Expected leftPanelWidth > 0, found \(leftPanelWidth)")
-    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
-    return NSSize(width: windowFrame.width - rightPanelWidth - leftPanelWidth,
-                  height: windowFrame.height - topPanelHeight - bottomPanelHeight)
-  }
-
-  var outsidePanelsTotalSize: NSSize {
-    return NSSize(width: rightPanelWidth + leftPanelWidth, height: topPanelHeight + bottomPanelHeight)
-  }
-
-  var minVideoSize: NSSize {
-    return PlayerCore.minVideoSize
-  }
+  // - MARK: Initializers
 
   init(windowFrame: NSRect, topPanelHeight: CGFloat, rightPanelWidth: CGFloat, bottomPanelHeight: CGFloat, leftPanelWidth: CGFloat) {
     self.windowFrame = windowFrame
@@ -65,6 +51,30 @@ struct MainWindowGeometry {
     self.init(windowFrame: windowFrame,
               topPanelHeight: topPanelHeight, rightPanelWidth: rightPanelWidth,
               bottomPanelHeight: bottomPanelHeight, leftPanelWidth: leftPanelWidth)
+  }
+
+  // - MARK: Derived properties
+
+  var videoSize: NSSize {
+    assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
+    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+    assert(bottomPanelHeight >= 0, "Expected bottomPanelHeight > 0, found \(bottomPanelHeight)")
+    assert(leftPanelWidth >= 0, "Expected leftPanelWidth > 0, found \(leftPanelWidth)")
+    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+    return NSSize(width: windowFrame.width - rightPanelWidth - leftPanelWidth,
+                  height: windowFrame.height - topPanelHeight - bottomPanelHeight)
+  }
+
+  var videoFrameInScreenCoords: NSRect {
+    return NSRect(origin: CGPoint(x: windowFrame.origin.x + leftPanelWidth, y: windowFrame.origin.y + bottomPanelHeight), size: videoSize)
+  }
+
+  var outsidePanelsTotalSize: NSSize {
+    return NSSize(width: rightPanelWidth + leftPanelWidth, height: topPanelHeight + bottomPanelHeight)
+  }
+
+  var minVideoSize: NSSize {
+    return PlayerCore.minVideoSize
   }
 
   func clone(windowFrame: NSRect? = nil,
@@ -130,7 +140,7 @@ struct MainWindowGeometry {
     return self.clone(windowFrame: newWindowFrame)
   }
 
-  func resizeOutsidePanels(newTopHeight: CGFloat? = nil, newRightWidth: CGFloat? = nil, newBottomHeight: CGFloat? = nil, newLeftWidth: CGFloat? = nil) -> MainWindowGeometry {
+  func resizeOutsidePanels(newTopHeight: CGFloat? = nil, newTrailingWidth: CGFloat? = nil, newBottomHeight: CGFloat? = nil, newLeadingWidth: CGFloat? = nil) -> MainWindowGeometry {
 
     var ΔW: CGFloat = 0
     var ΔH: CGFloat = 0
@@ -140,8 +150,8 @@ struct MainWindowGeometry {
       let ΔTop = abs(newTopHeight) - self.topPanelHeight
       ΔH += ΔTop
     }
-    if let newRightWidth = newRightWidth {
-      let ΔRight = abs(newRightWidth) - self.rightPanelWidth
+    if let newTrailingWidth = newTrailingWidth {
+      let ΔRight = abs(newTrailingWidth) - self.rightPanelWidth
       ΔW += ΔRight
     }
     if let newBottomHeight = newBottomHeight {
@@ -149,8 +159,8 @@ struct MainWindowGeometry {
       ΔH += ΔBottom
       ΔY -= ΔBottom
     }
-    if let newLeftWidth = newLeftWidth {
-      let ΔLeft = abs(newLeftWidth) - self.leftPanelWidth
+    if let newLeadingWidth = newLeadingWidth {
+      let ΔLeft = abs(newLeadingWidth) - self.leftPanelWidth
       ΔW += ΔLeft
       ΔX -= ΔLeft
     }
@@ -160,8 +170,8 @@ struct MainWindowGeometry {
                                 height: windowFrame.height + ΔH)
     return MainWindowGeometry(windowFrame: newWindowFrame,
                            topPanelHeight: newTopHeight ?? self.topPanelHeight,
-                           rightPanelWidth: newRightWidth ?? self.rightPanelWidth,
+                           rightPanelWidth: newTrailingWidth ?? self.rightPanelWidth,
                            bottomPanelHeight: newBottomHeight ?? self.bottomPanelHeight,
-                           leftPanelWidth: newLeftWidth ?? self.leftPanelWidth)
+                           leftPanelWidth: newLeadingWidth ?? self.leftPanelWidth)
   }
 }

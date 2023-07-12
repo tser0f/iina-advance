@@ -48,16 +48,20 @@ class UIAnimation {
     let runFunc: TaskFunc
 
     init(duration: CGFloat = UIAnimation.DefaultDuration,
-         timingFunction: CAMediaTimingFunction? = nil,
+         timing timingName: CAMediaTimingFunctionName? = nil,
          _ runFunc: @escaping TaskFunc) {
       self.duration = duration
-      self.timingFunction = timingFunction
+      if let timingName = timingName {
+        self.timingFunction = CAMediaTimingFunction(name: timingName)
+      } else {
+        self.timingFunction = nil
+      }
       self.runFunc = runFunc
     }
   }
 
   static func zeroDurationTask(_ runFunc: @escaping TaskFunc) -> Task {
-    return Task(duration: 0, timingFunction: nil, runFunc)
+    return Task(duration: 0, timing: nil, runFunc)
   }
 
   // MARK: - UIAnimation.Queue

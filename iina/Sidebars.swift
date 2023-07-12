@@ -315,8 +315,7 @@ extension MainWindowController {
     })
 
     // Task 2: Animate the showing/hiding:
-    animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timingFunction: CAMediaTimingFunction(name: .easeIn),
-                                           { [self] in
+    animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timing: .easeIn, { [self] in
       var ΔLeft: CGFloat = 0
       if let leadingTab = leadingTab, changeLeading {
         let currentWidth = leadingTab.group.width()
@@ -346,9 +345,9 @@ extension MainWindowController {
         // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
         // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
         // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-        let oldScaleFrame = buildMainWindowGeometryForCurrentLayout()
-        let newScaleFrame = oldScaleFrame.resizeOutsidePanels(newRightWidth: oldScaleFrame.rightPanelWidth + ΔRight,
-                                                              newLeftWidth: oldScaleFrame.leftPanelWidth + ΔLeft)
+        let oldScaleFrame = buildMainWindowGeometryFromCurrentLayout()
+        let newScaleFrame = oldScaleFrame.resizeOutsidePanels(newTrailingWidth: oldScaleFrame.rightPanelWidth + ΔRight,
+                                                              newLeadingWidth: oldScaleFrame.leftPanelWidth + ΔLeft)
         let newWindowFrame = newScaleFrame.constrainWithin(bestScreen.visibleFrame).windowFrame
 
         window.setFrame(newWindowFrame, display: true, animate: true)
