@@ -22,7 +22,7 @@ class PlaybackInfo {
     case bSet
   }
 
-  // - MARK: Playback lifecycle state
+  // MARK: - Playback lifecycle state
   // TODO: turn into enum?
 
   var isIdle: Bool = true {
@@ -104,7 +104,7 @@ class PlaybackInfo {
   var isNetworkResource: Bool = false
   var mpvMd5: String?
 
-  // MARK: Audio/Video
+  // MARK: - Audio/Video
 
   // TODO: place in GeometryManager
   var videoWidth: Int?
@@ -226,7 +226,7 @@ class PlaybackInfo {
     }
   }
 
-  // - MARK: Subtitles
+  // MARK: - Subtitles
 
   var subEncoding: String?
 
@@ -239,7 +239,7 @@ class PlaybackInfo {
   var currentSubsInfo: [FileInfo] = []
   var currentVideosInfo: [FileInfo] = []
 
-  // - MARK: Cache
+  // MARK: - Cache
 
   var pausedForCache: Bool = false
   var cacheUsed: Int = 0
@@ -311,7 +311,7 @@ class PlaybackInfo {
     }
   }
 
-  // - MARK: Thumbnails
+  // MARK: - Thumbnails
 
   var thumbnailsReady = false
   var thumbnailsProgress: Double = 0

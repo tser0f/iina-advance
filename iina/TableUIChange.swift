@@ -19,7 +19,7 @@ import Foundation
  This objects attempts to provide as much of this as possible and provide future reusability.
  */
 class TableUIChange {
-  // - MARK: Static definitions
+  // MARK: - Static definitions
 
   typealias CompletionHandler = (TableUIChange) -> Void
   typealias AnimationBlock = (NSAnimationContext) -> Void
@@ -63,7 +63,7 @@ class TableUIChange {
   // Will not call to update selection if this is nil.
   var newSelectedRowIndexes: IndexSet? = nil
 
-  // - MARK: Optional vars
+  // MARK: - Optional vars
 
   // Provide this to restore old selection when calculating the inverse of this change (when doing an undo of "move").
   // TODO: (optimization) figure out how to calculate this from `toMove` instead of storing this

@@ -163,7 +163,7 @@ class UIAnimation {
   }
 }
 
-// - MARK: Extensions for disabling animation
+// MARK: - Extensions for disabling animation
 
 extension NSLayoutConstraint {
   /// Even when executed inside an animation block, MacOS only sometimes creates implicit animations for changes to constraints.

@@ -61,7 +61,7 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
     searchField.delegate = self
   }
 
-  // - MARK: NSTableView delegate and data source
+  // MARK: - NSTableView delegate and data source
 
   func numberOfRows(in tableView: NSTableView) -> Int {
     if tableView == familyTableView {
@@ -100,7 +100,7 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
     }
   }
 
-  // - MARK: NSTextField delegate
+  // MARK: - NSTextField delegate
 
   func controlTextDidChange(_ obj: Notification) {
     familyTableView.deselectAll(searchField)
@@ -137,7 +137,7 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
   }
 
 
-  // - MARK: Utils
+  // MARK: - Utils
 
   private func updatePreview() {
     guard chosenFontMembers != nil else { return }

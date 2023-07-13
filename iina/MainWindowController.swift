@@ -913,7 +913,7 @@ class MainWindowController: PlayerWindowController {
     constrainVideoViewForWindowedMode()
   }
 
-  // - MARK: VideoView Constraints
+  // MARK: - VideoView Constraints
 
   private func addOrUpdate(_ existing: NSLayoutConstraint?,
                            _ attr: NSLayoutConstraint.Attribute, _ relation: NSLayoutConstraint.Relation, _ constant: CGFloat,
@@ -1021,7 +1021,7 @@ class MainWindowController: PlayerWindowController {
     window.appearance = appearance
   }
 
-  // - MARK: Controllers & Title Bar Layout
+  // MARK: - Controllers & Title Bar Layout
 
   /**
    This ONLY updates the constraints to toggle between `inside` and `outside` placement types.
@@ -1490,7 +1490,7 @@ class MainWindowController: PlayerWindowController {
       currentLayout = futureLayout
     })
 
-    // StartingAnimation 1: show fadeable views from current layout
+    // StartingAnimation 1: Show fadeable views from current layout
     for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopPanel: true) {
       transition.animationTasks.append(fadeAnimation)
     }
@@ -1507,12 +1507,12 @@ class MainWindowController: PlayerWindowController {
       }))
     }
 
-    // Ending animations:
-
-    // Not animated: Update constraints. Should have no visible changes.
+    // Middle point: update constraints. Should have no visible changes.
     transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
       updateHiddenViewsAndConstraints(transition)
     })
+
+    // Ending animations:
 
     // EndingAnimation: Open new panels and fade in new views
     transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in

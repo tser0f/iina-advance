@@ -148,16 +148,7 @@ extension MainWindowController {
     }
   }
 
-  // MARK: - Main Window functions
-  
-  // For JavascriptAPICore:
-  func isShowingSettingsSidebar() -> Bool {
-    return leadingSidebar.visibleTabGroup == .settings || trailingSidebar.visibleTabGroup == .settings
-  }
-
-  func isShowing(sidebarTab tab: SidebarTab) -> Bool {
-    return leadingSidebar.visibleTab == tab || trailingSidebar.visibleTab == tab
-  }
+  // MARK: - Changing visibility
 
   @IBAction func toggleLeadingSidebarVisibility(_ sender: NSButton) {
     toggleVisibility(of: leadingSidebar)
@@ -441,7 +432,7 @@ extension MainWindowController {
       videoContainerLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
     }
 
-    let coefficients = getLeadingSidebarCoefficients(show: false, placement: leadingSidebar.placement)
+    let coefficients = getLeadingSidebarWidthCoefficients(show: false, placement: leadingSidebar.placement)
 
     videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(
       equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
@@ -498,7 +489,7 @@ extension MainWindowController {
       videoContainerTrailingToTrailingSidebarCropLeadingConstraint.isActive = true
     }
 
-    let coefficients = getTrailingSidebarCoefficients(show: false, placement: trailingSidebar.placement)
+    let coefficients = getTrailingSidebarWidthCoefficients(show: false, placement: trailingSidebar.placement)
 
     videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint = videoContainerView.trailingAnchor.constraint(
       equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
@@ -594,11 +585,11 @@ extension MainWindowController {
   /**
    For opening/closing `leadingSidebar` via constraints, multiply each times the sidebar width
    Correesponding to:
-   (videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint,
-   videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
-   videoContainerLeadingOffsetFromContentViewLeadingConstraint)
+   (`videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint`,
+   `videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint`,
+   `videoContainerLeadingOffsetFromContentViewLeadingConstraint`)
    */
-  private func getLeadingSidebarCoefficients(show: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
+  private func getLeadingSidebarWidthCoefficients(show: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
     case .insideVideo:
       if show {
@@ -622,7 +613,7 @@ extension MainWindowController {
   private func updateLeadingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
     Logger.log("\(show ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
 
-    let coefficients = getLeadingSidebarCoefficients(show: show, placement: placement)
+    let coefficients = getLeadingSidebarWidthCoefficients(show: show, placement: placement)
     videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
     videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
     videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(coefficients.2 * newWidth)
@@ -631,11 +622,11 @@ extension MainWindowController {
   /**
    For opening/closing `trailingSidebar` via constraints, multiply each times the sidebar width
    Correesponding to:
-   (videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint,
-   videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint,
-   videoContainerTrailingOffsetFromContentViewTrailingConstraint)
+   (`videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint`,
+   `videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint`,
+   `videoContainerTrailingOffsetFromContentViewTrailingConstraint`)
    */
-  private func getTrailingSidebarCoefficients(show: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
+  private func getTrailingSidebarWidthCoefficients(show: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
     case .insideVideo:
       if show {
@@ -658,10 +649,21 @@ extension MainWindowController {
 
   private func updateTrailingSidebarWidth(to newWidth: CGFloat, show: Bool, placement: Preference.PanelPlacement) {
     Logger.log("\(show ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
-    let coefficients = getTrailingSidebarCoefficients(show: show, placement: placement)
+    let coefficients = getTrailingSidebarWidthCoefficients(show: show, placement: placement)
     videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
     videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
     videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(coefficients.2 * newWidth)
+  }
+
+  // MARK: - Various functions
+
+  // For JavascriptAPICore:
+  func isShowingSettingsSidebar() -> Bool {
+    return leadingSidebar.visibleTabGroup == .settings || trailingSidebar.visibleTabGroup == .settings
+  }
+
+  func isShowing(sidebarTab tab: SidebarTab) -> Bool {
+    return leadingSidebar.visibleTab == tab || trailingSidebar.visibleTab == tab
   }
 
   // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that
@@ -824,17 +826,17 @@ extension MainWindowController {
   }
 
   func hideSidebarsOnClick() -> Bool {
-    var registeredClick = false
+    var didSomething = false
     if let visibleTab = leadingSidebar.visibleTab, Preference.bool(for: .hideLeadingSidebarOnClick) {
       changeVisibility(forTab: visibleTab, to: false)
-      registeredClick = true
+      didSomething = true
     }
 
     if let visibleTab = trailingSidebar.visibleTab, Preference.bool(for: .hideTrailingSidebarOnClick) {
       changeVisibility(forTab: visibleTab, to: false)
-      registeredClick = true
+      didSomething = true
     }
-    return registeredClick
+    return didSomething
   }
 }
 

@@ -23,7 +23,7 @@ import Foundation
  └───────────────────────────────────────────┘
  */
 struct MainWindowGeometry: Equatable {
-  // - MARK: Stored properties
+  // MARK: - Stored properties
 
   let windowFrame: NSRect
 
@@ -33,7 +33,7 @@ struct MainWindowGeometry: Equatable {
   let bottomPanelHeight: CGFloat
   let leftPanelWidth: CGFloat
 
-  // - MARK: Initializers
+  // MARK: - Initializers
 
   init(windowFrame: NSRect, topPanelHeight: CGFloat, rightPanelWidth: CGFloat, bottomPanelHeight: CGFloat, leftPanelWidth: CGFloat) {
     assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
@@ -58,7 +58,7 @@ struct MainWindowGeometry: Equatable {
               bottomPanelHeight: bottomPanelHeight, leftPanelWidth: leftPanelWidth)
   }
 
-  // - MARK: Derived properties
+  // MARK: - Derived properties
 
   var videoSize: NSSize {
     return NSSize(width: windowFrame.width - rightPanelWidth - leftPanelWidth,
