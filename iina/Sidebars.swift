@@ -123,6 +123,10 @@ extension MainWindowController {
       return visibleTabGroup?.width() ?? 0
     }
 
+    var currentOutsidePanelWidth: CGFloat {
+      return isVisible && placement == .outsideVideo ? currentWidth : 0
+    }
+
     private var lastVisibleTab: SidebarTab? = nil
 
     var defaultTabToShow: SidebarTab? {

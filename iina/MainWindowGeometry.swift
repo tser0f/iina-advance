@@ -49,6 +49,9 @@ struct MainWindowGeometry: Equatable {
   }
 
   init(windowFrame: CGRect, videoFrame: CGRect) {
+    assert(videoFrame.height <= windowFrame.height, "videoFrame.height (\(videoFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
+    assert(videoFrame.width <= windowFrame.width, "videoFrame.width (\(videoFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
+
     let leftPanelWidth = videoFrame.origin.x
     let bottomPanelHeight = videoFrame.origin.y
     let rightPanelWidth = windowFrame.width - videoFrame.width - leftPanelWidth

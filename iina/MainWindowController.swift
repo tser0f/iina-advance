@@ -132,8 +132,7 @@ class MainWindowController: PlayerWindowController {
 
   // For Pinch To Magnify gesture:
   var lastMagnification: CGFloat = 0.0
-  var windowFrameAtMagnificationBegin = NSRect()
-  var videoContainerFrameAtMagnificationBegin = NSRect()
+  var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoFrame: NSRect())
   private lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
   }()
@@ -2329,7 +2328,7 @@ class MainWindowController: PlayerWindowController {
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
     guard pinchAction != .none else { return }
-    guard !isInInteractiveMode, let window = window else { return }
+    guard !isInInteractiveMode else { return }
 
     switch pinchAction {
     case .none:
@@ -2350,8 +2349,7 @@ class MainWindowController: PlayerWindowController {
       switch recognizer.state {
       case .began:
         // FIXME: confirm reset on video size change due to track change
-        windowFrameAtMagnificationBegin = window.frame
-        videoContainerFrameAtMagnificationBegin = videoContainerView.frame
+        windowGeometryAtMagnificationBegin = buildMainWindowGeometryFromCurrentLayout()
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
@@ -2700,8 +2698,8 @@ class MainWindowController: PlayerWindowController {
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
       let topHeight = transition.toLayout.topPanelOutsideHeight
       let bottomHeight = transition.toLayout.bottomPanelOutsideHeight
-      let leadingWidth = leadingSidebar.isVisible && leadingSidebar.placement == .outsideVideo ? leadingSidebar.currentWidth : 0
-      let trailingWidth = trailingSidebar.isVisible && trailingSidebar.placement == .outsideVideo ? trailingSidebar.currentWidth : 0
+      let leadingWidth = leadingSidebar.currentOutsidePanelWidth
+      let trailingWidth = trailingSidebar.currentOutsidePanelWidth
 
       let priorWindowFrame = priorWindowedFrame.resizeOutsidePanels(newTopHeight: topHeight,
                                                                             newTrailingWidth: trailingWidth,
@@ -3868,13 +3866,12 @@ class MainWindowController: PlayerWindowController {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
 
-    let origVideoSize = videoContainerFrameAtMagnificationBegin.size
+    let origVideoSize = windowGeometryAtMagnificationBegin.videoSize
     let newVideoSize = NSSize(width: origVideoSize.width * scale,
                               height: origVideoSize.height * scale);
 
     resizeVideo(toVideoSize: newVideoSize,
-               fromVideoFrame: videoContainerFrameAtMagnificationBegin,
-               fromWindowFrame: windowFrameAtMagnificationBegin,
+               fromGeometry: windowGeometryAtMagnificationBegin,
                animate: false)
   }
 
@@ -3888,21 +3885,19 @@ class MainWindowController: PlayerWindowController {
    • If `fromWindowFrame` is not provided, it will default to `window.frame`
    */
   func resizeVideo(toVideoSize desiredVideoSize: CGSize,
-                   fromVideoFrame: CGRect? = nil, fromWindowFrame: CGRect? = nil,
+                   fromGeometry: MainWindowGeometry? = nil,
                    animate: Bool = true) {
     guard !isInInteractiveMode, let window = window else { return }
     let newWindowGeo = computeWindowGeometryForVideoResize(toVideoSize: desiredVideoSize,
-                                                           fromVideoFrame: fromVideoFrame, fromWindowFrame: fromWindowFrame)
+                                                           fromGeometry: fromGeometry)
     window.setFrame(newWindowGeo.windowFrame, display: true, animate: animate)
   }
 
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
   private func computeWindowGeometryForVideoResize(toVideoSize desiredVideoSize: CGSize,
-                                                fromVideoFrame oldVideoFrame: CGRect? = nil,
-                                                fromWindowFrame oldWindowFrame: CGRect? = nil) -> MainWindowGeometry {
+                                                   fromGeometry: MainWindowGeometry? = nil) -> MainWindowGeometry {
 
-    let oldScaleGeo = MainWindowGeometry(windowFrame: oldWindowFrame ?? self.window!.frame,
-                                        videoFrame: oldVideoFrame ?? self.videoContainerView.frame)
+    let oldScaleGeo = fromGeometry ?? buildMainWindowGeometryFromCurrentLayout()
     let newScaleGeo = oldScaleGeo.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
 
     if Logger.isEnabled(.verbose) {
@@ -3914,7 +3909,19 @@ class MainWindowController: PlayerWindowController {
   }
 
   func buildMainWindowGeometryFromCurrentLayout() -> MainWindowGeometry {
-    return MainWindowGeometry(windowFrame: window!.frame, videoFrame: videoContainerView.frame)
+    let windowFrame = window!.frame
+    let videoFrame = videoContainerView.frame
+
+    guard videoFrame.width <= windowFrame.width && videoFrame.height <= windowFrame.height else {
+      Logger.log("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (Video: \(videoFrame); Window: \(windowFrame))",
+        level: .error, subsystem: player.subsystem)
+      return MainWindowGeometry(windowFrame: windowFrame,
+                                topPanelHeight: currentLayout.topPanelHeight,
+                                rightPanelWidth: trailingSidebar.currentOutsidePanelWidth,
+                                bottomPanelHeight: currentLayout.bottomPanelOutsideHeight,
+                                leftPanelWidth: leadingSidebar.currentOutsidePanelWidth)
+    }
+    return MainWindowGeometry(windowFrame: windowFrame, videoFrame: videoFrame)
   }
 
   // MARK: - UI: Others
