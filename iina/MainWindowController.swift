@@ -200,8 +200,8 @@ class MainWindowController: PlayerWindowController {
 
   /** Views that will show/hide when cursor moving in/out the window. */
   var fadeableViews = Set<NSView>()
-
-  var systemFadeableViews = Set<NSView>()
+  /** Similar to `fadeableViews`, but may fade in differently depending on configuration of top panel. */
+  var fadeableViewsTopPanel = Set<NSView>()
 
   // Left and right arrow buttons
 
@@ -344,6 +344,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   var animationState: UIAnimationState = .shown
+  var topPanelAnimationState: UIAnimationState = .shown
   var osdAnimationState: UIAnimationState = .hidden
 
   // MARK: - Observed user defaults
@@ -1160,7 +1161,7 @@ class MainWindowController: PlayerWindowController {
     let buttonVisibility = currentLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
     pinToTopButton.state = isOntop ? .on : .off
     apply(visibility: buttonVisibility, to: pinToTopButton)
-    if buttonVisibility == .showFadeable {
+    if buttonVisibility == .showFadeableTopPanel {
       showFadeableViews()
     }
   }
@@ -1209,7 +1210,8 @@ class MainWindowController: PlayerWindowController {
   enum Visibility {
     case hidden
     case showAlways
-    case showFadeable
+    case showFadeableTopPanel  // fade in as part of the top panel
+    case showFadeableNonTopPanel          // fade in as a fadeable view which is not top panel
 
     var isShowable: Bool {
       return self != .hidden
@@ -1333,7 +1335,7 @@ class MainWindowController: PlayerWindowController {
       }
 
       if topPanelPlacement == .insideVideo {
-        return .showFadeable
+        return .showFadeableNonTopPanel
       }
 
       return .showAlways
@@ -1346,11 +1348,17 @@ class MainWindowController: PlayerWindowController {
       view.alphaValue = 0
       view.isHidden = true
       fadeableViews.remove(view)
+      fadeableViewsTopPanel.remove(view)
     case .showAlways:
       view.alphaValue = 1
       view.isHidden = false
       fadeableViews.remove(view)
-    case .showFadeable:
+      fadeableViewsTopPanel.remove(view)
+    case .showFadeableTopPanel:
+      view.alphaValue = 1
+      view.isHidden = false
+      fadeableViewsTopPanel.insert(view)
+    case .showFadeableNonTopPanel:
       view.alphaValue = 1
       view.isHidden = false
       fadeableViews.insert(view)
@@ -1365,12 +1373,12 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func applyHiddenOnly(visibility: Visibility, to view: NSView) {
+  private func applyHiddenOnly(visibility: Visibility, to view: NSView, isTopPanel: Bool = true) {
     guard visibility == .hidden else { return }
     apply(visibility: visibility, view)
   }
 
-  private func applyShowableOnly(visibility: Visibility, to view: NSView) {
+  private func applyShowableOnly(visibility: Visibility, to view: NSView, isTopPanel: Bool = true) {
     guard visibility != .hidden else { return }
     apply(visibility: visibility, view)
   }
@@ -1429,6 +1437,7 @@ class MainWindowController: PlayerWindowController {
       updatePanelBlendingModes(to: transition.toLayout)
       apply(visibility: transition.toLayout.titleIconAndText, titleTextField, documentIconButton)
       animationState = .shown
+      topPanelAnimationState = .shown
       resetFadeTimer()
     }
   }
@@ -1482,7 +1491,7 @@ class MainWindowController: PlayerWindowController {
     })
 
     // StartingAnimation 1: show fadeable views from current layout
-    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration) {
+    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopPanel: true) {
       transition.animationTasks.append(fadeAnimation)
     }
 
@@ -1523,6 +1532,7 @@ class MainWindowController: PlayerWindowController {
       apply(visibility: futureLayout.titleIconAndText, titleTextField, documentIconButton)
 
       animationState = .shown
+      topPanelAnimationState = .shown
       resetFadeTimer()
     })
 
@@ -1530,7 +1540,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func fadeOutOldViews(_ transition: LayoutTransition) {
-    animationState = .willHide
     let futureLayout = transition.toLayout
     Logger.log("FadeOutOldViews", level: .verbose, subsystem: player.subsystem)
 
@@ -1552,9 +1561,9 @@ class MainWindowController: PlayerWindowController {
     if transition.isTopPanelPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
       // Hide all title bar accessories (if needed):
       leadingTitleBarAccessoryView.alphaValue = 0
-      fadeableViews.remove(leadingTitleBarAccessoryView)
+      fadeableViewsTopPanel.remove(leadingTitleBarAccessoryView)
       trailingTitleBarAccessoryView.alphaValue = 0
-      fadeableViews.remove(trailingTitleBarAccessoryView)
+      fadeableViewsTopPanel.remove(trailingTitleBarAccessoryView)
     } else {
       /// We may have gotten here in response to one of these buttons' visibility being toggled in the prefs,
       /// so we need to allow for showing/hiding these individually.
@@ -1562,15 +1571,15 @@ class MainWindowController: PlayerWindowController {
       /// So just set alpha value for now, and hide later in `updateHiddenViewsAndConstraints()`
       if futureLayout.leadingSidebarToggleButton == .hidden {
         leadingSidebarToggleButton.alphaValue = 0
-        fadeableViews.remove(leadingSidebarToggleButton)
+        fadeableViewsTopPanel.remove(leadingSidebarToggleButton)
       }
       if futureLayout.trailingSidebarToggleButton == .hidden {
         trailingSidebarToggleButton.alphaValue = 0
-        fadeableViews.remove(trailingSidebarToggleButton)
+        fadeableViewsTopPanel.remove(trailingSidebarToggleButton)
       }
       if futureLayout.pinToTopButton == .hidden {
         pinToTopButton.alphaValue = 0
-        fadeableViews.remove(pinToTopButton)
+        fadeableViewsTopPanel.remove(pinToTopButton)
       }
     }
 
@@ -1792,7 +1801,7 @@ class MainWindowController: PlayerWindowController {
 
     if futureLayout.isFullScreen {
       if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
-        apply(visibility: .showFadeable, to: additionalInfoView)
+        apply(visibility: .showFadeableNonTopPanel, to: additionalInfoView)
       }
     } else {
       /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
@@ -1939,7 +1948,7 @@ class MainWindowController: PlayerWindowController {
       futureLayout.titleIconAndText = .showAlways
       futureLayout.trafficLightButtons = .showAlways
     } else {
-      let visibleState: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
+      let visibleState: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeableTopPanel : .showAlways
 
       futureLayout.topPanelView = visibleState
       futureLayout.trafficLightButtons = visibleState
@@ -1973,7 +1982,7 @@ class MainWindowController: PlayerWindowController {
       // add fragment views
       switch futureLayout.oscPosition {
       case .floating:
-        futureLayout.controlBarFloating = .showFadeable  // floating is always fadeable
+        futureLayout.controlBarFloating = .showFadeableNonTopPanel  // floating is always fadeable
 
         futureLayout.setupControlBarInternalViews = { [self] in
           currentControlBar = controlBarFloating
@@ -2009,7 +2018,7 @@ class MainWindowController: PlayerWindowController {
           futureLayout.titleBarHeight = reducedTitleBarHeight
         }
 
-        let visibility: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeable : .showAlways
+        let visibility: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeableTopPanel : .showAlways
         futureLayout.topPanelView = visibility
         futureLayout.topOSCHeight = oscBarHeight
 
@@ -2021,7 +2030,7 @@ class MainWindowController: PlayerWindowController {
 
       case .bottom:
         futureLayout.bottomOSCHeight = oscBarHeight
-        futureLayout.controlBarBottom = (futureLayout.bottomPanelPlacement == .insideVideo) ? .showFadeable : .showAlways
+        futureLayout.controlBarBottom = (futureLayout.bottomPanelPlacement == .insideVideo) ? .showFadeableNonTopPanel : .showAlways
 
         futureLayout.setupControlBarInternalViews = { [self] in
           currentControlBar = controlBarBottom
@@ -2300,10 +2309,22 @@ class MainWindowController: PlayerWindowController {
     }
 
     if isMouseInWindow {
+      let isPrefEnabled = Preference.enum(for: .showTopPanelTrigger) == Preference.ShowTopPanelTrigger.topPanelHover
+      let forceShowTopPanel = isPrefEnabled && isMouseInTopPanelArea(event) && topPanelAnimationState == .hidden
       // Check whether mouse is in OSC
       let shouldRestartFadeTimer = !isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView])
-      showFadeableViews(thenRestartFadeTimer: shouldRestartFadeTimer, duration: 0)
+      showFadeableViews(thenRestartFadeTimer: shouldRestartFadeTimer, duration: 0, forceShowTopPanel: forceShowTopPanel)
     }
+  }
+
+  // assumes mouse is in window
+  private func isMouseInTopPanelArea(_ event: NSEvent) -> Bool {
+    if isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, controlBarBottom]) {
+      return false
+    }
+    guard let window = window, let contentView = window.contentView else { return false }
+    let heightThreshold = contentView.frame.height - currentLayout.topPanelHeight
+    return event.locationInWindow.y >= heightThreshold
   }
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
@@ -2845,10 +2866,16 @@ class MainWindowController: PlayerWindowController {
     return requestedSize
   }
 
+  func windowWillStartLiveResize(_ notification: Notification) {
+    guard let window = notification.object as? NSWindow else { return }
+    Logger.log("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)", level: .verbose, subsystem: player.subsystem)
+
+  }
+
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
-//    Logger.log("WindowDidResize: \(window.frame)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowDidResize (\(window.inLiveResize)): \(window.frame)", level: .verbose, subsystem: player.subsystem)
 
     UIAnimation.disableAnimation {
       if isInInteractiveMode {
@@ -3046,19 +3073,22 @@ class MainWindowController: PlayerWindowController {
   // MARK: - UI: Show / Hide Fadeable Views
 
   // Shows fadeableViews and titlebar via fade
-  private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration) {
-    let animationTasks: [UIAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: duration)
+  private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration,
+                                 forceShowTopPanel: Bool = false) {
+    let animationTasks: [UIAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: duration,
+                                                                               forceShowTopPanel: forceShowTopPanel)
     animationQueue.run(animationTasks)
   }
 
-  private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration) -> [UIAnimation.Task] {
+  private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration,
+                                                 forceShowTopPanel: Bool = false) -> [UIAnimation.Task] {
     var animationTasks: [UIAnimation.Task] = []
 
     guard !player.disableUI && !isInInteractiveMode else {
       return animationTasks
     }
 
-    guard animationState == .hidden else {
+    guard forceShowTopPanel || animationState == .hidden else {
       if restartFadeTimer {
         resetFadeTimer()
       } else {
@@ -3068,6 +3098,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     let currentLayout = self.currentLayout
+    let showTopPanel = forceShowTopPanel || Preference.enum(for: .showTopPanelTrigger) == Preference.ShowTopPanelTrigger.windowHover
 
     animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
       Logger.log("Showing fadeable views", level: .verbose, subsystem: player.subsystem)
@@ -3082,6 +3113,13 @@ class MainWindowController: PlayerWindowController {
       for v in fadeableViews {
         v.animator().alphaValue = 1
       }
+
+      if showTopPanel {
+        topPanelAnimationState = .willShow
+        for v in fadeableViewsTopPanel {
+          v.animator().alphaValue = 1
+        }
+      }
     }))
 
     // Not animated, but needs to wait until after fade is done
@@ -3092,11 +3130,19 @@ class MainWindowController: PlayerWindowController {
         for v in fadeableViews {
           v.isHidden = false
         }
+
         if restartFadeTimer {
           resetFadeTimer()
         }
+      }
+
+      if showTopPanel && topPanelAnimationState == .willShow {
+        topPanelAnimationState = .shown
+        for v in fadeableViewsTopPanel {
+          v.isHidden = false
+        }
         /// Special case for `trafficLightButtons` due to AppKit quirk
-        if currentLayout.trafficLightButtons == .showFadeable {
+        if currentLayout.trafficLightButtons == .showFadeableTopPanel {
           for button in trafficLightButtons {
             button.isHidden = false
           }
@@ -3143,12 +3189,16 @@ class MainWindowController: PlayerWindowController {
 
       destroyFadeTimer()
       animationState = .willHide
+      topPanelAnimationState = .willHide
 
       for v in fadeableViews {
         v.animator().alphaValue = 0
       }
+      for v in fadeableViewsTopPanel {
+        v.animator().alphaValue = 0
+      }
       /// Quirk 1: special handling for `trafficLightButtons`
-      if currentLayout.trafficLightButtons == .showFadeable {
+      if currentLayout.trafficLightButtons == .showFadeableTopPanel {
         for button in trafficLightButtons {
           button.alphaValue = 0
         }
@@ -3160,11 +3210,15 @@ class MainWindowController: PlayerWindowController {
       guard animationState == .willHide else { return }
 
       animationState = .hidden
+      topPanelAnimationState = .hidden
       for v in fadeableViews {
         v.isHidden = true
       }
+      for v in fadeableViewsTopPanel {
+        v.isHidden = true
+      }
       /// Quirk 1: need to set `alphaValue` back to `1` so that each button's corresponding menu items still work
-      if currentLayout.trafficLightButtons == .showFadeable {
+      if currentLayout.trafficLightButtons == .showFadeableTopPanel {
         for button in trafficLightButtons {
           button.isHidden = true
           button.alphaValue = 1
@@ -3753,9 +3807,9 @@ class MainWindowController: PlayerWindowController {
 //      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
 //      fsState.priorWindowedFrame = newWindowFrame
     } else {
-      Logger.log("AdjustFrameAfterVideoReconfig: Updating videoSize from: \(oldVideoSize) to: \(newVideoSize); newWindowFrame: \(newWindowFrame)",
-                 level: .verbose, subsystem: player.subsystem)
-      window.setFrame(newWindowFrame, display: true, animate: true)
+//      Logger.log("AdjustFrameAfterVideoReconfig \(window.inLiveResize): Updating videoSize from: \(oldVideoSize) to: \(newVideoSize); newWindowFrame: \(newWindowFrame)",
+//                 level: .verbose, subsystem: player.subsystem)
+//      window.setFrame(newWindowFrame, display: true, animate: true)
       updateWindowParametersForMPV(withSize: newVideoSize)
     }
 

@@ -107,7 +107,7 @@ struct Preference {
     // MARK: - Keys: UI
 
     /// Title bar and OSC
-    static let showTitleBarTrigger = Key("showTitleBarTrigger")
+    static let showTopPanelTrigger = Key("showTopPanelTrigger")
     static let topPanelPlacement = Key("topPanelPlacement")
     static let bottomPanelPlacement = Key("bottomPanelPlacement")
     static let enableOSC = Key("enableOSC")
@@ -509,11 +509,11 @@ struct Preference {
     }
   }
 
-  enum ShowTitleBarTrigger: Int, InitializingFromKey {
-    case onWindowHover = 1
-    case onSingleClick
+  enum ShowTopPanelTrigger: Int, InitializingFromKey {
+    case windowHover = 1
+    case topPanelHover
 
-    static var defaultValue = ShowTitleBarTrigger.onWindowHover
+    static var defaultValue = ShowTopPanelTrigger.windowHover
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -933,7 +933,7 @@ struct Preference {
     .oscBarToolbarIconSize: 14,
     .oscBarToolbarIconSpacing: 5,  // spacing between icons is x2 this number
     .enableOSC: true,
-    .showTitleBarTrigger: ShowTitleBarTrigger.onWindowHover.rawValue,
+    .showTopPanelTrigger: ShowTopPanelTrigger.windowHover.rawValue,
     .topPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .bottomPanelPlacement: PanelPlacement.insideVideo.rawValue,
     .oscBarHeight: 44,

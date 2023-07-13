@@ -53,9 +53,8 @@
             <point key="canvasLocation" x="541" y="-496"/>
         </customView>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <customView id="M9c-Ak-HmK" userLabel="Prefs &gt; UI &gt; Appearance" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="M9c-Ak-HmK" userLabel="Prefs &gt; UI &gt; Appearance" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="480" height="32"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleAppearance" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="APB-Nm-aTA">
                     <rect key="frame" x="-2" y="8" width="87" height="16"/>
@@ -114,9 +113,8 @@
             <point key="canvasLocation" x="2" y="-820"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="lH7-Vv-0M1"/>
-        <customView id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="480" height="412"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleWindow" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RFk-nU-SGL">
                     <rect key="frame" x="-2" y="388" width="61" height="16"/>
@@ -613,9 +611,8 @@
             </constraints>
             <point key="canvasLocation" x="2" y="-540"/>
         </customView>
-        <customView id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="460" height="643"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
                     <rect key="frame" x="-2" y="603" width="124" height="32"/>
@@ -632,7 +629,7 @@
                             <rect key="frame" x="0.0" y="379" width="341" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
-                                    <rect key="frame" x="65" y="5" width="134" height="16"/>
+                                    <rect key="frame" x="20" y="5" width="134" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top panel placement:" id="EvR-Ml-f7d">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -640,7 +637,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Panel-Placement Popup">
-                                    <rect key="frame" x="202" y="-4" width="142" height="27"/>
+                                    <rect key="frame" x="157" y="-4" width="187" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Panel-Placement Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -666,31 +663,31 @@
                                 <constraint firstAttribute="trailing" secondItem="f7b-zH-WwI" secondAttribute="trailing" constant="1" id="uW5-UI-eAh"/>
                             </constraints>
                         </customView>
-                        <customView identifier="showTitleBarTriggerContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="yqi-SP-x25" userLabel="Show-Title-Bar-Trigger-Container View">
+                        <customView identifier="showTopPanelTriggerContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="yqi-SP-x25" userLabel="Show-Top-Panel-Trigger-Container View">
                             <rect key="frame" x="0.0" y="351" width="341" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
-                                    <rect key="frame" x="108" y="5" width="91" height="16"/>
-                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Show title bar:" id="RVj-MO-iHC">
+                                    <rect key="frame" x="16" y="5" width="138" height="16"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Show top panel when:" id="RVj-MO-iHC">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="67g-AK-VP6" userLabel="Show-Title-Bar-Trigger Popup">
-                                    <rect key="frame" x="202" y="-4" width="142" height="27"/>
-                                    <popUpButtonCell key="cell" type="push" title="On Window Hover" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Show-Title-Bar-Trigger Popup Button Cell">
+                                    <rect key="frame" x="157" y="-4" width="187" height="27"/>
+                                    <popUpButtonCell key="cell" type="push" title="Mouse moves in window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Show-Title-Bar-Trigger Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="1Wl-Pc-ZHa">
                                             <items>
-                                                <menuItem title="On Window Hover" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
-                                                <menuItem title="On Single Click" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
+                                                <menuItem title="Mouse moves in window" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
+                                                <menuItem title="Mouse is over top panel" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
                                             </items>
                                         </menu>
                                     </popUpButtonCell>
                                     <connections>
-                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.showTitleBarTrigger" id="ng2-OR-2mp"/>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.showTopPanelTrigger" id="ng2-OR-2mp"/>
                                     </connections>
                                 </popUpButton>
                             </subviews>
@@ -1121,14 +1118,12 @@
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="top" secondItem="SyB-0R-TLF" secondAttribute="bottom" constant="8" id="xNr-ni-zgT"/>
                 <constraint firstItem="SyB-0R-TLF" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="HgG-px-UUt" secondAttribute="trailing" constant="8" id="z4E-Tj-yG1"/>
                 <constraint firstItem="GbG-nw-ict" firstAttribute="height" secondItem="f7b-zH-WwI" secondAttribute="height" id="zGO-d4-CbL"/>
-                <constraint firstItem="GbG-nw-ict" firstAttribute="leading" secondItem="f7b-zH-WwI" secondAttribute="leading" id="zIW-49-6lf"/>
                 <constraint firstItem="6ml-Xj-nVX" firstAttribute="leading" secondItem="0eU-xI-byi" secondAttribute="leading" id="zS7-aO-rrc"/>
             </constraints>
             <point key="canvasLocation" x="2" y="27"/>
         </customView>
-        <customView id="c8m-G4-or8" userLabel="Prefs &gt; UI &gt; OSD" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="c8m-G4-or8" userLabel="Prefs &gt; UI &gt; OSD" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="480" height="120"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleOSD" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zyi-J3-lSp">
                     <rect key="frame" x="-2" y="80" width="124" height="32"/>
@@ -1295,9 +1290,8 @@
             </constraints>
             <point key="canvasLocation" x="2" y="451"/>
         </customView>
-        <customView id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="584" height="185"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleSidebars" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E6K-jW-Lzn">
                     <rect key="frame" x="-2" y="161" width="124" height="16"/>
@@ -1553,9 +1547,8 @@
             </constraints>
             <point key="canvasLocation" x="15" y="672"/>
         </customView>
-        <customView id="3uJ-UU-1zw" userLabel="Prefs &gt; UI &gt; Thumbnail Viewer" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="3uJ-UU-1zw" userLabel="Prefs &gt; UI &gt; Thumbnail Viewer" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="480" height="80"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitleThumb" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="maZ-e8-1vw" userLabel="Thumbnail Preview Section Label">
                     <rect key="frame" x="-2" y="40" width="124" height="32"/>
@@ -1696,9 +1689,8 @@
             </constraints>
             <point key="canvasLocation" x="10" y="855"/>
         </customView>
-        <customView id="1fz-oP-RhZ" userLabel="Prefs &gt; UI &gt; PIP" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="1fz-oP-RhZ" userLabel="Prefs &gt; UI &gt; PIP" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="480" height="124"/>
-            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitlePictureInPicture" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ghC-br-cK9">
                     <rect key="frame" x="-2" y="84" width="124" height="32"/>

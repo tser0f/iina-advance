@@ -90,7 +90,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var pipMinimizeWindow: NSButton!
 
   private let observedPrefKeys: [Preference.Key] = [
-    .showTitleBarTrigger,
+    .showTopPanelTrigger,
     .topPanelPlacement,
     .bottomPanelPlacement,
     .enableOSC,
@@ -152,7 +152,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
-    case PK.showTitleBarTrigger.rawValue,
+    case PK.showTopPanelTrigger.rawValue,
       PK.enableOSC.rawValue,
       PK.topPanelPlacement.rawValue,
       PK.bottomPanelPlacement.rawValue,
@@ -211,8 +211,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         viewHidePairs.append((oscBottomPlacementContainerView, !oscIsBottom))
       }
 
-//      let showShowTitleBarTrigger = ib.topPanelPlacement == .insideVideo
-      let showShowTitleBarTrigger = false // TODO: implement showing title bar on click
+      let showShowTitleBarTrigger = ib.topPanelPlacement == .insideVideo
       if showTitleBarTriggerContainerView.isHidden != !showShowTitleBarTrigger {
         viewHidePairs.append((showTitleBarTriggerContainerView, !showShowTitleBarTrigger))
       }
