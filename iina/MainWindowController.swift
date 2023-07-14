@@ -1454,7 +1454,10 @@ class MainWindowController: PlayerWindowController {
     let startingAnimationCount: CGFloat = 3
 
     let startingAnimationDuration: CGFloat
-    let endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
+    var endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
+    if !transition.isTogglingFullScreen {
+      endingAnimationDuration /= 2
+    }
     if let totalStartingDuration = totalStartingDuration {
       startingAnimationDuration = totalStartingDuration / startingAnimationCount
     } else {
@@ -1509,8 +1512,18 @@ class MainWindowController: PlayerWindowController {
       }
 
       openNewPanels(transition)
-      fadeInNewViews(transition)
+
+      if transition.isTogglingFullScreen {
+        // Fullscreen animations don't have much time. Combine fadeIn step in same animation:
+        fadeInNewViews(transition)
+      }
     }))
+
+    if !transition.isTogglingFullScreen {
+      transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
+        fadeInNewViews(transition)
+      }))
+    }
 
     // After animations all finish, start fade timer
     transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
@@ -1800,6 +1813,8 @@ class MainWindowController: PlayerWindowController {
       for button in trafficLightButtons {
         button.alphaValue = 1
       }
+      titleTextField?.alphaValue = 1
+      documentIconButton?.alphaValue = 1
 
       if futureLayout.trafficLightButtons != .hidden {
         for button in trafficLightButtons {
@@ -2560,7 +2575,9 @@ class MainWindowController: PlayerWindowController {
 
     // Make sure this doesn't happen until after animation finishes
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
+
       if isLegacy {
+        // Enter legacy full screen
         window.styleMask.insert(.borderless)
         window.styleMask.remove(.resizable)
 
@@ -2570,11 +2587,11 @@ class MainWindowController: PlayerWindowController {
 
         (window as! MainWindow).forceKeyAndMain = true
         window.level = .floating
-      }
-
-      /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
-      for button in trafficLightButtons {
-        button.isHidden = false
+      } else {
+        /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
+        for button in trafficLightButtons {
+          button.isHidden = false
+        }
       }
 
       videoView.needsLayout = true
@@ -2670,16 +2687,15 @@ class MainWindowController: PlayerWindowController {
 
       apply(visibility: .hidden, to: additionalInfoView)
 
-      if !isLegacy {
-        // Hide traffic light buttons & title during the animation:
-        hideBuiltInTitleBarItems()
-      }
-
       fsState.startAnimatingToWindow()
 
       if isLegacy {
         videoView.videoLayer.suspend()
+      } else {  // !isLegacy
+        // Hide traffic light buttons & title during the animation:
+        hideBuiltInTitleBarItems()
       }
+
       player.mpv.setFlag(MPVOption.Window.keepaspect, false)
     })
 
@@ -2706,10 +2722,10 @@ class MainWindowController: PlayerWindowController {
 
     animationTasks.append(contentsOf: transition.animationTasks)
 
-    // Make sure this doesn't happen until after animation finishes
+    // After finishing exit animation
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       if isLegacy {
-        // reset stylemask at the end
+        // Go back to titled style
         window.styleMask.remove(.borderless)
         window.styleMask.insert(.resizable)
         if #available(macOS 10.16, *) {
@@ -2775,7 +2791,7 @@ class MainWindowController: PlayerWindowController {
           /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
           /// but should be ok for brief animations
           button.alphaValue = 1
-          button.isHidden = true
+          button.isHidden = false
         }
         window.titleVisibility = .visible
       }
@@ -3278,7 +3294,6 @@ class MainWindowController: PlayerWindowController {
 
   private func updateOSDPosition() {
     guard let contentView = window?.contentView else { return }
-//    contentView.removeConstraint(additionalInfoToOSDSpaceConstraint)
     contentView.removeConstraint(leadingSidebarToOSDSpaceConstraint)
     contentView.removeConstraint(trailingSidebarToOSDSpaceConstraint)
     let osdPosition: Preference.OSDPosition = Preference.enum(for: .osdPosition)
