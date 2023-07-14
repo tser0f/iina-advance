@@ -41,6 +41,9 @@ class VideoView: NSView {
 
   lazy var hdrSubsystem = Logger.makeSubsystem("hdr")
 
+  // The currently enforced aspect ratio of the video (width/height)
+  var aspectRatio: CGFloat = 1
+
   static let SRGB = CGColorSpaceCreateDeviceRGB()
 
   // MARK: - Attributes
@@ -99,16 +102,8 @@ class VideoView: NSView {
   }
 
   func updateAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
-    let newMultiplier: CGFloat = width == 0 || height == 0 ? 1 : height / width
-    if let aspectRatioConstraint = aspectRatioConstraint {
-      guard aspectRatioConstraint.multiplier != newMultiplier else {
-        return
-      }
-      removeConstraint(aspectRatioConstraint)
-    }
-    Logger.log("Updating videoView aspect ratio constraint to \(newMultiplier)")
-    aspectRatioConstraint = heightAnchor.constraint(equalTo: widthAnchor, multiplier: newMultiplier)
-    aspectRatioConstraint.isActive = true
+    let newAspectRatio: CGFloat = width == 0 || height == 0 ? 1 : width / height
+    aspectRatio = newAspectRatio
   }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {

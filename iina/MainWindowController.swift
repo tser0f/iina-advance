@@ -2851,6 +2851,14 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Window delegate: Resize
 
+  var isLiveResizingWidth = false
+
+  func windowWillStartLiveResize(_ notification: Notification) {
+    guard let window = notification.object as? NSWindow else { return }
+    Logger.log("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)", level: .verbose, subsystem: player.subsystem)
+    isLiveResizingWidth = false
+  }
+
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return requestedSize }
@@ -2865,18 +2873,55 @@ class MainWindowController: PlayerWindowController {
     }
 
     if requestedSize.height <= minSize.height || requestedSize.width <= minSize.width {
-      Logger.log("WindowWillResize: requestedSize too small; changing to min \(minSize)", level: .verbose, subsystem: player.subsystem)
-      let newVideoSize = videoContainerView.frame.size.shrink(toSize: minSize)
-      return computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame.size
+      // Sending the current size seems to work much better with accessibilty requests
+      // than trying to change to the min size
+      Logger.log("WindowWillResize: requestedSize smaller than min \(minSize); returning existing size", level: .verbose, subsystem: player.subsystem)
+      return window.frame.size
     }
 
-    return requestedSize
-  }
+    let requestedVideoSize = NSSize(width: requestedSize.width - (trailingSidebar.currentOutsidePanelWidth + leadingSidebar.currentOutsidePanelWidth),
+                                    height: requestedSize.height - (currentLayout.topPanelHeight + currentLayout.bottomPanelOutsideHeight))
 
-  func windowWillStartLiveResize(_ notification: Notification) {
-    guard let window = notification.object as? NSWindow else { return }
-    Logger.log("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)", level: .verbose, subsystem: player.subsystem)
+    // resize height based on requested width
+    let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoSize.width, height: requestedVideoSize.width / videoView.aspectRatio)
+    let resizeFromWidth = computeWindowGeometryForVideoResize(toVideoSize: resizeFromWidthRequestedVideoSize).windowFrame.size
 
+    // resize width based on requested height
+    let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoSize.height * videoView.aspectRatio, height: requestedVideoSize.height)
+    let resizeFromHeight = computeWindowGeometryForVideoResize(toVideoSize: resizeFromHeightRequestedVideoSize).windowFrame.size
+
+    let newSize: NSSize
+    if window.inLiveResize {
+      /// Notes on the trickiness of live window resize:
+      /// 1. We need to decide whether to (A) keep the width fixed, and resize the height, or (B) keep the height fixed, and resize the width.
+      /// "A" works well when the user grabs the top or bottom sides of the window, but will not allow resizing if the user grabs the left
+      /// or right sides. Similarly, "B" works with left or right sides, but will not work with top or bottom.
+      /// 2. We can make all 4 sides allow resizing by first checking if the user is requesting a different height: if yes, use "B";
+      /// and if no, use "A".
+      /// 3. Unfortunately (2) causes resize from the corners to jump all over the place, because in that case either height or width will change
+      /// in small increments (depending on how fast the user moves the cursor) but this will result in a different choice between "A" or "B" schemes
+      /// each time, with very different answers, which causes the jumpiness. In this case either scheme will work fine, just as long as we stick
+      /// to the same scheme for the whole resize. So to fix this, we add `isLiveResizingWidth`, and once set, stick to scheme "B".
+      if window.frame.height != requestedSize.height {
+        isLiveResizingWidth = true
+      }
+      if isLiveResizingWidth {
+        newSize = resizeFromHeight
+      } else {
+        newSize = resizeFromWidth
+      }
+    } else {
+      // Resize request is not coming from the user. Could be BetterTouchTool, Retangle, or some window manager, or the OS.
+      // These tools seem to expect that both dimensions of the returned size are less than the requested dimensions, so check for this.
+
+      if resizeFromWidth.width <= requestedSize.width && resizeFromWidth.height <= requestedSize.height {
+        newSize = resizeFromWidth
+      } else {
+        newSize = resizeFromHeight
+      }
+    }
+    Logger.log("WindowWillResize: returning \(newSize)", level: .verbose, subsystem: player.subsystem)
+    return newSize
   }
 
   func windowDidResize(_ notification: Notification) {
@@ -3906,11 +3951,11 @@ class MainWindowController: PlayerWindowController {
     let oldScaleGeo = fromGeometry ?? buildMainWindowGeometryFromCurrentLayout()
     let newScaleGeo = oldScaleGeo.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
 
-    if Logger.isEnabled(.verbose) {
-      let actualScale = String(format: "%.2f", newScaleGeo.videoSize.width / CGFloat(player.videoSizeForDisplay.0))
-      Logger.log("Resizing video from \(oldScaleGeo.videoSize) to \(newScaleGeo.videoSize) (\(actualScale)x scale), newWindowFrame: \(newScaleGeo.windowFrame)",
-                 level: .verbose, subsystem: player.subsystem)
-    }
+//    if Logger.isEnabled(.verbose) {
+//      let actualScale = String(format: "%.2f", newScaleGeo.videoSize.width / CGFloat(player.videoSizeForDisplay.0))
+//      Logger.log("Resizing video from \(oldScaleGeo.videoSize) to \(newScaleGeo.videoSize) (\(actualScale)x scale), newWindowFrame: \(newScaleGeo.windowFrame)",
+//                 level: .verbose, subsystem: player.subsystem)
+//    }
     return newScaleGeo
   }
 
