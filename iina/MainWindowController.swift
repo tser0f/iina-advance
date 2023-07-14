@@ -1666,7 +1666,7 @@ class MainWindowController: PlayerWindowController {
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       Logger.log("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)",
                  level: .debug, subsystem: player.subsystem)
-      window.setFrame(newWindowFrame, display: true, animate: true)
+      (window as! MainWindow).setFrameImmediately(newWindowFrame)
     }
 
     if transition.fromLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
@@ -1770,7 +1770,7 @@ class MainWindowController: PlayerWindowController {
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       Logger.log("Calling setFrame() from openNewPanels with newWindowFrame \(newWindowFrame)",
                  level: .debug, subsystem: player.subsystem)
-      window.setFrame(newWindowFrame, display: true, animate: true)
+      (window as! MainWindow).setFrameImmediately(newWindowFrame)
     }
 
     // Update sidebar vertical alignments
@@ -2875,9 +2875,6 @@ class MainWindowController: PlayerWindowController {
       } else if currentLayout.oscPosition == .floating {
         // Update floating control bar position
         updateFloatingOSCAfterWindowDidResize()
-      } else {
-        // May need to update title bar OSC
-        updateSpacingForTitleBarAccessories()
       }
     }
 

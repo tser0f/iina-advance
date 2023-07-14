@@ -10,6 +10,24 @@ import Cocoa
 
 class MainWindow: NSWindow {
   var forceKeyAndMain = false
+  private var useZeroDurationForNextResize = false
+
+  /**
+   By default, `setFrame()` is not immediate, and this can create an undesirable delay when combined with other animations.
+   This function uses a `0` duration animation.
+   */
+  func setFrameImmediately(_ newFrame: NSRect) {
+    useZeroDurationForNextResize = true
+    setFrame(newFrame, display: true, animate: true)
+  }
+
+  override func animationResizeTime(_ newFrame: NSRect) -> TimeInterval {
+    if useZeroDurationForNextResize {
+      useZeroDurationForNextResize = false
+      return 0
+    }
+    return super.animationResizeTime(newFrame)
+  }
 
   override func keyDown(with event: NSEvent) {
     // Forward all key events which the window receives to controller. This fixes:

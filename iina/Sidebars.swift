@@ -376,7 +376,7 @@ extension MainWindowController {
 
         Logger.log("Calling setFrame() from changeVisibilityForSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
                    level: .debug, subsystem: player.subsystem)
-        window.setFrame(newWindowFrame, display: true, animate: true)
+        (window as! MainWindow).setFrameImmediately(newWindowFrame)
       }
       updateSpacingForTitleBarAccessories()
       window.contentView?.layoutSubtreeIfNeeded()
@@ -571,8 +571,8 @@ extension MainWindowController {
       sidebar.visibleTab = nil
       /// Remove `tabGroupView` from its parent (also removes constraints):
       let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
-      viewController.view.removeFromSuperview()
       sidebarView.isHidden = true
+      viewController.view.removeFromSuperview()
       sidebar.animationState = .hidden
     }
   }
@@ -690,23 +690,6 @@ extension MainWindowController {
     sidebar.visibleTab = tab
   }
 
-  private func updateSidebarLocation(_ locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
-    let addingToSidebar: Sidebar
-    let removingFromSidebar: Sidebar
-    if locationID == leadingSidebar.locationID {
-      addingToSidebar = leadingSidebar
-      removingFromSidebar = trailingSidebar
-    } else {
-      addingToSidebar = trailingSidebar
-      removingFromSidebar = leadingSidebar
-    }
-    addingToSidebar.tabGroups.insert(tabGroup)
-    removingFromSidebar.tabGroups.remove(tabGroup)
-
-    // Sidebar buttons may have changed visibility:
-    updateTitleBarAndOSC()
-  }
-
   private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
     for sidebar in [leadingSidebar, trailingSidebar] {
       if sidebar.tabGroups.contains(tabGroup) {
@@ -747,6 +730,23 @@ extension MainWindowController {
                  level: .verbose, subsystem: player.subsystem)
       self.updateSidebarLocation(newLocationID, forTabGroup: tabGroup)
     }
+  }
+
+  private func updateSidebarLocation(_ locationID: Preference.SidebarLocation, forTabGroup tabGroup: SidebarTabGroup) {
+    let addingToSidebar: Sidebar
+    let removingFromSidebar: Sidebar
+    if locationID == leadingSidebar.locationID {
+      addingToSidebar = leadingSidebar
+      removingFromSidebar = trailingSidebar
+    } else {
+      addingToSidebar = trailingSidebar
+      removingFromSidebar = leadingSidebar
+    }
+    addingToSidebar.tabGroups.insert(tabGroup)
+    removingFromSidebar.tabGroups.remove(tabGroup)
+
+    // Sidebar buttons may have changed visibility:
+    updateTitleBarAndOSC()
   }
 
   // MARK: - Mouse events
