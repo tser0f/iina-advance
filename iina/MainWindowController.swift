@@ -964,6 +964,10 @@ class MainWindowController: PlayerWindowController {
     newConstraints.eqOffsetBottom.isActive = true
     newConstraints.eqOffsetLeft.isActive = true
     videoViewConstraints = newConstraints
+
+    /// Go back to enforcing the aspect ratio via `windowWillResize()`, because finer-grained control is needed for windowed mode
+    videoView.removeAspectRatioConstraint()
+
     window?.layoutIfNeeded()
   }
 
@@ -980,6 +984,10 @@ class MainWindowController: PlayerWindowController {
     newConstraints.centerX.isActive = true
     newConstraints.centerY.isActive = true
     videoViewConstraints = newConstraints
+
+    // Change aspectRatio into AutoLayout constraint to force the other constraints to work with it
+    videoView.setAspectRatioConstraint()
+
     window?.layoutIfNeeded()
   }
 
@@ -3770,7 +3778,7 @@ class MainWindowController: PlayerWindowController {
     let videoNativeSize = NSSize(width: vsfd.0, height: vsfd.1)
 
     // set aspect ratio
-    videoView.updateAspectRatioConstraint(w: videoNativeSize.width, h: videoNativeSize.height)
+    videoView.updateAspectRatio(w: videoNativeSize.width, h: videoNativeSize.height)
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoNativeSize
     }

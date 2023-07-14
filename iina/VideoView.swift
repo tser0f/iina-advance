@@ -34,15 +34,15 @@ class VideoView: NSView {
 
   private var aspectRatioConstraint: NSLayoutConstraint!
 
+  // The currently enforced aspect ratio of the video (width/height)
+  var aspectRatio: CGFloat = 1
+
   // cached indicator to prevent unnecessary updates of DisplayLink
   var currentDisplay: UInt32?
 
   private var displayIdleTimer: Timer?
 
   lazy var hdrSubsystem = Logger.makeSubsystem("hdr")
-
-  // The currently enforced aspect ratio of the video (width/height)
-  var aspectRatio: CGFloat = 1
 
   static let SRGB = CGColorSpaceCreateDeviceRGB()
 
@@ -101,9 +101,31 @@ class VideoView: NSView {
     // do nothing
   }
 
-  func updateAspectRatioConstraint(w width: CGFloat, h height: CGFloat) {
+  func updateAspectRatio(w width: CGFloat, h height: CGFloat) {
     let newAspectRatio: CGFloat = width == 0 || height == 0 ? 1 : width / height
     aspectRatio = newAspectRatio
+
+    if let aspectRatioConstraint = aspectRatioConstraint {
+      setAspectRatioConstraint()
+    }
+  }
+
+  func setAspectRatioConstraint() {
+    if let aspectRatioConstraint = aspectRatioConstraint {
+      guard aspectRatioConstraint.multiplier != aspectRatio else {
+        return
+      }
+      removeConstraint(aspectRatioConstraint)
+    }
+    Logger.log("Updating videoView aspect ratio constraint to \(aspectRatio)")
+    aspectRatioConstraint = widthAnchor.constraint(equalTo: heightAnchor, multiplier: aspectRatio)
+    aspectRatioConstraint.isActive = true
+  }
+
+  func removeAspectRatioConstraint() {
+    if let aspectRatioConstraint = aspectRatioConstraint {
+      removeConstraint(aspectRatioConstraint)
+    }
   }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {

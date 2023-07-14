@@ -568,7 +568,7 @@ class PlayerCore: NSObject {
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": videoView])
 
     let (width, height) = originalVideoSize
-    videoView.updateAspectRatioConstraint(w: CGFloat(width), h: CGFloat(height))
+    videoView.updateAspectRatio(w: CGFloat(width), h: CGFloat(height))
     miniPlayer.window?.layoutIfNeeded()
 
     // if received video size before switching to music mode, hide default album art
