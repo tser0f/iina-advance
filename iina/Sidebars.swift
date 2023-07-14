@@ -215,18 +215,25 @@ extension MainWindowController {
                                 then: doAfter)
   }
 
-  func hideSidebarThenShowAgain(_ sidebar: Sidebar) {
-    guard let tab = sidebar.visibleTab else { return }
+  // Updates placements (inside or outside) of both sidebars in the UI so they match the prefs.
+  // If placement of one/both sidebars change while open, closes & reopens the affected sidebars with the new placement.
+  func updateSidebarPlacements() {
+    let leadingPlacementNew: Preference.PanelPlacement = Preference.enum(for: .leadingSidebarPlacement)
+    let trailingPlacementNew: Preference.PanelPlacement = Preference.enum(for: .trailingSidebarPlacement)
 
-    changeVisibility(forTab: tab, to: false, then: { [self] in
-      /// careful to update placement *AFTER* closing sidebar with old placement!
-      if sidebar.locationID == .leadingSidebar {
-        sidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
-      } else if sidebar.locationID == .trailingSidebar {
-        sidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
+    let needLeadingReopen = leadingSidebar.isVisible && leadingSidebar.placement != leadingPlacementNew
+    let needTrailingReopen = trailingSidebar.isVisible && trailingSidebar.placement != trailingPlacementNew
+
+    /// Remember, `showLeading` / `showTrailing` will be ignored if `needLeadingReopen` / `needTrailingReopen` is false, respectively
+    changeVisibilityForSidebars(changeLeading: needLeadingReopen, showLeading: false,
+                                changeTrailing: needTrailingReopen, showTrailing: false, then: { [self] in
+      leadingSidebar.placement = leadingPlacementNew
+      trailingSidebar.placement = trailingPlacementNew
+
+      if needLeadingReopen || needTrailingReopen {
+        changeVisibilityForSidebars(changeLeading: needLeadingReopen, showLeading: true,
+                                    changeTrailing: needTrailingReopen, showTrailing: true)
       }
-
-      self.changeVisibility(forTab: tab, to: true)
     })
   }
 
@@ -367,6 +374,8 @@ extension MainWindowController {
                                                           newLeadingWidth: oldGeometry.leftPanelWidth + ΔLeft)
         let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
 
+        Logger.log("Calling setFrame() from changeVisibilityForSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
+                   level: .debug, subsystem: player.subsystem)
         window.setFrame(newWindowFrame, display: true, animate: true)
       }
       updateSpacingForTitleBarAccessories()
@@ -392,7 +401,7 @@ extension MainWindowController {
     animationQueue.run(animationTasks)
   }
 
-  /// Should be called prior to opening the "leading" sidebar
+  /// Execute this prior to opening `leadingSidebar` to the given tab.
   private func prepareLayoutForOpeningLeadingSidebar(toTab leadingTab: SidebarTab) {
     guard let window = window else { return }
 
@@ -449,7 +458,7 @@ extension MainWindowController {
     prepareLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTab)
   }
 
-  /// Should be called prior to opening the "trailing" sidebar
+  /// Execute this prior to opening `trailingSidebar` to the given tab.
   private func prepareLayoutForOpeningTrailingSidebar(toTab trailingTab: SidebarTab) {
     guard let window = window else { return }
 
@@ -506,7 +515,7 @@ extension MainWindowController {
     prepareLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: trailingTab)
   }
 
-  // Task 1: pre-animation
+  /// Works for either `Sidebar`. Execute this prior to opening the given `Sidebar` with corresponding `sidebarView`
   private func prepareLayoutForOpening(sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: SidebarTab) {
     Logger.log("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab",
                level: .error, subsystem: player.subsystem)
@@ -694,8 +703,8 @@ extension MainWindowController {
     addingToSidebar.tabGroups.insert(tabGroup)
     removingFromSidebar.tabGroups.remove(tabGroup)
 
-    // Sidebar buttons may have changed:
-    updateSpacingForTitleBarAccessories()
+    // Sidebar buttons may have changed visibility:
+    updateTitleBarAndOSC()
   }
 
   private func getConfiguredSidebar(forTabGroup tabGroup: SidebarTabGroup) -> Sidebar? {
@@ -717,17 +726,21 @@ extension MainWindowController {
       Logger.log("Moving visible tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)",
                  level: .verbose, subsystem: player.subsystem)
 
-      // Also close sidebar at new location if it is in the way.
-      // This will happen in parallel to the block below it:
-      if let newSidebar = sidebarsByID[newLocationID], let obstructingVisibleTab = newSidebar.visibleTab, newSidebar.isVisible {
-        changeVisibility(forTab: obstructingVisibleTab, to: false)
-      }
-
-      // Close sidebar at old location. Then reopen tab group at its new location:
-      changeVisibility(forTab: curentVisibleTab, to: false, then: {
+      let reopenFunc: TaskFunc = {
         self.updateSidebarLocation(newLocationID, forTabGroup: tabGroup)
         self.changeVisibility(forTab: curentVisibleTab, to: true)
-      })
+      }
+
+      // Also close sidebar at new location if it is in the way.
+      let closeBothSidebars = sidebarsByID[newLocationID]?.isVisible ?? false
+
+      if closeBothSidebars {
+        // Close both at the same time:
+        changeVisibilityForSidebars(changeLeading: true, showLeading: false, changeTrailing: true, showTrailing: false, then: reopenFunc)
+      } else {
+        // Close sidebar at old location. Then reopen tab group at its new location:
+        changeVisibility(forTab: curentVisibleTab, to: false, then: reopenFunc)
+      }
 
     } else {
       Logger.log("Moving hidden tabGroup \(tabGroup.rawValue.quoted) from \(currentLocationID) to \(newLocationID)",
@@ -830,17 +843,15 @@ extension MainWindowController {
   }
 
   func hideSidebarsOnClick() -> Bool {
-    var didSomething = false
-    if let visibleTab = leadingSidebar.visibleTab, Preference.bool(for: .hideLeadingSidebarOnClick) {
-      changeVisibility(forTab: visibleTab, to: false)
-      didSomething = true
-    }
+    let hideLeading = leadingSidebar.isVisible && Preference.bool(for: .hideLeadingSidebarOnClick)
+    let hideTrailing = trailingSidebar.isVisible && Preference.bool(for: .hideTrailingSidebarOnClick)
 
-    if let visibleTab = trailingSidebar.visibleTab, Preference.bool(for: .hideTrailingSidebarOnClick) {
-      changeVisibility(forTab: visibleTab, to: false)
-      didSomething = true
+    if hideLeading || hideTrailing {
+      changeVisibilityForSidebars(changeLeading: hideLeading, showLeading: false,
+                                  changeTrailing: hideTrailing, showTrailing: false)
+      return true
     }
-    return didSomething
+    return false
   }
 }
 

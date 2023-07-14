@@ -459,19 +459,8 @@ class MainWindowController: PlayerWindowController {
     case PK.alwaysShowOnTopIcon.rawValue:
       updatePinToTopButton()
       updateSpacingForTitleBarAccessories()
-    case PK.leadingSidebarPlacement.rawValue:
-      if leadingSidebar.isVisible {
-        // Close whatever is showing, then open with new placement:
-        hideSidebarThenShowAgain(leadingSidebar)
-      } else {
-        leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
-      }
-    case PK.trailingSidebarPlacement.rawValue:
-      if trailingSidebar.isVisible {
-        hideSidebarThenShowAgain(trailingSidebar)
-      } else {
-        trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
-      }
+    case PK.leadingSidebarPlacement.rawValue, PK.trailingSidebarPlacement.rawValue:
+      updateSidebarPlacements()
     case PK.settingsTabGroupLocation.rawValue:
       if let newRawValue = change[.newKey] as? Int, let newLocationID = Preference.SidebarLocation(rawValue: newRawValue) {
         self.moveTabGroup(.settings, toSidebarLocation: newLocationID)
@@ -1441,7 +1430,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func updateTitleBarAndOSC() {
+  func updateTitleBarAndOSC() {
     guard !isInInteractiveMode else {
       Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
       return
@@ -1675,6 +1664,8 @@ class MainWindowController: PlayerWindowController {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
+      Logger.log("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)",
+                 level: .debug, subsystem: player.subsystem)
       window.setFrame(newWindowFrame, display: true, animate: true)
     }
 
@@ -1777,6 +1768,8 @@ class MainWindowController: PlayerWindowController {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
+      Logger.log("Calling setFrame() from openNewPanels with newWindowFrame \(newWindowFrame)",
+                 level: .debug, subsystem: player.subsystem)
       window.setFrame(newWindowFrame, display: true, animate: true)
     }
 
@@ -2399,7 +2392,7 @@ class MainWindowController: PlayerWindowController {
 
     let useAnimation = !AccessibilityPreferences.motionReductionEnabled
     if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: currentScreen) {
-      Logger.log("WindowWillOpen using initial geometry; setFrame to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Calling setFrame() from WindowWillOpen using initial geometry, to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
       window.setFrame(windowFrame, display: false, animate: useAnimation)
     }
 
@@ -2559,7 +2552,7 @@ class MainWindowController: PlayerWindowController {
         // set window frame and in some cases content view frame
         setWindowFrameForLegacyFullScreen()
       } else {
-        Logger.log("Window entering full screen; setFrame to: \(screen.visibleFrame)", level: .verbose)
+        Logger.log("Calling setFrame() to animate into full screen, to: \(screen.visibleFrame)", level: .verbose)
         window.setFrame(screen.frameWithoutCameraHousing, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
       }
     })
@@ -2706,7 +2699,7 @@ class MainWindowController: PlayerWindowController {
                                                                             newBottomHeight: bottomHeight,
                                                                             newLeadingWidth: leadingWidth).windowFrame
 
-      Logger.log("Window exiting \(isLegacy ? "legacy " : "")full screen; setting priorWindowedFrame: \(priorWindowFrame)",
+      Logger.log("Calling setFrame() exiting \(isLegacy ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)",
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(priorWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     })
@@ -2828,7 +2821,7 @@ class MainWindowController: PlayerWindowController {
     let screen = window.screen ?? NSScreen.main!
     let newWindowFrame = screen.frame
 
-    Logger.log("Window entering legacy full screen; setFrame to: \(newWindowFrame)",
+    Logger.log("Calling setFrame() entering legacy full screen, to: \(newWindowFrame)",
                level: .verbose, subsystem: player.subsystem)
     window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
 
@@ -3890,6 +3883,7 @@ class MainWindowController: PlayerWindowController {
     guard !isInInteractiveMode, let window = window else { return }
     let newWindowGeo = computeWindowGeometryForVideoResize(toVideoSize: desiredVideoSize,
                                                            fromGeometry: fromGeometry)
+    Logger.log("Calling setFrame() from resizeVideo, to: \(newWindowGeo.windowFrame)", level: .verbose, subsystem: player.subsystem)
     window.setFrame(newWindowGeo.windowFrame, display: true, animate: animate)
   }
 
