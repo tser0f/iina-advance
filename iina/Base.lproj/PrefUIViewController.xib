@@ -682,7 +682,7 @@
                                         <menu key="menu" id="1Wl-Pc-ZHa">
                                             <items>
                                                 <menuItem title="Mouse moves in window" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
-                                                <menuItem title="Mouse is over top panel" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
+                                                <menuItem title="Mouse moves over top panel" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
                                             </items>
                                         </menu>
                                     </popUpButtonCell>

@@ -2888,7 +2888,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     let requestedVideoSize = NSSize(width: requestedSize.width - (trailingSidebar.currentOutsidePanelWidth + leadingSidebar.currentOutsidePanelWidth),
-                                    height: requestedSize.height - (currentLayout.topPanelHeight + currentLayout.bottomPanelOutsideHeight))
+                                    height: requestedSize.height - (currentLayout.topPanelOutsideHeight + currentLayout.bottomPanelOutsideHeight))
 
     // resize height based on requested width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoSize.width, height: requestedVideoSize.width / videoView.aspectRatio)
@@ -3863,9 +3863,9 @@ class MainWindowController: PlayerWindowController {
 //      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
 //      fsState.priorWindowedFrame = newWindowFrame
     } else {
-//      Logger.log("AdjustFrameAfterVideoReconfig \(window.inLiveResize): Updating videoSize from: \(oldVideoSize) to: \(newVideoSize); newWindowFrame: \(newWindowFrame)",
-//                 level: .verbose, subsystem: player.subsystem)
-//      window.setFrame(newWindowFrame, display: true, animate: true)
+      Logger.log("AdjustFrameAfterVideoReconfig \(window.inLiveResize): Updating videoSize from: \(oldVideoSize) to: \(newVideoSize); newWindowFrame: \(newWindowFrame)",
+                 level: .verbose, subsystem: player.subsystem)
+      window.setFrame(newWindowFrame, display: true, animate: true)
       updateWindowParametersForMPV(withSize: newVideoSize)
     }
 
