@@ -568,6 +568,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       if whatToDo == quitForAction {
         Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
         Preference.UIState.clearOpenWindowList()
+        NSApp.terminate(nil)
         return
       }
 
