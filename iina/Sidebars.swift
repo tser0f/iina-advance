@@ -147,7 +147,7 @@ extension MainWindowController {
       }
 
       // If sidebar has no tab groups, can't show anything:
-      Logger.log("No tab groups found for \(locationID), returning nil for defaultTab", level: .verbose, subsystem: player.subsystem)
+      Logger.log("No tab groups found for \(locationID), returning nil for defaultTab", level: .verbose)
       return nil
     }
   }

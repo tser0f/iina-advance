@@ -3033,8 +3033,15 @@ class MainWindowController: PlayerWindowController {
        let window = window, oldScale != Double(window.backingScaleFactor) {
       Logger.log("WindowDidChangeBackingProperties: scale factor changed from \(oldScale) to \(Double(window.backingScaleFactor))",
                  level: .verbose, subsystem: player.subsystem)
-      // FIXME: more needs to be changed than just this
+
       videoView.videoLayer.contentsScale = window.backingScaleFactor
+
+      if shouldResizeWindowAfterVideoReconfig() && Preference.bool(for: .usePhysicalResolution) {
+        // FIXME: need to keep relative location of pointer in relation to window
+        adjustFrameAfterVideoReconfig()
+      }
+
+      // Do not allow MacOS to change the window size:
       denyNextWindowResize = true
     }
   }
@@ -3782,39 +3789,40 @@ class MainWindowController: PlayerWindowController {
     let outsidePanelsWidth = window.frame.width - oldVideoSize.width
     let outsidePanelsHeight = window.frame.height - oldVideoSize.height
 
-    let screenRect = bestScreen.visibleFrame
-    let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
-                              height: screenRect.height - outsidePanelsHeight)
-
     var newVideoSize: NSSize
     var newWindowFrame: NSRect
+    var scaleDownFactor: CGFloat? = nil
 
     if shouldResizeWindowAfterVideoReconfig() {
-      Logger.log("Starting resizeWindow calculations. OriginalVideoSize: \(videoNativeSize)", level: .verbose)
-
       // get videoSize on screen
       newVideoSize = videoNativeSize
+      Logger.log("Starting resizeWindow calculations; set newVideoSize = originalVideoSize -> \(videoNativeSize)", level: .verbose)
+
       if Preference.bool(for: .usePhysicalResolution) {
-        // FIXME: this is wrong
-        newVideoSize = window.convertFromBacking(
-          NSMakeRect(window.frame.origin.x, window.frame.origin.y, videoNativeSize.width, videoNativeSize.height)).size
-        Logger.log("Converted to physical resolution, result: \(newVideoSize)", level: .verbose)
+        let invertedScale = 1.0 / window.backingScaleFactor
+        scaleDownFactor = invertedScale
+        newVideoSize = NSSize(width: videoNativeSize.width * invertedScale, height: videoNativeSize.height * invertedScale)
+        Logger.log("Converted newVideoSize to physical resolution -> \(newVideoSize)", level: .verbose)
       }
 
       let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
       if let strategy = resizeWindowStrategy, strategy != .fitScreen {
         let resizeRatio = strategy.ratio
         newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-        Logger.log("Applied resizeRatio: (\(resizeRatio)), result: \(newVideoSize)", level: .verbose)
+        Logger.log("Applied resizeRatio (\(resizeRatio)) to newVideoSize -> \(newVideoSize)", level: .verbose)
       }
+
+      let screenRect = bestScreen.visibleFrame
+      let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
+                                height: screenRect.height - outsidePanelsHeight)
 
       // check screen size
       newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-      Logger.log("Constrained max size to maxVideoSize: \(maxVideoSize), result: \(newVideoSize)", level: .verbose)
+      Logger.log("Constrained newVideoSize to maxVideoSize \(maxVideoSize) -> \(newVideoSize)", level: .verbose)
       // guard min size
       // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
       newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minSize)
-      Logger.log("Constrained min size: \(minSize). Final result for videoSize: \(newVideoSize)", level: .verbose)
+      Logger.log("Constrained videoSize to min size: \(minSize) -> \(newVideoSize)", level: .verbose)
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: newVideoSize) {
         Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
@@ -3838,7 +3846,7 @@ class MainWindowController: PlayerWindowController {
       let newVideoWidth = oldVideoSize.width
       let newVideoHeight = newVideoWidth / videoNativeSize.aspect
       newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
-      Logger.log("Using same width, with new height (\(newVideoHeight)) -> newVideoSize: \(newVideoSize)", level: .verbose)
+      Logger.log("Using oldVideoSize width for newVideoSize, with new height (\(newVideoHeight)) -> \(newVideoSize)", level: .verbose)
       newWindowFrame = computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame
     }
 
@@ -3856,7 +3864,15 @@ class MainWindowController: PlayerWindowController {
       Logger.log("AdjustFrameAfterVideoReconfig DONE: NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]",
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(newWindowFrame, display: true, animate: true)
-      updateWindowParametersForMPV(withSize: newVideoSize)
+
+      // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
+      let mpvVideoSize: CGSize
+      if let scaleDownFactor = scaleDownFactor {
+        mpvVideoSize = CGSize(width: newVideoSize.width * scaleDownFactor, height: newVideoSize.height * scaleDownFactor)
+      } else {
+        mpvVideoSize = newVideoSize
+      }
+      updateWindowParametersForMPV(withSize: mpvVideoSize)
     }
 
     // UI and slider
@@ -3895,19 +3911,21 @@ class MainWindowController: PlayerWindowController {
 
   func setWindowScale(_ scale: CGFloat) {
     guard fsState == .windowed else { return }
+    guard let window = window else { return }
 
     let (videoWidth, videoHeight) = player.videoSizeForDisplay
-    let videoDesiredSize = CGSize(width: CGFloat(videoWidth) * scale, height: CGFloat(videoHeight) * scale)
+    var videoSizeDesired = CGSize(width: CGFloat(videoWidth) * scale, height: CGFloat(videoHeight) * scale)
 
-    // FIXME: "Use physical resolution" never worked properly
-//    let logicalFrame = NSRect(x: window.frame.origin.x,
-//                              y: window.frame.origin.y,
-//                              width: CGFloat(videoWidth),
-//                              height: CGFloat(videoHeight))
-//    var finalSize = (Preference.bool(for: .usePhysicalResolution) ? window.convertFromBacking(logicalFrame) : logicalFrame).size
+    Logger.log("SetWindowScale: scale=\(scale)x, videoSizeDesired=\(videoSizeDesired)",
+               level: .verbose, subsystem: player.subsystem)
 
-    Logger.log("Setting window scale to \(scale)x -> desiredVideoSize: \(videoDesiredSize)")
-    resizeVideo(toVideoSize: videoDesiredSize)
+    if Preference.bool(for: .usePhysicalResolution) {
+      videoSizeDesired = window.convertFromBacking(NSRect(origin: window.frame.origin, size: videoSizeDesired)).size
+      Logger.log("SetWindowScale: converted videoSizeDesired to physical resolution: \(videoSizeDesired)",
+                 level: .verbose, subsystem: player.subsystem)
+    }
+
+    resizeVideo(toVideoSize: videoSizeDesired)
   }
 
   private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
@@ -3948,12 +3966,6 @@ class MainWindowController: PlayerWindowController {
 
     let oldScaleGeo = fromGeometry ?? buildMainWindowGeometryFromCurrentLayout()
     let newScaleGeo = oldScaleGeo.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
-
-//    if Logger.isEnabled(.verbose) {
-//      let actualScale = String(format: "%.2f", newScaleGeo.videoSize.width / CGFloat(player.videoSizeForDisplay.0))
-//      Logger.log("Resizing video from \(oldScaleGeo.videoSize) to \(newScaleGeo.videoSize) (\(actualScale)x scale), newWindowFrame: \(newScaleGeo.windowFrame)",
-//                 level: .verbose, subsystem: player.subsystem)
-//    }
     return newScaleGeo
   }
 
