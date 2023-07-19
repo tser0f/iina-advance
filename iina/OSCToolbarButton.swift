@@ -26,14 +26,15 @@ class OSCToolbarButton: NSButton {
   }
 
   static var iconSize: CGFloat {
-    return CGFloat(Preference.float(for: .oscBarToolbarIconSize)).clamped(to: 8...barHeight)
+    return CGFloat(Preference.float(for: .oscBarToolbarIconSize)).clamped(to: 8...oscBarHeight)
   }
 
   static var buttonSize: CGFloat {
     return iconSize + max(0, 2 * CGFloat(Preference.integer(for: .oscBarToolbarIconSpacing)))
   }
 
-  static var barHeight: CGFloat {
+  /// Preferred height for "full-width" OSCs (i.e. top/bottom, not floating/title bar)
+  static var oscBarHeight: CGFloat {
     return max(16, CGFloat(Preference.integer(for: .oscBarHeight)))
   }
 

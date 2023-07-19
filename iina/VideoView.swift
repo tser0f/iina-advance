@@ -70,7 +70,7 @@ class VideoView: NSView {
   }
 
   convenience init(player: PlayerCore) {
-    self.init(frame: NSRect(origin: CGPointZero, size: PlayerCore.minVideoSize))
+    self.init(frame: NSRect(origin: CGPointZero, size: AppData.minVideoSize))
     self.player = player
   }
 

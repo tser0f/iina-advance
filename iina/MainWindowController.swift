@@ -35,18 +35,9 @@ fileprivate let StandardTitleBarHeight: CGFloat = {
   return titleBarHeight
 }()
 
-/// Sidebar tab buttons
-private let defaultDownshift: CGFloat = 0
-private let defaultTabHeight: CGFloat = 48
-
-/// Preferred height for "full-width" OSCs (i.e. top and bottom, not floating or in title bar)
-fileprivate var oscBarHeight: CGFloat {
-  max(16, CGFloat(Preference.integer(for: .oscBarHeight)))
-}
-
 /// Size of a side the 3 square playback button icons (Play/Pause, LeftArrow, RightArrow):
 fileprivate var oscBarPlaybackIconSize: CGFloat {
-  CGFloat(Preference.integer(for: .oscBarPlaybackIconSize)).clamped(to: 8...oscBarHeight)
+  CGFloat(Preference.integer(for: .oscBarPlaybackIconSize)).clamped(to: 8...OSCToolbarButton.oscBarHeight)
 }
 /// Scale of spacing to the left & right of each playback button (for top/bottom OSC):
 fileprivate var oscBarPlaybackIconSpacing: CGFloat {
@@ -65,9 +56,6 @@ fileprivate let oscTitleBarToolbarButtonIconSize: CGFloat = 14
 fileprivate let oscTitleBarToolbarButtonIconPadding: CGFloat = 5
 
 fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
-
-/** For Force Touch. */
-fileprivate let minimumPressDuration: TimeInterval = 0.5
 
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
@@ -96,9 +84,6 @@ class MainWindowController: PlayerWindowController {
     Logger.log("reducedTitleBarHeight may be incorrect (could not get close button)", level: .error)
     return StandardTitleBarHeight
   }()
-
-  /// Minimum allowed video size. Does not include any panels which are outside the video.
-  var minSize: NSSize { return PlayerCore.minVideoSize }
 
   // MARK: - Objects, Views
 
@@ -765,7 +750,7 @@ class MainWindowController: PlayerWindowController {
     trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight).isActive = true
 
     // size
-    window.minSize = PlayerCore.minVideoSize
+    window.minSize = AppData.minVideoSize
 
     // osc views
     oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
@@ -1873,14 +1858,14 @@ class MainWindowController: PlayerWindowController {
     let downshift: CGFloat
     var tabHeight: CGFloat
     if player.isInMiniPlayer || (!layout.isFullScreen && layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo) {
-      downshift = defaultDownshift
-      tabHeight = defaultTabHeight
+      downshift = Constants.Sidebar.defaultDownshift
+      tabHeight = Constants.Sidebar.defaultTabHeight
       Logger.log("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))",
                  level: .verbose, subsystem: player.subsystem)
     } else {
       // Downshift: try to match title bar height
       if layout.isFullScreen || layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
-        downshift = defaultDownshift
+        downshift = Constants.Sidebar.defaultDownshift
       } else {
         // Need to adjust if has title bar
         downshift = reducedTitleBarHeight
@@ -1888,12 +1873,12 @@ class MainWindowController: PlayerWindowController {
 
       tabHeight = layout.topOSCHeight
       // Put some safeguards in place:
-      if tabHeight <= 16 || tabHeight > 70 {
-        tabHeight = defaultTabHeight
+      if tabHeight <= Constants.Sidebar.minTabHeight || tabHeight > Constants.Sidebar.maxTabHeight {
+        tabHeight = Constants.Sidebar.defaultTabHeight
       }
     }
 
-    Logger.log("Sidebar downshift: \(downshift), TabHeight: \(tabHeight) (fullScreen: \(layout.isFullScreen), topPanel: \(layout.topPanelPlacement))",
+    Logger.log("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topPanel: \(layout.topPanelPlacement)",
                level: .verbose, subsystem: player.subsystem)
     quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
     playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
@@ -2035,7 +2020,7 @@ class MainWindowController: PlayerWindowController {
 
         let visibility: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeableTopPanel : .showAlways
         futureLayout.topPanelView = visibility
-        futureLayout.topOSCHeight = oscBarHeight
+        futureLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
 
         futureLayout.setupControlBarInternalViews = { [self] in
           currentControlBar = controlBarTop
@@ -2044,7 +2029,7 @@ class MainWindowController: PlayerWindowController {
         }
 
       case .bottom:
-        futureLayout.bottomOSCHeight = oscBarHeight
+        futureLayout.bottomOSCHeight = OSCToolbarButton.oscBarHeight
         futureLayout.controlBarBottom = (futureLayout.bottomPanelPlacement == .insideVideo) ? .showFadeableNonTopPanel : .showAlways
 
         futureLayout.setupControlBarInternalViews = { [self] in
@@ -2874,10 +2859,10 @@ class MainWindowController: PlayerWindowController {
       return currentSize
     }
 
-    if requestedSize.height <= minSize.height || requestedSize.width <= minSize.width {
+    if requestedSize.height <= AppData.minVideoSize.height || requestedSize.width <= AppData.minVideoSize.width {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
-      Logger.log("WindowWillResize: requestedSize smaller than min \(minSize); returning existing size", level: .verbose, subsystem: player.subsystem)
+      Logger.log("WindowWillResize: requestedSize smaller than min \(AppData.minVideoSize); returning existing size", level: .verbose, subsystem: player.subsystem)
       return window.frame.size
     }
 
@@ -3715,7 +3700,7 @@ class MainWindowController: PlayerWindowController {
       } else {
         w = CGFloat(Int(strw)!)
       }
-      w = max(minSize.width, w)
+      w = max(AppData.minVideoSize.width, w)
       winFrame.size.width = w
       winFrame.size.height = w / winAspect
       widthOrHeightIsSet = true
@@ -3726,7 +3711,7 @@ class MainWindowController: PlayerWindowController {
       } else {
         h = CGFloat(Int(strh)!)
       }
-      h = max(minSize.height, h)
+      h = max(AppData.minVideoSize.height, h)
       winFrame.size.height = h
       winFrame.size.width = h * winAspect
       widthOrHeightIsSet = true
@@ -3821,8 +3806,8 @@ class MainWindowController: PlayerWindowController {
       Logger.log("Constrained newVideoSize to maxVideoSize \(maxVideoSize) -> \(newVideoSize)", level: .verbose)
       // guard min size
       // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minSize)
-      Logger.log("Constrained videoSize to min size: \(minSize) -> \(newVideoSize)", level: .verbose)
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
+      Logger.log("Constrained videoSize to min size: \(AppData.minVideoSize) -> \(newVideoSize)", level: .verbose)
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: newVideoSize) {
         Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
@@ -3943,7 +3928,7 @@ class MainWindowController: PlayerWindowController {
 
   /**
    Resizes and repositions the window, attempting to match `desiredVideoSize`, but the actual resulting
-   video size will be scaled if needed so it is`>= minSize` and `<= bestScreen.visibleFrame`.
+   video size will be scaled if needed so it is`>= AppData.minVideoSize` and `<= bestScreen.visibleFrame`.
    The window's position will also be updated to maintain its current center if possible, but also to
    ensure it is placed entirely inside `bestScreen.visibleFrame`. The aspect ratio of `desiredVideoSize`
    does not need to match the aspect ratio of `fromVideoSize`.
@@ -4090,7 +4075,7 @@ class MainWindowController: PlayerWindowController {
       if sender.intValue == 0 { // Released
         if maxPressure == 1 &&
           (speedValueIndex < speeds / 2 - 1 ||
-          Date().timeIntervalSince(lastClick) < minimumPressDuration) { // Single click ended, 2x speed
+           Date().timeIntervalSince(lastClick) < AppData.minimumPressDuration) { // Single click ended, 2x speed
           speedValueIndex = oldIndex - 1
         } else { // Force Touch or long press ended
           speedValueIndex = speeds / 2
@@ -4126,7 +4111,7 @@ class MainWindowController: PlayerWindowController {
       if sender.intValue == 0 { // Released
         if maxPressure == 1 &&
           (speedValueIndex > speeds / 2 + 1 ||
-          Date().timeIntervalSince(lastClick) < minimumPressDuration) { // Single click ended
+           Date().timeIntervalSince(lastClick) < AppData.minimumPressDuration) { // Single click ended
           speedValueIndex = oldIndex + 1
         } else { // Force Touch or long press ended
           speedValueIndex = speeds / 2

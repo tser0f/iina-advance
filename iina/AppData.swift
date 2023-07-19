@@ -24,6 +24,17 @@ struct AppData {
   static let minSpeed = 0.25
   static let maxSpeed = 16.0
 
+  /** For Force Touch. */
+  static let minimumPressDuration: TimeInterval = 0.5
+
+  /// Minimum value to set a mpv loop point to.
+  ///
+  /// Setting a loop point to zero disables looping, so when loop points are being adjusted IINA must insure the mpv property is not
+  /// set to zero. However using `Double.leastNonzeroMagnitude` as the minimum value did not work because mpv truncates
+  /// the value when storing the A-B loop points in the watch later file. As a result the state of the A-B loop feature is not properly
+  /// restored when the movies is played again. Using the following value as the minimum for loop points avoids this issue.
+  static let minLoopPointTime = 0.000001
+
   /** generate aspect and crop options in menu */
   static let aspects: [String] = ["4:3", "5:4", "16:9", "16:10", "1:1", "3:2", "2.21:1", "2.35:1", "2.39:1"]
 
@@ -86,6 +97,9 @@ struct AppData {
   static let widthWhenNoVideo = 640
   static let heightWhenNoVideo = 360
   static let sizeWhenNoVideo = NSSize(width: widthWhenNoVideo, height: heightWhenNoVideo)
+
+  /// Minimum allowed video size. Does not include any panels which are outside the video.
+  static let minVideoSize = NSMakeSize(285, 120)
 }
 
 
@@ -149,6 +163,22 @@ struct Constants {
     static let fontPicker = "IINAFontPickerWindow"
     static let mainPlayer = "PlayerWindow-%@"
     static let miniPlayer = "MiniPlayerWindow-%@"
+  }
+  struct Sidebar {
+    static let animationDuration: CGFloat = 0.2
+
+    // How close the cursor has to be horizontally to the edge of the sidebar in order to trigger its resize:
+    static let resizeActivationRadius: CGFloat = 10.0
+
+    static let minPlaylistWidth: CGFloat = 240
+    static let maxPlaylistWidth: CGFloat = 500
+    static let settingsWidth: CGFloat = 360
+
+    /// Sidebar tab buttons
+    static let defaultDownshift: CGFloat = 0
+    static let defaultTabHeight: CGFloat = 48
+    static let minTabHeight: CGFloat = 16
+    static let maxTabHeight: CGFloat = 70
   }
   struct Distance {
     // TODO: change to % of screen width

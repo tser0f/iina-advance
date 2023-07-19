@@ -11,16 +11,6 @@ import MediaPlayer
 
 class PlayerCore: NSObject {
 
-  /// Minimum value to set a mpv loop point to.
-  ///
-  /// Setting a loop point to zero disables looping, so when loop points are being adjusted IINA must insure the mpv property is not
-  /// set to zero. However using `Double.leastNonzeroMagnitude` as the minimum value did not work because mpv truncates
-  /// the value when storing the A-B loop points in the watch later file. As a result the state of the A-B loop feature is not properly
-  /// restored when the movies is played again. Using the following value as the minimum for loop points avoids this issue.
-  static private let minLoopPointTime = 0.000001
-
-  static let minVideoSize = NSMakeSize(285, 120)
-
   // MARK: - Multiple instances
 
   static private let first: PlayerCore = createAndStartPlayerCore()
@@ -234,7 +224,7 @@ class PlayerCore: NSObject {
     /// - Note: The value of the A loop point is not required by mpv to be before the B loop point.
     set {
       guard info.abLoopStatus == .aSet || info.abLoopStatus == .bSet else { return }
-      mpv.setDouble(MPVOption.PlaybackControl.abLoopA, max(PlayerCore.minLoopPointTime, newValue))
+      mpv.setDouble(MPVOption.PlaybackControl.abLoopA, max(AppData.minLoopPointTime, newValue))
     }
   }
 
@@ -255,7 +245,7 @@ class PlayerCore: NSObject {
     /// - Note: The value of the B loop point is not required by mpv to be after the A loop point.
     set {
       guard info.abLoopStatus == .bSet else { return }
-      mpv.setDouble(MPVOption.PlaybackControl.abLoopB, max(PlayerCore.minLoopPointTime, newValue))
+      mpv.setDouble(MPVOption.PlaybackControl.abLoopB, max(AppData.minLoopPointTime, newValue))
     }
   }
 

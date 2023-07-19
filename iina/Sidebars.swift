@@ -8,14 +8,9 @@
 
 import Foundation
 
-fileprivate let SettingsWidth: CGFloat = 360
-fileprivate let PlaylistMinWidth: CGFloat = 240
-fileprivate let PlaylistMaxWidth: CGFloat = 500
-
-fileprivate let SidebarAnimationDuration = 0.2
-
-// How close the cursor has to be horizontally to the edge of the sidebar in order to trigger its resize:
-fileprivate let sidebarResizeActivationRadius = 10.0
+private func clampPlaylistWidth(_ width: CGFloat) -> CGFloat {
+  return width.clamped(to: Constants.Sidebar.minPlaylistWidth...Constants.Sidebar.maxPlaylistWidth).rounded()
+}
 
 /** Enapsulates code relating to leading & trailing sidebars in MainWindow. */
 extension MainWindowController {
@@ -28,9 +23,9 @@ extension MainWindowController {
     func width() -> CGFloat {
       switch self {
       case .settings:
-        return SettingsWidth
+        return Constants.Sidebar.settingsWidth
       case .playlist:
-        return CGFloat(Preference.integer(for: .playlistWidth)).clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+        return clampPlaylistWidth(CGFloat(Preference.integer(for: .playlistWidth)))
       }
     }
   }
@@ -759,7 +754,10 @@ extension MainWindowController {
       let dragRectCenterX: CGFloat = sf.origin.x + sf.width
 
       // FIXME: need to find way to resize from inside of sidebar
-      let activationRect = NSMakeRect(dragRectCenterX, sf.origin.y, sidebarResizeActivationRadius, sf.height)
+      let activationRect = NSRect(x: dragRectCenterX,
+                                  y: sf.origin.y,
+                                  width: Constants.Sidebar.resizeActivationRadius,
+                                  height: sf.height)
       if NSPointInRect(mousePositionInWindow, activationRect) {
         return true
       }
@@ -773,7 +771,10 @@ extension MainWindowController {
       let dragRectCenterX: CGFloat = sf.origin.x
 
       // FIXME: need to find way to resize from inside of sidebar
-      let activationRect = NSMakeRect(dragRectCenterX - sidebarResizeActivationRadius, sf.origin.y, sidebarResizeActivationRadius, sf.height)
+      let activationRect = NSRect(x: dragRectCenterX - Constants.Sidebar.resizeActivationRadius,
+                                  y: sf.origin.y,
+                                  width: Constants.Sidebar.resizeActivationRadius,
+                                  height: sf.height)
       if NSPointInRect(mousePositionInWindow, activationRect) {
         return true
       }
@@ -804,7 +805,7 @@ extension MainWindowController {
       case .outsideVideo:
         newWidth = currentLocation.x + 2
       }
-      newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      newPlaylistWidth = clampPlaylistWidth(newWidth)
       UIAnimation.disableAnimation {
         updateLeadingSidebarWidth(to: newPlaylistWidth, show: true, placement: leadingSidebar.placement)
       }
@@ -815,7 +816,7 @@ extension MainWindowController {
       case .outsideVideo:
         newWidth = window!.frame.width - currentLocation.x - 2
       }
-      newPlaylistWidth = newWidth.clamped(to: PlaylistMinWidth...PlaylistMaxWidth)
+      newPlaylistWidth = clampPlaylistWidth(newWidth)
       UIAnimation.disableAnimation {
         updateTrailingSidebarWidth(to: newPlaylistWidth, show: true, placement: trailingSidebar.placement)
       }

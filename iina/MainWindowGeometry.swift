@@ -76,10 +76,6 @@ struct MainWindowGeometry: Equatable {
     return NSSize(width: rightPanelWidth + leftPanelWidth, height: topPanelHeight + bottomPanelHeight)
   }
 
-  var minVideoSize: NSSize {
-    return PlayerCore.minVideoSize
-  }
-
   func clone(windowFrame: NSRect? = nil,
              topPanelHeight: CGFloat? = nil, rightPanelWidth: CGFloat? = nil,
              bottomPanelHeight: CGFloat? = nil, leftPanelWidth: CGFloat? = nil) -> MainWindowGeometry {
@@ -119,11 +115,11 @@ struct MainWindowGeometry: Equatable {
     }
 
     // Min
-    if newVideoSize.height < minVideoSize.height {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    if newVideoSize.height < AppData.minVideoSize.height {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
     }
-    if newVideoSize.width < minVideoSize.width {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(minVideoSize)
+    if newVideoSize.width < AppData.minVideoSize.width {
+      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
     }
 
     newVideoSize = NSSize(width: newVideoSize.width, height: newVideoSize.height)
