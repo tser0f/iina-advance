@@ -1433,9 +1433,9 @@ class PlayerCore: NSObject {
     let geometry = mpv.getString(MPVOption.Window.geometry) ?? ""
     let parsed = GeometryDef.parse(geometry)
     if let parsed = parsed {
-      Logger.log("Got mpv geometry: \(parsed)", level: .verbose)
+      Logger.log("Got geometry from mpv: \(parsed)", level: .verbose, subsystem: subsystem)
     } else {
-      Logger.log("Got nil for mpv geometry!")
+      Logger.log("Got nil for mpv geometry!", level: .verbose, subsystem: subsystem)
     }
     return parsed
   }
@@ -1541,7 +1541,7 @@ class PlayerCore: NSObject {
       }
     }
     if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
-        Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
+      Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
       DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
     }
     // add to history

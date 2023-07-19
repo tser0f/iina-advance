@@ -147,7 +147,7 @@ extension MainWindowController {
       }
 
       // If sidebar has no tab groups, can't show anything:
-      Logger.log("No tab groups found for \(locationID), returning nil!", level: .warning)
+      Logger.log("No tab groups found for \(locationID), returning nil for defaultTab", level: .verbose, subsystem: player.subsystem)
       return nil
     }
   }
@@ -163,6 +163,8 @@ extension MainWindowController {
   }
 
   func toggleVisibility(of sidebar: Sidebar) {
+    Logger.log("Toggling visibility of sidebar: \(sidebar.locationID) (animationState: \(sidebar.animationState), isVisible: \(sidebar.isVisible))",
+               level: .verbose, subsystem: player.subsystem)
     // Do nothing if sidebar has no configured tabs
     guard let tab = sidebar.defaultTabToShow else { return }
 
@@ -198,11 +200,10 @@ extension MainWindowController {
 
       if destinationSidebar.visibleTab == tab && hideIfAlreadyShown {
         changeVisibility(forTab: tab, to: false)
-        return
+      } else {
+        // This will change the sidebar to the displayed tab group if needed:
+        changeVisibility(forTab: tab, to: true)
       }
-
-      // This will change the sidebar to the displayed tab group if needed:
-      changeVisibility(forTab: tab, to: true)
     })
   }
 
@@ -273,7 +274,7 @@ extension MainWindowController {
     }
 
     if nothingToDo {
-      return
+      return  // FIXME: include doAfter
     }
 
     let tabGroup = tab.group
@@ -379,6 +380,7 @@ extension MainWindowController {
         (window as! MainWindow).setFrameImmediately(newWindowFrame)
       }
       updateSpacingForTitleBarAccessories()
+      refreshSidebarVerticalConstraints()
       window.contentView?.layoutSubtreeIfNeeded()
     }))
 

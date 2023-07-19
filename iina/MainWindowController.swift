@@ -2413,12 +2413,6 @@ class MainWindowController: PlayerWindowController {
       NSScreen.log("Screen\(screenIndex)\(currentString)" , screen)
     }
 
-    let useAnimation = !AccessibilityPreferences.motionReductionEnabled
-    if shouldApplyInitialWindowSize, let windowFrame = windowFrameFromGeometry(newSize: AppData.sizeWhenNoVideo, screen: currentScreen) {
-      Logger.log("Calling setFrame() from WindowWillOpen using initial geometry, to: \(windowFrame)", level: .verbose, subsystem: player.subsystem)
-      window.setFrame(windowFrame, display: false, animate: useAnimation)
-    }
-
     resetCollectionBehavior()
     // update buffer indicator view
     updateBufferIndicatorView()
@@ -2563,10 +2557,10 @@ class MainWindowController: PlayerWindowController {
       }
       // Let mpv decide the correct render region in full screen
       player.mpv.setFlag(MPVOption.Window.keepaspect, true)
-    })
 
-    resetViewsForFullScreenTransition()
-    constrainVideoViewForFullScreen()
+      resetViewsForFullScreenTransition()
+      constrainVideoViewForFullScreen()
+    })
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
@@ -3766,7 +3760,7 @@ class MainWindowController: PlayerWindowController {
     winFrame.origin.x += screenFrame.origin.x
     winFrame.origin.y += screenFrame.origin.y
 
-    Logger.log("WindowFrameFromGeometry: result: \(winFrame)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowFrameFromGeometry: resulting windowFrame: \(winFrame)", level: .verbose, subsystem: player.subsystem)
     return winFrame
   }
 
@@ -3792,13 +3786,10 @@ class MainWindowController: PlayerWindowController {
     let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
                               height: screenRect.height - outsidePanelsHeight)
 
-    let windowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
     var newVideoSize: NSSize
     var newWindowFrame: NSRect
 
     if shouldResizeWindowAfterVideoReconfig() {
-      let resizeRatio = (Preference.enum(for: .resizeWindowOption) as Preference.ResizeWindowOption).ratio
-
       Logger.log("Starting resizeWindow calculations. OriginalVideoSize: \(videoNativeSize)", level: .verbose)
 
       // get videoSize on screen
@@ -3810,13 +3801,10 @@ class MainWindowController: PlayerWindowController {
         Logger.log("Converted to physical resolution, result: \(newVideoSize)", level: .verbose)
       }
 
-      if player.info.justStartedFile {
-        if resizeRatio < 0 {
-          newVideoSize = newVideoSize.shrink(toSize: maxVideoSize)
-          Logger.log("Shrinking videoSize to fit in maxVideoSize: \(maxVideoSize), result: \(newVideoSize)", level: .verbose)
-        } else {
-          newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-        }
+      let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
+      if let strategy = resizeWindowStrategy, strategy != .fitScreen {
+        let resizeRatio = strategy.ratio
+        newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
         Logger.log("Applied resizeRatio: (\(resizeRatio)), result: \(newVideoSize)", level: .verbose)
       }
 
@@ -3834,12 +3822,13 @@ class MainWindowController: PlayerWindowController {
       } else {
         let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
                                    height: newVideoSize.height + outsidePanelsHeight)
-        if player.info.justStartedFile, resizeRatio < 0 {
+        if let strategy = resizeWindowStrategy, strategy == .fitScreen {
           newWindowFrame = screenRect.centeredResize(to: newWindowSize)
           Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(newWindowFrame)", level: .verbose)
         } else {
-          newWindowFrame = windowFrame.centeredResize(to: newWindowSize)
-          Logger.log("Did a centered resize using prior frame \(windowFrame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
+          let priorWindowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
+          newWindowFrame = priorWindowFrame.centeredResize(to: newWindowSize)
+          Logger.log("Did a centered resize using prior frame \(priorWindowFrame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
         }
       }
 
@@ -3860,10 +3849,11 @@ class MainWindowController: PlayerWindowController {
     shouldApplyInitialWindowSize = false
 
     if fsState.isFullscreen {
+      // FIXME: get this back
 //      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
 //      fsState.priorWindowedFrame = newWindowFrame
     } else {
-      Logger.log("AdjustFrameAfterVideoReconfig \(window.inLiveResize): Updating videoSize from: \(oldVideoSize) to: \(newVideoSize); newWindowFrame: \(newWindowFrame)",
+      Logger.log("AdjustFrameAfterVideoReconfig DONE: NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]",
                  level: .verbose, subsystem: player.subsystem)
       window.setFrame(newWindowFrame, display: true, animate: true)
       updateWindowParametersForMPV(withSize: newVideoSize)

@@ -264,6 +264,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     } else {
       setSubViews(of: windowPosBox, enabled: false)
     }
+    Logger.log("Saving pref \(Preference.Key.initialWindowSizePosition.rawValue.quoted) with geometry: \(geometry.quoted)")
     Preference.set(geometry, for: .initialWindowSizePosition)
   }
 
