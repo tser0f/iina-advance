@@ -130,7 +130,7 @@ extension MainWindowController {
       return placement == .outsideVideo ? currentWidth : 0
     }
 
-    private var lastVisibleTab: SidebarTab? = nil
+    var lastVisibleTab: SidebarTab? = nil
 
     var defaultTabToShow: SidebarTab? {
       // Use last visible tab if still valid:
@@ -156,6 +156,11 @@ extension MainWindowController {
   }
 
   // MARK: - Changing visibility
+
+  private enum VisibilityGoal {
+    case show(tabToShow: SidebarTab)
+    case hide
+  }
 
   @IBAction func toggleLeadingSidebarVisibility(_ sender: NSButton) {
     toggleVisibility(of: leadingSidebar)
@@ -216,43 +221,43 @@ extension MainWindowController {
   func hideAllSidebars(animate: Bool = true, then doAfter: TaskFunc? = nil) {
     Logger.log("Hiding all sidebars", level: .verbose, subsystem: player.subsystem)
 
-    changeVisibilityForSidebars(changeLeading: true, showLeading: false,
-                                changeTrailing: true, showTrailing: false,
-                                then: doAfter)
+    changeVisibilityForSidebars(setLeadingTo: .hide, setTrailingTo: .hide, then: doAfter)
   }
 
   // Updates placements (inside or outside) of both sidebars in the UI so they match the prefs.
   // If placement of one/both sidebars change while open, closes & reopens the affected sidebars with the new placement.
   func updateSidebarPlacements() {
     let leadingPlacementNew: Preference.PanelPlacement = Preference.enum(for: .leadingSidebarPlacement)
-    let trailingPlacementNew: Preference.PanelPlacement = Preference.enum(for: .trailingSidebarPlacement)
-
     let needLeadingReopen = leadingSidebar.isVisible && leadingSidebar.placement != leadingPlacementNew
-    let needTrailingReopen = trailingSidebar.isVisible && trailingSidebar.placement != trailingPlacementNew
+    let leadingVisibleTab: SidebarTab? = leadingSidebar.visibleTab
 
-    /// Remember, `showLeading` / `showTrailing` will be ignored if `needLeadingReopen` / `needTrailingReopen` is false, respectively
-    changeVisibilityForSidebars(changeLeading: needLeadingReopen, showLeading: false,
-                                changeTrailing: needTrailingReopen, showTrailing: false, then: { [self] in
+    let trailingPlacementNew: Preference.PanelPlacement = Preference.enum(for: .trailingSidebarPlacement)
+    let needTrailingReopen = trailingSidebar.isVisible && trailingSidebar.placement != trailingPlacementNew
+    let trailingVisibleTab: SidebarTab? = trailingSidebar.visibleTab
+
+    changeVisibilityForSidebars(setLeadingTo: needLeadingReopen ? .hide : nil,
+                                setTrailingTo: needTrailingReopen ? .hide : nil, then: { [self] in
       leadingSidebar.placement = leadingPlacementNew
       trailingSidebar.placement = trailingPlacementNew
 
       if needLeadingReopen || needTrailingReopen {
-        changeVisibilityForSidebars(changeLeading: needLeadingReopen, showLeading: true,
-                                    changeTrailing: needTrailingReopen, showTrailing: true)
+        let leadingGoal = needLeadingReopen && leadingVisibleTab == nil ? nil : VisibilityGoal.show(tabToShow: leadingVisibleTab!)
+        let trailingGoal = needTrailingReopen && trailingVisibleTab == nil ? nil : VisibilityGoal.show(tabToShow: trailingVisibleTab!)
+        changeVisibilityForSidebars(setLeadingTo: leadingGoal, setTrailingTo: trailingGoal)
       }
     })
   }
 
-  private func changeVisibility(forTab tab: SidebarTab, to show: Bool, then doAfter: TaskFunc? = nil) {
+  private func changeVisibility(forTab tab: SidebarTab, to shouldShow: Bool, then doAfter: TaskFunc? = nil) {
     guard !isInInteractiveMode else { return }
-    Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(show ? "SHOW" : "HIDE")",
+    Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(shouldShow ? "SHOW" : "HIDE")",
                level: .verbose, subsystem: player.subsystem)
 
     let group = tab.group
     guard let sidebar = getConfiguredSidebar(forTabGroup: group) else { return }
 
     var nothingToDo = false
-    if show && sidebar.isVisible {
+    if shouldShow && sidebar.isVisible {
       guard let visibleTab = sidebar.visibleTab else {
         Logger.log("Internal error setting tab group for sidebar \(sidebar.locationID)",
                    level: .error, subsystem: player.subsystem)
@@ -271,7 +276,7 @@ extension MainWindowController {
                    level: .verbose, subsystem: player.subsystem)
         nothingToDo = true
       }
-    } else if !show && !sidebar.isVisible {
+    } else if !shouldShow && !sidebar.isVisible {
       // Just need to change tab in tab group. Fall through
       Logger.log("Nothing to do; \(sidebar.locationID) (which contains tab \(tab.name.quoted)) is already hidden",
                  level: .verbose, subsystem: player.subsystem)
@@ -287,11 +292,13 @@ extension MainWindowController {
       return
     }
 
+    let visibilityGoal: VisibilityGoal = shouldShow ? .show(tabToShow: tab) : .hide
+
     let tabGroup = tab.group
     if leadingSidebar.tabGroups.contains(tabGroup) {
-      changeVisibilityForSidebars(changeLeading: true, showLeading: show, setLeadingTab: tab, then: doAfter)
+      changeVisibilityForSidebars(setLeadingTo: visibilityGoal, then: doAfter)
     } else if trailingSidebar.tabGroups.contains(tabGroup) {
-      changeVisibilityForSidebars(changeTrailing: true, showTrailing: show, setTrailingTab: tab, then: doAfter)
+      changeVisibilityForSidebars(setTrailingTo: visibilityGoal, then: doAfter)
     } else {
       // Should never happen
       Logger.log("Cannot change sidebar tab visibility: could not find tab for tabGroup: \(tabGroup.rawValue)", level: .error, subsystem: player.subsystem)
@@ -302,19 +309,14 @@ extension MainWindowController {
    In one case it is desired to closed both sidebars simultaneously. To do this safely, we need to add logic for both sidebars
    to each animation block.
    */
-  private func changeVisibilityForSidebars(changeLeading leading: Bool = false, showLeading: Bool = false, setLeadingTab: SidebarTab? = nil,
-                                           changeTrailing trailing: Bool = false, showTrailing: Bool = false, setTrailingTab: SidebarTab? = nil,
+  private func changeVisibilityForSidebars(setLeadingTo: VisibilityGoal? = nil,
+                                           setTrailingTo: VisibilityGoal? = nil,
                                            then doAfter: TaskFunc? = nil) {
     guard let window = window else { return }
 
-    let leadingTabToShow = setLeadingTab ?? leadingSidebar.defaultTabToShow
-    assert(!leading || !showLeading || leadingTabToShow != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
-    let trailingTabToShow = setTrailingTab ?? trailingSidebar.defaultTabToShow
-    assert(!trailing || !showTrailing || trailingTabToShow != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
-    Logger.log("Changing visibility of sidebars: Leading:(change=\(leading),show=\(showLeading),placement=\(leadingSidebar.placement)), Trailing:(change=\(trailing),show=\(showTrailing),placement=\(trailingSidebar.placement))", level: .verbose, subsystem: player.subsystem)
-
-    var changeLeading = leading
-    var changeTrailing = trailing
+    var leadingGoal = setLeadingTo
+    var trailingGoal = setTrailingTo
+    Logger.log("Changing visibility of sidebars: \(leadingGoal == nil ? "" : "Leading:[\(leadingGoal!), \(leadingSidebar.placement)]" ) \(trailingGoal == nil ? "" : "Trailing:[\(trailingGoal!), \(trailingSidebar.placement)]")", level: .verbose, subsystem: player.subsystem)
 
     var animationTasks: [UIAnimation.Task] = []
 
@@ -322,42 +324,60 @@ extension MainWindowController {
     // (will be very different for "insideVideo" vs "outsideVideo" placement)
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       // Leading
-      if changeLeading {
-        if (showLeading && setLeadingTab == leadingSidebar.visibleTab) || (!showLeading && leadingSidebar.animationState != .shown) {
-          Logger.log("Skipping \(showLeading ? "show" : "hide") of leadingSidebar: it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
-          changeLeading = false
-        } else if let leadingTabToShow = leadingTabToShow, showLeading {
-          // Check if tab group is already showing, but just need to switch tab
-          if let visibleTab = leadingSidebar.visibleTab, visibleTab != leadingTabToShow && visibleTab.group == leadingTabToShow.group {
-            switchToTabInTabGroup(tab: leadingTabToShow)
-            // no further work needed
-            changeLeading = false
-          } else {
-            prepareLayoutForOpeningLeadingSidebar(toTab: leadingTabToShow)
+      if let goal = leadingGoal {
+        switch goal {
+        case .show(let tabToShow):
+          if let visibleTab = leadingSidebar.visibleTab {
+            if tabToShow == visibleTab {
+              Logger.log("Skipping \(goal) leadingSidebar: it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+              leadingGoal = nil
+            } else if tabToShow.group == visibleTab.group {
+              // Tab group is already showing, but just need to switch tab
+              switchToTabInTabGroup(tab: tabToShow)
+              // no further work needed
+              leadingGoal = nil
+            }
           }
-        }
-        if changeLeading {
-          leadingSidebar.animationState = showLeading ? .willShow : .willHide
+          if leadingGoal != nil {
+            prepareLayoutForOpeningLeadingSidebar(toTab: tabToShow)
+            leadingSidebar.animationState = .willShow
+          }
+        case .hide:
+          if leadingSidebar.animationState == .shown {
+            leadingSidebar.animationState = .willHide
+          } else {
+            leadingGoal = nil
+            Logger.log("Skipping \(goal) leadingSidebar: it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+          }
         }
       }
+
       // Trailing
-      if changeTrailing {
-        if (showTrailing && setTrailingTab == trailingSidebar.visibleTab) ||
-            (!showTrailing && trailingSidebar.animationState != .shown) {
-          Logger.log("Skipping \(showTrailing ? "show" : "hide") of trailingSidebar: it is in state \(trailingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
-          changeTrailing = false
-        } else if let trailingTabToShow = trailingTabToShow, showTrailing {
-          // Check if tab group is already showing, but just need to switch tab
-          if let visibleTab = trailingSidebar.visibleTab, visibleTab != trailingTabToShow && visibleTab.group == trailingTabToShow.group {
-            switchToTabInTabGroup(tab: trailingTabToShow)
-            // no further work needed
-            changeTrailing = false
-          } else {
-            prepareLayoutForOpeningTrailingSidebar(toTab: trailingTabToShow)
+      if let goal = trailingGoal {
+        switch goal {
+        case .show(let tabToShow):
+          if let visibleTab = trailingSidebar.visibleTab {
+            if tabToShow == visibleTab {
+              Logger.log("Skipping \(goal) trailingSidebar; it is in state \(trailingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+              trailingGoal = nil
+            } else if tabToShow.group == visibleTab.group {
+              // Tab group is already showing, but just need to switch tab
+              switchToTabInTabGroup(tab: tabToShow)
+              // no further work needed
+              trailingGoal = nil
+            }
           }
-        }
-        if changeTrailing {
-          trailingSidebar.animationState = showTrailing ? .willShow : .willHide
+          if trailingGoal != nil {
+            prepareLayoutForOpeningTrailingSidebar(toTab: tabToShow)
+            trailingSidebar.animationState = .willShow
+          }
+        case .hide:
+          if trailingSidebar.animationState == .shown {
+            trailingSidebar.animationState = .willHide
+          } else {
+            trailingGoal = nil
+            Logger.log("Skipping \(goal) trailingSidebar: it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+          }
         }
       }
     })
@@ -366,22 +386,48 @@ extension MainWindowController {
     animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timing: .easeIn, { [self] in
 
       var ΔLeft: CGFloat = 0
-      if let leadingTabToShow = leadingTabToShow, changeLeading {
-        let currentWidth = leadingTabToShow.group.width()
-        updateLeadingSidebarWidth(to: currentWidth, show: showLeading, placement: leadingSidebar.placement)
+      if let goal = leadingGoal {
+        var shouldShow = false
+        let sidebarWidth: CGFloat
+        switch goal {
+        case .show(let tabToShow):
+          sidebarWidth = tabToShow.group.width()
+          shouldShow = true
+        case .hide:
+          if let lastVisibleTab = leadingSidebar.lastVisibleTab {
+            sidebarWidth = lastVisibleTab.group.width()
+          } else {
+            Logger.log("Failed to find lastVisibleTab for leadingSidebar", level: .error, subsystem: player.subsystem)
+            sidebarWidth = 0
+          }
+        }
+        updateLeadingSidebarWidth(to: sidebarWidth, show: shouldShow, placement: leadingSidebar.placement)
         if leadingSidebar.placement == .outsideVideo {
-          leadingSidebarTrailingBorder.isHidden = !showLeading
-          ΔLeft = showLeading ? currentWidth : -currentWidth
+          leadingSidebarTrailingBorder.isHidden = !shouldShow
+          ΔLeft = shouldShow ? sidebarWidth : -sidebarWidth
         }
       }
 
       var ΔRight: CGFloat = 0
-      if let trailingTabToShow = trailingTabToShow, changeTrailing {
-        let currentWidth = trailingTabToShow.group.width()
-        updateTrailingSidebarWidth(to: currentWidth, show: showTrailing, placement: trailingSidebar.placement)
+      if let goal = trailingGoal {
+        var shouldShow = false
+        let sidebarWidth: CGFloat
+        switch goal {
+        case .show(let tabToShow):
+          sidebarWidth = tabToShow.group.width()
+          shouldShow = true
+        case .hide:
+          if let lastVisibleTab = trailingSidebar.lastVisibleTab {
+            sidebarWidth = lastVisibleTab.group.width()
+          } else {
+            Logger.log("Failed to find lastVisibleTab for trailingSidebar", level: .error, subsystem: player.subsystem)
+            sidebarWidth = 0
+          }
+        }
+        updateTrailingSidebarWidth(to: sidebarWidth, show: shouldShow, placement: trailingSidebar.placement)
         if trailingSidebar.placement == .outsideVideo {
-          trailingSidebarLeadingBorder.isHidden = !showTrailing
-          ΔRight = showTrailing ? currentWidth : -currentWidth
+          trailingSidebarLeadingBorder.isHidden = !shouldShow
+          ΔRight = shouldShow ? sidebarWidth : -sidebarWidth
         }
       }
 
@@ -407,11 +453,11 @@ extension MainWindowController {
     // Task 3: Finish up state changes:
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
 
-      if let leadingTabToShow = leadingTabToShow, changeLeading {
-        changeVisibilityPostAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tab: leadingTabToShow, show: showLeading)
+      if let goal = leadingGoal {
+        changeVisibilityPostAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, goal: goal)
       }
-      if let trailingTabToShow = trailingTabToShow, changeTrailing {
-        changeVisibilityPostAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tab: trailingTabToShow, show: showTrailing)
+      if let goal = trailingGoal {
+        changeVisibilityPostAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, goal: goal)
       }
     })
 
@@ -581,39 +627,27 @@ extension MainWindowController {
     updateSidebarBlendingMode(sidebar.locationID, layout: self.currentLayout)
 
     // Make it the active tab in its parent tab group (can do this whether or not it's shown):
-    switch tab.group {
-    case .playlist:
-      guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
-        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
-                   level: .error, subsystem: player.subsystem)
-        return
-      }
-      self.playlistView.pleaseSwitchToTab(tabType)
-    case .settings:
-      guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
-        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
-                   level: .error, subsystem: player.subsystem)
-        return
-      }
-      self.quickSettingView.pleaseSwitchToTab(tabType)
-    }
+    switchToTabInTabGroup(tab: tab)
 
     window?.layoutIfNeeded()
   }
 
   /// Task 3: post-animation
   /// `sidebarView` should correspond to same side as `sidebar`
-  private func changeVisibilityPostAnimation(forSidebar sidebar: Sidebar, sidebarView: NSView, tab: SidebarTab, show: Bool) {
-    Logger.log("ChangeVisibility post-animation: finishing setting \(sidebar.locationID) to: \(show)", level: .verbose, subsystem: player.subsystem)
-    if show {
+  private func changeVisibilityPostAnimation(forSidebar sidebar: Sidebar, sidebarView: NSView, goal: VisibilityGoal) {
+    Logger.log("ChangeVisibility post-animation: finishing setting \(sidebar.locationID) to: \(goal)", level: .verbose, subsystem: player.subsystem)
+    switch goal {
+    case .show(let tabToShow):
       sidebar.animationState = .shown
-      sidebar.visibleTab = tab
-    } else {  // hide
+      sidebar.visibleTab = tabToShow
+    case .hide:
+      if let visibleTab = sidebar.visibleTab {
+        /// Remove `tabGroupView` from its parent (also removes constraints):
+        let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
+        viewController.view.removeFromSuperview()
+      }
       sidebar.visibleTab = nil
-      /// Remove `tabGroupView` from its parent (also removes constraints):
-      let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
       sidebarView.isHidden = true
-      viewController.view.removeFromSuperview()
       sidebar.animationState = .hidden
     }
   }
@@ -760,7 +794,7 @@ extension MainWindowController {
 
       if closeBothSidebars {
         // Close both at the same time:
-        changeVisibilityForSidebars(changeLeading: true, showLeading: false, changeTrailing: true, showTrailing: false, then: reopenFunc)
+        changeVisibilityForSidebars(setLeadingTo: .hide, setTrailingTo: .hide, then: reopenFunc)
       } else {
         // Close sidebar at old location. Then reopen tab group at its new location:
         changeVisibility(forTab: curentVisibleTab, to: false, then: reopenFunc)
@@ -894,8 +928,8 @@ extension MainWindowController {
     let hideTrailing = trailingSidebar.isVisible && Preference.bool(for: .hideTrailingSidebarOnClick)
 
     if hideLeading || hideTrailing {
-      changeVisibilityForSidebars(changeLeading: hideLeading, showLeading: false,
-                                  changeTrailing: hideTrailing, showTrailing: false)
+      changeVisibilityForSidebars(setLeadingTo: hideLeading ? .hide : nil,
+                                  setTrailingTo: hideTrailing ? .hide : nil)
       return true
     }
     return false

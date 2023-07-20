@@ -105,7 +105,7 @@ class VideoView: NSView {
     let newAspectRatio: CGFloat = width == 0 || height == 0 ? 1 : width / height
     aspectRatio = newAspectRatio
 
-    if let aspectRatioConstraint = aspectRatioConstraint {
+    if aspectRatioConstraint != nil {
       setAspectRatioConstraint()
     }
   }
