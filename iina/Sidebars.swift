@@ -97,29 +97,37 @@ extension MainWindowController {
     var animationState: UIAnimationState = .hidden
     var isResizing = false
 
-    // nil means none/hidden:
-    var visibleTab: SidebarTab? = nil {
-      didSet {
-        if visibleTab != nil {
-          lastVisibleTab = visibleTab
+    /// The currently visible tab, if sidebar is open/visible. Is `nil` if sidebar is closed/hidden.
+    /// Use `lastVisibleTab` if the last shown tab needs to be known.
+    var visibleTab: SidebarTab? {
+      get {
+        return isVisible ? lastVisibleTab : nil
+      }
+      set {
+        if let tab = newValue {
+          lastVisibleTab = tab
         }
       }
     }
 
+    /// Tab group of `visibleTab`
     var visibleTabGroup: SidebarTabGroup? {
       return visibleTab?.group
     }
 
     var isVisible: Bool {
-      return visibleTab != nil
+      return animationState == .shown
     }
 
+    /// Returns `0` if sidebar is hidden.
     var currentWidth: CGFloat {
+      guard isVisible else { return 0 }
       return visibleTabGroup?.width() ?? 0
     }
 
+    /// Returns `0` if sidebar is hidden.
     var currentOutsidePanelWidth: CGFloat {
-      return isVisible && placement == .outsideVideo ? currentWidth : 0
+      return placement == .outsideVideo ? currentWidth : 0
     }
 
     private var lastVisibleTab: SidebarTab? = nil
@@ -193,10 +201,12 @@ extension MainWindowController {
     animationQueue.run(UIAnimation.zeroDurationTask { [self] in
       guard let destinationSidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
 
-      if destinationSidebar.visibleTab == tab && hideIfAlreadyShown {
-        changeVisibility(forTab: tab, to: false)
+      if destinationSidebar.visibleTab == tab {
+        if hideIfAlreadyShown {
+          changeVisibility(forTab: tab, to: false)
+        }
       } else {
-        // This will change the sidebar to the displayed tab group if needed:
+        // This will first change the sidebar to the displayed tab group if needed:
         changeVisibility(forTab: tab, to: true)
       }
     })
@@ -243,33 +253,38 @@ extension MainWindowController {
 
     var nothingToDo = false
     if show && sidebar.isVisible {
-      if sidebar.visibleTabGroup != group {
+      guard let visibleTab = sidebar.visibleTab else {
+        Logger.log("Internal error setting tab group for sidebar \(sidebar.locationID)",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      if visibleTab.group != group {
         // If tab is showing but with wrong tab group, hide it, then change it, then show again
         Logger.log("Need to change tab group for \(sidebar.locationID): will hide & re-show sidebar",
                    level: .verbose, subsystem: player.subsystem)
-        guard let visibleTab = sidebar.visibleTab else {
-          Logger.log("Internal error setting tab group for sidebar \(sidebar.locationID)",
-                     level: .error, subsystem: player.subsystem)
-          return
-        }
         changeVisibility(forTab: visibleTab, to: false, then: {
           self.changeVisibility(forTab: tab, to: true, then: doAfter)
         })
         return
-      } else if let visibleTab = sidebar.visibleTab, visibleTab == tab {
+      } else if visibleTab == tab {
         Logger.log("Nothing to do; \(sidebar.locationID) is already showing tab \(visibleTab.name.quoted)",
                    level: .verbose, subsystem: player.subsystem)
         nothingToDo = true
       }
-    // Else just need to change tab in tab group. Fall through
     } else if !show && !sidebar.isVisible {
+      // Just need to change tab in tab group. Fall through
       Logger.log("Nothing to do; \(sidebar.locationID) (which contains tab \(tab.name.quoted)) is already hidden",
                  level: .verbose, subsystem: player.subsystem)
       nothingToDo = true
     }
 
     if nothingToDo {
-      return  // FIXME: include doAfter
+      if let doAfter = doAfter {
+        animationQueue.run(UIAnimation.zeroDurationTask {
+          doAfter()
+        })
+      }
+      return
     }
 
     let tabGroup = tab.group
@@ -292,30 +307,14 @@ extension MainWindowController {
                                            then doAfter: TaskFunc? = nil) {
     guard let window = window else { return }
 
-    let leadingTab = setLeadingTab ?? leadingSidebar.defaultTabToShow
-    assert(!leading || !showLeading || leadingTab != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
-    let trailingTab = setTrailingTab ?? trailingSidebar.defaultTabToShow
-    assert(!trailing || !showTrailing || trailingTab != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
+    let leadingTabToShow = setLeadingTab ?? leadingSidebar.defaultTabToShow
+    assert(!leading || !showLeading || leadingTabToShow != nil, "changeVisibilityForSidebars: invalid config for leading sidebar!")
+    let trailingTabToShow = setTrailingTab ?? trailingSidebar.defaultTabToShow
+    assert(!trailing || !showTrailing || trailingTabToShow != nil, "changeVisibilityForSidebars: invalid config for trailing sidebar!")
     Logger.log("Changing visibility of sidebars: Leading:(change=\(leading),show=\(showLeading),placement=\(leadingSidebar.placement)), Trailing:(change=\(trailing),show=\(showTrailing),placement=\(trailingSidebar.placement))", level: .verbose, subsystem: player.subsystem)
 
     var changeLeading = leading
-    if changeLeading {
-      if (showLeading && leadingSidebar.animationState != .hidden) || (!showLeading && leadingSidebar.animationState != .shown) {
-        Logger.log("Skipping \(showLeading ? "show" : "hide") of leadingSidebar: it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
-        changeLeading = false
-      } else {
-        leadingSidebar.animationState = showLeading ? .willShow : .willHide
-      }
-    }
     var changeTrailing = trailing
-    if changeTrailing {
-      if (showTrailing && trailingSidebar.animationState != .hidden) || (!showTrailing && trailingSidebar.animationState != .shown) {
-        Logger.log("Skipping \(showTrailing ? "show" : "hide") of trailingSidebar: it is in state \(trailingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
-        changeTrailing = false
-      } else {
-        trailingSidebar.animationState = showTrailing ? .willShow : .willHide
-      }
-    }
 
     var animationTasks: [UIAnimation.Task] = []
 
@@ -323,16 +322,42 @@ extension MainWindowController {
     // (will be very different for "insideVideo" vs "outsideVideo" placement)
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       // Leading
-      if let leadingTab = leadingTab, changeLeading {
-        if showLeading {
-          prepareLayoutForOpeningLeadingSidebar(toTab: leadingTab)
+      if changeLeading {
+        if (showLeading && setLeadingTab == leadingSidebar.visibleTab) || (!showLeading && leadingSidebar.animationState != .shown) {
+          Logger.log("Skipping \(showLeading ? "show" : "hide") of leadingSidebar: it is in state \(leadingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+          changeLeading = false
+        } else if let leadingTabToShow = leadingTabToShow, showLeading {
+          // Check if tab group is already showing, but just need to switch tab
+          if let visibleTab = leadingSidebar.visibleTab, visibleTab != leadingTabToShow && visibleTab.group == leadingTabToShow.group {
+            switchToTabInTabGroup(tab: leadingTabToShow)
+            // no further work needed
+            changeLeading = false
+          } else {
+            prepareLayoutForOpeningLeadingSidebar(toTab: leadingTabToShow)
+          }
+        }
+        if changeLeading {
+          leadingSidebar.animationState = showLeading ? .willShow : .willHide
         }
       }
-
       // Trailing
-      if let trailingTab = trailingTab, changeTrailing {
-        if showTrailing {
-          prepareLayoutForOpeningTrailingSidebar(toTab: trailingTab)
+      if changeTrailing {
+        if (showTrailing && setTrailingTab == trailingSidebar.visibleTab) ||
+            (!showTrailing && trailingSidebar.animationState != .shown) {
+          Logger.log("Skipping \(showTrailing ? "show" : "hide") of trailingSidebar: it is in state \(trailingSidebar.animationState)", level: .debug, subsystem: player.subsystem)
+          changeTrailing = false
+        } else if let trailingTabToShow = trailingTabToShow, showTrailing {
+          // Check if tab group is already showing, but just need to switch tab
+          if let visibleTab = trailingSidebar.visibleTab, visibleTab != trailingTabToShow && visibleTab.group == trailingTabToShow.group {
+            switchToTabInTabGroup(tab: trailingTabToShow)
+            // no further work needed
+            changeTrailing = false
+          } else {
+            prepareLayoutForOpeningTrailingSidebar(toTab: trailingTabToShow)
+          }
+        }
+        if changeTrailing {
+          trailingSidebar.animationState = showTrailing ? .willShow : .willHide
         }
       }
     })
@@ -341,8 +366,8 @@ extension MainWindowController {
     animationTasks.append(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timing: .easeIn, { [self] in
 
       var ΔLeft: CGFloat = 0
-      if let leadingTab = leadingTab, changeLeading {
-        let currentWidth = leadingTab.group.width()
+      if let leadingTabToShow = leadingTabToShow, changeLeading {
+        let currentWidth = leadingTabToShow.group.width()
         updateLeadingSidebarWidth(to: currentWidth, show: showLeading, placement: leadingSidebar.placement)
         if leadingSidebar.placement == .outsideVideo {
           leadingSidebarTrailingBorder.isHidden = !showLeading
@@ -351,8 +376,8 @@ extension MainWindowController {
       }
 
       var ΔRight: CGFloat = 0
-      if let trailingTab = trailingTab, changeTrailing {
-        let currentWidth = trailingTab.group.width()
+      if let trailingTabToShow = trailingTabToShow, changeTrailing {
+        let currentWidth = trailingTabToShow.group.width()
         updateTrailingSidebarWidth(to: currentWidth, show: showTrailing, placement: trailingSidebar.placement)
         if trailingSidebar.placement == .outsideVideo {
           trailingSidebarLeadingBorder.isHidden = !showTrailing
@@ -382,11 +407,11 @@ extension MainWindowController {
     // Task 3: Finish up state changes:
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
 
-      if let leadingTab = leadingTab, changeLeading {
-        changeVisibilityPostAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tab: leadingTab, show: showLeading)
+      if let leadingTabToShow = leadingTabToShow, changeLeading {
+        changeVisibilityPostAnimation(forSidebar: leadingSidebar, sidebarView: leadingSidebarView, tab: leadingTabToShow, show: showLeading)
       }
-      if let trailingTab = trailingTab, changeTrailing {
-        changeVisibilityPostAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tab: trailingTab, show: showTrailing)
+      if let trailingTabToShow = trailingTabToShow, changeTrailing {
+        changeVisibilityPostAnimation(forSidebar: trailingSidebar, sidebarView: trailingSidebarView, tab: trailingTabToShow, show: showTrailing)
       }
     })
 
@@ -398,8 +423,28 @@ extension MainWindowController {
     animationQueue.run(animationTasks)
   }
 
+  private func switchToTabInTabGroup(tab: SidebarTab) {
+    // Make it the active tab in its parent tab group (can do this whether or not it's shown):
+    switch tab.group {
+    case .playlist:
+      guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.playlistView.pleaseSwitchToTab(tabType)
+    case .settings:
+      guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.quickSettingView.pleaseSwitchToTab(tabType)
+    }
+  }
+
   /// Execute this prior to opening `leadingSidebar` to the given tab.
-  private func prepareLayoutForOpeningLeadingSidebar(toTab leadingTab: SidebarTab) {
+  private func prepareLayoutForOpeningLeadingSidebar(toTab leadingTabToShow: SidebarTab) {
     guard let window = window else { return }
 
     // - Remove old:
@@ -419,7 +464,7 @@ extension MainWindowController {
     }
 
     // - Add new:
-    let sidebarWidth = leadingTab.group.width()
+    let sidebarWidth = leadingTabToShow.group.width()
     let tabContainerView: NSView
 
     if leadingSidebar.placement == .insideVideo {
@@ -452,11 +497,11 @@ extension MainWindowController {
       equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
     videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
 
-    prepareLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTab)
+    prepareLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTabToShow)
   }
 
   /// Execute this prior to opening `trailingSidebar` to the given tab.
-  private func prepareLayoutForOpeningTrailingSidebar(toTab trailingTab: SidebarTab) {
+  private func prepareLayoutForOpeningTrailingSidebar(toTab trailingTabToShow: SidebarTab) {
     guard let window = window else { return }
 
     // - Remove old:
@@ -476,7 +521,7 @@ extension MainWindowController {
     }
 
     // - Add new:
-    let sidebarWidth = trailingTab.group.width()
+    let sidebarWidth = trailingTabToShow.group.width()
     let tabContainerView: NSView
 
     if trailingSidebar.placement == .insideVideo {
@@ -509,7 +554,7 @@ extension MainWindowController {
       equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
     videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.isActive = true
 
-    prepareLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: trailingTab)
+    prepareLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: trailingTabToShow)
   }
 
   /// Works for either `Sidebar`. Execute this prior to opening the given `Sidebar` with corresponding `sidebarView`
@@ -552,7 +597,6 @@ extension MainWindowController {
       }
       self.quickSettingView.pleaseSwitchToTab(tabType)
     }
-
 
     window?.layoutIfNeeded()
   }
