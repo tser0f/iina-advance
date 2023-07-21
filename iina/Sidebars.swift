@@ -446,7 +446,7 @@ extension MainWindowController {
         (window as! MainWindow).setFrameImmediately(newWindowFrame)
       }
       updateSpacingForTitleBarAccessories()
-      refreshSidebarVerticalConstraints()
+      updateSidebarVerticalConstraints()
       window.contentView?.layoutSubtreeIfNeeded()
     }))
 

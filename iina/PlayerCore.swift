@@ -549,7 +549,7 @@ class PlayerCore: NSObject {
     playlistView.removeFromSuperview()
     // make sure isInMiniPlayer==true before setting this:
     mainWindow.playlistView.useCompactTabHeight = true
-    mainWindow.refreshSidebarVerticalConstraints()
+    mainWindow.updateSidebarVerticalConstraints()
     miniPlayer.playlistWrapperView.addSubview(playlistView)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": playlistView])
     // move video view
@@ -584,7 +584,7 @@ class PlayerCore: NSObject {
     }
     mainWindow.playlistView.view.removeFromSuperview()
     mainWindow.playlistView.useCompactTabHeight = false
-    mainWindow.refreshSidebarVerticalConstraints()
+    mainWindow.updateSidebarVerticalConstraints()
     // add back video view
     videoView.removeFromSuperview()
     mainWindow.addVideoViewToWindow()
