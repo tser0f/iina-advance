@@ -817,8 +817,9 @@ class MainWindowController: PlayerWindowController {
       self.quickSettingView.reload()
     }
 
-    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [unowned self] _ in
-      self.thumbnailPeekView.isHidden = true
+    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
+      thumbnailPeekView.isHidden = true
+      timePreviewWhenSeek.isHidden = true
     }
 
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
@@ -2260,7 +2261,7 @@ class MainWindowController: PlayerWindowController {
       thumbnailPeekView.isHidden = !player.info.thumbnailsReady
 
       let mousePos = playSlider.convert(event.locationInWindow, from: nil)
-      updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
+      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
     }
   }
 
@@ -2284,9 +2285,9 @@ class MainWindowController: PlayerWindowController {
     } else if obj == 1 {
       // slider
       isMouseInSlider = false
-      timePreviewWhenSeek.isHidden = true
       let mousePos = playSlider.convert(event.locationInWindow, from: nil)
-      updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
+      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
+      timePreviewWhenSeek.isHidden = true
       thumbnailPeekView.isHidden = true
     }
   }
@@ -2311,7 +2312,7 @@ class MainWindowController: PlayerWindowController {
 
     let mousePos = playSlider.convert(event.locationInWindow, from: nil)
     if isMouseInSlider {
-      updateTimeLabel(mousePos.x, originalPos: event.locationInWindow)
+      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
     }
 
     if isMouseInWindow {
@@ -3636,7 +3637,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   /** Display time label when mouse over slider */
-  private func updateTimeLabel(_ mouseXPos: CGFloat, originalPos: NSPoint) {
+  private func updateTimeLabelAndThumbnail(_ mouseXPos: CGFloat, originalPos: NSPoint) {
     timePreviewWhenSeekHorizontalCenterConstraint.constant = mouseXPos
 
     guard let duration = player.info.videoDuration else { return }
@@ -3670,6 +3671,9 @@ class MainWindowController: PlayerWindowController {
       thumbnailPeekView.imageView.image = imageToDisplay
       thumbnailPeekView.isHidden = false
 
+      if videoContainerView.frame.height < imageToDisplay.size.height {
+        thumbnailPeekView.frame.size = imageToDisplay.size.shrink(toSize: videoContainerView.frame.size)
+      }
       thumbnailPeekView.frame.size = imageToDisplay.size
       Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
       let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
@@ -3812,9 +3816,9 @@ class MainWindowController: PlayerWindowController {
       Logger.log("Starting resizeWindow calculations; set newVideoSize = videoBaseDisplaySize -> \(videoBaseDisplaySize)", level: .verbose)
 
       if Preference.bool(for: .usePhysicalResolution) {
-        let invertedScale = 1.0 / window.backingScaleFactor
-        scaleDownFactor = invertedScale
-        newVideoSize = NSSize(width: videoBaseDisplaySize.width * invertedScale, height: videoBaseDisplaySize.height * invertedScale)
+        let invertedScaleFactor = 1.0 / window.backingScaleFactor
+        scaleDownFactor = invertedScaleFactor
+        newVideoSize = videoBaseDisplaySize.multiplyThenRound(invertedScaleFactor)
         Logger.log("Converted newVideoSize to physical resolution -> \(newVideoSize)", level: .verbose)
       }
 
@@ -3881,7 +3885,7 @@ class MainWindowController: PlayerWindowController {
       // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
       let mpvVideoSize: CGSize
       if let scaleDownFactor = scaleDownFactor {
-        mpvVideoSize = CGSize(width: newVideoSize.width * scaleDownFactor, height: newVideoSize.height * scaleDownFactor)
+        mpvVideoSize = newVideoSize.multiplyThenRound(scaleDownFactor)
       } else {
         mpvVideoSize = newVideoSize
       }
@@ -3945,10 +3949,10 @@ class MainWindowController: PlayerWindowController {
   private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
+    Logger.log("Scaling pinched video, target scale: \(scale)")
 
     let origVideoSize = windowGeometryAtMagnificationBegin.videoSize
-    let newVideoSize = NSSize(width: origVideoSize.width * scale,
-                              height: origVideoSize.height * scale);
+    let newVideoSize = origVideoSize.multiply(scale);
 
     resizeVideo(toVideoSize: newVideoSize,
                fromGeometry: windowGeometryAtMagnificationBegin,

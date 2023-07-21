@@ -173,6 +173,10 @@ extension NSSize {
     return NSSize(width: width * multiplier, height: height * multiplier)
   }
 
+  func multiplyThenRound(_ multiplier: CGFloat) -> NSSize {
+    return NSSize(width: (width * multiplier).rounded(), height: (height * multiplier).rounded())
+  }
+
   func add(_ multiplier: CGFloat) -> NSSize {
     return NSSize(width: width + multiplier, height: height + multiplier)
   }
