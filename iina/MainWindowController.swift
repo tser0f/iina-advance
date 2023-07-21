@@ -186,8 +186,8 @@ class MainWindowController: PlayerWindowController {
 
   /** Views that will show/hide when cursor moving in/out the window. */
   var fadeableViews = Set<NSView>()
-  /** Similar to `fadeableViews`, but may fade in differently depending on configuration of top panel. */
-  var fadeableViewsTopPanel = Set<NSView>()
+  /** Similar to `fadeableViews`, but may fade in differently depending on configuration of top bar. */
+  var fadeableViewsTopBar = Set<NSView>()
 
   // Left and right arrow buttons
 
@@ -330,7 +330,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   var animationState: UIAnimationState = .shown
-  var topPanelAnimationState: UIAnimationState = .shown
+  var topBarAnimationState: UIAnimationState = .shown
   var osdAnimationState: UIAnimationState = .hidden
 
   // MARK: - Observed user defaults
@@ -344,8 +344,8 @@ class MainWindowController: PlayerWindowController {
     .osdPosition,
     .enableOSC,
     .oscPosition,
-    .topPanelPlacement,
-    .bottomPanelPlacement,
+    .topBarPlacement,
+    .bottomBarPlacement,
     .oscBarHeight,
     .oscBarPlaybackIconSize,
     .oscBarPlaybackIconSpacing,
@@ -381,8 +381,8 @@ class MainWindowController: PlayerWindowController {
     switch keyPath {
     case PK.enableOSC.rawValue,
       PK.oscPosition.rawValue,
-      PK.topPanelPlacement.rawValue,
-      PK.bottomPanelPlacement.rawValue,
+      PK.topBarPlacement.rawValue,
+      PK.bottomBarPlacement.rawValue,
       PK.oscBarHeight.rawValue,
       PK.oscBarPlaybackIconSize.rawValue,
       PK.oscBarPlaybackIconSpacing.rawValue,
@@ -478,23 +478,23 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var trailingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
 
-  // - Top panel (title bar and/or top OSC) constraints
-  @IBOutlet weak var videoContainerTopOffsetFromTopPanelBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTopOffsetFromTopPanelTopConstraint: NSLayoutConstraint!
+  // - Top bar (title bar and/or top OSC) constraints
+  @IBOutlet weak var videoContainerTopOffsetFromTopBarBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerTopOffsetFromTopBarTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerTopOffsetFromContentViewTopConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
-  @IBOutlet weak var topPanelLeadingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var topBarLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
-  @IBOutlet weak var topPanelTrailingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var topBarTrailingSpaceConstraint: NSLayoutConstraint!
 
   // - Bottom OSC constraints
-  @IBOutlet weak var videoContainerBottomOffsetFromBottomPanelTopConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerBottomOffsetFromBottomPanelBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerBottomOffsetFromBottomBarTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var videoContainerBottomOffsetFromBottomBarBottomConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerBottomOffsetFromContentViewBottomConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
-  @IBOutlet weak var bottomPanelLeadingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var bottomBarLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
-  @IBOutlet weak var bottomPanelTrailingSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var bottomBarTrailingSpaceConstraint: NSLayoutConstraint!
 
   // - Leading sidebar constraints
   @IBOutlet weak var videoContainerLeadingOffsetFromContentViewLeadingConstraint: NSLayoutConstraint!
@@ -522,10 +522,10 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var leadingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
 
-  // The OSD should always be below the top panel + 8. But if top panel/title bar is transparent, we need this constraint
+  // The OSD should always be below the top bar + 8. But if top bar/title bar is transparent, we need this constraint
   @IBOutlet weak var osdMinOffsetFromTopConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var bottomPanelBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
   /// Size of each side of the 3 square playback buttons ⏪⏯️⏩ (`leftArrowButton`, Play/Pause, `rightArrowButton`):
@@ -542,9 +542,9 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet var trailingTitleBarAccessoryView: NSView!
 
   /** Top-of-video panel, may contain `titleBarView` and/or top OSC if configured. */
-  @IBOutlet weak var topPanelView: NSVisualEffectView!
-  /** Bottom border of `topPanelView`. */
-  @IBOutlet weak var topPanelBottomBorder: NSBox!
+  @IBOutlet weak var topBarView: NSVisualEffectView!
+  /** Bottom border of `topBarView`. */
+  @IBOutlet weak var topBarBottomBorder: NSBox!
   /** Reserves space for the title bar components. Does not contain any child views. */
   @IBOutlet weak var titleBarView: NSView!
   @IBOutlet weak var leadingSidebarToggleButton: NSButton!
@@ -735,7 +735,7 @@ class MainWindowController: PlayerWindowController {
     // Titlebar accessories
 
     // Update this here to reduce animation jitter on older versions of MacOS:
-    videoContainerTopOffsetFromTopPanelTopConstraint.constant = StandardTitleBarHeight
+    videoContainerTopOffsetFromTopBarTopConstraint.constant = StandardTitleBarHeight
 
     leadingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     leadingTitlebarAccesoryViewController.view = leadingTitleBarAccessoryView
@@ -788,14 +788,14 @@ class MainWindowController: PlayerWindowController {
     // other initialization
     osdAccessoryProgress.usesThreadedAnimation = false
     if #available(macOS 10.14, *) {
-      topPanelBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
+      topBarBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     }
     cachedScreenIDs.removeAll()
     for screen in NSScreen.screens {
       cachedScreenIDs.insert(screen.displayId)
     }
     // Do not make visual effects views opaque when window is not in focus
-    for view in [topPanelView, osdVisualEffectView, controlBarBottom, controlBarFloating,
+    for view in [topBarView, osdVisualEffectView, controlBarBottom, controlBarFloating,
                  leadingSidebarView, trailingSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
       view?.state = .active
     }
@@ -995,7 +995,7 @@ class MainWindowController: PlayerWindowController {
     let isDarkTheme = appearance?.isDark ?? true
     (playSlider.cell as? PlaySliderCell)?.isInDarkTheme = isDarkTheme
 
-    for view in [topPanelView, controlBarFloating, controlBarBottom,
+    for view in [topBarView, controlBarFloating, controlBarBottom,
                  osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView] {
       view?.material = material
       view?.appearance = appearance
@@ -1027,45 +1027,45 @@ class MainWindowController: PlayerWindowController {
    │     │  VIDEO     O│     │          │     │  VIDEO     O│     │
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
-  private func updateTopPanelPlacement(placement: Preference.PanelPlacement) {
-    Logger.log("Updating top panel placement to: \(placement)", level: .verbose)
+  private func updateTopBarPlacement(placement: Preference.PanelPlacement) {
+    Logger.log("Updating top bar placement to: \(placement)", level: .verbose)
     guard let window = window, let contentView = window.contentView else { return }
-    contentView.removeConstraint(topPanelLeadingSpaceConstraint)
-    contentView.removeConstraint(topPanelTrailingSpaceConstraint)
+    contentView.removeConstraint(topBarLeadingSpaceConstraint)
+    contentView.removeConstraint(topBarTrailingSpaceConstraint)
 
     switch placement {
     case .insideVideo:
-      // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
-      topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-      topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+      // Align left & right sides with sidebars (top bar will squeeze to make space for sidebars)
+      topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+      topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
 
     case .outsideVideo:
-      // Align left & right sides with window (sidebars go below top panel)
-      topPanelLeadingSpaceConstraint = topPanelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
-      topPanelTrailingSpaceConstraint = topPanelView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
+      // Align left & right sides with window (sidebars go below top bar)
+      topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
+      topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
 
     }
-    topPanelLeadingSpaceConstraint.isActive = true
-    topPanelTrailingSpaceConstraint.isActive = true
+    topBarLeadingSpaceConstraint.isActive = true
+    topBarTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateTopPanelHeight(to topPanelHeight: CGFloat, transition: LayoutTransition) {
-    let placement = transition.toLayout.topPanelPlacement
-    Logger.log("TopPanel height: \(topPanelHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+  private func updateTopBarHeight(to topBarHeight: CGFloat, transition: LayoutTransition) {
+    let placement = transition.toLayout.topBarPlacement
+    Logger.log("TopBar height: \(topBarHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
 
     switch placement {
     case .insideVideo:
-      videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(-topPanelHeight)
-      videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(0)
+      videoContainerTopOffsetFromTopBarBottomConstraint.animateToConstant(-topBarHeight)
+      videoContainerTopOffsetFromTopBarTopConstraint.animateToConstant(0)
       videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0)
     case .outsideVideo:
-      videoContainerTopOffsetFromTopPanelBottomConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromTopPanelTopConstraint.animateToConstant(topPanelHeight)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topPanelHeight)
+      videoContainerTopOffsetFromTopBarBottomConstraint.animateToConstant(0)
+      videoContainerTopOffsetFromTopBarTopConstraint.animateToConstant(topBarHeight)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topBarHeight)
     }
   }
 
-  func updateDepthOrderOfPanels(topPanel: Preference.PanelPlacement, bottomPanel: Preference.PanelPlacement,
+  func updateDepthOrderOfPanels(topBar: Preference.PanelPlacement, bottomBar: Preference.PanelPlacement,
                                 leadingSidebar: Preference.PanelPlacement, trailingSidebar: Preference.PanelPlacement) {
     guard let window = window, let contentView = window.contentView else { return }
 
@@ -1079,16 +1079,16 @@ class MainWindowController: PlayerWindowController {
       contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: videoContainerView)
     }
 
-    contentView.addSubview(topPanelView, positioned: .above, relativeTo: videoContainerView)
+    contentView.addSubview(topBarView, positioned: .above, relativeTo: videoContainerView)
     contentView.addSubview(controlBarBottom, positioned: .above, relativeTo: videoContainerView)
 
     if leadingSidebar == .insideVideo {
       contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
 
-      if topPanel == .insideVideo {
-        contentView.addSubview(topPanelView, positioned: .below, relativeTo: leadingSidebarView)
+      if topBar == .insideVideo {
+        contentView.addSubview(topBarView, positioned: .below, relativeTo: leadingSidebarView)
       }
-      if bottomPanel == .insideVideo {
+      if bottomBar == .insideVideo {
         contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: leadingSidebarView)
       }
     }
@@ -1096,52 +1096,52 @@ class MainWindowController: PlayerWindowController {
     if trailingSidebar == .insideVideo {
       contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: videoContainerView)
 
-      if topPanel == .insideVideo {
-        contentView.addSubview(topPanelView, positioned: .below, relativeTo: trailingSidebarView)
+      if topBar == .insideVideo {
+        contentView.addSubview(topBarView, positioned: .below, relativeTo: trailingSidebarView)
       }
-      if bottomPanel == .insideVideo {
+      if bottomBar == .insideVideo {
         contentView.addSubview(controlBarBottom, positioned: .below, relativeTo: trailingSidebarView)
       }
     }
   }
 
-  private func updateBottomPanelPlacement(placement: Preference.PanelPlacement) {
-    Logger.log("Updating bottom panel placement to: \(placement)", level: .verbose, subsystem: player.subsystem)
+  private func updateBottomBarPlacement(placement: Preference.PanelPlacement) {
+    Logger.log("Updating bottom bar placement to: \(placement)", level: .verbose, subsystem: player.subsystem)
     guard let window = window, let contentView = window.contentView else { return }
-    contentView.removeConstraint(bottomPanelLeadingSpaceConstraint)
-    contentView.removeConstraint(bottomPanelTrailingSpaceConstraint)
+    contentView.removeConstraint(bottomBarLeadingSpaceConstraint)
+    contentView.removeConstraint(bottomBarTrailingSpaceConstraint)
 
     switch placement {
     case .insideVideo:
       controlBarBottomTopBorder.isHidden = true
 
-      // Align left & right sides with sidebars (top panel will squeeze to make space for sidebars)
-      bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-      bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
+      // Align left & right sides with sidebars (top bar will squeeze to make space for sidebars)
+      bottomBarLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
+      bottomBarTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
     case .outsideVideo:
       controlBarBottomTopBorder.isHidden = false
 
-      // Align left & right sides with window (sidebars go below top panel)
-      bottomPanelLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
-      bottomPanelTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
+      // Align left & right sides with window (sidebars go below top bar)
+      bottomBarLeadingSpaceConstraint = controlBarBottom.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
+      bottomBarTrailingSpaceConstraint = controlBarBottom.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
     }
-    bottomPanelLeadingSpaceConstraint.isActive = true
-    bottomPanelTrailingSpaceConstraint.isActive = true
+    bottomBarLeadingSpaceConstraint.isActive = true
+    bottomBarTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateBottomPanelHeight(to bottomOSCHeight: CGFloat, transition: LayoutTransition) {
-    let placement = transition.toLayout.bottomPanelPlacement
-    Logger.log("Updating bottomOSC height to: \(bottomOSCHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+  private func updateBottomBarHeight(to bottomBarHeight: CGFloat, transition: LayoutTransition) {
+    let placement = transition.toLayout.bottomBarPlacement
+    Logger.log("Updating bottomBar height to: \(bottomBarHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
 
     switch placement {
     case .insideVideo:
-      videoContainerBottomOffsetFromBottomPanelTopConstraint.animateToConstant(bottomOSCHeight)
-      videoContainerBottomOffsetFromBottomPanelBottomConstraint.animateToConstant(0)
+      videoContainerBottomOffsetFromBottomBarTopConstraint.animateToConstant(bottomBarHeight)
+      videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(0)
       videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(0)
     case .outsideVideo:
-      videoContainerBottomOffsetFromBottomPanelTopConstraint.animateToConstant(0)
-      videoContainerBottomOffsetFromBottomPanelBottomConstraint.animateToConstant(-bottomOSCHeight)
-      videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomOSCHeight)
+      videoContainerBottomOffsetFromBottomBarTopConstraint.animateToConstant(0)
+      videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
+      videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
     }
   }
 
@@ -1149,7 +1149,7 @@ class MainWindowController: PlayerWindowController {
     let buttonVisibility = currentLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
     pinToTopButton.state = isOntop ? .on : .off
     apply(visibility: buttonVisibility, to: pinToTopButton)
-    if buttonVisibility == .showFadeableTopPanel {
+    if buttonVisibility == .showFadeableTopBar {
       showFadeableViews()
     }
   }
@@ -1198,8 +1198,8 @@ class MainWindowController: PlayerWindowController {
   enum Visibility {
     case hidden
     case showAlways
-    case showFadeableTopPanel  // fade in as part of the top panel
-    case showFadeableNonTopPanel          // fade in as a fadeable view which is not top panel
+    case showFadeableTopBar  // fade in as part of the top bar
+    case showFadeableNonTopBar          // fade in as a fadeable view which is not top bar
 
     var isShowable: Bool {
       return self != .hidden
@@ -1208,16 +1208,16 @@ class MainWindowController: PlayerWindowController {
 
   struct LayoutSpec {
     let isFullScreen:  Bool
-    let topPanelPlacement: Preference.PanelPlacement
-    let bottomPanelPlacement: Preference.PanelPlacement
+    let topBarPlacement: Preference.PanelPlacement
+    let bottomBarPlacement: Preference.PanelPlacement
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
 
     static func fromPreferences(isFullScreen: Bool) -> LayoutSpec {
-      // If in fullscreen, top & bottom panels are always .insideVideo
+      // If in fullscreen, top & bottom bars are always .insideVideo
       return LayoutSpec(isFullScreen: isFullScreen,
-                        topPanelPlacement: Preference.enum(for: .topPanelPlacement),
-                        bottomPanelPlacement: Preference.enum(for: .bottomPanelPlacement),
+                        topBarPlacement: Preference.enum(for: .topBarPlacement),
+                        bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
                         oscPosition: Preference.enum(for: .oscPosition))
     }
@@ -1225,16 +1225,16 @@ class MainWindowController: PlayerWindowController {
     // Matches what is shown in the XIB
     static func initial() -> LayoutSpec {
       return LayoutSpec(isFullScreen: false,
-                        topPanelPlacement:.insideVideo,
-                        bottomPanelPlacement: .insideVideo,
+                        topBarPlacement:.insideVideo,
+                        bottomBarPlacement: .insideVideo,
                         enableOSC: false,
                         oscPosition: .floating)
     }
 
     func clone(fullScreen: Bool) -> LayoutSpec {
       return LayoutSpec(isFullScreen: fullScreen,
-                        topPanelPlacement: self.topPanelPlacement,
-                        bottomPanelPlacement: self.bottomPanelPlacement,
+                        topBarPlacement: self.topBarPlacement,
+                        bottomBarPlacement: self.bottomBarPlacement,
                         enableOSC: self.enableOSC,
                         oscPosition: self.oscPosition)
     }
@@ -1257,24 +1257,24 @@ class MainWindowController: PlayerWindowController {
 
     var controlBarFloating: Visibility = .hidden
     var controlBarBottom: Visibility = .hidden
-    var topPanelView: Visibility = .hidden
+    var topBarView: Visibility = .hidden
 
     var titleBarHeight: CGFloat = 0
     var topOSCHeight: CGFloat = 0
-    var topPanelHeight: CGFloat {
+    var topBarHeight: CGFloat {
       self.titleBarHeight + self.topOSCHeight
     }
 
-    var bottomOSCHeight: CGFloat = 0
+    var bottomBarHeight: CGFloat = 0
     /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
     /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
     var osdMinOffsetFromTop: CGFloat = 8
 
-    var topPanelOutsideHeight: CGFloat {
-      return topPanelPlacement == .outsideVideo ? topPanelHeight : 0
+    var topBarOutsideHeight: CGFloat {
+      return topBarPlacement == .outsideVideo ? topBarHeight : 0
     }
-    var bottomPanelOutsideHeight: CGFloat {
-      return bottomPanelPlacement == .outsideVideo ? bottomOSCHeight : 0
+    var bottomBarOutsideHeight: CGFloat {
+      return bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
     }
 
     var setupControlBarInternalViews: TaskFunc? = nil
@@ -1295,12 +1295,12 @@ class MainWindowController: PlayerWindowController {
       return spec.oscPosition
     }
 
-    var topPanelPlacement: Preference.PanelPlacement {
-      return spec.topPanelPlacement
+    var topBarPlacement: Preference.PanelPlacement {
+      return spec.topBarPlacement
     }
 
-    var bottomPanelPlacement: Preference.PanelPlacement {
-      return spec.bottomPanelPlacement
+    var bottomBarPlacement: Preference.PanelPlacement {
+      return spec.bottomBarPlacement
     }
 
     var hasFloatingOSC: Bool {
@@ -1312,8 +1312,8 @@ class MainWindowController: PlayerWindowController {
     }
 
     var hasPermanentOSC: Bool {
-      return enableOSC && ((oscPosition == .top && topPanelPlacement == .outsideVideo) ||
-                           (oscPosition == .bottom && bottomPanelPlacement == .outsideVideo))
+      return enableOSC && ((oscPosition == .top && topBarPlacement == .outsideVideo) ||
+                           (oscPosition == .bottom && bottomBarPlacement == .outsideVideo))
     }
 
     func computePinToTopButtonVisibility(isOnTop: Bool) -> Visibility {
@@ -1322,8 +1322,8 @@ class MainWindowController: PlayerWindowController {
         return .hidden
       }
 
-      if topPanelPlacement == .insideVideo {
-        return .showFadeableNonTopPanel
+      if topBarPlacement == .insideVideo {
+        return .showFadeableNonTopBar
       }
 
       return .showAlways
@@ -1336,17 +1336,17 @@ class MainWindowController: PlayerWindowController {
       view.alphaValue = 0
       view.isHidden = true
       fadeableViews.remove(view)
-      fadeableViewsTopPanel.remove(view)
+      fadeableViewsTopBar.remove(view)
     case .showAlways:
       view.alphaValue = 1
       view.isHidden = false
       fadeableViews.remove(view)
-      fadeableViewsTopPanel.remove(view)
-    case .showFadeableTopPanel:
+      fadeableViewsTopBar.remove(view)
+    case .showFadeableTopBar:
       view.alphaValue = 1
       view.isHidden = false
-      fadeableViewsTopPanel.insert(view)
-    case .showFadeableNonTopPanel:
+      fadeableViewsTopBar.insert(view)
+    case .showFadeableNonTopBar:
       view.alphaValue = 1
       view.isHidden = false
       fadeableViews.insert(view)
@@ -1361,12 +1361,12 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func applyHiddenOnly(visibility: Visibility, to view: NSView, isTopPanel: Bool = true) {
+  private func applyHiddenOnly(visibility: Visibility, to view: NSView, isTopBar: Bool = true) {
     guard visibility == .hidden else { return }
     apply(visibility: visibility, view)
   }
 
-  private func applyShowableOnly(visibility: Visibility, to view: NSView, isTopPanel: Bool = true) {
+  private func applyShowableOnly(visibility: Visibility, to view: NSView, isTopBar: Bool = true) {
     guard visibility != .hidden else { return }
     apply(visibility: visibility, view)
   }
@@ -1396,12 +1396,12 @@ class MainWindowController: PlayerWindowController {
       return self.fromLayout.isFullScreen && !self.toLayout.isFullScreen
     }
 
-    var isTopPanelPlacementChanging: Bool {
-      return self.fromLayout.topPanelPlacement != self.toLayout.topPanelPlacement
+    var isTopBarPlacementChanging: Bool {
+      return self.fromLayout.topBarPlacement != self.toLayout.topBarPlacement
     }
 
-    var isBottomPanelPlacementChanging: Bool {
-      return self.fromLayout.bottomPanelPlacement != self.toLayout.bottomPanelPlacement
+    var isBottomBarPlacementChanging: Bool {
+      return self.fromLayout.bottomBarPlacement != self.toLayout.bottomBarPlacement
     }
   }
 
@@ -1425,7 +1425,7 @@ class MainWindowController: PlayerWindowController {
       updatePanelBlendingModes(to: transition.toLayout)
       apply(visibility: transition.toLayout.titleIconAndText, titleTextField, documentIconButton)
       animationState = .shown
-      topPanelAnimationState = .shown
+      topBarAnimationState = .shown
       resetFadeTimer()
     }
   }
@@ -1482,7 +1482,7 @@ class MainWindowController: PlayerWindowController {
     })
 
     // StartingAnimation 1: Show fadeable views from current layout
-    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopPanel: true) {
+    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopBar: true) {
       transition.animationTasks.append(fadeAnimation)
     }
 
@@ -1533,7 +1533,7 @@ class MainWindowController: PlayerWindowController {
       apply(visibility: futureLayout.titleIconAndText, titleTextField, documentIconButton)
 
       animationState = .shown
-      topPanelAnimationState = .shown
+      topBarAnimationState = .shown
       resetFadeTimer()
     })
 
@@ -1546,12 +1546,12 @@ class MainWindowController: PlayerWindowController {
 
     // Title bar & title bar accessories:
 
-    // Hide all title bar items if top panel placement is changing
-    if futureLayout.titleIconAndText == .hidden || transition.isTopPanelPlacementChanging {
+    // Hide all title bar items if top bar placement is changing
+    if futureLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
       apply(visibility: .hidden, documentIconButton, titleTextField)
     }
 
-    if futureLayout.trafficLightButtons == .hidden || transition.isTopPanelPlacementChanging {
+    if futureLayout.trafficLightButtons == .hidden || transition.isTopBarPlacementChanging {
       /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
       /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
       for button in trafficLightButtons {
@@ -1559,12 +1559,12 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    if transition.isTopPanelPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
+    if transition.isTopBarPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
       // Hide all title bar accessories (if needed):
       leadingTitleBarAccessoryView.alphaValue = 0
-      fadeableViewsTopPanel.remove(leadingTitleBarAccessoryView)
+      fadeableViewsTopBar.remove(leadingTitleBarAccessoryView)
       trailingTitleBarAccessoryView.alphaValue = 0
-      fadeableViewsTopPanel.remove(trailingTitleBarAccessoryView)
+      fadeableViewsTopBar.remove(trailingTitleBarAccessoryView)
     } else {
       /// We may have gotten here in response to one of these buttons' visibility being toggled in the prefs,
       /// so we need to allow for showing/hiding these individually.
@@ -1572,22 +1572,22 @@ class MainWindowController: PlayerWindowController {
       /// So just set alpha value for now, and hide later in `updateHiddenViewsAndConstraints()`
       if futureLayout.leadingSidebarToggleButton == .hidden {
         leadingSidebarToggleButton.alphaValue = 0
-        fadeableViewsTopPanel.remove(leadingSidebarToggleButton)
+        fadeableViewsTopBar.remove(leadingSidebarToggleButton)
       }
       if futureLayout.trailingSidebarToggleButton == .hidden {
         trailingSidebarToggleButton.alphaValue = 0
-        fadeableViewsTopPanel.remove(trailingSidebarToggleButton)
+        fadeableViewsTopBar.remove(trailingSidebarToggleButton)
       }
       if futureLayout.pinToTopButton == .hidden {
         pinToTopButton.alphaValue = 0
-        fadeableViewsTopPanel.remove(pinToTopButton)
+        fadeableViewsTopBar.remove(pinToTopButton)
       }
     }
 
     // Change blending modes
     if transition.isTogglingFullScreen {
       /// Need to use `.withinWindow` during animation or else panel tint can change in odd ways
-      topPanelView.blendingMode = .withinWindow
+      topBarView.blendingMode = .withinWindow
       controlBarBottom.blendingMode = .withinWindow
       leadingSidebarView.blendingMode = .withinWindow
       trailingSidebarView.blendingMode = .withinWindow
@@ -1609,65 +1609,65 @@ class MainWindowController: PlayerWindowController {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
 
-    // Update heights of top & bottom panels:
+    // Update heights of top & bottom bars:
 
     let windowFrame = window.frame
     var windowYDelta: CGFloat = 0
     var windowHeightDelta: CGFloat = 0
 
-    var needsTopPanelHeightUpdate = false
-    var newTopPanelHeight: CGFloat = 0
-    if !transition.isInitialLayout && transition.isTopPanelPlacementChanging {
-      needsTopPanelHeightUpdate = true
+    var needsTopBarHeightUpdate = false
+    var newTopBarHeight: CGFloat = 0
+    if !transition.isInitialLayout && transition.isTopBarPlacementChanging {
+      needsTopBarHeightUpdate = true
       // close completely. will animate reopening if needed later
-      newTopPanelHeight = 0
-    } else if futureLayout.topPanelHeight < transition.fromLayout.topPanelHeight {
-      needsTopPanelHeightUpdate = true
-      newTopPanelHeight = futureLayout.topPanelHeight
+      newTopBarHeight = 0
+    } else if futureLayout.topBarHeight < transition.fromLayout.topBarHeight {
+      needsTopBarHeightUpdate = true
+      newTopBarHeight = futureLayout.topBarHeight
     }
 
-    if needsTopPanelHeightUpdate {
+    if needsTopBarHeightUpdate {
       // By default, when the window size changes, the system will add or subtract space from the bottom of the window.
       // Override this behavior to expand/contract upwards instead.
-      if transition.fromLayout.topPanelPlacement == .outsideVideo {
+      if transition.fromLayout.topBarPlacement == .outsideVideo {
         windowHeightDelta -= videoContainerTopOffsetFromContentViewTopConstraint.constant
       }
-      if transition.toLayout.topPanelPlacement == .outsideVideo {
-        windowHeightDelta += newTopPanelHeight
+      if transition.toLayout.topBarPlacement == .outsideVideo {
+        windowHeightDelta += newTopBarHeight
       }
 
-      updateTopPanelHeight(to: newTopPanelHeight, transition: transition)
+      updateTopBarHeight(to: newTopBarHeight, transition: transition)
     }
 
-    var needsBottomPanelHeightUpdate = false
-    var newBottomPanelHeight: CGFloat = 0
-    if !transition.isInitialLayout && transition.isBottomPanelPlacementChanging {
-      needsBottomPanelHeightUpdate = true
+    var needsBottomBarHeightUpdate = false
+    var newBottomBarHeight: CGFloat = 0
+    if !transition.isInitialLayout && transition.isBottomBarPlacementChanging {
+      needsBottomBarHeightUpdate = true
       // close completely. will animate reopening if needed later
-      newBottomPanelHeight = 0
-    } else if futureLayout.bottomOSCHeight < transition.fromLayout.bottomOSCHeight {
-      needsBottomPanelHeightUpdate = true
-      newBottomPanelHeight = futureLayout.bottomOSCHeight
+      newBottomBarHeight = 0
+    } else if futureLayout.bottomBarHeight < transition.fromLayout.bottomBarHeight {
+      needsBottomBarHeightUpdate = true
+      newBottomBarHeight = futureLayout.bottomBarHeight
     }
 
-    if needsBottomPanelHeightUpdate {
-      /// Because we are calling `setFrame()` to update the top panel, we also need to take the bottom panel into
+    if needsBottomBarHeightUpdate {
+      /// Because we are calling `setFrame()` to update the top bar, we also need to take the bottom bar into
       /// account. Otherwise the system may choose to move the window in an unwanted arbitrary direction.
-      /// We want the bottom panel, if "outside" the video, to expand/collapse on the bottom side.
-      if transition.fromLayout.bottomPanelPlacement == .outsideVideo {
+      /// We want the bottom bar, if "outside" the video, to expand/collapse on the bottom side.
+      if transition.fromLayout.bottomBarPlacement == .outsideVideo {
         windowHeightDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
         windowYDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
       }
-      if transition.toLayout.bottomPanelPlacement == .outsideVideo {
-        windowHeightDelta += newBottomPanelHeight
-        windowYDelta += newBottomPanelHeight
+      if transition.toLayout.bottomBarPlacement == .outsideVideo {
+        windowHeightDelta += newBottomBarHeight
+        windowYDelta += newBottomBarHeight
       }
 
-      updateBottomPanelHeight(to: newBottomPanelHeight, transition: transition)
+      updateBottomBarHeight(to: newBottomBarHeight, transition: transition)
     }
 
     // Update sidebar vertical alignments to match:
-    if futureLayout.topPanelHeight < transition.fromLayout.topPanelHeight {
+    if futureLayout.topBarHeight < transition.fromLayout.topBarHeight {
       refreshSidebarVerticalConstraints(layout: futureLayout)
     }
 
@@ -1701,7 +1701,7 @@ class MainWindowController: PlayerWindowController {
 
     updateSpacingForTitleBarAccessories(futureLayout)
 
-    if futureLayout.titleIconAndText == .hidden || transition.isTopPanelPlacementChanging {
+    if futureLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
       /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
       /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
@@ -1711,7 +1711,7 @@ class MainWindowController: PlayerWindowController {
     /// These should all be either 0 height or unchanged from `transition.fromLayout`
     apply(visibility: futureLayout.controlBarBottom, to: controlBarBottom)
     if !transition.isTogglingToFullScreen {
-      apply(visibility: futureLayout.topPanelView, to: topPanelView)
+      apply(visibility: futureLayout.topBarView, to: topBarView)
     }
 
     // Remove subviews from OSC
@@ -1724,15 +1724,15 @@ class MainWindowController: PlayerWindowController {
       setupControlBarInternalViews()
     }
 
-    if transition.isTopPanelPlacementChanging {
-      updateTopPanelPlacement(placement: futureLayout.topPanelPlacement)
+    if transition.isTopBarPlacementChanging {
+      updateTopBarPlacement(placement: futureLayout.topBarPlacement)
     }
 
-    if transition.isBottomPanelPlacementChanging {
-      updateBottomPanelPlacement(placement: futureLayout.bottomPanelPlacement)
+    if transition.isBottomBarPlacementChanging {
+      updateBottomBarPlacement(placement: futureLayout.bottomBarPlacement)
     }
 
-    updateDepthOrderOfPanels(topPanel: futureLayout.topPanelPlacement, bottomPanel: futureLayout.bottomPanelPlacement,
+    updateDepthOrderOfPanels(topBar: futureLayout.topBarPlacement, bottomBar: futureLayout.bottomBarPlacement,
                              leadingSidebar: leadingSidebar.placement, trailingSidebar: trailingSidebar.placement)
 
     // So that panels toggling between "inside" and "outside" don't change until they need to (different strategy than fullscreen)
@@ -1753,29 +1753,29 @@ class MainWindowController: PlayerWindowController {
     titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
     osdMinOffsetFromTopConstraint.animateToConstant(futureLayout.osdMinOffsetFromTop)
 
-    // Update heights of top & bottom panels:
+    // Update heights of top & bottom bars:
 
     let windowFrame = window.frame
     var windowYDelta: CGFloat = 0
     var windowHeightDelta: CGFloat = 0
 
-    if transition.fromLayout.topPanelPlacement == .outsideVideo {
+    if transition.fromLayout.topBarPlacement == .outsideVideo {
       windowHeightDelta -= videoContainerTopOffsetFromContentViewTopConstraint.constant
     }
-    if transition.toLayout.topPanelPlacement == .outsideVideo {
-      windowHeightDelta += futureLayout.topPanelHeight
+    if transition.toLayout.topBarPlacement == .outsideVideo {
+      windowHeightDelta += futureLayout.topBarHeight
     }
-    updateTopPanelHeight(to: futureLayout.topPanelHeight, transition: transition)
+    updateTopBarHeight(to: futureLayout.topBarHeight, transition: transition)
 
-    if transition.fromLayout.bottomPanelPlacement == .outsideVideo {
+    if transition.fromLayout.bottomBarPlacement == .outsideVideo {
       windowHeightDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
       windowYDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
     }
-    if transition.toLayout.bottomPanelPlacement == .outsideVideo {
-      windowHeightDelta += futureLayout.bottomOSCHeight
-      windowYDelta += futureLayout.bottomOSCHeight
+    if transition.toLayout.bottomBarPlacement == .outsideVideo {
+      windowHeightDelta += futureLayout.bottomBarHeight
+      windowYDelta += futureLayout.bottomBarHeight
     }
-    updateBottomPanelHeight(to: futureLayout.bottomOSCHeight, transition: transition)
+    updateBottomBarHeight(to: futureLayout.bottomBarHeight, transition: transition)
 
     if !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
@@ -1806,7 +1806,7 @@ class MainWindowController: PlayerWindowController {
 
     if futureLayout.isFullScreen {
       if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
-        apply(visibility: .showFadeableNonTopPanel, to: additionalInfoView)
+        apply(visibility: .showFadeableNonTopBar, to: additionalInfoView)
       }
     } else {
       /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
@@ -1842,14 +1842,14 @@ class MainWindowController: PlayerWindowController {
 
   private func updatePanelBlendingModes(to futureLayout: LayoutPlan) {
     // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.topPanelPlacement == .insideVideo || futureLayout.isFullScreen {
-      topPanelView.blendingMode = .withinWindow
+    if futureLayout.topBarPlacement == .insideVideo || futureLayout.isFullScreen {
+      topBarView.blendingMode = .withinWindow
     } else {
-      topPanelView.blendingMode = .behindWindow
+      topBarView.blendingMode = .behindWindow
     }
 
     // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.bottomPanelPlacement == .insideVideo || futureLayout.isFullScreen {
+    if futureLayout.bottomBarPlacement == .insideVideo || futureLayout.isFullScreen {
       controlBarBottom.blendingMode = .withinWindow
     } else {
       controlBarBottom.blendingMode = .behindWindow
@@ -1864,14 +1864,14 @@ class MainWindowController: PlayerWindowController {
     let layout = futureLayout ?? currentLayout
     let downshift: CGFloat
     var tabHeight: CGFloat
-    if player.isInMiniPlayer || (!layout.isFullScreen && layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo) {
+    if player.isInMiniPlayer || (!layout.isFullScreen && layout.topBarPlacement == Preference.PanelPlacement.outsideVideo) {
       downshift = Constants.Sidebar.defaultDownshift
       tabHeight = Constants.Sidebar.defaultTabHeight
       Logger.log("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))",
                  level: .verbose, subsystem: player.subsystem)
     } else {
       // Downshift: try to match title bar height
-      if layout.isFullScreen || layout.topPanelPlacement == Preference.PanelPlacement.outsideVideo {
+      if layout.isFullScreen || layout.topBarPlacement == Preference.PanelPlacement.outsideVideo {
         downshift = Constants.Sidebar.defaultDownshift
       } else {
         // Need to adjust if has title bar
@@ -1885,7 +1885,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    Logger.log("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topPanel: \(layout.topPanelPlacement)",
+    Logger.log("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topBar: \(layout.topBarPlacement)",
                level: .verbose, subsystem: player.subsystem)
     quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
     playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
@@ -1908,7 +1908,7 @@ class MainWindowController: PlayerWindowController {
 
     let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
 
-    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo && (leadingSidebar.animationState == .willShow
+    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && (leadingSidebar.animationState == .willShow
                                                                                || leadingSidebar.animationState == .shown)
     if isSpaceNeededForSidebar {
       // Subtract space taken by the 3 standard buttons + other visible buttons
@@ -1930,7 +1930,7 @@ class MainWindowController: PlayerWindowController {
       spaceForButtons += pinToTopButton.frame.width
     }
 
-    let isSpaceNeededForSidebar = layout.topPanelPlacement == .insideVideo && (trailingSidebar.animationState == .willShow
+    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && (trailingSidebar.animationState == .willShow
                                                                                || trailingSidebar.animationState == .shown)
     if isSpaceNeededForSidebar {
       leadingSpace = max(0, trailingSidebar.currentWidth - spaceForButtons)
@@ -1955,14 +1955,14 @@ class MainWindowController: PlayerWindowController {
       futureLayout.titleIconAndText = .showAlways
       futureLayout.trafficLightButtons = .showAlways
     } else {
-      let visibleState: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeableTopPanel : .showAlways
+      let visibleState: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
 
-      futureLayout.topPanelView = visibleState
+      futureLayout.topBarView = visibleState
       futureLayout.trafficLightButtons = visibleState
       futureLayout.titleIconAndText = visibleState
       futureLayout.titleBarHeight = StandardTitleBarHeight  // may be overridden by OSC layout
 
-      if futureLayout.topPanelPlacement == .insideVideo {
+      if futureLayout.topBarPlacement == .insideVideo {
         futureLayout.osdMinOffsetFromTop = StandardTitleBarHeight + 8
       }
 
@@ -1989,7 +1989,7 @@ class MainWindowController: PlayerWindowController {
       // add fragment views
       switch futureLayout.oscPosition {
       case .floating:
-        futureLayout.controlBarFloating = .showFadeableNonTopPanel  // floating is always fadeable
+        futureLayout.controlBarFloating = .showFadeableNonTopBar  // floating is always fadeable
 
         futureLayout.setupControlBarInternalViews = { [self] in
           currentControlBar = controlBarFloating
@@ -2025,8 +2025,8 @@ class MainWindowController: PlayerWindowController {
           futureLayout.titleBarHeight = reducedTitleBarHeight
         }
 
-        let visibility: Visibility = futureLayout.topPanelPlacement == .insideVideo ? .showFadeableTopPanel : .showAlways
-        futureLayout.topPanelView = visibility
+        let visibility: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
+        futureLayout.topBarView = visibility
         futureLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
 
         futureLayout.setupControlBarInternalViews = { [self] in
@@ -2036,8 +2036,8 @@ class MainWindowController: PlayerWindowController {
         }
 
       case .bottom:
-        futureLayout.bottomOSCHeight = OSCToolbarButton.oscBarHeight
-        futureLayout.controlBarBottom = (futureLayout.bottomPanelPlacement == .insideVideo) ? .showFadeableNonTopPanel : .showAlways
+        futureLayout.bottomBarHeight = OSCToolbarButton.oscBarHeight
+        futureLayout.controlBarBottom = (futureLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
 
         futureLayout.setupControlBarInternalViews = { [self] in
           currentControlBar = controlBarBottom
@@ -2163,7 +2163,7 @@ class MainWindowController: PlayerWindowController {
       /// Single click. Note that `event.clickCount` will be 0 if there is at least one call to `mouseDragged()`,
       /// but we will only count it as a drag if `isDragging==true`
       if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView,
-                                                                 topPanelView, controlBarBottom]) {
+                                                                 topBarView, controlBarBottom]) {
         if hideSidebarsOnClick() {
           return
         }
@@ -2316,21 +2316,21 @@ class MainWindowController: PlayerWindowController {
     }
 
     if isMouseInWindow {
-      let isPrefEnabled = Preference.enum(for: .showTopPanelTrigger) == Preference.ShowTopPanelTrigger.topPanelHover
-      let forceShowTopPanel = isPrefEnabled && isMouseInTopPanelArea(event) && topPanelAnimationState == .hidden
+      let isPrefEnabled = Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.topBarHover
+      let forceShowTopBar = isPrefEnabled && isMouseInTopBarArea(event) && topBarAnimationState == .hidden
       // Check whether mouse is in OSC
       let shouldRestartFadeTimer = !isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView])
-      showFadeableViews(thenRestartFadeTimer: shouldRestartFadeTimer, duration: 0, forceShowTopPanel: forceShowTopPanel)
+      showFadeableViews(thenRestartFadeTimer: shouldRestartFadeTimer, duration: 0, forceShowTopBar: forceShowTopBar)
     }
   }
 
   // assumes mouse is in window
-  private func isMouseInTopPanelArea(_ event: NSEvent) -> Bool {
+  private func isMouseInTopBarArea(_ event: NSEvent) -> Bool {
     if isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, controlBarBottom]) {
       return false
     }
     guard let window = window, let contentView = window.contentView else { return false }
-    let heightThreshold = contentView.frame.height - currentLayout.topPanelHeight
+    let heightThreshold = contentView.frame.height - currentLayout.topBarHeight
     return event.locationInWindow.y >= heightThreshold
   }
 
@@ -2699,15 +2699,15 @@ class MainWindowController: PlayerWindowController {
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
-      let topHeight = transition.toLayout.topPanelOutsideHeight
-      let bottomHeight = transition.toLayout.bottomPanelOutsideHeight
-      let leadingWidth = leadingSidebar.currentOutsidePanelWidth
-      let trailingWidth = trailingSidebar.currentOutsidePanelWidth
+      let topHeight = transition.toLayout.topBarOutsideHeight
+      let bottomHeight = transition.toLayout.bottomBarOutsideHeight
+      let leadingWidth = leadingSidebar.currentOutsideBarsWidth
+      let trailingWidth = trailingSidebar.currentOutsideBarsWidth
 
-      let priorWindowFrame = priorWindowedFrame.resizeOutsidePanels(newTopHeight: topHeight,
-                                                                            newTrailingWidth: trailingWidth,
-                                                                            newBottomHeight: bottomHeight,
-                                                                            newLeadingWidth: leadingWidth).windowFrame
+      let priorWindowFrame = priorWindowedFrame.resizeOutsideBars(newTopHeight: topHeight,
+                                                                  newTrailingWidth: trailingWidth,
+                                                                  newBottomHeight: bottomHeight,
+                                                                  newLeadingWidth: leadingWidth).windowFrame
 
       Logger.log("Calling setFrame() exiting \(isLegacy ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)",
                  level: .verbose, subsystem: player.subsystem)
@@ -2881,8 +2881,8 @@ class MainWindowController: PlayerWindowController {
       return window.frame.size
     }
 
-    let requestedVideoSize = NSSize(width: requestedSize.width - (trailingSidebar.currentOutsidePanelWidth + leadingSidebar.currentOutsidePanelWidth),
-                                    height: requestedSize.height - (currentLayout.topPanelOutsideHeight + currentLayout.bottomPanelOutsideHeight))
+    let requestedVideoSize = NSSize(width: requestedSize.width - (trailingSidebar.currentOutsideBarsWidth + leadingSidebar.currentOutsideBarsWidth),
+                                    height: requestedSize.height - (currentLayout.topBarOutsideHeight + currentLayout.bottomBarOutsideHeight))
 
     // resize height based on requested width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoSize.width, height: requestedVideoSize.width / videoView.aspectRatio)
@@ -3132,21 +3132,21 @@ class MainWindowController: PlayerWindowController {
 
   // Shows fadeableViews and titlebar via fade
   private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration,
-                                 forceShowTopPanel: Bool = false) {
+                                 forceShowTopBar: Bool = false) {
     let animationTasks: [UIAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: duration,
-                                                                               forceShowTopPanel: forceShowTopPanel)
+                                                                               forceShowTopBar: forceShowTopBar)
     animationQueue.run(animationTasks)
   }
 
   private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration,
-                                                 forceShowTopPanel: Bool = false) -> [UIAnimation.Task] {
+                                                 forceShowTopBar: Bool = false) -> [UIAnimation.Task] {
     var animationTasks: [UIAnimation.Task] = []
 
     guard !player.disableUI && !isInInteractiveMode else {
       return animationTasks
     }
 
-    guard forceShowTopPanel || animationState == .hidden else {
+    guard forceShowTopBar || animationState == .hidden else {
       if restartFadeTimer {
         resetFadeTimer()
       } else {
@@ -3156,7 +3156,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     let currentLayout = self.currentLayout
-    let showTopPanel = forceShowTopPanel || Preference.enum(for: .showTopPanelTrigger) == Preference.ShowTopPanelTrigger.windowHover
+    let showTopBar = forceShowTopBar || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover
 
     animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
       Logger.log("Showing fadeable views", level: .verbose, subsystem: player.subsystem)
@@ -3172,9 +3172,9 @@ class MainWindowController: PlayerWindowController {
         v.animator().alphaValue = 1
       }
 
-      if showTopPanel {
-        topPanelAnimationState = .willShow
-        for v in fadeableViewsTopPanel {
+      if showTopBar {
+        topBarAnimationState = .willShow
+        for v in fadeableViewsTopBar {
           v.animator().alphaValue = 1
         }
       }
@@ -3194,13 +3194,13 @@ class MainWindowController: PlayerWindowController {
         }
       }
 
-      if showTopPanel && topPanelAnimationState == .willShow {
-        topPanelAnimationState = .shown
-        for v in fadeableViewsTopPanel {
+      if showTopBar && topBarAnimationState == .willShow {
+        topBarAnimationState = .shown
+        for v in fadeableViewsTopBar {
           v.isHidden = false
         }
         /// Special case for `trafficLightButtons` due to AppKit quirk
-        if currentLayout.trafficLightButtons == .showFadeableTopPanel {
+        if currentLayout.trafficLightButtons == .showFadeableTopBar {
           for button in trafficLightButtons {
             button.isHidden = false
           }
@@ -3247,16 +3247,16 @@ class MainWindowController: PlayerWindowController {
 
       destroyFadeTimer()
       animationState = .willHide
-      topPanelAnimationState = .willHide
+      topBarAnimationState = .willHide
 
       for v in fadeableViews {
         v.animator().alphaValue = 0
       }
-      for v in fadeableViewsTopPanel {
+      for v in fadeableViewsTopBar {
         v.animator().alphaValue = 0
       }
       /// Quirk 1: special handling for `trafficLightButtons`
-      if currentLayout.trafficLightButtons == .showFadeableTopPanel {
+      if currentLayout.trafficLightButtons == .showFadeableTopBar {
         for button in trafficLightButtons {
           button.alphaValue = 0
         }
@@ -3268,15 +3268,15 @@ class MainWindowController: PlayerWindowController {
       guard animationState == .willHide else { return }
 
       animationState = .hidden
-      topPanelAnimationState = .hidden
+      topBarAnimationState = .hidden
       for v in fadeableViews {
         v.isHidden = true
       }
-      for v in fadeableViewsTopPanel {
+      for v in fadeableViewsTopBar {
         v.isHidden = true
       }
       /// Quirk 1: need to set `alphaValue` back to `1` so that each button's corresponding menu items still work
-      if currentLayout.trafficLightButtons == .showFadeableTopPanel {
+      if currentLayout.trafficLightButtons == .showFadeableTopBar {
         for button in trafficLightButtons {
           button.isHidden = true
           button.alphaValue = 1
@@ -3500,8 +3500,8 @@ class MainWindowController: PlayerWindowController {
     /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
     /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
     let interactiveModeLayout = LayoutSpec(isFullScreen: currentLayout.isFullScreen,
-                                           topPanelPlacement: .insideVideo,
-                                           bottomPanelPlacement: currentLayout.bottomPanelPlacement,
+                                           topBarPlacement: .insideVideo,
+                                           bottomBarPlacement: currentLayout.bottomBarPlacement,
                                            enableOSC: false,
                                            oscPosition: currentLayout.oscPosition)
 
@@ -3535,7 +3535,7 @@ class MainWindowController: PlayerWindowController {
       let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
       let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
-      bottomPanelBottomConstraint.animateToConstant(0)
+      bottomBarBottomConstraint.animateToConstant(0)
       constrainVideoViewForWindowedMode(
         top: window.frame.height - newVideoViewFrame.maxY,
         right: newVideoViewFrame.maxX - window.frame.width,
@@ -3580,7 +3580,7 @@ class MainWindowController: PlayerWindowController {
 
     animationTasks.append(UIAnimation.Task(duration: duration, timing: .easeIn, { [self] in
       // Restore prev constraints:
-      bottomPanelBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
+      bottomBarBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
       constrainVideoViewForWindowedMode()
     }))
 
@@ -3995,10 +3995,10 @@ class MainWindowController: PlayerWindowController {
       Logger.log("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (Video: \(videoFrame); Window: \(windowFrame))",
         level: .error, subsystem: player.subsystem)
       return MainWindowGeometry(windowFrame: windowFrame,
-                                topPanelHeight: currentLayout.topPanelHeight,
-                                rightPanelWidth: trailingSidebar.currentOutsidePanelWidth,
-                                bottomPanelHeight: currentLayout.bottomPanelOutsideHeight,
-                                leftPanelWidth: leadingSidebar.currentOutsidePanelWidth)
+                                topBarHeight: currentLayout.topBarHeight,
+                                rightBarWidth: trailingSidebar.currentOutsideBarsWidth,
+                                bottomBarHeight: currentLayout.bottomBarOutsideHeight,
+                                leftBarWidth: leadingSidebar.currentOutsideBarsWidth)
     }
     return MainWindowGeometry(windowFrame: windowFrame, videoFrame: videoFrame)
   }

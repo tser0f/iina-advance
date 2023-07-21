@@ -90,9 +90,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var pipMinimizeWindow: NSButton!
 
   private let observedPrefKeys: [Preference.Key] = [
-    .showTopPanelTrigger,
-    .topPanelPlacement,
-    .bottomPanelPlacement,
+    .showTopBarTrigger,
+    .topBarPlacement,
+    .bottomBarPlacement,
     .enableOSC,
     .oscPosition,
     .themeMaterial,
@@ -152,10 +152,10 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
-    case PK.showTopPanelTrigger.rawValue,
+    case PK.showTopBarTrigger.rawValue,
       PK.enableOSC.rawValue,
-      PK.topPanelPlacement.rawValue,
-      PK.bottomPanelPlacement.rawValue,
+      PK.topBarPlacement.rawValue,
+      PK.bottomBarPlacement.rawValue,
       PK.oscPosition.rawValue,
       PK.themeMaterial.rawValue:
       refreshTitleBarAndOSCSection()
@@ -183,10 +183,10 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   private func refreshTitleBarAndOSCSection(animate: Bool = true) {
     let ib = PlayerWindowPreviewImageBuilder()
 
-    let titleBarIsOverlay = ib.topPanelPlacement == .insideVideo
+    let titleBarIsOverlay = ib.topBarPlacement == .insideVideo
     let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .floating ||
-                                         (ib.oscPosition == .top && ib.topPanelPlacement == .insideVideo) ||
-                                         (ib.oscPosition == .bottom && ib.bottomPanelPlacement == .insideVideo))
+                                         (ib.oscPosition == .top && ib.topBarPlacement == .insideVideo) ||
+                                         (ib.oscPosition == .bottom && ib.bottomBarPlacement == .insideVideo))
     let hasOverlay = titleBarIsOverlay || oscIsOverlay
 
     var viewHidePairs: [(NSView, Bool)] = []
@@ -211,7 +211,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         viewHidePairs.append((oscBottomPlacementContainerView, !oscIsBottom))
       }
 
-      let showShowTitleBarTrigger = ib.topPanelPlacement == .insideVideo
+      let showShowTitleBarTrigger = ib.topBarPlacement == .insideVideo
       if showTitleBarTriggerContainerView.isHidden != !showShowTitleBarTrigger {
         viewHidePairs.append((showTitleBarTriggerContainerView, !showShowTitleBarTrigger))
       }

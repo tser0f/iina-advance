@@ -126,7 +126,7 @@ extension MainWindowController {
     }
 
     /// Returns `0` if sidebar is hidden.
-    var currentOutsidePanelWidth: CGFloat {
+    var currentOutsideBarsWidth: CGFloat {
       return placement == .outsideVideo ? currentWidth : 0
     }
 
@@ -437,8 +437,8 @@ extension MainWindowController {
         // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
         // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
         // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-        let newGeometry = oldGeometry.resizeOutsidePanels(newTrailingWidth: oldGeometry.rightPanelWidth + ΔRight,
-                                                          newLeadingWidth: oldGeometry.leftPanelWidth + ΔLeft)
+        let newGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.rightBarWidth + ΔRight,
+                                                          newLeadingWidth: oldGeometry.leftBarWidth + ΔLeft)
         let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
 
         Logger.log("Calling setFrame() from changeVisibilityForSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
@@ -620,7 +620,7 @@ extension MainWindowController {
 
     sidebarView.isHidden = false
 
-    updateDepthOrderOfPanels(topPanel: currentLayout.topPanelPlacement, bottomPanel: currentLayout.bottomPanelPlacement,
+    updateDepthOrderOfPanels(topBar: currentLayout.topBarPlacement, bottomBar: currentLayout.bottomBarPlacement,
                              leadingSidebar: leadingSidebar.placement, trailingSidebar: trailingSidebar.placement)
 
     // Update blending mode instantaneously. It doesn't animate well

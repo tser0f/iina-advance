@@ -16,9 +16,9 @@
                 <outlet property="additionalInfoTitle" destination="3uh-OF-zy6" id="N6w-Hh-fQ1"/>
                 <outlet property="additionalInfoToOSDSpaceConstraint" destination="RUl-l8-s3i" id="Bq2-Vt-7D0"/>
                 <outlet property="additionalInfoView" destination="Qbi-jx-9pO" id="bdV-ZH-SkC"/>
-                <outlet property="bottomPanelBottomConstraint" destination="vP1-IE-sbB" id="G77-vL-Wf8"/>
-                <outlet property="bottomPanelLeadingSpaceConstraint" destination="Wkx-hm-sJ4" id="EyE-ox-wzo"/>
-                <outlet property="bottomPanelTrailingSpaceConstraint" destination="3qV-vK-qlg" id="Gpt-6V-BMV"/>
+                <outlet property="bottomBarBottomConstraint" destination="vP1-IE-sbB" id="G77-vL-Wf8"/>
+                <outlet property="bottomBarLeadingSpaceConstraint" destination="Wkx-hm-sJ4" id="EyE-ox-wzo"/>
+                <outlet property="bottomBarTrailingSpaceConstraint" destination="3qV-vK-qlg" id="Gpt-6V-BMV"/>
                 <outlet property="bottomView" destination="Tdb-EA-alw" id="5Xv-Ja-j4G"/>
                 <outlet property="bufferDetailLabel" destination="hlZ-5D-Wag" id="3Ld-2C-wGO"/>
                 <outlet property="bufferIndicatorView" destination="oX4-0N-but" id="fXY-gn-jfQ"/>
@@ -67,11 +67,11 @@
                 <outlet property="timePreviewWhenSeekHorizontalCenterConstraint" destination="ekV-Sh-cEZ" id="zYq-k1-B2g"/>
                 <outlet property="titleBarHeightConstraint" destination="fcC-MX-fmN" id="3FJ-wZ-oVK"/>
                 <outlet property="titleBarView" destination="WaC-08-utU" id="Ahh-93-k7q"/>
+                <outlet property="topBarBottomBorder" destination="iA3-pt-6Jm" id="RD4-8v-bHB"/>
+                <outlet property="topBarLeadingSpaceConstraint" destination="ofB-WP-9dW" id="6hD-K8-P5n"/>
+                <outlet property="topBarTrailingSpaceConstraint" destination="te1-wi-BbH" id="sfe-UH-ki8"/>
+                <outlet property="topBarView" destination="TRx-2V-Gr3" id="4CG-pA-rHP"/>
                 <outlet property="topOSCHeightConstraint" destination="wwB-Bd-YpC" id="Xei-hb-Zwh"/>
-                <outlet property="topPanelBottomBorder" destination="iA3-pt-6Jm" id="RD4-8v-bHB"/>
-                <outlet property="topPanelLeadingSpaceConstraint" destination="ofB-WP-9dW" id="6hD-K8-P5n"/>
-                <outlet property="topPanelTrailingSpaceConstraint" destination="te1-wi-BbH" id="sfe-UH-ki8"/>
-                <outlet property="topPanelView" destination="TRx-2V-Gr3" id="4CG-pA-rHP"/>
                 <outlet property="trailingSidebarLeadingBorder" destination="exJ-CB-MoS" id="jY1-pX-sXL"/>
                 <outlet property="trailingSidebarToOSDSpaceConstraint" destination="zbm-D9-epN" id="TdE-wQ-5Me"/>
                 <outlet property="trailingSidebarToggleButton" destination="VTu-Ac-dgn" id="CQd-j7-xZg"/>
@@ -79,16 +79,16 @@
                 <outlet property="trailingTitleBarAccessoryView" destination="maF-Zr-K8w" id="H6b-g2-qRx"/>
                 <outlet property="trailingTitleBarLeadingSpaceConstraint" destination="c8g-qm-Vdc" id="m15-JQ-OEe"/>
                 <outlet property="trailingTitleBarTrailingSpaceConstraint" destination="Tf8-XK-IVw" id="cwJ-tX-keD"/>
-                <outlet property="videoContainerBottomOffsetFromBottomPanelBottomConstraint" destination="ayn-Wv-3NJ" id="LXY-f9-Zrt"/>
-                <outlet property="videoContainerBottomOffsetFromBottomPanelTopConstraint" destination="68T-mq-A30" id="dZZ-Lb-2wM"/>
+                <outlet property="videoContainerBottomOffsetFromBottomBarBottomConstraint" destination="ayn-Wv-3NJ" id="LXY-f9-Zrt"/>
+                <outlet property="videoContainerBottomOffsetFromBottomBarTopConstraint" destination="68T-mq-A30" id="dZZ-Lb-2wM"/>
                 <outlet property="videoContainerBottomOffsetFromContentViewBottomConstraint" destination="4gm-o8-h98" id="GyQ-e0-oLf"/>
                 <outlet property="videoContainerLeadingOffsetFromContentViewLeadingConstraint" destination="vZs-ut-z4j" id="E4F-6L-B6v"/>
                 <outlet property="videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint" destination="PMP-ks-GY2" id="SCL-aE-ECP"/>
                 <outlet property="videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint" destination="Uue-Qa-4ao" id="aE6-Zn-qlY"/>
                 <outlet property="videoContainerLeadingToLeadingSidebarCropTrailingConstraint" destination="wAv-zI-fJc" id="dv8-MV-gsM"/>
                 <outlet property="videoContainerTopOffsetFromContentViewTopConstraint" destination="Zqm-9J-g9b" id="tfe-U8-Eeb"/>
-                <outlet property="videoContainerTopOffsetFromTopPanelBottomConstraint" destination="1Ut-pz-GFg" id="Tbh-9a-TrS"/>
-                <outlet property="videoContainerTopOffsetFromTopPanelTopConstraint" destination="Drc-3Y-nhs" id="enJ-Sr-k7Z"/>
+                <outlet property="videoContainerTopOffsetFromTopBarBottomConstraint" destination="1Ut-pz-GFg" id="Tbh-9a-TrS"/>
+                <outlet property="videoContainerTopOffsetFromTopBarTopConstraint" destination="Drc-3Y-nhs" id="enJ-Sr-k7Z"/>
                 <outlet property="videoContainerTrailingOffsetFromContentViewTrailingConstraint" destination="v5S-lZ-agU" id="szX-Kq-zSS"/>
                 <outlet property="videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint" destination="0m3-Bq-3N0" id="k7t-qz-rG9"/>
                 <outlet property="videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint" destination="PAj-s6-32e" id="UEo-Zg-pJq"/>
@@ -378,7 +378,7 @@
                             <outlet property="yConstraint" destination="cRP-R4-zYY" id="kxT-61-1SZ"/>
                         </connections>
                     </visualEffectView>
-                    <visualEffectView identifier="TopPanelView" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-Panel View">
+                    <visualEffectView identifier="TopBarView" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="Top-Panel View">
                         <rect key="frame" x="0.0" y="372" width="640" height="28"/>
                         <subviews>
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="Title-Bar View">
@@ -398,7 +398,7 @@
                                     <constraint firstItem="fDY-vk-Ylv" firstAttribute="top" secondItem="pgt-r3-Vbf" secondAttribute="top" id="xOA-fC-WYr"/>
                                 </constraints>
                             </customView>
-                            <box identifier="TopPanelBottomBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="Top-Panel-Bottom-Border Box">
+                            <box identifier="TopBarBottomBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="Top-Panel-Bottom-Border Box">
                                 <rect key="frame" x="0.0" y="0.0" width="640" height="1"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="1" id="YtK-mf-czn"/>
@@ -440,7 +440,7 @@
                         <constraints>
                             <constraint firstAttribute="bottom" secondItem="Qmi-hb-0aM" secondAttribute="bottom" id="84H-65-Ego"/>
                             <constraint firstItem="Qmi-hb-0aM" firstAttribute="top" secondItem="DFb-1L-U9o" secondAttribute="top" id="ANy-8g-kkb"/>
-                            <constraint firstAttribute="trailing" secondItem="Qmi-hb-0aM" secondAttribute="trailing" constant="8" identifier="bottomPanelTrailingSpaceConstraint" id="bOW-iG-HNY"/>
+                            <constraint firstAttribute="trailing" secondItem="Qmi-hb-0aM" secondAttribute="trailing" constant="8" identifier="bottomBarTrailingSpaceConstraint" id="bOW-iG-HNY"/>
                             <constraint firstAttribute="trailing" secondItem="EJf-SX-YpP" secondAttribute="trailing" id="bX4-9Y-drG"/>
                             <constraint firstItem="Qmi-hb-0aM" firstAttribute="leading" secondItem="DFb-1L-U9o" secondAttribute="leading" constant="8" id="c3E-rA-tSH"/>
                             <constraint firstItem="EJf-SX-YpP" firstAttribute="top" secondItem="DFb-1L-U9o" secondAttribute="top" id="mgb-5J-8vn"/>
@@ -518,13 +518,13 @@
                 <constraints>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint" id="0m3-Bq-3N0"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="g0O-v5-RQj" secondAttribute="bottom" constant="8" identifier="vidContainerBtm_GE_osdBtm_Constraint" id="0pt-vB-Ycm"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="bottom" constant="-28" identifier="TopOfVideoContainer-BottomOfTopPanel-Constraint" id="1Ut-pz-GFg"/>
-                    <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="bottomPanelTrailingSpaceConstraint" id="3qV-vK-qlg"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="bottom" constant="-28" identifier="TopOfVideoContainer-BottomOfTopBar-Constraint" id="1Ut-pz-GFg"/>
+                    <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="bottomBarTrailingSpaceConstraint" id="3qV-vK-qlg"/>
                     <constraint firstAttribute="bottom" secondItem="3nL-Ky-Hfa" secondAttribute="bottom" identifier="videoContainerlViewBottom-ContentViewBottom-Constraint" id="4gm-o8-h98"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="top" identifier="videoContainerBottom-BottomOSCTop-Constraint" id="68T-mq-A30"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="leading" priority="249" constant="330" id="9z2-rX-b7C"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="Agb-na-g88"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" identifier="TopOfVideoContainer-BottomOfBottomPanel-Constraint" id="Drc-3Y-nhs"/>
+                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" identifier="TopOfVideoContainer-BottomOfBottomBar-Constraint" id="Drc-3Y-nhs"/>
                     <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="bottom" constant="10" identifier="contentViewBtm_GE_oscFloatingBtm_Constraint" id="Ham-QL-hBU"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="10" identifier="oscFloatingLeading_GE_leadingSidebarTrailing_Constraint" id="HfB-0k-fyF"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Qbi-jx-9pO" secondAttribute="trailing" constant="8" id="Ja8-8A-W6L"/>
@@ -536,7 +536,7 @@
                     <constraint firstItem="Qbi-jx-9pO" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="RUl-l8-s3i"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint" id="Uue-Qa-4ao"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="Vtd-0f-x7p"/>
-                    <constraint firstItem="DFb-1L-U9o" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="bottomPanelLeadingSpaceConstraint" id="Wkx-hm-sJ4"/>
+                    <constraint firstItem="DFb-1L-U9o" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="bottomBarLeadingSpaceConstraint" id="Wkx-hm-sJ4"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerY" secondItem="3nL-Ky-Hfa" secondAttribute="centerY" id="XlV-7n-jPb"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="top" relation="greaterThanOrEqual" secondItem="3nL-Ky-Hfa" secondAttribute="top" constant="8" identifier="osdMinOffsetFromTopConstraint" id="Xtd-Tp-gx1"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" identifier="videoContainerlViewTop-ContentViewTop-Constraint" id="Zqm-9J-g9b"/>
@@ -544,16 +544,16 @@
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="OiF-pA-8Sd" secondAttribute="bottom" priority="750" constant="60" identifier="ControlBarFloating_Y-Constraint" id="cRP-R4-zYY"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="trailing" constant="10" identifier="trailingSidebarLeading_GE_oscFloatingTrailing_Constraint" id="cln-MW-RoF"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="bottom" secondItem="XBs-34-TIm" secondAttribute="bottom" id="f5L-Kv-wdv"/>
-                    <constraint firstItem="g0O-v5-RQj" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="bottom" priority="900" constant="8" identifier="TopOSD-EQ-topPanel-Constraint" id="hAe-Tn-76i"/>
+                    <constraint firstItem="g0O-v5-RQj" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="bottom" priority="900" constant="8" identifier="TopOSD-EQ-topBar-Constraint" id="hAe-Tn-76i"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="Nrz-jZ-Luf" secondAttribute="bottom" id="kHE-py-RY5"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="centerX" id="kfR-hG-8ee"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Nrz-jZ-Luf" secondAttribute="trailing" id="mJs-PF-Ex5"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="n2d-ys-qVW"/>
-                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="topPanelLeadingSpaceConstraint" id="ofB-WP-9dW"/>
+                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="topBarLeadingSpaceConstraint" id="ofB-WP-9dW"/>
                     <constraint firstItem="Qbi-jx-9pO" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" priority="900" id="r5V-EL-YbE"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="epo-S6-QVB" secondAttribute="leading" constant="-8" id="rQT-Vg-6uB"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="XBs-34-TIm" secondAttribute="top" id="tWp-dA-I4y"/>
-                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="topPanelTrailingSpaceConstraint" id="te1-wi-BbH"/>
+                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="topBarTrailingSpaceConstraint" id="te1-wi-BbH"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="se5-gp-TjO" secondAttribute="trailing" identifier="videoContainerlViewTrailing-ContentViewTrailing-Constraint" id="v5S-lZ-agU"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="Tdb-EA-alw" secondAttribute="bottom" constant="-60" identifier="interactiveModeBottomToVideoContainerViewBottomConstraint" id="vP1-IE-sbB"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" identifier="videoContainerlViewLeading-ContentViewLeading-Constraint" id="vZs-ut-z4j"/>

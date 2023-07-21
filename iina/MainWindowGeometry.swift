@@ -9,18 +9,19 @@
 import Foundation
 
 /**
- ┌───────────────────────────────────────────┐
- │ `windowFrame`      ▲                      │
- │                    │`topPanelHeight`      │
- │                    ▼                      │
- │                ┌───────┐                  │
- │◄──────────────►│ Video │◄────────────────►│
- │`leftPanelWidth`│ Frame │`rightPanelWidth `│
- │                └───────┘                  │
- │                  ▲                        │
- │                  │ `bottomPanelHeight`    │
- │                  ▼                        │
- └───────────────────────────────────────────┘
+ ┌─────────────────────────────────────────┐
+ │`windowFrame`        ▲                   │
+ │                     │`topBarHeight`     │
+ │                     ▼                   │
+ ├──────────────┬──────────┬───────────────┤
+ │              │  Video   │               │
+ │◄────────────►│   Frame  │◄─────────────►│
+ │`leftBarWidth`│          │`rightBarWidth`│
+ ├──────────────┴──────────┴───────────────┤
+ │                 ▲                       │
+ │                 │`bottomBarHeight`      │
+ │                 ▼                       │
+ └─────────────────────────────────────────┘
  */
 struct MainWindowGeometry: Equatable {
   // MARK: - Stored properties
@@ -28,71 +29,71 @@ struct MainWindowGeometry: Equatable {
   let windowFrame: NSRect
 
   // Outside panels
-  let topPanelHeight: CGFloat
-  let rightPanelWidth: CGFloat
-  let bottomPanelHeight: CGFloat
-  let leftPanelWidth: CGFloat
+  let topBarHeight: CGFloat
+  let rightBarWidth: CGFloat
+  let bottomBarHeight: CGFloat
+  let leftBarWidth: CGFloat
 
   // MARK: - Initializers
 
-  init(windowFrame: NSRect, topPanelHeight: CGFloat, rightPanelWidth: CGFloat, bottomPanelHeight: CGFloat, leftPanelWidth: CGFloat) {
-    assert(topPanelHeight >= 0, "Expected topPanelHeight > 0, found \(topPanelHeight)")
-    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
-    assert(bottomPanelHeight >= 0, "Expected bottomPanelHeight > 0, found \(bottomPanelHeight)")
-    assert(leftPanelWidth >= 0, "Expected leftPanelWidth > 0, found \(leftPanelWidth)")
-    assert(rightPanelWidth >= 0, "Expected rightPanelWidth > 0, found \(rightPanelWidth)")
+  init(windowFrame: NSRect, topBarHeight: CGFloat, rightBarWidth: CGFloat, bottomBarHeight: CGFloat, leftBarWidth: CGFloat) {
+    assert(topBarHeight >= 0, "Expected topBarHeight > 0, found \(topBarHeight)")
+    assert(rightBarWidth >= 0, "Expected rightBarWidth > 0, found \(rightBarWidth)")
+    assert(bottomBarHeight >= 0, "Expected bottomBarHeight > 0, found \(bottomBarHeight)")
+    assert(leftBarWidth >= 0, "Expected leftBarWidth > 0, found \(leftBarWidth)")
+    assert(rightBarWidth >= 0, "Expected rightBarWidth > 0, found \(rightBarWidth)")
     self.windowFrame = windowFrame
-    self.topPanelHeight = topPanelHeight
-    self.rightPanelWidth = rightPanelWidth
-    self.bottomPanelHeight = bottomPanelHeight
-    self.leftPanelWidth = leftPanelWidth
+    self.topBarHeight = topBarHeight
+    self.rightBarWidth = rightBarWidth
+    self.bottomBarHeight = bottomBarHeight
+    self.leftBarWidth = leftBarWidth
   }
 
   init(windowFrame: CGRect, videoFrame: CGRect) {
     assert(videoFrame.height <= windowFrame.height, "videoFrame.height (\(videoFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
     assert(videoFrame.width <= windowFrame.width, "videoFrame.width (\(videoFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
 
-    let leftPanelWidth = videoFrame.origin.x
-    let bottomPanelHeight = videoFrame.origin.y
-    let rightPanelWidth = windowFrame.width - videoFrame.width - leftPanelWidth
-    let topPanelHeight = windowFrame.height - videoFrame.height - bottomPanelHeight
+    let leftBarWidth = videoFrame.origin.x
+    let bottomBarHeight = videoFrame.origin.y
+    let rightBarWidth = windowFrame.width - videoFrame.width - leftBarWidth
+    let topBarHeight = windowFrame.height - videoFrame.height - bottomBarHeight
     self.init(windowFrame: windowFrame,
-              topPanelHeight: topPanelHeight, rightPanelWidth: rightPanelWidth,
-              bottomPanelHeight: bottomPanelHeight, leftPanelWidth: leftPanelWidth)
+              topBarHeight: topBarHeight, rightBarWidth: rightBarWidth,
+              bottomBarHeight: bottomBarHeight, leftBarWidth: leftBarWidth)
   }
 
   // MARK: - Derived properties
 
   var videoSize: NSSize {
-    return NSSize(width: windowFrame.width - rightPanelWidth - leftPanelWidth,
-                  height: windowFrame.height - topPanelHeight - bottomPanelHeight)
+    return NSSize(width: windowFrame.width - rightBarWidth - leftBarWidth,
+                  height: windowFrame.height - topBarHeight - bottomBarHeight)
   }
 
   var videoFrameInScreenCoords: NSRect {
-    return NSRect(origin: CGPoint(x: windowFrame.origin.x + leftPanelWidth, y: windowFrame.origin.y + bottomPanelHeight), size: videoSize)
+    return NSRect(origin: CGPoint(x: windowFrame.origin.x + leftBarWidth, y: windowFrame.origin.y + bottomBarHeight), size: videoSize)
   }
 
-  var outsidePanelsTotalSize: NSSize {
-    return NSSize(width: rightPanelWidth + leftPanelWidth, height: topPanelHeight + bottomPanelHeight)
+  var outsideBarsTotalSize: NSSize {
+    return NSSize(width: rightBarWidth + leftBarWidth, height: topBarHeight + bottomBarHeight)
   }
 
   func clone(windowFrame: NSRect? = nil,
-             topPanelHeight: CGFloat? = nil, rightPanelWidth: CGFloat? = nil,
-             bottomPanelHeight: CGFloat? = nil, leftPanelWidth: CGFloat? = nil) -> MainWindowGeometry {
+             topBarHeight: CGFloat? = nil, rightBarWidth: CGFloat? = nil,
+             bottomBarHeight: CGFloat? = nil, leftBarWidth: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
-                           topPanelHeight: topPanelHeight ?? self.topPanelHeight,
-                           rightPanelWidth: rightPanelWidth ?? self.rightPanelWidth,
-                           bottomPanelHeight: bottomPanelHeight ?? self.bottomPanelHeight,
-                           leftPanelWidth: leftPanelWidth ?? self.leftPanelWidth)
+                           topBarHeight: topBarHeight ?? self.topBarHeight,
+                           rightBarWidth: rightBarWidth ?? self.rightBarWidth,
+                           bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
+                           leftBarWidth: leftBarWidth ?? self.leftBarWidth)
   }
 
   private func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
     // Resize only the video. Panels outside the video do not change size.
     // To do this, subtract the "outside" panels from the container frame
-    let outsidePanelsSize = self.outsidePanelsTotalSize
-    return NSSize(width: containerSize.width - outsidePanelsSize.width,
-                  height: containerSize.height - outsidePanelsSize.height)
+    let outsideBarsSize = self.outsideBarsTotalSize
+    return NSSize(width: containerSize.width - outsideBarsSize.width,
+                  height: containerSize.height - outsideBarsSize.height)
   }
 
   func constrainWithin(_ containerFrame: NSRect) -> MainWindowGeometry {
@@ -124,9 +125,9 @@ struct MainWindowGeometry: Equatable {
 
     newVideoSize = NSSize(width: newVideoSize.width, height: newVideoSize.height)
 
-    let outsidePanelsSize = self.outsidePanelsTotalSize
-    let newWindowSize = NSSize(width: round(newVideoSize.width + outsidePanelsSize.width),
-                               height: round(newVideoSize.height + outsidePanelsSize.height))
+    let outsideBarsSize = self.outsideBarsTotalSize
+    let newWindowSize = NSSize(width: round(newVideoSize.width + outsideBarsSize.width),
+                               height: round(newVideoSize.height + outsideBarsSize.height))
 
     // Round the results to prevent excessive window drift due to small imprecisions in calculation
     let deltaX = round((newVideoSize.width - videoSize.width) / 2)
@@ -139,27 +140,27 @@ struct MainWindowGeometry: Equatable {
     return self.clone(windowFrame: newWindowFrame)
   }
 
-  func resizeOutsidePanels(newTopHeight: CGFloat? = nil, newTrailingWidth: CGFloat? = nil, newBottomHeight: CGFloat? = nil, newLeadingWidth: CGFloat? = nil) -> MainWindowGeometry {
+  func resizeOutsideBars(newTopHeight: CGFloat? = nil, newTrailingWidth: CGFloat? = nil, newBottomHeight: CGFloat? = nil, newLeadingWidth: CGFloat? = nil) -> MainWindowGeometry {
 
     var ΔW: CGFloat = 0
     var ΔH: CGFloat = 0
     var ΔX: CGFloat = 0
     var ΔY: CGFloat = 0
     if let newTopHeight = newTopHeight {
-      let ΔTop = abs(newTopHeight) - self.topPanelHeight
+      let ΔTop = abs(newTopHeight) - self.topBarHeight
       ΔH += ΔTop
     }
     if let newTrailingWidth = newTrailingWidth {
-      let ΔRight = abs(newTrailingWidth) - self.rightPanelWidth
+      let ΔRight = abs(newTrailingWidth) - self.rightBarWidth
       ΔW += ΔRight
     }
     if let newBottomHeight = newBottomHeight {
-      let ΔBottom = abs(newBottomHeight) - self.bottomPanelHeight
+      let ΔBottom = abs(newBottomHeight) - self.bottomBarHeight
       ΔH += ΔBottom
       ΔY -= ΔBottom
     }
     if let newLeadingWidth = newLeadingWidth {
-      let ΔLeft = abs(newLeadingWidth) - self.leftPanelWidth
+      let ΔLeft = abs(newLeadingWidth) - self.leftBarWidth
       ΔW += ΔLeft
       ΔX -= ΔLeft
     }
@@ -168,9 +169,9 @@ struct MainWindowGeometry: Equatable {
                                 width: windowFrame.width + ΔW,
                                 height: windowFrame.height + ΔH)
     return MainWindowGeometry(windowFrame: newWindowFrame,
-                              topPanelHeight: newTopHeight ?? self.topPanelHeight,
-                              rightPanelWidth: newTrailingWidth ?? self.rightPanelWidth,
-                              bottomPanelHeight: newBottomHeight ?? self.bottomPanelHeight,
-                              leftPanelWidth: newLeadingWidth ?? self.leftPanelWidth)
+                              topBarHeight: newTopHeight ?? self.topBarHeight,
+                              rightBarWidth: newTrailingWidth ?? self.rightBarWidth,
+                              bottomBarHeight: newBottomHeight ?? self.bottomBarHeight,
+                              leftBarWidth: newLeadingWidth ?? self.leftBarWidth)
   }
 }

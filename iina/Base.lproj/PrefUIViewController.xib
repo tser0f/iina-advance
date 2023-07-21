@@ -622,23 +622,23 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="6" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4SE-r9-OnD" userLabel="Top-Panel Vertical Stack View">
+                <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="6" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4SE-r9-OnD" userLabel="Top-Bar Vertical Stack View">
                     <rect key="frame" x="120" y="234" width="341" height="401"/>
                     <subviews>
-                        <customView identifier="topPanelPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="TRL-kd-T5g" userLabel="Top-Panel-Position-Container View">
+                        <customView identifier="topBarPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="TRL-kd-T5g" userLabel="Top-Bar-Position-Container View">
                             <rect key="frame" x="0.0" y="379" width="341" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
                                     <rect key="frame" x="20" y="5" width="134" height="16"/>
-                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top panel placement:" id="EvR-Ml-f7d">
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top bar placement:" id="EvR-Ml-f7d">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
-                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Panel-Placement Popup">
+                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Bar-Placement Popup">
                                     <rect key="frame" x="157" y="-4" width="187" height="27"/>
-                                    <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Panel-Placement Popup Button Cell">
+                                    <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Bar-Placement Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="CD9-hv-Dz3">
@@ -649,7 +649,7 @@
                                         </menu>
                                     </popUpButtonCell>
                                     <connections>
-                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topPanelPlacement" id="9yo-1M-9oW"/>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topBarPlacement" id="9yo-1M-9oW"/>
                                     </connections>
                                 </popUpButton>
                             </subviews>
@@ -663,12 +663,12 @@
                                 <constraint firstAttribute="trailing" secondItem="f7b-zH-WwI" secondAttribute="trailing" constant="1" id="uW5-UI-eAh"/>
                             </constraints>
                         </customView>
-                        <customView identifier="showTopPanelTriggerContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="yqi-SP-x25" userLabel="Show-Top-Panel-Trigger-Container View">
+                        <customView identifier="showTopBarTriggerContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="yqi-SP-x25" userLabel="Show-Top-Bar-Trigger-Container View">
                             <rect key="frame" x="0.0" y="351" width="341" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
                                     <rect key="frame" x="16" y="5" width="138" height="16"/>
-                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Show top panel when:" id="RVj-MO-iHC">
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Show top bar when:" id="RVj-MO-iHC">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -682,12 +682,12 @@
                                         <menu key="menu" id="1Wl-Pc-ZHa">
                                             <items>
                                                 <menuItem title="Mouse moves in window" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
-                                                <menuItem title="Mouse moves over top panel" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
+                                                <menuItem title="Mouse moves over top bar" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
                                             </items>
                                         </menu>
                                     </popUpButtonCell>
                                     <connections>
-                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.showTopPanelTrigger" id="ng2-OR-2mp"/>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.showTopBarTrigger" id="ng2-OR-2mp"/>
                                     </connections>
                                 </popUpButton>
                             </subviews>
@@ -789,13 +789,13 @@
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Xua-UF-KwL">
                                     <rect key="frame" x="-2" y="5" width="181" height="16"/>
-                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Bottom controller placement:" id="FAb-aX-CEz">
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Bottom bar placement:" id="FAb-aX-CEz">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
-                                <popUpButton verticalHuggingPriority="750" tag="3" translatesAutoresizingMaskIntoConstraints="NO" id="5FX-gc-1fJ" userLabel="Bottom-Panel-Placement Popup">
+                                <popUpButton verticalHuggingPriority="750" tag="3" translatesAutoresizingMaskIntoConstraints="NO" id="5FX-gc-1fJ" userLabel="Bottom-Bar-Placement Popup">
                                     <rect key="frame" x="182" y="-4" width="142" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="0lA-gX-YQA" id="pEe-uZ-wjN" userLabel="Title-Bar-Placement Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
@@ -808,7 +808,7 @@
                                         </menu>
                                     </popUpButtonCell>
                                     <connections>
-                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.bottomPanelPlacement" id="1u6-LI-VnF"/>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.bottomBarPlacement" id="1u6-LI-VnF"/>
                                     </connections>
                                 </popUpButton>
                             </subviews>
@@ -985,7 +985,7 @@
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6ml-Xj-nVX">
                     <rect key="frame" x="118" y="76" width="148" height="16"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="&quot;Inside Video&quot; controls:" id="SBZ-A7-Btg">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Hide &quot;Inside Video&quot; items:" id="SBZ-A7-Btg">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>

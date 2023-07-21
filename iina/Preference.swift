@@ -107,9 +107,9 @@ struct Preference {
     // MARK: - Keys: UI
 
     /// Title bar and OSC
-    static let showTopPanelTrigger = Key("showTopPanelTrigger")
-    static let topPanelPlacement = Key("topPanelPlacement")
-    static let bottomPanelPlacement = Key("bottomPanelPlacement")
+    static let showTopBarTrigger = Key("showTopBarTrigger")
+    static let topBarPlacement = Key("topBarPlacement")
+    static let bottomBarPlacement = Key("bottomBarPlacement")
     static let enableOSC = Key("enableOSC")
     static let oscPosition = Key("oscPosition")
     static let hideFadeableViewsWhenOutsideWindow = Key("hideFadeableViewsWhenOutsideWindow")
@@ -509,11 +509,11 @@ struct Preference {
     }
   }
 
-  enum ShowTopPanelTrigger: Int, InitializingFromKey {
+  enum ShowTopBarTrigger: Int, InitializingFromKey {
     case windowHover = 1
-    case topPanelHover
+    case topBarHover
 
-    static var defaultValue = ShowTopPanelTrigger.windowHover
+    static var defaultValue = ShowTopBarTrigger.windowHover
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -933,9 +933,9 @@ struct Preference {
     .oscBarToolbarIconSize: 14,
     .oscBarToolbarIconSpacing: 5,  // spacing between icons is x2 this number
     .enableOSC: true,
-    .showTopPanelTrigger: ShowTopPanelTrigger.windowHover.rawValue,
-    .topPanelPlacement: PanelPlacement.insideVideo.rawValue,
-    .bottomPanelPlacement: PanelPlacement.insideVideo.rawValue,
+    .showTopBarTrigger: ShowTopBarTrigger.windowHover.rawValue,
+    .topBarPlacement: PanelPlacement.insideVideo.rawValue,
+    .bottomBarPlacement: PanelPlacement.insideVideo.rawValue,
     .oscBarHeight: 44,
     .oscBarPlaybackIconSize: 24,
     .oscBarPlaybackIconSpacing: 16,

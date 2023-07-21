@@ -50,8 +50,8 @@ class PlayerWindowPreviewImageBuilder {
 
   let oscEnabled = Preference.bool(for: .enableOSC)
   let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
-  let topPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .topPanelPlacement)
-  let bottomPanelPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomPanelPlacement)
+  let topBarPlacement: Preference.PanelPlacement = Preference.enum(for: .topBarPlacement)
+  let bottomBarPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomBarPlacement)
 
   fileprivate var iconColor: NSColor = {
     .textColor
@@ -103,8 +103,8 @@ class PlayerWindowPreviewImageBuilder {
     let titleBarButtonsWidth = CGFloat(titleBarHeight) * (CGFloat(titleBarButtonsImg.width) / CGFloat(titleBarButtonsImg.height))
 
     var videoViewOffsetY: Int = 0
-    if oscEnabled && oscPosition == .bottom && bottomPanelPlacement == .outsideVideo {
-      // add extra space for bottom panel
+    if oscEnabled && oscPosition == .bottom && bottomBarPlacement == .outsideVideo {
+      // add extra space for bottom bar
       videoViewOffsetY += oscFullWidthHeight
     }
 
@@ -119,7 +119,7 @@ class PlayerWindowPreviewImageBuilder {
         let adjustment = oscFullWidthHeight / 8 // remove some space between controller & title bar
         oscHeight = oscFullWidthHeight - adjustment
 
-        switch topPanelPlacement {
+        switch topBarPlacement {
 
         case .outsideVideo:
           oscAlpha = opaqueControlAlpha
@@ -129,19 +129,19 @@ class PlayerWindowPreviewImageBuilder {
           oscAlpha = overlayAlpha
           oscOffsetY = videoViewOffsetY + videoHeight - oscHeight - titleBarHeight
 
-        }  // end switch topPanelPlacement
+        }  // end switch topBarPlacement
 
       case .bottom:
         oscHeight = oscFullWidthHeight
 
-        switch bottomPanelPlacement {
+        switch bottomBarPlacement {
         case .outsideVideo:
           oscAlpha = opaqueControlAlpha
           oscOffsetY = videoViewOffsetY - oscFullWidthHeight
         case .insideVideo:
           oscAlpha = overlayAlpha
           oscOffsetY = videoViewOffsetY
-        }  // end switch bottomPanelPlacement
+        }  // end switch bottomBarPlacement
 
       case .floating:
         oscAlpha = overlayAlpha
@@ -158,7 +158,7 @@ class PlayerWindowPreviewImageBuilder {
     }
 
     var winHeight: Int = videoViewOffsetY + videoHeight
-    if topPanelPlacement == .outsideVideo {
+    if topBarPlacement == .outsideVideo {
       if oscEnabled && oscPosition == .top {
         winHeight += oscHeight
       }
@@ -300,7 +300,7 @@ class PlayerWindowPreviewImageBuilder {
 
       // Draw title bar
       var titleBarOffsetY: Int = videoViewOffsetY + videoHeight
-      if topPanelPlacement == .insideVideo {
+      if topBarPlacement == .insideVideo {
         titleBarOffsetY -= titleBarHeight
       } else {  // outside
         if oscEnabled && oscPosition == .top {
@@ -308,7 +308,7 @@ class PlayerWindowPreviewImageBuilder {
         }
       }
 
-      let isTitleBarInside = topPanelPlacement == .insideVideo
+      let isTitleBarInside = topBarPlacement == .insideVideo
       let drawTitleBarBackground: Bool
       if isTitleBarInside || (oscEnabled && oscPosition == .top) {
         drawTitleBarBackground = true
