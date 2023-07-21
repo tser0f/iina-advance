@@ -2792,24 +2792,34 @@ class MainWindowController: PlayerWindowController {
   }
 
   func toggleWindowFullScreen() {
-    guard let window = self.window else { fatalError("make sure the window exists before animating") }
-
     switch fsState {
     case .windowed:
-      guard !player.isInMiniPlayer else { return }
-      if Preference.bool(for: .useLegacyFullScreen) {
-        animateEntryIntoFullScreen(withDuration: UIAnimation.FullScreenTransitionDuration, isLegacy: true)
-      } else {
-        window.toggleFullScreen(self)
-      }
+      enterFullScreen()
     case let .fullscreen(legacy, _):
-      if legacy {
-        animateExitFromFullScreen(withDuration: UIAnimation.FullScreenTransitionDuration, isLegacy: true)
-      } else {
-        window.toggleFullScreen(self)
-      }
+      exitFullScreen(legacy: legacy)
     default:
       return
+    }
+  }
+
+  func enterFullScreen() {
+    guard let window = self.window else { fatalError("make sure the window exists before animating") }
+    guard !player.isInMiniPlayer else { return }
+
+    if Preference.bool(for: .useLegacyFullScreen) {
+      animateEntryIntoFullScreen(withDuration: UIAnimation.FullScreenTransitionDuration, isLegacy: true)
+    } else {
+      window.toggleFullScreen(self)
+    }
+  }
+
+  func exitFullScreen(legacy: Bool) {
+    guard let window = self.window else { fatalError("make sure the window exists before animating") }
+
+    if legacy {
+      animateExitFromFullScreen(withDuration: UIAnimation.FullScreenTransitionDuration, isLegacy: true)
+    } else {
+      window.toggleFullScreen(self)
     }
   }
 
@@ -3635,14 +3645,29 @@ class MainWindowController: PlayerWindowController {
 
     if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image,
         let totalRotation = player.info.totalRotation {
-      let imageToDisplay = image.rotate(totalRotation)
+
+      let thumbWidth = image.size.width
+      var thumbHeight = image.size.height
+      let rawAspect = thumbWidth / thumbHeight
+
+      if let dwidth = player.info.videoDisplayWidth, let dheight = player.info.videoDisplayHeight,
+         player.info.thumbnailWidth > 0 {
+        // The aspect ratio of some videos is different at display time. May need to resize these videos
+        // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
+        // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
+        let dAspect = Double(dwidth) / Double(dheight)
+        if rawAspect != dAspect {
+          thumbHeight = CGFloat((Double(thumbWidth) / dAspect).rounded())
+        }
+      }
+
+      let imageToDisplay = image.resized(newWidth: thumbWidth, newHeight: thumbHeight).rotate(totalRotation)
+
       thumbnailPeekView.imageView.image = imageToDisplay
       thumbnailPeekView.isHidden = false
 
-      let thumbLength = imageToDisplay.size.width
-      let thumbHeight = imageToDisplay.size.height
       thumbnailPeekView.frame.size = imageToDisplay.size
-      Logger.log("Displaying thumbnail: \(thumbLength) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
       let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
       let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
       let thumbOriginY: CGFloat

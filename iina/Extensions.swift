@@ -669,6 +669,20 @@ extension NSImage {
     newImage.unlockFocus()
     return newImage
   }
+
+  func resized(newWidth: CGFloat, newHeight: CGFloat) -> NSImage {
+    guard newWidth != self.size.width || newHeight != self.size.height else {
+      return self
+    }
+    let newSize = NSSize(width: newWidth, height: newHeight)
+    let image = NSImage(size: newSize)
+    image.lockFocus()
+    let context = NSGraphicsContext.current
+    context!.imageInterpolation = .high
+    draw(in: NSRect(origin: .zero, size: newSize), from: NSZeroRect, operation: .copy, fraction: 1)
+    image.unlockFocus()
+    return image
+  }
 }
 
 

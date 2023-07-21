@@ -24,8 +24,8 @@ class ThumbnailPeekView: NSView {
     }
     // shadow is set in xib  // FIXME: shadow is broken
     self.layer?.shadowRadius = 4
-    self.layer?.borderWidth = 2
-    self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
+//    self.layer?.borderWidth = 2
+//    self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
   }
 
 }

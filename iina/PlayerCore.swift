@@ -1532,7 +1532,7 @@ class PlayerCore: NSObject {
     }
     if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
       Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
-      DispatchQueue.main.async(execute: self.mainWindow.toggleWindowFullScreen)
+      DispatchQueue.main.async(execute: self.mainWindow.enterFullScreen)
     }
     // add to history
     if let url = info.currentURL {
@@ -1924,50 +1924,51 @@ class PlayerCore: NSObject {
   }
 
   func reloadThumbnails() {
-    Logger.log("Getting thumbnails", subsystem: subsystem)
-    info.thumbnailsReady = false
-    info.thumbnails.removeAll(keepingCapacity: true)
-    info.thumbnailsProgress = 0
-    if #available(macOS 10.12.2, *) {
-      DispatchQueue.main.async {
+    DispatchQueue.main.async { [self] in
+      Logger.log("Getting thumbnails", subsystem: subsystem)
+
+      info.thumbnailsReady = false
+      info.thumbnails.removeAll(keepingCapacity: true)
+      info.thumbnailsProgress = 0
+      if #available(macOS 10.12.2, *) {
         self.touchBarSupport.touchBarPlaySlider?.resetCachedThumbnails()
       }
-    }
-    guard !info.isNetworkResource, let url = info.currentURL else {
-      Logger.log("...stopped because cannot get file path", subsystem: subsystem)
-      return
-    }
-    if !Preference.bool(for: .enableThumbnailForRemoteFiles) {
-      if let attrs = try? url.resourceValues(forKeys: Set([.volumeIsLocalKey])), !attrs.volumeIsLocal! {
-        Logger.log("...stopped because file is on a mounted remote drive", subsystem: subsystem)
+      guard !info.isNetworkResource, let url = info.currentURL else {
+        Logger.log("...stopped because cannot get file path", subsystem: subsystem)
         return
       }
-    }
-    guard Preference.bool(for: .enableThumbnailPreview) else {
-      Logger.log("...stopped because thumbnails are disabled by user", level: .verbose, subsystem: subsystem)
-      return
-    }
-
-    let requestedLength = Preference.integer(for: .thumbnailLength)
-    guard let thumbWidth = determineWidthOfThumbnail(from: requestedLength) else { return }
-    info.thumbnailLength = requestedLength
-    info.thumbnailWidth = thumbWidth
-
-    if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
-      Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
-      thumbnailQueue.async {
-        if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: thumbWidth) {
-          self.info.thumbnails = thumbnails
-          self.info.thumbnailsReady = true
-          self.info.thumbnailsProgress = 1
-          self.refreshTouchBarSlider()
-        } else {
-          Logger.log("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px", level: .error, subsystem: self.subsystem)
+      if !Preference.bool(for: .enableThumbnailForRemoteFiles) {
+        if let attrs = try? url.resourceValues(forKeys: Set([.volumeIsLocalKey])), !attrs.volumeIsLocal! {
+          Logger.log("...stopped because file is on a mounted remote drive", subsystem: subsystem)
+          return
         }
       }
-    } else {
-      Logger.log("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)", subsystem: subsystem)
-      ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
+      guard Preference.bool(for: .enableThumbnailPreview) else {
+        Logger.log("...stopped because thumbnails are disabled by user", level: .verbose, subsystem: subsystem)
+        return
+      }
+
+      let requestedLength = Preference.integer(for: .thumbnailLength)
+      guard let thumbWidth = determineWidthOfThumbnail(from: requestedLength) else { return }
+      info.thumbnailLength = requestedLength
+      info.thumbnailWidth = thumbWidth
+
+      if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
+        Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
+        thumbnailQueue.async {
+          if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: thumbWidth) {
+            self.info.thumbnails = thumbnails
+            self.info.thumbnailsReady = true
+            self.info.thumbnailsProgress = 1
+            self.refreshTouchBarSlider()
+          } else {
+            Logger.log("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px", level: .error, subsystem: self.subsystem)
+          }
+        }
+      } else {
+        Logger.log("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)", subsystem: subsystem)
+        ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
+      }
     }
   }
 
@@ -1995,7 +1996,9 @@ class PlayerCore: NSObject {
   /** We want the requested size of thumbnail to correspond to whichever video dimension is longer.
    Example: if video's native size is 600 W x 800 H and requested thumbnail size is 100, then `thumbWidth` should be 75. */
   private func determineWidthOfThumbnail(from requestedLength: Int) -> Int? {
-    guard let videoHeight = info.videoDisplayHeight, let videoWidth = info.videoDisplayWidth, videoHeight > 0, videoWidth > 0 else {
+    // Generate thumbnails using video's original dimensions, before aspect ratio correction.
+    // We will adjust aspect ratio & rotation when we display the thumbnail, similar to how mpv works.
+    guard let videoHeight = info.videoRawHeight, let videoWidth = info.videoRawHeight, videoHeight > 0, videoWidth > 0 else {
       Logger.log("Failed to generate thumbnails: video height and/or width not present in playback info", level: .error, subsystem: subsystem)
       return nil
     }
