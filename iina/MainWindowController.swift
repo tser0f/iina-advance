@@ -817,6 +817,10 @@ class MainWindowController: PlayerWindowController {
       self.quickSettingView.reload()
     }
 
+    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [unowned self] _ in
+      self.thumbnailPeekView.isHidden = true
+    }
+
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
       // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
 
