@@ -12,7 +12,7 @@ import Foundation
 // a bunch of tricky failure points for undo/redo, as well as unexpected behavior when the files are
 // changed outside of IINA.
 class InputConfFileCache {
-  static let writeQueue = DispatchQueue(label: "InputConfFile-WriteQueue", qos: .utility)
+  static let fileDQ = DispatchQueue(label: "InputConfFile-FileSystemQueue", qos: .utility)
 
   private var storage: [String: InputConfFile] = [:]
   private let storageLock = Lock()
@@ -69,7 +69,7 @@ class InputConfFileCache {
       InputConfFile.cache.storage[inputConfFile.confName] = inputConfFile
     }
 
-    InputConfFileCache.writeQueue.async {
+    InputConfFileCache.fileDQ.async {
       Logger.log("Saving conf \(inputConfFile.confName.pii.quoted) to file path \(inputConfFile.filePath.pii.quoted)", level: .verbose)
       do {
         let newFileContent: String = inputConfFile.lines.joined(separator: "\n")
@@ -97,7 +97,7 @@ class InputConfFileCache {
       storage[newConfName] = inputConfFile.clone(confName: newConfName, filePath: newFilePath)
     }
 
-    InputConfFileCache.writeQueue.async {
+    InputConfFileCache.fileDQ.async {
 
       let oldExists = FileManager.default.fileExists(atPath: oldFilePath)
       let newExists = FileManager.default.fileExists(atPath: newFilePath)
@@ -144,7 +144,7 @@ class InputConfFileCache {
       removedFileDict[confName] = removedConfFile
       let filePath = removedConfFile.filePath
 
-      InputConfFileCache.writeQueue.async {
+      InputConfFileCache.fileDQ.async {
         do {
           try FileManager.default.removeItem(atPath: filePath)
         } catch {
@@ -189,7 +189,7 @@ class InputConfFileCache {
         continue
       }
 
-      InputConfFileCache.writeQueue.async {
+      InputConfFileCache.fileDQ.async {
         let filePath = inputConfFile.filePath
         do {
           if FileManager.default.fileExists(atPath: filePath) {

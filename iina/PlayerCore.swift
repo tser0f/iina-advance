@@ -1470,7 +1470,7 @@ class PlayerCore: NSObject {
     $backgroundQueueTicket.withLock { $0 += 1 }
     let shouldAutoLoadFiles = info.shouldAutoLoadFiles
     let currentTicket = backgroundQueueTicket
-    backgroundQueue.async {
+    backgroundQueue.async { [self] in
       // add files in same folder
       if shouldAutoLoadFiles {
         Logger.log("Started auto load", subsystem: self.subsystem)
@@ -1487,7 +1487,9 @@ class PlayerCore: NSObject {
         guard currentTicket == self.backgroundQueueTicket, self.mpv.mpv != nil else { return }
         self.setTrack(1, forType: .sub)
       }
-      self.autoSearchOnlineSub()
+      backgroundQueue.asyncAfter(deadline: .now() + 0.5) { [self] in
+        autoSearchOnlineSub()
+      }
     }
     events.emit(.fileStarted)
 
@@ -1687,7 +1689,6 @@ class PlayerCore: NSObject {
   }
 
   private func autoSearchOnlineSub() {
-    Thread.sleep(forTimeInterval: 0.5)
     if Preference.bool(for: .autoSearchOnlineSub) &&
       !info.isNetworkResource && info.subTracks.isEmpty &&
       (info.videoDuration?.second ?? 0.0) >= Preference.double(for: .autoSearchThreshold) * 60 {
@@ -1948,14 +1949,15 @@ class PlayerCore: NSObject {
         return
       }
 
-      let requestedLength = Preference.integer(for: .thumbnailLength)
-      guard let thumbWidth = determineWidthOfThumbnail(from: requestedLength) else { return }
-      info.thumbnailLength = requestedLength
-      info.thumbnailWidth = thumbWidth
+      // Run the following in the background at lower priority, so the UI is not slowed down
+      thumbnailQueue.async { [self] in
+        let requestedLength = Preference.integer(for: .thumbnailLength)
+        guard let thumbWidth = determineWidthOfThumbnail(from: requestedLength) else { return }
+        info.thumbnailLength = requestedLength
+        info.thumbnailWidth = thumbWidth
 
-      if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
-        Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
-        thumbnailQueue.async {
+        if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
+          Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
           if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: thumbWidth) {
             self.info.thumbnails = thumbnails
             self.info.thumbnailsReady = true
@@ -1964,10 +1966,10 @@ class PlayerCore: NSObject {
           } else {
             Logger.log("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px", level: .error, subsystem: self.subsystem)
           }
+        } else {
+          Logger.log("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)", subsystem: subsystem)
+          ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
         }
-      } else {
-        Logger.log("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)", subsystem: subsystem)
-        ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
       }
     }
   }

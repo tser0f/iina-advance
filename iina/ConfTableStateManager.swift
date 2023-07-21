@@ -36,7 +36,7 @@ class ConfTableStateManager: NSObject {
   func startUp() {
     _ = loadSelectedConfBindingsIntoAppConfig()
 
-    DispatchQueue.global(qos: .utility).async {
+    InputConfFileCache.fileDQ.async {
       Logger.log("Loading \(AppData.defaultConfs.count) builtin conf files into cache")
       for (confName, filePath) in AppData.defaultConfs {
         self.fileCache.getOrLoadConfFile(at: filePath, isReadOnly: true, confName: confName)
