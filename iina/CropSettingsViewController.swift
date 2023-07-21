@@ -31,8 +31,8 @@ class CropSettingsViewController: CropBoxViewController {
 
     mainWindow.exitInteractiveMode {
       if self.cropx == 0 && self.cropy == 0 &&
-        self.cropw == player.info.videoWidth &&
-        self.croph == player.info.videoHeight {
+        self.cropw == player.info.videoRawWidth &&
+        self.croph == player.info.videoRawHeight {
         // if no crop, remove the crop filter
         if let vf = player.info.cropFilter {
           let _ = player.removeVideoFilter(vf)

@@ -130,6 +130,7 @@ class MPVController: NSObject {
     MPVProperty.trackList: MPV_FORMAT_NONE,
     MPVProperty.vf: MPV_FORMAT_NONE,
     MPVProperty.af: MPV_FORMAT_NONE,
+//    MPVProperty.videoOutParams: MPV_FORMAT_INT64,
     MPVOption.TrackSelection.vid: MPV_FORMAT_INT64,
     MPVOption.TrackSelection.aid: MPV_FORMAT_INT64,
     MPVOption.TrackSelection.sid: MPV_FORMAT_INT64,
@@ -814,6 +815,62 @@ class MPVController: NSObject {
     return ""
   }
 
+  struct MPVVideoParams: CustomStringConvertible {
+    let videoRawWidth: Int
+    let videoRawHeight: Int
+
+    /// `dwidth`:
+    let videoDisplayWidth: Int
+    /// `dheight`:
+    let videoDisplayHeight: Int
+
+    /// `MPVProperty.videoParamsRotate`:
+    let totalRotation: Int
+    /// `MPVProperty.videoRotate`:
+    let userRotation: Int
+
+    var isWidthSwappedWithHeightByRotation: Bool {
+      // 90, 270, etc...
+      (userRotation %% 180) != 0
+    }
+
+    /// Like `dwidth`, but after applying `userRotation`.
+    var videoDisplayRotatedWidth: Int {
+      if isWidthSwappedWithHeightByRotation {
+        return videoDisplayHeight
+      } else {
+        return videoDisplayWidth
+      }
+    }
+
+    /// Like `dheight`, but after applying `userRotation`.
+    var videoDisplayRotatedHeight: Int {
+      if isWidthSwappedWithHeightByRotation {
+        return videoDisplayWidth
+      } else {
+        return videoDisplayHeight
+      }
+    }
+
+    var description: String {
+      return "MPVVideoParams:{ rawSize:\(videoRawWidth)x\(videoRawHeight), dSize:\(videoDisplayWidth)x\(videoDisplayHeight), rotTotal: \(totalRotation), rotUser: \(userRotation) }"
+    }
+  }
+
+  /// Makes calls to mpv to get the latest video params, then returns them.
+  func queryForVideoParams() -> MPVVideoParams {
+    let videoRawWidth = getInt(MPVProperty.width)
+    let videoRawHeight = getInt(MPVProperty.height)
+    let videoDisplayWidth = getInt(MPVProperty.dwidth)
+    let videoDisplayHeight = getInt(MPVProperty.dheight)
+    let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
+    let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
+
+    let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight, videoDisplayWidth: videoDisplayWidth, videoDisplayHeight: videoDisplayHeight, totalRotation: mpvParamRotate, userRotation: mpvVideoRotate)
+
+    return params
+  }
+
   // MARK: - Hooks
 
   func addHook(_ name: MPVHook, priority: Int32 = 0, hook: MPVHookValue) {
@@ -1049,19 +1106,17 @@ class MPVController: NSObject {
     // mpvSuspend()
     setFlag(MPVOption.PlaybackControl.pause, true)
     // Get video size and set the initial window size
-    let width = getInt(MPVProperty.width)
-    let height = getInt(MPVProperty.height)
     let duration = getDouble(MPVProperty.duration)
     let position = getDouble(MPVProperty.timePos)
-    let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
-    let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
-    Logger.log("Got info for opened file. Video:{ size: \(width)x\(height), rot: \(mpvParamRotate) + \(mpvVideoRotate) }, Loc(sec): \(position) / \(duration)")
-    player.info.totalRotation = mpvParamRotate
-    player.info.userRotation = mpvVideoRotate
-    player.info.videoHeight = height
-    player.info.videoWidth = width
-    player.info.displayWidth = 0
-    player.info.displayHeight = 0
+    let vParams = queryForVideoParams()
+    Logger.log("Got info for opened file. \(vParams), Loc(sec): \(position) / \(duration)", subsystem: player.subsystem)
+    player.info.totalRotation = vParams.totalRotation
+    player.info.userRotation = vParams.userRotation
+    player.info.videoRawWidth = vParams.videoRawWidth
+    player.info.videoRawHeight = vParams.videoRawHeight
+    // FIXME: why is this zero? It doesn't need to be
+    player.info.videoDisplayWidth = 0
+    player.info.videoDisplayHeight = 0
     player.info.videoDuration = VideoTime(duration)
     if let filename = getString(MPVProperty.path) {
       self.player.info.setCachedVideoDuration(filename, duration)
@@ -1089,6 +1144,18 @@ class MPVController: NSObject {
       Logger.log("Got mpv prop: \(MPVProperty.videoParams.quoted)", level: .verbose, subsystem: player.subsystem)
       needReloadQuickSettingsView = true
 
+    case MPVProperty.videoOutParams:
+      /** From the mpv manual:
+       ```
+       video-out-params
+       Same as video-params, but after video filters have been applied. If there are no video filters in use, this will contain the same values as video-params. Note that this is still not necessarily what the video window uses, since the user can change the window size, and all real VOs do their own scaling independently from the filter chain.
+
+       Has the same sub-properties as video-params.
+       ```
+       */
+      Logger.log("Got mpv prop: \(MPVProperty.videoOutParams.quoted)", level: .verbose, subsystem: player.subsystem)
+      break
+
     case MPVProperty.videoParamsRotate:
         /** `video-params/rotate: Intended display rotation in degrees (clockwise).` - mpv manual
          Do not confuse with the user-configured `video-params` (above) */
@@ -1098,7 +1165,7 @@ class MPVController: NSObject {
       }
 
     case MPVProperty.videoParamsPrimaries:
-      fallthrough;
+      fallthrough
 
     case MPVProperty.videoParamsGamma:
       if #available(macOS 10.15, *) {

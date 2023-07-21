@@ -165,6 +165,8 @@ class MainWindowController: PlayerWindowController {
   var mousePosRelatedToWindow: CGPoint?
   var isDragging: Bool = false
 
+  var isLiveResizingWidth = false
+
   var pipStatus = PIPStatus.notInPIP
   var isInInteractiveMode: Bool = false
 
@@ -2838,8 +2840,6 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Window delegate: Resize
 
-  var isLiveResizingWidth = false
-
   func windowWillStartLiveResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     Logger.log("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)", level: .verbose, subsystem: player.subsystem)
@@ -3760,13 +3760,12 @@ class MainWindowController: PlayerWindowController {
   func adjustFrameAfterVideoReconfig() {
     guard let window = window else { return }
 
-    let vsfd = player.videoSizeForDisplay
-    let videoNativeSize = NSSize(width: vsfd.0, height: vsfd.1)
+    let videoBaseDisplaySize = player.videoBaseDisplaySize
 
     // set aspect ratio
-    videoView.updateAspectRatio(w: videoNativeSize.width, h: videoNativeSize.height)
+    videoView.updateAspectRatio(w: videoBaseDisplaySize.width, h: videoBaseDisplaySize.height)
     if #available(macOS 10.12, *) {
-      pip.aspectRatio = videoNativeSize
+      pip.aspectRatio = videoBaseDisplaySize
     }
 
     // Scale only the video. Panels outside the video do not change size
@@ -3780,13 +3779,13 @@ class MainWindowController: PlayerWindowController {
 
     if shouldResizeWindowAfterVideoReconfig() {
       // get videoSize on screen
-      newVideoSize = videoNativeSize
-      Logger.log("Starting resizeWindow calculations; set newVideoSize = originalVideoSize -> \(videoNativeSize)", level: .verbose)
+      newVideoSize = videoBaseDisplaySize
+      Logger.log("Starting resizeWindow calculations; set newVideoSize = videoBaseDisplaySize -> \(videoBaseDisplaySize)", level: .verbose)
 
       if Preference.bool(for: .usePhysicalResolution) {
         let invertedScale = 1.0 / window.backingScaleFactor
         scaleDownFactor = invertedScale
-        newVideoSize = NSSize(width: videoNativeSize.width * invertedScale, height: videoNativeSize.height * invertedScale)
+        newVideoSize = NSSize(width: videoBaseDisplaySize.width * invertedScale, height: videoBaseDisplaySize.height * invertedScale)
         Logger.log("Converted newVideoSize to physical resolution -> \(newVideoSize)", level: .verbose)
       }
 
@@ -3829,7 +3828,7 @@ class MainWindowController: PlayerWindowController {
       // FIXME: this gets messed up by vertical videos. Investigate organizing per aspect ratio
       // user is navigating in playlist. retain same window width.
       let newVideoWidth = oldVideoSize.width
-      let newVideoHeight = newVideoWidth / videoNativeSize.aspect
+      let newVideoHeight = newVideoWidth / videoBaseDisplaySize.aspect
       newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
       Logger.log("Using oldVideoSize width for newVideoSize, with new height (\(newVideoHeight)) -> \(newVideoSize)", level: .verbose)
       newWindowFrame = computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame
@@ -3883,7 +3882,8 @@ class MainWindowController: PlayerWindowController {
   }
 
   func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
-    if let videoWidth = player.info.videoWidth {
+    let videoWidth = player.videoBaseDisplaySize.width
+    if videoWidth > 0 {
       let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
       let prevVideoScale = player.info.cachedWindowScale
       if videoScale != prevVideoScale {
@@ -3898,19 +3898,19 @@ class MainWindowController: PlayerWindowController {
     guard fsState == .windowed else { return }
     guard let window = window else { return }
 
-    let (videoWidth, videoHeight) = player.videoSizeForDisplay
-    var videoSizeDesired = CGSize(width: CGFloat(videoWidth) * scale, height: CGFloat(videoHeight) * scale)
+    let videoBaseDisplaySize = player.videoBaseDisplaySize
+    var videoDesiredSize = CGSize(width: videoBaseDisplaySize.width * scale, height: videoBaseDisplaySize.height * scale)
 
-    Logger.log("SetWindowScale: scale=\(scale)x, videoSizeDesired=\(videoSizeDesired)",
+    Logger.log("SetWindowScale: requested scale=\(scale)x, videoBaseSize=\(videoDesiredSize) -> videoDesiredSize=\(videoDesiredSize)",
                level: .verbose, subsystem: player.subsystem)
 
     if Preference.bool(for: .usePhysicalResolution) {
-      videoSizeDesired = window.convertFromBacking(NSRect(origin: window.frame.origin, size: videoSizeDesired)).size
-      Logger.log("SetWindowScale: converted videoSizeDesired to physical resolution: \(videoSizeDesired)",
+      videoDesiredSize = window.convertFromBacking(NSRect(origin: window.frame.origin, size: videoDesiredSize)).size
+      Logger.log("SetWindowScale: converted videoDesiredSize to physical resolution: \(videoDesiredSize)",
                  level: .verbose, subsystem: player.subsystem)
     }
 
-    resizeVideo(toVideoSize: videoSizeDesired)
+    resizeVideo(toVideoSize: videoDesiredSize)
   }
 
   private func scaleVideoFromPinchGesture(to magnification: CGFloat) {

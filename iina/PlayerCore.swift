@@ -1109,8 +1109,8 @@ class PlayerCore: NSObject {
   }
 
   func setCrop(fromString str: String) {
-    let vwidth = info.videoWidth!
-    let vheight = info.videoHeight!
+    let vwidth = info.videoRawWidth!
+    let vheight = info.videoRawHeight!
     if let aspect = Aspect(string: str) {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
       Logger.log("Setting crop to: \(cropped.width)x\(cropped.width) (orig videoSize: \(vwidth)x\(vheight), requested string: \(str.quoted))", level: .verbose, subsystem: subsystem)
@@ -1651,20 +1651,18 @@ class PlayerCore: NSObject {
   func onVideoReconfig() {
     // If loading file, video reconfig can return 0 width and height
     guard !info.fileLoading, !isShuttingDown, !isShutdown else { return }
-    var dwidth = mpv.getInt(MPVProperty.dwidth)
-    var dheight = mpv.getInt(MPVProperty.dheight)
-    if info.userRotation == 90 || info.userRotation == 270 {
-      swap(&dwidth, &dheight)
-    }
-    let mpvParamRotate = mpv.getInt(MPVProperty.videoParamsRotate)
-    let mpvVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
-    Logger.log("Got mpv '\(MPV_EVENT_VIDEO_RECONFIG)'. mpv = (W: \(dwidth), H: \(dheight), Rot: \(mpvParamRotate) - \(mpvVideoRotate)); PlayerInfo = (W: \(info.displayWidth!) H: \(info.displayHeight!) Rot: \(info.userRotation)°)", level: .verbose, subsystem: subsystem)
-    if dwidth != info.displayWidth! || dheight != info.displayHeight! {
+
+    let vParams = mpv.queryForVideoParams()
+    Logger.log("Got mpv `video-reconfig`. mpv = \(vParams); PlayerInfo = {W: \(info.videoDisplayWidth!) H: \(info.videoDisplayHeight!) (rawSize: \(info.videoRawWidth ?? 0) x \(info.videoRawHeight ?? 0)) Rot: \(info.userRotation)°}", level: .verbose, subsystem: subsystem)
+
+    let drW = vParams.videoDisplayRotatedWidth
+    let drH = vParams.videoDisplayRotatedHeight
+    if drW != info.videoDisplayWidth! || drH != info.videoDisplayHeight! {
       // filter the last video-reconfig event before quit
-      if dwidth == 0 && dheight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
+      if drW == 0 && drH == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
       // video size changed
-      info.displayWidth = dwidth
-      info.displayHeight = dheight
+      info.videoDisplayWidth = drW
+      info.videoDisplayHeight = drH
       DispatchQueue.main.sync {
         self.mainWindow.adjustFrameAfterVideoReconfig()
       }
@@ -1997,7 +1995,7 @@ class PlayerCore: NSObject {
   /** We want the requested size of thumbnail to correspond to whichever video dimension is longer.
    Example: if video's native size is 600 W x 800 H and requested thumbnail size is 100, then `thumbWidth` should be 75. */
   private func determineWidthOfThumbnail(from requestedLength: Int) -> Int? {
-    guard let videoHeight = info.videoHeight, let videoWidth = info.videoWidth, videoHeight > 0, videoWidth > 0 else {
+    guard let videoHeight = info.videoDisplayHeight, let videoWidth = info.videoDisplayWidth, videoHeight > 0, videoWidth > 0 else {
       Logger.log("Failed to generate thumbnails: video height and/or width not present in playback info", level: .error, subsystem: subsystem)
       return nil
     }
@@ -2115,19 +2113,19 @@ class PlayerCore: NSObject {
    Non-nil and non-zero width/height value calculated for video window, from current `dwidth`
    and `dheight` while taking pure audio files and video rotations into consideration.
    */
-  var videoSizeForDisplay: (Int, Int) {
+  var videoBaseDisplaySize: CGSize {
     get {
       var width: Int
       var height: Int
 
-      if let w = info.displayWidth, let h = info.displayHeight {
+      if let w = info.videoDisplayWidth, let h = info.videoDisplayHeight {
         // when width and height == 0 there's no video track
         width = w == 0 ? AppData.widthWhenNoVideo : w
         height = h == 0 ? AppData.heightWhenNoVideo : h
       } else {
         // we cannot get dwidth and dheight, which is unexpected. This block should never be executed
         // but just in case, let's log the error.
-        Logger.log("videoSizeForDisplay: Cannot get dwidth and dheight", level: .warning, subsystem: subsystem)
+        Logger.log("videoBaseDisplaySize: Cannot get dwidth and dheight", level: .warning, subsystem: subsystem)
         width = AppData.widthWhenNoVideo
         height = AppData.heightWhenNoVideo
       }
@@ -2135,19 +2133,21 @@ class PlayerCore: NSObject {
       // if video has rotation
       let mpvParamRotate = mpv.getInt(MPVProperty.videoParamsRotate)
       let mpvVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
-      let mpvNetRotate = mpvParamRotate - mpvVideoRotate
-      let rotate = mpvNetRotate >= 0 ? mpvNetRotate : mpvNetRotate + 360
-      if rotate == 90 || rotate == 270 {
+      var mpvNetRotate = mpvParamRotate - mpvVideoRotate
+      if mpvNetRotate < 0 {
+        mpvNetRotate += 360
+      }
+      if mpvNetRotate == 90 || mpvNetRotate == 270 {
         swap(&width, &height)
       }
-      Logger.log("videoSizeForDisplay: Rot=(\(mpvParamRotate)-\(mpvVideoRotate))=\(mpvNetRotate) = \(rotate), WxH: \(width)x\(height)", level: .verbose, subsystem: subsystem)
-      return (width, height)
+      Logger.log("videoBaseDisplaySize: Rot=(\(mpvParamRotate) total, \(mpvVideoRotate) user)=\(mpvNetRotate), WxH: \(width)x\(height)", level: .verbose, subsystem: subsystem)
+      return CGSize(width: width, height: height)
     }
   }
 
   var originalVideoSize: (Int, Int) {
     get {
-      if let w = info.videoWidth, let h = info.videoHeight {
+      if let w = info.videoRawWidth, let h = info.videoRawHeight {
         let mpvParamRotate = mpv.getInt(MPVProperty.videoParamsRotate)
         let mpvVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
         let mpvNetRotate = mpvParamRotate - mpvVideoRotate

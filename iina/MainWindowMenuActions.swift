@@ -43,8 +43,7 @@ extension MainWindowController {
       setWindowScale(2)
     case 3:  // fit screen
       window.center()  // FIXME: this should be animated
-      let (videoWidth, videoHeight) = player.videoSizeForDisplay
-      let desiredVideoSize = CGSize(width: CGFloat(videoWidth), height: CGFloat(videoHeight)).satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
+      let desiredVideoSize = player.videoBaseDisplaySize.satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
       Logger.log("Scaling video to fit screen (calculated size: \(desiredVideoSize))", level: .verbose, subsystem: player.subsystem)
       resizeVideo(toVideoSize: desiredVideoSize)
     case 10:  // smaller size

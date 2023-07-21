@@ -106,12 +106,27 @@ class PlaybackInfo {
 
   // MARK: - Audio/Video
 
-  // TODO: place in GeometryManager
-  var videoWidth: Int?
-  var videoHeight: Int?
+  /// Current video's native stored dimensions, before aspect correction applied.
+  /// In most cases `videoDisplayWidth` and `videoDisplayHeight` will be more useful.
+  /// From the mpv manual:
+  /// ```
+  /// width, height
+  ///   Video size. This uses the size of the video as decoded, or if no video frame has been decoded yet,
+  ///   the (possibly incorrect) container indicated size.
+  /// ```
+  var videoRawWidth: Int?
+  var videoRawHeight: Int?
 
-  var displayWidth: Int?
-  var displayHeight: Int?
+  /// The video size, with aspect correction applied, but before scaling or rotation.
+  /// From the mpv manual:
+  /// ```
+  /// dwidth, dheight
+  /// Video display size. This is the video size after filters and aspect scaling have been applied. The actual
+  /// video window size can still be different from this, e.g. if the user resized the video window manually.
+  /// These have the same values as video-out-params/dw and video-out-params/dh.
+  /// ```
+  var videoDisplayWidth: Int?
+  var videoDisplayHeight: Int?
 
   // Is refreshed as property change events arrive for `MPVOption.Video.videoRotate` ("video-rotate").
   // Not to be confused with the `MPVProperty.videoParamsRotate` ("video-params/rotate")

@@ -315,10 +315,10 @@ fileprivate class StatusAPI: JavascriptAPI, CoreSubAPIExportable {
     case "speed":
       return player!.info.playSpeed
     case "videoWidth":
-      guard let vw = player!.info.videoWidth else { return NSNull() }
+      guard let vw = player!.info.videoRawWidth else { return NSNull() }
       return Int32(vw)
     case "videoHeight":
-      guard let vh = player!.info.videoHeight else { return NSNull() }
+      guard let vh = player!.info.videoRawHeight else { return NSNull() }
       return Int32(vh)
     case "isNetworkResource":
       return player!.info.isNetworkResource
