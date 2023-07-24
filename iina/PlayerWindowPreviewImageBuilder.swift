@@ -52,6 +52,11 @@ class PlayerWindowPreviewImageBuilder {
   let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   let topBarPlacement: Preference.PanelPlacement = Preference.enum(for: .topBarPlacement)
   let bottomBarPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomBarPlacement)
+  let appearance: NSAppearance
+
+  init(_ enclosingView: NSView) {
+    self.appearance = PlayerWindowPreviewImageBuilder.calculateAppearance(enclosingView)
+  }
 
   fileprivate var iconColor: NSColor = {
     .textColor
@@ -66,23 +71,24 @@ class PlayerWindowPreviewImageBuilder {
 //    NSColor(red: 0x68 / 255, green: 0x67 / 255, blue: 0xAF / 255, alpha: 1.0)  // "blue violet"
   }()
 
-  fileprivate var appearance: NSAppearance = {
+  fileprivate static func calculateAppearance(_ enclosingView: NSView) -> NSAppearance {
     if #available(macOS 10.14, *) {
       var theme: Preference.Theme = Preference.enum(for: .themeMaterial)
-      if theme == .system && NSAppearance.current.isDark {
-        // For some reason, "system" dark does not result in the same colors as "dark".
-        // Just override it with "dark" to keep it consistent.
-        theme = .dark
+      if theme == .system {
+        if enclosingView.effectiveAppearance.isDark {
+          // For some reason, "system" dark does not result in the same colors as "dark".
+          // Just override it with "dark" to keep it consistent.
+          theme = .dark
+        } else {
+          theme = .light
+        }
       }
       if let themeAppearance = NSAppearance(iinaTheme: theme) {
         return themeAppearance
       }
     }
-    if let dark = NSAppearance(named: .vibrantDark) {
-      return dark
-    }
-    return NSAppearance.current
-  }()
+    return enclosingView.effectiveAppearance
+  }
 
   func withIINAAppearance<T>(_ closure: () throws -> T) rethrows -> T {
     let previousAppearance = NSAppearance.current

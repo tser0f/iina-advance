@@ -109,6 +109,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     observedPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
+
+    // Set up key-value observing for changes to this view's properties:
+    addObserver(self, forKeyPath: #keyPath(view.effectiveAppearance), options: [.old, .new], context: nil)
   }
 
   required init?(coder: NSCoder) {
@@ -120,6 +123,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       for key in self.observedPrefKeys {
         UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
       }
+      UserDefaults.standard.removeObserver(self, forKeyPath: #keyPath(view.effectiveAppearance))
     }
   }
 
@@ -166,6 +170,12 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       PK.oscBarToolbarIconSpacing.rawValue:
 
       updateOSCToolbarButtons()
+    case #keyPath(view.effectiveAppearance):
+      if Preference.enum(for: .themeMaterial) == Preference.Theme.system {
+        // Refresh image in case dark mode changed
+        let ib = PlayerWindowPreviewImageBuilder(self.view)
+        windowPreviewImageView.image = ib.updateWindowPreviewImage()
+      }
     default:
       break
     }
@@ -181,7 +191,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 
   private func refreshTitleBarAndOSCSection(animate: Bool = true) {
-    let ib = PlayerWindowPreviewImageBuilder()
+    let ib = PlayerWindowPreviewImageBuilder(self.view)
 
     let titleBarIsOverlay = ib.topBarPlacement == .insideVideo
     let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .floating ||
