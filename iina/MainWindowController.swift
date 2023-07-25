@@ -1253,7 +1253,6 @@ class MainWindowController: PlayerWindowController {
     // Visiblity of views/categories:
 
     var titleIconAndText: Visibility = .hidden
-
     var trafficLightButtons: Visibility = .hidden
     var titlebarAccessoryViewControllers: Visibility = .hidden
     var leadingSidebarToggleButton: Visibility = .hidden
@@ -1261,6 +1260,7 @@ class MainWindowController: PlayerWindowController {
     var pinToTopButton: Visibility = .hidden
 
     var controlBarFloating: Visibility = .hidden
+
     var bottomBarView: Visibility = .hidden
     var topBarView: Visibility = .hidden
 
@@ -2706,8 +2706,8 @@ class MainWindowController: PlayerWindowController {
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
       let topHeight = transition.toLayout.topBarOutsideHeight
       let bottomHeight = transition.toLayout.bottomBarOutsideHeight
-      let leadingWidth = leadingSidebar.currentOutsideBarsWidth
-      let trailingWidth = trailingSidebar.currentOutsideBarsWidth
+      let leadingWidth = leadingSidebar.currentOutsideWidth
+      let trailingWidth = trailingSidebar.currentOutsideWidth
 
       let priorWindowFrame = priorWindowedFrame.resizeOutsideBars(newTopHeight: topHeight,
                                                                   newTrailingWidth: trailingWidth,
@@ -2886,7 +2886,7 @@ class MainWindowController: PlayerWindowController {
       return window.frame.size
     }
 
-    let requestedVideoSize = NSSize(width: requestedSize.width - (trailingSidebar.currentOutsideBarsWidth + leadingSidebar.currentOutsideBarsWidth),
+    let requestedVideoSize = NSSize(width: requestedSize.width - (trailingSidebar.currentOutsideWidth + leadingSidebar.currentOutsideWidth),
                                     height: requestedSize.height - (currentLayout.topBarOutsideHeight + currentLayout.bottomBarOutsideHeight))
 
     // resize height based on requested width
@@ -3939,7 +3939,7 @@ class MainWindowController: PlayerWindowController {
     let videoBaseDisplaySize = player.videoBaseDisplaySize
     var videoDesiredSize = CGSize(width: videoBaseDisplaySize.width * scale, height: videoBaseDisplaySize.height * scale)
 
-    Logger.log("SetWindowScale: requested scale=\(scale)x, videoBaseSize=\(videoDesiredSize) -> videoDesiredSize=\(videoDesiredSize)",
+    Logger.log("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) -> videoDesiredSize=\(videoDesiredSize)",
                level: .verbose, subsystem: player.subsystem)
 
     if Preference.bool(for: .usePhysicalResolution) {
@@ -4001,9 +4001,9 @@ class MainWindowController: PlayerWindowController {
         level: .error, subsystem: player.subsystem)
       return MainWindowGeometry(windowFrame: windowFrame,
                                 topBarHeight: currentLayout.topBarHeight,
-                                rightBarWidth: trailingSidebar.currentOutsideBarsWidth,
+                                rightBarWidth: trailingSidebar.currentOutsideWidth,
                                 bottomBarHeight: currentLayout.bottomBarOutsideHeight,
-                                leftBarWidth: leadingSidebar.currentOutsideBarsWidth)
+                                leftBarWidth: leadingSidebar.currentOutsideWidth)
     }
     return MainWindowGeometry(windowFrame: windowFrame, videoFrame: videoFrame)
   }

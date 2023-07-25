@@ -126,7 +126,7 @@ extension MainWindowController {
     }
 
     /// Returns `0` if sidebar is hidden.
-    var currentOutsideBarsWidth: CGFloat {
+    var currentOutsideWidth: CGFloat {
       return placement == .outsideVideo ? currentWidth : 0
     }
 

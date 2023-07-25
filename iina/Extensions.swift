@@ -779,6 +779,27 @@ extension NSScreen {
     return deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
   }
 
+  /// Gets the actual scale factor, because `NSScreen.backingScaleFactor` does not provide this.
+  var screenScaleFactor: CGFloat {
+    let screen = self
+    let screenFrame: NSRect = screen.frame
+
+    // if there's a native resolution found in this method, that's more accurate than above
+    let myModes = CGDisplayCopyAllDisplayModes(screen.displayId, nil) as! [CGDisplayMode]
+    for mode in myModes {
+      let isNative = mode.ioFlags & UInt32(kDisplayModeNativeFlag) > 0
+//      let flags = String(format:"%02X", mode.ioFlags)
+      if isNative {
+        let scaleFactor = CGFloat(mode.width) / screenFrame.size.width
+        Logger.log("NativeSize: \(mode.pixelWidth)x\(mode.pixelHeight) CurrentSize:\(screenFrame.width)x\(screenFrame.height) ScaleFactor: \(scaleFactor)", level: .verbose)
+        return scaleFactor
+      }
+    }
+
+    return 1.0  // default fallback
+  }
+
+
   /// Log the given `NSScreen` object.
   ///
   /// Due to issues with multiple monitors and how the screen to use for a window is selected detailed logging has been added in this
@@ -797,9 +818,9 @@ extension NSScreen {
       // Screen frame coordinates have their origin at the lower left of the primary display.
       // So any display to the left of primary will be in negative X, and any below primary will have negative Y.
       // `visibleFrame` is what we most care about.
-      Logger.log("\(label): \"\(screen.localizedName)\" visibleFrame: \(screen.visibleFrame), scaleFactor: \(screen.backingScaleFactor), EDR: {supports=\(canEnableEDR) maxPotential=\(maxPossibleEDR) maxCurrent=\(screen.maximumExtendedDynamicRangeColorComponentValue)}")
+      Logger.log("\(label): \"\(screen.localizedName)\" visibleFrame: \(screen.visibleFrame), backingScaleFactor: \(screen.backingScaleFactor), screenScaleFactor: \(screen.screenScaleFactor) EDR: {supports=\(canEnableEDR) maxPotential=\(maxPossibleEDR) maxCurrent=\(screen.maximumExtendedDynamicRangeColorComponentValue)}", level: .verbose)
     } else {
-      Logger.log("\(label): visible frame \(screen.visibleFrame)")
+      Logger.log("\(label): visible frame \(screen.visibleFrame)", level: .verbose)
     }
   }
 }
@@ -826,6 +847,10 @@ extension NSWindow {
       return NSScreen.main!
     }
     return NSScreen.screens[0]
+  }
+
+  var screenScaleFactor: CGFloat {
+    return selectDefaultScreen().screenScaleFactor
   }
 
   func isOnlyOpenWindow() -> Bool {
@@ -938,6 +963,25 @@ extension NSView {
     guard let cgImage = CGWindowListCreateImage(rect, .optionIncludingWindow, CGWindowID(window.windowNumber), CGWindowImageOption.bestResolution) else { return nil }
 
     return NSImage(cgImage: cgImage, size: self.bounds.size)
+  }
+
+  var iinaAppearance: NSAppearance {
+    if #available(macOS 10.14, *) {
+      var theme: Preference.Theme = Preference.enum(for: .themeMaterial)
+      if theme == .system {
+        if self.effectiveAppearance.isDark {
+          // For some reason, "system" dark does not result in the same colors as "dark".
+          // Just override it with "dark" to keep it consistent.
+          theme = .dark
+        } else {
+          theme = .light
+        }
+      }
+      if let themeAppearance = NSAppearance(iinaTheme: theme) {
+        return themeAppearance
+      }
+    }
+    return self.effectiveAppearance
   }
 
 }

@@ -55,7 +55,7 @@ class PlayerWindowPreviewImageBuilder {
   let appearance: NSAppearance
 
   init(_ enclosingView: NSView) {
-    self.appearance = PlayerWindowPreviewImageBuilder.calculateAppearance(enclosingView)
+    self.appearance = enclosingView.iinaAppearance
   }
 
   fileprivate var iconColor: NSColor = {
@@ -70,25 +70,6 @@ class PlayerWindowPreviewImageBuilder {
     }
 //    NSColor(red: 0x68 / 255, green: 0x67 / 255, blue: 0xAF / 255, alpha: 1.0)  // "blue violet"
   }()
-
-  fileprivate static func calculateAppearance(_ enclosingView: NSView) -> NSAppearance {
-    if #available(macOS 10.14, *) {
-      var theme: Preference.Theme = Preference.enum(for: .themeMaterial)
-      if theme == .system {
-        if enclosingView.effectiveAppearance.isDark {
-          // For some reason, "system" dark does not result in the same colors as "dark".
-          // Just override it with "dark" to keep it consistent.
-          theme = .dark
-        } else {
-          theme = .light
-        }
-      }
-      if let themeAppearance = NSAppearance(iinaTheme: theme) {
-        return themeAppearance
-      }
-    }
-    return enclosingView.effectiveAppearance
-  }
 
   func withIINAAppearance<T>(_ closure: () throws -> T) rethrows -> T {
     let previousAppearance = NSAppearance.current

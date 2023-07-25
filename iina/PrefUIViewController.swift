@@ -17,8 +17,6 @@ fileprivate let SideRightTag = 1
 fileprivate let SideTopTag = 0
 fileprivate let SideBottomTag = 1
 
-fileprivate let uiAnimationDuration: CGFloat = 0.25
-
 @objcMembers
 class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable {
 
@@ -202,7 +200,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     var viewHidePairs: [(NSView, Bool)] = []
     // Use animation where possible to make the transition less jarring
     NSAnimationContext.runAnimationGroup({context in
-      context.duration = 0 // TODO animate ? AccessibilityPreferences.adjustedDuration(uiAnimationDuration) : 0
+      context.duration = 0 // TODO animate ? AccessibilityPreferences.adjustedDuration(UIAnimation.defaultDuration) : 0
       context.allowsImplicitAnimation = animate ? !AccessibilityPreferences.motionReductionEnabled : false
       context.timingFunction = CAMediaTimingFunction(name: .linear)
 
@@ -240,7 +238,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       windowPreviewImageView.image = ib.updateWindowPreviewImage()
 
       NSAnimationContext.runAnimationGroup({context in
-        context.duration = animate ? AccessibilityPreferences.adjustedDuration(uiAnimationDuration) : 0
+        context.duration = animate ? AccessibilityPreferences.adjustedDuration(UIAnimation.DefaultDuration) : 0
         context.allowsImplicitAnimation = animate ? !AccessibilityPreferences.motionReductionEnabled : false
         context.timingFunction = CAMediaTimingFunction(name: .linear)
         for (view, shouldHide) in viewHidePairs {

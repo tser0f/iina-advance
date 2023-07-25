@@ -81,12 +81,6 @@ fileprivate extension NSColor {
 }
 
 fileprivate class GrayHighlightRowView: NSTableRowView {
-  private func fillWithColor(_ color: NSColor) {
-    let selectionRect = NSInsetRect(self.bounds, 2.5, 2.5)
-    color.setFill()
-    let selectionPath = NSBezierPath.init(roundedRect: selectionRect, xRadius: 4, yRadius: 4)
-    selectionPath.fill()
-  }
   
   override func drawSelection(in dirtyRect: NSRect) {
     if self.selectionHighlightStyle != .none {
