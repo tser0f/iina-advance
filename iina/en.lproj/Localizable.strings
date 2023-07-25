@@ -28,9 +28,6 @@
 "initial.debug.desc" = "Debug builds are usually not optimized for performance, so it is not recommended to be used as daily drive. Debug builds do not support auto update.";
 "initial.bug_report" = "Report via <a href=\"https://github.com/iina/iina/issues\">GitHub issues</a>.";
 
-// Inspector Window
-"inspector.error" = "Error";
-
 // MainWindowController.swift
 "main.buffering_indicator" = "Buffering… %d%%";
 "main.opening_stream" = "Opening stream…";
@@ -89,7 +86,7 @@
 "osd.network_error" = "Network error";
 "osd.file_error" = "Error reading file";
 "osd.cannot_login" = "Cannot login";
-"osd.canceled" = "Cancelled";
+"osd.canceled" = "Canceled";
 "osd.filter_added" = "Added Filter: %@";
 "osd.filter_removed" = "Removed Filter";
 "osd.file_loop" = "File Loop: %@";
@@ -111,7 +108,7 @@
 "preference.logged_in_as" = "Logged in as %@";
 "preference.system_media_control" = "Use system media control";
 
-"preference.key_binding_hint_1" = "To edit key bindings in current configuration file, click \"Duplicate\" button first to create a copy.";
+"preference.key_binding_hint_1" = "To edit key bindings in current configuration file, click \"Duplicate…\" button first to create a copy.";
 "preference.key_binding_hint_2" = "Double click a row at the right side to edit the corresponding key binding.";
 
 "preference.enable_adv_settings" = "Enable advanced settings";
@@ -186,7 +183,7 @@
 "alert.config.empty_name" = "The name cannot be empty.";
 "alert.config.name_existing" = "The name already exists.";
 "alert.config.file_existing.title" = "File Already Exists";
-"alert.config.file_existing.message" = "This should not happen. Choose OK to overwrite, Cancel to reveal the file in Finder.";
+"alert.config.file_existing.message" = "This should not happen. Choose OK to overwrite, Cancel to show the file in Finder.";
 "alert.config.cannot_create" = "Cannot create config file!\n%@";
 "alert.config.cannot_write" = "Cannot write to config file!";
 
@@ -301,7 +298,7 @@
 "filter.audio_filters" = "Audio Filters";
 
 "hwdec.no" = "Disable hardware decoding.";
-"hwdec.auto" = "Enable hardware decoding. However, most of the video filters won’t work properly.";
+"hwdec.auto" = "Enable hardware decoding. However, most of the video filters won't work properly.";
 "hwdec.auto-copy" = "Enable hardware decoding. It will consume double the memory but work with video filters.";
 
 "subencoding.auto" = "Auto detect";
