@@ -398,6 +398,8 @@ struct Preference {
     static let uiPrefBindingsTableSearchString = Key("uiPrefBindingsTableSearchString")
     static let uiPrefBindingsTableScrollOffsetY = Key("uiPrefBindingsTableScrollOffsetY")
 
+    static let uiInspectorWindowTabIndex = Key("uiInspectorWindowTabIndex")
+
     static let uiHistoryTableGroupBy = Key("uiHistoryTableGroupBy")
     static let uiHistoryTableSearchType = Key("uiHistoryTableSearchType")
     static let uiHistoryTableSearchString = Key("uiHistoryTableSearchString")
@@ -1094,6 +1096,7 @@ struct Preference {
     .uiCollapseViewSubTextSubsAdvanced: false,
     .uiPrefBindingsTableSearchString: "",
     .uiPrefBindingsTableScrollOffsetY: 0,
+    .uiInspectorWindowTabIndex: 0,
     .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayedDay.rawValue,
     .uiHistoryTableSearchType: HistorySearchType.fullPath.rawValue,
     .uiHistoryTableSearchString: "",
