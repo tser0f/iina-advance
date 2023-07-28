@@ -232,20 +232,26 @@ class VideoView: NSView {
       CVDisplayLinkCreateWithActiveCGDisplays(&link)
     }
     guard let link = link else {
-      Logger.fatal("Cannot Create display link!")
+      Logger.fatal("Cannot create DisplayLink!")
     }
     guard !CVDisplayLinkIsRunning(link) else { return }
     updateDisplayLink()
     CVDisplayLinkSetOutputCallback(link, displayLinkCallback, mutableRawPointerOf(obj: self))
-    CVDisplayLinkStart(link)
+    let returnValue = CVDisplayLinkStart(link)
+    if returnValue != kCVReturnSuccess {
+      Logger.log("Error returned by CVDisplayLinkStart: \(returnValue)", level: .error)
+    }
   }
 
   @objc func stopDisplayLink() {
-    guard let link = link, CVDisplayLinkIsRunning(link) else { return }
+    guard let link = link, CVDisplayLinkIsRunning(link) else {
+      Logger.log("DisplayLink is already stopped", level: .verbose)
+      return
+    }
     CVDisplayLinkStop(link)
   }
 
-  // This should only be called if the window has changed displays
+  /// This should be called at start or if the window has changed displays
   func updateDisplayLink() {
     guard let window = window, let link = link, let screen = window.screen else { return }
     let displayId = screen.displayId

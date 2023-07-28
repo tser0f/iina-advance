@@ -853,9 +853,10 @@ extension NSWindow {
     return selectDefaultScreen().screenScaleFactor
   }
 
+  /// Excludes the Inspector window
   func isOnlyOpenWindow() -> Bool {
     for window in NSApp.windows {
-      if window != self && window.isVisible {
+      if window != self && window.isVisible && window.frameAutosaveName != Constants.WindowAutosaveName.inspector {
         return false
       }
     }

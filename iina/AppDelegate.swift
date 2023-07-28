@@ -326,6 +326,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     let activePlayer = PlayerCore.active  // will load the first PlayerCore if not already loaded
     Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
+    let firstPlayerWindow = activePlayer.mainWindow  // load MainWindow preemptively
+    firstPlayerWindow!.window?.orderOut(self)
 
     if #available(macOS 10.13, *) {
       if RemoteCommandController.useSystemMediaControl {
@@ -507,9 +509,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func showInspectorWindow() {
-    Logger.log("Showing Inspector window", level: .verbose)
     inspector.showWindow(self)
-    inspector.updateInfo()
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

@@ -717,8 +717,6 @@ class MainWindowController: PlayerWindowController {
 
     guard let window = window else { return }
 
-    window.orderOut(self)
-
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
 
