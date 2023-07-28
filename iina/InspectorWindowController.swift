@@ -113,7 +113,6 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
     tableHeightConstraint = watchTableContainerView.heightAnchor.constraint(greaterThanOrEqualToConstant: computeMinTableHeight())
     tableHeightConstraint!.isActive = true
-    watchTableContainerView.layout()
 
     updateInfo()
     watchTableView.scrollRowToVisible(0)
@@ -460,7 +459,6 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
     watchTableView.removeRows(at: IndexSet(integer: rowIndex), withAnimation: AccessibilityPreferences.motionReductionEnabled ? [] : .slideUp)
     tableHeightConstraint?.constant = computeMinTableHeight()
-    watchTableContainerView.layout()
   }
 
   /// Workaround (as of MacOS 13.4): try to ensure `watchTableView` never scrolls vertically, because `NSTableView` will draw rows

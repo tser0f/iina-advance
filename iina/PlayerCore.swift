@@ -8,10 +8,14 @@
 
 import Cocoa
 import MediaPlayer
+import os.log  // for Points of Interest, for performance profiling
 
 class PlayerCore: NSObject {
 
   // MARK: - Multiple instances
+
+  @available(macOS 10.14, *)
+  static private let pointsOfInterest = OSLog(subsystem: Bundle.main.bundleIdentifier!, category: .pointsOfInterest)
 
   static private let first: PlayerCore = createAndStartPlayerCore()
 
@@ -1740,16 +1744,17 @@ class PlayerCore: NSObject {
   // MARK: - Sync with UI in MainWindow
 
   func restartSyncUITimer() {
-    let timeInterval = TimeInterval(DurationDisplayTextField.precision >= 2 ? AppData.syncTimePreciseInterval : AppData.syncTimeInterval)
-    Logger.log("Restarting syncUITimer, timeInterval \(timeInterval)", level: .verbose, subsystem: subsystem)
+    let timerConfig = DurationDisplayTextField.precision >= 2 ? AppData.syncTimerConfig : AppData.syncTimerPreciseConfig
+    Logger.log("Restarting syncUITimer, timeInterval \(timerConfig.interval)", level: .verbose, subsystem: subsystem)
     invalidateSyncUITimer()
     syncUITimer = Timer.scheduledTimer(
-      timeInterval: timeInterval,
+      timeInterval: timerConfig.interval,
       target: self,
       selector: #selector(self.syncUITime),
       userInfo: nil,
       repeats: true
     )
+    syncUITimer?.tolerance = timerConfig.tolerance
   }
 
   // difficult to use option set
@@ -1764,7 +1769,20 @@ class PlayerCore: NSObject {
     case fileLoop
   }
 
+  @available(macOS 10.14, *)
+  static let signpostID = OSSignpostID(log: pointsOfInterest)
+
   @objc func syncUITime() {
+    // Debugging
+    if #available(macOS 10.14, *) {
+      os_signpost(.begin, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task1", signpostID: PlayerCore.signpostID)
+    }
+    defer {
+      if #available(macOS 10.14, *) {
+        os_signpost(.end, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task1", signpostID: PlayerCore.signpostID)
+      }
+    }
+
     syncUI(.time)
   }
 
@@ -1803,6 +1821,15 @@ class PlayerCore: NSObject {
         info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
       }
       DispatchQueue.main.async { [self] in
+        // Debugging
+        if #available(macOS 10.14, *) {
+          os_signpost(.begin, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task2", signpostID: PlayerCore.signpostID)
+        }
+        defer {
+          if #available(macOS 10.14, *) {
+            os_signpost(.end, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task2", signpostID: PlayerCore.signpostID)
+          }
+        }
         if self.isInMiniPlayer {
           miniPlayer.updatePlayTime(withDuration: isNetworkStream)
         } else {
