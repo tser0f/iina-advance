@@ -179,8 +179,8 @@ class PlaybackInfo {
 
   func constrainVideoPosition() {
     guard let duration = videoDuration, let position = videoPosition else { return }
-    if position.second < 0 { position.second = 0 }
-    if position.second > duration.second { position.second = duration.second }
+    if position.second < 0 { videoPosition = VideoTime.zero }
+    if position.second > duration.second { videoPosition = duration }
   }
 
   var chapter = 0

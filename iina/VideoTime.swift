@@ -8,7 +8,7 @@
 
 import Foundation
 
-class VideoTime {
+struct VideoTime {
 
   static let infinite = VideoTime(999, 0, 0)
   static let zero = VideoTime(0)
@@ -48,7 +48,7 @@ class VideoTime {
     return h_ + m_ + ":" + s_
   }
 
-  convenience init?(_ format: String) {
+  init?(_ format: String) {
     let split = format.split(separator: ":").map { (seq) -> Int? in
       return Int(String(seq))
     }

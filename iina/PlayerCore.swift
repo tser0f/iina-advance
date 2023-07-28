@@ -729,13 +729,6 @@ class PlayerCore: NSObject {
     mpv.asyncCommand(.screenshot, args: [option], replyUserdata: MPVController.UserData.screenshot)
   }
 
-  func buildOSDSeekMessage() -> OSDMessage {
-    let osdText = (info.videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder) + " / " +
-    (info.videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder)
-    let percentage = (info.videoPosition / info.videoDuration) ?? 1
-    return .seek(osdText, percentage)
-  }
-
   func screenshotCallback() {
     let saveToFile = Preference.bool(for: .screenshotSaveToFile)
     let saveToClipboard = Preference.bool(for: .screenshotCopyToClipboard)

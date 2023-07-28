@@ -3324,7 +3324,7 @@ class MainWindowController: PlayerWindowController {
       case .pause, .resume:
         message = osdLastMessage
       case .seek(_, _):
-        message = player.buildOSDSeekMessage()
+        message = .seek(player.info.videoPosition, player.info.videoDuration)
       default:
         return
       }
@@ -3394,10 +3394,6 @@ class MainWindowController: PlayerWindowController {
     osdLastMessage = message
 
     let (osdString, osdType) = message.message()
-
-    let osdTextSize = Preference.float(for: .osdTextSize)
-    osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize), weight: .regular)
-    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize * 0.5).clamped(to: 11...25), weight: .regular)
     osdLabel.stringValue = osdString
 
     switch osdType {
@@ -3409,6 +3405,9 @@ class MainWindowController: PlayerWindowController {
       osdStackView.setVisibilityPriority(.mustHold, for: osdAccessoryProgress)
       osdAccessoryProgress.doubleValue = value
     case .withText(let text):
+      osdStackView.setVisibilityPriority(.mustHold, for: osdAccessoryText)
+      osdStackView.setVisibilityPriority(.notVisible, for: osdAccessoryProgress)
+
       // data for mustache redering
       let osdData: [String: String] = [
         "duration": player.info.videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder,
@@ -3416,9 +3415,6 @@ class MainWindowController: PlayerWindowController {
         "currChapter": (player.mpv.getInt(MPVProperty.chapter) + 1).description,
         "chapterCount": player.info.chapters.count.description
       ]
-
-      osdStackView.setVisibilityPriority(.mustHold, for: osdAccessoryText)
-      osdStackView.setVisibilityPriority(.notVisible, for: osdAccessoryProgress)
       osdAccessoryText.stringValue = try! (try! Template(string: text)).render(osdData)
     }
 
@@ -3433,6 +3429,9 @@ class MainWindowController: PlayerWindowController {
       self.hideOSDTimer = nil
     }
     osdAnimationState = .shown
+    let osdTextSize = Preference.float(for: .osdTextSize)
+    osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize), weight: .regular)
+    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize * 0.5).clamped(to: 11...25), weight: .regular)
     setOSDViews(fromMessage: message)
 
     apply(visibility: .showAlways, to: osdVisualEffectView)

@@ -1025,7 +1025,7 @@ class MPVController: NSObject {
         recordedSeekStartTime = CACurrentMediaTime()
       }
       player.syncUI(.time)
-      player.sendOSD(player.buildOSDSeekMessage())
+      player.sendOSD(.seek(player.info.videoPosition, player.info.videoDuration))
 
     case MPV_EVENT_PLAYBACK_RESTART:
       player.info.isIdle = false
@@ -1044,7 +1044,7 @@ class MPVController: NSObject {
       }
       player.playbackRestarted()
       player.syncUI(.time)
-      player.sendOSD(player.buildOSDSeekMessage())
+      player.sendOSD(.seek(player.info.videoPosition, player.info.videoDuration))
 
     case MPV_EVENT_END_FILE:
       // if receive end-file when loading file, might be error

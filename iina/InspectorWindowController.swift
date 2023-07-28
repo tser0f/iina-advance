@@ -143,7 +143,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
   override func showWindow(_ sender: Any?) {
     Logger.log("Showing Inspector window", level: .verbose)
 
-    guard let window = self.window else { return }
+    guard let _ = self.window else { return }
 
     updateInfo()
 
