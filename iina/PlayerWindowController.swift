@@ -508,7 +508,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     muteButton.state = player.info.isMuted ? .on : .off
   }
   
-  func updatePlayTime(withDuration: Bool, andProgressBar: Bool) {
+  func updatePlayTime(withDuration: Bool) {
     // IINA listens for changes to mpv properties such as chapter that can occur during file loading
     // resulting in this function being called before mpv has set its position and duration
     // properties. Confirm the window and file have been loaded.
@@ -527,12 +527,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if #available(macOS 10.12.2, *) {
       player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
     }
-    if andProgressBar {
-      let percentage = (pos.second / duration.second) * 100
-      playSlider.doubleValue = percentage
-      if #available(macOS 10.12.2, *) {
-        player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
-      }
+    let percentage = (pos.second / duration.second) * 100
+    playSlider.doubleValue = percentage
+    if #available(macOS 10.12.2, *) {
+      player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
     }
   }
   

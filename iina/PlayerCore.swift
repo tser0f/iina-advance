@@ -729,6 +729,13 @@ class PlayerCore: NSObject {
     mpv.asyncCommand(.screenshot, args: [option], replyUserdata: MPVController.UserData.screenshot)
   }
 
+  func buildOSDSeekMessage() -> OSDMessage {
+    let osdText = (info.videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder) + " / " +
+    (info.videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder)
+    let percentage = (info.videoPosition / info.videoDuration) ?? 1
+    return .seek(osdText, percentage)
+  }
+
   func screenshotCallback() {
     let saveToFile = Preference.bool(for: .screenshotSaveToFile)
     let saveToClipboard = Preference.bool(for: .screenshotCopyToClipboard)
@@ -1740,9 +1747,11 @@ class PlayerCore: NSObject {
   // MARK: - Sync with UI in MainWindow
 
   func restartSyncUITimer() {
+    let timeInterval = TimeInterval(DurationDisplayTextField.precision >= 2 ? AppData.syncTimePreciseInterval : AppData.syncTimeInterval)
+    Logger.log("Restarting syncUITimer, timeInterval \(timeInterval)", level: .verbose, subsystem: subsystem)
     invalidateSyncUITimer()
     syncUITimer = Timer.scheduledTimer(
-      timeInterval: TimeInterval(DurationDisplayTextField.precision >= 2 ? AppData.syncTimePreciseInterval : AppData.syncTimeInterval),
+      timeInterval: timeInterval,
       target: self,
       selector: #selector(self.syncUITime),
       userInfo: nil,
@@ -1770,9 +1779,9 @@ class PlayerCore: NSObject {
     // if window not loaded, ignore
     guard mainWindow.loaded else { return }
     // This is too noisy and making verbose logs unreadable. Please uncomment when debugging syncing releated issues.
-//    if option != .time {
+    if option != .time {
       Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
-//    }
+    }
 
     switch option {
 
@@ -1802,9 +1811,9 @@ class PlayerCore: NSObject {
       }
       DispatchQueue.main.async { [self] in
         if self.isInMiniPlayer {
-          miniPlayer.updatePlayTime(withDuration: isNetworkStream, andProgressBar: true)
+          miniPlayer.updatePlayTime(withDuration: isNetworkStream)
         } else {
-          mainWindow.updatePlayTime(withDuration: isNetworkStream, andProgressBar: true)
+          mainWindow.updatePlayTime(withDuration: isNetworkStream)
           mainWindow.updateAdditionalInfo()
         }
         if isNetworkStream {

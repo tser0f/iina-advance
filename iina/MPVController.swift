@@ -1025,11 +1025,7 @@ class MPVController: NSObject {
         recordedSeekStartTime = CACurrentMediaTime()
       }
       player.syncUI(.time)
-      let osdText = (player.info.videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder) + " / " +
-        (player.info.videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder)
-      let percentage = (player.info.videoPosition / player.info.videoDuration) ?? 1
-      Logger.log("Got mpv '\(eventId)'. Sending to OSD: \(osdText.quoted), \(percentage)%", level: .verbose, subsystem: player.subsystem)
-      player.sendOSD(.seek(osdText, percentage))
+      player.sendOSD(player.buildOSDSeekMessage())
 
     case MPV_EVENT_PLAYBACK_RESTART:
       player.info.isIdle = false
@@ -1048,10 +1044,7 @@ class MPVController: NSObject {
       }
       player.playbackRestarted()
       player.syncUI(.time)
-      let osdText = (player.info.videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder) + " / " +
-        (player.info.videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder)
-      let percentage = (player.info.videoPosition / player.info.videoDuration) ?? 1
-      player.sendOSD(.seek(osdText, percentage))
+      player.sendOSD(player.buildOSDSeekMessage())
 
     case MPV_EVENT_END_FILE:
       // if receive end-file when loading file, might be error

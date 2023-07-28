@@ -331,6 +331,7 @@ class MainWindowController: PlayerWindowController {
   var fadeableViewsAnimationState: UIAnimationState = .shown
   var fadeableTopBarAnimationState: UIAnimationState = .shown
   var osdAnimationState: UIAnimationState = .hidden
+  private var osdLastMessage: OSDMessage? = nil
 
   // MARK: - Observed user defaults
 
@@ -3314,6 +3315,24 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  override func updatePlayTime(withDuration duration: Bool) {
+    super.updatePlayTime(withDuration: duration)
+
+    if osdAnimationState == .shown, let osdLastMessage = self.osdLastMessage {
+      let message: OSDMessage
+      switch osdLastMessage {
+      case .pause, .resume:
+        message = osdLastMessage
+      case .seek(_, _):
+        message = player.buildOSDSeekMessage()
+      default:
+        return
+      }
+
+      setOSDViews(fromMessage: message)
+    }
+  }
+
   // MARK: - UI: Title
 
   @objc
@@ -3371,15 +3390,8 @@ class MainWindowController: PlayerWindowController {
     contentView.layoutSubtreeIfNeeded()
   }
 
-  // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
-  func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
-    guard player.displayOSD && !isShowingPersistentOSD && !isInInteractiveMode else { return }
-
-    if let hideOSDTimer = self.hideOSDTimer {
-      hideOSDTimer.invalidate()
-      self.hideOSDTimer = nil
-    }
-    osdAnimationState = .shown
+  private func setOSDViews(fromMessage message: OSDMessage) {
+    osdLastMessage = message
 
     let (osdString, osdType) = message.message()
 
@@ -3409,6 +3421,19 @@ class MainWindowController: PlayerWindowController {
       osdStackView.setVisibilityPriority(.notVisible, for: osdAccessoryProgress)
       osdAccessoryText.stringValue = try! (try! Template(string: text)).render(osdData)
     }
+
+  }
+
+  // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
+  func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
+    guard player.displayOSD && !isShowingPersistentOSD && !isInInteractiveMode else { return }
+
+    if let hideOSDTimer = self.hideOSDTimer {
+      hideOSDTimer.invalidate()
+      self.hideOSDTimer = nil
+    }
+    osdAnimationState = .shown
+    setOSDViews(fromMessage: message)
 
     apply(visibility: .showAlways, to: osdVisualEffectView)
     osdVisualEffectView.layoutSubtreeIfNeeded()
@@ -3905,7 +3930,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // UI and slider
-    updatePlayTime(withDuration: true, andProgressBar: true)
+    updatePlayTime(withDuration: true)
     player.events.emit(.windowSizeAdjusted, data: newWindowFrame)
   }
 
