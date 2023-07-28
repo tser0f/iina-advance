@@ -70,6 +70,7 @@ class ScrollingTextField: NSTextField {
 
   @objc
   private func moveText() {
+    Logger.log("MOVE TEXT") // FIXME: these timers never get cleared
     drawPoint.x -= step
     if drawPoint.x + appendedStringCopyWidth < 0 {
       reset()

@@ -166,7 +166,7 @@ class PlayerCore: NSObject {
 
   lazy var info: PlaybackInfo = PlaybackInfo()
 
-  var syncPlayTimeTimer: Timer?
+  var syncUITimer: Timer?
 
   var displayOSD: Bool = true
 
@@ -478,7 +478,7 @@ class PlayerCore: NSObject {
 
   private func savePlayerState() {
     savePlaybackPosition()
-    invalidateTimer()
+    invalidateSyncUITimer()
     uninitVideo()
   }
 
@@ -511,10 +511,10 @@ class PlayerCore: NSObject {
   }
 
   // invalidate timer
-  func invalidateTimer() {
-    if let syncPlayTimeTimer = self.syncPlayTimeTimer {
-      self.syncPlayTimeTimer = nil
-      syncPlayTimeTimer.invalidate()
+  func invalidateSyncUITimer() {
+    if let syncUITimer = self.syncUITimer {
+      self.syncUITimer = nil
+      syncUITimer.invalidate()
     }
   }
 
@@ -538,7 +538,7 @@ class PlayerCore: NSObject {
     // when the OSC is hidden. As the OSC is always displayed in the mini player ensure the timer is
     // running if media is playing.
     if !info.isPaused {
-      createSyncUITimer()
+      restartSyncUITimer()
     }
     let playlistView = mainWindow.playlistView.view
     let videoView = videoView
@@ -630,7 +630,7 @@ class PlayerCore: NSObject {
     savePlaybackPosition()
 
     videoView.stopDisplayLink()
-    invalidateTimer()
+    invalidateSyncUITimer()
 
     info.currentFolder = nil
     info.$matchedSubs.withLock { $0.removeAll() }
@@ -1501,7 +1501,7 @@ class PlayerCore: NSObject {
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
     Logger.log("File loaded", subsystem: subsystem)
-    invalidateTimer()
+    invalidateSyncUITimer()
     triedUsingExactSeekForCurrentFile = false
     info.fileLoading = false
     // Playback will move directly from stopped to loading when transitioning to the next file in
@@ -1523,7 +1523,7 @@ class PlayerCore: NSObject {
       reloadPlaylist()
       reloadChapters()
       syncAbLoop()
-      createSyncUITimer()
+      restartSyncUITimer()
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
       }
@@ -1739,9 +1739,9 @@ class PlayerCore: NSObject {
 
   // MARK: - Sync with UI in MainWindow
 
-  func createSyncUITimer() {
-    invalidateTimer()
-    syncPlayTimeTimer = Timer.scheduledTimer(
+  func restartSyncUITimer() {
+    invalidateSyncUITimer()
+    syncUITimer = Timer.scheduledTimer(
       timeInterval: TimeInterval(DurationDisplayTextField.precision >= 2 ? AppData.syncTimePreciseInterval : AppData.syncTimeInterval),
       target: self,
       selector: #selector(self.syncUITime),
@@ -1753,7 +1753,6 @@ class PlayerCore: NSObject {
   // difficult to use option set
   enum SyncUIOption {
     case time
-    case timeAndCache
     case playButton
     case volume
     case muteButton
@@ -1761,55 +1760,27 @@ class PlayerCore: NSObject {
     case playlist
     case playlistLoop
     case fileLoop
-    case additionalInfo
   }
 
   @objc func syncUITime() {
-    if info.isNetworkResource {
-      syncUI(.timeAndCache)
-    } else {
-      syncUI(.time)
-    }
-    if !isInMiniPlayer &&
-      mainWindow.fsState.isFullscreen && mainWindow.displayTimeAndBatteryInFullScreen &&
-      !mainWindow.additionalInfoView.isHidden {
-        syncUI(.additionalInfo)
-    }
+    syncUI(.time)
   }
 
   func syncUI(_ option: SyncUIOption) {
     // if window not loaded, ignore
     guard mainWindow.loaded else { return }
     // This is too noisy and making verbose logs unreadable. Please uncomment when debugging syncing releated issues.
-    // Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
+//    if option != .time {
+      Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
+//    }
 
     switch option {
 
     case .time:
-      // When the end of a video file is reached mpv does not update the value of the property
-      // time-pos, leaving it reflecting the position of the last frame of the video. This is
-      // especially noticeable if the onscreen controller time labels are configured to show
-      // milliseconds. Adjust the position if the end of the file has been reached.
-      let eofReached = mpv.getFlag(MPVProperty.eofReached)
-      if eofReached, let duration = info.videoDuration?.second {
-        info.videoPosition?.second = duration
-      } else {
-        info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
-        if info.isNetworkResource {
-          info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
-        }
+      let isNetworkStream = info.isNetworkResource
+      if isNetworkStream {
+        info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
       }
-      info.constrainVideoPosition()
-      DispatchQueue.main.async {
-        if self.isInMiniPlayer {
-          self.miniPlayer.updatePlayTime(withDuration: self.info.isNetworkResource, andProgressBar: true)
-        } else {
-          self.mainWindow.updatePlayTime(withDuration: self.info.isNetworkResource, andProgressBar: true)
-        }
-      }
-
-    case .timeAndCache:
-      info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
       // When the end of a video file is reached mpv does not update the value of the property
       // time-pos, leaving it reflecting the position of the last frame of the video. This is
       // especially noticeable if the onscreen controller time labels are configured to show
@@ -1821,18 +1792,24 @@ class PlayerCore: NSObject {
         info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
       }
       info.constrainVideoPosition()
-      info.pausedForCache = mpv.getFlag(MPVProperty.pausedForCache)
-      info.cacheUsed = ((mpv.getNode(MPVProperty.demuxerCacheState) as? [String: Any])?["fw-bytes"] as? Int) ?? 0
-      info.cacheSpeed = mpv.getInt(MPVProperty.cacheSpeed)
-      info.cacheTime = mpv.getInt(MPVProperty.demuxerCacheTime)
-      info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
-      DispatchQueue.main.async {
+      if isNetworkStream {
+        // Update cache info
+        info.pausedForCache = mpv.getFlag(MPVProperty.pausedForCache)
+        info.cacheUsed = ((mpv.getNode(MPVProperty.demuxerCacheState) as? [String: Any])?["fw-bytes"] as? Int) ?? 0
+        info.cacheSpeed = mpv.getInt(MPVProperty.cacheSpeed)
+        info.cacheTime = mpv.getInt(MPVProperty.demuxerCacheTime)
+        info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
+      }
+      DispatchQueue.main.async { [self] in
         if self.isInMiniPlayer {
-          self.miniPlayer.updatePlayTime(withDuration: true, andProgressBar: true)
+          miniPlayer.updatePlayTime(withDuration: isNetworkStream, andProgressBar: true)
         } else {
-          self.mainWindow.updatePlayTime(withDuration: true, andProgressBar: true)
+          mainWindow.updatePlayTime(withDuration: isNetworkStream, andProgressBar: true)
+          mainWindow.updateAdditionalInfo()
         }
-        self.mainWindow.updateNetworkState()
+        if isNetworkStream {
+          self.mainWindow.updateNetworkState()
+        }
       }
 
     case .playButton:
@@ -1873,11 +1850,6 @@ class PlayerCore: NSObject {
     case .fileLoop:
       DispatchQueue.main.async {
         self.mainWindow.playlistView.updateLoopFileBtnStatus()
-      }
-
-    case .additionalInfo:
-      DispatchQueue.main.async {
-        self.mainWindow.updateAdditionalInfo()
       }
     }
   }
@@ -1982,7 +1954,7 @@ class PlayerCore: NSObject {
     // However the timer can't be stopped if it is needed to update the information being displayed
     // in the touch bar. If currently playing make sure the timer is running.
     if info.isPlaying && !isShuttingDown && !isShutdown {
-      createSyncUITimer()
+      restartSyncUITimer()
     }
     return touchBarSupport.touchBar
   }

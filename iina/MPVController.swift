@@ -1199,11 +1199,11 @@ class MPVController: NSObject {
           // video is paused to avoid wasting energy with needless processing. If paused shutdown
           // the timer that synchronizes the UI and the high priority display link thread.
           if paused {
-            player.invalidateTimer()
+            player.invalidateSyncUITimer()
             player.videoView.displayIdle()
           } else {
             player.videoView.displayActive()
-            player.createSyncUITimer()
+            player.restartSyncUITimer()
           }
           if #available(macOS 10.12, *), player.mainWindow.pipStatus == .inPIP {
             player.mainWindow.pip.playing = !paused

@@ -387,6 +387,7 @@ class OpenSub {
 
     private func startHeartbeat() {
       heartBeatTimer = Timer(timeInterval: heartbeatInterval, target: self, selector: #selector(sendHeartbeat), userInfo: nil, repeats: true)
+      heartBeatTimer?.tolerance = 0.9
     }
 
     @objc private func sendHeartbeat() {

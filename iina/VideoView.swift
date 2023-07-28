@@ -321,6 +321,8 @@ class VideoView: NSView {
     // paused before stopping audio. As mpv does not provide an event indicating a frame step has
     // completed the time used must not be too short or will catch mpv still drawing when stepping.
     displayIdleTimer = Timer(timeInterval: 6.0, target: self, selector: #selector(stopDisplayLink), userInfo: nil, repeats: false)
+    // Not super picky about timeout; favor efficiency
+    displayIdleTimer?.tolerance = 0.5
     RunLoop.current.add(displayIdleTimer!, forMode: .default)
   }
 

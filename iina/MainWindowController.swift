@@ -3167,7 +3167,7 @@ class MainWindowController: PlayerWindowController {
       // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
       player.syncUITime()
       if !player.info.isPaused {
-        player.createSyncUITimer()
+        player.restartSyncUITimer()
       }
       destroyFadeTimer()
 
@@ -3245,7 +3245,7 @@ class MainWindowController: PlayerWindowController {
       // timer on Macs that do not have a touch bar. It also may avoid running the timer when a
       // MacBook with a touch bar is being operated in closed clameshell mode.
       if !player.isInMiniPlayer && !player.needsTouchBar && !currentLayout.hasPermanentOSC {
-        player.invalidateTimer()
+        player.invalidateSyncUITimer()
       }
 
       destroyFadeTimer()
@@ -3304,6 +3304,7 @@ class MainWindowController: PlayerWindowController {
       timeout = UIAnimation.DefaultDuration
     }
     hideFadeableViewsTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideFadeableViewsAndCursor), userInfo: nil, repeats: false)
+    hideFadeableViewsTimer?.tolerance = 0.1
   }
 
   private func destroyFadeTimer() {
@@ -3374,9 +3375,9 @@ class MainWindowController: PlayerWindowController {
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
     guard player.displayOSD && !isShowingPersistentOSD && !isInInteractiveMode else { return }
 
-    if hideOSDTimer != nil {
-      hideOSDTimer!.invalidate()
-      hideOSDTimer = nil
+    if let hideOSDTimer = self.hideOSDTimer {
+      hideOSDTimer.invalidate()
+      self.hideOSDTimer = nil
     }
     osdAnimationState = .shown
 
@@ -3459,6 +3460,10 @@ class MainWindowController: PlayerWindowController {
     osdAnimationState = .willHide
     isShowingPersistentOSD = false
     osdContext = nil
+    if let hideOSDTimer = self.hideOSDTimer {
+      hideOSDTimer.invalidate()
+      self.hideOSDTimer = nil
+    }
 
     UIAnimation.runAsync(UIAnimation.Task(duration: UIAnimation.OSDAnimationDuration, { [self] in
       osdVisualEffectView.alphaValue = 0
@@ -3472,6 +3477,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   func updateAdditionalInfo() {
+    guard fsState.isFullscreen && displayTimeAndBatteryInFullScreen && !additionalInfoView.isHidden else {
+      return
+    }
+
     additionalInfoLabel.stringValue = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short)
     additionalInfoTitle.stringValue = window?.representedURL?.lastPathComponent ?? window?.title ?? ""
     if let capacity = PowerSource.getList().filter({ $0.type == "InternalBattery" }).first?.currentCapacity {
