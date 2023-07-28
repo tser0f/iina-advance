@@ -429,6 +429,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard !windowNamesBackToFront.isEmpty else {
       return false
     }
+    if windowNamesBackToFront.count == 1 && windowNamesBackToFront[0] == Constants.WindowAutosaveName.inspector {
+      // Do not restore this on its own
+      Logger.log("Not restoring windows because only open window was Inspector", level: .verbose)
+      return false
+    }
 
     Logger.log("Restoring open windows: \(windowNamesBackToFront)")
     // Show windows one by one, starting at back and iterating to front:

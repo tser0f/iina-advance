@@ -155,7 +155,7 @@ struct Constants {
     static let welcome = "IINAWelcomeWindow"
     static let openURL = "OpenURLWindow"
     static let about = "AboutWindow"
-    static let inspector = "InspectorWindow"
+    static let inspector = "InspectorWindow"  // not always treated like a real window
     static let playbackHistory = "PlaybackHistoryWindow"
     // TODO: what about Guide?
     static let videoFilter = "VideoFilterWindow"
