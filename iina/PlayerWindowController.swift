@@ -455,8 +455,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @objc internal func performMouseActionLater(_ timer: Timer) {
     guard let action = timer.userInfo as? Preference.MouseClickAction else { return }
     if mouseExitEnterCount >= 2 && action == .hideOSC {
-      // the counter being greater than or equal to 2 means that the mouse re-entered the window
-      // `showUI()` must be called due to the movement in the window, thus `hideOSC` action should be cancelled
+      /// the counter being greater than or equal to 2 means that the mouse re-entered the window
+      /// `showFadeableViews()` must be called due to the movement in the window, thus `hideOSC` action should be cancelled
       return
     }
     performMouseAction(action)

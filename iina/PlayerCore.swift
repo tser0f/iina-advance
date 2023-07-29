@@ -1732,32 +1732,20 @@ class PlayerCore: NSObject {
   // MARK: - Sync with UI in MainWindow
 
   /// Call this when `syncUITimer` may need to be started, stopped, or needs its interval changed. It will figure out the correct action.
-  /// Just need to make sure that any state variables (e.g., `info.isPaused`, the variables checked in `mainWindow.isUITimerNeeded()`, etc.)
-  /// are set *before* calling this method, not after.
+  /// Just need to make sure that any state variables (e.g., `info.isPaused`, `isInMiniPlayer`, the vars checked by `mainWindow.isUITimerNeeded()`,
+  /// etc.) are set *before* calling this method, not after, so that it makes the correct decisions.
   func refreshSyncUITimer() {
-    var wasTimerRunning = false
-    // Invalidate timer
-    if let syncUITimer = self.syncUITimer {
-      if syncUITimer.isValid {
-        wasTimerRunning = true
-      }
-      syncUITimer.invalidate()
-      self.syncUITimer = nil
-    }
-
-    Logger.log("SyncUITimer: \(wasTimerRunning ? "didStop" : "wasNotRunning"). Player: paused=\(info.isPaused) stopping=\(isStopping) isShuttingDown=\(isShuttingDown) needsTouchBar=\(needsTouchBar) isInMini=\(isInMiniPlayer )",
-               level: .verbose, subsystem: subsystem)
-
-    // Check if timer should start/restart:
-    guard !isStopping && !isShuttingDown else { return }
-
-    // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
-    // video is paused to avoid wasting energy with needless processing. If paused shutdown
-    // the timer that synchronizes the UI and the high priority display link thread.
-    guard !info.isPaused else { return }
+    // Check if timer should start/restart
 
     let useTimer: Bool
-    if needsTouchBar || isInMiniPlayer {
+    if isStopping || isShuttingDown {
+      useTimer = false
+    } else if info.isPaused {
+      // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
+      // video is paused to avoid wasting energy with needless processing. If paused shutdown
+      // the timer that synchronizes the UI and the high priority display link thread.
+      useTimer = false
+    } else if needsTouchBar || isInMiniPlayer {
       // Follow energy efficiency best practices and stop the timer that updates the OSC while it is
       // hidden. However the timer can't be stopped if the mini player is being used as it always
       // displays the the OSC or the timer is also updating the information being displayed in the
@@ -1774,6 +1762,34 @@ class PlayerCore: NSObject {
       useTimer = mainWindow.isUITimerNeeded()
     }
 
+    let timerConfig = DurationDisplayTextField.precision >= 2 ? AppData.syncTimerConfig : AppData.syncTimerPreciseConfig
+
+    /// Invalidate existing timer:
+    /// - if no longer needed
+    /// - if still needed but need to change the `timeInterval`
+    var wasTimerRunning = false
+    if let existingTimer = self.syncUITimer, existingTimer.isValid {
+      if useTimer && timerConfig.interval == existingTimer.timeInterval {
+        /// Don't restart the existing timer if not needed, because restarting will ignore any time it has
+        /// already spent waiting, and could in theory result in a small visual jump (more so for long intervals).
+        Logger.log("SyncUITimer already running, no change needed", level: .verbose, subsystem: subsystem)
+        return
+      } else {
+        wasTimerRunning = true
+        existingTimer.invalidate()
+        self.syncUITimer = nil
+      }
+    }
+
+    if Logger.isEnabled(.verbose) {
+      var summary = wasTimerRunning ? (useTimer ? "restarting" : "didStop") : (useTimer ? "starting" : "notNeeded")
+      if useTimer {
+        summary += ", timeInterval \(timerConfig.interval)"
+      }
+      Logger.log("SyncUITimer \(summary). Player={paused:\(info.isPaused) mini:\(isInMiniPlayer) touchBar:\(needsTouchBar) stopping:\(isStopping) quitting:\(isShuttingDown)}",
+                 level: .verbose, subsystem: subsystem)
+    }
+
     guard useTimer else { return }
 
     // Timer will start
@@ -1783,8 +1799,6 @@ class PlayerCore: NSObject {
       syncUITime()
     }
 
-    let timerConfig = DurationDisplayTextField.precision >= 2 ? AppData.syncTimerConfig : AppData.syncTimerPreciseConfig
-    Logger.log("SyncUITimer starting, timeInterval \(timerConfig.interval)", level: .verbose, subsystem: subsystem)
     syncUITimer = Timer.scheduledTimer(
       timeInterval: timerConfig.interval,
       target: self,
@@ -1792,6 +1806,8 @@ class PlayerCore: NSObject {
       userInfo: nil,
       repeats: true
     )
+    /// This defaults to 0 ("no tolerance"). But after profiling, it was found that granting a tolerance of `timeInterval * 0.1` (10%)
+    /// resulted in an ~8% redunction in CPU time used by UI sync.
     syncUITimer?.tolerance = timerConfig.tolerance
   }
 
