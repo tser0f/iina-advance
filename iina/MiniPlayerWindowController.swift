@@ -270,6 +270,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   }
 
   // MARK: - UI
+
   @objc
   override func updateTitle() {
     let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()

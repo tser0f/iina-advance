@@ -170,9 +170,12 @@ class PlayerCore: NSObject {
 
   lazy var info: PlaybackInfo = PlaybackInfo()
 
+  // TODO: fold hideFadeableViewsTimer into this
+  // TODO: fold hideOSDTimer into this
+  // TODO: fold the 4 Music Mode timers into this
   var syncUITimer: Timer?
 
-  var displayOSD: Bool = true
+  var enableOSD: Bool = true
 
   /// Whether shutdown of this player has been initiated.
   var isShuttingDown = false
@@ -482,7 +485,7 @@ class PlayerCore: NSObject {
 
   private func savePlayerState() {
     savePlaybackPosition()
-    invalidateSyncUITimer()
+    refreshSyncUITimer()
     uninitVideo()
   }
 
@@ -514,14 +517,6 @@ class PlayerCore: NSObject {
     postNotification(.iinaPlayerShutdown)
   }
 
-  // invalidate timer
-  func invalidateSyncUITimer() {
-    if let syncUITimer = self.syncUITimer {
-      self.syncUITimer = nil
-      syncUITimer.invalidate()
-    }
-  }
-
   func switchToMiniPlayer(automatically: Bool = false) {
     Logger.log("Switch to mini player, automatically=\(automatically)", subsystem: subsystem)
     if !automatically {
@@ -537,13 +532,7 @@ class PlayerCore: NSObject {
 
     miniPlayer.updateVideoViewLayout()
     miniPlayer.updateTitle()
-    syncUITime()
-    // When not in the mini player the timer that updates the OSC may be stopped to conserve energy
-    // when the OSC is hidden. As the OSC is always displayed in the mini player ensure the timer is
-    // running if media is playing.
-    if !info.isPaused {
-      restartSyncUITimer()
-    }
+    refreshSyncUITimer()
     let playlistView = mainWindow.playlistView.view
     let videoView = videoView
     // hide sidebars
@@ -634,7 +623,6 @@ class PlayerCore: NSObject {
     savePlaybackPosition()
 
     videoView.stopDisplayLink()
-    invalidateSyncUITimer()
 
     info.currentFolder = nil
     info.$matchedSubs.withLock { $0.removeAll() }
@@ -644,6 +632,7 @@ class PlayerCore: NSObject {
     guard !isStopped else { return }
     Logger.log("Stopping playback", subsystem: subsystem)
     isStopping = true
+    refreshSyncUITimer()
     mpv.command(.stop)
   }
 
@@ -1505,7 +1494,6 @@ class PlayerCore: NSObject {
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
     Logger.log("File loaded", subsystem: subsystem)
-    invalidateSyncUITimer()
     triedUsingExactSeekForCurrentFile = false
     info.fileLoading = false
     // Playback will move directly from stopped to loading when transitioning to the next file in
@@ -1527,7 +1515,7 @@ class PlayerCore: NSObject {
       reloadPlaylist()
       reloadChapters()
       syncAbLoop()
-      restartSyncUITimer()
+      refreshSyncUITimer()
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
       }
@@ -1743,10 +1731,60 @@ class PlayerCore: NSObject {
 
   // MARK: - Sync with UI in MainWindow
 
-  func restartSyncUITimer() {
+  /// Call this when `syncUITimer` may need to be started, stopped, or needs its interval changed. It will figure out the correct action.
+  /// Just need to make sure that any state variables (e.g., `info.isPaused`, the variables checked in `mainWindow.isUITimerNeeded()`, etc.)
+  /// are set *before* calling this method, not after.
+  func refreshSyncUITimer() {
+    var wasTimerRunning = false
+    // Invalidate timer
+    if let syncUITimer = self.syncUITimer {
+      if syncUITimer.isValid {
+        wasTimerRunning = true
+      }
+      syncUITimer.invalidate()
+      self.syncUITimer = nil
+    }
+
+    Logger.log("SyncUITimer: \(wasTimerRunning ? "didStop" : "wasNotRunning"). Player: paused=\(info.isPaused) stopping=\(isStopping) isShuttingDown=\(isShuttingDown) needsTouchBar=\(needsTouchBar) isInMini=\(isInMiniPlayer )",
+               level: .verbose, subsystem: subsystem)
+
+    // Check if timer should start/restart:
+    guard !isStopping && !isShuttingDown else { return }
+
+    // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
+    // video is paused to avoid wasting energy with needless processing. If paused shutdown
+    // the timer that synchronizes the UI and the high priority display link thread.
+    guard !info.isPaused else { return }
+
+    let useTimer: Bool
+    if needsTouchBar || isInMiniPlayer {
+      // Follow energy efficiency best practices and stop the timer that updates the OSC while it is
+      // hidden. However the timer can't be stopped if the mini player is being used as it always
+      // displays the the OSC or the timer is also updating the information being displayed in the
+      // touch bar. Does this host have a touch bar? Is the touch bar configured to show app controls?
+      // Is the touch bar awake? Is the host being operated in closed clamshell mode? This is the kind
+      // of information needed to avoid running the timer and updating controls that are not visible.
+      // Unfortunately in the documentation for NSTouchBar Apple indicates "There’s no need, and no
+      // API, for your app to know whether or not there’s a Touch Bar available". So this code keys
+      // off whether AppKit has requested that a NSTouchBar object be created. This avoids running the
+      // timer on Macs that do not have a touch bar. It also may avoid running the timer when a
+      // MacBook with a touch bar is being operated in closed clameshell mode.
+      useTimer = true
+    } else {
+      useTimer = mainWindow.isUITimerNeeded()
+    }
+
+    guard useTimer else { return }
+
+    // Timer will start
+
+    if !wasTimerRunning {
+      // Do not wait for first redraw
+      syncUITime()
+    }
+
     let timerConfig = DurationDisplayTextField.precision >= 2 ? AppData.syncTimerConfig : AppData.syncTimerPreciseConfig
-    Logger.log("Restarting syncUITimer, timeInterval \(timerConfig.interval)", level: .verbose, subsystem: subsystem)
-    invalidateSyncUITimer()
+    Logger.log("SyncUITimer starting, timeInterval \(timerConfig.interval)", level: .verbose, subsystem: subsystem)
     syncUITimer = Timer.scheduledTimer(
       timeInterval: timerConfig.interval,
       target: self,
@@ -1982,9 +2020,7 @@ class PlayerCore: NSObject {
     // The timer that synchronizes the UI is shutdown to conserve energy when the OSC is hidden.
     // However the timer can't be stopped if it is needed to update the information being displayed
     // in the touch bar. If currently playing make sure the timer is running.
-    if info.isPlaying && !isShuttingDown && !isShutdown {
-      restartSyncUITimer()
-    }
+    refreshSyncUITimer()
     return touchBarSupport.touchBar
   }
 

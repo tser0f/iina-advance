@@ -3134,6 +3134,18 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Show / Hide Fadeable Views
 
+  func isUITimerNeeded() -> Bool {
+    Logger.log("Checking if UITimer needed. hasPermanentOSC: \(currentLayout.hasPermanentOSC), fadeableViews: \(fadeableViewsAnimationState), topBar: \(fadeableTopBarAnimationState), OSD: \(osdAnimationState)", level: .verbose, subsystem: player.subsystem)
+
+    if currentLayout.hasPermanentOSC {
+      return true
+    }
+    let showingFadeableViews = fadeableViewsAnimationState == .shown || fadeableViewsAnimationState == .willShow
+    let showingFadeableTopBar = fadeableTopBarAnimationState == .shown || fadeableViewsAnimationState == .willShow
+    let showingOSD = osdAnimationState == .shown || osdAnimationState == .willShow
+    return showingFadeableViews || showingFadeableTopBar || showingOSD
+  }
+
   // Shows fadeableViews and titlebar via fade
   private func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration,
                                  forceShowTopBar: Bool = false) {
@@ -3165,11 +3177,7 @@ class MainWindowController: PlayerWindowController {
     animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
       Logger.log("Showing fadeable views", level: .verbose, subsystem: player.subsystem)
       fadeableViewsAnimationState = .willShow
-      // The OSC was not updated while it was hidden to avoid wasting energy. Update it now.
-      player.syncUITime()
-      if !player.info.isPaused {
-        player.restartSyncUITimer()
-      }
+      player.refreshSyncUITimer()
       destroyFadeTimer()
 
       for v in fadeableViews {
@@ -3234,24 +3242,10 @@ class MainWindowController: PlayerWindowController {
       // Don't hide overlays when in PIP or when they are not actually shown
       Logger.log("Hiding fadeable views", level: .verbose, subsystem: player.subsystem)
 
-      // Follow energy efficiency best practices and stop the timer that updates the OSC while it is
-      // hidden. However the timer can't be stopped if the mini player is being used as it always
-      // displays the the OSC or the timer is also updating the information being displayed in the
-      // touch bar. Does this host have a touch bar? Is the touch bar configured to show app controls?
-      // Is the touch bar awake? Is the host being operated in closed clamshell mode? This is the kind
-      // of information needed to avoid running the timer and updating controls that are not visible.
-      // Unfortunately in the documentation for NSTouchBar Apple indicates "There’s no need, and no
-      // API, for your app to know whether or not there’s a Touch Bar available". So this code keys
-      // off whether AppKit has requested that a NSTouchBar object be created. This avoids running the
-      // timer on Macs that do not have a touch bar. It also may avoid running the timer when a
-      // MacBook with a touch bar is being operated in closed clameshell mode.
-      if !player.isInMiniPlayer && !player.needsTouchBar && !currentLayout.hasPermanentOSC {
-        player.invalidateSyncUITimer()
-      }
-
       destroyFadeTimer()
       fadeableViewsAnimationState = .willHide
       fadeableTopBarAnimationState = .willHide
+      player.refreshSyncUITimer()
 
       for v in fadeableViews {
         v.animator().alphaValue = 0
@@ -3422,13 +3416,18 @@ class MainWindowController: PlayerWindowController {
 
   // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
-    guard player.displayOSD && !isShowingPersistentOSD && !isInInteractiveMode else { return }
+    guard player.enableOSD && !isShowingPersistentOSD && !isInInteractiveMode else { return }
 
     if let hideOSDTimer = self.hideOSDTimer {
       hideOSDTimer.invalidate()
       self.hideOSDTimer = nil
     }
-    osdAnimationState = .shown
+    if osdAnimationState != .shown {
+      osdAnimationState = .shown  /// set this before calling `refreshSyncUITimer()`
+      player.refreshSyncUITimer()
+    } else {
+      osdAnimationState = .shown
+    }
     let osdTextSize = Preference.float(for: .osdTextSize)
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize), weight: .regular)
     osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize * 0.5).clamped(to: 11...25), weight: .regular)
@@ -3488,6 +3487,8 @@ class MainWindowController: PlayerWindowController {
       hideOSDTimer.invalidate()
       self.hideOSDTimer = nil
     }
+
+    player.refreshSyncUITimer()
 
     UIAnimation.runAsync(UIAnimation.Task(duration: UIAnimation.OSDAnimationDuration, { [self] in
       osdVisualEffectView.alphaValue = 0
