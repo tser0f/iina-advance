@@ -1014,18 +1014,10 @@ class MPVController: NSObject {
       onFileLoaded()
 
     case MPV_EVENT_SEEK:
-      player.info.isSeeking = true
-      DispatchQueue.main.sync {
-        // When playback is paused the display link may be shutdown in order to not waste energy.
-        // It must be running when seeking to avoid slowdowns caused by mpv waiting for IINA to call
-        // mpv_render_report_swap.
-        player.videoView.displayActive()
-      }
       if needRecordSeekTime {
         recordedSeekStartTime = CACurrentMediaTime()
       }
-      player.syncUI(.time)
-      player.sendOSD(.seek(player.info.videoPosition, player.info.videoDuration))
+      player.seeking()
 
     case MPV_EVENT_PLAYBACK_RESTART:
       player.info.isIdle = false
@@ -1043,8 +1035,6 @@ class MPVController: NSObject {
         recordedSeekTimeListener = nil
       }
       player.playbackRestarted()
-      player.syncUI(.time)
-      player.sendOSD(.seek(player.info.videoPosition, player.info.videoDuration))
 
     case MPV_EVENT_END_FILE:
       // if receive end-file when loading file, might be error
@@ -1208,7 +1198,7 @@ class MPVController: NSObject {
 
     case MPVProperty.chapter:
       player.info.chapter = Int(getInt(MPVProperty.chapter))
-      player.syncUI(.time)
+      Logger.log("Notified by mpv: chapter changed to \(player.info.chapter)", level: .verbose, subsystem: player.subsystem)
       player.syncUI(.chapterList)
       player.postNotification(.iinaMediaTitleChanged)
 

@@ -484,6 +484,7 @@ class PlayerCore: NSObject {
   }
 
   private func savePlayerState() {
+    Logger.log("Saving player state", level: .verbose, subsystem: subsystem)
     savePlaybackPosition()
     refreshSyncUITimer()
     uninitVideo()
@@ -1097,8 +1098,6 @@ class PlayerCore: NSObject {
     let chapter = info.chapters[pos]
     mpv.command(.seek, args: ["\(chapter.time.second)", "absolute"])
     resume()
-    // need to update time pos
-    syncUITime()
   }
 
   func setCrop(fromString str: String) {
@@ -1572,10 +1571,24 @@ class PlayerCore: NSObject {
     }
   }
 
+  func seeking() {
+    info.isSeeking = true
+    DispatchQueue.main.sync { [self] in
+      // When playback is paused the display link may be shutdown in order to not waste energy.
+      // It must be running when seeking to avoid slowdowns caused by mpv waiting for IINA to call
+      // mpv_render_report_swap.
+      videoView.displayActive()
+    }
+    syncUITime()
+    sendOSD(.seek(info.videoPosition, info.videoDuration))
+  }
+
   func playbackRestarted() {
     Logger.log("Playback restarted", subsystem: subsystem)
     reloadSavedIINAfilters()
     videoView.videoLayer.draw(forced: true)
+    syncUITime()
+    sendOSD(.seek(info.videoPosition, info.videoDuration))
 
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
       DispatchQueue.main.sync {
@@ -1758,6 +1771,9 @@ class PlayerCore: NSObject {
       // timer on Macs that do not have a touch bar. It also may avoid running the timer when a
       // MacBook with a touch bar is being operated in closed clameshell mode.
       useTimer = true
+    } else if info.isNetworkResource {
+      // May need to show, hide, or update buffering indicator at any time
+      useTimer = true
     } else {
       useTimer = mainWindow.isUITimerNeeded()
     }
@@ -1786,7 +1802,7 @@ class PlayerCore: NSObject {
       if useTimer {
         summary += ", timeInterval \(timerConfig.interval)"
       }
-      Logger.log("SyncUITimer \(summary). Player={paused:\(info.isPaused) mini:\(isInMiniPlayer) touchBar:\(needsTouchBar) stopping:\(isStopping) quitting:\(isShuttingDown)}",
+      Logger.log("SyncUITimer \(summary). Player={paused:\(info.isPaused) network:\(info.isNetworkResource) mini:\(isInMiniPlayer) touchBar:\(needsTouchBar) stopping:\(isStopping) quitting:\(isShuttingDown)}",
                  level: .verbose, subsystem: subsystem)
     }
 
@@ -1811,22 +1827,10 @@ class PlayerCore: NSObject {
     syncUITimer?.tolerance = timerConfig.tolerance
   }
 
-  // difficult to use option set
-  enum SyncUIOption {
-    case time
-    case playButton
-    case volume
-    case muteButton
-    case chapterList
-    case playlist
-    case playlistLoop
-    case fileLoop
-  }
-
   @available(macOS 10.14, *)
   static let signpostID = OSSignpostID(log: pointsOfInterest)
 
-  @objc func syncUITime() {
+  @objc private func syncUITime() {
     // Debugging
     if #available(macOS 10.14, *) {
       os_signpost(.begin, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task1", signpostID: PlayerCore.signpostID)
@@ -1837,63 +1841,68 @@ class PlayerCore: NSObject {
       }
     }
 
-    syncUI(.time)
+    let isNetworkStream = info.isNetworkResource
+    if isNetworkStream {
+      info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
+    }
+    // When the end of a video file is reached mpv does not update the value of the property
+    // time-pos, leaving it reflecting the position of the last frame of the video. This is
+    // especially noticeable if the onscreen controller time labels are configured to show
+    // milliseconds. Adjust the position if the end of the file has been reached.
+    let eofReached = mpv.getFlag(MPVProperty.eofReached)
+    if eofReached, let duration = info.videoDuration?.second {
+      info.videoPosition?.second = duration
+    } else {
+      info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
+    }
+    info.constrainVideoPosition()
+    if isNetworkStream {
+      // Update cache info
+      info.pausedForCache = mpv.getFlag(MPVProperty.pausedForCache)
+      info.cacheUsed = ((mpv.getNode(MPVProperty.demuxerCacheState) as? [String: Any])?["fw-bytes"] as? Int) ?? 0
+      info.cacheSpeed = mpv.getInt(MPVProperty.cacheSpeed)
+      info.cacheTime = mpv.getInt(MPVProperty.demuxerCacheTime)
+      info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
+    }
+    DispatchQueue.main.async { [self] in
+      // Debugging
+      if #available(macOS 10.14, *) {
+        os_signpost(.begin, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task2", signpostID: PlayerCore.signpostID)
+      }
+      defer {
+        if #available(macOS 10.14, *) {
+          os_signpost(.end, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task2", signpostID: PlayerCore.signpostID)
+        }
+      }
+      if self.isInMiniPlayer {
+        miniPlayer.updatePlayTime(withDuration: isNetworkStream)
+      } else {
+        mainWindow.updatePlayTime(withDuration: isNetworkStream)
+        mainWindow.updateAdditionalInfo()
+      }
+      if isNetworkStream {
+        self.mainWindow.updateNetworkState()
+      }
+    }
+  }
+
+  // difficult to use option set
+  enum SyncUIOption {
+    case playButton
+    case volume
+    case muteButton
+    case chapterList
+    case playlist
+    case playlistLoop
+    case fileLoop
   }
 
   func syncUI(_ option: SyncUIOption) {
     // if window not loaded, ignore
     guard mainWindow.loaded else { return }
-    // This is too noisy and making verbose logs unreadable. Please uncomment when debugging syncing releated issues.
-    if option != .time {
-      Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
-    }
+    Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
 
     switch option {
-
-    case .time:
-      let isNetworkStream = info.isNetworkResource
-      if isNetworkStream {
-        info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
-      }
-      // When the end of a video file is reached mpv does not update the value of the property
-      // time-pos, leaving it reflecting the position of the last frame of the video. This is
-      // especially noticeable if the onscreen controller time labels are configured to show
-      // milliseconds. Adjust the position if the end of the file has been reached.
-      let eofReached = mpv.getFlag(MPVProperty.eofReached)
-      if eofReached, let duration = info.videoDuration?.second {
-        info.videoPosition?.second = duration
-      } else {
-        info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
-      }
-      info.constrainVideoPosition()
-      if isNetworkStream {
-        // Update cache info
-        info.pausedForCache = mpv.getFlag(MPVProperty.pausedForCache)
-        info.cacheUsed = ((mpv.getNode(MPVProperty.demuxerCacheState) as? [String: Any])?["fw-bytes"] as? Int) ?? 0
-        info.cacheSpeed = mpv.getInt(MPVProperty.cacheSpeed)
-        info.cacheTime = mpv.getInt(MPVProperty.demuxerCacheTime)
-        info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
-      }
-      DispatchQueue.main.async { [self] in
-        // Debugging
-        if #available(macOS 10.14, *) {
-          os_signpost(.begin, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task2", signpostID: PlayerCore.signpostID)
-        }
-        defer {
-          if #available(macOS 10.14, *) {
-            os_signpost(.end, log: PlayerCore.pointsOfInterest, name: "SyncUITime_Task2", signpostID: PlayerCore.signpostID)
-          }
-        }
-        if self.isInMiniPlayer {
-          miniPlayer.updatePlayTime(withDuration: isNetworkStream)
-        } else {
-          mainWindow.updatePlayTime(withDuration: isNetworkStream)
-          mainWindow.updateAdditionalInfo()
-        }
-        if isNetworkStream {
-          self.mainWindow.updateNetworkState()
-        }
-      }
 
     case .playButton:
       DispatchQueue.main.async {
@@ -1913,7 +1922,7 @@ class PlayerCore: NSObject {
     case .chapterList:
       DispatchQueue.main.async {
         // this should avoid sending reload when table view is not ready
-        if self.isInMiniPlayer ? self.miniPlayer.isPlaylistVisible : self.mainWindow.isShowing(sidebarTab: .playlist) {
+        if self.isInMiniPlayer ? self.miniPlayer.isPlaylistVisible : self.mainWindow.isShowing(sidebarTab: .chapters) {
           self.mainWindow.playlistView.chapterTableView.reloadData()
         }
       }

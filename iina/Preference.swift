@@ -982,7 +982,7 @@ struct Preference {
     .playlistShowMetadata: true,
     .playlistShowMetadataInMusicMode: true,
 
-    .usePhysicalResolution: true,
+    .usePhysicalResolution: false,
     .initialWindowSizePosition: "",
     .resizeWindowTiming: ResizeWindowTiming.onlyWhenOpen.rawValue,
     .resizeWindowOption: ResizeWindowOption.videoSize10.rawValue,
