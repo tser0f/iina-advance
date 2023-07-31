@@ -21,6 +21,8 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
   var watchProperties: [String] = []
 
+  private var observers: [NSObjectProtocol] = []
+
   @IBOutlet weak var tabView: NSTabView!
   @IBOutlet weak var tabButtonGroup: NSSegmentedControl!
   @IBOutlet weak var trackPopup: NSPopUpButton!
@@ -78,8 +80,6 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
   @IBOutlet weak var watchTableContainerView: NSView!
   private var tableHeightConstraint: NSLayoutConstraint? = nil
 
-  private var observers: [NSObjectProtocol] = []
-
   init() {
     super.init(window: nil)
     self.windowFrameAutosaveName = Constants.WindowAutosaveName.inspector
@@ -88,6 +88,14 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+
+  deinit {
+    ObjcUtils.silenced {
+      NotificationCenter.default.removeObserver(self)
+    }
+  }
+
+  // MARK: - Window Delegate
 
   override func windowDidLoad() {
     super.windowDidLoad()
@@ -130,14 +138,6 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     tabButtonGroup.selectSegment(withTag: selectTabIndex)
     tabView.selectTabViewItem(at: selectTabIndex)
   }
-
-  deinit {
-    ObjcUtils.silenced {
-      NotificationCenter.default.removeObserver(self)
-    }
-  }
-
-  // MARK: - Window Delegate
 
   override func showWindow(_ sender: Any?) {
     Logger.log("Showing Inspector window", level: .verbose)

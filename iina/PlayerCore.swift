@@ -1592,7 +1592,6 @@ class PlayerCore: NSObject {
     reloadSavedIINAfilters()
     videoView.videoLayer.draw(forced: true)
     syncUITime()
-    sendOSD(.seek(info.videoPosition, info.videoDuration))
 
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
       DispatchQueue.main.sync {
