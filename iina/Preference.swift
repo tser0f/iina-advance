@@ -1315,10 +1315,12 @@ struct Preference {
     // Returns the autosave names of windows which have been saved in the set of open windows
     static func getSavedOpenWindowsBackToFront() -> [String] {
       guard isRestoreEnabled else {
+        Logger.log("UI restore disabled. Returning empty open window list")
         return []
       }
 
       let csv = Preference.string(for: Key.uiOpenWindowsBackToFrontList)?.trimmingCharacters(in: .whitespaces) ?? ""
+      Logger.log("Loaded list of previously open windows: \(csv.quoted)", level: .verbose)
       if csv.isEmpty {
         return []
       }

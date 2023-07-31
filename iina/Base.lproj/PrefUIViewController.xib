@@ -676,13 +676,13 @@
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="67g-AK-VP6" userLabel="Show-Title-Bar-Trigger Popup">
                                     <rect key="frame" x="157" y="-4" width="187" height="27"/>
-                                    <popUpButtonCell key="cell" type="push" title="Mouse moves in window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Show-Title-Bar-Trigger Popup Button Cell">
+                                    <popUpButtonCell key="cell" type="push" title="Mouse moves inside window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Show-Title-Bar-Trigger Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="1Wl-Pc-ZHa">
                                             <items>
-                                                <menuItem title="Mouse moves in window" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
-                                                <menuItem title="Mouse moves over top bar" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
+                                                <menuItem title="Mouse moves inside window" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
+                                                <menuItem title="Mouse moves inside top bar" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
                                             </items>
                                         </menu>
                                     </popUpButtonCell>

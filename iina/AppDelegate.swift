@@ -448,7 +448,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return false
     }
 
-    Logger.log("Restoring open windows: \(windowNamesBackToFront)")
     // Show windows one by one, starting at back and iterating to front:
     for autosaveName in windowNamesBackToFront {
       switch autosaveName {
@@ -586,7 +585,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       if whatToDo == quitForAction {
         Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
         Preference.UIState.clearOpenWindowList()
-        NSApp.terminate(nil)
+        DispatchQueue.main.async {
+          NSApp.terminate(nil)
+        }
         return
       }
 

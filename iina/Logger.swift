@@ -31,9 +31,11 @@ class Logger: NSObject {
 
   /// If true, strings which are indicated to contain personally identifiable information (PII) are replaced with a
   /// unique PII token (see `piiFormat` below) when they are logged to iina.log.
-  static let enablePiiMaskingInLog = Preference.bool(for: .enablePiiMaskingInLog)
+  static var enablePiiMasking: Bool {
+    return Preference.bool(for: .enablePiiMaskingInLog)
+  }
 
-  /// Is ignored unless `enablePiiMaskingInLog` is true. If `writeUnmaskedPiiToFile` is true, each PII token and its value is written to a separate file
+  /// Is ignored unless `Preference.enablePiiMaskingInLog` is true. If `writeUnmaskedPiiToFile` is true, each PII token and its value is written to a separate file
   /// which can be used to look up the PII tokens from the log; if it is false, then the values are not logged.
   static let writeUnmaskedPiiToFile = true
 
@@ -118,15 +120,17 @@ class Logger: NSObject {
   fileprivate static var piiDict: [String: Int] = [:]
 
   static func getOrCreatePII(for privateString: String) -> String {
-    guard enablePiiMaskingInLog else {
+    guard enablePiiMasking else {
       return privateString
     }
 
     var piiToken: String = ""
     lock.withLock {
       if let piiID = piiDict[privateString] {
+        // Reoccurrence
         piiToken = formatPIIToken(piiID)
       } else {
+        // New occurrence
         let piiID = piiDict.count
         piiDict[privateString] = piiID
         let escapedString = privateString.replacingOccurrences(of: "\n", with: "\\n")
@@ -203,14 +207,22 @@ class Logger: NSObject {
     }
   }()
 
-  private static var piiFileHandle: FileHandle? = {
-    FileManager.default.createFile(atPath: piiFile.path, contents: nil, attributes: nil)
-    do {
-      return try FileHandle(forWritingTo: piiFile)
-    } catch  {
-      fatalDuringInit("Cannot open log file \(piiFile.path) for writing: \(error.localizedDescription)")
+  private static var _piiFileHandle: FileHandle? = nil
+  private static var piiFileHandle: FileHandle? {
+    get {
+      if let handle = _piiFileHandle {
+        return handle
+      }
+      FileManager.default.createFile(atPath: piiFile.path, contents: nil, attributes: nil)
+      do {
+        let handle = try FileHandle(forWritingTo: piiFile)
+        _piiFileHandle = handle
+        return handle
+      } catch  {
+        fatalDuringInit("Cannot open log file \(piiFile.path) for writing: \(error.localizedDescription)")
+      }
     }
-  }()
+  }
 
   private static let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -233,7 +245,7 @@ class Logger: NSObject {
       close(logFile, logFileHandle)
       logFileHandle = nil
       close(piiFile, piiFileHandle)
-      piiFileHandle = nil
+      _piiFileHandle = nil
     }
   }
 
@@ -288,12 +300,23 @@ class Logger: NSObject {
     }
   }
 
-  static func log(_ message: String, level: Level = .debug, subsystem: Subsystem = .general) {
+  static private func maskAnyPII(_ rawMessage: String) -> String {
+    var maskedMessage: String = rawMessage
+    guard enablePiiMasking else { return rawMessage }
+    for (piiString, piiID) in piiDict {
+      maskedMessage = maskedMessage.replacingOccurrences(of: piiString, with: formatPIIToken(piiID))
+    }
+    return maskedMessage
+  }
+
+  static func log(_ rawMessage: String, level: Level = .debug, subsystem: Subsystem = .general) {
     #if !DEBUG
     guard enabled else { return }
     #endif
 
     guard level.rawValue >= Preference.integer(for: .logLevel) else { return }
+
+    let message = maskAnyPII(rawMessage)
 
     let date = Date()
     let string = formatMessage(message, level, subsystem, true, date)

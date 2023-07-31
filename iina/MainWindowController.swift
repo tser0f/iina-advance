@@ -701,11 +701,13 @@ class MainWindowController: PlayerWindowController {
 
   var pipVideo: NSViewController!
 
+  var windowStateName: String? = nil
+
   // MARK: - Initialization
 
   override init(playerCore: PlayerCore) {
     super.init(playerCore: playerCore)
-    self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
+    self.windowStateName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
   }
 
@@ -723,6 +725,7 @@ class MainWindowController: PlayerWindowController {
 
     // set background color to black
     window.backgroundColor = .black
+//    window.backgroundColor = .clear
 
     // Sidebars
 
@@ -1214,6 +1217,8 @@ class MainWindowController: PlayerWindowController {
     let isFullScreen:  Bool
     let topBarPlacement: Preference.PanelPlacement
     let bottomBarPlacement: Preference.PanelPlacement
+    let leadingSidebarPlacement: Preference.PanelPlacement
+    let trailingSidebarPlacement: Preference.PanelPlacement
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
 
@@ -1222,6 +1227,8 @@ class MainWindowController: PlayerWindowController {
       return LayoutSpec(isFullScreen: isFullScreen,
                         topBarPlacement: Preference.enum(for: .topBarPlacement),
                         bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
+                        leadingSidebarPlacement: Preference.enum(for: .leadingSidebarPlacement),
+                        trailingSidebarPlacement: Preference.enum(for: .trailingSidebarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
                         oscPosition: Preference.enum(for: .oscPosition))
     }
@@ -1231,6 +1238,8 @@ class MainWindowController: PlayerWindowController {
       return LayoutSpec(isFullScreen: false,
                         topBarPlacement:.insideVideo,
                         bottomBarPlacement: .insideVideo,
+                        leadingSidebarPlacement:.insideVideo,
+                        trailingSidebarPlacement: .insideVideo,
                         enableOSC: false,
                         oscPosition: .floating)
     }
@@ -1239,6 +1248,8 @@ class MainWindowController: PlayerWindowController {
       return LayoutSpec(isFullScreen: fullScreen,
                         topBarPlacement: self.topBarPlacement,
                         bottomBarPlacement: self.bottomBarPlacement,
+                        leadingSidebarPlacement: self.leadingSidebarPlacement,
+                        trailingSidebarPlacement: self.trailingSidebarPlacement,
                         enableOSC: self.enableOSC,
                         oscPosition: self.oscPosition)
     }
@@ -1305,6 +1316,14 @@ class MainWindowController: PlayerWindowController {
 
     var bottomBarPlacement: Preference.PanelPlacement {
       return spec.bottomBarPlacement
+    }
+
+    var leadingSidebarPlacement: Preference.PanelPlacement {
+      return spec.leadingSidebarPlacement
+    }
+
+    var trailingSidebarPlacement: Preference.PanelPlacement {
+      return spec.trailingSidebarPlacement
     }
 
     var hasFloatingOSC: Bool {
@@ -2627,6 +2646,7 @@ class MainWindowController: PlayerWindowController {
 
       fsState.finishAnimating()
       player.events.emit(.windowFullscreenChanged, data: true)
+      saveWindowFrame()
     })
 
     animationQueue.run(animationTasks)
@@ -3053,12 +3073,14 @@ class MainWindowController: PlayerWindowController {
   
   override func windowDidChangeScreen(_ notification: Notification) {
     super.windowDidChangeScreen(notification)
+    saveWindowFrame()
 
     player.events.emit(.windowScreenChanged)
   }
 
   func windowDidMove(_ notification: Notification) {
     guard let window = window else { return }
+    saveWindowFrame()
     player.events.emit(.windowMoved, data: window.frame)
   }
 
@@ -3115,6 +3137,7 @@ class MainWindowController: PlayerWindowController {
         enterPIP()
       }
     }
+    saveWindowFrame()
     player.events.emit(.windowMiniaturized)
   }
 
@@ -3129,6 +3152,7 @@ class MainWindowController: PlayerWindowController {
         exitPIP()
       }
     }
+    saveWindowFrame()
     player.events.emit(.windowDeminiaturized)
   }
 
@@ -3539,6 +3563,8 @@ class MainWindowController: PlayerWindowController {
     let interactiveModeLayout = LayoutSpec(isFullScreen: currentLayout.isFullScreen,
                                            topBarPlacement: .insideVideo,
                                            bottomBarPlacement: currentLayout.bottomBarPlacement,
+                                           leadingSidebarPlacement: currentLayout.leadingSidebarPlacement,
+                                           trailingSidebarPlacement: currentLayout.trailingSidebarPlacement,
                                            enableOSC: false,
                                            oscPosition: currentLayout.oscPosition)
 
@@ -3682,7 +3708,7 @@ class MainWindowController: PlayerWindowController {
     let previewTime = duration * percentage
     guard timePreviewWhenSeek.stringValue != previewTime.stringRepresentation else { return }
 
-    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
+//    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
     if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image,
@@ -3712,7 +3738,7 @@ class MainWindowController: PlayerWindowController {
         thumbnailPeekView.frame.size = imageToDisplay.size.shrink(toSize: videoContainerView.frame.size)
       }
       thumbnailPeekView.frame.size = imageToDisplay.size
-      Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
+//      Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
       let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
       let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
       let thumbOriginY: CGFloat
@@ -4284,6 +4310,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   // MARK: - Utility
+
+  func saveWindowFrame() {
+    // TODO: implement this
+  }
 
   internal override func handleIINACommand(_ cmd: IINACommand) {
     super.handleIINACommand(cmd)
