@@ -21,6 +21,7 @@
 		519872FF26879B9B00F84BCC /* AccessibilityPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 519872FE26879B9B00F84BCC /* AccessibilityPreferences.swift */; };
 		51C1BA3A291CA76700C1208A /* InfoDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C1BA39291CA76700C1208A /* InfoDictionary.swift */; };
 		51CACB9529D500290034CEE5 /* VideoPIPViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CACB9429D500290034CEE5 /* VideoPIPViewController.swift */; };
+		51DE55C92A6646710050AD06 /* Sysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DE55C82A6646710050AD06 /* Sysctl.swift */; };
 		51E63DFB29CFB031008AFC20 /* PlaySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E63DFA29CFB031008AFC20 /* PlaySlider.swift */; };
 		51E63DFD29CFB04C008AFC20 /* PlaySliderLoopKnob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51E63DFC29CFB04B008AFC20 /* PlaySliderLoopKnob.swift */; };
 		51F7974728C7E00200812D0D /* Lock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F7974628C7E00200812D0D /* Lock.swift */; };
@@ -911,6 +912,7 @@
 		51A0F0F629FA2C8E000130CF /* Beta.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Beta.xcconfig; sourceTree = "<group>"; };
 		51C1BA39291CA76700C1208A /* InfoDictionary.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InfoDictionary.swift; sourceTree = "<group>"; };
 		51CACB9429D500290034CEE5 /* VideoPIPViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPIPViewController.swift; sourceTree = "<group>"; };
+		51DE55C82A6646710050AD06 /* Sysctl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sysctl.swift; sourceTree = "<group>"; };
 		51E63DFA29CFB031008AFC20 /* PlaySlider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaySlider.swift; sourceTree = "<group>"; };
 		51E63DFC29CFB04B008AFC20 /* PlaySliderLoopKnob.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaySliderLoopKnob.swift; sourceTree = "<group>"; };
 		51F7974628C7E00200812D0D /* Lock.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Lock.swift; sourceTree = "<group>"; };
@@ -2257,6 +2259,7 @@
 				E39A11FC240F176E00A67F9F /* StringEncodingName.swift */,
 				D1DC673028ED682100C419CB /* RemainingRemovalTracker.swift */,
 				51C1BA39291CA76700C1208A /* InfoDictionary.swift */,
+				51DE55C82A6646710050AD06 /* Sysctl.swift */,
 			);
 			name = Utils;
 			sourceTree = "<group>";
@@ -2977,6 +2980,7 @@
 				D1DC673128ED682100C419CB /* RemainingRemovalTracker.swift in Sources */,
 				840820111ECF6C1800361416 /* FileGroup.swift in Sources */,
 				E374160C20F138A900B4F7F9 /* CollapseView.swift in Sources */,
+				D1B4E24E2A3AFC9100E36F1D /* MiniPlayerWindow.swift in Sources */,
 				84A0BA901D2F8D4100BC8DA1 /* IINAError.swift in Sources */,
 				D1FD2DDC28533EE700CF7B35 /* InputSection.swift in Sources */,
 				D1D87E042932086000737886 /* TableUIChangeBuilder.swift in Sources */,
@@ -3060,6 +3064,7 @@
 				847C62CA1DC13CDA00E1EF16 /* PrefGeneralViewController.swift in Sources */,
 				E3530700214908DD008FE492 /* JavascriptAPIHttp.swift in Sources */,
 				84FBF23E1EF06A90003EA491 /* ThumbnailCache.swift in Sources */,
+				51DE55C92A6646710050AD06 /* Sysctl.swift in Sources */,
 				845FB0C71D39462E00C011E0 /* ControlBarView.swift in Sources */,
 				D188CB2628D9E95500F166FD /* BindingTableState.swift in Sources */,
 				D1A8878C29D16452000D1AE4 /* RotationHandler.swift in Sources */,

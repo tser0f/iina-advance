@@ -477,6 +477,7 @@ class MenuController: NSObject, NSMenuDelegate {
     let isDisplayingChapters = player.mainWindow.isShowing(sidebarTab: .chapters)
     chapterPanel?.title = isDisplayingChapters ? Constants.String.hideChaptersPanel : Constants.String.chaptersPanel
     pause.title = player.info.isPaused ? Constants.String.resume : Constants.String.pause
+    abLoop.state = player.isABLoopActive ? .on : .off
     let isLoop = player.mpv.getString(MPVOption.PlaybackControl.loopFile) == "inf"
     fileLoop.state = isLoop ? .on : .off
     let isPlaylistLoop = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)

@@ -256,6 +256,10 @@ class PlayerCore: NSObject {
     }
   }
 
+  var isABLoopActive: Bool {
+    abLoopA != 0 && abLoopB != 0 && mpv.getString(MPVOption.PlaybackControl.abLoopCount) != "0"
+  }
+
   init(_ label: String) {
     self.label = label
     self.subsystem = Logger.Subsystem(rawValue: "player\(label)")

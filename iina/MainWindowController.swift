@@ -3411,7 +3411,6 @@ class MainWindowController: PlayerWindowController {
       ]
       osdAccessoryText.stringValue = try! (try! Template(string: text)).render(osdData)
     }
-
   }
 
   // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
@@ -3431,6 +3430,7 @@ class MainWindowController: PlayerWindowController {
     let osdTextSize = Preference.float(for: .osdTextSize)
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize), weight: .regular)
     osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize * 0.5).clamped(to: 11...25), weight: .regular)
+
     setOSDViews(fromMessage: message)
 
     apply(visibility: .showAlways, to: osdVisualEffectView)
