@@ -37,6 +37,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   private var observers: [NSObjectProtocol] = []
   var observedPrefKeys: [Preference.Key] = [
     .logLevel,
+    .enableLogging,
+    .enableAdvancedSettings,
     .iinaLaunchCount,
     .iinaPing,
   ]
@@ -96,6 +98,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard let keyPath = keyPath, let change = change else { return }
 
     switch keyPath {
+    case Preference.Key.enableAdvancedSettings.rawValue, Preference.Key.enableLogging.rawValue:
+      Logger.updateEnablement()
+
     case Preference.Key.logLevel.rawValue:
       if let newValue = change[.newKey] as? Int {
         Logger.Level.preferred = Logger.Level(rawValue: newValue.clamped(to: 0...3))!

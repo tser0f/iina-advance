@@ -120,7 +120,7 @@ class Logger: NSObject {
   fileprivate static var piiDict: [String: Int] = [:]
 
   static func getOrCreatePII(for privateString: String) -> String {
-    guard enablePiiMasking else {
+    guard enabled && enablePiiMasking else {
       return privateString
     }
 
@@ -161,7 +161,18 @@ class Logger: NSObject {
     return String(format: piiFormat, paddedInt)
   }
 
-  static let enabled = Preference.bool(for: .enableAdvancedSettings) && Preference.bool(for: .enableLogging)
+  static private(set) var enabled: Bool = Preference.bool(for: .enableAdvancedSettings) && Preference.bool(for: .enableLogging)
+
+  static func updateEnablement() {
+    let newValue = Preference.bool(for: .enableAdvancedSettings) && Preference.bool(for: .enableLogging)
+    if enabled && !newValue {
+      Logger.log("Logging disabled due to settings change")
+      enabled = newValue
+    } else if !enabled && newValue {
+      enabled = newValue
+      Logger.log("Logging is now enabled due to settings change")
+    }
+  }
 
   static func isEnabled(_ level: Logger.Level) -> Bool {
     #if !DEBUG
@@ -207,22 +218,14 @@ class Logger: NSObject {
     }
   }()
 
-  private static var _piiFileHandle: FileHandle? = nil
-  private static var piiFileHandle: FileHandle? {
-    get {
-      if let handle = _piiFileHandle {
-        return handle
-      }
-      FileManager.default.createFile(atPath: piiFile.path, contents: nil, attributes: nil)
-      do {
-        let handle = try FileHandle(forWritingTo: piiFile)
-        _piiFileHandle = handle
-        return handle
-      } catch  {
-        fatalDuringInit("Cannot open log file \(piiFile.path) for writing: \(error.localizedDescription)")
-      }
+  private static var piiFileHandle: FileHandle? = {
+    FileManager.default.createFile(atPath: piiFile.path, contents: nil, attributes: nil)
+    do {
+      return try FileHandle(forWritingTo: piiFile)
+    } catch  {
+      fatalDuringInit("Cannot open log file \(piiFile.path) for writing: \(error.localizedDescription)")
     }
-  }
+  }()
 
   private static let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -243,9 +246,7 @@ class Logger: NSObject {
     // Lock to avoid closing the log file while another thread is writing to it.
     lock.withLock {
       close(logFile, logFileHandle)
-      logFileHandle = nil
       close(piiFile, piiFileHandle)
-      _piiFileHandle = nil
     }
   }
 

@@ -96,6 +96,14 @@
                     </buttonCell>
                     <connections>
                         <action selector="openLogDir:" target="-2" id="dfR-Jf-uSQ"/>
+                        <binding destination="nyg-fH-Pug" name="enabled2" keyPath="values.enableLogging" previousBinding="CH7-kE-1sm" id="N5B-kf-6pZ">
+                            <dictionary key="options">
+                                <integer key="NSMultipleValuesPlaceholder" value="-1"/>
+                                <integer key="NSNoSelectionPlaceholder" value="-1"/>
+                                <integer key="NSNotApplicablePlaceholder" value="-1"/>
+                                <integer key="NSNullPlaceholder" value="-1"/>
+                            </dictionary>
+                        </binding>
                         <binding destination="nyg-fH-Pug" name="enabled" keyPath="values.enableAdvancedSettings" id="CH7-kE-1sm"/>
                     </connections>
                 </button>
