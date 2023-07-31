@@ -539,7 +539,7 @@ struct Preference {
     case exact
     case auto
 
-    static var defaultValue = SeekOption.relative
+    static var defaultValue = SeekOption.exact
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1108,7 +1108,7 @@ struct Preference {
 
     .keepOpenOnFileEnd: true,
     .actionWhenNoOpenedWindow: ActionWhenNoOpenedWindow.none.rawValue,
-    .useExactSeek: SeekOption.relative.rawValue,
+    .useExactSeek: SeekOption.exact.rawValue,
     .followGlobalSeekTypeWhenAdjustSlider: false,
     .relativeSeekAmount: 3,
     .volumeScrollAmount: 3,

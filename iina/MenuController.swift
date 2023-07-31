@@ -14,7 +14,6 @@ fileprivate func sameKeyAction(_ lhs: [String], _ rhs: [String], _ normalizeLast
   if lhs.first == "seek" {
     if let last = lhs.last {
       if let _ = Double(last) {
-        // "relative+keyframes" is implicit default.
         extraData = Preference.SeekOption.defaultValue
       } else {
         // matching values are one of: "relative", "keyframes", "exact", "relative+keyframes", "relative+exact"

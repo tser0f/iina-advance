@@ -35,8 +35,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   
   // Cached user defaults values
   internal lazy var followGlobalSeekTypeWhenAdjustSlider: Bool = Preference.bool(for: .followGlobalSeekTypeWhenAdjustSlider)
-  // FIXME: typo
-  internal lazy var useExtractSeek: Preference.SeekOption = Preference.enum(for: .useExactSeek)
+  internal lazy var useExactSeek: Preference.SeekOption = Preference.enum(for: .useExactSeek)
   internal lazy var relativeSeekAmount: Int = Preference.integer(for: .relativeSeekAmount)
   internal lazy var volumeScrollAmount: Int = Preference.integer(for: .volumeScrollAmount)
   internal lazy var singleClickAction: Preference.MouseClickAction = Preference.enum(for: .singleClickAction)
@@ -92,7 +91,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case PK.useExactSeek.rawValue:
       if let newValue = change[.newKey] as? Int {
-        useExtractSeek = Preference.SeekOption(rawValue: newValue)!
+        useExactSeek = Preference.SeekOption(rawValue: newValue)!
       }
     case PK.relativeSeekAmount.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -435,7 +434,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     switch scrollAction {
     case .seek:
       let seekAmount = (isMouse ? AppData.seekAmountMapMouse : AppData.seekAmountMap)[relativeSeekAmount] * delta
-      player.seek(relativeSecond: seekAmount, option: useExtractSeek)
+      player.seek(relativeSecond: seekAmount, option: useExactSeek)
     case .volume:
       // don't use precised delta for mouse
       let newVolume = player.info.volume + (isMouse ? delta : AppData.volumeMap[volumeScrollAmount] * delta)

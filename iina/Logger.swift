@@ -302,10 +302,13 @@ class Logger: NSObject {
   }
 
   static private func maskAnyPII(_ rawMessage: String) -> String {
-    var maskedMessage: String = rawMessage
     guard enablePiiMasking else { return rawMessage }
-    for (piiString, piiID) in piiDict {
-      maskedMessage = maskedMessage.replacingOccurrences(of: piiString, with: formatPIIToken(piiID))
+
+    var maskedMessage: String = rawMessage
+    lock.withLock {
+      for (piiString, piiID) in piiDict {
+        maskedMessage = maskedMessage.replacingOccurrences(of: piiString, with: formatPIIToken(piiID))
+      }
     }
     return maskedMessage
   }
