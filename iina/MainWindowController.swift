@@ -2093,6 +2093,20 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Key events
 
+  override func keyDown(with event: NSEvent) {
+    if sideBarStatus == .playlist {
+      // Special case for playlist delete
+      let key = KeyCodeHelper.mpvKeyCode(from: event)
+      if key == "DEL" || key == "BS" {
+        let deletedSomething = playlistView.deleteSelectedRows()
+        if deletedSomething {
+          return
+        }
+      }
+    }
+    super.keyDown(with: event)
+  }
+
   @discardableResult
   override func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
     let success = super.handleKeyBinding(keyBinding)
