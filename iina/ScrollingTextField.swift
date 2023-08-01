@@ -8,74 +8,78 @@
 
 import Cocoa
 
+// Adjust x offset by this, otherwise text will be off-center
+fileprivate let mediaInfoViewLeadingOffset: CGFloat = 22
+fileprivate let startPoint = NSPoint(x: mediaInfoViewLeadingOffset, y: 0)
+
 class ScrollingTextField: NSTextField {
 
-  enum State {
-    case idle
-    case scrolling
-  }
+  let stepSize: CGFloat = 3.0  // increase this to scroll faster
+  let stepsToWaitBeforeStart: Int = 10
 
-  private var state: State = .idle
-
-  let offsetPerSec: CGFloat = 30.0
-  let timeToWaitBeforeStart: TimeInterval = 0.2
-
-  private var timeSinceLastReset = Date()
+  private var stepIndex: Int = 0
 
   private var scrollingTimer: Timer?
-  private var drawPoint: NSPoint = .zero
+  private var drawPoint = startPoint
 
   private var scrollingString = NSAttributedString(string: "")
   private var appendedStringCopyWidth: CGFloat = 0
 
+  override var stringValue: String {
+    didSet {
+      guard !attributedStringValue.string.isEmpty else { return }  // prevents crash while quitting
+      let attributes = attributedStringValue.attributes(at: 0, effectiveRange: nil)
+      // Add padding between end and start of the copy
+      let appendedStringCopy = "    " + stringValue
+      appendedStringCopyWidth = NSAttributedString(string: appendedStringCopy, attributes: attributes).size().width
+      scrollingString = NSAttributedString(string: stringValue + appendedStringCopy, attributes: attributes)
+      reset()
+    }
+  }
+
   // Updates the text location based on time elapsed since the last scroll
-  func updateScroll() {
+  func stepNext() {
     let stringWidth = attributedStringValue.size().width
+    // Must use superview frame as a reference. NSTextField frame is poorly defined
     let frameWidth = superview!.frame.width
     if stringWidth < frameWidth {
       // Plenty of space. Center text instead
       let xOffset = (frameWidth - stringWidth) / 2
-      drawPoint.x = xOffset
-      state = .idle
+      drawPoint.x = xOffset + mediaInfoViewLeadingOffset
     } else {
-      state = .scrolling
-      let now = Date()
-      let scrollStartTime = timeSinceLastReset + timeToWaitBeforeStart
-      if now < scrollStartTime {
+      stepIndex += 1
+      let scrollOffset = CGFloat(stepIndex - stepsToWaitBeforeStart) * stepSize
+      if scrollOffset < 0 {
         // Initial pause
         return
       }
-      let timeElapsed = now.timeIntervalSince(scrollStartTime)
-      let offsetSinceStart = timeElapsed * offsetPerSec
-      if appendedStringCopyWidth - offsetSinceStart < 0 {
+      if appendedStringCopyWidth - scrollOffset < 0 {
         reset()
         return
       } else {
-        drawPoint.x = -offsetSinceStart
+        drawPoint.x = -scrollOffset + mediaInfoViewLeadingOffset
       }
     }
     needsDisplay = true
   }
 
   func reset() {
-//    Logger.log("Resetting scroll animation", level: .verbose)
-    guard !attributedStringValue.string.isEmpty else { return }  // prevents crash while quitting
-    let attributes = attributedStringValue.attributes(at: 0, effectiveRange: nil)
-    // Add padding between end and start of the copy
-    let appendedStringCopy = "    " + stringValue
-    appendedStringCopyWidth = NSAttributedString(string: appendedStringCopy, attributes: attributes).size().width
-    scrollingString = NSAttributedString(string: stringValue + appendedStringCopy, attributes: attributes)
-    timeSinceLastReset = Date()
-    drawPoint = .zero
+    stepIndex = 0
+    drawPoint = startPoint
     needsDisplay = true
+    self.display()
   }
 
   override func draw(_ dirtyRect: NSRect) {
-    if state == .scrolling {
-      scrollingString.draw(at: drawPoint)
-    } else {
+    let stringWidth = attributedStringValue.size().width
+    let frameWidth = superview!.frame.width
+    if stringWidth < frameWidth {
+      // Plenty of space. Center text instead
+      let xOffset = (frameWidth - stringWidth) / 2
+      drawPoint.x = xOffset + mediaInfoViewLeadingOffset
       attributedStringValue.draw(at: drawPoint)
+    } else {
+      scrollingString.draw(at: drawPoint)
     }
   }
-
 }
