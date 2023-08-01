@@ -48,7 +48,7 @@
             <windowCollectionBehavior key="collectionBehavior" fullScreenNone="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="300" height="72"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1496" height="933"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
             <value key="minSize" type="size" width="300" height="72"/>
             <view key="contentView" id="se5-gp-TjO" userLabel="Content View">
                 <rect key="frame" x="0.0" y="0.0" width="300" height="72"/>
@@ -77,16 +77,16 @@
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="Zv7-H8-iOq" userLabel="MediaInfo View">
                                 <rect key="frame" x="0.0" y="24" width="300" height="48"/>
                                 <subviews>
-                                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="h25-bp-EvL" customClass="ScrollingTextField" customModule="IINA" customModuleProvider="target">
-                                        <rect key="frame" x="133" y="26" width="35" height="16"/>
+                                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="h25-bp-EvL" userLabel="Title Label" customClass="ScrollingTextField" customModule="IINA" customModuleProvider="target">
+                                        <rect key="frame" x="-2" y="26" width="304" height="16"/>
                                         <textFieldCell key="cell" lineBreakMode="truncatingMiddle" sendsActionOnEndEditing="YES" alignment="center" title="Title" id="Rs9-6l-6vp">
                                             <font key="font" metaFont="system"/>
                                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                         </textFieldCell>
                                     </textField>
-                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="kcj-EY-i9R" customClass="ScrollingTextField" customModule="IINA" customModuleProvider="target">
-                                        <rect key="frame" x="109" y="8" width="82" height="14"/>
+                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="kcj-EY-i9R" userLabel="Artist-Album Label" customClass="ScrollingTextField" customModule="IINA" customModuleProvider="target">
+                                        <rect key="frame" x="-2" y="8" width="304" height="14"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="Artist - Album" id="Nle-gv-CWY">
                                             <font key="font" metaFont="message" size="11"/>
                                             <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
@@ -95,15 +95,9 @@
                                     </textField>
                                 </subviews>
                                 <constraints>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="h25-bp-EvL" secondAttribute="trailing" constant="24" id="4DV-b1-VzX"/>
-                                    <constraint firstItem="kcj-EY-i9R" firstAttribute="centerX" secondItem="Zv7-H8-iOq" secondAttribute="centerX" id="DYZ-sc-L0I"/>
                                     <constraint firstItem="h25-bp-EvL" firstAttribute="top" secondItem="Zv7-H8-iOq" secondAttribute="top" constant="6" id="Qaf-SS-SCV"/>
-                                    <constraint firstItem="kcj-EY-i9R" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Zv7-H8-iOq" secondAttribute="leading" constant="24" id="U84-tV-T8O"/>
-                                    <constraint firstItem="h25-bp-EvL" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Zv7-H8-iOq" secondAttribute="leading" constant="24" id="gIX-TM-h4K"/>
                                     <constraint firstItem="kcj-EY-i9R" firstAttribute="top" secondItem="h25-bp-EvL" secondAttribute="bottom" constant="4" id="mbp-t7-SX2"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="kcj-EY-i9R" secondAttribute="trailing" constant="24" id="qt7-Ax-WS9"/>
                                     <constraint firstAttribute="height" constant="48" id="uWg-wb-QM5"/>
-                                    <constraint firstItem="h25-bp-EvL" firstAttribute="centerX" secondItem="Zv7-H8-iOq" secondAttribute="centerX" id="uob-1w-0x0"/>
                                 </constraints>
                             </customView>
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="cDR-8J-QI7" userLabel="Control View">
@@ -379,15 +373,21 @@
                 <constraints>
                     <constraint firstItem="dkl-qd-rae" firstAttribute="top" secondItem="HdA-I9-dRJ" secondAttribute="bottom" id="0W4-FN-tBa"/>
                     <constraint firstItem="ejt-zy-gzd" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" constant="4" id="6rW-3W-21z"/>
+                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="kcj-EY-i9R" secondAttribute="trailing" priority="499" id="8tD-Pn-0eE"/>
                     <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="HdA-I9-dRJ" secondAttribute="bottom" id="CJ6-Xd-Pyo"/>
                     <constraint firstItem="HdA-I9-dRJ" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" id="EdS-0d-ohu"/>
+                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="h25-bp-EvL" secondAttribute="trailing" priority="499" id="FZb-vB-KVi"/>
                     <constraint firstAttribute="trailing" secondItem="HdA-I9-dRJ" secondAttribute="trailing" id="HP4-5D-1Fa"/>
                     <constraint firstAttribute="trailing" secondItem="dkl-qd-rae" secondAttribute="trailing" id="Ijy-z8-oYC"/>
                     <constraint firstItem="HdA-I9-dRJ" firstAttribute="top" relation="greaterThanOrEqual" secondItem="se5-gp-TjO" secondAttribute="top" id="KWN-bK-Z8C"/>
+                    <constraint firstAttribute="trailing" relation="lessThanOrEqual" secondItem="kcj-EY-i9R" secondAttribute="trailing" priority="501" id="Qud-6h-D0H"/>
                     <constraint firstAttribute="bottom" secondItem="dkl-qd-rae" secondAttribute="bottom" priority="250" id="TgY-LJ-TLI"/>
                     <constraint firstAttribute="trailing" secondItem="WD9-DD-LNj" secondAttribute="trailing" id="U5V-IX-6UZ"/>
+                    <constraint firstItem="h25-bp-EvL" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" id="UlC-Bh-ckc"/>
                     <constraint firstItem="ejt-zy-gzd" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" constant="4" id="VJK-N0-ZMG"/>
                     <constraint firstItem="WD9-DD-LNj" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" priority="750" id="Vve-4d-4UK"/>
+                    <constraint firstAttribute="trailing" relation="lessThanOrEqual" secondItem="h25-bp-EvL" secondAttribute="trailing" priority="501" id="erf-H5-UAZ"/>
+                    <constraint firstItem="kcj-EY-i9R" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" id="hSR-s9-n4T"/>
                     <constraint firstItem="HdA-I9-dRJ" firstAttribute="top" secondItem="WD9-DD-LNj" secondAttribute="bottom" id="m9y-eT-GRX"/>
                     <constraint firstItem="HdA-I9-dRJ" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" id="sJO-Qa-tUh"/>
                     <constraint firstItem="WD9-DD-LNj" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" id="tqw-qA-JsS"/>

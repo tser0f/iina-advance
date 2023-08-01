@@ -12,75 +12,66 @@ class ScrollingTextField: NSTextField {
 
   enum State {
     case idle
-    case pause
-    case scroll
+    case scrolling
   }
 
   private var state: State = .idle
 
-  let updateInterval: TimeInterval = 0.03
+  let offsetPerSec: CGFloat = 30.0
   let timeToWaitBeforeStart: TimeInterval = 0.2
 
-  private var scrollingTimer: Timer?
-  private var startTimer: Timer?
-  private var drawPoint: NSPoint = .zero
+  private var timeSinceLastReset = Date()
 
-  private var step: CGFloat = 1
+  private var scrollingTimer: Timer?
+  private var drawPoint: NSPoint = .zero
 
   private var scrollingString = NSAttributedString(string: "")
   private var appendedStringCopyWidth: CGFloat = 0
 
-  override var stringValue: String {
-    didSet {
-      reset()
-    }
-  }
-
-  func scroll() {
+  // Updates the text location based on time elapsed since the last scroll
+  func updateScroll() {
     let stringWidth = attributedStringValue.size().width
-    // FIXME: Use hard-coded width here. Should be changed to frame.width and handle the center alignment by ourself in draw().
-    guard state == .idle && stringWidth > 252 else { return }
-
-    state = .pause
-    startTimer = Timer.scheduledTimer(timeInterval: timeToWaitBeforeStart, target: self, selector: #selector(startScrolling),
-                                      userInfo: nil, repeats: false)
+    let frameWidth = superview!.frame.width
+    if stringWidth < frameWidth {
+      // Plenty of space. Center text instead
+      let xOffset = (frameWidth - stringWidth) / 2
+      drawPoint.x = xOffset
+      state = .idle
+    } else {
+      state = .scrolling
+      let now = Date()
+      let scrollStartTime = timeSinceLastReset + timeToWaitBeforeStart
+      if now < scrollStartTime {
+        // Initial pause
+        return
+      }
+      let timeElapsed = now.timeIntervalSince(scrollStartTime)
+      let offsetSinceStart = timeElapsed * offsetPerSec
+      if appendedStringCopyWidth - offsetSinceStart < 0 {
+        reset()
+        return
+      } else {
+        drawPoint.x = -offsetSinceStart
+      }
+    }
+    needsDisplay = true
   }
 
-  @objc
-  private func startScrolling() {
+  func reset() {
+//    Logger.log("Resetting scroll animation", level: .verbose)
+    guard !attributedStringValue.string.isEmpty else { return }  // prevents crash while quitting
     let attributes = attributedStringValue.attributes(at: 0, effectiveRange: nil)
     // Add padding between end and start of the copy
     let appendedStringCopy = "    " + stringValue
     appendedStringCopyWidth = NSAttributedString(string: appendedStringCopy, attributes: attributes).size().width
     scrollingString = NSAttributedString(string: stringValue + appendedStringCopy, attributes: attributes)
-    state = .scroll
-    scrollingTimer = Timer.scheduledTimer(timeInterval: updateInterval, target: self, selector: #selector(moveText),
-                                          userInfo: nil, repeats: true)
-  }
-
-  private func reset() {
-    scrollingTimer?.invalidate()
-    scrollingTimer = nil
-    startTimer?.invalidate()
-    startTimer = nil
+    timeSinceLastReset = Date()
     drawPoint = .zero
-    state = .idle
-    needsDisplay = true
-  }
-
-  @objc
-  private func moveText() {
-    Logger.log("MOVE TEXT") // FIXME: these timers never get cleared
-    drawPoint.x -= step
-    if drawPoint.x + appendedStringCopyWidth < 0 {
-      reset()
-      return
-    }
     needsDisplay = true
   }
 
   override func draw(_ dirtyRect: NSRect) {
-    if state == .scroll {
+    if state == .scrolling {
       scrollingString.draw(at: drawPoint)
     } else {
       attributedStringValue.draw(at: drawPoint)

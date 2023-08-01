@@ -220,12 +220,15 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - Window delegate: Size
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
+    updateScrollingLabels()
     return adjustWindowSize(requestedSize)
   }
 
   func windowDidResize(_ notification: Notification) {
     guard let window = window, !window.inLiveResize else { return }
     videoView.videoLayer.draw()
+    // Re-evaluate space requirements for labels. May need to scroll
+    updateScrollingLabels()
   }
 
   func windowDidEndLiveResize(_ notification: Notification) {
@@ -242,8 +245,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   override func windowDidBecomeMain(_ notification: Notification) {
     super.windowDidBecomeMain(notification)
 
-    titleLabel.scroll()
-    artistAlbumLabel.scroll()
+    updateScrollingLabels()
   }
 
   // MARK: - UI: Show / Hide
@@ -264,8 +266,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1
     }, completionHandler: {
-      self.titleLabel.scroll()
-      self.artistAlbumLabel.scroll()
+      self.updateScrollingLabels()
     })
   }
 
@@ -288,8 +289,14 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
         artistAlbumLabel.stringValue = "\(mediaArtist) - \(mediaAlbum)"
       }
     }
-    titleLabel.scroll()
-    artistAlbumLabel.scroll()
+    guard player.isStopping || player.isShuttingDown else { return }
+    titleLabel.reset()
+    artistAlbumLabel.reset()
+  }
+
+  func updateScrollingLabels() {
+    titleLabel.updateScroll()
+    artistAlbumLabel.updateScroll()
   }
 
   override func updateVolume() {

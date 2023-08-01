@@ -172,7 +172,6 @@ class PlayerCore: NSObject {
 
   // TODO: fold hideFadeableViewsTimer into this
   // TODO: fold hideOSDTimer into this
-  // TODO: fold the 4 Music Mode timers into this
   var syncUITimer: Timer?
 
   var enableOSD: Bool = true
@@ -1879,6 +1878,7 @@ class PlayerCore: NSObject {
       }
       if self.isInMiniPlayer {
         miniPlayer.updatePlayTime(withDuration: isNetworkStream)
+        miniPlayer.updateScrollingLabels()
       } else {
         mainWindow.updatePlayTime(withDuration: isNetworkStream)
         mainWindow.updateAdditionalInfo()
