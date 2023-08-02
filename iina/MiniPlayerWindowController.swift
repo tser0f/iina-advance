@@ -64,6 +64,8 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
   }
 
+  static let maxWindowWidth = CGFloat(Preference.float(for: .musicModeMaxWidth))
+
   lazy var hideVolumePopover: DispatchWorkItem = {
     DispatchWorkItem {
       self.volumePopover.animates = true
@@ -105,8 +107,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
 
     contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerMinWidth).isActive = true
-    let maxWidth = CGFloat(Preference.float(for: .musicModeMaxWidth))
-    contentView.widthAnchor.constraint(lessThanOrEqualToConstant: maxWidth).isActive = true
+    contentView.widthAnchor.constraint(lessThanOrEqualToConstant: MiniPlayerWindowController.maxWindowWidth).isActive = true
 
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: PlaylistMinHeight).isActive = true
 
@@ -217,7 +218,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     resetScrollingLabels()
-    return adjustWindowSize(requestedSize)
+    return constrainWindowSize(requestedSize)
   }
 
   func windowDidResize(_ notification: Notification) {
@@ -397,7 +398,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       newFrame.size.height = min(newFrame.size.height + heightToAdd, screen.visibleFrame.height)
 
       // May need to reduce size of video/art to fit playlist on screen, or other adjustments:
-      newFrame.size = adjustWindowSize(newFrame.size)
+      newFrame.size = constrainWindowSize(newFrame.size)
     } else { // hide playlist
       // Save playlist height first
       if currentPlaylistHeight > PlaylistMinHeight {
@@ -419,6 +420,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     if isVideoVisible {
       var frame = window.frame
       frame.size.height += videoViewHeight
+      frame.size = constrainWindowSize(frame.size)
       window.setFrame(frame, display: true, animate: false)
     } else {
       var frame = window.frame
@@ -429,47 +431,52 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // MARK: - Utils
 
-  private func adjustWindowSize(_ requestedSize: NSSize) -> NSSize {
+  /// The MiniPlayerWindow's width must be between `MiniPlayerMinWidth` and `Preference.musicModeMaxWidth`.
+  /// It is composed of up to 3 vertical sections:
+  /// 1. `videoWrapperView`: Visible if `isVideoVisible` is true). Scales with the aspect ratio of its video
+  /// 2. `backgroundView`: Visible always. Fixed height
+  /// 3. `playlistWrapperView`: Visible if `isPlaylistVisible` is true. Height is user resizable, and must be >= `PlaylistMinHeight`
+  /// Must also ensure that window stays within the bounds of the screen it is in. Almost all of the time the window  will be
+  /// height-bounded instead of width-bounded.
+  private func constrainWindowSize(_ requestedSize: NSSize) -> NSSize {
     guard let screen = window?.screen else { return requestedSize }
-    /// The window has the same width as the album art, and the album art is square,
-    /// so when the window's width is expanded, the art's height also expands,
+    /// When the window's width changes, the video scales to match while keeping its aspect ratio,
     /// and the control bar (`backgroundView`) and playlist are pushed down.
-    /// Calculate the maximum width/height the art can grow to so that the
-    /// control bar is not pushed off the screen.
+    /// Calculate the maximum width/height the art can grow to so that `backgroundView` is not pushed off the screen.
+    let videoAspectRatio = videoView.aspectRatio
     let visibleScreenSize = screen.visibleFrame.size
-    let usableScreenHeight = visibleScreenSize.height
     let minPlaylistHeight = isPlaylistVisible ? PlaylistMinHeight : 0
-    let minWindowHeightWithoutArt = backgroundView.frame.height + minPlaylistHeight
-    let maxArtSize = min(usableScreenHeight - minWindowHeightWithoutArt, visibleScreenSize.width)
 
-    let requestedArtSize = isVideoVisible ? requestedSize.width : 0
-    if requestedArtSize > maxArtSize {
-      // No more space on screen: clamp art to max size
-      let clampedSize = NSSize(width: maxArtSize,
-                               height: maxArtSize + minWindowHeightWithoutArt)
-      Logger.log("AdjustWindowSize: no more space on screen; clamped requested size \(requestedSize) to: \(clampedSize)",
-                 level: .verbose)
-      return clampedSize
-    } else if isPlaylistVisible {
-      let minRequiredHeightWithRequestedArt = minWindowHeightWithoutArt + requestedArtSize
-      if requestedSize.height <= minRequiredHeightWithRequestedArt {
-        let availableHeightForArt = usableScreenHeight - minWindowHeightWithoutArt
-        let artAdjustmentNeeded = min(0,
-                                      availableHeightForArt - requestedArtSize,
-                                      visibleScreenSize.width - requestedArtSize)
-        let adjustedSize = NSSize(width: requestedArtSize + artAdjustmentNeeded,
-                                  height: minRequiredHeightWithRequestedArt + artAdjustmentNeeded)
-        Logger.log("AdjustWindowSize: adjusted requested height to satisfy min playlist size", level: .verbose)
-        return adjustedSize
-      }
-    } else if !isPlaylistVisible {
-      // Fix the window height so that playlist does not appear
-      return NSSize(width: requestedSize.width,
-                    height: requestedSize.width + backgroundView.frame.height)
+    let maxWindowWidth: CGFloat
+    if isVideoVisible {
+      var maxVideoHeight = visibleScreenSize.height - backgroundView.frame.height - minPlaylistHeight
+      /// `maxVideoHeight` can be negative if very short screen! Fall back to height based on `MiniPlayerMinWidth` if needed
+      maxVideoHeight = max(maxVideoHeight, MiniPlayerMinWidth / videoView.aspectRatio)
+      maxWindowWidth = maxVideoHeight * videoAspectRatio
+    } else {
+      maxWindowWidth = MiniPlayerWindowController.maxWindowWidth
     }
 
-    Logger.log("AdjustWindowSize: returning requested size \(requestedSize)", level: .verbose)
-    return requestedSize
+    let newWidth: CGFloat
+    if requestedSize.width < MiniPlayerMinWidth {
+      // Clamp to min width
+      newWidth = MiniPlayerMinWidth
+    } else if requestedSize.width > maxWindowWidth {
+      // Clamp to max width
+      newWidth = maxWindowWidth
+    } else {
+      // Requested size is valid
+      newWidth = requestedSize.width
+    }
+    let videoHeight = isVideoVisible ? newWidth / videoAspectRatio : 0
+    let minWindowHeight = videoHeight + backgroundView.frame.height + minPlaylistHeight
+    // Make sure height is within acceptable values
+    var newHeight = max(requestedSize.height, minWindowHeight)
+    let maxHeight = isPlaylistVisible ? visibleScreenSize.height : minWindowHeight
+    newHeight = min(newHeight, maxHeight)
+    let newWindowSize = NSSize(width: newWidth, height: newHeight)
+    Logger.log("Constrained miniPlayerWindow. VideoAspect: \(videoAspectRatio), RequestedSize: \(requestedSize), NewSize: \(newWindowSize)", level: .verbose)
+    return newWindowSize
   }
 
   // Returns the current height of the window,

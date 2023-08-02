@@ -553,6 +553,7 @@ class PlayerCore: NSObject {
     videoView.removeFromSuperview()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": videoView])
+    videoView.setAspectRatioConstraint()
     miniPlayer.window?.layoutIfNeeded()
 
     // if received video size before switching to music mode, hide default album art
@@ -580,6 +581,7 @@ class PlayerCore: NSObject {
     mainWindow.playlistView.useCompactTabHeight = false
     mainWindow.updateSidebarVerticalConstraints()
     // add back video view
+    videoView.removeAspectRatioConstraint()
     videoView.removeFromSuperview()
     mainWindow.addVideoViewToWindow()
     // hide mini player
