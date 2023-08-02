@@ -9,12 +9,9 @@
         <customObject id="-2" userLabel="File's Owner" customClass="MiniPlayerWindowController" customModule="IINA" customModuleProvider="target">
             <connections>
                 <outlet property="artistAlbumLabel" destination="kcj-EY-i9R" id="fp4-Kg-HYY"/>
-                <outlet property="backButtonBox" destination="K7j-vB-FlK" id="c7f-eR-HVi"/>
                 <outlet property="backButtonVE" destination="WS6-ix-uBJ" id="heD-iT-6XC"/>
                 <outlet property="backgroundView" destination="HdA-I9-dRJ" id="miJ-0n-Psw"/>
-                <outlet property="closeButtonBackgroundViewBox" destination="NWy-Hm-vxL" id="DUk-UO-PeD"/>
                 <outlet property="closeButtonBackgroundViewVE" destination="3Xd-pn-agj" id="n9a-zJ-2zy"/>
-                <outlet property="closeButtonBox" destination="hZH-NM-Lst" id="KXG-pY-jGa"/>
                 <outlet property="closeButtonVE" destination="F4P-Wj-5qw" id="82z-Jr-BcJ"/>
                 <outlet property="closeButtonView" destination="ejt-zy-gzd" id="5Eg-ME-Qle"/>
                 <outlet property="controlView" destination="cDR-8J-QI7" id="B1L-ru-Mnc"/>
@@ -50,11 +47,11 @@
             <rect key="contentRect" x="196" y="240" width="300" height="72"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
             <value key="minSize" type="size" width="300" height="72"/>
-            <view key="contentView" id="se5-gp-TjO" userLabel="Content View">
+            <view key="contentView" id="se5-gp-TjO" userLabel="MiniPlayerWindow Content View">
                 <rect key="frame" x="0.0" y="0.0" width="300" height="72"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="WD9-DD-LNj" userLabel="AlbumArt View">
+                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="WD9-DD-LNj" userLabel="VideoWrapper View">
                         <rect key="frame" x="0.0" y="72" width="300" height="0.0"/>
                         <subviews>
                             <customView wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Psi-wJ-2SC" userLabel="DefaultAlbumArt View">
@@ -272,7 +269,7 @@
                             <constraint firstItem="qN9-Wd-Ae5" firstAttribute="top" secondItem="dkl-qd-rae" secondAttribute="top" id="ykA-Bq-lAq"/>
                         </constraints>
                     </visualEffectView>
-                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="ejt-zy-gzd" userLabel="CloseButton View">
+                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="ejt-zy-gzd" userLabel="WindowButtons View">
                         <rect key="frame" x="4" y="34" width="19" height="34"/>
                         <subviews>
                             <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="3Xd-pn-agj" userLabel="CloseButtonBackground View">
@@ -314,59 +311,12 @@
                                     <constraint firstAttribute="trailing" secondItem="WS6-ix-uBJ" secondAttribute="trailing" constant="4" id="tcm-kc-gnR"/>
                                 </constraints>
                             </visualEffectView>
-                            <box boxType="custom" cornerRadius="8" title="Box" translatesAutoresizingMaskIntoConstraints="NO" id="NWy-Hm-vxL" userLabel="CloseBtnBackgroundView Box">
-                                <rect key="frame" x="2" y="2" width="17" height="30"/>
-                                <view key="contentView" id="SH0-Bg-0kB">
-                                    <rect key="frame" x="1" y="1" width="15" height="28"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                    <subviews>
-                                        <button toolTip="Close Mini Player" translatesAutoresizingMaskIntoConstraints="NO" id="hZH-NM-Lst">
-                                            <rect key="frame" x="2" y="12" width="11" height="17"/>
-                                            <constraints>
-                                                <constraint firstAttribute="width" secondItem="hZH-NM-Lst" secondAttribute="height" multiplier="1:1" id="LSx-9r-gMd"/>
-                                                <constraint firstAttribute="height" constant="11" id="RKA-bS-WrY"/>
-                                            </constraints>
-                                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="T9Y-J8-Nj6">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
-                                        </button>
-                                        <button toolTip="Back to video mode" translatesAutoresizingMaskIntoConstraints="NO" id="K7j-vB-FlK">
-                                            <rect key="frame" x="2" y="2" width="11" height="11"/>
-                                            <constraints>
-                                                <constraint firstAttribute="width" secondItem="K7j-vB-FlK" secondAttribute="height" multiplier="1:1" id="JQU-aZ-9ka"/>
-                                                <constraint firstAttribute="height" constant="11" id="UQA-yh-8vO"/>
-                                            </constraints>
-                                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="back" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="wd8-60-NJn">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
-                                            <connections>
-                                                <action selector="backBtnAction:" target="-2" id="At6-dB-7qN"/>
-                                            </connections>
-                                        </button>
-                                    </subviews>
-                                    <constraints>
-                                        <constraint firstItem="hZH-NM-Lst" firstAttribute="leading" secondItem="SH0-Bg-0kB" secondAttribute="leading" constant="2" id="Ip8-5t-gjg"/>
-                                        <constraint firstItem="K7j-vB-FlK" firstAttribute="leading" secondItem="SH0-Bg-0kB" secondAttribute="leading" constant="2" id="bJa-Sa-08N"/>
-                                        <constraint firstAttribute="trailing" secondItem="K7j-vB-FlK" secondAttribute="trailing" constant="2" id="fdC-Wd-9nR"/>
-                                        <constraint firstAttribute="bottom" secondItem="K7j-vB-FlK" secondAttribute="bottom" constant="2" id="tmm-eQ-1Rk"/>
-                                        <constraint firstItem="hZH-NM-Lst" firstAttribute="top" secondItem="SH0-Bg-0kB" secondAttribute="top" constant="2" id="yYT-xC-lWj"/>
-                                        <constraint firstAttribute="trailing" secondItem="hZH-NM-Lst" secondAttribute="trailing" constant="2" id="ytQ-fk-OSa"/>
-                                    </constraints>
-                                </view>
-                                <color key="borderColor" red="0.57045853140000002" green="0.57047235969999999" blue="0.57046490910000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <color key="fillColor" red="0.85688321572269888" green="0.85688321572269888" blue="0.85688321572269888" alpha="0.0" colorSpace="custom" customColorSpace="displayP3"/>
-                            </box>
                         </subviews>
                         <constraints>
                             <constraint firstItem="3Xd-pn-agj" firstAttribute="top" secondItem="ejt-zy-gzd" secondAttribute="top" id="GQa-ix-jZJ"/>
                             <constraint firstAttribute="trailing" secondItem="3Xd-pn-agj" secondAttribute="trailing" id="KS8-De-1L8"/>
                             <constraint firstItem="3Xd-pn-agj" firstAttribute="leading" secondItem="ejt-zy-gzd" secondAttribute="leading" id="QXF-Wm-77W"/>
-                            <constraint firstItem="NWy-Hm-vxL" firstAttribute="leading" secondItem="ejt-zy-gzd" secondAttribute="leading" constant="2" id="jb3-TF-GBZ"/>
-                            <constraint firstItem="NWy-Hm-vxL" firstAttribute="top" secondItem="ejt-zy-gzd" secondAttribute="top" constant="2" id="u91-uV-8Mj"/>
                             <constraint firstAttribute="bottom" secondItem="3Xd-pn-agj" secondAttribute="bottom" id="wVu-Un-7Lg"/>
-                            <constraint firstAttribute="bottom" secondItem="NWy-Hm-vxL" secondAttribute="bottom" constant="2" id="ypc-jd-KLx"/>
                         </constraints>
                     </customView>
                 </subviews>

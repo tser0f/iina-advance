@@ -9,7 +9,8 @@
 import Cocoa
 
 // Adjust x offset by this, otherwise text will be off-center
-fileprivate let mediaInfoViewLeadingOffset: CGFloat = 22
+// (add 2 to actual offset to prevent leading edge from clipping)
+fileprivate let mediaInfoViewLeadingOffset: CGFloat = 20 + 2
 fileprivate let startPoint = NSPoint(x: mediaInfoViewLeadingOffset, y: 0)
 
 class ScrollingTextField: NSTextField {

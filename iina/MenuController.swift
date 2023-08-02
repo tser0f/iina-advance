@@ -420,7 +420,7 @@ class MenuController: NSObject, NSMenuDelegate {
     }
 
     inspector.action = #selector(PlayerWindowController.menuShowInspector(_:))
-    miniPlayer.action = #selector(MainWindowController.menuSwitchToMiniPlayer(_:))
+    miniPlayer.action = #selector(PlayerWindowController.menuSwitchToMiniPlayer(_:))
   }
 
   // MARK: - Update Menus

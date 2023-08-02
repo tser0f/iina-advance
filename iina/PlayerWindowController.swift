@@ -548,6 +548,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - IBActions
 
+  @objc func menuSwitchToMiniPlayer(_ sender: NSMenuItem) {
+    if player.isInMiniPlayer {
+      player.switchBackFromMiniPlayer()
+    } else {
+      player.switchToMiniPlayer()
+    }
+  }
+
   @IBAction func volumeSliderChanges(_ sender: NSSlider) {
     let value = sender.doubleValue
     if Preference.double(for: .maxVolume) > 100, value > 100 && value < 101 {
@@ -589,6 +597,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       menuFindOnlineSub(.dummy)
     case .saveDownloadedSub:
       saveDownloadedSub(.dummy)
+    case .toggleMusicMode:
+      menuSwitchToMiniPlayer(.dummy)
     default:
       break
     }

@@ -553,9 +553,6 @@ class PlayerCore: NSObject {
     videoView.removeFromSuperview()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": videoView])
-
-    let (width, height) = originalVideoSize
-    videoView.updateAspectRatio(w: CGFloat(width), h: CGFloat(height))
     miniPlayer.window?.layoutIfNeeded()
 
     // if received video size before switching to music mode, hide default album art
@@ -565,14 +562,14 @@ class PlayerCore: NSObject {
 
     // hide main window, and show mini player window
     mainWindow.window?.orderOut(self)
-    miniPlayer.window?.makeKeyAndOrderFront(self)
+    miniPlayer.showWindow(self)
 
     videoView.videoLayer.draw(forced: true)
     
     events.emit(.musicModeChanged, data: true)
   }
 
-  func switchBackFromMiniPlayer(automatically: Bool = false, showMainWindow: Bool = true) {
+  func switchBackFromMiniPlayer(automatically: Bool = false) {
     Logger.log("Switch to normal window from mini player, automatically=\(automatically)", subsystem: subsystem)
     if !automatically {
       overrideAutoSwitchToMusicMode = !overrideAutoSwitchToMusicMode
@@ -585,10 +582,6 @@ class PlayerCore: NSObject {
     // add back video view
     videoView.removeFromSuperview()
     mainWindow.addVideoViewToWindow()
-    // show main window
-    if showMainWindow {
-      mainWindow.window?.makeKeyAndOrderFront(self)
-    }
     // hide mini player
     miniPlayer.window?.orderOut(nil)
     isInMiniPlayer = false
@@ -598,6 +591,8 @@ class PlayerCore: NSObject {
     mainWindow.updateTitle()
     
     events.emit(.musicModeChanged, data: false)
+    // show main window
+    mainWindow.showWindow(self)
   }
 
   // MARK: - MPV commands
@@ -2212,23 +2207,6 @@ class PlayerCore: NSObject {
       }
       Logger.log("videoBaseDisplaySize: Rot=(\(mpvParamRotate) total, \(mpvVideoRotate) user)=\(mpvNetRotate), WxH: \(width)x\(height)", level: .verbose, subsystem: subsystem)
       return CGSize(width: width, height: height)
-    }
-  }
-
-  var originalVideoSize: (Int, Int) {
-    get {
-      if let w = info.videoRawWidth, let h = info.videoRawHeight {
-        let mpvParamRotate = mpv.getInt(MPVProperty.videoParamsRotate)
-        let mpvVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
-        let mpvNetRotate = mpvParamRotate - mpvVideoRotate
-        let rotate = mpvNetRotate >= 0 ? mpvNetRotate : mpvNetRotate + 360
-        let (width, height) = rotate == 90 || rotate == 270 ? (h, w) : (w, h)
-        Logger.log("originalVideoSize: Rot=(\(mpvParamRotate)-\(mpvVideoRotate))=\(mpvNetRotate)=\(rotate); WxH=(\(width)x\(height))", level: .verbose, subsystem: subsystem)
-        return (width, height)
-      } else {
-        Logger.log("originalVideoSize: WxH=(0x0)", level: .verbose, subsystem: subsystem)
-        return (0, 0)
-      }
     }
   }
 

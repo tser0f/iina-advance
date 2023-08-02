@@ -84,10 +84,6 @@ extension MainWindowController {
     toggleWindowFullScreen()
   }
 
-  @objc func menuSwitchToMiniPlayer(_ sender: NSMenuItem) {
-    player.switchToMiniPlayer()
-  }
-
   @objc func menuSetDelogo(_ sender: NSMenuItem) {
     if sender.state == .on {
       if let filter = player.info.delogoFilter {

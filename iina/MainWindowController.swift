@@ -3550,8 +3550,8 @@ class MainWindowController: PlayerWindowController {
       window?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1)
     }
 
-    let (ow, oh) = player.originalVideoSize
-    guard ow != 0 && oh != 0 else {
+    let origVideoSize = player.videoBaseDisplaySize
+    guard origVideoSize.width != 0 && origVideoSize.height != 0 else {
       Utility.showAlert("no_video_track")
       return
     }
@@ -3588,7 +3588,6 @@ class MainWindowController: PlayerWindowController {
       Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.view])
 
       isInInteractiveMode = true
-      let origVideoSize = NSSize(width: ow, height: oh)
       // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
       // the max region that the video view can occupy
       let newVideoViewBounds = NSRect(x: StandardTitleBarHeight,
@@ -4081,7 +4080,7 @@ class MainWindowController: PlayerWindowController {
       blackWindow.level = .iinaBlackScreen
 
       blackWindows.append(blackWindow)
-      blackWindow.makeKeyAndOrderFront(nil)
+      blackWindow.orderFront(nil)
     }
     Logger.log("Added black windows for \(screens.count); total is now: \(blackWindows.count)", level: .verbose)
   }
@@ -4332,8 +4331,6 @@ class MainWindowController: PlayerWindowController {
       menuShowPlaylistPanel(.dummy)
     case .chapterPanel:
       menuShowChaptersPanel(.dummy)
-    case .toggleMusicMode:
-      menuSwitchToMiniPlayer(.dummy)
     case .deleteCurrentFileHard:
       menuDeleteCurrentFileHard(.dummy)
     case .biggerWindow:

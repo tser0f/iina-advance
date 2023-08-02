@@ -30,11 +30,8 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBOutlet weak var backgroundView: NSVisualEffectView!
   @IBOutlet weak var closeButtonView: NSView!
   @IBOutlet weak var closeButtonBackgroundViewVE: NSVisualEffectView!
-  @IBOutlet weak var closeButtonBackgroundViewBox: NSBox!
   @IBOutlet weak var closeButtonVE: NSButton!
   @IBOutlet weak var backButtonVE: NSButton!
-  @IBOutlet weak var closeButtonBox: NSButton!
-  @IBOutlet weak var backButtonBox: NSButton!
   @IBOutlet weak var videoWrapperView: NSView!
   @IBOutlet var videoWrapperViewBottomConstraint: NSLayoutConstraint!
   @IBOutlet var controlViewTopConstraint: NSLayoutConstraint!
@@ -54,10 +51,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       Preference.bool(for: .musicModeShowPlaylist)
     }
     set {
-      // We already use autosave to save the window frame across launches, so one would think we could
-      // determinte whether the playlist is visible just by inspecting the window's size.
-      // But we still need to save this info and restore it in case IINA is later relaunched using
-      // some very different display/resolution which changes the window size.
       Preference.set(newValue, for: .musicModeShowPlaylist)
     }
   }
@@ -136,11 +129,9 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     // close button
     closeButtonVE.action = #selector(self.close)
-    closeButtonBox.action = #selector(self.close)
     closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
 
     // hide controls initially
-    closeButtonBackgroundViewBox.isHidden = true
     closeButtonView.alphaValue = 0
     controlView.alphaValue = 0
     
@@ -218,7 +209,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     if !player.isShuttingDown {
       // not needed if called when terminating the whole app
       player.overrideAutoSwitchToMusicMode = false
-      player.switchBackFromMiniPlayer(automatically: true, showMainWindow: false)
+      player.switchBackFromMiniPlayer(automatically: true)
     }
     player.mainWindow.close()
   }
@@ -233,25 +224,21 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   func windowDidResize(_ notification: Notification) {
     guard let window = window, !window.inLiveResize else { return }
-    videoView.videoLayer.draw()
+
     // Re-evaluate space requirements for labels. May need to scroll
     titleLabel.reset()
     artistAlbumLabel.reset()
+
+    videoView.videoLayer.draw()
   }
 
   func windowDidEndLiveResize(_ notification: Notification) {
-    let playlistHeight = currentPlaylistHeight()
+    let playlistHeight = currentPlaylistHeight
     if playlistHeight >= PlaylistMinHeight {
       // save playlist height
       Logger.log("Saving playlist height: \(playlistHeight)")
       Preference.set(playlistHeight, for: .musicModePlaylistHeight)
     }
-  }
-
-  // MARK: - Window delegate: Activeness status
-
-  override func windowDidBecomeMain(_ notification: Notification) {
-    super.windowDidBecomeMain(notification)
   }
 
   // MARK: - UI: Show / Hide
@@ -322,19 +309,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
   }
 
-  func updateVideoSize() {
-    guard let window = window else { return }
-    let (width, height) = player.originalVideoSize
-    let aspect = (width == 0 || height == 0) ? 1 : CGFloat(width) / CGFloat(height)
-    let currentHeight = videoView.frame.height
-    let newHeight = videoView.frame.width / aspect
-    // resize window
-    guard isVideoVisible else { return }
-    var frame = window.frame
-    frame.size.height += newHeight - currentHeight - 0.5
-    window.setFrame(frame, display: true, animate: false)
-  }
-
   // MARK: - NSPopoverDelegate
 
   func popoverWillClose(_ notification: Notification) {
@@ -374,7 +348,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     let showPlaylist = !isPlaylistVisible
     Logger.log("Toggling playlist visibility from \(!showPlaylist) to \(showPlaylist)", level: .verbose)
     self.isPlaylistVisible = showPlaylist
-    let currentPlaylistHeight = currentPlaylistHeight()
+    let currentPlaylistHeight = currentPlaylistHeight
     var newFrame = window.frame
 
     if showPlaylist {
@@ -397,7 +371,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       if currentPlaylistHeight > PlaylistMinHeight {
         Preference.set(currentPlaylistHeight, for: .musicModePlaylistHeight)
       }
-      let heightWithoutPlaylist = windowHeightWithoutPlaylist()
+      let heightWithoutPlaylist = windowHeightWithoutPlaylist
       newFrame.origin.y += newFrame.size.height - heightWithoutPlaylist
       newFrame.size.height = heightWithoutPlaylist
     }
@@ -425,7 +399,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     videoWrapperViewBottomConstraint.isActive = isVideoVisible
     controlViewTopConstraint.isActive = !isVideoVisible
     closeButtonBackgroundViewVE.isHidden = !isVideoVisible
-    closeButtonBackgroundViewBox.isHidden = isVideoVisible
+  }
+
+  @objc func menuAlwaysOnTop(_ sender: AnyObject) {
+    setWindowFloatingOnTop(!isOntop)
   }
 
   @IBAction func backBtnAction(_ sender: NSButton) {
@@ -452,13 +429,13 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // Returns the current height of the window,
   // including the album art, but not including the playlist.
-  private func windowHeightWithoutPlaylist() -> CGFloat {
+  private var windowHeightWithoutPlaylist: CGFloat {
     return backgroundView.frame.height + (isVideoVisible ? videoWrapperView.frame.height : 0)
   }
 
-  private func currentPlaylistHeight() -> CGFloat {
+  private var currentPlaylistHeight: CGFloat {
     guard let window = window else { return 0 }
-    return window.frame.height - windowHeightWithoutPlaylist()
+    return window.frame.height - windowHeightWithoutPlaylist
   }
 
   private func adjustWindowSize(_ requestedSize: NSSize) -> NSSize {
@@ -503,15 +480,4 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     Logger.log("AdjustWindowSize: returning requested size \(requestedSize)", level: .verbose)
     return requestedSize
   }
-
-  internal override func handleIINACommand(_ cmd: IINACommand) {
-    super.handleIINACommand(cmd)
-    switch cmd {
-    case .toggleMusicMode:
-      menuSwitchToMiniPlayer(.dummy)
-    default:
-      break
-    }
-  }
-
 }
