@@ -200,8 +200,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - Window delegate: Open / Close
 
   override func showWindow(_ sender: Any?) {
-    titleLabel.reset()
-    artistAlbumLabel.reset()
+    resetScrollingLabels()
     super.showWindow(sender)
   }
 
@@ -217,8 +216,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - Window delegate: Size
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    titleLabel.reset()
-    artistAlbumLabel.reset()
+    resetScrollingLabels()
     return adjustWindowSize(requestedSize)
   }
 
@@ -226,8 +224,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     guard let window = window, !window.inLiveResize else { return }
 
     // Re-evaluate space requirements for labels. May need to scroll
-    titleLabel.reset()
-    artistAlbumLabel.reset()
+    resetScrollingLabels()
 
     videoView.videoLayer.draw()
   }
@@ -263,6 +260,16 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // MARK: - UI
 
+  func updateScrollingLabels() {
+    titleLabel.stepNext()
+    artistAlbumLabel.stepNext()
+  }
+
+  private func resetScrollingLabels() {
+    titleLabel.reset()
+    artistAlbumLabel.reset()
+  }
+
   @objc
   override func updateTitle() {
     let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
@@ -280,11 +287,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
         artistAlbumLabel.stringValue = "\(mediaArtist) - \(mediaAlbum)"
       }
     }
-  }
-
-  func updateScrollingLabels() {
-    titleLabel.stepNext()
-    artistAlbumLabel.stepNext()
   }
 
   override func updateVolume() {
@@ -342,6 +344,36 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // MARK: - IBActions
 
+  @objc func menuAlwaysOnTop(_ sender: AnyObject) {
+    setWindowFloatingOnTop(!isOntop)
+  }
+
+  @IBAction func backBtnAction(_ sender: NSButton) {
+    player.switchBackFromMiniPlayer()
+  }
+
+  @IBAction func nextBtnAction(_ sender: NSButton) {
+    player.navigateInPlaylist(nextMedia: true)
+  }
+
+  @IBAction func prevBtnAction(_ sender: NSButton) {
+    player.navigateInPlaylist(nextMedia: false)
+  }
+
+  @IBAction func volumeBtnAction(_ sender: NSButton) {
+    if volumePopover.isShown {
+      volumePopover.performClose(self)
+    } else {
+      volumePopover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+    }
+  }
+
+  func updateVideoViewLayout() {
+    videoWrapperViewBottomConstraint.isActive = isVideoVisible
+    controlViewTopConstraint.isActive = !isVideoVisible
+    closeButtonBackgroundViewVE.isHidden = !isVideoVisible
+  }
+
   @IBAction func togglePlaylist(_ sender: Any) {
     guard let window = window else { return }
     guard let screen = window.screen else { return }
@@ -364,7 +396,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       newFrame.origin.y = max(newFrame.origin.y - heightToAdd, screen.visibleFrame.origin.y)
       newFrame.size.height = min(newFrame.size.height + heightToAdd, screen.visibleFrame.height)
 
-      // May need to reduce size of album art to fit playlist on screen, or other adjustments:
+      // May need to reduce size of video/art to fit playlist on screen, or other adjustments:
       newFrame.size = adjustWindowSize(newFrame.size)
     } else { // hide playlist
       // Save playlist height first
@@ -395,48 +427,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
   }
 
-  func updateVideoViewLayout() {
-    videoWrapperViewBottomConstraint.isActive = isVideoVisible
-    controlViewTopConstraint.isActive = !isVideoVisible
-    closeButtonBackgroundViewVE.isHidden = !isVideoVisible
-  }
-
-  @objc func menuAlwaysOnTop(_ sender: AnyObject) {
-    setWindowFloatingOnTop(!isOntop)
-  }
-
-  @IBAction func backBtnAction(_ sender: NSButton) {
-    player.switchBackFromMiniPlayer()
-  }
-
-  @IBAction func nextBtnAction(_ sender: NSButton) {
-    player.navigateInPlaylist(nextMedia: true)
-  }
-
-  @IBAction func prevBtnAction(_ sender: NSButton) {
-    player.navigateInPlaylist(nextMedia: false)
-  }
-
-  @IBAction func volumeBtnAction(_ sender: NSButton) {
-    if volumePopover.isShown {
-      volumePopover.performClose(self)
-    } else {
-      volumePopover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
-    }
-  }
-
   // MARK: - Utils
-
-  // Returns the current height of the window,
-  // including the album art, but not including the playlist.
-  private var windowHeightWithoutPlaylist: CGFloat {
-    return backgroundView.frame.height + (isVideoVisible ? videoWrapperView.frame.height : 0)
-  }
-
-  private var currentPlaylistHeight: CGFloat {
-    guard let window = window else { return 0 }
-    return window.frame.height - windowHeightWithoutPlaylist
-  }
 
   private func adjustWindowSize(_ requestedSize: NSSize) -> NSSize {
     guard let screen = window?.screen else { return requestedSize }
@@ -480,4 +471,16 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     Logger.log("AdjustWindowSize: returning requested size \(requestedSize)", level: .verbose)
     return requestedSize
   }
+
+  // Returns the current height of the window,
+  // including the album art, but not including the playlist.
+  private var windowHeightWithoutPlaylist: CGFloat {
+    return backgroundView.frame.height + (isVideoVisible ? videoWrapperView.frame.height : 0)
+  }
+
+  private var currentPlaylistHeight: CGFloat {
+    guard let window = window else { return 0 }
+    return window.frame.height - windowHeightWithoutPlaylist
+  }
+
 }
