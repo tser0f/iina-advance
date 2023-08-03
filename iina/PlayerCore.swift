@@ -553,7 +553,8 @@ class PlayerCore: NSObject {
     videoView.removeFromSuperview()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": videoView])
-    videoView.setAspectRatioConstraint()
+    /// Use `.defaultHigh` instead of `.required`, otherwise can't expand width of MiniPlayerWindow while playlist is hidden
+    videoView.setAspectRatioConstraint(priority: .defaultHigh)
     miniPlayer.window?.layoutIfNeeded()
 
     // if received video size before switching to music mode, hide default album art

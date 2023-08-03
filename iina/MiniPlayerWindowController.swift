@@ -476,6 +476,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     newHeight = min(newHeight, maxHeight)
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
     Logger.log("Constrained miniPlayerWindow. VideoAspect: \(videoAspectRatio), RequestedSize: \(requestedSize), NewSize: \(newWindowSize)", level: .verbose)
+
     return newWindowSize
   }
 
