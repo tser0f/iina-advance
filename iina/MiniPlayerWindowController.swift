@@ -29,9 +29,14 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBOutlet weak var volumeSliderView: NSView!
   @IBOutlet weak var backgroundView: NSVisualEffectView!
   @IBOutlet weak var closeButtonView: NSView!
+  // Mini island containing window buttons which hover over album art / video:
   @IBOutlet weak var closeButtonBackgroundViewVE: NSVisualEffectView!
+  // Mini island containing window buttons which appear next to controls (when video not visible):
+  @IBOutlet weak var closeButtonBackgroundViewBox: NSBox!
   @IBOutlet weak var closeButtonVE: NSButton!
   @IBOutlet weak var backButtonVE: NSButton!
+  @IBOutlet weak var closeButtonBox: NSButton!
+  @IBOutlet weak var backButtonBox: NSButton!
   @IBOutlet weak var videoWrapperView: NSView!
   @IBOutlet var videoWrapperViewBottomConstraint: NSLayoutConstraint!
   @IBOutlet var controlViewTopConstraint: NSLayoutConstraint!
@@ -138,9 +143,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     // close button
     closeButtonVE.action = #selector(self.close)
+    closeButtonBox.action = #selector(self.close)
     closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
 
     // hide controls initially
+    closeButtonBackgroundViewBox.isHidden = true
     closeButtonView.alphaValue = 0
     controlView.alphaValue = 0
     
@@ -412,6 +419,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     videoWrapperViewBottomConstraint.isActive = isVideoVisible
     controlViewTopConstraint.isActive = !isVideoVisible
     closeButtonBackgroundViewVE.isHidden = !isVideoVisible
+    closeButtonBackgroundViewBox.isHidden = isVideoVisible
   }
 
   @IBAction func togglePlaylist(_ sender: Any) {
