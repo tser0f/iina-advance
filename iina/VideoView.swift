@@ -110,7 +110,7 @@ class VideoView: NSView {
     }
   }
 
-  func setAspectRatioConstraint(priority: NSLayoutConstraint.Priority = .required) {
+  func setAspectRatioConstraint() {
     if let aspectRatioConstraint = aspectRatioConstraint {
       guard aspectRatioConstraint.multiplier != aspectRatio else {
         return
@@ -119,7 +119,6 @@ class VideoView: NSView {
     }
     Logger.log("Updating videoView aspect ratio constraint to \(aspectRatio)")
     aspectRatioConstraint = widthAnchor.constraint(equalTo: heightAnchor, multiplier: aspectRatio)
-    aspectRatioConstraint.priority = priority
     aspectRatioConstraint.isActive = true
   }
 

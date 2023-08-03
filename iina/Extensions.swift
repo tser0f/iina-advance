@@ -947,6 +947,16 @@ extension Process {
 }
 
 extension NSView {
+  func addConstraintsToFillSuperview(v: Bool = true, h: Bool = true) {
+    if h {
+      leadingAnchor.constraint(equalTo: superview!.leadingAnchor).isActive = true
+      trailingAnchor.constraint(equalTo: superview!.trailingAnchor).isActive = true
+    }
+    if v {
+      topAnchor.constraint(equalTo: superview!.topAnchor).isActive = true
+      bottomAnchor.constraint(equalTo: superview!.bottomAnchor).isActive = true
+    }
+  }
 
   func snapshotImage() -> NSImage? {
 

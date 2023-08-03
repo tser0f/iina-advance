@@ -548,13 +548,11 @@ class PlayerCore: NSObject {
     mainWindow.playlistView.useCompactTabHeight = true
     mainWindow.updateSidebarVerticalConstraints()
     miniPlayer.playlistWrapperView.addSubview(playlistView)
-    Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": playlistView])
+    playlistView.addConstraintsToFillSuperview()
     // move video view
     videoView.removeFromSuperview()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
-    Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": videoView])
-    /// Use `.defaultHigh` instead of `.required`, otherwise can't expand width of MiniPlayerWindow while playlist is hidden
-    videoView.setAspectRatioConstraint(priority: .defaultHigh)
+    videoView.addConstraintsToFillSuperview()
     miniPlayer.window?.layoutIfNeeded()
 
     // if received video size before switching to music mode, hide default album art
@@ -582,7 +580,6 @@ class PlayerCore: NSObject {
     mainWindow.playlistView.useCompactTabHeight = false
     mainWindow.updateSidebarVerticalConstraints()
     // add back video view
-    videoView.removeAspectRatioConstraint()
     videoView.removeFromSuperview()
     mainWindow.addVideoViewToWindow()
     // hide mini player

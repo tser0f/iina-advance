@@ -46,6 +46,12 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
 
+  /// When resizing the window, need to control the aspect ratio of `videoView`. But cannot use an `aspectRatio` constraint,
+  /// because: when playlist is hidden but videoView is shown, that prevents the window from being expanded when the user drags
+  /// from the right window edge. Possibly AppKit treats it like a fixed-width constraint. Workaround: use only a `height` constraint
+  /// and recalculate it from the video's aspect ratio whenever the window's width changes.
+  private var videoWrapperViewHeightConstraint: NSLayoutConstraint!
+
   var isPlaylistVisible: Bool {
     get {
       Preference.bool(for: .musicModeShowPlaylist)
@@ -111,6 +117,8 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: PlaylistMinHeight).isActive = true
 
+    updateVideoViewHeightConstraint()
+
     controlViewTopConstraint.isActive = false
 
     // tracking area
@@ -148,6 +156,28 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
     volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
     volumePopover.delegate = self
+  }
+
+  func updateVideoViewHeightConstraint(height: CGFloat? = nil) {
+    if !isVideoVisible {
+      if let videoWrapperViewHeightConstraint = videoWrapperViewHeightConstraint {
+        videoWrapperView.removeConstraint(videoWrapperViewHeightConstraint)
+      }
+      videoWrapperView.layout()
+      return
+    }
+
+    let height = height ?? heightOfVideoView()
+    if let videoWrapperViewHeightConstraint = videoWrapperViewHeightConstraint {
+      guard videoWrapperViewHeightConstraint.constant != height else {
+        return
+      }
+      videoWrapperView.removeConstraint(videoWrapperViewHeightConstraint)
+    }
+    Logger.log("Updating videoWrapperViewHeightConstraint to \(height)")
+    videoWrapperViewHeightConstraint = videoWrapperView.heightAnchor.constraint(equalToConstant: height)
+    videoWrapperViewHeightConstraint.isActive = true
+    videoWrapperView.layout()
   }
 
   override internal func setMaterial(_ theme: Preference.Theme?) {
@@ -201,7 +231,15 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - Window delegate: Open / Close
 
   override func showWindow(_ sender: Any?) {
+    guard let window = window else { return }
     resetScrollingLabels()
+
+    /// Video aspect ratio may have changed if a different video is being shown than last time.
+    /// Use `constrainWindowSize()` and `setFrame()` to gracefully adapt layout as needed
+    var newFrame = window.frame
+    newFrame.size = constrainWindowSize(newFrame.size)
+    window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+
     super.showWindow(sender)
   }
 
@@ -226,6 +264,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     // Re-evaluate space requirements for labels. May need to scroll
     resetScrollingLabels()
+    updateVideoViewHeightConstraint()
 
     videoView.videoLayer.draw()
   }
@@ -392,22 +431,21 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       // The window may be in the middle of a previous toggle, so we can't just assume window's current frame
       // represents a state where the playlist is fully shown or fully hidden. Instead, start by computing the height
       // we want to set, and then figure out the changes needed to the window's existing frame.
-      let heightToAdd = desiredPlaylistHeight - currentPlaylistHeight
+      let targetHeightToAdd = desiredPlaylistHeight - currentPlaylistHeight
       // Fill up screen if needed
-      newFrame.origin.y = max(newFrame.origin.y - heightToAdd, screen.visibleFrame.origin.y)
-      newFrame.size.height = min(newFrame.size.height + heightToAdd, screen.visibleFrame.height)
-
-      // May need to reduce size of video/art to fit playlist on screen, or other adjustments:
-      newFrame.size = constrainWindowSize(newFrame.size)
+      newFrame.size.height = newFrame.size.height + targetHeightToAdd
     } else { // hide playlist
       // Save playlist height first
       if currentPlaylistHeight > PlaylistMinHeight {
         Preference.set(currentPlaylistHeight, for: .musicModePlaylistHeight)
       }
-      let heightWithoutPlaylist = windowHeightWithoutPlaylist
-      newFrame.origin.y += newFrame.size.height - heightWithoutPlaylist
-      newFrame.size.height = heightWithoutPlaylist
     }
+
+    // May need to reduce size of video/art to fit playlist on screen, or other adjustments:
+    newFrame.size = constrainWindowSize(newFrame.size)
+    let heightDifference = newFrame.height - window.frame.height
+    // adjust window origin to expand downwards, but do not allow bottom of window to fall offscreen
+    newFrame.origin.y = max(newFrame.origin.y - heightDifference, screen.visibleFrame.origin.y)
 
     window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
   }
@@ -415,18 +453,17 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBAction func toggleVideoView(_ sender: Any) {
     guard let window = window else { return }
     isVideoVisible = !isVideoVisible
+    Logger.log("Toggling videoView visibility from \(!isVideoVisible) to \(isVideoVisible)", level: .verbose)
     updateVideoViewLayout()
     let videoViewHeight = round(videoView.frame.height)
+    var frame = window.frame
     if isVideoVisible {
-      var frame = window.frame
       frame.size.height += videoViewHeight
-      frame.size = constrainWindowSize(frame.size)
-      window.setFrame(frame, display: true, animate: false)
     } else {
-      var frame = window.frame
       frame.size.height -= videoViewHeight
-      window.setFrame(frame, display: true, animate: false)
     }
+    frame.size = constrainWindowSize(frame.size)
+    window.setFrame(frame, display: true, animate: false)
   }
 
   // MARK: - Utils
@@ -477,13 +514,15 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
     Logger.log("Constrained miniPlayerWindow. VideoAspect: \(videoAspectRatio), RequestedSize: \(requestedSize), NewSize: \(newWindowSize)", level: .verbose)
 
+    updateVideoViewHeightConstraint(height: videoHeight)
     return newWindowSize
   }
 
   // Returns the current height of the window,
   // including the album art, but not including the playlist.
   private var windowHeightWithoutPlaylist: CGFloat {
-    return backgroundView.frame.height + (isVideoVisible ? videoWrapperView.frame.height : 0)
+    guard let window = window else { return backgroundView.frame.height }
+    return backgroundView.frame.height + (isVideoVisible ? window.frame.width / videoView.aspectRatio : 0)
   }
 
   private var currentPlaylistHeight: CGFloat {
@@ -491,4 +530,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     return window.frame.height - windowHeightWithoutPlaylist
   }
 
+  private func heightOfVideoView(forWindowFrame specifiedFrame: NSRect? = nil) -> CGFloat {
+    guard let window = window, isVideoVisible else { return 0 }
+
+    let windowFrame = specifiedFrame ?? window.frame
+    return windowFrame.width / videoView.aspectRatio
+  }
 }
