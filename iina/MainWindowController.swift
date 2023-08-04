@@ -2888,7 +2888,6 @@ class MainWindowController: PlayerWindowController {
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return requestedSize }
-    Logger.log("WindowWillResize: requestedSize: \(requestedSize)", level: .verbose, subsystem: player.subsystem)
 
     if denyNextWindowResize {
       let currentSize = window.frame.size
@@ -2901,7 +2900,7 @@ class MainWindowController: PlayerWindowController {
     if requestedSize.height <= AppData.minVideoSize.height || requestedSize.width <= AppData.minVideoSize.width {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
-      Logger.log("WindowWillResize: requestedSize smaller than min \(AppData.minVideoSize); returning existing size", level: .verbose, subsystem: player.subsystem)
+      Logger.log("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(window.frame.size)", level: .verbose, subsystem: player.subsystem)
       return window.frame.size
     }
 
@@ -2946,14 +2945,14 @@ class MainWindowController: PlayerWindowController {
         newSize = resizeFromHeight
       }
     }
-    Logger.log("WindowWillResize: returning \(newSize)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowWillResize requestedSize: \(requestedSize), newSize: \(newSize)", level: .verbose, subsystem: player.subsystem)
     return newSize
   }
 
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
-    Logger.log("WindowDidResize (\(window.inLiveResize)): \(window.frame)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)", level: .verbose, subsystem: player.subsystem)
 
     UIAnimation.disableAnimation {
       if isInInteractiveMode {

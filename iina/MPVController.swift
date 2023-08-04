@@ -915,7 +915,7 @@ not applying FFmpeg 9599 workaround
     }
 
     var description: String {
-      return "MPVVideoParams:{ rawSize:\(videoRawWidth)x\(videoRawHeight), dSize:\(videoDisplayWidth)x\(videoDisplayHeight), rotTotal: \(totalRotation), rotUser: \(userRotation) }"
+      return "MPVVideoParams:{rawSize:\(videoRawWidth)x\(videoRawHeight), dSize:\(videoDisplayWidth)x\(videoDisplayHeight), rotTotal: \(totalRotation), rotUser: \(userRotation)}"
     }
   }
 

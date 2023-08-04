@@ -284,6 +284,16 @@ extension CGFloat {
       return Double(copysign(1, self))
     }
   }
+
+  var string2f: String {
+    String(format: "%.2f", self)
+  }
+}
+
+extension Bool {
+  var yn: String {
+    self ? "Y" : "N"
+  }
 }
 
 extension Double {

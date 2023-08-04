@@ -263,7 +263,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   }
 
   func windowDidEndLiveResize(_ notification: Notification) {
-    let playlistHeight = currentPlaylistHeight
+    let playlistHeight = round(currentPlaylistHeight)
     if playlistHeight >= PlaylistMinHeight {
       // save playlist height
       Logger.log("Saving playlist height: \(playlistHeight)")
@@ -405,7 +405,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     guard let window = window else { return }
     guard let screen = window.screen else { return }
     let showPlaylist = !isPlaylistVisible
-    Logger.log("Toggling playlist visibility from \(!showPlaylist) to \(showPlaylist)", level: .verbose)
+    Logger.log("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)", level: .verbose)
     self.isPlaylistVisible = showPlaylist
     let currentPlaylistHeight = currentPlaylistHeight
     var newFrame = window.frame
@@ -440,7 +440,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBAction func toggleVideoView(_ sender: Any) {
     guard let window = window else { return }
     isVideoVisible = !isVideoVisible
-    Logger.log("Toggling videoView visibility from \(!isVideoVisible) to \(isVideoVisible)", level: .verbose)
+    Logger.log("Toggling videoView visibility from \((!isVideoVisible).yn) to \(isVideoVisible.yn)", level: .verbose)
     updateVideoViewLayout()
     let videoViewHeight = round(videoView.frame.height)
     var frame = window.frame
@@ -506,7 +506,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     let maxHeight = isPlaylistVisible ? visibleScreenSize.height : minWindowHeight
     newHeight = min(newHeight, maxHeight)
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
-    Logger.log("Constrained miniPlayerWindow. VideoAspect: \(videoAspectRatio), RequestedSize: \(requestedSize), NewSize: \(newWindowSize)", level: .verbose)
+    Logger.log("Constraining miniPlayer. VideoAspect=\(videoAspectRatio.string2f), ReqSize=\(requestedSize), NewSize=\(newWindowSize)", level: .verbose)
 
     updateVideoViewHeightConstraint(height: videoHeight, animate: animate)
     return newWindowSize
@@ -530,7 +530,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     guard let window = window else { return }
 
     newHeight = height ?? window.frame.width / videoView.aspectRatio
-    Logger.log("Updating videoWrapperViewHeightConstraint to \(newHeight)")
 
     if let videoWrapperViewHeightConstraint = videoWrapperViewHeightConstraint {
       if animate {

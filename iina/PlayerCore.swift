@@ -1788,7 +1788,7 @@ class PlayerCore: NSObject {
       if useTimer {
         summary += ", timeInterval \(timerConfig.interval)"
       }
-      Logger.log("SyncUITimer \(summary). Player={paused:\(info.isPaused) network:\(info.isNetworkResource) mini:\(isInMiniPlayer) touchBar:\(needsTouchBar) stopping:\(isStopping) quitting:\(isShuttingDown)}",
+      Logger.log("SyncUITimer \(summary). Player={paused:\(info.isPaused.yn) network:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stopping:\(isStopping.yn) quitting:\(isShuttingDown.yn)}",
                  level: .verbose, subsystem: subsystem)
     }
 
