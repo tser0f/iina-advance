@@ -227,7 +227,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if let menuItem = keyBinding.menuItem, let action = menuItem.action {
       // - Menu item (e.g. custom video filter)
       // If a menu item's key equivalent doesn't have any modifiers, the player window will get the key event instead of the main menu.
-      Logger.log("Executing action for menuItem \(menuItem.title.quoted)", level: .verbose)
+      Logger.log("Executing action for menuItem \(menuItem.title.quoted)", level: .verbose, subsystem: player.subsystem)
       NSApp.sendAction(action, to: self, from: menuItem)
       return true
     } else if keyBinding.isIINACommand {
@@ -236,7 +236,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         handleIINACommand(iinaCommand)
         return true
       } else {
-        Logger.log("Unrecognized IINA command: \(keyBinding.rawAction.quoted)", level: .error)
+        Logger.log("Unrecognized IINA command: \(keyBinding.rawAction.quoted)", level: .error, subsystem: player.subsystem)
         return false
       }
     } else {
@@ -254,7 +254,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if returnValue == 0 {
         return true
       } else {
-        Logger.log("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)", level: .error)
+        Logger.log("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)",
+                   level: .error, subsystem: player.subsystem)
         return false
       }
     }
@@ -464,6 +465,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Window delegate: Open / Close
   
   func windowDidOpen() {
+    Logger.log("WindowDidOpen", level: .verbose, subsystem: player.subsystem)
     if Preference.bool(for: .alwaysFloatOnTop) {
       setWindowFloatingOnTop(true)
     }
@@ -473,7 +475,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Window delegate: Activeness status
 
   func windowDidBecomeMain(_ notification: Notification) {
-    Logger.log("Window became main: \(player.subsystem.rawValue)", level: .verbose)
+    Logger.log("Window became main: \(player.subsystem.rawValue)", level: .verbose, subsystem: player.subsystem)
 
     PlayerCore.lastActive = player
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
@@ -485,13 +487,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
   
   func windowDidResignMain(_ notification: Notification) {
-    Logger.log("Window is no longer main: \(player.subsystem.rawValue)", level: .verbose)
+    Logger.log("Window is no longer main: \(player.subsystem.rawValue)", level: .verbose, subsystem: player.subsystem)
 
     NotificationCenter.default.post(name: .iinaMainWindowChanged, object: false)
   }
 
   func windowDidChangeScreen(_ notification: Notification) {
-    Logger.log("windowDidChangeScreen()", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowDidChangeScreen", level: .verbose, subsystem: player.subsystem)
     videoView.updateDisplayLink()
   }
 
@@ -515,11 +517,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // The mpv documentation for the duration property indicates mpv is not always able to determine
     // the video duration in which case the property is not available.
     guard let duration = player.info.videoDuration else {
-      Logger.log("Video duration not available")
+      Logger.log("Video duration not available", subsystem: player.subsystem)
       return
     }
     guard let pos = player.info.videoPosition else {
-      Logger.log("Video position not available")
+      Logger.log("Video position not available", subsystem: player.subsystem)
       return
     }
     [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }

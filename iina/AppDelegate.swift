@@ -344,8 +344,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     let activePlayer = PlayerCore.active  // will load the first PlayerCore if not already loaded
     Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
-    let firstPlayerWindow = activePlayer.mainWindow  // load MainWindow preemptively
-    firstPlayerWindow!.window?.orderOut(self)
 
     if #available(macOS 10.13, *) {
       if RemoteCommandController.useSystemMediaControl {
@@ -474,12 +472,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       case Constants.WindowAutosaveName.audioFilter:
         showAudioFilterWindow(self)
       default:
-        // TODO
-        //          if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
-        //            PlayerCore.restoreSavedState(forPlayerUID: uniqueID)
-        //          } else {
-        //            Logger.log("Cannot restore window because it is not recognized: \(autosaveName)", level: .warning)
-        //          }
+        if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
+          PlayerCore.restoreSavedUIState(forPlayerUID: uniqueID)
+        } else {
+          Logger.log("Cannot restore window because it is not recognized: \(autosaveName)", level: .warning)
+        }
         break
       }
     }

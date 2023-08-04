@@ -120,7 +120,7 @@ class Logger: NSObject {
   fileprivate static var piiDict: [String: Int] = [:]
 
   static func getOrCreatePII(for privateString: String) -> String {
-    guard enabled && enablePiiMasking else {
+    guard enabled && enablePiiMasking && !privateString.isEmpty else {
       return privateString
     }
 

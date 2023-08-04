@@ -701,13 +701,11 @@ class MainWindowController: PlayerWindowController {
 
   var pipVideo: NSViewController!
 
-  var windowStateName: String? = nil
-
   // MARK: - Initialization
 
   override init(playerCore: PlayerCore) {
     super.init(playerCore: playerCore)
-    self.windowStateName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
+    self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
   }
 
@@ -4310,7 +4308,10 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Utility
 
   func saveWindowFrame() {
-    // TODO: implement this
+    guard let window = window else { return }
+    let frame = window.frame
+    player.stateDict["frame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
+    player.saveUIState()
   }
 
   internal override func handleIINACommand(_ cmd: IINACommand) {

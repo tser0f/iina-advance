@@ -1280,6 +1280,18 @@ struct Preference {
     /// will return the default values.
     private static var disableForThisInstance = false
 
+    static func getPlayerState(playerUID: String) -> [String: Any]? {
+      guard isRestoreEnabled else { return nil }
+      let key = String(format: Constants.WindowAutosaveName.mainPlayer, playerUID)
+      return ud.dictionary(forKey: key)
+    }
+
+    static func setPlayerState(playerUID: String, _ stateDict: [String: Any]) {
+      guard isSaveEnabled else { return }
+      let key = String(format: Constants.WindowAutosaveName.mainPlayer, playerUID)
+      ud.setValue(stateDict, forKey: key)
+    }
+
     static var isSaveEnabled: Bool {
       return !disableForThisInstance && Preference.bool(for: .enableSaveUIState)
     }
@@ -1329,7 +1341,7 @@ struct Preference {
 
     static func saveOpenWindowList(windowNamesBackToFront: [String]) {
       guard isSaveEnabled else { return }
-      // Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
+//      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
       let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")
       Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
     }
