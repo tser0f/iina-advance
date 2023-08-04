@@ -91,10 +91,10 @@ class PlayerCore: NSObject {
     return pc
   }
 
-  static func restoreSavedUIState(forPlayerUID uid: String) {
-    Logger.log("Creating & restoring saved state for \(String(format: Constants.WindowAutosaveName.mainPlayer, uid).quoted)")
+  static func restoreUIState(forPlayerUID uid: String) {
+    Logger.log("Creating new PlayerCore & restoring saved state for \(String(format: Constants.WindowAutosaveName.mainPlayer, uid).quoted)")
     let playerCore = createPlayerCore(label: uid)
-    playerCore.restoreSavedUIState()
+    playerCore.restoreUIState()
   }
 
   static func activeOrNewForMenuAction(isAlternative: Bool) -> PlayerCore {
@@ -105,6 +105,8 @@ class PlayerCore: NSObject {
   // MARK: - Fields
 
   let subsystem: Logger.Subsystem
+
+  var log: Logger.Subsystem { self.subsystem }
 
   var label: String
   var isManagedByPlugin = false
@@ -494,9 +496,7 @@ class PlayerCore: NSObject {
     uninitVideo()
   }
 
-  var stateDict: [String: Any] = [:]
-
-  fileprivate func restoreSavedUIState() {
+  fileprivate func restoreUIState() {
     guard Preference.UIState.isRestoreEnabled else {
       Logger.log("UI restore disabled! Will not restore player state", level: .error, subsystem: subsystem)
       return
@@ -505,9 +505,9 @@ class PlayerCore: NSObject {
     loadPlugins()
 
     if let savedDict = Preference.UIState.getPlayerState(playerUID: self.label) {
-      stateDict = savedDict
+      info.persistedProperties = savedDict
 
-      if let csv = stateDict["frame"] as? String {
+      if let csv = savedDict["frame"] as? String {
         let dims: [Int] = csv.components(separatedBy: ",").compactMap{Int($0)}
         if dims.count == 4 {
           let windowFrame = NSRect(x: dims[0], y: dims[1], width: dims[2], height: dims[3])
@@ -517,24 +517,32 @@ class PlayerCore: NSObject {
         Logger.log("Could not restore UI state for property 'frame'", level: .error, subsystem: subsystem)
       }
 
-      if let urlString = stateDict["url"] as? String {
+      if let urlString = savedDict["currentURL"] as? String {
         openMainWindow(url: URL(string: urlString))
         mainWindow.window!.makeKeyAndOrderFront(nil)
       } else {
-        Logger.log("Could not restore UI state for property 'url'", level: .error, subsystem: subsystem)
+        Logger.log("Could not restore UI state for property 'currentURL'", level: .error, subsystem: subsystem)
       }
+
+      if let wasPaused = savedDict["isPaused"] as? Bool {
+        if wasPaused {
+          pause()
+        } else {
+          resume()
+        }
+      }
+
       // TODO: much, much more
 
     }
   }
 
   func saveUIState() {
-    if let url = info.currentURL {
-      stateDict["url"] = url.absoluteString
-    } else {
-      Logger.log("Could not save UI state for property 'url'", level: .error, subsystem: subsystem)
+    var props = info.getPropDict()
+    if let frame = mainWindow.window?.frame {
+      props["frame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
     }
-    Preference.UIState.setPlayerState(playerUID: self.label, stateDict)
+    Preference.UIState.setPlayerState(playerUID: self.label, props)
   }
 
   /// Initiate shutdown of this player.
@@ -634,7 +642,7 @@ class PlayerCore: NSObject {
 
   // MARK: - MPV commands
 
-  func togglePause(_ set: Bool? = nil) {
+  func togglePause() {
     info.isPaused ? resume() : pause()
   }
 
@@ -643,6 +651,7 @@ class PlayerCore: NSObject {
   }
 
   func resume() {
+    // FIXME: add a switch for this
     // Restart playback when reached EOF
     if mpv.getFlag(MPVProperty.eofReached) {
       seek(absoluteSecond: 0)
@@ -1088,18 +1097,18 @@ class PlayerCore: NSObject {
   }
 
   private func _playlistRemove(_ index: Int) {
-    Logger.log("Removing row \(index) from playlist", level: .verbose)
+    subsystem.verbose("Removing row \(index) from playlist")
     mpv.command(.playlistRemove, args: [index.description])
   }
 
   func playlistRemove(_ index: Int) {
-    Logger.log("Will remove row \(index) from playlist")
+    subsystem.verbose("Will remove row \(index) from playlist")
     _playlistRemove(index)
     postNotification(.iinaPlaylistChanged)
   }
 
   func playlistRemove(_ indexSet: IndexSet) {
-    Logger.log("Will remove rows \(indexSet.map{$0}) from playlist")
+    subsystem.verbose("Will remove rows \(indexSet.map{$0}) from playlist")
     var count = 0
     for i in indexSet {
       _playlistRemove(i - count)
@@ -1527,9 +1536,10 @@ class PlayerCore: NSObject {
 
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
-    Logger.log("File loaded", subsystem: subsystem)
+    log.debug("File loaded")
     triedUsingExactSeekForCurrentFile = false
     info.fileLoading = false
+    info.fileLoaded = true
     // Playback will move directly from stopped to loading when transitioning to the next file in
     // the playlist.
     isStopping = false

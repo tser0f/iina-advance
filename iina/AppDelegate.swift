@@ -473,7 +473,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         showAudioFilterWindow(self)
       default:
         if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
-          PlayerCore.restoreSavedUIState(forPlayerUID: uniqueID)
+          PlayerCore.restoreUIState(forPlayerUID: uniqueID)
         } else {
           Logger.log("Cannot restore window because it is not recognized: \(autosaveName)", level: .warning)
         }

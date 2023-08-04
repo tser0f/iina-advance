@@ -443,7 +443,7 @@ class VideoView: NSView {
 extension VideoView {
   func refreshEdrMode() {
     guard player.mainWindow.loaded else { return }
-    guard player.mpv.fileLoaded else { return }
+    guard player.info.fileLoaded else { return }
     guard let displayId = currentDisplay else { return }
     if let screen = self.window?.screen {
       NSScreen.log("Refreshing HDR for \(player.subsystem.rawValue) @ display\(displayId)", screen)

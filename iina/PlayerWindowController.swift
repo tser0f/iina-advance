@@ -513,7 +513,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // IINA listens for changes to mpv properties such as chapter that can occur during file loading
     // resulting in this function being called before mpv has set its position and duration
     // properties. Confirm the window and file have been loaded.
-    guard loaded, player.mpv.fileLoaded else { return }
+    guard loaded, player.info.fileLoaded else { return }
     // The mpv documentation for the duration property indicates mpv is not always able to determine
     // the video duration in which case the property is not available.
     guard let duration = player.info.videoDuration else {

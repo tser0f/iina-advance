@@ -72,6 +72,22 @@ class Logger: NSObject {
     required init(rawValue: String) {
       self.rawValue = rawValue
     }
+
+     func verbose(_ rawMessage: String) {
+       Logger.log(rawMessage, level: .verbose, subsystem: self)
+    }
+
+     func debug(_ rawMessage: String) {
+       Logger.log(rawMessage, level: .debug, subsystem: self)
+    }
+
+     func warn(_ rawMessage: String) {
+       Logger.log(rawMessage, level: .warning, subsystem: self)
+    }
+
+     func error(_ rawMessage: String) {
+       Logger.log(rawMessage, level: .error, subsystem: self)
+    }
   }
 
   @Atomic static var subsystems: [Subsystem] = [.general]

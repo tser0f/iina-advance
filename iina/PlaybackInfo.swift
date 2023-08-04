@@ -31,10 +31,13 @@ class PlaybackInfo {
     }
   }
 
-  var fileLoading: Bool = false
+  var isRestoring: Bool = false
 
   var justStartedFile: Bool = false
   var justOpenedFile: Bool = false
+
+  var fileLoading: Bool = false
+  var fileLoaded: Bool = false
 
   var shouldAutoLoadFiles: Bool = false
   var isMatchingSubtitles = false
@@ -47,35 +50,39 @@ class PlaybackInfo {
   var persistedProperties: [String: Any] = [:]
 
   func getPropDict() -> [String: Any] {
-    var dict: [String: Any] = [:]
-    
-    dict["videoURL"] = currentURL
-    dict["playPosition"] = videoPosition?.second
-    dict["videoDuration"] = videoDuration?.second
-    dict["isPaused"] = isPaused
-    dict["deinterlace"] = deinterlace
-    dict["hwdec"] = hwdec
-    dict["hdrEnabled"] = hdrEnabled
+    var props: [String: Any] = persistedProperties
 
-    dict["aid"] = aid
-    dict["sid"] = sid
-    dict["sid2"] = secondSid
-    dict["vid"] = vid
+    if let urlString = currentURL?.absoluteString ?? nil {
+      props["currentURL"] = urlString
+    }
+    if let videoPosition = videoPosition?.second {
+      props["playPosition"] = videoPosition
+    }
+    props["isPaused"] = isPaused
+  /*
+    props["deinterlace"] = deinterlace
+    props["hwdec"] = hwdec
+    props["hdrEnabled"] = hdrEnabled
 
-    dict["brightness"] = brightness
-    dict["contrast"] = contrast
-    dict["saturation"] = saturation
-    dict["gamma"] = gamma
-    dict["hue"] = hue
-    dict["playSpeed"] = playSpeed
-    dict["volume"] = volume
-    dict["isMuted"] = isMuted
-    dict["audioDelay"] = audioDelay
-    dict["subDelay"] = subDelay
-    dict["abLoopStatus"] = abLoopStatus.rawValue
-    dict["userRotationDeg"] = userRotation
+    props["aid"] = aid
+    props["sid"] = sid
+    props["sid2"] = secondSid
+    props["vid"] = vid
 
-    return dict
+    props["brightness"] = brightness
+    props["contrast"] = contrast
+    props["saturation"] = saturation
+    props["gamma"] = gamma
+    props["hue"] = hue
+    props["playSpeed"] = playSpeed
+    props["volume"] = volume
+    props["isMuted"] = isMuted
+    props["audioDelay"] = audioDelay
+    props["subDelay"] = subDelay
+    props["abLoopStatus"] = abLoopStatus.rawValue
+    props["userRotationDeg"] = userRotation
+*/
+    return props
   }
 
   var isPaused: Bool = false {

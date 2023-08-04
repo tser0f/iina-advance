@@ -119,8 +119,6 @@ class MPVController: NSObject {
 
   var receivedEndFileWhileLoading: Bool = false
 
-  var fileLoaded: Bool = false
-
   let inputSectionLogScanner: MPVInputSectionLogScanner!
 
   private var hooks: [UInt64: MPVHookValue] = [:]
@@ -1148,13 +1146,17 @@ not applying FFmpeg 9599 workaround
   }
 
   private func onFileLoaded() {
-    // mpvSuspend()
-    setFlag(MPVOption.PlaybackControl.pause, true)
     // Get video size and set the initial window size
+    if player.info.isRestoring {
+      let pause = player.info.justOpenedFile && Preference.bool(for: .pauseWhenOpen)
+      setFlag(MPVOption.PlaybackControl.pause, pause)
+    }
+    player.info.isRestoring = false
+
     let duration = getDouble(MPVProperty.duration)
     let position = getDouble(MPVProperty.timePos)
     let vParams = queryForVideoParams()
-    Logger.log("Got info for opened file. \(vParams), Loc(sec): \(position) / \(duration)", subsystem: player.subsystem)
+    player.log.debug("Got info for opened file. \(vParams), Loc(sec): \(position) / \(duration)")
     player.info.totalRotation = vParams.totalRotation
     player.info.userRotation = vParams.userRotation
     player.info.videoRawWidth = vParams.videoRawWidth
@@ -1168,11 +1170,7 @@ not applying FFmpeg 9599 workaround
     }
     player.info.videoPosition = VideoTime(position)
     player.fileLoaded()
-    fileLoaded = true
-    // mpvResume()
-    if !(player.info.justOpenedFile && Preference.bool(for: .pauseWhenOpen)) {
-      setFlag(MPVOption.PlaybackControl.pause, false)
-    }
+
     player.syncUI(.playlist)
   }
 
@@ -1471,8 +1469,8 @@ not applying FFmpeg 9599 workaround
           player.info.currentURL = nil
         }
         player.info.isIdle = true
-        if fileLoaded {
-          fileLoaded = false
+        if player.info.fileLoaded {
+          player.info.fileLoaded = false
           player.closeWindow()
         }
         receivedEndFileWhileLoading = false

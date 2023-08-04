@@ -4309,8 +4309,6 @@ class MainWindowController: PlayerWindowController {
 
   func saveWindowFrame() {
     guard let window = window else { return }
-    let frame = window.frame
-    player.stateDict["frame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
     player.saveUIState()
   }
 
