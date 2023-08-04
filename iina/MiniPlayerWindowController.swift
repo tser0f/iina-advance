@@ -9,7 +9,7 @@
 import Cocoa
 
 // Hide playlist if its height is too small to display at least 3 items:
-fileprivate let PlaylistMinHeight: CGFloat = 140
+fileprivate let PlaylistMinHeight: CGFloat = 138
 fileprivate let AnimationDurationShowControl: TimeInterval = 0.2
 fileprivate let MiniPlayerMinWidth: CGFloat = 300
 
@@ -148,6 +148,8 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     closeButtonBackgroundViewBox.isHidden = true
     closeButtonView.alphaValue = 0
     controlView.alphaValue = 0
+
+    updateVideoViewLayout()
     
     // tool tips
     togglePlaylistButton.toolTip = Preference.ToolBarButton.playlist.description()
@@ -238,6 +240,15 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     resetScrollingLabels()
+
+    if !window.inLiveResize && requestedSize.width <= MiniPlayerMinWidth {
+      // Responding with the current size seems to work much better with certain window management tools
+      // (e.g. BetterTouchTool's window snapping) than trying to respond with the min size,
+      // which seems to result in the window manager retrying with different sizes, which results in flickering.
+      Logger.log("WindowWillResize: requestedSize smaller than min \(MiniPlayerMinWidth); returning existing size", level: .verbose, subsystem: player.subsystem)
+      return window.frame.size
+    }
+
     return constrainWindowSize(requestedSize)
   }
 
@@ -390,13 +401,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
   }
 
-  func updateVideoViewLayout() {
-    videoWrapperViewBottomConstraint.isActive = isVideoVisible
-    controlViewTopConstraint.isActive = !isVideoVisible
-    closeButtonBackgroundViewVE.isHidden = !isVideoVisible
-    closeButtonBackgroundViewBox.isHidden = isVideoVisible
-  }
-
   @IBAction func togglePlaylist(_ sender: Any) {
     guard let window = window else { return }
     guard let screen = window.screen else { return }
@@ -416,7 +420,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       // we want to set, and then figure out the changes needed to the window's existing frame.
       let targetHeightToAdd = desiredPlaylistHeight - currentPlaylistHeight
       // Fill up screen if needed
-      newFrame.size.height = newFrame.size.height + targetHeightToAdd
+      newFrame.size.height += targetHeightToAdd
     } else { // hide playlist
       // Save playlist height first
       if currentPlaylistHeight > PlaylistMinHeight {
@@ -449,7 +453,14 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     window.setFrame(frame, display: true, animate: false)
   }
 
-  // MARK: - Utils
+  // MARK: - Layout
+
+  private func updateVideoViewLayout() {
+    videoWrapperViewBottomConstraint.isActive = isVideoVisible
+    controlViewTopConstraint.isActive = !isVideoVisible
+    closeButtonBackgroundViewVE.isHidden = !isVideoVisible
+    closeButtonBackgroundViewBox.isHidden = isVideoVisible
+  }
 
   /// The MiniPlayerWindow's width must be between `MiniPlayerMinWidth` and `Preference.musicModeMaxWidth`.
   /// It is composed of up to 3 vertical sections:
@@ -471,7 +482,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     if isVideoVisible {
       var maxVideoHeight = visibleScreenSize.height - backgroundView.frame.height - minPlaylistHeight
       /// `maxVideoHeight` can be negative if very short screen! Fall back to height based on `MiniPlayerMinWidth` if needed
-      maxVideoHeight = max(maxVideoHeight, MiniPlayerMinWidth / videoView.aspectRatio)
+      maxVideoHeight = max(maxVideoHeight, MiniPlayerMinWidth / videoAspectRatio)
       maxWindowWidth = maxVideoHeight * videoAspectRatio
     } else {
       maxWindowWidth = MiniPlayerWindowController.maxWindowWidth
@@ -534,9 +545,13 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     videoWrapperView.superview!.layout()
   }
 
+  // MARK: - Utils
+
   private func adjustLayoutForVideoChange() {
     guard let window = window else { return }
     resetScrollingLabels()
+
+    defaultAlbumArt.isHidden = player.info.vid != 0
 
     UIAnimation.runAsync(UIAnimation.Task{ [self] in
       var newFrame = window.frame

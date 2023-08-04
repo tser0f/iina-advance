@@ -534,7 +534,6 @@ class PlayerCore: NSObject {
     miniPlayer.window?.orderOut(self)
     isInMiniPlayer = true
 
-    miniPlayer.updateVideoViewLayout()
     miniPlayer.updateTitle()
     refreshSyncUITimer()
     let playlistView = mainWindow.playlistView.view
@@ -553,12 +552,6 @@ class PlayerCore: NSObject {
     videoView.removeFromSuperview()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
     videoView.addConstraintsToFillSuperview()
-    miniPlayer.window?.layoutIfNeeded()
-
-    // if received video size before switching to music mode, hide default album art
-    if info.vid != 0 {
-      miniPlayer.defaultAlbumArt.isHidden = true
-    }
 
     // hide main window, and show mini player window
     mainWindow.window?.orderOut(self)
@@ -1515,10 +1508,6 @@ class PlayerCore: NSObject {
       refreshSyncUITimer()
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
-      }
-
-      if self.isInMiniPlayer {
-        miniPlayer.defaultAlbumArt.isHidden = self.info.vid != 0
       }
     }
     if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {

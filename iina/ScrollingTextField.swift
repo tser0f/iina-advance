@@ -9,7 +9,7 @@
 import Cocoa
 
 // Adjust x offset by this, otherwise text will be off-center
-// (add 2 to actual offset to prevent leading edge from clipping)
+// (add 2 to frame's actual offset to prevent leading edge from clipping)
 fileprivate let mediaInfoViewLeadingOffset: CGFloat = 20 + 2
 fileprivate let startPoint = NSPoint(x: mediaInfoViewLeadingOffset, y: 0)
 
