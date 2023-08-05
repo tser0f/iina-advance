@@ -288,6 +288,10 @@ extension CGFloat {
   var string2f: String {
     String(format: "%.2f", self)
   }
+
+  var twoDigitHex: String {
+    String(format: "%02X", self)
+  }
 }
 
 extension Bool {
@@ -789,23 +793,25 @@ extension NSScreen {
     return deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
   }
 
-  /// Gets the actual scale factor, because `NSScreen.backingScaleFactor` does not provide this.
-  var screenScaleFactor: CGFloat {
-    let screen = self
-    let screenFrame: NSRect = screen.frame
-
+  // Returns nil on failure (not sure if success is guaranteed)
+  var nativeResolution: CGSize? {
     // if there's a native resolution found in this method, that's more accurate than above
-    let myModes = CGDisplayCopyAllDisplayModes(screen.displayId, nil) as! [CGDisplayMode]
-    for mode in myModes {
+    let displayModes = CGDisplayCopyAllDisplayModes(displayId, nil) as! [CGDisplayMode]
+    for mode in displayModes {
       let isNative = mode.ioFlags & UInt32(kDisplayModeNativeFlag) > 0
-//      let flags = String(format:"%02X", mode.ioFlags)
       if isNative {
-        let scaleFactor = CGFloat(mode.width) / screenFrame.size.width
-        Logger.log("NativeSize: \(mode.pixelWidth)x\(mode.pixelHeight) CurrentSize:\(screenFrame.width)x\(screenFrame.height) ScaleFactor: \(scaleFactor)", level: .verbose)
-        return scaleFactor
+        return CGSize(width: mode.width, height: mode.height)
       }
     }
 
+    return nil
+  }
+
+  /// Gets the actual scale factor, because `NSScreen.backingScaleFactor` does not provide this.
+  var screenScaleFactor: CGFloat {
+    if let nativeSize = nativeResolution {
+      return CGFloat(nativeSize.width) / frame.size.width
+    }
     return 1.0  // default fallback
   }
 
@@ -825,10 +831,12 @@ extension NSScreen {
     if #available(macOS 10.15, *) {
       let maxPossibleEDR = screen.maximumPotentialExtendedDynamicRangeColorComponentValue
       let canEnableEDR = maxPossibleEDR > 1.0
+      let nativeRes = screen.nativeResolution
+      let nativeResStr = nativeRes == nil ? "<err>" : "\(nativeRes!)"
       // Screen frame coordinates have their origin at the lower left of the primary display.
       // So any display to the left of primary will be in negative X, and any below primary will have negative Y.
       // `visibleFrame` is what we most care about.
-      Logger.log("\(label): \"\(screen.localizedName)\" visibleFrame: \(screen.visibleFrame), backingScaleFactor: \(screen.backingScaleFactor), screenScaleFactor: \(screen.screenScaleFactor) EDR: {supports=\(canEnableEDR) maxPotential=\(maxPossibleEDR) maxCurrent=\(screen.maximumExtendedDynamicRangeColorComponentValue)}", level: .verbose)
+      Logger.log("\(label): \"\(screen.localizedName)\" visible \(screen.visibleFrame), native \(nativeResStr) bScale \(screen.backingScaleFactor), sScale: \(screen.screenScaleFactor) EDR: {supports=\(canEnableEDR.yn) maxPotential=\(maxPossibleEDR)}", level: .verbose)
     } else {
       Logger.log("\(label): visible frame \(screen.visibleFrame)", level: .verbose)
     }

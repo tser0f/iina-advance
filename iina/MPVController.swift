@@ -633,6 +633,7 @@ not applying FFmpeg 9599 workaround
   }
 
   func observe(property: String, format: mpv_format = MPV_FORMAT_DOUBLE) {
+    player.log.verbose("Adding mpv observer for prop \(property.quoted)")
     mpv_observe_property(mpv, 0, property, format)
   }
 
@@ -1598,7 +1599,9 @@ not applying FFmpeg 9599 workaround
     }
 
     if code < 0 {
-      Utility.showAlert("mpv_error", arguments: [String(cString: mpv_error_string(code)), "\(code)", name])
+      let message = String(cString: mpv_error_string(code))
+      player.log.error("Displaying mpv msg popup for error (\(code), name: \(name.quoted)): \"\(message)\"")
+      Utility.showAlert("mpv_error", arguments: [message, "\(code)", name])
     }
 
     if sync {

@@ -187,9 +187,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     // Start the log file by logging the version of IINA producing the log file.
-    let (version, build) = InfoDictionary.shared.version
-    let type = InfoDictionary.shared.buildTypeIdentifier
-    Logger.log("IINA \(version) Build \(build)" + (type == nil ? "" : " " + type!))
+    Logger.log(InfoDictionary.shared.printableBuildInfo)
 
     // The copyright is used in the Finder "Get Info" window which is a narrow window so the
     // copyright consists of multiple lines.
@@ -234,6 +232,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(self.handleURLEvent(event:withReplyEvent:)), forEventClass: AEEventClass(kInternetEventClass), andEventID: AEEventID(kAEGetURL))
 
     // guide window
+    let version = InfoDictionary.shared.version.0
     if FirstRunManager.isFirstRun(for: .init("firstLaunchAfter\(version)")) {
       guideWindow.show(pages: [.highlights])
     }
@@ -241,16 +240,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Hide Window > "Enter Full Screen" menu item, because this is already present in the Video menu
     UserDefaults.standard.set(false, forKey: "NSFullScreenMenuItemEverywhere")
 
-    // handle arguments
+    // handle command line arguments
     let arguments = ProcessInfo.processInfo.arguments.dropFirst()
-    guard arguments.count > 0 else { return }
+    if !arguments.isEmpty {
+      startFromCommandLine(arguments)
+    }
+  }
 
+  private func startFromCommandLine(_ args: ArraySlice<String>) {
     var iinaArgs: [String] = []
     var iinaArgFilenames: [String] = []
     var dropNextArg = false
 
-    Logger.log("Got arguments \("\(arguments)".pii)")
-    for arg in arguments {
+    Logger.log("Got cmd line arguments \("\(args)".pii)")
+    for arg in args {
       if dropNextArg {
         dropNextArg = false
         continue
@@ -277,7 +280,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     Logger.log("Filenames from arguments: \(iinaArgFilenames.map {$0.pii})")
     commandLineStatus.parseArguments(iinaArgs)
 
-    print("IINA \(version) Build \(build)")
+    print(InfoDictionary.shared.printableBuildInfo)
 
     guard !iinaArgFilenames.isEmpty || commandLineStatus.isStdin else {
       print("This binary is not intended for being used as a command line tool. Please use the bundled iina-cli.")
@@ -316,26 +319,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     JavascriptPlugin.loadGlobalInstances()
 
-    /** In case we are restoring windows from a previous launch, we must do it early, before any `PlayerCore` is referenced.
-        This is because `PlayerCore.active` immediately creates the first `PlayerCore`, which creates its `MainWindowController`
-        in its contructor, and we need to supply the window's autosave name to its constructor. */
+    /// In case we are restoring windows from a previous launch, we must do it early, before any `PlayerCore` is referenced.
+    /// This is because `PlayerCore.active` immediately creates the first `PlayerCore`, which creates its `MainWindowController`
+    /// in its contructor, and we need to supply the window's autosave name to its constructor.
     if !commandLineStatus.isCommandLine {
+
+      Logger.log("Adding observers")
 
       // The "action on last window closed" action will vary slightly depending on which type of window was closed.
       // Here we add a listener which fires when *any* window is closed, in order to handle that logic all in one place.
-      self.observers.append(NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil,
-                                                            queue: .main, using: self.windowWillClose))
+      observers.append(NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil,
+                                                              queue: .main, using: self.windowWillClose))
 
-      /** Show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. app was launched on its own. */
-      var useLaunchDefaultAction = true
-      if !self.openFileCalled {
+      /// Show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. app was launched
+      /// on its own.
+      var useLaunchDefaultAction: Bool
+      if openFileCalled {
+        useLaunchDefaultAction = false
+      } else {
         // Restore window state *before* hooking up the listener which saves state
         useLaunchDefaultAction = !restoreWindowsFromPreviousLaunch()
       }
 
       // Save ordered list of open windows each time the order of windows changed.
-      self.observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
-                                                            queue: .main, using: self.keyWindowDidChange))
+      observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
+                                                              queue: .main, using: self.keyWindowDidChange))
 
       if useLaunchDefaultAction {
         doLaunchOrReopenAction()
@@ -382,6 +390,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
       if let pc = lastPlayerCore {
         if commandLineStatus.enterMusicMode {
+          Logger.log("Entering music mode as specified via command line", level: .verbose)
           if commandLineStatus.enterPIP {
             // PiP is not supported in music mode. Combining these options is not permitted and is
             // rejected by iina-cli. The IINA executable must have been invoked directly with
@@ -392,12 +401,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           }
           pc.switchToMiniPlayer()
         } else if #available(macOS 10.12, *), commandLineStatus.enterPIP {
+          Logger.log("Entering PIP as specified via command line", level: .verbose)
           pc.mainWindow.enterPIP()
         }
       }
     }
     NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
-
     NSApplication.shared.servicesProvider = self
 
     (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
@@ -532,6 +541,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    Logger.log("applicationShouldTerminateAfterLastWindowClosed() entered", level: .verbose)
     // Certain events (like when PIP is enabled) can result in this being called when it shouldn't.
     guard !PlayerCore.active.mainWindow.isOpen else { return false }
 
@@ -801,22 +811,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func application(_ sender: NSApplication, openFiles filePaths: [String]) {
-    Logger.log("application(openFiles:) called with: \(filePaths)")
+    Logger.log("application(openFiles:) called with: \(filePaths.map{$0.pii})")
     openFileCalled = true
     // if launched from command line, should ignore openFile once
     if shouldIgnoreOpenFile {
       shouldIgnoreOpenFile = false
       return
     }
-    // open pending files
     let urls = filePaths.map { URL(fileURLWithPath: $0) }
 
-    let playableFileCount = PlayerCore.activeOrNew.openURLs(urls)
-    if playableFileCount == 0 {
-      Utility.showAlert("nothing_to_open")
-      NSApp.reply(toOpenOrPrint: .failure)
-    } else {
-      NSApp.reply(toOpenOrPrint: .success)
+    DispatchQueue.main.async {
+      Logger.log("Opening \(urls.count) files")
+      // open pending files
+      var playableFileCount = 0
+      for url in urls {
+        if let openedFileCount = PlayerCore.activeOrNew.openURLs([url]) {
+          playableFileCount += openedFileCount
+        }
+      }
+      if playableFileCount == 0 {
+        Logger.log("Notifying user nothing was opened", level: .verbose)
+        Utility.showAlert("nothing_to_open")
+      }
     }
   }
 
@@ -874,7 +890,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
      Options starting with `no-` are not supported.
    */
   private func parsePendingURL(_ url: String) {
-    Logger.log("Parsing URL \(url)")
+    Logger.log("Parsing URL \(url.pii)")
     guard let parsed = URLComponents(string: url) else {
       Logger.log("Cannot parse URL using URLComponents", level: .warning)
       return
@@ -961,6 +977,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       let isAlternative = (sender as? NSMenuItem)?.tag == AlternativeMenuItemTag
       let playerCore = PlayerCore.activeOrNewForMenuAction(isAlternative: isAlternative)
       if playerCore.openURLs(panel.urls) == 0 {
+        Logger.log("OpenFile: notifying user there is nothing to open", level: .verbose)
         Utility.showAlert("nothing_to_open")
       }
     }

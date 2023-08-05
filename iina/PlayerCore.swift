@@ -10,90 +10,46 @@ import Cocoa
 import MediaPlayer
 
 class PlayerCore: NSObject {
-
   // MARK: - Multiple instances
 
-  static private weak var _lastActive: PlayerCore?
+  static private let store = PlayerCoreStore()
+
+  static var playerCores: [PlayerCore] {
+    return store.getPlayerCores()
+  }
 
   /// - Important: Code referencing this property **must** be run on the main thread as getting the value of this property _may_
   ///              result in a reference the `active` property and that requires use of the main thread.
   static var lastActive: PlayerCore {
     get {
-      return _lastActive ?? active
+      return store.lastActive ?? active
     }
     set {
-      _lastActive = newValue
+      store.lastActive = newValue
     }
   }
 
   /// - Important: Code referencing this property **must** be run on the main thread because it references
   ///              [NSApplication.mainWindow`](https://developer.apple.com/documentation/appkit/nsapplication/1428723-mainwindow)
   static var active: PlayerCore {
-    if let wc = NSApp.mainWindow?.windowController as? MainWindowController {
-      return wc.player
-    } else {
-      return playerCores.first ?? createAndStartPlayerCore()
-    }
+    return store.getActive()
   }
 
   static var newPlayerCore: PlayerCore {
-    return findIdlePlayerCore() ?? createAndStartPlayerCore()
+    return store.getIdleOrCreateNew()
   }
 
   static var activeOrNew: PlayerCore {
-    if playerCores.isEmpty {
-      return createPlayerCore()
-    }
-    if Preference.bool(for: .alwaysOpenInNewWindow) {
-      return newPlayerCore
-    } else {
-      return active
-    }
+    return store.getActiveOrCreateNew()
   }
 
   static var playing: [PlayerCore] {
-    return playerCores.filter { !$0.info.isIdle }
-  }
-
-  static var playerCores: [PlayerCore] = []
-  static private var playerCoreCounter = 0
-
-  static private func findIdlePlayerCore() -> PlayerCore? {
-    return playerCores.first { $0.info.isIdle && !$0.info.fileLoading }
-  }
-
-  static private func createPlayerCore(label: String? = nil) -> PlayerCore {
-    let pc: PlayerCore
-    if let label = label {
-      if playerExists(withLabel: label) {
-        Logger.fatal("Cannot create new PlayerCore: a player already exists with label \(label.quoted)")
-      }
-      pc = PlayerCore(label)
-    } else {
-      while playerExists(withLabel: "\(playerCoreCounter)") {
-        playerCoreCounter += 1
-      }
-      pc = PlayerCore("\(playerCoreCounter)")
-      playerCoreCounter += 1
-    }
-    playerCores.append(pc)
-    return pc
-  }
-
-  static private func playerExists(withLabel label: String) -> Bool {
-    return playerCores.first(where: { $0.label == label }) != nil
-  }
-
-  static private func createAndStartPlayerCore(label: String? = nil) -> PlayerCore {
-    let pc = createPlayerCore(label: label)
-    pc.startMPV()
-    pc.loadPlugins()
-    return pc
+    return store.getNonIdle()
   }
 
   static func restoreUIState(forPlayerUID uid: String) {
     Logger.log("Creating new PlayerCore & restoring saved state for \(String(format: Constants.WindowAutosaveName.mainPlayer, uid).quoted)")
-    let playerCore = createPlayerCore(label: uid)
+    let playerCore = store.createNewPlayerCore(withLabel: uid)
     playerCore.restoreUIState()
   }
 
@@ -113,6 +69,7 @@ class PlayerCore: NSObject {
   var userLabel: String?
   var disableUI = false
   var disableWindowAnimation = false
+  private var didStart = false
   private var didInitVideo = false
 
   @available(macOS 10.12.2, *)
@@ -256,6 +213,7 @@ class PlayerCore: NSObject {
   }
 
   init(_ label: String) {
+    Logger.log("PlayerCore\(label) init")
     self.label = label
     self.subsystem = Logger.Subsystem(rawValue: "player\(label)")
     super.init()
@@ -315,7 +273,6 @@ class PlayerCore: NSObject {
     if shouldAutoLoad {
       info.shouldAutoLoadFiles = true
     }
-    info.hdrEnabled = Preference.bool(for: .enableHdrSupport)
     openMainWindow(url: url)
   }
 
@@ -377,6 +334,7 @@ class PlayerCore: NSObject {
   }
 
   func openURL(_ url: URL, shouldAutoLoad: Bool = true) {
+    info.hdrEnabled = Preference.bool(for: .enableHdrSupport)
     openURLs([url], shouldAutoLoad: shouldAutoLoad)
   }
 
@@ -399,19 +357,15 @@ class PlayerCore: NSObject {
   /// if `url` is `nil`, assumed to be `stdin`
   private func openMainWindow(url: URL? = nil) {
     let path: String
-    if let url = url {
-      if url.absoluteString == "stdin" {
-        path = "-"
-      } else {
-        path = url.isFileURL ? url.path : url.absoluteString
-      }
+    if let url = url, url.absoluteString != "stdin" {
+      path = url.isFileURL ? url.path : url.absoluteString
       info.currentURL = url
+      log.debug("Opening in Player window: \(url), path: \(path)")
     } else {
       path = "-"
       info.currentURL = URL(string: "stdin")!
     }
-    Logger.log("Opening in main window: \(path.pii.quoted)", subsystem: subsystem)
-    info.currentURL = url
+    log.debug("Opening in Player window: \(path.pii.quoted)")
     // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
     info.currentFolder = nil
 
@@ -420,11 +374,11 @@ class PlayerCore: NSObject {
 
     // FIXME: delay until after fileLoaded. We don't know the video dimensions yet!
     if isInMiniPlayer {
-      Logger.log("Showing Mini Player Window", level: .verbose, subsystem: subsystem)
+      log.verbose("Showing Mini Player Window")
       miniPlayer.showWindow(nil)
     } else {
       mainWindow.windowWillOpen()
-      Logger.log("Showing Player Window", level: .verbose, subsystem: subsystem)
+      log.verbose("Showing Player Window")
       mainWindow.showWindow(nil)
       mainWindow.windowDidOpen()
     }
@@ -442,6 +396,13 @@ class PlayerCore: NSObject {
     if Preference.bool(for: .enableFileLoop) {
       mpv.setString(MPVOption.PlaybackControl.loopFile, "inf")
     }
+  }
+
+  func start() {
+    guard !didStart else { return }
+    didStart = true
+    startMPV()
+    loadPlugins()
   }
 
   func startMPV() {
@@ -501,8 +462,6 @@ class PlayerCore: NSObject {
       Logger.log("UI restore disabled! Will not restore player state", level: .error, subsystem: subsystem)
       return
     }
-    startMPV()  // FIXME: parameterize this
-    loadPlugins()
 
     if let savedDict = Preference.UIState.getPlayerState(playerUID: self.label) {
       info.persistedProperties = savedDict
@@ -519,7 +478,7 @@ class PlayerCore: NSObject {
 
       if let urlString = savedDict["currentURL"] as? String {
         openMainWindow(url: URL(string: urlString))
-        mainWindow.window!.makeKeyAndOrderFront(nil)
+        mainWindow.showWindow(self)
       } else {
         Logger.log("Could not restore UI state for property 'currentURL'", level: .error, subsystem: subsystem)
       }
@@ -538,6 +497,10 @@ class PlayerCore: NSObject {
   }
 
   func saveUIState() {
+    guard mainWindow.loaded else {
+      log.debug("Aborting save of UI state: player window is not loaded")
+      return
+    }
     var props = info.getPropDict()
     if let frame = mainWindow.window?.frame {
       props["frame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"

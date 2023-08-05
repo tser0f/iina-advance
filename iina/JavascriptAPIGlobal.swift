@@ -41,7 +41,7 @@ class JavascriptAPIGlobalController: JavascriptAPI, JavascriptAPIGlobalControlle
     // create the `PlayerCore` manually since it's managed directly by the plugin
     let pc = PlayerCore("\(instanceCounter)-\(pluginInstance.plugin.identifier)")
     pc.isManagedByPlugin = true
-    pc.startMPV()
+    pc.start()
     if options["disableWindowAnimation"] as? Bool == true {
       pc.disableWindowAnimation = true
     }
@@ -51,9 +51,7 @@ class JavascriptAPIGlobalController: JavascriptAPI, JavascriptAPIGlobalControlle
     if let label = options["label"] as? String {
       pc.userLabel = label
     }
-    if options["enablePlugins"] as? Bool == true {
-      pc.loadPlugins()
-    } else {
+    if options["enablePlugins"] as? Bool == false {
       // load the current plugin only.
       // `reloadPlugin` will create a plugin instance if it's not loaded.
       pc.reloadPlugin(pluginInstance.plugin)

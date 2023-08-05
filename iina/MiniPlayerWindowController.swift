@@ -167,6 +167,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
       adjustLayoutForVideoChange()
     }
+    player.log.verbose("MiniPlayerWindow windowDidLoad done")
   }
 
   override internal func setMaterial(_ theme: Preference.Theme?) {

@@ -866,6 +866,7 @@ class MainWindowController: PlayerWindowController {
       self.player.sendOSD(.abLoopUpdate(.bSet, VideoTime(seconds).stringRepresentation))
     }
 
+    player.log.verbose("MainWindow windowDidLoad done")
     player.events.emit(.windowLoaded)
   }
 
@@ -4308,7 +4309,6 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Utility
 
   func saveWindowFrame() {
-    guard let window = window else { return }
     player.saveUIState()
   }
 
@@ -4414,7 +4414,7 @@ extension MainWindowController: PIPViewControllerDelegate {
 
   func doneExitingPIP() {
     if isWindowHidden {
-      window?.makeKeyAndOrderFront(self)
+      showWindow(self)
     }
 
     pipStatus = .notInPIP

@@ -68,6 +68,12 @@ struct InfoDictionary {
 
   var copyright: String { dictionary["NSHumanReadableCopyright"] as! String }
 
+  var printableBuildInfo: String {
+    let (version, build) = InfoDictionary.shared.version
+    let type = InfoDictionary.shared.buildTypeIdentifier
+    return "IINA \(version) Build \(build)" + (type == nil ? "" : " " + type!)
+  }
+
   let dictionary = Bundle.main.infoDictionary!
 
   /// A Boolean value that indicates whether this executable was an optimized (not debug) build.

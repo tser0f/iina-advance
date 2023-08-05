@@ -299,7 +299,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
     if Logger.isEnabled(.verbose) {
       let last = lastPlaybackURL.flatMap { $0.resolvingSymlinksInPath().path.pii.quoted } ?? "nil"
       let didFilter = recentsUnfiltered.count > recentDocuments.count
-      Logger.log("Reloading WelcomeWindow. LastPlaybackURL: \(last), UnfilteredRecents: \(recentsUnfiltered.count), DidFilter: \(didFilter)", level: .verbose)
+      Logger.log("Reloaded WelcomeWindow. LastPlaybackURL: \(last), UnfilteredRecents: \(recentsUnfiltered.count), DidFilter: \(didFilter)", level: .verbose)
 
       for (index, url) in recentDocuments.enumerated() {
         Logger.log("Recents[\(index)]: \(url.resolvingSymlinksInPath().path.pii.quoted)", level: .verbose)
