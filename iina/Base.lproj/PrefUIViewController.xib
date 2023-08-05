@@ -126,13 +126,10 @@
                 </textField>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="RRL-GG-R45">
                     <rect key="frame" x="118" y="63" width="280" height="18"/>
-                    <buttonCell key="cell" type="check" title="Use physical resolution on Retina displays" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="fsj-YE-OB7">
+                    <buttonCell key="cell" type="check" title="Use physical resolution on Retina displays" bezelStyle="regularSquare" imagePosition="left" enabled="NO" inset="2" id="fsj-YE-OB7">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
-                    <connections>
-                        <binding destination="lH7-Vv-0M1" name="value" keyPath="values.usePhysicalResolution" id="v3I-k2-1e5"/>
-                    </connections>
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="WJ8-tU-wDW">
                     <rect key="frame" x="118" y="192" width="216" height="16"/>

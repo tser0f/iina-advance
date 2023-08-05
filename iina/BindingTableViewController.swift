@@ -35,6 +35,7 @@ class BindingTableViewController: NSObject {
 
   private unowned var tableView: EditableTableView!
 
+  // Gets current snapshot of table data. Do not save result past the life of the calling function
   private var bindingTableState: BindingTableState {
     return BindingTableState.current
   }

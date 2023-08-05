@@ -503,8 +503,13 @@ class PlayerCore: NSObject {
   }
 
   func saveUIState() {
+    guard Preference.UIState.isSaveEnabled else { return }
     guard mainWindow.loaded else {
       log.debug("Aborting save of UI state: player window is not loaded")
+      return
+    }
+    guard !info.isRestoring else {
+      log.warn("Aborting save of UI state: still restoring previous state")
       return
     }
     var props = info.getPropDict()

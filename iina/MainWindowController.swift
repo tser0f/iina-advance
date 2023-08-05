@@ -3058,7 +3058,8 @@ class MainWindowController: PlayerWindowController {
 
       videoView.videoLayer.contentsScale = window.backingScaleFactor
 
-      if shouldResizeWindowAfterVideoReconfig() && Preference.bool(for: .usePhysicalResolution) {
+      // TODO
+      if false && shouldResizeWindowAfterVideoReconfig() && Preference.bool(for: .usePhysicalResolution) {
         // FIXME: need to keep relative location of pointer in relation to window
         adjustFrameAfterVideoReconfig()
       }
@@ -3879,7 +3880,8 @@ class MainWindowController: PlayerWindowController {
         newVideoSize = videoBaseDisplaySize
         Logger.log("Starting resizeWindow calculations; set newVideoSize = videoBaseDisplaySize -> \(videoBaseDisplaySize)", level: .verbose)
 
-        if Preference.bool(for: .usePhysicalResolution) {
+        // TODO
+        if false && Preference.bool(for: .usePhysicalResolution) {
           let invertedScaleFactor = 1.0 / window.backingScaleFactor
           scaleDownFactor = invertedScaleFactor
           newVideoSize = videoBaseDisplaySize.multiplyThenRound(invertedScaleFactor)
@@ -4006,7 +4008,8 @@ class MainWindowController: PlayerWindowController {
     Logger.log("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) -> videoDesiredSize=\(videoDesiredSize)",
                level: .verbose, subsystem: player.subsystem)
 
-    if Preference.bool(for: .usePhysicalResolution) {
+    // TODO
+    if false && Preference.bool(for: .usePhysicalResolution) {
       videoDesiredSize = window.convertFromBacking(NSRect(origin: window.frame.origin, size: videoDesiredSize)).size
       Logger.log("SetWindowScale: converted videoDesiredSize to physical resolution: \(videoDesiredSize)",
                  level: .verbose, subsystem: player.subsystem)

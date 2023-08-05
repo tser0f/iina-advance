@@ -17,7 +17,9 @@ import Foundation
  Tries to be model-focused and decoupled from UI code so that everything is cleaner.
  */
 struct ConfTableState {
+  // current read-only snapshot:
   static var current: ConfTableState = ConfTableStateManager.initialState()
+  // this decides the lifecycle of snapshots:
   static let manager: ConfTableStateManager = ConfTableStateManager()
 
   enum SpecialState {
@@ -36,7 +38,7 @@ struct ConfTableState {
 
   let specialState: SpecialState
 
-  // Combined with built-in conf
+  /// Combined with built-in conf. See `ConfTableStateManager.initialState()` followed by `ConfTableState.buildConfTableRows()`
   let userConfDict: [String: String]
 
   let selectedConfName: String

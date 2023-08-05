@@ -1239,6 +1239,7 @@ not applying FFmpeg 9599 workaround
         player.sendOSD(paused ? .pause : .resume)
         DispatchQueue.main.sync {
           player.info.isPaused = paused
+          player.saveUIState()  // record the pause state
           player.refreshSyncUITimer()
           if paused {
             player.videoView.displayIdle()
