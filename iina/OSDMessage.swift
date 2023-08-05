@@ -33,7 +33,7 @@ enum OSDMessage {
 
   case pause
   case resume
-  case seek(VideoTime?, VideoTime?)  /// `player.info.videoPosition`, `player.info.videoDuration`
+  case seek(videoPosition: VideoTime?, videoDuration: VideoTime?)
   case volume(Int)
   case speed(Double)
   case aspect(String)

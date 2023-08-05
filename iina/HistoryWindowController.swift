@@ -57,7 +57,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   init() {
     super.init(window: nil)
-    self.windowFrameAutosaveName = Constants.WindowAutosaveName.playbackHistory
+    self.windowFrameAutosaveName = WindowAutosaveName.playbackHistory.string
 
     observedPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)

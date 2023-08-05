@@ -1282,13 +1282,13 @@ struct Preference {
 
     static func getPlayerState(playerUID: String) -> [String: Any]? {
       guard isRestoreEnabled else { return nil }
-      let key = String(format: Constants.WindowAutosaveName.mainPlayer, playerUID)
+      let key = WindowAutosaveName.mainPlayer(id: playerUID).string
       return ud.dictionary(forKey: key)
     }
 
     static func setPlayerState(playerUID: String, _ stateDict: [String: Any]) {
       guard isSaveEnabled else { return }
-      let key = String(format: Constants.WindowAutosaveName.mainPlayer, playerUID)
+      let key = WindowAutosaveName.mainPlayer(id: playerUID).string
       ud.setValue(stateDict, forKey: key)
     }
 

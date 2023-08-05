@@ -18,6 +18,8 @@ class PlayerCore: NSObject {
     return store.getPlayerCores()
   }
 
+  /// TODO: make `lastActive` and `active` Optional, so creating an uncessary player randomly at startup isn't needed
+
   /// - Important: Code referencing this property **must** be run on the main thread as getting the value of this property _may_
   ///              result in a reference the `active` property and that requires use of the main thread.
   static var lastActive: PlayerCore {
@@ -48,7 +50,7 @@ class PlayerCore: NSObject {
   }
 
   static func restoreUIState(forPlayerUID uid: String) {
-    Logger.log("Creating new PlayerCore & restoring saved state for \(String(format: Constants.WindowAutosaveName.mainPlayer, uid).quoted)")
+    Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: uid).string.quoted)")
     let playerCore = store.createNewPlayerCore(withLabel: uid)
     playerCore.restoreUIState()
   }
@@ -1584,7 +1586,7 @@ class PlayerCore: NSObject {
       videoView.displayActive()
     }
     syncUITime()
-    sendOSD(.seek(info.videoPosition, info.videoDuration))
+    sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
   func playbackRestarted() {
@@ -2394,7 +2396,7 @@ class NowPlayingInfoManager {
       }
     }
 
-    let duration = PlayerCore.lastActive.info.videoDuration?.second ?? 0
+    let duration = activePlayer.info.videoDuration?.second ?? 0
     let time = activePlayer.info.videoPosition?.second ?? 0
     let speed = activePlayer.info.playSpeed
 

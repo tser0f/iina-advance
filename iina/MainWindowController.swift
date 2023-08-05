@@ -705,7 +705,7 @@ class MainWindowController: PlayerWindowController {
 
   override init(playerCore: PlayerCore) {
     super.init(playerCore: playerCore)
-    self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.mainPlayer, playerCore.label)
+    self.windowFrameAutosaveName = WindowAutosaveName.mainPlayer(id: playerCore.label).string
     Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
   }
 
@@ -3340,7 +3340,7 @@ class MainWindowController: PlayerWindowController {
       case .pause, .resume:
         message = osdLastMessage
       case .seek(_, _):
-        message = .seek(player.info.videoPosition, player.info.videoDuration)
+        message = .seek(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration)
       default:
         return
       }

@@ -90,7 +90,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   override init(playerCore: PlayerCore) {
     super.init(playerCore: playerCore)
-    self.windowFrameAutosaveName = String(format: Constants.WindowAutosaveName.miniPlayer, playerCore.label)
+    self.windowFrameAutosaveName = WindowAutosaveName.miniPlayer(id: playerCore.label).string
     Logger.log("MiniPlayerWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
   }
 

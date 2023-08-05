@@ -200,6 +200,7 @@
 		D1FD2DD828521AD500CF7B35 /* MPVInputSectionLogScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */; };
 		D1FD2DDC28533EE700CF7B35 /* InputSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DDB28533EE700CF7B35 /* InputSection.swift */; };
 		D1FF15752A7E072200C0CE86 /* PlayerCoreStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF15742A7E072200C0CE86 /* PlayerCoreStore.swift */; };
+		D1FF15772A7E35F300C0CE86 /* WindowAutosaveName.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF15762A7E35F300C0CE86 /* WindowAutosaveName.swift */; };
 		E301EFDA21312AB300BC8588 /* KeychainAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = E301EFD921312AB300BC8588 /* KeychainAccess.swift */; };
 		E30D2EBD21F5FD2600E1FF0D /* PluginOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30D2EBC21F5FD2600E1FF0D /* PluginOverlayView.swift */; };
 		E322A4F820A8442E00C67D32 /* PlaylistPlaybackProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E322A4F720A8442E00C67D32 /* PlaylistPlaybackProgressView.swift */; };
@@ -1558,6 +1559,7 @@
 		D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVInputSectionLogScanner.swift; sourceTree = "<group>"; };
 		D1FD2DDB28533EE700CF7B35 /* InputSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSection.swift; sourceTree = "<group>"; };
 		D1FF15742A7E072200C0CE86 /* PlayerCoreStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCoreStore.swift; sourceTree = "<group>"; };
+		D1FF15762A7E35F300C0CE86 /* WindowAutosaveName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAutosaveName.swift; sourceTree = "<group>"; };
 		D27556FC1EC6E1C300CAB2A4 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/HistoryWindowController.strings"; sourceTree = "<group>"; };
 		D27E35CE1E379B6D0064BE57 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/MainMenu.strings"; sourceTree = "<group>"; };
 		D27E35CF1E379B6D0064BE57 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/MainWindowController.strings"; sourceTree = "<group>"; };
@@ -2286,6 +2288,7 @@
 				84EB1F041D2F5C5B004FA5A1 /* AppData.swift */,
 				84A0BA8F1D2F8D4100BC8DA1 /* IINAError.swift */,
 				84AABE8A1DBF634600D138FD /* CharEncoding.swift */,
+				D1FF15762A7E35F300C0CE86 /* WindowAutosaveName.swift */,
 				8450403F1E0ACADD0079C194 /* MPVNode.swift */,
 				842F55A41EA17E7E0081D475 /* IINACommand.swift */,
 			);
@@ -3049,6 +3052,7 @@
 				845404AC1E43980900B02B12 /* LuaScript.swift in Sources */,
 				E35306F42147F78D008FE492 /* JavascriptAPICore.swift in Sources */,
 				D1FA42E528E5E54700DF49DD /* AppInputConfig.swift in Sources */,
+				D1FF15772A7E35F300C0CE86 /* WindowAutosaveName.swift in Sources */,
 				847557141F405F8C0006B0FF /* MainWindowMenuActions.swift in Sources */,
 				E33BA5C7204BD9FE0069A0F6 /* SubChooseViewController.swift in Sources */,
 				51CACB9529D500290034CEE5 /* VideoPIPViewController.swift in Sources */,

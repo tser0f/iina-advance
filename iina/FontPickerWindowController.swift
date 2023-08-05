@@ -38,7 +38,7 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
 
   init() {
     super.init(window: nil)
-    self.windowFrameAutosaveName = Constants.WindowAutosaveName.fontPicker
+    self.windowFrameAutosaveName = WindowAutosaveName.fontPicker.string
   }
 
   required init?(coder: NSCoder) {

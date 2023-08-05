@@ -58,7 +58,7 @@ class AboutWindowController: NSWindowController, NSWindowDelegate {
 
   init() {
     super.init(window: nil)
-    self.windowFrameAutosaveName = Constants.WindowAutosaveName.about
+    self.windowFrameAutosaveName = WindowAutosaveName.about.string
   }
 
   required init?(coder: NSCoder) {

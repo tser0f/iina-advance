@@ -874,7 +874,7 @@ extension NSWindow {
   /// Excludes the Inspector window
   func isOnlyOpenWindow() -> Bool {
     for window in NSApp.windows {
-      if window != self && window.isVisible && window.frameAutosaveName != Constants.WindowAutosaveName.inspector {
+      if window != self && window.isVisible && window.frameAutosaveName != WindowAutosaveName.inspector.string {
         return false
       }
     }

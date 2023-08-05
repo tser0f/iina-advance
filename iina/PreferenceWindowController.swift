@@ -149,7 +149,7 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
   init(viewControllers: [NSViewController & PreferenceWindowEmbeddable]) {
     self.viewControllers = viewControllers
     super.init(window: nil)
-    self.windowFrameAutosaveName = Constants.WindowAutosaveName.preference
+    self.windowFrameAutosaveName = WindowAutosaveName.preference.string
   }
 
   required init?(coder: NSCoder) {

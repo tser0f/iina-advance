@@ -82,7 +82,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
   init() {
     super.init(window: nil)
-    self.windowFrameAutosaveName = Constants.WindowAutosaveName.inspector
+    self.windowFrameAutosaveName = WindowAutosaveName.inspector.string
   }
 
   required init?(coder: NSCoder) {

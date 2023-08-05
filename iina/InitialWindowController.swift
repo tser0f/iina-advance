@@ -149,7 +149,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
 
   init() {
     super.init(window: nil)
-    self.windowFrameAutosaveName = Constants.WindowAutosaveName.welcome
+    self.windowFrameAutosaveName = WindowAutosaveName.welcome.string
   }
 
   required init?(coder: NSCoder) {

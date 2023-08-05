@@ -27,7 +27,7 @@ class OpenURLWindowController: NSWindowController, NSWindowDelegate, NSTextField
 
   init() {
     super.init(window: nil)
-    self.windowFrameAutosaveName = Constants.WindowAutosaveName.openURL
+    self.windowFrameAutosaveName = WindowAutosaveName.openURL.string
   }
 
   required init?(coder: NSCoder) {

@@ -55,10 +55,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   lazy var logWindow: LogWindowController = LogWindowController()
 
   lazy var vfWindow: FilterWindowController = FilterWindowController(filterType: MPVProperty.vf,
-                                                                     autosaveName: Constants.WindowAutosaveName.videoFilter)
+                                                                     autosaveName: WindowAutosaveName.videoFilter.string)
 
   lazy var afWindow: FilterWindowController = FilterWindowController(filterType: MPVProperty.af,
-                                                                     autosaveName: Constants.WindowAutosaveName.audioFilter)
+                                                                     autosaveName: WindowAutosaveName.audioFilter.string)
 
   lazy var preferenceWindowController: NSWindowController = {
     var list: [NSViewController & PreferenceWindowEmbeddable] = [
@@ -450,11 +450,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   private func restoreWindowsFromPreviousLaunch() -> Bool {
-    let windowNamesBackToFront = Preference.UIState.getSavedOpenWindowsBackToFront()
-    guard !windowNamesBackToFront.isEmpty else {
+    guard Preference.UIState.isRestoreEnabled else {
+      Logger.log("Not restoring windows because restore is disabled", level: .verbose)
       return false
     }
-    if windowNamesBackToFront.count == 1 && windowNamesBackToFront[0] == Constants.WindowAutosaveName.inspector {
+    let windowNamesBackToFront = remapPlayerZeroUIState()
+    guard !windowNamesBackToFront.isEmpty else {
+      Logger.log("Not restoring windows: window list empty")
+      return false
+    }
+    if windowNamesBackToFront.count == 1 && windowNamesBackToFront[0] == WindowAutosaveName.inspector {
       // Do not restore this on its own
       Logger.log("Not restoring windows because only open window was Inspector", level: .verbose)
       return false
@@ -463,29 +468,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Show windows one by one, starting at back and iterating to front:
     for autosaveName in windowNamesBackToFront {
       switch autosaveName {
-      case Constants.WindowAutosaveName.playbackHistory:
+      case .playbackHistory:
         showHistoryWindow(self)
-      case Constants.WindowAutosaveName.welcome:
+      case .welcome:
         showWelcomeWindow()
-      case Constants.WindowAutosaveName.preference:
+      case .preference:
         showPreferences(self)
-      case Constants.WindowAutosaveName.about:
+      case .about:
         showAboutWindow(self)
-      case Constants.WindowAutosaveName.openURL:
+      case .openURL:
         // TODO: persist isAlternativeAction too
         showOpenURLWindow(isAlternativeAction: true)
-      case Constants.WindowAutosaveName.inspector:
+      case .inspector:
         showInspectorWindow()
-      case Constants.WindowAutosaveName.videoFilter:
+      case .videoFilter:
         showVideoFilterWindow(self)
-      case Constants.WindowAutosaveName.audioFilter:
+      case .audioFilter:
         showAudioFilterWindow(self)
+      case .mainPlayer(let id):
+        PlayerCore.restoreUIState(forPlayerUID: id)
+      case .miniPlayer(_):
+        break
       default:
-        if let uniqueID = parseIdentifierFromMatchingWindowName(autosaveName: autosaveName, mustStartWith: "PlayerWindow-") {
-          PlayerCore.restoreUIState(forPlayerUID: uniqueID)
-        } else {
-          Logger.log("Cannot restore window because it is not recognized: \(autosaveName)", level: .warning)
-        }
+        Logger.log("Cannot restore unrecognized autosave enum: \(autosaveName)", level: .error)
         break
       }
     }
@@ -499,14 +504,55 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     return true
   }
 
-  private func parseIdentifierFromMatchingWindowName(autosaveName: String, mustStartWith prefix: String) -> String? {
-    if autosaveName.starts(with: prefix) {
-      let splitted = autosaveName.split(separator: "-")
-      if splitted.count == 2 {
-        return String(splitted[1])
+  /// Workaround for IINA PlayerCore init weirdness which sometimes creates a new `player0` at startup, if some random other UI code
+  /// happens to call `PlayerCore.lastActive` or `PlayerCore.active`. If this happens before we try to restore the `player0` from a
+  /// previous launch, that would cause a conflict. Workaround: look for previous `player0` and remap it to some higher number.
+  private func remapPlayerZeroUIState() -> [WindowAutosaveName] {
+    let windowNamesStrings = Preference.UIState.getSavedOpenWindowsBackToFront()
+    let windowNamesBackToFront = windowNamesStrings.compactMap{WindowAutosaveName($0)}
+
+    var foundPlayerZero = false
+    var largestPlayerID: UInt = 0
+
+    for windowName in windowNamesBackToFront {
+      switch windowName {
+      case WindowAutosaveName.mainPlayer(let id):
+        guard let uid = UInt(id) else { break }
+        if uid == 0 {
+          foundPlayerZero = true
+        } else if uid > largestPlayerID {
+          largestPlayerID = uid
+        }
+      default:
+        break
       }
     }
-    return nil
+
+    guard foundPlayerZero else {
+      Logger.log("PlayerZero not found in saved windows", level: .verbose)
+      return windowNamesBackToFront
+    }
+
+    let newPlayerZeroID = String(largestPlayerID + 1)
+
+    guard let propList = Preference.UIState.getPlayerState(playerUID: "0") else {
+      Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
+      return windowNamesBackToFront
+    }
+
+    let oldPlayerZeroString = WindowAutosaveName.mainPlayer(id: "0").string
+    let newPlayerZeroString = WindowAutosaveName.mainPlayer(id: newPlayerZeroID).string
+
+    Preference.UIState.setPlayerState(playerUID: newPlayerZeroID, propList)
+
+    Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
+
+    let newWindowNamesStrings = windowNamesStrings.map { $0 == oldPlayerZeroString ? newPlayerZeroString : $0 }
+    Preference.UIState.saveOpenWindowList(windowNamesBackToFront: newWindowNamesStrings)
+    Logger.log("Re-saved window list with remapped name: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
+    // In case you were wondering, just leave the old entry for player0. It will be overwritten soon enough anyway.
+
+    return newWindowNamesStrings.compactMap{WindowAutosaveName($0)}
   }
 
   private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {
@@ -574,9 +620,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     } else if window.isOnlyOpenWindow() {
       let quitForAction: Preference.ActionWhenNoOpenedWindow?
       switch window.frameAutosaveName {
-      case Constants.WindowAutosaveName.playbackHistory:
+      case WindowAutosaveName.playbackHistory.string:
         quitForAction = .historyWindow
-      case Constants.WindowAutosaveName.welcome:
+      case WindowAutosaveName.welcome.string:
         guard !initialWindow.expectingAnotherWindowToOpen else {
           return
         }

@@ -106,7 +106,6 @@ struct AppData {
   static let minVideoSize = NSMakeSize(285, 120)
 }
 
-
 struct Constants {
   struct String {
     static let degree = "°"
@@ -153,20 +152,6 @@ struct Constants {
     static let mirror = "iina_mirror"
     static let audioEq = "iina_aeq"
     static let delogo = "iina_delogo"
-  }
-  struct WindowAutosaveName {
-    static let preference = "IINAPreferenceWindow"
-    static let welcome = "IINAWelcomeWindow"
-    static let openURL = "OpenURLWindow"
-    static let about = "AboutWindow"
-    static let inspector = "InspectorWindow"  // not always treated like a real window
-    static let playbackHistory = "PlaybackHistoryWindow"
-    // TODO: what about Guide?
-    static let videoFilter = "VideoFilterWindow"
-    static let audioFilter = "AudioFilterWindow"
-    static let fontPicker = "IINAFontPickerWindow"
-    static let mainPlayer = "PlayerWindow-%@"
-    static let miniPlayer = "MiniPlayerWindow-%@"
   }
   struct Sidebar {
     static let animationDuration: CGFloat = 0.2
