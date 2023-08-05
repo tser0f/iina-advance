@@ -3861,6 +3861,7 @@ class MainWindowController: PlayerWindowController {
       pip.aspectRatio = videoBaseDisplaySize
     }
 
+
     // Scale only the video. Panels outside the video do not change size
     let oldVideoSize = videoView.frame.size
     let outsidePanelsWidth = window.frame.width - oldVideoSize.width
@@ -3870,91 +3871,96 @@ class MainWindowController: PlayerWindowController {
     var newWindowFrame: NSRect
     var scaleDownFactor: CGFloat? = nil
 
-    if shouldResizeWindowAfterVideoReconfig() {
-      // get videoSize on screen
-      newVideoSize = videoBaseDisplaySize
-      Logger.log("Starting resizeWindow calculations; set newVideoSize = videoBaseDisplaySize -> \(videoBaseDisplaySize)", level: .verbose)
-
-      if Preference.bool(for: .usePhysicalResolution) {
-        let invertedScaleFactor = 1.0 / window.backingScaleFactor
-        scaleDownFactor = invertedScaleFactor
-        newVideoSize = videoBaseDisplaySize.multiplyThenRound(invertedScaleFactor)
-        Logger.log("Converted newVideoSize to physical resolution -> \(newVideoSize)", level: .verbose)
-      }
-
-      let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
-      if let strategy = resizeWindowStrategy, strategy != .fitScreen {
-        let resizeRatio = strategy.ratio
-        newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-        Logger.log("Applied resizeRatio (\(resizeRatio)) to newVideoSize -> \(newVideoSize)", level: .verbose)
-      }
-
-      let screenRect = bestScreen.visibleFrame
-      let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
-                                height: screenRect.height - outsidePanelsHeight)
-
-      // check screen size
-      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-      Logger.log("Constrained newVideoSize to maxVideoSize \(maxVideoSize) -> \(newVideoSize)", level: .verbose)
-      // guard min size
-      // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
-      Logger.log("Constrained videoSize to min size: \(AppData.minVideoSize) -> \(newVideoSize)", level: .verbose)
-      // check if have geometry set (initial window position/size)
-      if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: newVideoSize) {
-        Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
-        newWindowFrame = wfg
-      } else {
-        let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
-                                   height: newVideoSize.height + outsidePanelsHeight)
-        if let strategy = resizeWindowStrategy, strategy == .fitScreen {
-          newWindowFrame = screenRect.centeredResize(to: newWindowSize)
-          Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(newWindowFrame)", level: .verbose)
-        } else {
-          let priorWindowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
-          newWindowFrame = priorWindowFrame.centeredResize(to: newWindowSize)
-          Logger.log("Did a centered resize using prior frame \(priorWindowFrame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
-        }
-      }
-
+    if player.info.isRestoring {
+      player.log.debug("AdjustFrameAfterVideoReconfig: skipping resize because isRestoring is set")
     } else {
-      // FIXME: this gets messed up by vertical videos. Investigate organizing per aspect ratio
-      // user is navigating in playlist. retain same window width.
-      let newVideoWidth = oldVideoSize.width
-      let newVideoHeight = newVideoWidth / videoBaseDisplaySize.aspect
-      newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
-      Logger.log("Using oldVideoSize width for newVideoSize, with new height (\(newVideoHeight)) -> \(newVideoSize)", level: .verbose)
-      newWindowFrame = computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame
+      if shouldResizeWindowAfterVideoReconfig() {
+        // get videoSize on screen
+        newVideoSize = videoBaseDisplaySize
+        Logger.log("Starting resizeWindow calculations; set newVideoSize = videoBaseDisplaySize -> \(videoBaseDisplaySize)", level: .verbose)
+
+        if Preference.bool(for: .usePhysicalResolution) {
+          let invertedScaleFactor = 1.0 / window.backingScaleFactor
+          scaleDownFactor = invertedScaleFactor
+          newVideoSize = videoBaseDisplaySize.multiplyThenRound(invertedScaleFactor)
+          Logger.log("Converted newVideoSize to physical resolution -> \(newVideoSize)", level: .verbose)
+        }
+
+        let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
+        if let strategy = resizeWindowStrategy, strategy != .fitScreen {
+          let resizeRatio = strategy.ratio
+          newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
+          Logger.log("Applied resizeRatio (\(resizeRatio)) to newVideoSize -> \(newVideoSize)", level: .verbose)
+        }
+
+        let screenRect = bestScreen.visibleFrame
+        let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
+                                  height: screenRect.height - outsidePanelsHeight)
+
+        // check screen size
+        newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
+        Logger.log("Constrained newVideoSize to maxVideoSize \(maxVideoSize) -> \(newVideoSize)", level: .verbose)
+        // guard min size
+        // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
+        newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
+        Logger.log("Constrained videoSize to min size: \(AppData.minVideoSize) -> \(newVideoSize)", level: .verbose)
+        // check if have geometry set (initial window position/size)
+        if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: newVideoSize) {
+          Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
+          newWindowFrame = wfg
+        } else {
+          let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
+                                     height: newVideoSize.height + outsidePanelsHeight)
+          if let strategy = resizeWindowStrategy, strategy == .fitScreen {
+            newWindowFrame = screenRect.centeredResize(to: newWindowSize)
+            Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(newWindowFrame)", level: .verbose)
+          } else {
+            let priorWindowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
+            newWindowFrame = priorWindowFrame.centeredResize(to: newWindowSize)
+            Logger.log("Did a centered resize using prior frame \(priorWindowFrame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
+          }
+        }
+
+      } else {
+        // FIXME: this gets messed up by vertical videos. Investigate organizing per aspect ratio
+        // user is navigating in playlist. retain same window width.
+        let newVideoWidth = oldVideoSize.width
+        let newVideoHeight = newVideoWidth / videoBaseDisplaySize.aspect
+        newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
+        Logger.log("Using oldVideoSize width for newVideoSize, with new height (\(newVideoHeight)) -> \(newVideoSize)", level: .verbose)
+        newWindowFrame = computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame
+      }
+
+      /// Finally call `setFrame()`
+      if fsState.isFullscreen {
+        // FIXME: get this back
+        //      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
+        //      fsState.priorWindowedFrame = newWindowFrame
+      } else {
+        Logger.log("AdjustFrameAfterVideoReconfig DONE: NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]",
+                   level: .verbose, subsystem: player.subsystem)
+        window.setFrame(newWindowFrame, display: true, animate: true)
+
+        // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
+        let mpvVideoSize: CGSize
+        if let scaleDownFactor = scaleDownFactor {
+          mpvVideoSize = newVideoSize.multiplyThenRound(scaleDownFactor)
+        } else {
+          mpvVideoSize = newVideoSize
+        }
+        updateWindowParametersForMPV(withSize: mpvVideoSize)
+      }
+
+      // UI and slider
+      updatePlayTime(withDuration: true)
+      player.events.emit(.windowSizeAdjusted, data: newWindowFrame)
     }
 
-    // FIXME: examine this
     // maybe not a good position, consider putting these at playback-restart
     player.info.justOpenedFile = false
     player.info.justStartedFile = false
     shouldApplyInitialWindowSize = false
-
-    if fsState.isFullscreen {
-      // FIXME: get this back
-//      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
-//      fsState.priorWindowedFrame = newWindowFrame
-    } else {
-      Logger.log("AdjustFrameAfterVideoReconfig DONE: NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]",
-                 level: .verbose, subsystem: player.subsystem)
-      window.setFrame(newWindowFrame, display: true, animate: true)
-
-      // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
-      let mpvVideoSize: CGSize
-      if let scaleDownFactor = scaleDownFactor {
-        mpvVideoSize = newVideoSize.multiplyThenRound(scaleDownFactor)
-      } else {
-        mpvVideoSize = newVideoSize
-      }
-      updateWindowParametersForMPV(withSize: mpvVideoSize)
-    }
-
-    // UI and slider
-    updatePlayTime(withDuration: true)
-    player.events.emit(.windowSizeAdjusted, data: newWindowFrame)
+    player.info.isRestoring = false
   }
 
   private func shouldResizeWindowAfterVideoReconfig() -> Bool {
@@ -3975,6 +3981,9 @@ class MainWindowController: PlayerWindowController {
   }
 
   func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
+    // this is also a good place to save state, if applicable
+    saveWindowFrame()
+
     let videoWidth = player.videoBaseDisplaySize.width
     if videoWidth > 0 {
       let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)

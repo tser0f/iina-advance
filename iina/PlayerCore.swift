@@ -467,12 +467,16 @@ class PlayerCore: NSObject {
 
     if let savedDict = Preference.UIState.getPlayerState(playerUID: self.label) {
       info.persistedProperties = savedDict
+      info.isRestoring = true
 
       if let csv = savedDict["frame"] as? String {
-        let dims: [Int] = csv.components(separatedBy: ",").compactMap{Int($0)}
+        let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
         if dims.count == 4 {
           let windowFrame = NSRect(x: dims[0], y: dims[1], width: dims[2], height: dims[3])
+          log.debug("Restoring windowFrame to: \(windowFrame)")
           mainWindow.window!.setFrame(windowFrame, display: false)
+        } else {
+          log.error("Could not restore UI state for property 'frame': could not parse \(csv.quoted)")
         }
       } else {
         Logger.log("Could not restore UI state for property 'frame'", level: .error, subsystem: subsystem)

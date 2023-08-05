@@ -1148,16 +1148,16 @@ not applying FFmpeg 9599 workaround
 
   private func onFileLoaded() {
     // Get video size and set the initial window size
-    if player.info.isRestoring {
+    if !player.info.isRestoring {
       let pause = player.info.justOpenedFile && Preference.bool(for: .pauseWhenOpen)
+      player.log.verbose("OnFileLoaded: setting playback to \(pause ? "paused" : "resume")")
       setFlag(MPVOption.PlaybackControl.pause, pause)
     }
-    player.info.isRestoring = false
 
     let duration = getDouble(MPVProperty.duration)
     let position = getDouble(MPVProperty.timePos)
     let vParams = queryForVideoParams()
-    player.log.debug("Got info for opened file. \(vParams), Loc(sec): \(position) / \(duration)")
+    player.log.debug("OnFileLoaded: Got info for opened file. \(vParams), Loc(sec): \(position) / \(duration)")
     player.info.totalRotation = vParams.totalRotation
     player.info.userRotation = vParams.userRotation
     player.info.videoRawWidth = vParams.videoRawWidth
