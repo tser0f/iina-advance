@@ -53,12 +53,12 @@ class PlaybackInfo {
     var props: [String: Any] = persistedProperties
 
     if let urlString = currentURL?.absoluteString ?? nil {
-      props["currentURL"] = urlString
+      props["url"] = urlString
     }
     if let videoPosition = videoPosition?.second {
-      props["playPosition"] = videoPosition
+      props["progress"] = String(videoPosition)
     }
-    props["isPaused"] = isPaused
+    props["paused"] = String(isPaused)
   /*
     props["deinterlace"] = deinterlace
     props["hwdec"] = hwdec

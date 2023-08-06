@@ -13,7 +13,7 @@ struct VideoTime {
   static let infinite = VideoTime(999, 0, 0)
   static let zero = VideoTime(0)
 
-  var second: Double
+  let second: Double
 
   var h: Int {
     Int(second) / 3600

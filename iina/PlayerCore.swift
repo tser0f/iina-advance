@@ -49,9 +49,19 @@ class PlayerCore: NSObject {
     return store.getNonIdle()
   }
 
-  static func restoreUIState(forPlayerUID uid: String) {
+  // Attempt to exactly restore play state & UI from last run of IINA (for given player)
+  static func restoreFromPriorLaunch(forPlayerUID uid: String) {
     Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: uid).string.quoted)")
-    let playerCore = store.createNewPlayerCore(withLabel: uid)
+    let playerCore = store.createNewPlayerCore(withLabel: uid, start: false)
+
+    if let savedDict = Preference.UIState.getPlayerState(playerUID: playerCore.label) {
+      /// set these before calling `start()`
+      playerCore.info.persistedProperties = savedDict
+      playerCore.info.isRestoring = true
+    }
+    /// Many properties need to be set via mpv init, called by `start()`:
+    playerCore.start()
+    /// Restore remaining non-mpv state here:
     playerCore.restoreUIState()
   }
 
@@ -235,7 +245,7 @@ class PlayerCore: NSObject {
     (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
   }
 
-  func loadPlugins() {
+  private func loadPlugins() {
     pluginMap.removeAll()
     plugins = JavascriptPlugin.plugins.compactMap { plugin in
       guard plugin.enabled else { return nil }
@@ -400,6 +410,7 @@ class PlayerCore: NSObject {
     }
   }
 
+  // Does nothing if already started
   func start() {
     guard !didStart else { return }
     didStart = true
@@ -407,7 +418,7 @@ class PlayerCore: NSObject {
     loadPlugins()
   }
 
-  func startMPV() {
+  private func startMPV() {
     // set path for youtube-dl
     let oldPath = String(cString: getenv("PATH")!)
     var path = Utility.exeDirURL.path + ":" + oldPath
@@ -459,47 +470,34 @@ class PlayerCore: NSObject {
     uninitVideo()
   }
 
+  // Finish restoring state of player from prior launch
   fileprivate func restoreUIState() {
-    guard Preference.UIState.isRestoreEnabled else {
-      Logger.log("UI restore disabled! Will not restore player state", level: .error, subsystem: subsystem)
-      return
+    guard info.isRestoring else { return }
+
+    let props = info.persistedProperties
+
+    if let csv = props["windowFrame"] as? String {
+      let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
+      if dims.count == 4 {
+        let windowFrame = NSRect(x: dims[0], y: dims[1], width: dims[2], height: dims[3])
+        log.debug("Restoring windowFrame to: \(windowFrame)")
+        mainWindow.window!.setFrame(windowFrame, display: false)
+      } else {
+        log.error("Could not restore UI state for property 'windowFrame': could not parse \(csv.quoted)")
+      }
+    } else {
+      Logger.log("Could not restore UI state for property 'windowFrame'", level: .error, subsystem: subsystem)
     }
 
-    if let savedDict = Preference.UIState.getPlayerState(playerUID: self.label) {
-      info.persistedProperties = savedDict
-      info.isRestoring = true
-
-      if let csv = savedDict["frame"] as? String {
-        let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
-        if dims.count == 4 {
-          let windowFrame = NSRect(x: dims[0], y: dims[1], width: dims[2], height: dims[3])
-          log.debug("Restoring windowFrame to: \(windowFrame)")
-          mainWindow.window!.setFrame(windowFrame, display: false)
-        } else {
-          log.error("Could not restore UI state for property 'frame': could not parse \(csv.quoted)")
-        }
-      } else {
-        Logger.log("Could not restore UI state for property 'frame'", level: .error, subsystem: subsystem)
-      }
-
-      if let urlString = savedDict["currentURL"] as? String {
-        openMainWindow(url: URL(string: urlString))
-        mainWindow.showWindow(self)
-      } else {
-        Logger.log("Could not restore UI state for property 'currentURL'", level: .error, subsystem: subsystem)
-      }
-
-      if let wasPaused = savedDict["isPaused"] as? Bool {
-        if wasPaused {
-          pause()
-        } else {
-          resume()
-        }
-      }
-
-      // TODO: much, much more
-
+    if let urlString = props["url"] as? String {
+      openMainWindow(url: URL(string: urlString))
+      mainWindow.showWindow(self)
+    } else {
+      Logger.log("Could not restore UI state for property 'url'", level: .error, subsystem: subsystem)
     }
+
+    // TODO: much, much more
+
   }
 
   func saveUIState() {
@@ -514,7 +512,7 @@ class PlayerCore: NSObject {
     }
     var props = info.getPropDict()
     if let frame = mainWindow.window?.frame {
-      props["frame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
+      props["windowFrame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
     }
     Preference.UIState.setPlayerState(playerUID: self.label, props)
   }
@@ -1412,7 +1410,7 @@ class PlayerCore: NSObject {
     // If the player is stopped then the file has been unloaded and it is too late to save the
     // watch later configuration.
     if isStopped {
-      Logger.log("Player is stopped; too late to write water later config", level: .verbose, subsystem: subsystem)
+      Logger.log("Player is stopped; too late to write water later config. This is ok if shutdown was initiated by mpv", level: .verbose, subsystem: subsystem)
     } else {
       Logger.log("Write watch later config", subsystem: subsystem)
       mpv.command(.writeWatchLaterConfig)
@@ -1426,6 +1424,8 @@ class PlayerCore: NSObject {
     if let position = info.videoPosition?.second {
       Logger.log("Saving iinaLastPlayedFilePosition: \(position) sec", level: .verbose, subsystem: subsystem)
       Preference.set(position, for: .iinaLastPlayedFilePosition)
+    } else {
+      log.debug("Cannot save iinaLastPlayedFilePosition; no position found")
     }
   }
 
@@ -1844,17 +1844,17 @@ class PlayerCore: NSObject {
   @objc private func syncUITime() {
     let isNetworkStream = info.isNetworkResource
     if isNetworkStream {
-      info.videoDuration?.second = mpv.getDouble(MPVProperty.duration)
+      info.videoDuration = VideoTime(mpv.getDouble(MPVProperty.duration))
     }
     // When the end of a video file is reached mpv does not update the value of the property
     // time-pos, leaving it reflecting the position of the last frame of the video. This is
     // especially noticeable if the onscreen controller time labels are configured to show
     // milliseconds. Adjust the position if the end of the file has been reached.
     let eofReached = mpv.getFlag(MPVProperty.eofReached)
-    if eofReached, let duration = info.videoDuration?.second {
-      info.videoPosition?.second = duration
+    if eofReached, let duration = info.videoDuration {
+      info.videoPosition = duration
     } else {
-      info.videoPosition?.second = mpv.getDouble(MPVProperty.timePos)
+      info.videoPosition = VideoTime(mpv.getDouble(MPVProperty.timePos))
     }
     info.constrainVideoPosition()
     if isNetworkStream {

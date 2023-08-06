@@ -2488,8 +2488,6 @@ class MainWindowController: PlayerWindowController {
     guard let w = self.window, let cv = w.contentView else { return }
     cv.trackingAreas.forEach(cv.removeTrackingArea)
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
-
-    // TODO: save playback state here
     
     player.events.emit(.windowWillClose)
   }

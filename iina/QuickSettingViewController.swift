@@ -505,16 +505,16 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let columnName = tableColumn?.identifier
     if tableView == videoTableView {
       track = row == 0 ? nil : player.info.videoTracks[at: row-1]
-      activeId = player.info.vid!
+      activeId = player.info.vid ?? -1
     } else if tableView == audioTableView {
       track = row == 0 ? nil : player.info.audioTracks[at: row-1]
-      activeId = player.info.aid!
+      activeId = player.info.aid ?? -1
     } else if tableView == subTableView {
       track = row == 0 ? nil : player.info.subTracks[at: row-1]
-      activeId = player.info.sid!
+      activeId = player.info.sid ?? -1
     } else if tableView == secSubTableView {
       track = row == 0 ? nil : player.info.subTracks[at: row-1]
-      activeId = player.info.secondSid!
+      activeId = player.info.secondSid ?? -1
     } else {
       return nil
     }

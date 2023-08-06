@@ -352,11 +352,13 @@ struct Preference {
     static let useUserDefinedConfDir = Key("useUserDefinedConfDir")
     static let userDefinedConfDir = Key("userDefinedConfDir")
 
+    // Inspector window watch list
     static let watchProperties = Key("watchProperties")
 
     static let savedVideoFilters = Key("savedVideoFilters")
     static let savedAudioFilters = Key("savedAudioFilters")
 
+    // These are apparently only used for display in the welcome window
     static let iinaLastPlayedFilePath = Key("iinaLastPlayedFilePath")
     static let iinaLastPlayedFilePosition = Key("iinaLastPlayedFilePosition")
 

@@ -486,7 +486,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       case .audioFilter:
         showAudioFilterWindow(self)
       case .mainPlayer(let id):
-        PlayerCore.restoreUIState(forPlayerUID: id)
+        PlayerCore.restoreFromPriorLaunch(forPlayerUID: id)
       case .miniPlayer(_):
         break
       default:
