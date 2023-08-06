@@ -31,7 +31,11 @@ class PlaybackInfo {
     }
   }
 
-  var isRestoring: Bool = false
+  var restorableState: RestorableState? =  nil
+
+  var isRestoring: Bool {
+    return restorableState != nil
+  }
 
   var justStartedFile: Bool = false
   var justOpenedFile: Bool = false
@@ -46,44 +50,6 @@ class PlaybackInfo {
   var isSeeking: Bool = false
 
   // -- PERSISTENT PROPERTIES BEGIN --
-
-  var persistedProperties: [String: Any] = [:]
-
-  func getPropDict() -> [String: Any] {
-    var props: [String: Any] = persistedProperties
-
-    if let urlString = currentURL?.absoluteString ?? nil {
-      props["url"] = urlString
-    }
-    if let videoPosition = videoPosition?.second {
-      props["progress"] = String(videoPosition)
-    }
-    props["paused"] = String(isPaused)
-  /*
-    props["deinterlace"] = deinterlace
-    props["hwdec"] = hwdec
-    props["hdrEnabled"] = hdrEnabled
-
-    props["aid"] = aid
-    props["sid"] = sid
-    props["sid2"] = secondSid
-    props["vid"] = vid
-
-    props["brightness"] = brightness
-    props["contrast"] = contrast
-    props["saturation"] = saturation
-    props["gamma"] = gamma
-    props["hue"] = hue
-    props["playSpeed"] = playSpeed
-    props["volume"] = volume
-    props["isMuted"] = isMuted
-    props["audioDelay"] = audioDelay
-    props["subDelay"] = subDelay
-    props["abLoopStatus"] = abLoopStatus.rawValue
-    props["userRotationDeg"] = userRotation
-*/
-    return props
-  }
 
   var isPaused: Bool = false {
     didSet {

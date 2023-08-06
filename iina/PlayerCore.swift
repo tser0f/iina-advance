@@ -54,10 +54,9 @@ class PlayerCore: NSObject {
     Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: uid).string.quoted)")
     let playerCore = store.createNewPlayerCore(withLabel: uid, start: false)
 
-    if let savedDict = Preference.UIState.getPlayerState(playerUID: playerCore.label) {
+    if let savedState = Preference.UIState.getPlayerState(playerID: playerCore.label) {
       /// set these before calling `start()`
-      playerCore.info.persistedProperties = savedDict
-      playerCore.info.isRestoring = true
+      playerCore.info.restorableState = savedState
     }
     /// Many properties need to be set via mpv init, called by `start()`:
     playerCore.start()
@@ -472,9 +471,7 @@ class PlayerCore: NSObject {
 
   // Finish restoring state of player from prior launch
   fileprivate func restoreUIState() {
-    guard info.isRestoring else { return }
-
-    let props = info.persistedProperties
+    guard let props = info.restorableState?.properties else { return }
 
     if let csv = props["windowFrame"] as? String {
       let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
@@ -510,11 +507,8 @@ class PlayerCore: NSObject {
       log.warn("Aborting save of UI state: still restoring previous state")
       return
     }
-    var props = info.getPropDict()
-    if let frame = mainWindow.window?.frame {
-      props["windowFrame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
-    }
-    Preference.UIState.setPlayerState(playerUID: self.label, props)
+    let state = RestorableState.from(self)
+    Preference.UIState.setPlayerState(playerID: self.label, state)
   }
 
   /// Initiate shutdown of this player.

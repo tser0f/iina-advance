@@ -369,21 +369,20 @@ struct Preference {
 
     // MARK: - Keys: Internal UI State
 
-    /**
-     When saving and restoring the UI state is enabled, we need to first check if other instances of IINA are running so that they
-     don't overwrite each other's data. To do that, we can have each instance listen for changes to this counter and respond appropriately.
-     */
+    /// When saving and restoring the UI state is enabled, we need to first check if other instances of IINA are running so that they
+    /// don't overwrite each other's data. To do that, we can have each instance listen for changes to this counter and respond
+    /// appropriately.
     static let iinaLaunchCount = Key("iinaLaunchCount")
     static let iinaPing = Key("iinaPing")
 
-    /** If true, saves the state of UI components as they change. This includes things like open windows &
-     their sizes & positions, current scroll offsets, search entries, and more.
-     NOTE: Do not use this directly. Use `Preference.UIState.isSaveEnabled()` so that runtime overrides can work. */
-    fileprivate static let enableSaveUIState = Key("enableSaveUIState")
-    /** If true, initializes the state of UI components to their previous values (presumably from the previous launch).
-     Note that a saved state must exist for these components (see `enableSaveUIState`).
-     NOTE: Do not use this directly. Use `Preference.UIState.isRestoreEnabled()` so that runtime overrides work. */
-    fileprivate static let enableRestoreUIState = Key("enableRestoreUIState")
+    /// If true, saves the state of UI components as they change. This includes things like open windows & their sizes & positions,
+    /// current scroll offsets, search entries, and more.
+    /// NOTE: Do not use this directly. Use `Preference.UIState.isSaveEnabled()` so that runtime overrides can work.
+    static let enableSaveUIState = Key("enableSaveUIState")
+    /// If true, initializes the state of UI components to their previous values (presumably from the previous launch).
+    /// Note that a saved state must exist for these components (see `enableSaveUIState`).
+    /// NOTE: Do not use this directly. Use `Preference.UIState.isRestoreEnabled()` so that runtime overrides work.
+    static let enableRestoreUIState = Key("enableRestoreUIState")
 
     // Comma-separated list of window names
     static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFrontList")
@@ -391,8 +390,8 @@ struct Preference {
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
     static let uiPrefDetailViewScrollOffsetY = Key("uiPrefDetailViewScrollOffsetY")
-    /** These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with "uiCollapseView":
-     `true` == open;  `false` == folded */
+    /// These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with
+    /// "uiCollapseView": `true` == open;  `false` == folded
     static let uiCollapseViewMediaIsOpened = Key("uiCollapseViewMediaIsOpened")
     static let uiCollapseViewPauseResume = Key("uiCollapseViewPauseResume")
     static let uiCollapseViewSubAutoLoadAdvanced = Key("uiCollapseViewSubAutoLoadAdvanced")
@@ -861,25 +860,14 @@ struct Preference {
     case subTrack
 
     func image() -> NSImage {
-//      if #available(macOS 11.0, *) {
-//        switch self {
-//        case .settings: return NSImage(named: NSImage.actionTemplateName)!  // "ellipsis.circle"
-//        case .playlist: return NSImage(systemSymbolName: "play.square.stack.fill", accessibilityDescription: nil)!
-//        case .pip: return NSImage(systemSymbolName: "pip.enter", accessibilityDescription: nil)!
-//        case .fullScreen: return NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: nil)!
-//        case .musicMode: return NSImage(systemSymbolName: "music.note", accessibilityDescription: nil)!
-//        case .subTrack: return NSImage(systemSymbolName: "captions.bubble.fill", accessibilityDescription: nil)!
-//        }
-//      } else {
-        switch self {
-        case .settings: return NSImage(named: NSImage.actionTemplateName)!
-        case .playlist: return #imageLiteral(resourceName: "playlist")
-        case .pip: return #imageLiteral(resourceName: "pip")
-        case .fullScreen: return #imageLiteral(resourceName: "fullscreen")
-        case .musicMode: return #imageLiteral(resourceName: "toggle-album-art")
-        case .subTrack: return #imageLiteral(resourceName: "sub-track")
-        }
-//      }
+      switch self {
+      case .settings: return NSImage(named: NSImage.actionTemplateName)!
+      case .playlist: return #imageLiteral(resourceName: "playlist")
+      case .pip: return #imageLiteral(resourceName: "pip")
+      case .fullScreen: return #imageLiteral(resourceName: "fullscreen")
+      case .musicMode: return #imageLiteral(resourceName: "toggle-album-art")
+      case .subTrack: return #imageLiteral(resourceName: "sub-track")
+      }
     }
 
     func description() -> String {
@@ -979,12 +967,12 @@ struct Preference {
     .pauseWhenGoesToSleep: true,
     .playWhenEnteringFullScreen: false,
 
-    .playlistAutoAdd: true,
+      .playlistAutoAdd: true,
     .playlistAutoPlayNext: true,
     .playlistShowMetadata: true,
     .playlistShowMetadataInMusicMode: true,
 
-    .usePhysicalResolution: false,
+      .usePhysicalResolution: false,
     .initialWindowSizePosition: "",
     .resizeWindowTiming: ResizeWindowTiming.onlyWhenOpen.rawValue,
     .resizeWindowOption: ResizeWindowOption.videoSize10.rawValue,
@@ -1002,11 +990,11 @@ struct Preference {
     .musicModeMaxWidth: 1000,
     .displayTimeAndBatteryInFullScreen: false,
 
-    .windowBehaviorWhenPip: WindowBehaviorWhenPip.doNothing.rawValue,
+      .windowBehaviorWhenPip: WindowBehaviorWhenPip.doNothing.rawValue,
     .pauseWhenPip: false,
     .togglePipByMinimizingWindow: false,
 
-    .videoThreads: 0,
+      .videoThreads: 0,
     .hardwareDecoder: HardwareDecoderOption.auto.rawValue,
     .forceDedicatedGPU: false,
     .loadIccProfile: true,
@@ -1027,7 +1015,7 @@ struct Preference {
     .enablePlaylistLoop: false,
     .enableFileLoop: false,
 
-    .subAutoLoadIINA: IINAAutoLoadAction.iina.rawValue,
+      .subAutoLoadIINA: IINAAutoLoadAction.iina.rawValue,
     .subAutoLoadPriorityString: "",
     .subAutoLoadSearchPath: "./*",
     .ignoreAssStyles: false,
@@ -1060,7 +1048,7 @@ struct Preference {
     .autoSearchOnlineSub: false,
     .autoSearchThreshold: 20,
 
-    .enableCache: true,
+      .enableCache: true,
     .defaultCacheSize: 153600,
     .cacheBufferSize: 153600,
     .secPrefech: 36000,
@@ -1071,10 +1059,10 @@ struct Preference {
     .ytdlRawOptions: "",
     .httpProxy: "",
 
-    .inputConfigs: [String: Any](),
+      .inputConfigs: [String: Any](),
     .currentInputConfigName: "IINA Default",
 
-    .enableAdvancedSettings: false,
+      .enableAdvancedSettings: false,
     .useMpvOsd: false,
     .enableLogging: false,
     .logLevel: Logger.Level.debug.rawValue,
@@ -1108,7 +1096,7 @@ struct Preference {
     .userDefinedConfDir: "~/.config/mpv/",
     .iinaEnablePluginSystem: false,
 
-    .keepOpenOnFileEnd: true,
+      .keepOpenOnFileEnd: true,
     .actionWhenNoOpenedWindow: ActionWhenNoOpenedWindow.none.rawValue,
     .useExactSeek: SeekOption.exact.rawValue,
     .followGlobalSeekTypeWhenAdjustSlider: false,
@@ -1125,7 +1113,7 @@ struct Preference {
     .rotateAction: RotateAction.defaultValue.rawValue,
     .forceTouchAction: MouseClickAction.none.rawValue,
 
-    .screenshotSaveToFile: true,
+      .screenshotSaveToFile: true,
     .screenshotCopyToClipboard: false,
     .screenshotFolder: "~/Pictures/Screenshots",
     .screenshotIncludeSubtitle: true,
@@ -1133,11 +1121,11 @@ struct Preference {
     .screenshotTemplate: "%F-%n",
     .screenshotShowPreview: true,
 
-    .watchProperties: [String](),
+      .watchProperties: [String](),
     .savedVideoFilters: [SavedFilter](),
     .savedAudioFilters: [SavedFilter](),
 
-    .suppressCannotPreventDisplaySleep: false
+      .suppressCannotPreventDisplaySleep: false
   ]
 
 
@@ -1269,87 +1257,5 @@ struct Preference {
     set(mpvColorString, for: key)
     Logger.log("Converted color value from legacyKey \(legacyKey.rawValue) and stored in key \(key.rawValue)")
     return mpvColorString
-  }
-
-  /** Notes on performance:
-   Apple's `NSUserDefaults`, when getting & saving preference values, utilizes an in-memory cache which is very fast.
-   And although it periodically saves "dirty" values to disk, and the interval between writes is unclear, this doesn't appear to cause
-   a significant performance penalty, and certainly can't be much improved upon by IINA. Also, as playing video is by its nature very
-   data-intensive, writes to the .plist should be trivial by comparison. */
-  class UIState {
-    /// This value, when set to true, disables state loading & saving for the remaining lifetime of this instance of IINA
-    /// (overriding any user settings); calls to `set()` will not be saved for the next launch, and any new get() requests
-    /// will return the default values.
-    private static var disableForThisInstance = false
-
-    static func getPlayerState(playerUID: String) -> [String: Any]? {
-      guard isRestoreEnabled else { return nil }
-      let key = WindowAutosaveName.mainPlayer(id: playerUID).string
-      return ud.dictionary(forKey: key)
-    }
-
-    static func setPlayerState(playerUID: String, _ stateDict: [String: Any]) {
-      guard isSaveEnabled else { return }
-      let key = WindowAutosaveName.mainPlayer(id: playerUID).string
-      ud.setValue(stateDict, forKey: key)
-    }
-
-    static var isSaveEnabled: Bool {
-      return !disableForThisInstance && Preference.bool(for: .enableSaveUIState)
-    }
-
-    static var isRestoreEnabled: Bool {
-      return !disableForThisInstance && Preference.bool(for: .enableRestoreUIState)
-    }
-
-    static func disablePersistentStateUntilNextLaunch() {
-      disableForThisInstance = true
-    }
-
-    // Convenience method. If restoring UI state is enabled, returns the saved value; otherwise returns the saved value.
-    // Note: doesn't work for enums.
-    static func get<T>(_ key: Key) -> T {
-      if isRestoreEnabled {
-        if let val = Preference.value(for: key) as? T {
-          return val
-        }
-      }
-      return Preference.typedDefault(for: key)
-    }
-
-    // Convenience method. If saving UI state is enabled, saves the given value. Otherwise does nothing.
-    static func set<T: Equatable>(_ value: T, for key: Key) {
-      guard isSaveEnabled else { return }
-      if let existing = Preference.object(for: key) as? T, existing == value {
-        return
-      }
-      Preference.set(value, for: key)
-    }
-
-    // Returns the autosave names of windows which have been saved in the set of open windows
-    static func getSavedOpenWindowsBackToFront() -> [String] {
-      guard isRestoreEnabled else {
-        Logger.log("UI restore disabled. Returning empty open window list")
-        return []
-      }
-
-      let csv = Preference.string(for: Key.uiOpenWindowsBackToFrontList)?.trimmingCharacters(in: .whitespaces) ?? ""
-      Logger.log("Loaded list of previously open windows: \(csv.quoted)", level: .verbose)
-      if csv.isEmpty {
-        return []
-      }
-      return csv.components(separatedBy: ",").map{ $0.trimmingCharacters(in: .whitespaces)}
-    }
-
-    static func saveOpenWindowList(windowNamesBackToFront: [String]) {
-      guard isSaveEnabled else { return }
-//      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
-      let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")
-      Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
-    }
-
-    static func clearOpenWindowList() {
-      saveOpenWindowList(windowNamesBackToFront: [])
-    }
   }
 }

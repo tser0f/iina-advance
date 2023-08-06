@@ -271,8 +271,8 @@ not applying FFmpeg 9599 workaround
 
     applyHardwareAccelerationWorkaround()
 
-    if player.info.isRestoring {
-      let props = player.info.persistedProperties
+    if let priorState = player.info.restorableState {
+      let props = priorState.properties
 
       if let str = props["paused"] as? String, let wasPaused = Bool(str) {
         setOption(forName: MPVOption.PlaybackControl.pause, toValue: wasPaused, type: .bool)

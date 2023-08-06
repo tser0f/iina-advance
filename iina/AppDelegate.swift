@@ -454,7 +454,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       Logger.log("Not restoring windows because restore is disabled", level: .verbose)
       return false
     }
-    let windowNamesBackToFront = remapPlayerZeroUIState()
+    let windowNamesBackToFront = Preference.UIState.getSavedWindowsWithPlayerZeroWorkaround()
     guard !windowNamesBackToFront.isEmpty else {
       Logger.log("Not restoring windows: window list empty")
       return false
@@ -502,57 +502,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return false
     }
     return true
-  }
-
-  /// Workaround for IINA PlayerCore init weirdness which sometimes creates a new `player0` at startup, if some random other UI code
-  /// happens to call `PlayerCore.lastActive` or `PlayerCore.active`. If this happens before we try to restore the `player0` from a
-  /// previous launch, that would cause a conflict. Workaround: look for previous `player0` and remap it to some higher number.
-  private func remapPlayerZeroUIState() -> [WindowAutosaveName] {
-    let windowNamesStrings = Preference.UIState.getSavedOpenWindowsBackToFront()
-    let windowNamesBackToFront = windowNamesStrings.compactMap{WindowAutosaveName($0)}
-
-    var foundPlayerZero = false
-    var largestPlayerID: UInt = 0
-
-    for windowName in windowNamesBackToFront {
-      switch windowName {
-      case WindowAutosaveName.mainPlayer(let id):
-        guard let uid = UInt(id) else { break }
-        if uid == 0 {
-          foundPlayerZero = true
-        } else if uid > largestPlayerID {
-          largestPlayerID = uid
-        }
-      default:
-        break
-      }
-    }
-
-    guard foundPlayerZero else {
-      Logger.log("PlayerZero not found in saved windows", level: .verbose)
-      return windowNamesBackToFront
-    }
-
-    let newPlayerZeroID = String(largestPlayerID + 1)
-
-    guard let propList = Preference.UIState.getPlayerState(playerUID: "0") else {
-      Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
-      return windowNamesBackToFront
-    }
-
-    let oldPlayerZeroString = WindowAutosaveName.mainPlayer(id: "0").string
-    let newPlayerZeroString = WindowAutosaveName.mainPlayer(id: newPlayerZeroID).string
-
-    Preference.UIState.setPlayerState(playerUID: newPlayerZeroID, propList)
-
-    Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
-
-    let newWindowNamesStrings = windowNamesStrings.map { $0 == oldPlayerZeroString ? newPlayerZeroString : $0 }
-    Preference.UIState.saveOpenWindowList(windowNamesBackToFront: newWindowNamesStrings)
-    Logger.log("Re-saved window list with remapped name: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
-    // In case you were wondering, just leave the old entry for player0. It will be overwritten soon enough anyway.
-
-    return newWindowNamesStrings.compactMap{WindowAutosaveName($0)}
   }
 
   private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {
@@ -612,12 +561,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let openWindowNamesNew = self.getCurrentOpenWindowNames(excludingWindowName: window.frameAutosaveName)
     Preference.UIState.saveOpenWindowList(windowNamesBackToFront: openWindowNamesNew)
 
-    // Check whether this is the last player closed; show welcome or history window if configured.
-    // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
-    if let player = (window.windowController as? MainWindowController)?.player, player.isOnlyOpenPlayer {
-      Logger.log("Window was last player window open", level: .verbose, subsystem: player.subsystem)
-      doActionWhenLastWindowWillClose()
-    } else if window.isOnlyOpenWindow() {
+    // Player window was closed? Need to remove some additional state
+    if let player = (window.windowController as? MainWindowController)?.player {
+      Preference.UIState.removePlayerState(playerID: player.label)
+
+      // Check whether this is the last player closed; show welcome or history window if configured.
+      // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
+      if player.isOnlyOpenPlayer {
+        Logger.log("Window was last player window open", level: .verbose, subsystem: player.subsystem)
+        doActionWhenLastWindowWillClose()
+        return
+      }
+    }
+
+    if window.isOnlyOpenWindow() {
       let quitForAction: Preference.ActionWhenNoOpenedWindow?
       switch window.frameAutosaveName {
       case WindowAutosaveName.playbackHistory.string:
