@@ -8,12 +8,12 @@
 
 import Foundation
 
+/// Notes on performance:
+/// Apple's `NSUserDefaults`, when getting & saving preference values, utilizes an in-memory cache which is very fast.
+/// And although it periodically saves "dirty" values to disk, and the interval between writes is unclear, this doesn't appear to cause
+/// a significant performance penalty, and certainly can't be much improved upon by IINA. Also, as playing video is by its nature very
+/// data-intensive, writes to the .plist should be trivial by comparison.
 extension Preference {
-  /** Notes on performance:
-   Apple's `NSUserDefaults`, when getting & saving preference values, utilizes an in-memory cache which is very fast.
-   And although it periodically saves "dirty" values to disk, and the interval between writes is unclear, this doesn't appear to cause
-   a significant performance penalty, and certainly can't be much improved upon by IINA. Also, as playing video is by its nature very
-   data-intensive, writes to the .plist should be trivial by comparison. */
   class UIState {
     /// This value, when set to true, disables state loading & saving for the remaining lifetime of this instance of IINA
     /// (overriding any user settings); calls to `set()` will not be saved for the next launch, and any new get() requests
@@ -109,7 +109,7 @@ extension Preference {
 
       let newPlayerZeroID = String(largestPlayerID + 1)
 
-      guard let propList = Preference.UIState.getPlayerState(playerID: "0") else {
+      guard let propList = Preference.UIState.getPlayerUIState(playerID: "0") else {
         Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
         return windowNamesBackToFront
       }
@@ -117,51 +117,53 @@ extension Preference {
       let oldPlayerZeroString = WindowAutosaveName.mainPlayer(id: "0").string
       let newPlayerZeroString = WindowAutosaveName.mainPlayer(id: newPlayerZeroID).string
 
-      Preference.UIState.setPlayerState(playerID: newPlayerZeroID, propList)
+      Preference.UIState.setPlayerUIState(playerID: newPlayerZeroID, propList)
 
       Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
 
       let newWindowNamesStrings = windowNamesStrings.map { $0 == oldPlayerZeroString ? newPlayerZeroString : $0 }
       Preference.UIState.saveOpenWindowList(windowNamesBackToFront: newWindowNamesStrings)
       Logger.log("Re-saved window list with remapped name: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
-      // In case you were wondering, just leave the old entry for player0. It will be overwritten soon enough anyway.
+      // Remove old entry now that it's been re-mapped
+      Preference.UIState.removePlayerUIState(playerID: "0")
 
       return newWindowNamesStrings.compactMap{WindowAutosaveName($0)}
     }
 
-    static func getPlayerState(playerID: String) -> RestorableState? {
+    static func getPlayerUIState(playerID: String) -> PlayerUIState? {
       guard isRestoreEnabled else { return nil }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       guard let propDict = UserDefaults.standard.dictionary(forKey: key) else {
         return nil
       }
-      return RestorableState(propDict)
+      return PlayerUIState(propDict)
     }
 
-    static func setPlayerState(playerID: String, _ state: RestorableState) {
+    static func setPlayerUIState(playerID: String, _ state: PlayerUIState) {
       guard isSaveEnabled else { return }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       UserDefaults.standard.setValue(state.properties, forKey: key)
     }
 
-    static func removePlayerState(playerID: String) {
+    static func removePlayerUIState(playerID: String) {
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       UserDefaults.standard.setValue(nil, forKey: key)
+      Logger.log("Removed stored UI state for player \(playerID)", level: .verbose)
     }
 
-    private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {
-      var orderNamePairs: [(Int, String)] = []
-      for window in NSApp.windows {
-        let name = window.frameAutosaveName
-        if !name.isEmpty && window.isVisible {
-          if let nameToExclude = nameToExclude, nameToExclude == name {
-            continue
-          }
-          orderNamePairs.append((window.orderedIndex, name))
-        }
+    static func save(_ player: PlayerCore) {
+      guard Preference.UIState.isSaveEnabled else { return }
+      guard player.mainWindow.loaded else {
+        player.log.debug("Aborting save of UI state: player window is not loaded")
+        return
       }
-      return orderNamePairs.sorted(by: { (left, right) in left.0 > right.0}).map{ $0.1 }
+      guard !player.info.isRestoring else {
+        player.log.warn("Aborting save of UI state: still restoring previous state")
+        return
+      }
+      player.log.verbose("Saving UI state")
+      let state = PlayerUIState.from(player)
+      setPlayerUIState(playerID: player.label, state)
     }
-
   }
 }

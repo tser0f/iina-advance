@@ -1,5 +1,5 @@
 //
-//  RestorableState.swift
+//  PlayerUIState.swift
 //  iina
 //
 //  Created by Matt Svoboda on 8/6/23.
@@ -8,7 +8,8 @@
 
 import Foundation
 
-struct RestorableState {
+// Data structure for saving to prefs / restoring from prefs the UI state of a single player window
+struct PlayerUIState {
   // TODO: find cool way to store in prefs as Strings, but map to Swift types
   let properties: [String: Any]
 
@@ -16,9 +17,11 @@ struct RestorableState {
     self.properties = props
   }
 
-  static func from(_ player: PlayerCore) -> RestorableState {
+  static func from(_ player: PlayerCore) -> PlayerUIState {
     var props: [String: Any] = [:]
     let info = player.info
+
+    props["launchID"] = (NSApp.delegate as! AppDelegate).launchID
 
     if let frame = player.mainWindow.window?.frame {
       props["windowFrame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
@@ -53,6 +56,6 @@ struct RestorableState {
      props["abLoopStatus"] = abLoopStatus.rawValue
      props["userRotationDeg"] = userRotation
      */
-    return RestorableState(props)
+    return PlayerUIState(props)
   }
 }

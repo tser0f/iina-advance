@@ -32,7 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   private(set) var isTerminating = false
 
-  private var launchID: Int!
+  var launchID: Int!
 
   private var observers: [NSObjectProtocol] = []
   var observedPrefKeys: [Preference.Key] = [
@@ -454,9 +454,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       Logger.log("Not restoring windows because restore is disabled", level: .verbose)
       return false
     }
+
+    // TODO: prompt
+
     let windowNamesBackToFront = Preference.UIState.getSavedWindowsWithPlayerZeroWorkaround()
     guard !windowNamesBackToFront.isEmpty else {
-      Logger.log("Not restoring windows: window list empty")
+      Logger.log("Not restoring windows: stored window list empty")
       return false
     }
     if windowNamesBackToFront.count == 1 && windowNamesBackToFront[0] == WindowAutosaveName.inspector {
@@ -563,7 +566,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     // Player window was closed? Need to remove some additional state
     if let player = (window.windowController as? MainWindowController)?.player {
-      Preference.UIState.removePlayerState(playerID: player.label)
+      Preference.UIState.removePlayerUIState(playerID: player.label)
 
       // Check whether this is the last player closed; show welcome or history window if configured.
       // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.

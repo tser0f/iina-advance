@@ -385,7 +385,7 @@ struct Preference {
     static let enableRestoreUIState = Key("enableRestoreUIState")
 
     // Comma-separated list of window names
-    static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFrontList")
+    static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFront")
 
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")

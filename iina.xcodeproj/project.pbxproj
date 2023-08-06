@@ -199,9 +199,9 @@
 		D1FA42E528E5E54700DF49DD /* AppInputConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FA42E428E5E54700DF49DD /* AppInputConfig.swift */; };
 		D1FD2DD828521AD500CF7B35 /* MPVInputSectionLogScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */; };
 		D1FD2DDC28533EE700CF7B35 /* InputSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD2DDB28533EE700CF7B35 /* InputSection.swift */; };
-		D1FF15752A7E072200C0CE86 /* PlayerCoreStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF15742A7E072200C0CE86 /* PlayerCoreStore.swift */; };
+		D1FF15752A7E072200C0CE86 /* PlayerCoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF15742A7E072200C0CE86 /* PlayerCoreManager.swift */; };
 		D1FF15772A7E35F300C0CE86 /* WindowAutosaveName.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF15762A7E35F300C0CE86 /* WindowAutosaveName.swift */; };
-		D1FF15792A7FA6A300C0CE86 /* RestorableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF15782A7FA6A300C0CE86 /* RestorableState.swift */; };
+		D1FF15792A7FA6A300C0CE86 /* PlayerUIState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF15782A7FA6A300C0CE86 /* PlayerUIState.swift */; };
 		D1FF157B2A7FAE9100C0CE86 /* UIState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF157A2A7FAE9100C0CE86 /* UIState.swift */; };
 		E301EFDA21312AB300BC8588 /* KeychainAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = E301EFD921312AB300BC8588 /* KeychainAccess.swift */; };
 		E30D2EBD21F5FD2600E1FF0D /* PluginOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30D2EBC21F5FD2600E1FF0D /* PluginOverlayView.swift */; };
@@ -1560,9 +1560,9 @@
 		D1FA42E428E5E54700DF49DD /* AppInputConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInputConfig.swift; sourceTree = "<group>"; };
 		D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVInputSectionLogScanner.swift; sourceTree = "<group>"; };
 		D1FD2DDB28533EE700CF7B35 /* InputSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSection.swift; sourceTree = "<group>"; };
-		D1FF15742A7E072200C0CE86 /* PlayerCoreStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCoreStore.swift; sourceTree = "<group>"; };
+		D1FF15742A7E072200C0CE86 /* PlayerCoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCoreManager.swift; sourceTree = "<group>"; };
 		D1FF15762A7E35F300C0CE86 /* WindowAutosaveName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAutosaveName.swift; sourceTree = "<group>"; };
-		D1FF15782A7FA6A300C0CE86 /* RestorableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestorableState.swift; sourceTree = "<group>"; };
+		D1FF15782A7FA6A300C0CE86 /* PlayerUIState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerUIState.swift; sourceTree = "<group>"; };
 		D1FF157A2A7FAE9100C0CE86 /* UIState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIState.swift; sourceTree = "<group>"; };
 		D27556FC1EC6E1C300CAB2A4 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/HistoryWindowController.strings"; sourceTree = "<group>"; };
 		D27E35CE1E379B6D0064BE57 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/MainMenu.strings"; sourceTree = "<group>"; };
@@ -2541,11 +2541,11 @@
 			isa = PBXGroup;
 			children = (
 				84A0BA961D2FA1CE00BC8DA1 /* PlayerCore.swift */,
-				D1FF15742A7E072200C0CE86 /* PlayerCoreStore.swift */,
+				D1FF15742A7E072200C0CE86 /* PlayerCoreManager.swift */,
 				84A0BA981D2FAAA700BC8DA1 /* MPVController.swift */,
 				D1FD2DD728521AD500CF7B35 /* MPVInputSectionLogScanner.swift */,
 				D18333BD2834CE620060A4E9 /* PlayerBindingController.swift */,
-				D1FF15782A7FA6A300C0CE86 /* RestorableState.swift */,
+				D1FF15782A7FA6A300C0CE86 /* PlayerUIState.swift */,
 			);
 			name = Player;
 			sourceTree = "<group>";
@@ -2991,7 +2991,7 @@
 				E374160C20F138A900B4F7F9 /* CollapseView.swift in Sources */,
 				84A0BA901D2F8D4100BC8DA1 /* IINAError.swift in Sources */,
 				D1FD2DDC28533EE700CF7B35 /* InputSection.swift in Sources */,
-				D1FF15752A7E072200C0CE86 /* PlayerCoreStore.swift in Sources */,
+				D1FF15752A7E072200C0CE86 /* PlayerCoreManager.swift in Sources */,
 				D1D87E042932086000737886 /* TableUIChangeBuilder.swift in Sources */,
 				84C6D3621EAF8D63009BF721 /* HistoryController.swift in Sources */,
 				D1AF3D7928F16CA4002A15A7 /* CellEditTracker.swift in Sources */,
@@ -3006,7 +3006,7 @@
 				8450403D1E0A9EE20079C194 /* InspectorWindowController.swift in Sources */,
 				E38BA1C0253E54F2000B551D /* JavascriptAPIGlobal.swift in Sources */,
 				E39A11FD240F176E00A67F9F /* StringEncodingName.swift in Sources */,
-				D1FF15792A7FA6A300C0CE86 /* RestorableState.swift in Sources */,
+				D1FF15792A7FA6A300C0CE86 /* PlayerUIState.swift in Sources */,
 				E33FEEB52229A44F00B59711 /* JavascriptAPIUtils.swift in Sources */,
 				84C6D3671EB2A427009BF721 /* HistoryWindowController.swift in Sources */,
 				9E47DAC01E3CFA6D00457420 /* DurationDisplayTextField.swift in Sources */,

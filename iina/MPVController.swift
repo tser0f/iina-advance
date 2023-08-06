@@ -271,7 +271,7 @@ not applying FFmpeg 9599 workaround
 
     applyHardwareAccelerationWorkaround()
 
-    if let priorState = player.info.restorableState {
+    if let priorState = player.info.priorUIState {
       let props = priorState.properties
 
       if let str = props["paused"] as? String, let wasPaused = Bool(str) {

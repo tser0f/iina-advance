@@ -31,10 +31,10 @@ class PlaybackInfo {
     }
   }
 
-  var restorableState: RestorableState? =  nil
+  var priorUIState: PlayerUIState? =  nil
 
   var isRestoring: Bool {
-    return restorableState != nil
+    return priorUIState != nil
   }
 
   var justStartedFile: Bool = false

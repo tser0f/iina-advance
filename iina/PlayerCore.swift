@@ -12,10 +12,10 @@ import MediaPlayer
 class PlayerCore: NSObject {
   // MARK: - Multiple instances
 
-  static private let store = PlayerCoreStore()
+  static private let manager = PlayerCoreManager()
 
   static var playerCores: [PlayerCore] {
-    return store.getPlayerCores()
+    return manager.getPlayerCores()
   }
 
   /// TODO: make `lastActive` and `active` Optional, so creating an uncessary player randomly at startup isn't needed
@@ -24,41 +24,41 @@ class PlayerCore: NSObject {
   ///              result in a reference the `active` property and that requires use of the main thread.
   static var lastActive: PlayerCore {
     get {
-      return store.lastActive ?? active
+      return manager.lastActive ?? active
     }
     set {
-      store.lastActive = newValue
+      manager.lastActive = newValue
     }
   }
 
   /// - Important: Code referencing this property **must** be run on the main thread because it references
   ///              [NSApplication.mainWindow`](https://developer.apple.com/documentation/appkit/nsapplication/1428723-mainwindow)
   static var active: PlayerCore {
-    return store.getActive()
+    return manager.getActive()
   }
 
   static var newPlayerCore: PlayerCore {
-    return store.getIdleOrCreateNew()
+    return manager.getIdleOrCreateNew()
   }
 
   static var activeOrNew: PlayerCore {
-    return store.getActiveOrCreateNew()
+    return manager.getActiveOrCreateNew()
   }
 
   static var playing: [PlayerCore] {
-    return store.getNonIdle()
+    return manager.getNonIdle()
   }
 
   // Attempt to exactly restore play state & UI from last run of IINA (for given player)
   static func restoreFromPriorLaunch(forPlayerUID uid: String) {
     Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: uid).string.quoted)")
-    let playerCore = store.createNewPlayerCore(withLabel: uid, start: false)
+    let playerCore = manager.createNewPlayerCore(withLabel: uid, start: false)
 
-    if let savedState = Preference.UIState.getPlayerState(playerID: playerCore.label) {
+    if let savedState = Preference.UIState.getPlayerUIState(playerID: playerCore.label) {
       /// set these before calling `start()`
-      playerCore.info.restorableState = savedState
+      playerCore.info.priorUIState = savedState
     }
-    /// Many properties need to be set via mpv init, called by `start()`:
+    /// Most playback properties need to be set via mpv init. These will be called by `start()`:
     playerCore.start()
     /// Restore remaining non-mpv state here:
     playerCore.restoreUIState()
@@ -460,7 +460,7 @@ class PlayerCore: NSObject {
     didInitVideo = false
   }
 
-  private func savePlayerState() {
+  private func savePlayerUIState() {
     Logger.log("Saving player state", level: .verbose, subsystem: subsystem)
 
     saveUIState()
@@ -469,9 +469,13 @@ class PlayerCore: NSObject {
     uninitVideo()
   }
 
+  func saveUIState() {
+    Preference.UIState.save(self)
+  }
+
   // Finish restoring state of player from prior launch
   fileprivate func restoreUIState() {
-    guard let props = info.restorableState?.properties else { return }
+    guard let props = info.priorUIState?.properties else { return }
 
     if let csv = props["windowFrame"] as? String {
       let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
@@ -497,20 +501,6 @@ class PlayerCore: NSObject {
 
   }
 
-  func saveUIState() {
-    guard Preference.UIState.isSaveEnabled else { return }
-    guard mainWindow.loaded else {
-      log.debug("Aborting save of UI state: player window is not loaded")
-      return
-    }
-    guard !info.isRestoring else {
-      log.warn("Aborting save of UI state: still restoring previous state")
-      return
-    }
-    let state = RestorableState.from(self)
-    Preference.UIState.setPlayerState(playerID: self.label, state)
-  }
-
   /// Initiate shutdown of this player.
   ///
   /// This method is intended to only be used during application termination. Once shutdown has been initiated player methods
@@ -522,7 +512,7 @@ class PlayerCore: NSObject {
     guard !isShuttingDown else { return }
     isShuttingDown = true
     Logger.log("Shutting down", subsystem: subsystem)
-    savePlayerState()
+    savePlayerUIState()
     mpv.mpvQuit()
   }
 
@@ -534,7 +524,7 @@ class PlayerCore: NSObject {
     // If mpv shutdown was initiated by mpv then the player state has not been saved.
     if isMPVInitiated {
       isShuttingDown = true
-      savePlayerState()
+      savePlayerUIState()
     }
     postNotification(.iinaPlayerShutdown)
   }
@@ -1604,6 +1594,7 @@ class PlayerCore: NSObject {
       }
     }
     DispatchQueue.main.async {
+      self.saveUIState()
       Timer.scheduledTimer(timeInterval: TimeInterval(0.2), target: self, selector: #selector(self.reEnableOSDAfterFileLoading), userInfo: nil, repeats: false)
     }
   }

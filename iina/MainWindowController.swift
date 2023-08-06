@@ -3960,7 +3960,7 @@ class MainWindowController: PlayerWindowController {
     player.info.justOpenedFile = false
     player.info.justStartedFile = false
     shouldApplyInitialWindowSize = false
-    player.info.restorableState = nil
+    player.info.priorUIState = nil
   }
 
   private func shouldResizeWindowAfterVideoReconfig() -> Bool {

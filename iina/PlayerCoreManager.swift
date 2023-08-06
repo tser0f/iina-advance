@@ -1,5 +1,5 @@
 //
-//  PlayerCoreStore.swift
+//  PlayerCoreManager.swift
 //  iina
 //
 //  Created by Matt Svoboda on 8/4/23.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-class PlayerCoreStore {
+class PlayerCoreManager {
   private let lock = Lock()
   private var playerCoreCounter = 0
 
