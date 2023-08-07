@@ -16,16 +16,16 @@ class AppInputConfigBuilder {
   // See `AppInputConfig.userConfSectionEndIndex`
   private var userConfSectionEndIndex: Int? = nil
 
+  private var log: Logger.Subsystem {
+    return AppInputConfig.log
+  }
+
   init(_ sectionStack: InputSectionStack) {
     self.sectionStack = sectionStack
   }
 
-  private func log(_ msg: String, level: Logger.Level = .debug) {
-    Logger.log(msg, level: level, subsystem: sectionStack.subsystem)
-  }
-
   func build(version: Int) -> AppInputConfig {
-    Logger.log("Starting rebuild of AppInputConfig v\(version)", level: .verbose, subsystem: sectionStack.subsystem)
+    log.verbose("Starting rebuild of AppInputConfig v\(version)")
 
     // Build the list of InputBindings, including redundancies. We're not done setting each's `isEnabled` field though.
     // This also sets `userConfSectionStartIndex` and `userConfSectionEndIndex`.
@@ -59,7 +59,7 @@ class AppInputConfigBuilder {
 
     let appBindings = AppInputConfig(version: version, bindingCandidateList: bindingCandidateList, resolverDict: resolverDict,
                                      userConfSectionStartIndex: userConfSectionStartIndex!, userConfSectionEndIndex: userConfSectionEndIndex!)
-    Logger.log("Finished rebuild of AppInputConfig (\(appBindings.resolverDict.count) bindings)", subsystem: sectionStack.subsystem)
+    log.debug("Finished rebuild of AppInputConfig (\(appBindings.resolverDict.count) bindings)")
     appBindings.logEnabledBindings()
 
     return appBindings
@@ -80,11 +80,11 @@ class AppInputConfigBuilder {
       // Iterate from bottom to the top of the "stack":
       for enabledSectionMeta in sectionStack.sectionsEnabled {
         if AppInputConfig.logBindingsRebuild {
-          log("RebuildBindings: examining enabled section: \(enabledSectionMeta.name.quoted)", level: .error)
+          log.error("RebuildBindings: examining enabled section: \(enabledSectionMeta.name.quoted)")
         }
         guard let inputSection = sectionStack.sectionsDefined[enabledSectionMeta.name] else {
           // indicates serious internal error
-          log("RebuildBindings: failed to find section: \(enabledSectionMeta.name.quoted)", level: .error)
+          log.error("RebuildBindings: failed to find section: \(enabledSectionMeta.name.quoted)")
           continue
         }
 
@@ -97,11 +97,11 @@ class AppInputConfigBuilder {
         addAllBindings(from: inputSection, to: &linkedList)
 
         if AppInputConfig.logBindingsRebuild {
-          log("RebuildBindings: CandidateList in increasing priority: \(linkedList.map({$0.keyMapping.normalizedMpvKey}).joined(separator: ", "))", level: .verbose)
+          log.verbose("RebuildBindings: CandidateList in increasing priority: \(linkedList.map({$0.keyMapping.normalizedMpvKey}).joined(separator: ", "))")
         }
 
         if enabledSectionMeta.isExclusive {
-          log("RebuildBindings: section \(inputSection.name.quoted) was enabled exclusively", level: .verbose)
+          log.verbose("RebuildBindings: section \(inputSection.name.quoted) was enabled exclusively")
           return Array<InputBinding>(linkedList)
         }
       }
@@ -119,12 +119,12 @@ class AppInputConfigBuilder {
   private func addAllBindings(from inputSection: InputSection, to linkedList: inout LinkedList<InputBinding>) {
     if inputSection.keyMappingList.isEmpty {
       if AppInputConfig.logBindingsRebuild {
-        log("RebuildBindings: skipping \(inputSection.name) as it has no bindings", level: .verbose)
+        log.verbose("RebuildBindings: skipping \(inputSection.name) as it has no bindings")
       }
     } else {
       if inputSection.isForce {
         if AppInputConfig.logBindingsRebuild {
-          log("RebuildBindings: adding bindings from \(inputSection) to tail of list, level: .verbose)", level: .verbose)
+          log.verbose("RebuildBindings: adding bindings from \(inputSection) to tail of list, level: .verbose)")
         }
         // Strong section: Iterate from top of section to bottom (increasing priority) and add to end of list
         for keyMapping in inputSection.keyMappingList {
@@ -134,7 +134,7 @@ class AppInputConfigBuilder {
       } else {
         // Weak section: Iterate from top of section to bottom (decreasing priority) and add backwards to beginning of list
         if AppInputConfig.logBindingsRebuild {
-          log("RebuildBindings: adding bindings from \(inputSection) to head of list, in reverse order", level: .verbose)
+          log.verbose("RebuildBindings: adding bindings from \(inputSection) to head of list, in reverse order")
         }
         for keyMapping in inputSection.keyMappingList.reversed() {
           let activeBinding = buildNewInputBinding(from: keyMapping, section: inputSection)

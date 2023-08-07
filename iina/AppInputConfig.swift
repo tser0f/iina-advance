@@ -8,10 +8,6 @@
 
 import Foundation
 
-fileprivate func log(_ msg: String, _ level: Logger.Level = .debug) {
-  Logger.log(msg, level: level, subsystem: AppInputConfig.subsystem)
-}
-
 // Application-scoped input config (key bindings)
 // The currently active bindings for the IINA app. Includes key lookup table, list of binding candidates, & other data
 struct AppInputConfig {
@@ -19,18 +15,18 @@ struct AppInputConfig {
   typealias NotificationData = [AnyHashable : Any]
 
   static let subsystem = Logger.Subsystem(rawValue: "input")
+  static let log = subsystem
 
   // MARK: Shared input sections
 
   // Contains static sections which occupy the bottom of every stack.
   // Sort of like a prototype, but a change to any of these sections will immediately affects all players.
-  static private let sharedSectionStack = InputSectionStack(AppInputConfig.subsystem,
-                                                            initialEnabledSections: [
-                                                              SharedInputSection(name: SharedInputSection.USER_CONF_SECTION_NAME, isForce: true, origin: .confFile),
-                                                              SharedInputSection(name: SharedInputSection.AUDIO_FILTERS_SECTION_NAME, isForce: true, origin: .savedFilter),
-                                                              SharedInputSection(name: SharedInputSection.VIDEO_FILTERS_SECTION_NAME, isForce: true, origin: .savedFilter),
-                                                              SharedInputSection(name: SharedInputSection.PLUGINS_SECTION_NAME, isForce: false, origin: .iinaPlugin)
-                                                            ])
+  static private let sharedSectionStack = InputSectionStack(initialEnabledSections: [
+    SharedInputSection(name: SharedInputSection.USER_CONF_SECTION_NAME, isForce: true, origin: .confFile),
+    SharedInputSection(name: SharedInputSection.AUDIO_FILTERS_SECTION_NAME, isForce: true, origin: .savedFilter),
+    SharedInputSection(name: SharedInputSection.VIDEO_FILTERS_SECTION_NAME, isForce: true, origin: .savedFilter),
+    SharedInputSection(name: SharedInputSection.PLUGINS_SECTION_NAME, isForce: false, origin: .iinaPlugin)
+  ])
 
   static var sharedSections: [InputSection] {
     sharedSectionStack.sectionsEnabled.map( { sharedSectionStack.sectionsDefined[$0.name]! })
@@ -90,7 +86,7 @@ struct AppInputConfig {
    */
   static func rebuildCurrent(attaching userData: NotificationData? = nil) {
     let requestedVersion = AppInputConfig.lastStartedVersion + 1
-    log("Requesting AppInputConfig build v\(requestedVersion)", .verbose)
+    log.verbose("Requesting AppInputConfig build v\(requestedVersion)")
 
     DispatchQueue.main.async {
 
@@ -120,7 +116,7 @@ struct AppInputConfig {
 
       let notification = Notification(name: .iinaAppInputConfigDidChange,
                                       object: nil, userInfo: data)
-      log("Completed AppInputConfig v\(appInputConfigNew.version); posting notification: \(notification.name.rawValue.quoted)", .verbose)
+      log.verbose("Completed AppInputConfig v\(appInputConfigNew.version); posting notification: \(notification.name.rawValue.quoted)")
       NotificationCenter.default.post(notification)
     }
   }
@@ -167,7 +163,7 @@ struct AppInputConfig {
   func logEnabledBindings() {
     if AppInputConfig.logBindingsRebuild, Logger.enabled && Logger.Level.preferred >= .verbose {
       let bindingList = bindingCandidateList.filter({ $0.isEnabled })
-      log("Currently enabled bindings (\(bindingList.count)):\n\(bindingList.map { "\t\($0)" }.joined(separator: "\n"))", .verbose)
+      AppInputConfig.log.verbose("Currently enabled bindings (\(bindingList.count)):\n\(bindingList.map { "\t\($0)" }.joined(separator: "\n"))")
     }
   }
 }

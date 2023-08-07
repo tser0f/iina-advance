@@ -72,7 +72,7 @@ class PlayerBindingController {
 
   // MARK: - Single player instance
 
-  private let subsystem: Logger.Subsystem
+  private let log: Logger.Subsystem
 
   // Data structure which keeps track of a player's input sections
   private var sectionStack: InputSectionStack
@@ -85,18 +85,14 @@ class PlayerBindingController {
   private var keyPressHistory = RingBuffer<String>(capacity: MP_MAX_KEY_DOWN)
 
   init(playerCore: PlayerCore) {
-    self.subsystem = Logger.Subsystem(rawValue: "\(playerCore.subsystem.rawValue)/\(AppInputConfig.subsystem.rawValue)")
+    self.log = Logger.Subsystem(rawValue: "\(playerCore.subsystem.rawValue)/\(AppInputConfig.subsystem.rawValue)")
 
     // Default to adding the static shared sections
-    sectionStack = InputSectionStack(subsystem, initialEnabledSections: AppInputConfig.sharedSections)
+    sectionStack = InputSectionStack(initialEnabledSections: AppInputConfig.sharedSections)
   }
 
   deinit {
     self.keyPressHistory.clear()
-  }
-
-  private func log(_ msg: String, level: Logger.Level = .debug) {
-    Logger.log(msg, level: level, subsystem: subsystem)
   }
 
   func makeAppInputConfigBuilder() -> AppInputConfigBuilder {
@@ -146,7 +142,7 @@ class PlayerBindingController {
 
     let keySequence: String = KeyCodeHelper.mpvKeyCode(from: keyDownEvent)
     if keySequence == "" {
-      log("Event could not be translated; ignoring: \(keyDownEvent)")
+      log.debug("Event could not be translated; ignoring: \(keyDownEvent)")
       return nil
     }
     let normalizedKeySequence = KeyCodeHelper.normalizeMpv(keySequence)
@@ -168,21 +164,21 @@ class PlayerBindingController {
         keySequence = "\(prevKey)-\(keySequence)"
       }
 
-      log("Checking keySeq: \(keySequence.quoted)", level: .verbose)
+      log.verbose("Checking keySeq: \(keySequence.quoted)")
 
       if let binding = appBindings.resolverDict[keySequence] {
         if binding.origin == .iinaPlugin {
           // Make extra sure we don't resolve plugin bindings here
-          log("Sequence \(keySequence.quoted) resolved to an IINA plugin (and will be ignored)! This indicates a bug which should be fixed", level: .error)
+          log.error("Sequence \(keySequence.quoted) resolved to an IINA plugin (and will be ignored)! This indicates a bug which should be fixed")
           appBindings.logEnabledBindings()
           return nil
         }
         let keyMapping = binding.keyMapping
         if keyMapping.isIgnored {
-          log("Ignoring \(keyMapping.normalizedMpvKey.quoted) (from: \(binding.srcSectionName.quoted))", level: .verbose)
+          log.verbose("Ignoring \(keyMapping.normalizedMpvKey.quoted) (from: \(binding.srcSectionName.quoted))")
           hasPartialValidSequence = true
         } else {
-          log("Found matching binding: \(keyMapping.normalizedMpvKey.quoted) → \(keyMapping.readableAction.quoted) (from: \(binding.srcSectionName.quoted))")
+          log.debug("Found matching binding: \(keyMapping.normalizedMpvKey.quoted) → \(keyMapping.readableAction.quoted) (from: \(binding.srcSectionName.quoted))")
           // Non-ignored action! Clear prev key buffer as per mpv spec
           keyPressHistory.clear()
           return keyMapping
@@ -192,11 +188,11 @@ class PlayerBindingController {
 
     if hasPartialValidSequence {
       // Send an explicit "ignore" for a partial sequence match, so player window doesn't beep
-      log("Contains partial sequence, ignoring: \(keySequence.quoted)", level: .verbose)
+      log.verbose("Contains partial sequence, ignoring: \(keySequence.quoted)")
       return KeyMapping(rawKey: keySequence, rawAction: MPVCommand.ignore.rawValue, comment: nil)
     } else {
       // Not even part of a valid sequence = invalid keystroke
-      log("No active binding for keystroke \(lastKeyStroke.quoted)")
+      log.debug("No active binding for keystroke \(lastKeyStroke.quoted)")
       appBindings.logEnabledBindings()
       return nil
     }

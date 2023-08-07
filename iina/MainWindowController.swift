@@ -2901,6 +2901,7 @@ class MainWindowController: PlayerWindowController {
       if let csv = savedState.string(for: .windowFrame) {
         let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
         if dims.count == 4 {
+          // FIXME: constrain within screen (add to MainWindowGeometry)
           let savedSize = NSSize(width: dims[2], height: dims[3])
           player.log.verbose("WindowWillResize: denying request due to restore; returning \(savedSize)")
           return savedSize

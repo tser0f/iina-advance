@@ -45,11 +45,9 @@ class InputSectionStack {
    */
   var sectionsEnabled = LinkedList<EnabledSectionMeta>()
 
-  let subsystem: Logger.Subsystem
+  let log = AppInputConfig.subsystem
 
-  init(_ subsystem: Logger.Subsystem, initialEnabledSections: [InputSection]? = nil) {
-    self.subsystem = subsystem
-
+  init(initialEnabledSections: [InputSection]? = nil) {
     let sections: [InputSection]
     if let initialEnabledSections = initialEnabledSections {
       sections = initialEnabledSections
@@ -59,7 +57,7 @@ class InputSectionStack {
 
     for section in sections {
       if AppInputConfig.logBindingsRebuild {
-        log("CreateStack: Adding initial enabled section: \(section.name.quoted)", level: .verbose)
+        log.verbose("CreateStack: Adding initial enabled section: \(section.name.quoted)")
       }
       self.sectionsDefined[section.name] = section
       self.sectionsEnabled.append(EnabledSectionMeta(name: section.name, isExclusive: false))
@@ -69,11 +67,6 @@ class InputSectionStack {
   deinit {
     self.sectionsDefined = [:]
     self.sectionsEnabled.clear()
-  }
-
-  // Utility function
-  private func log(_ msg: String, level: Logger.Level = .debug) {
-    Logger.log(msg, level: level, subsystem: subsystem)
   }
 
   // MARK: MPV Input Section API
@@ -113,7 +106,7 @@ class InputSectionStack {
       // mpv behavior is to remove a section from the enabled list if it is updated with no content
       if inputSection.keyMappingList.isEmpty && sectionsDefined[inputSection.name] != nil {
         // remove existing enabled section with same name
-        log("New definition of \(inputSection.name.quoted) contains no bindings: disabling & removing it")
+        log.debug("New definition of \(inputSection.name.quoted) contains no bindings: disabling & removing it")
         disableSection_Unsafe(inputSection.name)
       }
       sectionsDefined[inputSection.name] = inputSection
@@ -146,15 +139,15 @@ class InputSectionStack {
           break
         case "exclusive":
           isExclusive = true
-          log("Enabling exclusive section: \(sectionName.quoted)")
+          log.debug("Enabling exclusive section: \(sectionName.quoted)")
           break
         default:
-          log("Found unexpected flag \(flag.quoted) when enabling input section \(sectionName.quoted)", level: .error)
+          log.error("Found unexpected flag \(flag.quoted) when enabling input section \(sectionName.quoted)")
         }
       }
 
       guard sectionsDefined[sectionName] != nil else {
-        log("Cannot enable section \(sectionName.quoted): it was never defined!", level: .error)
+        log.error("Cannot enable section \(sectionName.quoted): it was never defined!")
         return
       }
 
@@ -163,7 +156,7 @@ class InputSectionStack {
       sectionsEnabled.remove({ $0.name == sectionName })
 
       sectionsEnabled.append(EnabledSectionMeta(name: sectionName, isExclusive: isExclusive))
-      log("InputSection was enabled: \(sectionName.quoted). SectionsEnabled=\(sectionsEnabled.map{ "\($0.name.quoted)" }); SectionsDefined=\(sectionsDefined.keys)", level: .verbose)
+      log.verbose("InputSection was enabled: \(sectionName.quoted). SectionsEnabled=\(sectionsEnabled.map{ "\($0.name.quoted)" }); SectionsDefined=\(sectionsDefined.keys)")
     }
   }
 
@@ -185,7 +178,7 @@ class InputSectionStack {
       sectionsEnabled.remove({ $0.name == sectionName })
       sectionsDefined.removeValue(forKey: sectionName)
 
-      log("InputSection was disabled: \(sectionName.quoted)", level: .verbose)
+      log.verbose("InputSection was disabled: \(sectionName.quoted)")
     }
   }
 
@@ -199,7 +192,7 @@ class InputSectionStack {
         }
       } else {
         // indicates our code is wrong
-        log("Unexpected action for parsed key binding from 'define-section': \(kb.rawAction.quoted)", level: .error)
+        log.error("Unexpected action for parsed key binding from 'define-section': \(kb.rawAction.quoted)")
       }
     }
     return scriptNameSet
@@ -210,7 +203,7 @@ class InputSectionStack {
     if splitName.count == 2 {
       return String(splitName[0])
     } else if splitName.count != 1 {
-      log("Unexpected script binding name from 'define-section': \(scriptBindingName.quoted)", level: .error)
+      log.error("Unexpected script binding name from 'define-section': \(scriptBindingName.quoted)")
     }
     return nil
   }
