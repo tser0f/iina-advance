@@ -64,7 +64,7 @@ class PlayerCore: NSObject {
   // MARK: - Fields
 
   let subsystem: Logger.Subsystem
-  var log: Logger.Subsystem { self.subsystem }
+  unowned var log: Logger.Subsystem { self.subsystem }
   var label: String
 
   // Plugins

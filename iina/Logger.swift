@@ -68,6 +68,7 @@ class Logger: NSObject {
     var added = false
 
     static let general = Subsystem(rawValue: "iina")
+    static let input = Logger.Subsystem(rawValue: "input")
 
     required init(rawValue: String) {
       self.rawValue = rawValue

@@ -85,7 +85,7 @@ class PlayerBindingController {
   private var keyPressHistory = RingBuffer<String>(capacity: MP_MAX_KEY_DOWN)
 
   init(playerCore: PlayerCore) {
-    self.log = Logger.Subsystem(rawValue: "\(playerCore.subsystem.rawValue)/\(AppInputConfig.subsystem.rawValue)")
+    self.log = Logger.Subsystem(rawValue: "\(playerCore.log.rawValue)/\(Logger.Subsystem.input.rawValue)")
 
     // Default to adding the static shared sections
     sectionStack = InputSectionStack(initialEnabledSections: AppInputConfig.sharedSections)

@@ -66,6 +66,9 @@ fileprivate extension NSStackView.VisibilityPriority {
 // MARK: - Constants
 
 class MainWindowController: PlayerWindowController {
+  unowned var log: Logger.Subsystem {
+    return player.log
+  }
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MainWindowController")
@@ -81,7 +84,7 @@ class MainWindowController: PlayerWindowController {
       // add 2 because button's bounds seems to be a bit larger than its visible size
       return StandardTitleBarHeight - ((StandardTitleBarHeight - heightOfCloseButton) / 2 + 2)
     }
-    Logger.log("reducedTitleBarHeight may be incorrect (could not get close button)", level: .error)
+    log.error("reducedTitleBarHeight may be incorrect (could not get close button)")
     return StandardTitleBarHeight
   }()
 
@@ -395,11 +398,10 @@ class MainWindowController: PlayerWindowController {
       updateTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) {
-          if newValue == Preference.integer(for: .thumbnailLength) && newValue != self.player.info.thumbnailLength {
-            Logger.log("Pref \(Preference.Key.thumbnailLength.rawValue.quoted) changed to \(newValue)px: requesting thumbs regen",
-                       subsystem: self.player.subsystem)
-            self.player.reloadThumbnails()
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
+          if newValue == Preference.integer(for: .thumbnailLength) && newValue != player.info.thumbnailLength {
+            log.debug("Pref \(keyPath.quoted) changed to \(newValue)px: requesting thumbs regen")
+            player.reloadThumbnails()
           }
         }
       }
@@ -706,7 +708,7 @@ class MainWindowController: PlayerWindowController {
   override init(playerCore: PlayerCore) {
     super.init(playerCore: playerCore)
     self.windowFrameAutosaveName = WindowAutosaveName.mainPlayer(id: playerCore.label).string
-    Logger.log("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
+    log.verbose("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)")
   }
 
   required init?(coder: NSCoder) {
@@ -835,7 +837,7 @@ class MainWindowController: PlayerWindowController {
       for screen in NSScreen.screens {
         screenIDs.insert(screen.displayId)
       }
-      Logger.log("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)", subsystem: player.subsystem)
+      log.verbose("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)")
       if self.fsState.isFullscreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
         self.removeBlackWindows()
         self.blackOutOtherMonitors()
@@ -866,7 +868,7 @@ class MainWindowController: PlayerWindowController {
       self.player.sendOSD(.abLoopUpdate(.bSet, VideoTime(seconds).stringRepresentation))
     }
 
-    player.log.verbose("MainWindow windowDidLoad done")
+    log.verbose("MainWindow windowDidLoad done")
     player.events.emit(.windowLoaded)
   }
 
@@ -941,7 +943,7 @@ class MainWindowController: PlayerWindowController {
 
   // TODO: figure out why this 2px adjustment is necessary
   private func constrainVideoViewForWindowedMode(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
-    player.log.verbose("Contraining videoView for windowed mode")
+    log.verbose("Contraining videoView for windowed mode")
     // Remove GT & center constraints. Use only EQ
     let existing = self.videoViewConstraints
     if let existing = existing {
@@ -1034,7 +1036,7 @@ class MainWindowController: PlayerWindowController {
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
   private func updateTopBarPlacement(placement: Preference.PanelPlacement) {
-    Logger.log("Updating top bar placement to: \(placement)", level: .verbose)
+    log.verbose("Updating top bar placement to: \(placement)")
     guard let window = window, let contentView = window.contentView else { return }
     contentView.removeConstraint(topBarLeadingSpaceConstraint)
     contentView.removeConstraint(topBarTrailingSpaceConstraint)
@@ -1057,7 +1059,7 @@ class MainWindowController: PlayerWindowController {
 
   private func updateTopBarHeight(to topBarHeight: CGFloat, transition: LayoutTransition) {
     let placement = transition.toLayout.topBarPlacement
-    Logger.log("TopBar height: \(topBarHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("TopBar height: \(topBarHeight), placement: \(placement)")
 
     switch placement {
     case .insideVideo:
@@ -1112,7 +1114,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func updateBottomBarPlacement(placement: Preference.PanelPlacement) {
-    Logger.log("Updating bottom bar placement to: \(placement)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Updating bottom bar placement to: \(placement)")
     guard let window = window, let contentView = window.contentView else { return }
     contentView.removeConstraint(bottomBarLeadingSpaceConstraint)
     contentView.removeConstraint(bottomBarTrailingSpaceConstraint)
@@ -1137,7 +1139,7 @@ class MainWindowController: PlayerWindowController {
 
   private func updateBottomBarHeight(to bottomBarHeight: CGFloat, transition: LayoutTransition) {
     let placement = transition.toLayout.bottomBarPlacement
-    Logger.log("Updating bottomBar height to: \(bottomBarHeight), placement: \(placement)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Updating bottomBar height to: \(bottomBarHeight), placement: \(placement)")
 
     switch placement {
     case .insideVideo:
@@ -1167,7 +1169,7 @@ class MainWindowController: PlayerWindowController {
     if #available(macOS 10.12.2, *) {} else {
       buttonTypes = buttonTypes.filter { $0 != .pip }
     }
-    Logger.log("Adding buttons to OSC toolbar: \(buttonTypes)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Adding buttons to OSC toolbar: \(buttonTypes)")
 
     var toolButtons: [OSCToolbarButton] = []
     for buttonType in buttonTypes {
@@ -1429,7 +1431,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func transitionToInitialLayout() {
-    Logger.log("Setting initial layout", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Setting initial layout")
     let initialLayoutSpec = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
     let initialLayout = buildFutureLayoutPlan(from: initialLayoutSpec)
 
@@ -1455,7 +1457,7 @@ class MainWindowController: PlayerWindowController {
 
   func updateTitleBarAndOSC() {
     guard !isInInteractiveMode else {
-      Logger.log("Skipping layout refresh due to interactive mode", level: .verbose, subsystem: player.subsystem)
+      log.verbose("Skipping layout refresh due to interactive mode")
       return
     }
     let futureLayoutSpec = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
@@ -1492,7 +1494,7 @@ class MainWindowController: PlayerWindowController {
     /// Fortunately, we don't need `linear` for the fullscreen transition.
     let panelTimingName = transition.isTogglingFullScreen ? nil : CAMediaTimingFunctionName.linear
 
-    Logger.log("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
 
     // Starting animations:
 
@@ -1565,7 +1567,7 @@ class MainWindowController: PlayerWindowController {
 
   private func fadeOutOldViews(_ transition: LayoutTransition) {
     let futureLayout = transition.toLayout
-    Logger.log("FadeOutOldViews", level: .verbose, subsystem: player.subsystem)
+    log.verbose("FadeOutOldViews")
 
     // Title bar & title bar accessories:
 
@@ -1620,7 +1622,7 @@ class MainWindowController: PlayerWindowController {
   private func closeOldPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    Logger.log("CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)")
 
     if futureLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
@@ -1700,8 +1702,7 @@ class MainWindowController: PlayerWindowController {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
-      Logger.log("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)",
-                 level: .debug, subsystem: player.subsystem)
+      log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)")
       (window as! MainWindow).setFrameImmediately(newWindowFrame)
     }
 
@@ -1716,7 +1717,7 @@ class MainWindowController: PlayerWindowController {
   private func updateHiddenViewsAndConstraints(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    Logger.log("UpdateHiddenViewsAndConstraints", level: .verbose, subsystem: player.subsystem)
+    log.verbose("UpdateHiddenViewsAndConstraints")
 
     applyHiddenOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
@@ -1743,7 +1744,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     if let setupControlBarInternalViews = futureLayout.setupControlBarInternalViews {
-      Logger.log("Setting up control bar: \(futureLayout.oscPosition)", level: .verbose, subsystem: player.subsystem)
+      log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
       setupControlBarInternalViews()
     }
 
@@ -1769,7 +1770,7 @@ class MainWindowController: PlayerWindowController {
   private func openNewPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    Logger.log("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
 
     // Update heights to their final values:
     topOSCHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
@@ -1804,8 +1805,7 @@ class MainWindowController: PlayerWindowController {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
-      Logger.log("Calling setFrame() from openNewPanels with newWindowFrame \(newWindowFrame)",
-                 level: .debug, subsystem: player.subsystem)
+      log.debug("Calling setFrame() from openNewPanels with newWindowFrame \(newWindowFrame)")
       (window as! MainWindow).setFrameImmediately(newWindowFrame)
     }
 
@@ -1819,7 +1819,7 @@ class MainWindowController: PlayerWindowController {
   private func fadeInNewViews(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    Logger.log("FadeInNewViews", level: .verbose, subsystem: player.subsystem)
+    log.verbose("FadeInNewViews")
 
     if futureLayout.titleIconAndText.isShowable {
       window.titleVisibility = .visible
@@ -1890,8 +1890,7 @@ class MainWindowController: PlayerWindowController {
     if player.isInMiniPlayer || (!layout.isFullScreen && layout.topBarPlacement == Preference.PanelPlacement.outsideVideo) {
       downshift = Constants.Sidebar.defaultDownshift
       tabHeight = Constants.Sidebar.defaultTabHeight
-      Logger.log("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))",
-                 level: .verbose, subsystem: player.subsystem)
+      log.verbose("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))")
     } else {
       // Downshift: try to match title bar height
       if layout.isFullScreen || layout.topBarPlacement == Preference.PanelPlacement.outsideVideo {
@@ -1908,8 +1907,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    Logger.log("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topBar: \(layout.topBarPlacement)",
-               level: .verbose, subsystem: player.subsystem)
+    log.verbose("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topBar: \(layout.topBarPlacement)")
     quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
     playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
   }
@@ -2132,7 +2130,7 @@ class MainWindowController: PlayerWindowController {
 
   override func mouseDown(with event: NSEvent) {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
-      Logger.log("MainWindow mouseDown @ \(event.locationInWindow)", level: .verbose, subsystem: player.subsystem)
+      log.verbose("MainWindow mouseDown @ \(event.locationInWindow)")
     }
     workaroundCursorDefect()
     // do nothing if it's related to floating OSC
@@ -2159,7 +2157,7 @@ class MainWindowController: PlayerWindowController {
             return
           }
           if Logger.enabled && Logger.Level.preferred >= .verbose {
-            Logger.log("MainWindow mouseDrag: minimum dragging distance was met", level: .verbose, subsystem: player.subsystem)
+            log.verbose("MainWindow mouseDrag: minimum dragging distance was met")
           }
           isDragging = true
         }
@@ -2170,8 +2168,7 @@ class MainWindowController: PlayerWindowController {
 
   override func mouseUp(with event: NSEvent) {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
-      Logger.log("MainWindow mouseUp @ \(event.locationInWindow), isDragging: \(isDragging), clickCount: \(event.clickCount)",
-                 level: .verbose, subsystem: player.subsystem)
+      log.verbose("MainWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
     }
     workaroundCursorDefect()
     mousePosRelatedToWindow = nil
@@ -2231,7 +2228,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override internal func performMouseAction(_ action: Preference.MouseClickAction) {
-    Logger.log("Performing mouseAction: \(action)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Performing mouseAction: \(action)")
     super.performMouseAction(action)
     switch action {
     case .fullscreen:
@@ -2268,7 +2265,7 @@ class MainWindowController: PlayerWindowController {
   override func mouseEntered(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
     guard let obj = event.trackingArea?.userInfo?["obj"] as? Int else {
-      Logger.log("No data for tracking area", level: .warning)
+      log.warn("No data for tracking area")
       return
     }
     mouseExitEnterCount += 1
@@ -2291,7 +2288,7 @@ class MainWindowController: PlayerWindowController {
   override func mouseExited(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
     guard let obj = event.trackingArea?.userInfo?["obj"] as? Int else {
-      Logger.log("No data for tracking area", level: .warning)
+      log.warn("No data for tracking area")
       return
     }
     mouseExitEnterCount += 1
@@ -2404,7 +2401,7 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Window delegate: Open / Close
 
   func windowWillOpen() {
-    Logger.log("WindowWillOpen", level: .verbose, subsystem: player.subsystem)
+    log.verbose("WindowWillOpen")
     isClosing = false
     guard let window = self.window, let cv = window.contentView else { return }
     // Must workaround an AppKit defect in some versions of macOS. This defect is known to exist in
@@ -2470,7 +2467,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowWillClose(_ notification: Notification) {
-    Logger.log("Window closing", subsystem: player.subsystem)
+    log.verbose("Window will close")
 
     isClosing = true
     shouldApplyInitialWindowSize = true
@@ -2528,8 +2525,7 @@ class MainWindowController: PlayerWindowController {
   private func animateEntryIntoFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
     guard let window = window,
           let screen = window.screen else { return }
-    Logger.log("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
-               level: .verbose, subsystem: player.subsystem)
+    log.verbose("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)")
 
     // Because the outside panels can change while in fullscreen, use the coords of the video frame instead
     let priorWindowedGeometry = buildMainWindowGeometryFromCurrentLayout()
@@ -2538,7 +2534,7 @@ class MainWindowController: PlayerWindowController {
 
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedGeometry)
-      Logger.log("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)", level: .verbose)
+      log.verbose("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)")
 
       if !isLegacy {
         // Hide traffic light buttons & title during the animation:
@@ -2863,8 +2859,7 @@ class MainWindowController: PlayerWindowController {
     let screen = window.screen ?? NSScreen.main!
     let newWindowFrame = screen.frame
 
-    Logger.log("Calling setFrame() entering legacy full screen, to: \(newWindowFrame)",
-               level: .verbose, subsystem: player.subsystem)
+    log.verbose("Calling setFrame() entering legacy full screen, to: \(newWindowFrame)")
     window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
 
     if let unusableHeight = screen.cameraHousingHeight {
@@ -2879,7 +2874,7 @@ class MainWindowController: PlayerWindowController {
 
   func windowWillStartLiveResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
-    Logger.log("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)")
     isLiveResizingWidth = false
   }
 
@@ -2889,8 +2884,7 @@ class MainWindowController: PlayerWindowController {
 
     if denyNextWindowResize {
       let currentSize = window.frame.size
-      Logger.log("WindowWillResize: denying this resize; will stay at \(currentSize)",
-                 level: .verbose, subsystem: player.subsystem)
+      log.verbose("WindowWillResize: denying this resize; will stay at \(currentSize)")
       denyNextWindowResize = false
       return currentSize
     }
@@ -2903,18 +2897,18 @@ class MainWindowController: PlayerWindowController {
         if dims.count == 4 {
           // FIXME: constrain within screen (add to MainWindowGeometry)
           let savedSize = NSSize(width: dims[2], height: dims[3])
-          player.log.verbose("WindowWillResize: denying request due to restore; returning \(savedSize)")
+          log.verbose("WindowWillResize: denying request due to restore; returning \(savedSize)")
           return savedSize
         }
       }
-      player.log.verbose("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
+      log.verbose("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
       return window.frame.size
     }
 
     if requestedSize.height <= AppData.minVideoSize.height || requestedSize.width <= AppData.minVideoSize.width {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
-      Logger.log("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(window.frame.size)", level: .verbose, subsystem: player.subsystem)
+      log.verbose("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(window.frame.size)")
       return window.frame.size
     }
 
@@ -2959,14 +2953,14 @@ class MainWindowController: PlayerWindowController {
         newSize = resizeFromHeight
       }
     }
-    Logger.log("WindowWillResize returning: \(newSize) from:\(requestedSize)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("WindowWillResize returning: \(newSize) from:\(requestedSize)")
     return newSize
   }
 
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
-    Logger.log("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
 
     UIAnimation.disableAnimation {
       if isInInteractiveMode {
@@ -3065,11 +3059,10 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowDidChangeBackingProperties(_ notification: Notification) {
-    Logger.log("WindowDidChangeBackingProperties()", level: .verbose, subsystem: player.subsystem)
+    log.verbose("WindowDidChangeBackingProperties()")
     if let oldScale = (notification.userInfo?[NSWindow.oldScaleFactorUserInfoKey] as? NSNumber)?.doubleValue,
        let window = window, oldScale != Double(window.backingScaleFactor) {
-      Logger.log("WindowDidChangeBackingProperties: scale factor changed from \(oldScale) to \(Double(window.backingScaleFactor))",
-                 level: .verbose, subsystem: player.subsystem)
+      log.verbose("WindowDidChangeBackingProperties: scale factor changed from \(oldScale) to \(Double(window.backingScaleFactor))")
 
       videoView.videoLayer.contentsScale = window.backingScaleFactor
 
@@ -3156,7 +3149,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func windowDidDeminiaturize(_ notification: Notification) {
-    Logger.log("windowDidDeminiaturize()", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Window did deminiaturize")
     if Preference.bool(for: .pauseWhenMinimized) && isPausedDueToMiniaturization {
       player.resume()
       isPausedDueToMiniaturization = false
@@ -3173,7 +3166,7 @@ class MainWindowController: PlayerWindowController {
   // MARK: - UI: Show / Hide Fadeable Views
 
   func isUITimerNeeded() -> Bool {
-    Logger.log("Checking if UITimer needed. hasPermanentOSC: \(currentLayout.hasPermanentOSC), fadeableViews: \(fadeableViewsAnimationState), topBar: \(fadeableTopBarAnimationState), OSD: \(osdAnimationState)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Checking if UITimer needed. hasPermanentOSC: \(currentLayout.hasPermanentOSC), fadeableViews: \(fadeableViewsAnimationState), topBar: \(fadeableTopBarAnimationState), OSD: \(osdAnimationState)")
 
     if currentLayout.hasPermanentOSC {
       return true
@@ -3213,7 +3206,7 @@ class MainWindowController: PlayerWindowController {
     let showTopBar = forceShowTopBar || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover
 
     animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
-      Logger.log("Showing fadeable views", level: .verbose, subsystem: player.subsystem)
+      log.verbose("Showing fadeable views")
       fadeableViewsAnimationState = .willShow
       player.refreshSyncUITimer()
       destroyFadeTimer()
@@ -3278,7 +3271,7 @@ class MainWindowController: PlayerWindowController {
 
     animationTasks.append(UIAnimation.Task{ [self] in
       // Don't hide overlays when in PIP or when they are not actually shown
-      Logger.log("Hiding fadeable views", level: .verbose, subsystem: player.subsystem)
+      log.verbose("Hiding fadeable views")
 
       destroyFadeTimer()
       fadeableViewsAnimationState = .willHide
@@ -3787,10 +3780,10 @@ class MainWindowController: PlayerWindowController {
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
   func windowFrameFromGeometry(newSize: NSSize? = nil, screen: NSScreen? = nil) -> NSRect? {
     guard let geometry = cachedGeometry ?? player.getGeometry(), let screenFrame = (screen ?? window?.screen)?.visibleFrame else {
-      Logger.log("WindowFrameFromGeometry: returning nil", level: .verbose, subsystem: player.subsystem)
+      log.verbose("WindowFrameFromGeometry: returning nil")
       return nil
     }
-    Logger.log("WindowFrameFromGeometry: using \(geometry), screenFrame: \(screenFrame)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("WindowFrameFromGeometry: using \(geometry), screenFrame: \(screenFrame)")
 
     cachedGeometry = geometry
     // FIXME: should not use this
@@ -3861,7 +3854,7 @@ class MainWindowController: PlayerWindowController {
     winFrame.origin.x += screenFrame.origin.x
     winFrame.origin.y += screenFrame.origin.y
 
-    Logger.log("WindowFrameFromGeometry: resulting windowFrame: \(winFrame)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("WindowFrameFromGeometry: resulting windowFrame: \(winFrame)")
     return winFrame
   }
 
@@ -3888,26 +3881,26 @@ class MainWindowController: PlayerWindowController {
     var scaleDownFactor: CGFloat? = nil
 
     if player.info.isRestoring {
-      player.log.debug("AdjustFrameAfterVideoReconfig: skipping resize because isRestoring is set")
+      log.debug("AdjustFrameAfterVideoReconfig: skipping resize because isRestoring is set")
     } else {
       if shouldResizeWindowAfterVideoReconfig() {
         // get videoSize on screen
         newVideoSize = videoBaseDisplaySize
-        Logger.log("Starting resizeWindow calculations; set newVideoSize = videoBaseDisplaySize -> \(videoBaseDisplaySize)", level: .verbose)
+        log.verbose("Starting resizeWindow calculations; set newVideoSize = videoBaseDisplaySize -> \(videoBaseDisplaySize)")
 
         // TODO
         if false && Preference.bool(for: .usePhysicalResolution) {
           let invertedScaleFactor = 1.0 / window.backingScaleFactor
           scaleDownFactor = invertedScaleFactor
           newVideoSize = videoBaseDisplaySize.multiplyThenRound(invertedScaleFactor)
-          Logger.log("Converted newVideoSize to physical resolution -> \(newVideoSize)", level: .verbose)
+          log.verbose("Converted newVideoSize to physical resolution -> \(newVideoSize)")
         }
 
         let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
         if let strategy = resizeWindowStrategy, strategy != .fitScreen {
           let resizeRatio = strategy.ratio
           newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-          Logger.log("Applied resizeRatio (\(resizeRatio)) to newVideoSize -> \(newVideoSize)", level: .verbose)
+          log.verbose("Applied resizeRatio (\(resizeRatio)) to newVideoSize -> \(newVideoSize)")
         }
 
         let screenRect = bestScreen.visibleFrame
@@ -3916,25 +3909,25 @@ class MainWindowController: PlayerWindowController {
 
         // check screen size
         newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-        Logger.log("Constrained newVideoSize to maxVideoSize \(maxVideoSize) -> \(newVideoSize)", level: .verbose)
+        log.verbose("Constrained newVideoSize to maxVideoSize \(maxVideoSize) -> \(newVideoSize)")
         // guard min size
         // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
         newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
-        Logger.log("Constrained videoSize to min size: \(AppData.minVideoSize) -> \(newVideoSize)", level: .verbose)
+        log.verbose("Constrained videoSize to min size: \(AppData.minVideoSize) -> \(newVideoSize)")
         // check if have geometry set (initial window position/size)
         if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: newVideoSize) {
-          Logger.log("Applied initial window geometry; resulting windowFrame: \(wfg)", level: .verbose)
+          log.verbose("Applied initial window geometry; resulting windowFrame: \(wfg)")
           newWindowFrame = wfg
         } else {
           let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
                                      height: newVideoSize.height + outsidePanelsHeight)
           if let strategy = resizeWindowStrategy, strategy == .fitScreen {
             newWindowFrame = screenRect.centeredResize(to: newWindowSize)
-            Logger.log("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(newWindowFrame)", level: .verbose)
+            log.verbose("Did a centered resize using screen rect \(screenRect); resulting windowFrame: \(newWindowFrame)")
           } else {
             let priorWindowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
             newWindowFrame = priorWindowFrame.centeredResize(to: newWindowSize)
-            Logger.log("Did a centered resize using prior frame \(priorWindowFrame); resulting windowFrame: \(newWindowFrame)", level: .verbose)
+            log.verbose("Did a centered resize using prior frame \(priorWindowFrame); resulting windowFrame: \(newWindowFrame)")
           }
         }
 
@@ -3944,7 +3937,7 @@ class MainWindowController: PlayerWindowController {
         let newVideoWidth = oldVideoSize.width
         let newVideoHeight = newVideoWidth / videoBaseDisplaySize.aspect
         newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
-        Logger.log("Using oldVideoSize width for newVideoSize, with new height (\(newVideoHeight)) -> \(newVideoSize)", level: .verbose)
+        log.verbose("Using oldVideoSize width for newVideoSize, with new height (\(newVideoHeight)) -> \(newVideoSize)")
         newWindowFrame = computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame
       }
 
@@ -3954,8 +3947,7 @@ class MainWindowController: PlayerWindowController {
         //      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
         //      fsState.priorWindowedFrame = newWindowFrame
       } else {
-        Logger.log("AdjustFrameAfterVideoReconfig DONE: NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]",
-                   level: .verbose, subsystem: player.subsystem)
+        log.verbose("AdjustFrameAfterVideoReconfig DONE: NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]")
         window.setFrame(newWindowFrame, display: true, animate: true)
 
         // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
@@ -4006,7 +3998,7 @@ class MainWindowController: PlayerWindowController {
       let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
       let prevVideoScale = player.info.cachedWindowScale
       if videoScale != prevVideoScale {
-        Logger.log("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")
+        log.verbose("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")
         player.info.cachedWindowScale = videoScale
         player.mpv.setDouble(MPVProperty.windowScale, videoScale)
       }
@@ -4020,14 +4012,12 @@ class MainWindowController: PlayerWindowController {
     let videoBaseDisplaySize = player.videoBaseDisplaySize
     var videoDesiredSize = CGSize(width: videoBaseDisplaySize.width * scale, height: videoBaseDisplaySize.height * scale)
 
-    Logger.log("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) -> videoDesiredSize=\(videoDesiredSize)",
-               level: .verbose, subsystem: player.subsystem)
+    log.verbose("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) -> videoDesiredSize=\(videoDesiredSize)")
 
     // TODO
     if false && Preference.bool(for: .usePhysicalResolution) {
       videoDesiredSize = window.convertFromBacking(NSRect(origin: window.frame.origin, size: videoDesiredSize)).size
-      Logger.log("SetWindowScale: converted videoDesiredSize to physical resolution: \(videoDesiredSize)",
-                 level: .verbose, subsystem: player.subsystem)
+      log.verbose("SetWindowScale: converted videoDesiredSize to physical resolution: \(videoDesiredSize)")
     }
 
     resizeVideo(toVideoSize: videoDesiredSize)
@@ -4036,7 +4026,7 @@ class MainWindowController: PlayerWindowController {
   private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
-    Logger.log("Scaling pinched video, target scale: \(scale)")
+    log.verbose("Scaling pinched video, target scale: \(scale)")
 
     let origVideoSize = windowGeometryAtMagnificationBegin.videoSize
     let newVideoSize = origVideoSize.multiply(scale);
@@ -4061,7 +4051,7 @@ class MainWindowController: PlayerWindowController {
     guard !isInInteractiveMode, let window = window else { return }
     let newWindowGeo = computeWindowGeometryForVideoResize(toVideoSize: desiredVideoSize,
                                                            fromGeometry: fromGeometry)
-    Logger.log("Calling setFrame() from resizeVideo, to: \(newWindowGeo.windowFrame)", level: .verbose, subsystem: player.subsystem)
+    log.verbose("Calling setFrame() from resizeVideo, to: \(newWindowGeo.windowFrame)")
     window.setFrame(newWindowGeo.windowFrame, display: true, animate: animate)
   }
 
@@ -4079,8 +4069,7 @@ class MainWindowController: PlayerWindowController {
     let videoFrame = videoContainerView.frame
 
     guard videoFrame.width <= windowFrame.width && videoFrame.height <= windowFrame.height else {
-      Logger.log("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (Video: \(videoFrame); Window: \(windowFrame))",
-        level: .error, subsystem: player.subsystem)
+      log.error("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (Video: \(videoFrame); Window: \(windowFrame))")
       return MainWindowGeometry(windowFrame: windowFrame,
                                 topBarHeight: currentLayout.topBarHeight,
                                 rightBarWidth: trailingSidebar.currentOutsideWidth,
@@ -4107,7 +4096,7 @@ class MainWindowController: PlayerWindowController {
       blackWindows.append(blackWindow)
       blackWindow.orderFront(nil)
     }
-    Logger.log("Added black windows for \(screens.count); total is now: \(blackWindows.count)", level: .verbose)
+    log.verbose("Added black windows for \(screens.count); total is now: \(blackWindows.count)")
   }
 
   private func removeBlackWindows() {
@@ -4115,7 +4104,7 @@ class MainWindowController: PlayerWindowController {
       window.orderOut(self)
     }
     blackWindows = []
-    Logger.log("Removed all black windows", level: .verbose)
+    log.verbose("Removed all black windows")
   }
 
   override func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
@@ -4305,7 +4294,7 @@ class MainWindowController: PlayerWindowController {
     // update text of time label
     let percentage = 100 * sender.doubleValue / sender.maxValue
     let seekTime = player.info.videoDuration! * percentage * 0.01
-    Logger.log("PlaySliderChanged: setting seek time label to \(seekTime.stringRepresentation.quoted)")
+    log.debug("PlaySliderChanged: setting seek time label to \(seekTime.stringRepresentation.quoted)")
     timePreviewWhenSeek.stringValue = seekTime.stringRepresentation
   }
 

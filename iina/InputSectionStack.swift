@@ -45,7 +45,7 @@ class InputSectionStack {
    */
   var sectionsEnabled = LinkedList<EnabledSectionMeta>()
 
-  let log = AppInputConfig.subsystem
+  let log = AppInputConfig.log
 
   init(initialEnabledSections: [InputSection]? = nil) {
     let sections: [InputSection]

@@ -9,16 +9,13 @@
 import Foundation
 
 class AppInputConfigBuilder {
+  private unowned var log = Logger.Subsystem.input
   private let sectionStack: InputSectionStack
 
   // See `AppInputConfig.userConfSectionStartIndex`
   private var userConfSectionStartIndex: Int? = nil
   // See `AppInputConfig.userConfSectionEndIndex`
   private var userConfSectionEndIndex: Int? = nil
-
-  private var log: Logger.Subsystem {
-    return AppInputConfig.log
-  }
 
   init(_ sectionStack: InputSectionStack) {
     self.sectionStack = sectionStack

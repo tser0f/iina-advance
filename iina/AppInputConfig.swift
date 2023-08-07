@@ -14,8 +14,7 @@ struct AppInputConfig {
   // return true to send notifications; false otherwise
   typealias NotificationData = [AnyHashable : Any]
 
-  static let subsystem = Logger.Subsystem(rawValue: "input")
-  static let log = subsystem
+  static unowned var log = Logger.Subsystem.input
 
   // MARK: Shared input sections
 
