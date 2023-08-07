@@ -318,42 +318,96 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     JavascriptPlugin.loadGlobalInstances()
+    menuController.updatePluginMenu()
 
-    /// In case we are restoring windows from a previous launch, we must do it early, before any `PlayerCore` is referenced.
-    /// This is because `PlayerCore.active` immediately creates the first `PlayerCore`, which creates its `MainWindowController`
-    /// in its contructor, and we need to supply the window's autosave name to its constructor.
-    if !commandLineStatus.isCommandLine {
+    let activePlayer = PlayerCore.active  // Load the first PlayerCore
+    Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
 
-      Logger.log("Adding observers")
+    if commandLineStatus.isCommandLine {
+      // (Option A) Launch from command line
+      startFromCommandLine()
+    } else if openFileCalled {
+      // (Option B) Launch app from UI with open file(s)
+      // Delete state of previous launch if file opened at launch. Is this the best approach?
+      Preference.UIState.clearAllSavedWindowsState()
+    } else {
+      // (Option C) Launch app (standalone)
+      startWithNoOpenedFiles()
+    }
 
-      // The "action on last window closed" action will vary slightly depending on which type of window was closed.
-      // Here we add a listener which fires when *any* window is closed, in order to handle that logic all in one place.
-      observers.append(NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil,
-                                                              queue: .main, using: self.windowWillClose))
+    finishLaunching()
+  }
 
-      /// Show welcome window (or other configured action) if `application(_:openFile:)` wasn't called, i.e. app was launched
-      /// on its own.
-      var useLaunchDefaultAction: Bool
-      if openFileCalled {
-        useLaunchDefaultAction = false
-        // Delete state of previous launch if file opened at launch. Is this the best approach?
-        Preference.UIState.clearAllSavedWindowsState()
-      } else {
-        // Restore window state *before* hooking up the listener which saves state
-        useLaunchDefaultAction = !restoreWindowsFromPreviousLaunch()
+  private func startWithNoOpenedFiles() {
+    // Restore window state *before* hooking up the listener which saves state
+    let restoredSomething = restoreWindowsFromPreviousLaunch()
+    if !restoredSomething {
+      // Fall back to default action
+      doLaunchOrReopenAction()
+    }
+  }
+
+  private func startFromCommandLine() {
+    Preference.UIState.disablePersistentStateUntilNextLaunch()
+
+    var lastPlayerCore: PlayerCore? = nil
+    let getNewPlayerCore = { () -> PlayerCore in
+      let pc = PlayerCore.newPlayerCore
+      self.commandLineStatus.assignMPVArguments(to: pc)
+      lastPlayerCore = pc
+      return pc
+    }
+    if commandLineStatus.isStdin {
+      getNewPlayerCore().openURLString("-")
+    } else {
+      let validFileURLs: [URL] = commandLineStatus.filenames.compactMap { filename in
+        if Regex.url.matches(filename) {
+          return URL(string: filename.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? filename)
+        } else {
+          return FileManager.default.fileExists(atPath: filename) ? URL(fileURLWithPath: filename) : nil
+        }
       }
-
-      // Save ordered list of open windows each time the order of windows changed.
-      observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
-                                                              queue: .main, using: self.keyWindowDidChange))
-
-      if useLaunchDefaultAction {
-        doLaunchOrReopenAction()
+      if commandLineStatus.openSeparateWindows {
+        validFileURLs.forEach { url in
+          getNewPlayerCore().openURL(url)
+        }
+      } else {
+        getNewPlayerCore().openURLs(validFileURLs)
       }
     }
 
-    let activePlayer = PlayerCore.active  // will load the first PlayerCore if not already loaded
-    Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
+    if let pc = lastPlayerCore {
+      if commandLineStatus.enterMusicMode {
+        Logger.log("Entering music mode as specified via command line", level: .verbose)
+        if commandLineStatus.enterPIP {
+          // PiP is not supported in music mode. Combining these options is not permitted and is
+          // rejected by iina-cli. The IINA executable must have been invoked directly with
+          // arguments.
+          Logger.log("Cannot specify both --music-mode and --pip", level: .error)
+          // Command line usage error.
+          exit(EX_USAGE)
+        }
+        pc.switchToMiniPlayer()
+      } else if #available(macOS 10.12, *), commandLineStatus.enterPIP {
+        Logger.log("Entering PIP as specified via command line", level: .verbose)
+        pc.mainWindow.enterPIP()
+      }
+    }
+  }
+
+  private func finishLaunching() {
+    Logger.log("Adding observers")
+
+    // The "action on last window closed" action will vary slightly depending on which type of window was closed.
+    // Here we add a listener which fires when *any* window is closed, in order to handle that logic all in one place.
+    observers.append(NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil,
+                                                            queue: .main, using: self.windowWillClose))
+
+    if Preference.UIState.isSaveEnabled {
+      // Save ordered list of open windows each time the order of windows changed.
+      observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
+                                                              queue: .main, using: self.keyWindowDidChange))
+    }
 
     if #available(macOS 10.13, *) {
       if RemoteCommandController.useSystemMediaControl {
@@ -363,55 +417,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    if commandLineStatus.isCommandLine {
-      var lastPlayerCore: PlayerCore? = nil
-      let getNewPlayerCore = { () -> PlayerCore in
-        let pc = PlayerCore.newPlayerCore
-        self.commandLineStatus.assignMPVArguments(to: pc)
-        lastPlayerCore = pc
-        return pc
-      }
-      if commandLineStatus.isStdin {
-        getNewPlayerCore().openURLString("-")
-      } else {
-        let validFileURLs: [URL] = commandLineStatus.filenames.compactMap { filename in
-          if Regex.url.matches(filename) {
-            return URL(string: filename.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? filename)
-          } else {
-            return FileManager.default.fileExists(atPath: filename) ? URL(fileURLWithPath: filename) : nil
-          }
-        }
-        if commandLineStatus.openSeparateWindows {
-          validFileURLs.forEach { url in
-            getNewPlayerCore().openURL(url)
-          }
-        } else {
-          getNewPlayerCore().openURLs(validFileURLs)
-        }
-      }
-
-      if let pc = lastPlayerCore {
-        if commandLineStatus.enterMusicMode {
-          Logger.log("Entering music mode as specified via command line", level: .verbose)
-          if commandLineStatus.enterPIP {
-            // PiP is not supported in music mode. Combining these options is not permitted and is
-            // rejected by iina-cli. The IINA executable must have been invoked directly with
-            // arguments.
-            Logger.log("Cannot specify both --music-mode and --pip", level: .error)
-            // Command line usage error.
-            exit(EX_USAGE)
-          }
-          pc.switchToMiniPlayer()
-        } else if #available(macOS 10.12, *), commandLineStatus.enterPIP {
-          Logger.log("Entering PIP as specified via command line", level: .verbose)
-          pc.mainWindow.enterPIP()
-        }
-      }
-    }
     NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
     NSApplication.shared.servicesProvider = self
-
-    (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
   }
 
   func applicationShouldAutomaticallyLocalizeKeyEquivalents(_ application: NSApplication) -> Bool {
@@ -457,8 +464,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return false
     }
 
-    // TODO: prompt
-
     let windowNamesBackToFront = Preference.UIState.getSavedWindowsWithPlayerZeroWorkaround()
     guard !windowNamesBackToFront.isEmpty else {
       Logger.log("Not restoring windows: stored window list empty")
@@ -469,6 +474,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       Logger.log("Not restoring windows because only open window was Inspector", level: .verbose)
       return false
     }
+
+    let tryToRestoreWindows: Bool // false means delete restored state
+    if Preference.bool(for: .isRestoreInProgress) {
+      // Indicates last restore failed. Ask user whether to try again or delete saved state
+      Logger.log("Looks like there was a previous restore which didn't complete (pref \(Preference.Key.isRestoreInProgress.rawValue) == true). Asking user whether to retry or skip")
+      tryToRestoreWindows = Utility.quickAskPanel("restore_prev_error", useCustomButtons: true)
+    } else if Preference.bool(for: .alwaysAskBeforeRestoreAtLaunch) {
+      Logger.log("Prompting user whether to restore app state, per pref", level: .verbose)
+      tryToRestoreWindows = Utility.quickAskPanel("restore_confirm", useCustomButtons: true)
+    } else {
+      tryToRestoreWindows = true
+    }
+
+    if !tryToRestoreWindows {
+      // Clear out old state. It may have been causing errors, or user wants to start new
+      Preference.UIState.clearAllSavedWindowsState()
+      Preference.set(false, for: .isRestoreInProgress)
+      return false
+    }
+
+    Logger.log("Starting restore of \(windowNamesBackToFront.count) windows", level: .verbose)
+    Preference.set(true, for: .isRestoreInProgress)
 
     // Show windows one by one, starting at back and iterating to front:
     for autosaveName in windowNamesBackToFront {
@@ -499,6 +526,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         break
       }
     }
+
+    Logger.log("Done restoring windows", level: .verbose)
+    Preference.set(false, for: .isRestoreInProgress)
 
     // Count only "important windows" (IINA startup can open other windows which are hidden, such as color picker)
     let openWindowCount = NSApp.windows.reduce(0, {count, win in (win.isImportant() && win.isOpen()) ? count + 1 : count})

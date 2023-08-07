@@ -185,6 +185,15 @@
 "alert.unsupported_url" = "Unsupported URL.";
 "alert.wrong_url_format" = "Wrong URL format.";
 
+"alert.restore_prev_error.title" = "Retry Restore";
+"alert.restore_prev_error.message" = "Looks like there was a problem restoring windows from the last launch. Do you want to try again?";
+"alert.restore_prev_error.ok" = "Yes, Restore";
+"alert.restore_prev_error.cancel" = "No, Discard Save";
+"alert.restore_confirm.title" = "Confirm Restore";
+"alert.restore_confirm.message" = "Do you want to restore windows from the previous launch?";
+"alert.restore_confirm.ok" = "Yes, Restore";
+"alert.restore_confirm.cancel" = "No, Discard";
+
 "alert.error_open" = "Cannot open file or stream!";
 "alert.error_finding_file" = "Cannot find %@ file!";
 "alert.error_loading_script" = "Cannot load script %@!";

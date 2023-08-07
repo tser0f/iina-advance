@@ -105,7 +105,7 @@ class Utility {
    - Returns: Whether user dismissed the panel by clicking OK, discardable when using sheet.
    */
   @discardableResult
-  static func quickAskPanel(_ key: String, titleComment: String? = nil, messageComment: String? = nil, titleArgs: [CVarArg]? = nil, messageArgs: [CVarArg]? = nil, sheetWindow: NSWindow? = nil, callback: ((NSApplication.ModalResponse) -> Void)? = nil) -> Bool {
+  static func quickAskPanel(_ key: String, titleComment: String? = nil, messageComment: String? = nil, titleArgs: [CVarArg]? = nil, messageArgs: [CVarArg]? = nil, useCustomButtons: Bool = false, sheetWindow: NSWindow? = nil, callback: ((NSApplication.ModalResponse) -> Void)? = nil) -> Bool {
     let panel = NSAlert()
     let titleKey = "alert." + key + ".title"
     let messageKey = "alert." + key + ".message"
@@ -121,8 +121,11 @@ class Utility {
     } else {
       panel.informativeText = messageFormat
     }
-    panel.addButton(withTitle: NSLocalizedString("general.ok", comment: "OK"))
-    panel.addButton(withTitle: NSLocalizedString("general.cancel", comment: "Cancel"))
+
+    let ok = NSLocalizedString(useCustomButtons ? "alert.\(key).ok" : "general.ok", comment: "OK")
+    let cancel = NSLocalizedString(useCustomButtons ? "alert.\(key).cancel" : "general.cancel", comment: "Cancel")
+    panel.addButton(withTitle: ok)
+    panel.addButton(withTitle: cancel)
 
     if let sheetWindow = sheetWindow {
       panel.beginSheetModal(for: sheetWindow, completionHandler: callback)

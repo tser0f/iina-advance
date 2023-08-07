@@ -79,6 +79,10 @@ extension Preference {
     }
 
     static func clearAllSavedWindowsState() {
+      guard isSaveEnabled else {
+        Logger.log("Will not clear saved UI state; UI save is disabled")
+        return
+      }
       let windowNamesStrings = Preference.UIState.getSavedOpenWindowsBackToFront()
       let playerIDs = getPlayerIDs(from: windowNamesStrings.compactMap{WindowAutosaveName($0)})
       Logger.log("Clearing saved UI state of \(windowNamesStrings.count) windows, including \(playerIDs.count) player windows")

@@ -384,6 +384,9 @@ struct Preference {
     /// NOTE: Do not use this directly. Use `Preference.UIState.isRestoreEnabled()` so that runtime overrides work.
     static let enableRestoreUIState = Key("enableRestoreUIState")
 
+    static let alwaysAskBeforeRestoreAtLaunch = Key("alwaysAskBeforeRestoreAtLaunch")
+    static let isRestoreInProgress = Key("isRestoreInProgress")
+
     // Comma-separated list of window names
     static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFront")
 
@@ -1077,6 +1080,8 @@ struct Preference {
     .iinaPing: "",
     .enableSaveUIState: true,
     .enableRestoreUIState: true,
+    .alwaysAskBeforeRestoreAtLaunch: false,
+    .isRestoreInProgress: false,
     .uiOpenWindowsBackToFrontList: "",
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
