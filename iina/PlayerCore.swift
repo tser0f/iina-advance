@@ -52,16 +52,8 @@ class PlayerCore: NSObject {
   // Attempt to exactly restore play state & UI from last run of IINA (for given player)
   static func restoreFromPriorLaunch(forPlayerUID uid: String) {
     Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: uid).string.quoted)")
-    let playerCore = manager.createNewPlayerCore(withLabel: uid, start: false)
-
-    if let savedState = Preference.UIState.getPlayerUIState(playerID: playerCore.label) {
-      /// set these before calling `start()`
-      playerCore.info.priorUIState = savedState
-    }
-    /// Most playback properties need to be set via mpv init. These will be called by `start()`:
-    playerCore.start()
-    /// Restore remaining non-mpv state here:
-    playerCore.restoreUIState()
+    _ = manager.createNewPlayerCore(withLabel: uid, restore: true)
+    /// see `start(restore: Bool)` below
   }
 
   static func activeOrNewForMenuAction(isAlternative: Bool) -> PlayerCore {
@@ -72,14 +64,16 @@ class PlayerCore: NSObject {
   // MARK: - Fields
 
   let subsystem: Logger.Subsystem
-
   var log: Logger.Subsystem { self.subsystem }
-
   var label: String
+
+  // Plugins
   var isManagedByPlugin = false
   var userLabel: String?
   var disableUI = false
   var disableWindowAnimation = false
+
+  // Internal vars used to make sure init functions don't happen more than once
   private var didStart = false
   private var didInitVideo = false
 
@@ -410,11 +404,22 @@ class PlayerCore: NSObject {
   }
 
   // Does nothing if already started
-  func start() {
+  func start(restore: Bool = false) {
     guard !didStart else { return }
     didStart = true
+
+    /// If restoring, most playback properties need to be set via `mpv.mpvInit()`. Set this before calling `startMPV()`.
+    if restore, let savedState = Preference.UIState.getPlayerUIState(playerID: label) {
+      info.priorUIState = savedState
+    }
+
     startMPV()
     loadPlugins()
+
+    /// Restore remaining non-mpv state here:
+    if restore {
+      restoreUIState()
+    }
   }
 
   private func startMPV() {
@@ -475,13 +480,14 @@ class PlayerCore: NSObject {
 
   // Finish restoring state of player from prior launch
   fileprivate func restoreUIState() {
-    guard let props = info.priorUIState?.properties else { return }
+    guard let savedState = info.priorUIState else { return }
 
-    if let csv = props["windowFrame"] as? String {
+    if let csv = savedState.string(for: .windowFrame) {
       let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
       if dims.count == 4 {
         let windowFrame = NSRect(x: dims[0], y: dims[1], width: dims[2], height: dims[3])
         log.debug("Restoring windowFrame to: \(windowFrame)")
+        // FIXME: constrain within screen (add to MainWindowGeometry)
         mainWindow.window!.setFrame(windowFrame, display: false)
       } else {
         log.error("Could not restore UI state for property 'windowFrame': could not parse \(csv.quoted)")
@@ -490,7 +496,7 @@ class PlayerCore: NSObject {
       Logger.log("Could not restore UI state for property 'windowFrame'", level: .error, subsystem: subsystem)
     }
 
-    if let urlString = props["url"] as? String {
+    if let urlString = savedState.string(for: .url) {
       openMainWindow(url: URL(string: urlString))
       mainWindow.showWindow(self)
     } else {
@@ -1659,10 +1665,10 @@ class PlayerCore: NSObject {
     guard !info.fileLoading, !isShuttingDown, !isShutdown else { return }
 
     let vParams = mpv.queryForVideoParams()
-    Logger.log("Got mpv `video-reconfig`. mpv = \(vParams); PlayerInfo = {W: \(info.videoDisplayWidth!) H: \(info.videoDisplayHeight!) (rawSize: \(info.videoRawWidth ?? 0) x \(info.videoRawHeight ?? 0)) Rot: \(info.userRotation)°}", level: .verbose, subsystem: subsystem)
-
     let drW = vParams.videoDisplayRotatedWidth
     let drH = vParams.videoDisplayRotatedHeight
+    log.verbose("Got mpv `video-reconfig`. mpv = \(vParams); PlayerInfo = {W: \(info.videoDisplayWidth!) H: \(info.videoDisplayHeight!) (rawSize: \(info.videoRawWidth ?? 0) x \(info.videoRawHeight ?? 0)) Rot: \(info.userRotation)°}")
+
     if drW != info.videoDisplayWidth! || drH != info.videoDisplayHeight! {
       // filter the last video-reconfig event before quit
       if drW == 0 && drH == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
@@ -1672,6 +1678,8 @@ class PlayerCore: NSObject {
       DispatchQueue.main.sync {
         self.mainWindow.adjustFrameAfterVideoReconfig()
       }
+    } else {
+      log.verbose("No real change from video-reconfig; ignoring")
     }
   }
 
@@ -1925,7 +1933,7 @@ class PlayerCore: NSObject {
   }
 
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
-    // querying `mainWindow.isWindowLoaded` will initialize mainWindow unexpectedly
+    /// Note: use `mainWindow.loaded` (querying `mainWindow.isWindowLoaded` will initialize mainWindow unexpectedly)
     guard mainWindow.loaded && Preference.bool(for: .enableOSD) else { return }
     if info.disableOSDForFileLoading && !external {
       guard case .fileStart = osd else {

@@ -836,9 +836,9 @@ extension NSScreen {
       // Screen frame coordinates have their origin at the lower left of the primary display.
       // So any display to the left of primary will be in negative X, and any below primary will have negative Y.
       // `visibleFrame` is what we most care about.
-      Logger.log("\(label): \"\(screen.localizedName)\" visible \(screen.visibleFrame), native \(nativeResStr) bScale \(screen.backingScaleFactor), sScale: \(screen.screenScaleFactor) EDR: {supports=\(canEnableEDR.yn) maxPotential=\(maxPossibleEDR)}", level: .verbose)
+      Logger.log("\(label): \"\(screen.localizedName)\" vis:\(screen.visibleFrame) native:\(nativeResStr) scale:\(screen.screenScaleFactor)x backing:\(screen.backingScaleFactor)x EDR:\(canEnableEDR.yn) ≤\(maxPossibleEDR)", level: .verbose)
     } else {
-      Logger.log("\(label): visible frame \(screen.visibleFrame)", level: .verbose)
+      Logger.log("\(label): vis:\(screen.visibleFrame)", level: .verbose)
     }
   }
 }

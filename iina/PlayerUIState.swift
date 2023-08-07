@@ -10,29 +10,49 @@ import Foundation
 
 // Data structure for saving to prefs / restoring from prefs the UI state of a single player window
 struct PlayerUIState {
-  // TODO: find cool way to store in prefs as Strings, but map to Swift types
+  enum PropName: String {
+    case launchID = "launchID"
+    case windowFrame = "windowFrame"
+    case url = "url"
+    case progress = "progress"
+    case paused = "paused"
+  }
+
   let properties: [String: Any]
 
   init(_ props: [String: Any]) {
     self.properties = props
   }
 
+  func string(for name: PropName) -> String? {
+    return properties[name.rawValue] as? String
+  }
+
+  func bool(for name: PropName) -> Bool? {
+    return properties[name.rawValue] as? Bool
+  }
+
+  func int(for name: PropName) -> Int? {
+    return properties[name.rawValue] as? Int
+  }
+
   static func from(_ player: PlayerCore) -> PlayerUIState {
     var props: [String: Any] = [:]
     let info = player.info
 
-    props["launchID"] = (NSApp.delegate as! AppDelegate).launchID
+
+    props[PropName.launchID.rawValue] = (NSApp.delegate as! AppDelegate).launchID
 
     if let frame = player.mainWindow.window?.frame {
-      props["windowFrame"] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
+      props[PropName.windowFrame.rawValue] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
     }
     if let urlString = info.currentURL?.absoluteString ?? nil {
-      props["url"] = urlString
+      props[PropName.url.rawValue] = urlString
     }
     if let videoPosition = info.videoPosition?.second {
-      props["progress"] = String(videoPosition)
+      props[PropName.progress.rawValue] = String(videoPosition)
     }
-    props["paused"] = String(info.isPaused)
+    props[PropName.paused.rawValue] = info.isPaused
     /*
      props["deinterlace"] = deinterlace
      props["hwdec"] = hwdec

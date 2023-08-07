@@ -271,15 +271,13 @@ not applying FFmpeg 9599 workaround
 
     applyHardwareAccelerationWorkaround()
 
-    if let priorState = player.info.priorUIState {
-      let props = priorState.properties
-
-      if let str = props["paused"] as? String, let wasPaused = Bool(str) {
+    if let savedState = player.info.priorUIState {
+      if let wasPaused = savedState.bool(for: .paused) {
         setOption(forName: MPVOption.PlaybackControl.pause, toValue: wasPaused, type: .bool)
       }
 
-      if let value = props["progress"] as? String {
-        setOption(forName: MPVOption.PlaybackControl.start, toValue: value, type: .string)
+      if let startTime = savedState.string(for: .progress) {
+        setOption(forName: MPVOption.PlaybackControl.start, toValue: startTime, type: .string)
       }
     }
 
@@ -322,7 +320,9 @@ not applying FFmpeg 9599 workaround
     setUserOption(PK.resumeLastPosition, type: .bool, forName: MPVOption.WatchLater.savePositionOnQuit)
     setUserOption(PK.resumeLastPosition, type: .bool, forName: "resume-playback")
 
-    setUserOption(.initialWindowSizePosition, type: .string, forName: MPVOption.Window.geometry)
+    if !player.info.isRestoring {  // if restoring, will use stored windowFrame instead
+      setUserOption(.initialWindowSizePosition, type: .string, forName: MPVOption.Window.geometry)
+    }
 
     // - Codec
 
@@ -503,7 +503,7 @@ not applying FFmpeg 9599 workaround
                 MPVOption.Subtitles.secondarySubVisibility)
     }
     if let watchLaterOptions = getString(MPVOption.WatchLater.watchLaterOptions) {
-      Logger.log("Options mpv is configured to save in watch later files: \(watchLaterOptions)")
+      player.log.debug("Options mpv is configured to save in watch later files: \(watchLaterOptions)")
     }
 
     // get version

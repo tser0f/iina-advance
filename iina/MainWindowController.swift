@@ -941,6 +941,7 @@ class MainWindowController: PlayerWindowController {
 
   // TODO: figure out why this 2px adjustment is necessary
   private func constrainVideoViewForWindowedMode(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
+    player.log.verbose("Contraining videoView for windowed mode")
     // Remove GT & center constraints. Use only EQ
     let existing = self.videoViewConstraints
     if let existing = existing {
@@ -2423,8 +2424,8 @@ class MainWindowController: PlayerWindowController {
 
     let currentScreen = window.selectDefaultScreen()
     NSScreen.screens.enumerated().forEach { (screenIndex, screen) in
-      let currentString = (screen == currentScreen) ? " (current)" : ""
-      NSScreen.log("Screen\(screenIndex)\(currentString)" , screen)
+      let currentString = (screen == currentScreen) ? "✅" : " "
+      NSScreen.log("\(currentString)Screen\(screenIndex)" , screen)
     }
 
     resetCollectionBehavior()
@@ -2894,6 +2895,21 @@ class MainWindowController: PlayerWindowController {
       return currentSize
     }
 
+    if player.info.isRestoring {
+      guard let savedState = player.info.priorUIState else { return window.frame.size }
+
+      if let csv = savedState.string(for: .windowFrame) {
+        let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
+        if dims.count == 4 {
+          let savedSize = NSSize(width: dims[2], height: dims[3])
+          player.log.verbose("WindowWillResize: denying request due to restore; returning \(savedSize)")
+          return savedSize
+        }
+      }
+      player.log.verbose("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
+      return window.frame.size
+    }
+
     if requestedSize.height <= AppData.minVideoSize.height || requestedSize.width <= AppData.minVideoSize.width {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
@@ -2942,7 +2958,7 @@ class MainWindowController: PlayerWindowController {
         newSize = resizeFromHeight
       }
     }
-    Logger.log("WindowWillResize requestedSize: \(requestedSize), newSize: \(newSize)", level: .verbose, subsystem: player.subsystem)
+    Logger.log("WindowWillResize returning: \(newSize) from:\(requestedSize)", level: .verbose, subsystem: player.subsystem)
     return newSize
   }
 

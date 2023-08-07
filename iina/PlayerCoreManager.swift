@@ -122,14 +122,12 @@ class PlayerCoreManager {
     return pc
   }
 
-  func createNewPlayerCore(withLabel label: String? = nil, start: Bool = true) -> PlayerCore {
+  func createNewPlayerCore(withLabel label: String? = nil, restore: Bool = false) -> PlayerCore {
     var pc: PlayerCore? = nil
     lock.withLock {
       pc = _createNewPlayerCore(withLabel: label)
     }
-    if start {
-      pc!.start()
-    }
+    pc!.start(restore: restore)
     return pc!
   }
 

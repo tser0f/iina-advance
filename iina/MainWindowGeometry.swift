@@ -82,10 +82,10 @@ struct MainWindowGeometry: Equatable {
              bottomBarHeight: CGFloat? = nil, leftBarWidth: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
-                           topBarHeight: topBarHeight ?? self.topBarHeight,
-                           rightBarWidth: rightBarWidth ?? self.rightBarWidth,
-                           bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
-                           leftBarWidth: leftBarWidth ?? self.leftBarWidth)
+                              topBarHeight: topBarHeight ?? self.topBarHeight,
+                              rightBarWidth: rightBarWidth ?? self.rightBarWidth,
+                              bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
+                              leftBarWidth: leftBarWidth ?? self.leftBarWidth)
   }
 
   private func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
@@ -101,6 +101,7 @@ struct MainWindowGeometry: Equatable {
   }
 
   func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect) -> MainWindowGeometry {
+    Logger.log("Scaling MainWindowGeometry desired:\(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
     /// Clamp video between max and min video sizes, maintaining its aspect ratio.
