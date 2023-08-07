@@ -465,19 +465,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     let windowNamesBackToFront = Preference.UIState.getSavedWindowsWithPlayerZeroWorkaround()
+
     guard !windowNamesBackToFront.isEmpty else {
       Logger.log("Not restoring windows: stored window list empty")
       return false
     }
-    if windowNamesBackToFront.count == 1 && windowNamesBackToFront[0] == WindowAutosaveName.inspector {
-      // Do not restore this on its own
-      Logger.log("Not restoring windows because only open window was Inspector", level: .verbose)
-      return false
+
+    if windowNamesBackToFront.count == 1 {
+      let onlyWindow = windowNamesBackToFront[0]
+
+      if onlyWindow == WindowAutosaveName.inspector {
+        // Do not restore this on its own
+        Logger.log("Not restoring windows because only open window was Inspector", level: .verbose)
+        return false
+      }
+
+      let action: Preference.ActionAfterLaunch = Preference.enum(for: .actionAfterLaunch)
+      if (onlyWindow == WindowAutosaveName.welcome && action == .welcomeWindow)
+          || (onlyWindow == WindowAutosaveName.openURL && action == .openPanel)
+          || (onlyWindow == WindowAutosaveName.playbackHistory && action == .historyWindow) {
+        Logger.log("Not restoring windows because only open window was identical to launch action (\(action))",
+                   level: .verbose)
+        // Skip the prompts below because they are just unnecessary nagging
+        return false
+      }
     }
 
     let tryToRestoreWindows: Bool // false means delete restored state
     if Preference.bool(for: .isRestoreInProgress) {
-      // Indicates last restore failed. Ask user whether to try again or delete saved state
+      // If this flag is still set, the last restore probably failed. If it keeps failing, launch will be impossible.
+      // Let user decide whether to try again or delete saved state.
       Logger.log("Looks like there was a previous restore which didn't complete (pref \(Preference.Key.isRestoreInProgress.rawValue) == true). Asking user whether to retry or skip")
       tryToRestoreWindows = Utility.quickAskPanel("restore_prev_error", useCustomButtons: true)
     } else if Preference.bool(for: .alwaysAskBeforeRestoreAtLaunch) {
