@@ -135,13 +135,13 @@ class BindingTableStateManager {
   func applyFilter(newFilterString: String) {
     Preference.UIState.set(newFilterString, for: .uiPrefBindingsTableSearchString)
     applyStateUpdate(AppInputConfig.current, newFilterString: newFilterString)
+    // Tell search field to update if needed:
+    NotificationCenter.default.post(Notification(name: .iinaKeyBindingSearchFieldShouldUpdate, object: newFilterString))
   }
 
   private func clearFilter() {
     Logger.log("Clearing Key Bindings filter", level: .verbose)
     applyFilter(newFilterString: "")
-    // Tell search field to clear itself:
-    NotificationCenter.default.post(Notification(name: .iinaKeyBindingSearchFieldShouldUpdate, object: ""))
   }
 
   private func appInputConfigDidChange(_ notification: Notification) {
