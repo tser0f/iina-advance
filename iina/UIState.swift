@@ -78,6 +78,30 @@ extension Preference {
       saveOpenWindowList(windowNamesBackToFront: [])
     }
 
+    static func clearAllSavedWindowsState() {
+      let windowNamesStrings = Preference.UIState.getSavedOpenWindowsBackToFront()
+      let playerIDs = getPlayerIDs(from: windowNamesStrings.compactMap{WindowAutosaveName($0)})
+      Logger.log("Clearing saved UI state of \(windowNamesStrings.count) windows, including \(playerIDs.count) player windows")
+      for id in playerIDs {
+        Preference.UIState.removePlayerUIState(playerID: String(id))
+      }
+      clearOpenWindowList()
+    }
+
+    static private func getPlayerIDs(from windowAutosaveNames: [WindowAutosaveName]) -> [UInt] {
+      var ids: [UInt] = []
+      for windowName in windowAutosaveNames {
+        switch windowName {
+        case WindowAutosaveName.mainPlayer(let id):
+          guard let id = UInt(id) else { break }
+          ids.append(id)
+        default:
+          break
+        }
+      }
+      return ids
+    }
+
     /// Workaround for IINA PlayerCore init weirdness which sometimes creates a new `player0` at startup, if some random other UI code
     /// happens to call `PlayerCore.lastActive` or `PlayerCore.active`. If this happens before we try to restore the `player0` from a
     /// previous launch, that would cause a conflict. Workaround: look for previous `player0` and remap it to some higher number.
@@ -88,17 +112,11 @@ extension Preference {
       var foundPlayerZero = false
       var largestPlayerID: UInt = 0
 
-      for windowName in windowNamesBackToFront {
-        switch windowName {
-        case WindowAutosaveName.mainPlayer(let id):
-          guard let uid = UInt(id) else { break }
-          if uid == 0 {
-            foundPlayerZero = true
-          } else if uid > largestPlayerID {
-            largestPlayerID = uid
-          }
-        default:
-          break
+      for playerID in getPlayerIDs(from: windowNamesBackToFront) {
+        if playerID == 0 {
+          foundPlayerZero = true
+        } else if playerID > largestPlayerID {
+          largestPlayerID = playerID
         }
       }
 

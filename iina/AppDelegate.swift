@@ -336,6 +336,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       var useLaunchDefaultAction: Bool
       if openFileCalled {
         useLaunchDefaultAction = false
+        // Delete state of previous launch if file opened at launch. Is this the best approach?
+        Preference.UIState.clearAllSavedWindowsState()
       } else {
         // Restore window state *before* hooking up the listener which saves state
         useLaunchDefaultAction = !restoreWindowsFromPreviousLaunch()
