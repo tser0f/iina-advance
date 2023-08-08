@@ -252,7 +252,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     var iinaArgFilenames: [String] = []
     var dropNextArg = false
 
-    Logger.log("Got cmd line arguments \("\(args)".pii)")
+    Logger.log("Command-line arguments \("\(args)".pii)")
     for arg in args {
       if dropNextArg {
         dropNextArg = false
@@ -276,9 +276,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    Logger.log("IINA arguments: \("\(iinaArgs)".pii)")
-    Logger.log("Filenames from arguments: \(iinaArgFilenames.map {$0.pii})")
     commandLineStatus.parseArguments(iinaArgs)
+    Logger.log("Filenames from args: \(iinaArgFilenames)")
+    Logger.log("Derived mpv properties from args: \(commandLineStatus.mpvArguments)")
 
     print(InfoDictionary.shared.printableBuildInfo)
 
@@ -376,16 +376,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    if let pc = lastPlayerCore {
-      if commandLineStatus.enterMusicMode {
-        Logger.log("Entering music mode as specified via command line", level: .verbose)
-        if commandLineStatus.enterPIP {
-          // PiP is not supported in music mode. Combining these options is not permitted and is
-          // rejected by iina-cli. The IINA executable must have been invoked directly with
-          // arguments.
-          Logger.log("Cannot specify both --music-mode and --pip", level: .error)
-          // Command line usage error.
-          exit(EX_USAGE)
+      if let pc = lastPlayerCore {
+        if commandLineStatus.shufflePlaylist {
+          pc.toggleShuffle()
+        }
+
+        if commandLineStatus.enterMusicMode {
+          Logger.log("Entering music mode as specified via command line", level: .verbose)
+          if commandLineStatus.enterPIP {
+            // PiP is not supported in music mode. Combining these options is not permitted and is
+            // rejected by iina-cli. The IINA executable must have been invoked directly with
+            // arguments.
+            Logger.log("Cannot specify both --music-mode and --pip", level: .error)
+            // Command line usage error.
+            exit(EX_USAGE)
         }
         pc.switchToMiniPlayer()
       } else if #available(macOS 10.12, *), commandLineStatus.enterPIP {
@@ -1159,6 +1163,7 @@ struct CommandLineStatus {
   var openSeparateWindows = false
   var enterMusicMode = false
   var enterPIP = false
+  var shufflePlaylist = false
   var mpvArguments: [(String, String)] = []
   var iinaArguments: [(String, String)] = []
   var filenames: [String] = []
@@ -1174,10 +1179,20 @@ struct CommandLineStatus {
         let strippedName = String(name.dropFirst(4))
         if strippedName == "-" {
           isStdin = true
-        } else if splitted.count <= 1 {
-          mpvArguments.append((strippedName, "yes"))
         } else {
-          mpvArguments.append((strippedName, String(splitted[1])))
+          let argPair: (String, String)
+          if splitted.count <= 1 {
+            argPair = (strippedName, "yes")
+          } else {
+            argPair = (strippedName, String(splitted[1]))
+          }
+
+          if argPair.0 == "shuffle" && argPair.1 == "yes" {
+            Logger.log("Found shuffle request in command-line args. Will convert it to \"playlist-shuffle\" command")
+            shufflePlaylist = true
+          } else {
+            mpvArguments.append(argPair)
+          }
         }
       } else {
         // other args

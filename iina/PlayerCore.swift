@@ -299,8 +299,7 @@ class PlayerCore: NSObject {
     if urls.count == 1 {
       let url = urls[0]
 
-      if url.isExistingDirectory
-          || isBDFolder(url)
+      if isBDFolder(url)
           || Utility.playlistFileExt.contains(url.absoluteString.lowercasedPathExtension) {
         info.shouldAutoLoadFiles = false
         open(url)
