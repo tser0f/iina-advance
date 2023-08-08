@@ -60,7 +60,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   lazy var afWindow: FilterWindowController = FilterWindowController(filterType: MPVProperty.af,
                                                                      autosaveName: WindowAutosaveName.audioFilter.string)
 
-  lazy var preferenceWindowController: NSWindowController = {
+  lazy var preferenceWindowController: PreferenceWindowController = {
     var list: [NSViewController & PreferenceWindowEmbeddable] = [
       PrefGeneralViewController(),
       PrefUIViewController(),
@@ -878,6 +878,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return
     }
     let urls = filePaths.map { URL(fileURLWithPath: $0) }
+    
+    // if installing a plugin package
+    if let pluginPackageURL = urls.first(where: { $0.pathExtension == "iinaplgz" }) {
+      showPreferences(self)
+      preferenceWindowController.performAction(.installPlugin(url: pluginPackageURL))
+      return
+    }
 
     DispatchQueue.main.async {
       Logger.log("Opening \(urls.count) files")

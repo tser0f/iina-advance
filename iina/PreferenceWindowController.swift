@@ -126,6 +126,10 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
 
   private let indexingQueue = DispatchQueue(label: "IINAPreferenceIndexingTask", qos: .userInitiated)
   private var isIndexing: Bool = true
+  
+  enum Action {
+    case installPlugin(url: URL)
+  }
 
   @IBOutlet weak var searchField: NSSearchField!
   @IBOutlet weak var tableView: NSTableView!
@@ -394,6 +398,18 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
     return nil
   }
 
+  func performAction(_ action: Action) {
+    switch action {
+    case .installPlugin(url: let url):
+      guard let idx = viewControllers.firstIndex(where: { $0 is PrefPluginViewController }) else {
+        return
+      }
+      loadTab(at: idx)
+      let vc = viewControllers[idx] as! PrefPluginViewController
+      vc.installPluginAction(localPackageURL: url)
+      // vc.perform(#selector(vc.installPluginAction(localPackageURL:)), with: url, afterDelay: 0.25)
+    }
+  }
   // MARK: - Debugging
 
 #if DEBUG
