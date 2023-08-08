@@ -2094,7 +2094,7 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Key events
 
   override func keyDown(with event: NSEvent) {
-    if sideBarStatus == .playlist {
+    if player.isPlaylistVisible {
       // Special case for playlist delete
       let key = KeyCodeHelper.mpvKeyCode(from: event)
       if key == "DEL" || key == "BS" {

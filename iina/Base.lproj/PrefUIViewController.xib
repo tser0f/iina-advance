@@ -626,7 +626,7 @@
                             <rect key="frame" x="0.0" y="379" width="341" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
-                                    <rect key="frame" x="20" y="5" width="134" height="16"/>
+                                    <rect key="frame" x="8" y="5" width="121" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top bar placement:" id="EvR-Ml-f7d">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -634,7 +634,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Bar-Placement Popup">
-                                    <rect key="frame" x="157" y="-4" width="187" height="27"/>
+                                    <rect key="frame" x="132" y="-4" width="212" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Bar-Placement Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -664,7 +664,7 @@
                             <rect key="frame" x="0.0" y="351" width="341" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
-                                    <rect key="frame" x="16" y="5" width="138" height="16"/>
+                                    <rect key="frame" x="5" y="5" width="124" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Show top bar when:" id="RVj-MO-iHC">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -672,7 +672,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="67g-AK-VP6" userLabel="Show-Title-Bar-Trigger Popup">
-                                    <rect key="frame" x="157" y="-4" width="187" height="27"/>
+                                    <rect key="frame" x="132" y="-4" width="212" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Mouse moves inside window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Show-Title-Bar-Trigger Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -744,7 +744,7 @@
                                     </connections>
                                 </button>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="jbc-22-59W">
-                                    <rect key="frame" x="142" y="5" width="57" height="16"/>
+                                    <rect key="frame" x="135" y="5" width="57" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Position:" id="l54-63-V6n">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -752,7 +752,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="GbG-nw-ict" userLabel="Controller-Position Popup">
-                                    <rect key="frame" x="202" y="-4" width="142" height="27"/>
+                                    <rect key="frame" x="195" y="-4" width="149" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Top" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="se2-DE-pJk" id="XRT-QK-HPy" userLabel="Controller-Position Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -785,7 +785,7 @@
                             <rect key="frame" x="20" y="22" width="321" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Xua-UF-KwL">
-                                    <rect key="frame" x="-2" y="5" width="181" height="16"/>
+                                    <rect key="frame" x="-2" y="5" width="174" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Bottom bar placement:" id="FAb-aX-CEz">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -793,7 +793,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" tag="3" translatesAutoresizingMaskIntoConstraints="NO" id="5FX-gc-1fJ" userLabel="Bottom-Bar-Placement Popup">
-                                    <rect key="frame" x="182" y="-4" width="142" height="27"/>
+                                    <rect key="frame" x="175" y="-4" width="149" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="0lA-gX-YQA" id="pEe-uZ-wjN" userLabel="Title-Bar-Placement Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -981,7 +981,7 @@
                     </connections>
                 </button>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6ml-Xj-nVX">
-                    <rect key="frame" x="118" y="76" width="148" height="16"/>
+                    <rect key="frame" x="118" y="76" width="125" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="&quot;Inside Video&quot; bars:" id="SBZ-A7-Btg">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -989,9 +989,9 @@
                     </textFieldCell>
                 </textField>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="0eU-xI-byi" userLabel="Inside-Video-Controls Box">
-                    <rect key="frame" x="117" y="4" width="339" height="68"/>
+                    <rect key="frame" x="117" y="4" width="262" height="68"/>
                     <view key="contentView" id="s79-ch-C1D" userLabel="Inside-Video-Controls Box View">
-                        <rect key="frame" x="4" y="5" width="331" height="60"/>
+                        <rect key="frame" x="4" y="5" width="254" height="60"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="NpR-4X-AUC" userLabel="Auto-hide after:">
@@ -1032,7 +1032,7 @@
                                 </textFieldCell>
                             </textField>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="kw0-f3-qrz">
-                                <rect key="frame" x="14" y="9" width="301" height="18"/>
+                                <rect key="frame" x="14" y="9" width="224" height="18"/>
                                 <buttonCell key="cell" type="check" title="Hide when cursor leaves window" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="ZJL-Jz-cNh">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
