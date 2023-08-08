@@ -224,13 +224,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   
   @discardableResult
   func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
-    if let menuItem = keyBinding.menuItem, let action = menuItem.action {
-      // - Menu item (e.g. custom video filter)
-      // If a menu item's key equivalent doesn't have any modifiers, the player window will get the key event instead of the main menu.
-      Logger.log("Executing action for menuItem \(menuItem.title.quoted)", level: .verbose, subsystem: player.subsystem)
-      NSApp.sendAction(action, to: self, from: menuItem)
-      return true
-    } else if keyBinding.isIINACommand {
+    if keyBinding.isIINACommand {
+      if let menuItem = keyBinding.menuItem, let action = menuItem.action {
+        // - Menu item (e.g. custom video filter)
+        // If a menu item's key equivalent doesn't have any modifiers, the player window will get the key event instead of the main menu.
+        Logger.log("Executing action for menuItem \(menuItem.title.quoted)", level: .verbose, subsystem: player.subsystem)
+        NSApp.sendAction(action, to: self, from: menuItem)
+        return true
+      }
+
       // - IINA command
       if let iinaCommand = IINACommand(rawValue: keyBinding.rawAction) {
         handleIINACommand(iinaCommand)
@@ -241,6 +243,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     } else {
       // - mpv command
+
+      if let menuItem = keyBinding.menuItem, let action = menuItem.action {
+        // Contains an action selector. Call it instead of sending raw mpv command
+        NSApplication.shared.sendAction(action, to: menuItem.target, from: menuItem)
+        return true
+      }
+
       let returnValue: Int32
       // execute the command
       switch keyBinding.action.first! {

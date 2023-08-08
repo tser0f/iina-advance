@@ -14,7 +14,9 @@ class KeyMapping: NSObject, Codable {
 
   let isIINACommand: Bool
 
-  var menuItem: NSMenuItem? { nil }
+  // If present, holds the action selector & data for a menu item action.
+  // May not match the actual menu item which is present in the menus.
+  var menuItem: NSMenuItem? = nil
 
   // MARK: Key
 
@@ -91,6 +93,29 @@ class KeyMapping: NSObject, Codable {
     }
   }
 
+  private enum CodingKeys: String, CodingKey {
+    case rawKey, rawAction, isIINACommand, comment
+  }
+
+  required init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    rawKey = try container.decode(String.self, forKey: .rawKey)
+    rawAction = try container.decode(String.self, forKey: .rawAction)
+    isIINACommand = try container.decode(Bool.self, forKey: .isIINACommand)
+    comment = try container.decode(String.self, forKey: .comment)
+    normalizedMpvKey = KeyCodeHelper.normalizeMpv(rawKey)
+    action = rawAction.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+  }
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(rawKey, forKey: .rawKey)
+    try container.encode(rawAction, forKey: .rawAction)
+    try container.encode(isIINACommand, forKey: .isIINACommand)
+    try container.encode(comment, forKey: .comment)
+  }
+
+
   // Note: neither `rawKey` nor `rawAction` paranms should start with `KeyMapping.IINA_PREFIX`.
   // (If this is an IINA command, use `isIINACommand: true`)
   init(rawKey: String, rawAction: String, isIINACommand: Bool = false, comment: String? = nil) {
@@ -109,7 +134,6 @@ class KeyMapping: NSObject, Codable {
           let row = try? PropertyListDecoder().decode(KeyMapping.self, from: data) else { return nil }
     self.init(rawKey: row.rawKey, rawAction: row.rawAction, isIINACommand: row.isIINACommand, comment: row.comment)
   }
-
 
   static func removeIINAPrefix(from string: String) -> String? {
     if string.hasPrefix(IINA_PREFIX) {
@@ -217,15 +241,14 @@ extension KeyMapping: NSPasteboardWriting, NSPasteboardReading {
 // This class is a little bit of a hurried kludge, so that bindings for menu items could go everywhere that mpv's bindings can go,
 // but instead of an action string each contains a reference to a menu item.
 class MenuItemMapping: KeyMapping {
-  private let _menuItem: NSMenuItem
   let sourceName: String
   
   init(rawKey: String, sourceName: String, menuItem: NSMenuItem, actionDescription: String) {
-    self._menuItem = menuItem
     self.sourceName = sourceName
 
     // Store description in `comment`
     super.init(rawKey: rawKey, rawAction: "", isIINACommand: true, comment: actionDescription)
+    self.menuItem = menuItem
   }
 
   required init(from decoder: Decoder) throws {
@@ -237,10 +260,8 @@ class MenuItemMapping: KeyMapping {
   }
 
   public override var description: String {
-    return "\(rawKey.quoted) → src=\(sourceName.quoted) menuItem=\(_menuItem.title.quoted) comment=\(comment?.quoted ?? "nil")"
+    return "\(rawKey.quoted) → src=\(sourceName.quoted) menuItem=\(menuItem?.title.quoted ?? "ERROR") comment=\(comment?.quoted ?? "nil")"
   }
-
-  override var menuItem: NSMenuItem? { _menuItem }
 
   override var readableAction: String {
     return menuItem?.title ?? ""

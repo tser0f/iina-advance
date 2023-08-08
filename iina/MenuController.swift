@@ -969,12 +969,30 @@ class MenuController: NSObject, NSMenuDelegate {
         guard kb.isIINACommand == isIINACmd else { continue }
         let (sameAction, value, extraData) = sameKeyAction(kb.action, actionForMenuItem, normalizeLastNum, numRange)
         if sameAction, let (kEqv, kMdf) = KeyCodeHelper.macOSKeyEquivalent(from: kb.normalizedMpvKey) {
-          didBindMenuItem = true
-          binding.associatedMenuItem = menuItem  // so we can indicate it in UI
-          binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
+          /// If we got here, `KeyMapping`'s action qualifies for being bound to `menuItem`.
 
-          updateMenuItem(menuItem, kEqv: kEqv, kMdf: kMdf, l10nKey: l10nKey, value: value, extraData: extraData)
-          break
+          if didBindMenuItem {
+            /// There is already a `KeyMapping` bound to the menu item. This means that its key will trigger `menuItem`'s action.
+            /// There can only be one key equivalent per menu item. But we want every matching `KeyMapping` to trigger `menuItem`'s
+            /// action. Also, some key combinations may go to `keyDown()` in `PlayerWindowController` instead.
+            /// To make this work while not disturbing legacy code, create a dummy `NSMenuItem` to hold the data needed to call
+            /// the action. Store it in the `KeyMapping` so that it can be called from the player window.
+            kb.menuItem = NSMenuItem(title: menuItem.title, action: menuItem.action, keyEquivalent: "")
+            if let value = value {
+              /// note that this may not match `menuItem.representedObject`
+              menuItem.representedObject = value
+            }
+          } else {
+            // First qualifying mapping
+
+            binding.associatedMenuItem = menuItem  // so we can indicate it in UI
+            binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
+
+            updateMenuItem(menuItem, kEqv: kEqv, kMdf: kMdf, l10nKey: l10nKey, value: value, extraData: extraData)
+
+            kb.menuItem = menuItem
+            didBindMenuItem = true
+          }
         }
       }
 
