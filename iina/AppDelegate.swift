@@ -114,23 +114,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     /// corrupt each other's shared state or create echo-like behavior.
     case PK.iinaLaunchCount.rawValue:
       if let newLaunchID = change[.newKey] as? Int {
-        guard newLaunchID != self.launchID else { return }
-        if newLaunchID < self.launchID {
+        guard let launchID = launchID, newLaunchID != launchID else { return }
+        if newLaunchID < launchID {
           Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which looks invalid because it is below the current value! Will disable UI state load/save functionality to be safe.", level: .warning)
           Preference.UIState.disablePersistentStateUntilNextLaunch()
         } else {
           Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(self.launchID!)).")
           Logger.log("Will assume a newer instance of IINA has started; sending a ping to notify it.")
-          let (version, build) = InfoDictionary.shared.version
-          let buildString = "IINA \(version) Build \(build)"
-          Preference.set(buildString, for: .iinaPing)
+          Preference.set(launchID, for: .iinaPing)
         }
       }
 
     case PK.iinaPing.rawValue:
-      if let info = change[.newKey] as? String {
-        Logger.log("Got a ping. Will assume an instance of IINA is already running, and disable loading/saving UI state. [PingInfo: \(info)]")
-        Preference.UIState.disablePersistentStateUntilNextLaunch()
+      if let pingID = change[.newKey] as? Int {
+        if pingID >= 0 && pingID != launchID {
+          Logger.log("Got a ping: \(pingID). Will assume an instance of IINA is already running, and disable loading/saving UI state.")
+          Preference.UIState.disablePersistentStateUntilNextLaunch()
+        } else {
+          Logger.log("Got a ping: \(pingID)", level: .verbose)
+        }
       }
 
     default:
@@ -217,12 +219,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     Logger.log("App will launch")
 
-    Logger.log("Checking for other running instances of IINA...", level: .verbose)
-    self.launchID = Preference.integer(for: .iinaLaunchCount) + 1
     for key in self.observedPrefKeys {
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
-    Preference.set(self.launchID, for: .iinaLaunchCount)
 
     // Call this *before* registering for url events, to guarantee that menu is init'd
     confTableStateManager.startUp()
@@ -243,11 +242,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // handle command line arguments
     let arguments = ProcessInfo.processInfo.arguments.dropFirst()
     if !arguments.isEmpty {
-      startFromCommandLine(arguments)
+      parseCommandLine(arguments)
     }
   }
 
-  private func startFromCommandLine(_ args: ArraySlice<String>) {
+  // TODO: refactor to put this all in CommandLineStatus class
+  private func parseCommandLine(_ args: ArraySlice<String>) {
     var iinaArgs: [String] = []
     var iinaArgFilenames: [String] = []
     var dropNextArg = false
@@ -320,6 +320,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     JavascriptPlugin.loadGlobalInstances()
     menuController.updatePluginMenu()
 
+    let nextID = Preference.integer(for: .iinaLaunchCount) + 1
+    launchID = nextID
+    Logger.log("LaunchID: \(nextID). Checking for other running instances of IINA...", level: .verbose)
+    Preference.set(nextID, for: .iinaLaunchCount)
+    Preference.set(nextID, for: .iinaPing)
+
     let activePlayer = PlayerCore.active  // Load the first PlayerCore
     Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
 
@@ -376,20 +382,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-      if let pc = lastPlayerCore {
-        if commandLineStatus.shufflePlaylist {
-          pc.toggleShuffle()
-        }
+    if let pc = lastPlayerCore {
+      if commandLineStatus.shufflePlaylist {
+        pc.toggleShuffle()
+      }
 
-        if commandLineStatus.enterMusicMode {
-          Logger.log("Entering music mode as specified via command line", level: .verbose)
-          if commandLineStatus.enterPIP {
-            // PiP is not supported in music mode. Combining these options is not permitted and is
-            // rejected by iina-cli. The IINA executable must have been invoked directly with
-            // arguments.
-            Logger.log("Cannot specify both --music-mode and --pip", level: .error)
-            // Command line usage error.
-            exit(EX_USAGE)
+      if commandLineStatus.enterMusicMode {
+        Logger.log("Entering music mode as specified via command line", level: .verbose)
+        if commandLineStatus.enterPIP {
+          // PiP is not supported in music mode. Combining these options is not permitted and is
+          // rejected by iina-cli. The IINA executable must have been invoked directly with
+          // arguments.
+          Logger.log("Cannot specify both --music-mode and --pip", level: .error)
+          // Command line usage error.
+          exit(EX_USAGE)
         }
         pc.switchToMiniPlayer()
       } else if #available(macOS 10.12, *), commandLineStatus.enterPIP {
@@ -400,7 +406,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   private func finishLaunching() {
-    Logger.log("Adding observers")
+    Logger.log("Adding window observers")
 
     // The "action on last window closed" action will vary slightly depending on which type of window was closed.
     // Here we add a listener which fires when *any* window is closed, in order to handle that logic all in one place.
@@ -466,6 +472,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard Preference.UIState.isRestoreEnabled else {
       Logger.log("Not restoring windows because restore is disabled", level: .verbose)
       return false
+    }
+
+    if Preference.bool(for: .isSaveRestoreInUse) {
+      Logger.log("Waiting 1s to see if another instance is still running...", level: .verbose)
+      Thread.sleep(forTimeInterval: 1)
+      if Preference.integer(for: .iinaPing) != launchID {
+        Logger.log("Looks like another instance is still running. Disabling state restore/save for this instance", level: .verbose)
+        Preference.UIState.disablePersistentStateUntilNextLaunch()
+        return false
+      }
+    } else {
+      Logger.log("Didn't detect any pings. Proceeding with restore of windows", level: .verbose)
+      Preference.set(true, for: .isSaveRestoreInUse)
     }
 
     let windowNamesBackToFront = Preference.UIState.getSavedWindowsWithPlayerZeroWorkaround()
@@ -724,6 +743,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         Logger.log("Disabling remote commands")
         RemoteCommandController.disableAllCommands()
       }
+    }
+
+    if Preference.UIState.isSaveEnabled {
+      // unlock for new launch
+      Preference.set(false, for: .isSaveRestoreInUse)
     }
 
     // Close all windows. When a player window is closed it will send a stop command to mpv to stop

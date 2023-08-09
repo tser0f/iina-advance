@@ -386,6 +386,7 @@ struct Preference {
 
     static let alwaysAskBeforeRestoreAtLaunch = Key("alwaysAskBeforeRestoreAtLaunch")
     static let isRestoreInProgress = Key("isRestoreInProgress")
+    static let isSaveRestoreInUse = Key("isSaveRestoreInUse")
 
     // Comma-separated list of window names
     static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFront")
@@ -1077,11 +1078,12 @@ struct Preference {
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
     .iinaLaunchCount: 0,
-    .iinaPing: "",
+    .iinaPing: 0,
     .enableSaveUIState: true,
     .enableRestoreUIState: true,
     .alwaysAskBeforeRestoreAtLaunch: false,
     .isRestoreInProgress: false,
+    .isSaveRestoreInUse: false,
     .uiOpenWindowsBackToFrontList: "",
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,

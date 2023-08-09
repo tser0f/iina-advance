@@ -53,7 +53,7 @@ extension Preference {
     }
 
     // Returns the autosave names of windows which have been saved in the set of open windows
-    private static func getSavedOpenWindowsBackToFront() -> [String] {
+    static func getSavedOpenWindowsBackToFront() -> [String] {
       guard isRestoreEnabled else {
         Logger.log("UI restore disabled. Returning empty open window list")
         return []
