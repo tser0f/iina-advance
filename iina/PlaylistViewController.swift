@@ -437,17 +437,10 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   }
 
   @objc func delete(_ sender: NSMenuItem) {
-    deleteSelectedRows()
-  }
-
-  @discardableResult
-  func deleteSelectedRows() -> Bool {
     let selectedRows = playlistTableView.selectedRowIndexes
     if !selectedRows.isEmpty {
       player.playlistRemove(selectedRows)
-      return true
     }
-    return false
   }
 
   // MARK: - private methods

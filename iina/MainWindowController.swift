@@ -2093,20 +2093,6 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Key events
 
-  override func keyDown(with event: NSEvent) {
-    if player.isPlaylistVisible {
-      // Special case for playlist delete
-      let key = KeyCodeHelper.mpvKeyCode(from: event)
-      if key == "DEL" || key == "BS" {
-        let deletedSomething = playlistView.deleteSelectedRows()
-        if deletedSomething {
-          return
-        }
-      }
-    }
-    super.keyDown(with: event)
-  }
-
   @discardableResult
   override func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
     let success = super.handleKeyBinding(keyBinding)
@@ -2360,7 +2346,7 @@ class MainWindowController: PlayerWindowController {
 
   // assumes mouse is in window
   private func isMouseInTopBarArea(_ event: NSEvent) -> Bool {
-    if isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, bottomBarView]) {
+    if isMouseEvent(event, inAnyOf: [bottomBarView]) {
       return false
     }
     guard let window = window, let contentView = window.contentView else { return false }
