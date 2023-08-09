@@ -3921,7 +3921,12 @@ class MainWindowController: PlayerWindowController {
     var scaleDownFactor: CGFloat? = nil
 
     if player.info.isRestoring {
-      log.debug("AdjustFrameAfterVideoReconfig: skipping resize because isRestoring is set")
+      if oldVideoSize.aspect == videoView.aspectRatio {
+        log.debug("AdjustFrameAfterVideoReconfig: skipping resize because isRestoring is set")
+      } else {
+        log.debug("AdjustFrameAfterVideoReconfig: bad aspect! Expected \(videoView.aspectRatio), found \(oldVideoSize.aspect)")
+        // FIXME: fix it!
+      }
     } else {
       if shouldResizeWindowAfterVideoReconfig() {
         // get videoSize on screen
@@ -3952,6 +3957,7 @@ class MainWindowController: PlayerWindowController {
         log.verbose("Constrained newVideoSize to maxVideoSize \(maxVideoSize) -> \(newVideoSize)")
         // guard min size
         // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
+        // FIXME: cannot use same aspect ratio as AppData.minVideoSize!
         newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
         log.verbose("Constrained videoSize to min size: \(AppData.minVideoSize) -> \(newVideoSize)")
         // check if have geometry set (initial window position/size)

@@ -130,18 +130,15 @@ extension Preference {
       }
 
       let newPlayerZeroID = String(largestPlayerID + 1)
-
-      guard let propList = Preference.UIState.getPlayerUIState(playerID: "0") else {
-        Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
-        return windowNamesBackToFront
-      }
-
       let oldPlayerZeroString = WindowAutosaveName.mainPlayer(id: "0").string
       let newPlayerZeroString = WindowAutosaveName.mainPlayer(id: newPlayerZeroID).string
 
-      Preference.UIState.setPlayerUIState(playerID: newPlayerZeroID, propList)
-
-      Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
+      if let propList = Preference.UIState.getPlayerUIState(playerID: "0") {
+        Preference.UIState.setPlayerUIState(playerID: newPlayerZeroID, propList)
+        Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
+      } else {
+        Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
+      }
 
       let newWindowNamesStrings = windowNamesStrings.map { $0 == oldPlayerZeroString ? newPlayerZeroString : $0 }
       Preference.UIState.saveOpenWindowList(windowNamesBackToFront: newWindowNamesStrings)

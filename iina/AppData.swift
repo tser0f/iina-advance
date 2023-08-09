@@ -160,7 +160,7 @@ struct Constants {
     static let resizeActivationRadius: CGFloat = 10.0
 
     static let minPlaylistWidth: CGFloat = 240
-    static let maxPlaylistWidth: CGFloat = 500
+    static let maxPlaylistWidth: CGFloat = 800
     static let settingsWidth: CGFloat = 360
 
     /// Sidebar tab buttons

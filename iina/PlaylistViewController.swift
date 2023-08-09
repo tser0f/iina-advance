@@ -557,7 +557,14 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       let item = info.playlist[row]
 
       if identifier == .isChosen {
-        v.textField?.stringValue = item.isPlaying ? Constants.String.play : ""
+        if let textField = v.textField {
+          let text = item.isPlaying ? Constants.String.play : ""
+          if #available(macOS 10.14, *) {
+            textField.setFormattedText(stringValue: text, textColor: .controlAccentColor)
+          } else {
+            textField.stringValue = text
+          }
+        }
       } else if identifier == .trackName {
         let cellView = v as! PlaylistTrackCellView
         // file name
@@ -573,14 +580,14 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
           guard let artist = metadata.artist, let title = metadata.title else { return nil }
           return (artist, title)
         }
-        cellView.setTitle(displayStr)
+        cellView.setTitle(displayStr, isPlaying: item.isPlaying)
         // playback progress and duration
         cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         cellView.durationLabel.stringValue = ""
         player.playlistQueue.async {
           if let (artist, title) = getCachedMetadata() {
             DispatchQueue.main.async {
-              cellView.setTitle(title)
+              cellView.setTitle(title, isPlaying: item.isPlaying)
               cellView.setAdditionalInfo(artist)
             }
           }
@@ -936,9 +943,16 @@ class PlaylistTrackCellView: NSTableCellView {
     }
   }
 
-  func setTitle(_ title: String) {
-    textField?.stringValue = title
-    textField?.toolTip = title
+  func setTitle(_ title: String, isPlaying: Bool) {
+    guard let textField = textField else { return }
+//    if #available(macOS 10.14, *) {
+//      // TODO: pick colors which work for this. Fix font wrapping
+//      textField.setFormattedText(stringValue: title, textColor: isPlaying ? .controlTextColor : .controlTextColor)
+//    } else {
+//      textField.stringValue = title
+//    }
+    textField.stringValue = title
+    textField.toolTip = title
   }
 
   override func prepareForReuse() {

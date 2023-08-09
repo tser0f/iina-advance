@@ -13,6 +13,8 @@ struct PlayerUIState {
   enum PropName: String {
     case launchID = "launchID"
 
+    case playlist = "playlist"
+
     case windowFrame = "windowFrame"
     case isFullScreen = "fullScreen"
     case isMinimized = "minimized"
