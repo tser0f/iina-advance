@@ -12,7 +12,12 @@ import Foundation
 struct PlayerUIState {
   enum PropName: String {
     case launchID = "launchID"
+
     case windowFrame = "windowFrame"
+    case isFullScreen = "fullScreen"
+    case isMinimized = "minimized"
+    case bars = "bars"  /// "`TopSize`,`TrailingSize`,`BtmSize`,`LeadingSize` `TopPlacement`,`TrailingPlacement`,`BtmPlacement`"
+
     case url = "url"
     case progress = "progress"
     case paused = "paused"
@@ -36,23 +41,47 @@ struct PlayerUIState {
     return properties[name.rawValue] as? Int
   }
 
+  static private func bars(from layout: MainWindowController.LayoutPlan) -> String {
+    let barSizes: [CGFloat] = [layout.topBarHeight, layout.trailingBarWidth,
+                               layout.bottomBarHeight, layout.leadingBarWidth]
+    let barPlacements: [Int] = [layout.topBarPlacement.rawValue, layout.trailingSidebarPlacement.rawValue,
+                                layout.bottomBarPlacement.rawValue, layout.leadingSidebarPlacement.rawValue]
+    let barsSizesString = barSizes.map{$0.string2f}.joined(separator: ",")
+    let barsPlacementsString = barPlacements.map{String($0)}.joined(separator: ",")
+    return "\(barsSizesString) \(barsPlacementsString)"
+  }
+
   static func from(_ player: PlayerCore) -> PlayerUIState {
     var props: [String: Any] = [:]
     let info = player.info
-
+    let layout = player.mainWindow.currentLayout
 
     props[PropName.launchID.rawValue] = (NSApp.delegate as! AppDelegate).launchID
 
+    // - Window state:
+
+    /// `windowFrame`
     if let frame = player.mainWindow.window?.frame {
       props[PropName.windowFrame.rawValue] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
     }
+
+    /// `bars`
+    props[PropName.bars.rawValue] = bars(from: layout)
+    /// `isFullScreen`
+    props[PropName.isFullScreen.rawValue] = layout.isFullScreen
+    /// TODO: `isMinimized`
+
+    // - Video state:
+
     if let urlString = info.currentURL?.absoluteString ?? nil {
       props[PropName.url.rawValue] = urlString
     }
+
     if let videoPosition = info.videoPosition?.second {
       props[PropName.progress.rawValue] = String(videoPosition)
     }
     props[PropName.paused.rawValue] = info.isPaused
+
     /*
      props["deinterlace"] = deinterlace
      props["hwdec"] = hwdec

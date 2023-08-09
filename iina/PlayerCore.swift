@@ -481,6 +481,16 @@ class PlayerCore: NSObject {
   fileprivate func restoreUIState() {
     guard let savedState = info.priorUIState else { return }
 
+    if let barsString = savedState.string(for: .bars) {
+      let splitted = barsString.split(separator: " ")
+      if splitted.count >= 2 {
+        let sizes = splitted[0].split(separator: ",")
+        let placements = splitted[1].split(separator: ",")
+        // TODO: restore opened sidebars
+
+      }
+    }
+
     if let csv = savedState.string(for: .windowFrame) {
       let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
       if dims.count == 4 {

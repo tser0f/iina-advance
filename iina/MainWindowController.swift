@@ -224,7 +224,7 @@ class MainWindowController: PlayerWindowController {
 
   // Window state
 
-  var currentLayout = LayoutPlan(spec: LayoutSpec.initial())
+  lazy var currentLayout = LayoutPlan(spec: LayoutSpec.initial(leadingSidebar: self.leadingSidebar, trailingSidebar: self.trailingSidebar))
 
   enum FullScreenState: Equatable {
     case windowed
@@ -1215,7 +1215,12 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  /// `struct LayoutSpec`: data structure which is the blueprint for building a `LayoutPlan`
   struct LayoutSpec {
+    // Not sure putting these here is a good idea...
+    let leadingSidebar: Sidebar
+    let trailingSidebar: Sidebar
+
     let isFullScreen:  Bool
     let topBarPlacement: Preference.PanelPlacement
     let bottomBarPlacement: Preference.PanelPlacement
@@ -1224,9 +1229,10 @@ class MainWindowController: PlayerWindowController {
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
 
-    static func fromPreferences(isFullScreen: Bool) -> LayoutSpec {
+    static func fromPreferences(andSpec prevSpec: LayoutSpec) -> LayoutSpec {
       // If in fullscreen, top & bottom bars are always .insideVideo
-      return LayoutSpec(isFullScreen: isFullScreen,
+      return LayoutSpec(leadingSidebar: prevSpec.leadingSidebar, trailingSidebar: prevSpec.trailingSidebar,
+                        isFullScreen: prevSpec.isFullScreen,
                         topBarPlacement: Preference.enum(for: .topBarPlacement),
                         bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
                         leadingSidebarPlacement: Preference.enum(for: .leadingSidebarPlacement),
@@ -1236,8 +1242,10 @@ class MainWindowController: PlayerWindowController {
     }
 
     // Matches what is shown in the XIB
-    static func initial() -> LayoutSpec {
-      return LayoutSpec(isFullScreen: false,
+    static func initial(leadingSidebar: Sidebar, trailingSidebar: Sidebar) -> LayoutSpec {
+      return LayoutSpec(leadingSidebar: leadingSidebar,
+                        trailingSidebar: trailingSidebar,
+                        isFullScreen: false,
                         topBarPlacement:.insideVideo,
                         bottomBarPlacement: .insideVideo,
                         leadingSidebarPlacement:.insideVideo,
@@ -1246,18 +1254,33 @@ class MainWindowController: PlayerWindowController {
                         oscPosition: .floating)
     }
 
-    func clone(fullScreen: Bool) -> LayoutSpec {
-      return LayoutSpec(isFullScreen: fullScreen,
-                        topBarPlacement: self.topBarPlacement,
-                        bottomBarPlacement: self.bottomBarPlacement,
-                        leadingSidebarPlacement: self.leadingSidebarPlacement,
-                        trailingSidebarPlacement: self.trailingSidebarPlacement,
-                        enableOSC: self.enableOSC,
+    // Specify any properties
+    func clone(isFullScreen: Bool? = nil,
+               topBarPlacement: Preference.PanelPlacement? = nil,
+               bottomBarPlacement: Preference.PanelPlacement? = nil,
+               leadingSidebarPlacement: Preference.PanelPlacement? = nil,
+               trailingSidebarPlacement: Preference.PanelPlacement? = nil,
+               enableOSC: Bool? = nil) -> LayoutSpec {
+      return LayoutSpec(leadingSidebar: self.leadingSidebar,
+                        trailingSidebar: self.trailingSidebar,
+                        isFullScreen: isFullScreen ?? self.isFullScreen,
+                        topBarPlacement: topBarPlacement ?? self.topBarPlacement,
+                        bottomBarPlacement: bottomBarPlacement ?? self.bottomBarPlacement,
+                        leadingSidebarPlacement: leadingSidebarPlacement ?? self.leadingSidebarPlacement,
+                        trailingSidebarPlacement: trailingSidebarPlacement ?? self.trailingSidebarPlacement,
+                        enableOSC: enableOSC ?? self.enableOSC,
                         oscPosition: self.oscPosition)
     }
   }
 
-  /// "Layout" would be a better name for this class, but it's already taken by AppKit.
+  /// `LayoutPlan`: data structure which contains all the variables which describe a single way to layout the `MainWindow`.
+  /// ("Layout" might have been a better name for this class, but it's already used by AppKit). Notes:
+  /// • With all the different window layout configurations which are now possible, it's crucial to use this class in order for animations
+  ///   to work reliably.
+  /// • It should be treated like a read-only object after it's built. Its member variables are only mutable to make it easier to build.
+  /// • When any member variable inside it needs to be changed, a new `LayoutPlan` object should be constructed to describe the new state,
+  ///   and a `LayoutTransition` should be built to describe the animations needs to go from old to new.
+  /// • The new `LayoutPlan`, once active, should be stored in the `currentLayout` of `MainWindowController` for future reference.
   class LayoutPlan {
     // All other variables in this class are derived from this spec:
     let spec: LayoutSpec
@@ -1276,23 +1299,43 @@ class MainWindowController: PlayerWindowController {
     var bottomBarView: Visibility = .hidden
     var topBarView: Visibility = .hidden
 
+    // Geometry:
+
     var titleBarHeight: CGFloat = 0
     var topOSCHeight: CGFloat = 0
     var topBarHeight: CGFloat {
       self.titleBarHeight + self.topOSCHeight
     }
-
+    var trailingBarWidth: CGFloat {
+      // Is mutable
+      return spec.trailingSidebar.currentWidth
+    }
     var bottomBarHeight: CGFloat = 0
-    /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
-    /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
-    var osdMinOffsetFromTop: CGFloat = 8
+
+    var leadingBarWidth: CGFloat {
+      // Is mutable
+      return spec.leadingSidebar.currentWidth
+    }
 
     var topBarOutsideHeight: CGFloat {
       return topBarPlacement == .outsideVideo ? topBarHeight : 0
     }
+
+    var trailingBarOutsideWidth: CGFloat {
+      return trailingSidebarPlacement == .outsideVideo ? trailingBarWidth : 0
+    }
+
     var bottomBarOutsideHeight: CGFloat {
       return bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
     }
+
+    var leadingBarOutsideWidth: CGFloat {
+      return leadingSidebarPlacement == .outsideVideo ? leadingBarWidth : 0
+    }
+
+    /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
+    /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
+    var osdMinOffsetFromTop: CGFloat = 8
 
     var setupControlBarInternalViews: TaskFunc? = nil
 
@@ -1432,7 +1475,7 @@ class MainWindowController: PlayerWindowController {
 
   private func transitionToInitialLayout() {
     log.verbose("Setting initial layout")
-    let initialLayoutSpec = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
+    let initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     let initialLayout = buildFutureLayoutPlan(from: initialLayoutSpec)
 
     let transition = LayoutTransition(from: currentLayout, to: initialLayout, isInitialLayout: true)
@@ -1460,7 +1503,7 @@ class MainWindowController: PlayerWindowController {
       log.verbose("Skipping layout refresh due to interactive mode")
       return
     }
-    let futureLayoutSpec = LayoutSpec.fromPreferences(isFullScreen: fsState.isFullscreen)
+    let futureLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     let transition = buildLayoutTransition(to: futureLayoutSpec)
     animationQueue.run(transition.animationTasks)
   }
@@ -2572,7 +2615,7 @@ class MainWindowController: PlayerWindowController {
     })
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
-    let fullscreenLayout = currentLayout.spec.clone(fullScreen: true)
+    let fullscreenLayout = currentLayout.spec.clone(isFullScreen: true)
     let transition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
       if isLegacy {
         // set window frame and in some cases content view frame
@@ -2713,7 +2756,7 @@ class MainWindowController: PlayerWindowController {
 
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = currentLayout.spec.clone(fullScreen: false)
+    let windowedLayout = currentLayout.spec.clone(isFullScreen: false)
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
@@ -3567,13 +3610,9 @@ class MainWindowController: PlayerWindowController {
 
     /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
     /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
-    let interactiveModeLayout = LayoutSpec(isFullScreen: currentLayout.isFullScreen,
-                                           topBarPlacement: .insideVideo,
-                                           bottomBarPlacement: currentLayout.bottomBarPlacement,
-                                           leadingSidebarPlacement: currentLayout.leadingSidebarPlacement,
-                                           trailingSidebarPlacement: currentLayout.trailingSidebarPlacement,
-                                           enableOSC: false,
-                                           oscPosition: currentLayout.oscPosition)
+    let interactiveModeLayout = currentLayout.spec.clone(isFullScreen: currentLayout.isFullScreen,
+                                                         topBarPlacement: .insideVideo,
+                                                         enableOSC: false)
 
     let transition = buildLayoutTransition(to: interactiveModeLayout, totalEndingDuration: 0)
     var animationTasks: [UIAnimation.Task] = transition.animationTasks
@@ -3668,7 +3707,7 @@ class MainWindowController: PlayerWindowController {
       self.cropSettingsView = nil
     })
 
-    let transition = buildLayoutTransition(to: LayoutSpec.fromPreferences(isFullScreen: currentLayout.isFullScreen),
+    let transition = buildLayoutTransition(to: LayoutSpec.fromPreferences(andSpec: currentLayout.spec),
                                            totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
 
     animationTasks.append(contentsOf: transition.animationTasks)
@@ -3873,6 +3912,7 @@ class MainWindowController: PlayerWindowController {
 
     // Scale only the video. Panels outside the video do not change size
     let oldVideoSize = videoView.frame.size
+    // TODO: figure out why these each == -2, and whether that is OK
     let outsidePanelsWidth = window.frame.width - oldVideoSize.width
     let outsidePanelsHeight = window.frame.height - oldVideoSize.height
 
@@ -3927,7 +3967,7 @@ class MainWindowController: PlayerWindowController {
           } else {
             let priorWindowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
             newWindowFrame = priorWindowFrame.centeredResize(to: newWindowSize)
-            log.verbose("Did a centered resize using prior frame \(priorWindowFrame); resulting windowFrame: \(newWindowFrame)")
+            log.verbose("Did a centered resize to \(newWindowSize) using prior frame \(priorWindowFrame); resulting windowFrame: \(newWindowFrame)")
           }
         }
 

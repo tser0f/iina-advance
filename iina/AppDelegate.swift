@@ -106,13 +106,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         Logger.Level.preferred = Logger.Level(rawValue: newValue.clamped(to: 0...3))!
       }
 
-    /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1.
-    /// It uses it this value as its launchID, and stores the new value back to the prefs, which will notify anyone listening to pref changes.
-    /// So this acts like a sort of registration mechanism. Each instance listens to see if the pref is updated by other instances.
-    /// If an older launch sees a newer launch register itself, it will set an `.iinaPing`, which the newer instance will receive, and
-    /// assuming it is well-behaved, disable its usage of shared UI state for the remainder of its run, so that multiple instances don't
-    /// corrupt each other's shared state or create echo-like behavior.
     case PK.iinaLaunchCount.rawValue:
+      /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1.
+      /// It uses it this value as its launchID, and stores the new value back to the prefs, which will notify anyone listening to pref changes.
+      /// So this acts like a sort of registration mechanism. Each instance listens to see if the pref is updated by other instances.
+      /// If an older launch hears a newer launch register itself, it will set an `.iinaPing`, which the newer instance will hear.
+      /// Any IINA instance which detects a ping not match its own `launchID` will, if well-behaved, immediately disable its usage of shared UI state
+      /// for the remainder of its run, so that multiple instances don't corrupt each other's shared state or create echo-like behavior.
       if let newLaunchID = change[.newKey] as? Int {
         guard let launchID = launchID, newLaunchID != launchID else { return }
         if newLaunchID < launchID {
@@ -128,11 +128,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     case PK.iinaPing.rawValue:
       if let pingID = change[.newKey] as? Int {
         if pingID >= 0 && pingID != launchID {
-          Logger.log("Got a ping: \(pingID). Will assume an instance of IINA is already running, and disable loading/saving UI state.")
+          Logger.log("Ping received: \(pingID). Will assume an instance of IINA is already running, and disable loading/saving UI state.")
           Preference.UIState.disablePersistentStateUntilNextLaunch()
-        } else {
-          Logger.log("Got a ping: \(pingID)", level: .verbose)
         }
+      } else if let pingValue = change[.newKey] {
+        Logger.log("Ping unrecognized: \(pingValue)", level: .warning)
       }
 
     default:
@@ -324,7 +324,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     launchID = nextID
     Logger.log("LaunchID: \(nextID). Checking for other running instances of IINA...", level: .verbose)
     Preference.set(nextID, for: .iinaLaunchCount)
-    Preference.set(nextID, for: .iinaPing)
+    Preference.set(nextID, for: .iinaPing)  // need to set this for comparison later
 
     let activePlayer = PlayerCore.active  // Load the first PlayerCore
     Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
@@ -478,7 +478,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       Logger.log("Waiting 1s to see if another instance is still running...", level: .verbose)
       Thread.sleep(forTimeInterval: 1)
       if Preference.integer(for: .iinaPing) != launchID {
-        Logger.log("Looks like another instance is still running. Disabling state restore/save for this instance", level: .verbose)
+        Logger.log("Looks like another IINA instance is still running. Disabling restore/save of window state for this instance")
+        Utility.showAlert("restore_cancelled", style: .informational)
         Preference.UIState.disablePersistentStateUntilNextLaunch()
         return false
       }
