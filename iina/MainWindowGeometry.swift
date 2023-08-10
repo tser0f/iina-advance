@@ -34,9 +34,11 @@ struct MainWindowGeometry: Equatable {
   let bottomBarHeight: CGFloat
   let leftBarWidth: CGFloat
 
+  let videoAspectRatio: CGFloat
+
   // MARK: - Initializers
 
-  init(windowFrame: NSRect, topBarHeight: CGFloat, rightBarWidth: CGFloat, bottomBarHeight: CGFloat, leftBarWidth: CGFloat) {
+  init(windowFrame: NSRect, topBarHeight: CGFloat, rightBarWidth: CGFloat, bottomBarHeight: CGFloat, leftBarWidth: CGFloat, videoAspectRatio: CGFloat) {
     assert(topBarHeight >= 0, "Expected topBarHeight > 0, found \(topBarHeight)")
     assert(rightBarWidth >= 0, "Expected rightBarWidth > 0, found \(rightBarWidth)")
     assert(bottomBarHeight >= 0, "Expected bottomBarHeight > 0, found \(bottomBarHeight)")
@@ -47,9 +49,10 @@ struct MainWindowGeometry: Equatable {
     self.rightBarWidth = rightBarWidth
     self.bottomBarHeight = bottomBarHeight
     self.leftBarWidth = leftBarWidth
+    self.videoAspectRatio = videoAspectRatio
   }
 
-  init(windowFrame: CGRect, videoFrame: CGRect) {
+  init(windowFrame: CGRect, videoFrame: CGRect, videoAspectRatio: CGFloat) {
     assert(videoFrame.height <= windowFrame.height, "videoFrame.height (\(videoFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
     assert(videoFrame.width <= windowFrame.width, "videoFrame.width (\(videoFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
 
@@ -59,7 +62,8 @@ struct MainWindowGeometry: Equatable {
     let topBarHeight = windowFrame.height - videoFrame.height - bottomBarHeight
     self.init(windowFrame: windowFrame,
               topBarHeight: topBarHeight, rightBarWidth: rightBarWidth,
-              bottomBarHeight: bottomBarHeight, leftBarWidth: leftBarWidth)
+              bottomBarHeight: bottomBarHeight, leftBarWidth: leftBarWidth,
+              videoAspectRatio: videoAspectRatio)
   }
 
   // MARK: - Derived properties
@@ -79,13 +83,15 @@ struct MainWindowGeometry: Equatable {
 
   func clone(windowFrame: NSRect? = nil,
              topBarHeight: CGFloat? = nil, rightBarWidth: CGFloat? = nil,
-             bottomBarHeight: CGFloat? = nil, leftBarWidth: CGFloat? = nil) -> MainWindowGeometry {
+             bottomBarHeight: CGFloat? = nil, leftBarWidth: CGFloat? = nil,
+             videoAspectRatio: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
                               topBarHeight: topBarHeight ?? self.topBarHeight,
                               rightBarWidth: rightBarWidth ?? self.rightBarWidth,
                               bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
-                              leftBarWidth: leftBarWidth ?? self.leftBarWidth)
+                              leftBarWidth: leftBarWidth ?? self.leftBarWidth,
+                              videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
   private func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
@@ -101,10 +107,14 @@ struct MainWindowGeometry: Equatable {
   }
 
   func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect) -> MainWindowGeometry {
-    Logger.log("Scaling MainWindowGeometry desired:\(desiredVideoSize)", level: .debug)
+    Logger.log("Scaling MainWindowGeometry desiredVideoSize:\(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
-    /// Clamp video between max and min video sizes, maintaining its aspect ratio.
+    /// Enforce `videoView.aspectRatio`: Recalculate height, trying to preserve width
+    newVideoSize = NSSize(width: desiredVideoSize.width, height: desiredVideoSize.width / videoAspectRatio)
+    Logger.log("Enforced aspectRatio, newVideoSize:\(newVideoSize)", level: .verbose)
+
+    /// Clamp video between max and min video sizes, maintaining aspect ratio of `desiredVideoSize`.
     /// (`desiredVideoSize` is assumed to be correct aspect ratio of the video.)
 
     // Max
@@ -169,10 +179,7 @@ struct MainWindowGeometry: Equatable {
                                 y: windowFrame.origin.y + ΔY,
                                 width: windowFrame.width + ΔW,
                                 height: windowFrame.height + ΔH)
-    return MainWindowGeometry(windowFrame: newWindowFrame,
-                              topBarHeight: newTopHeight ?? self.topBarHeight,
-                              rightBarWidth: newTrailingWidth ?? self.rightBarWidth,
-                              bottomBarHeight: newBottomHeight ?? self.bottomBarHeight,
-                              leftBarWidth: newLeadingWidth ?? self.leftBarWidth)
+    return self.clone(windowFrame: newWindowFrame, topBarHeight: newTopHeight, rightBarWidth: newTrailingWidth,
+                      bottomBarHeight: newBottomHeight, leftBarWidth: newLeadingWidth)
   }
 }

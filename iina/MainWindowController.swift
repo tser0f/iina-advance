@@ -120,7 +120,7 @@ class MainWindowController: PlayerWindowController {
 
   // For Pinch To Magnify gesture:
   var lastMagnification: CGFloat = 0.0
-  var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoFrame: NSRect())
+  var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoFrame: NSRect(), videoAspectRatio: 1.0)
   private lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
   }()
@@ -2948,7 +2948,7 @@ class MainWindowController: PlayerWindowController {
       return window.frame.size
     }
 
-    if requestedSize.height <= AppData.minVideoSize.height || requestedSize.width <= AppData.minVideoSize.width {
+    if !window.inLiveResize && (requestedSize.height <= AppData.minVideoSize.height || requestedSize.width <= AppData.minVideoSize.width) {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
       log.verbose("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(window.frame.size)")
@@ -4106,6 +4106,7 @@ class MainWindowController: PlayerWindowController {
                                                    fromGeometry: MainWindowGeometry? = nil) -> MainWindowGeometry {
 
     let oldScaleGeo = fromGeometry ?? buildMainWindowGeometryFromCurrentLayout()
+
     let newScaleGeo = oldScaleGeo.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
     return newScaleGeo
   }
@@ -4113,6 +4114,7 @@ class MainWindowController: PlayerWindowController {
   func buildMainWindowGeometryFromCurrentLayout() -> MainWindowGeometry {
     let windowFrame = window!.frame
     let videoFrame = videoContainerView.frame
+    let videoAspectRatio = videoView.aspectRatio
 
     guard videoFrame.width <= windowFrame.width && videoFrame.height <= windowFrame.height else {
       log.error("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (Video: \(videoFrame); Window: \(windowFrame))")
@@ -4120,9 +4122,11 @@ class MainWindowController: PlayerWindowController {
                                 topBarHeight: currentLayout.topBarHeight,
                                 rightBarWidth: trailingSidebar.currentOutsideWidth,
                                 bottomBarHeight: currentLayout.bottomBarOutsideHeight,
-                                leftBarWidth: leadingSidebar.currentOutsideWidth)
+                                leftBarWidth: leadingSidebar.currentOutsideWidth,
+                                videoAspectRatio: videoAspectRatio)
     }
-    return MainWindowGeometry(windowFrame: windowFrame, videoFrame: videoFrame)
+    return MainWindowGeometry(windowFrame: windowFrame, videoFrame: videoFrame,
+                              videoAspectRatio: videoAspectRatio)
   }
 
   // MARK: - UI: Others
