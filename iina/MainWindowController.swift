@@ -2420,7 +2420,7 @@ class MainWindowController: PlayerWindowController {
       switch recognizer.state {
       case .began:
         // FIXME: confirm reset on video size change due to track change
-        windowGeometryAtMagnificationBegin = buildMainWindowGeometryFromCurrentLayout()
+        windowGeometryAtMagnificationBegin = buildGeometryFromCurrentLayout()
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
@@ -2571,7 +2571,7 @@ class MainWindowController: PlayerWindowController {
     log.verbose("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)")
 
     // Because the outside panels can change while in fullscreen, use the coords of the video frame instead
-    let priorWindowedGeometry = buildMainWindowGeometryFromCurrentLayout()
+    let priorWindowedGeometry = buildGeometryFromCurrentLayout()
 
     var animationTasks: [UIAnimation.Task] = []
 
@@ -2960,11 +2960,11 @@ class MainWindowController: PlayerWindowController {
 
     // resize height based on requested width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoSize.width, height: requestedVideoSize.width / videoView.aspectRatio)
-    let resizeFromWidth = computeWindowGeometryForVideoResize(toVideoSize: resizeFromWidthRequestedVideoSize).windowFrame.size
+    let resizeFromWidth = computeResizedWindowFrame(withDesiredVideoSize: resizeFromWidthRequestedVideoSize).size
 
     // resize width based on requested height
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoSize.height * videoView.aspectRatio, height: requestedVideoSize.height)
-    let resizeFromHeight = computeWindowGeometryForVideoResize(toVideoSize: resizeFromHeightRequestedVideoSize).windowFrame.size
+    let resizeFromHeight = computeResizedWindowFrame(withDesiredVideoSize: resizeFromHeightRequestedVideoSize).size
 
     let newSize: NSSize
     if window.inLiveResize {
@@ -3984,7 +3984,7 @@ class MainWindowController: PlayerWindowController {
         let newVideoHeight = newVideoWidth / videoBaseDisplaySize.aspect
         newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
         log.verbose("Using oldVideoSize width for newVideoSize, with new height (\(newVideoHeight)) -> \(newVideoSize)")
-        newWindowFrame = computeWindowGeometryForVideoResize(toVideoSize: newVideoSize).windowFrame
+        newWindowFrame = computeResizedWindowFrame(withDesiredVideoSize: newVideoSize)
       }
 
       /// Finally call `setFrame()`
@@ -4066,7 +4066,7 @@ class MainWindowController: PlayerWindowController {
       log.verbose("SetWindowScale: converted videoDesiredSize to physical resolution: \(videoDesiredSize)")
     }
 
-    resizeVideo(toVideoSize: videoDesiredSize)
+    resizeVideo(desiredVideoSize: videoDesiredSize)
   }
 
   private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
@@ -4077,9 +4077,7 @@ class MainWindowController: PlayerWindowController {
     let origVideoSize = windowGeometryAtMagnificationBegin.videoSize
     let newVideoSize = origVideoSize.multiply(scale);
 
-    resizeVideo(toVideoSize: newVideoSize,
-               fromGeometry: windowGeometryAtMagnificationBegin,
-               animate: false)
+    resizeVideo(desiredVideoSize: newVideoSize, fromGeometry: windowGeometryAtMagnificationBegin, animate: false)
   }
 
   /**
@@ -4091,27 +4089,32 @@ class MainWindowController: PlayerWindowController {
    • If `fromVideoSize` is not provided, it will default to `videoView.frame.size`.
    • If `fromWindowFrame` is not provided, it will default to `window.frame`
    */
-  func resizeVideo(toVideoSize desiredVideoSize: CGSize,
-                   fromGeometry: MainWindowGeometry? = nil,
-                   animate: Bool = true) {
+  func resizeVideo(desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil, animate: Bool = true) {
     guard !isInInteractiveMode, let window = window else { return }
-    let newWindowGeo = computeWindowGeometryForVideoResize(toVideoSize: desiredVideoSize,
-                                                           fromGeometry: fromGeometry)
-    log.verbose("Calling setFrame() from resizeVideo, to: \(newWindowGeo.windowFrame)")
-    window.setFrame(newWindowGeo.windowFrame, display: true, animate: animate)
+
+    let newWindowFrame = computeResizedWindowFrame(withDesiredVideoSize: desiredVideoSize, fromGeometry: fromGeometry)
+    log.verbose("Calling setFrame() from resizeVideo, to: \(newWindowFrame)")
+
+    if animate {
+      // This seems to provide a better animation and plays better with other animations
+      animationQueue.run(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timing: .easeInEaseOut, {
+        (window as! MainWindow).setFrameImmediately(newWindowFrame)
+      }))
+    } else {
+      window.setFrame(newWindowFrame, display: true, animate: false)
+    }
   }
 
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
-  private func computeWindowGeometryForVideoResize(toVideoSize desiredVideoSize: CGSize,
-                                                   fromGeometry: MainWindowGeometry? = nil) -> MainWindowGeometry {
+  /// If `fromGeometry` is `nil`, uses existing window geometry.
+  func computeResizedWindowFrame(withDesiredVideoSize desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil) -> NSRect {
 
-    let oldScaleGeo = fromGeometry ?? buildMainWindowGeometryFromCurrentLayout()
-
+    let oldScaleGeo = fromGeometry ?? buildGeometryFromCurrentLayout()
     let newScaleGeo = oldScaleGeo.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
-    return newScaleGeo
+    return newScaleGeo.windowFrame
   }
 
-  func buildMainWindowGeometryFromCurrentLayout() -> MainWindowGeometry {
+  func buildGeometryFromCurrentLayout() -> MainWindowGeometry {
     let windowFrame = window!.frame
     let videoFrame = videoContainerView.frame
     let videoAspectRatio = videoView.aspectRatio

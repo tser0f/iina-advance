@@ -22,7 +22,6 @@ class TableUIChange {
   // MARK: - Static definitions
 
   typealias CompletionHandler = (TableUIChange) -> Void
-  typealias AnimationBlock = (NSAnimationContext) -> Void
 
   // After removal of rows, select the next single row after the last one removed:
   static let selectNextRowAfterDelete = true

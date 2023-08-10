@@ -71,7 +71,7 @@ class UIAnimation {
     private var isRunning = false
     private var queue = LinkedList<Task>()
 
-    /// Convenience function. Same as `run([AnimationBlock])`, but for a single animation.
+    /// Convenience function. Same as `run([Task])`, but for a single animation.
     func run(_ task: Task, then doAfter: TaskFunc? = nil) {
       run([task], then: doAfter)
     }

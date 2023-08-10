@@ -32,7 +32,6 @@ extension MainWindowController {
 
   @objc func menuChangeWindowSize(_ sender: NSMenuItem) {
     let size = sender.tag
-    guard let window = window, !fsState.isFullscreen else { return }
 
     switch size {
     case 0:  //  0: half
@@ -42,10 +41,12 @@ extension MainWindowController {
     case 2:  //  2: double
       setWindowScale(2)
     case 3:  // fit screen
-      window.center()  // FIXME: this should be animated
       let desiredVideoSize = player.videoBaseDisplaySize.satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
-      Logger.log("Scaling video to fit screen (calculated size: \(desiredVideoSize))", level: .verbose, subsystem: player.subsystem)
-      resizeVideo(toVideoSize: desiredVideoSize)
+      // TODO: center on screen
+      let newWindowFrame = computeResizedWindowFrame(withDesiredVideoSize: desiredVideoSize)
+
+      resizeVideo(desiredVideoSize: desiredVideoSize)
+
     case 10:  // smaller size
       scaleVideoByIncrement(-AppData.scaleStep)
     case 11:  // bigger size
@@ -61,7 +62,7 @@ extension MainWindowController {
     let newHeight = newWidth / currentVideoSize.aspect
     let desiredVideoSize = CGSize(width: currentVideoSize.width + step, height: newHeight)
     Logger.log("Incrementing video width by \(step), to desired size \(desiredVideoSize)", level: .verbose, subsystem: player.subsystem)
-    resizeVideo(toVideoSize: desiredVideoSize)
+    resizeVideo(desiredVideoSize: desiredVideoSize)
   }
 
   @objc func menuAlwaysOnTop(_ sender: AnyObject) {
