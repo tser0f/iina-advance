@@ -4089,10 +4089,11 @@ class MainWindowController: PlayerWindowController {
    • If `fromVideoSize` is not provided, it will default to `videoView.frame.size`.
    • If `fromWindowFrame` is not provided, it will default to `window.frame`
    */
-  func resizeVideo(desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil, animate: Bool = true) {
+  func resizeVideo(desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil,
+                   centerInScreen: Bool = false, animate: Bool = true) {
     guard !isInInteractiveMode, let window = window else { return }
 
-    let newWindowFrame = computeResizedWindowFrame(withDesiredVideoSize: desiredVideoSize, fromGeometry: fromGeometry)
+    let newWindowFrame = computeResizedWindowFrame(withDesiredVideoSize: desiredVideoSize, fromGeometry: fromGeometry, centerInScreen: centerInScreen)
     log.verbose("Calling setFrame() from resizeVideo, to: \(newWindowFrame)")
 
     if animate {
@@ -4107,10 +4108,14 @@ class MainWindowController: PlayerWindowController {
 
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
   /// If `fromGeometry` is `nil`, uses existing window geometry.
-  func computeResizedWindowFrame(withDesiredVideoSize desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil) -> NSRect {
+  func computeResizedWindowFrame(withDesiredVideoSize desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil,
+                                 centerInScreen: Bool = false) -> NSRect {
 
     let oldScaleGeo = fromGeometry ?? buildGeometryFromCurrentLayout()
     let newScaleGeo = oldScaleGeo.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
+    if centerInScreen {
+      return newScaleGeo.windowFrame.size.centeredRect(in: bestScreen.visibleFrame)
+    }
     return newScaleGeo.windowFrame
   }
 
