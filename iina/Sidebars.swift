@@ -827,7 +827,7 @@ extension MainWindowController {
   // MARK: - Mouse events
 
   func isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: NSPoint) -> Bool {
-    if leadingSidebar.visibleTab == .playlist {
+    if leadingSidebar.visibleTabGroup == .playlist {
       let sf = leadingSidebarView.frame
       let dragRectCenterX: CGFloat = sf.origin.x + sf.width
 
@@ -844,7 +844,7 @@ extension MainWindowController {
   }
 
   func isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: NSPoint) -> Bool {
-    if trailingSidebar.visibleTab == .playlist {
+    if trailingSidebar.visibleTabGroup == .playlist {
       let sf = trailingSidebarView.frame
       let dragRectCenterX: CGFloat = sf.origin.x
 

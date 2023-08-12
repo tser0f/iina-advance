@@ -1960,9 +1960,6 @@ class MainWindowController: PlayerWindowController {
 
     updateSpacingForLeadingTitleBarAccessory(layout)
     updateSpacingForTrailingTitleBarAccessory(layout)
-
-    leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
-    trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
@@ -1972,13 +1969,13 @@ class MainWindowController: PlayerWindowController {
 
     let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
 
-    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && (leadingSidebar.animationState == .willShow
-                                                                               || leadingSidebar.animationState == .shown)
+    let isSpaceNeededForSidebar = leadingSidebar.currentWidth > 0
     if isSpaceNeededForSidebar {
       // Subtract space taken by the 3 standard buttons + other visible buttons
       trailingSpace = max(0, leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
     }
-    leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
+    leadingTitleBarTrailingSpaceConstraint.constant = trailingSpace
+    leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
@@ -1994,17 +1991,17 @@ class MainWindowController: PlayerWindowController {
       spaceForButtons += pinToTopButton.frame.width
     }
 
-    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && (trailingSidebar.animationState == .willShow
-                                                                               || trailingSidebar.animationState == .shown)
+    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && trailingSidebar.currentWidth > 0
     if isSpaceNeededForSidebar {
       leadingSpace = max(0, trailingSidebar.currentWidth - spaceForButtons)
     }
-    trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
+    trailingTitleBarLeadingSpaceConstraint.constant = leadingSpace
 
     // Add padding to the side for buttons
     let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || layout.pinToTopButton.isShowable
     let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
-    trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
+    trailingTitleBarTrailingSpaceConstraint.constant = buttonMargin
+    trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
   // This method should only make a layout plan. It should not alter the current layout.
@@ -2925,6 +2922,10 @@ class MainWindowController: PlayerWindowController {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return requestedSize }
 
+    defer {
+      updateSpacingForTitleBarAccessories()
+    }
+
     if denyNextWindowResize {
       let currentSize = window.frame.size
       log.verbose("WindowWillResize: denying this resize; will stay at \(currentSize)")
@@ -3004,6 +3005,9 @@ class MainWindowController: PlayerWindowController {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
     log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
+    defer {
+      updateSpacingForTitleBarAccessories()
+    }
 
     UIAnimation.disableAnimation {
       if isInInteractiveMode {
@@ -4090,10 +4094,10 @@ class MainWindowController: PlayerWindowController {
    • If `fromWindowFrame` is not provided, it will default to `window.frame`
    */
   func resizeVideo(desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil,
-                   centerInScreen: Bool = false, animate: Bool = true) {
+                   centerOnScreen: Bool = false, animate: Bool = true) {
     guard !isInInteractiveMode, let window = window else { return }
 
-    let newWindowFrame = computeResizedWindowFrame(withDesiredVideoSize: desiredVideoSize, fromGeometry: fromGeometry, centerInScreen: centerInScreen)
+    let newWindowFrame = computeResizedWindowFrame(withDesiredVideoSize: desiredVideoSize, fromGeometry: fromGeometry, centerOnScreen: centerOnScreen)
     log.verbose("Calling setFrame() from resizeVideo, to: \(newWindowFrame)")
 
     if animate {
@@ -4109,11 +4113,11 @@ class MainWindowController: PlayerWindowController {
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
   /// If `fromGeometry` is `nil`, uses existing window geometry.
   func computeResizedWindowFrame(withDesiredVideoSize desiredVideoSize: CGSize, fromGeometry: MainWindowGeometry? = nil,
-                                 centerInScreen: Bool = false) -> NSRect {
+                                 centerOnScreen: Bool = false) -> NSRect {
 
     let oldScaleGeo = fromGeometry ?? buildGeometryFromCurrentLayout()
     let newScaleGeo = oldScaleGeo.scale(desiredVideoSize: desiredVideoSize, constrainedWithin: bestScreen.visibleFrame)
-    if centerInScreen {
+    if centerOnScreen {
       return newScaleGeo.windowFrame.size.centeredRect(in: bestScreen.visibleFrame)
     }
     return newScaleGeo.windowFrame
