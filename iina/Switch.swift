@@ -120,7 +120,7 @@ class Switch: NSView {
   private func setupSubViews() {
     if #available(macOS 10.15, *) {
       let label = NSTextField(labelWithString: title)
-      let nsSwitch = NSSwitch()
+      let nsSwitch = NonKeyViewSwitch()
       nsSwitch.target = self
       nsSwitch.action = #selector(statusChanged)
       label.translatesAutoresizingMaskIntoConstraints = false
@@ -139,14 +139,15 @@ class Switch: NSView {
     } else {
       let checkbox: NSButton
       if #available(macOS 10.12, *) {
-        checkbox = NSButton(checkboxWithTitle: title, target: self, action: #selector(statusChanged))
+        checkbox = NonKeyViewButton(checkboxWithTitle: title, target: self, action: #selector(statusChanged))
       } else {
-        checkbox = NSButton()
+        checkbox = NonKeyViewButton()
         checkbox.setButtonType(.switch)
         checkbox.target = self
         checkbox.action = #selector(statusChanged)
       }
       checkbox.translatesAutoresizingMaskIntoConstraints = false
+      checkbox.focusRingType = .none
       self.checkbox = checkbox
       addSubview(checkbox)
       Utility.quickConstraints(["H:|-0-[b]-(>=0)-|"], ["b": checkbox])
@@ -171,5 +172,18 @@ class Switch: NSView {
       _checked = checkbox!.state == .on
     }
     self.action(_checked)
+  }
+
+  @available(macOS 10.15, *)
+  class NonKeyViewSwitch: NSSwitch {
+    override var acceptsFirstResponder: Bool {
+      return false
+    }
+  }
+
+  class NonKeyViewButton: NSButton {
+    override var acceptsFirstResponder: Bool {
+      return false
+    }
   }
 }

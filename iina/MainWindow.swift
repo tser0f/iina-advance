@@ -43,6 +43,39 @@ class MainWindow: NSWindow {
     }
   }
 
+  override func performKeyEquivalent(with event: NSEvent) -> Bool {
+    /// AppKit by default will prioritize menu item key equivalents over arrow key navigation
+    /// (although for some reason it is the opposite for `ESC`, `TAB`, `ENTER` or `RETURN`).
+    /// Need to add an explicit check here for arrow keys to ensure that they always work when desired.
+    if let responder = firstResponder, shouldFavorArrowKeyNavigation(for: responder) {
+
+      let keyCode = KeyCodeHelper.mpvKeyCode(from: event)
+      let normalizedKeyCode = KeyCodeHelper.normalizeMpv(keyCode)
+
+      switch normalizedKeyCode {
+      case "UP", "DOWN", "LEFT", "RIGHT":
+        // Send arrow keys to view to enable key navigation
+        responder.keyDown(with: event)
+        return true
+      default:
+        break
+      }
+    }
+    return super.performKeyEquivalent(with: event)
+  }
+
+  private func shouldFavorArrowKeyNavigation(for responder: NSResponder) -> Bool {
+    if responder as? NSTextView != nil {
+      return true
+    }
+    /// There is some ambiguity about when a table is in focus, so only favor arrow keys when there's
+    /// already a selection:
+    if let tableView = responder as? NSTableView, !tableView.selectedRowIndexes.isEmpty {
+      return true
+    }
+    return false
+  }
+
   override var canBecomeKey: Bool {
     forceKeyAndMain ? true : super.canBecomeKey
   }
