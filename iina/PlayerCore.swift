@@ -162,6 +162,10 @@ class PlayerCore: NSObject {
     isInMiniPlayer ? miniPlayer.isPlaylistVisible : mainWindow.isShowing(sidebarTab: .playlist)
   }
 
+  var currentWindow: NSWindow? {
+    return isInMiniPlayer ? miniPlayer.window : mainWindow.window
+  }
+
   var isOnlyOpenPlayer: Bool {
     for player in PlayerCore.playerCores {
       if player != self && player.mainWindow.isOpen {
