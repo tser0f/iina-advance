@@ -2178,7 +2178,10 @@ class MainWindowController: PlayerWindowController {
     // record current mouse pos
     mousePosRelatedToWindow = event.locationInWindow
     // Start resize if applicable
-    startResizingSidebar(with: event)
+    let shouldCallSuper = !startResizingSidebar(with: event)
+    if shouldCallSuper {
+      super.mouseDown(with: event)
+    }
   }
 
   override func mouseDragged(with event: NSEvent) {
@@ -2202,6 +2205,7 @@ class MainWindowController: PlayerWindowController {
           isDragging = true
         }
         window?.performDrag(with: event)
+        super.informPluginMouseDragged(with: event)
       }
     }
   }
@@ -2260,6 +2264,7 @@ class MainWindowController: PlayerWindowController {
   /// return to the view.`
   override func rightMouseDown(with event: NSEvent) {
     workaroundCursorDefect()
+    super.rightMouseDown(with: event)
   }
 
   override func rightMouseUp(with event: NSEvent) {

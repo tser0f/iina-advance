@@ -30,11 +30,16 @@ class MainWindow: NSWindow {
   }
 
   override func keyDown(with event: NSEvent) {
-    // Forward all key events which the window receives to controller. This fixes:
-    // (a) ESC key not otherwise sent to window
-    // (b) window was not getting a chance to respond before main menu
+    if menu?.performKeyEquivalent(with: event) == true {
+      return
+    }
+    /// Forward all key events which the window receives to its controller.
+    /// This allows `ESC` & `TAB` key bindings to work, instead of getting swallowed by
+    /// MacOS keyboard focus navigation (which we don't use).
     if let controller = windowController as? MainWindowController {
       controller.keyDown(with: event)
+    } else {
+      super.keyDown(with: event)
     }
   }
 

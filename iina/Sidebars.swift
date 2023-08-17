@@ -860,14 +860,17 @@ extension MainWindowController {
     return false
   }
 
-  func startResizingSidebar(with event: NSEvent) {
+  func startResizingSidebar(with event: NSEvent) -> Bool {
     if isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
       Logger.log("User started resize of leading sidebar", level: .verbose, subsystem: player.subsystem)
       leadingSidebar.isResizing = true
+      return true
     } else if isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
       Logger.log("User started resize of trailing sidebar", level: .verbose, subsystem: player.subsystem)
       trailingSidebar.isResizing = true
+      return true
     }
+    return false
   }
 
   // Returns true if handled; false if not
