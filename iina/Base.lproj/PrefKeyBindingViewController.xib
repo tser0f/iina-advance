@@ -171,9 +171,9 @@
                     </scroller>
                 </scrollView>
                 <box boxType="custom" title="Box" translatesAutoresizingMaskIntoConstraints="NO" id="Le4-ai-PiB" userLabel="ConfTableFooter Box">
-                    <rect key="frame" x="188" y="41" width="292" height="22"/>
+                    <rect key="frame" x="0.0" y="41" width="190" height="22"/>
                     <view key="contentView" id="Mvx-13-iEj" userLabel="ConfTableFooter Box View">
-                        <rect key="frame" x="1" y="1" width="290" height="20"/>
+                        <rect key="frame" x="1" y="1" width="188" height="20"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="iCp-ho-SlQ" userLabel="AddConf Square Button">
@@ -428,6 +428,16 @@
                                     <action selector="removeBindingBtnAction:" target="-2" id="aeN-fq-0zS"/>
                                 </connections>
                             </button>
+                            <button toolTip="Show all key bindings from IINA in the list" translatesAutoresizingMaskIntoConstraints="NO" id="ogR-hg-OWq" userLabel="Show bindings from all sources Button">
+                                <rect key="frame" x="10" y="4" width="156" height="12"/>
+                                <buttonCell key="cell" type="check" title="Show bindings from all sources" bezelStyle="regularSquare" imagePosition="left" controlSize="mini" refusesFirstResponder="YES" state="on" inset="2" id="ofM-Fl-e5N">
+                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                    <font key="font" metaFont="label" size="9"/>
+                                </buttonCell>
+                                <connections>
+                                    <binding destination="XM5-Sj-lhw" name="value" keyPath="values.showKeyBindingsFromAllSources" id="KJD-p3-CXn"/>
+                                </connections>
+                            </button>
                             <box horizontalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="GnK-98-Zrg">
                                 <rect key="frame" x="163" y="0.0" width="5" height="20"/>
                             </box>
@@ -444,12 +454,15 @@
                             </button>
                         </subviews>
                         <constraints>
+                            <constraint firstItem="ogR-hg-OWq" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="0le-1T-r5f" secondAttribute="leading" constant="6" id="1ri-Vd-Cck"/>
                             <constraint firstItem="uFG-OF-DJ5" firstAttribute="top" secondItem="0le-1T-r5f" secondAttribute="top" id="Fj3-Ay-5aJ"/>
+                            <constraint firstItem="GnK-98-Zrg" firstAttribute="leading" secondItem="ogR-hg-OWq" secondAttribute="trailing" constant="6" id="PyE-Ao-PGB"/>
                             <constraint firstItem="l2M-TH-eCt" firstAttribute="leading" secondItem="GnK-98-Zrg" secondAttribute="trailing" constant="8" id="Qbj-KE-dFO"/>
                             <constraint firstAttribute="bottom" secondItem="uFG-OF-DJ5" secondAttribute="bottom" id="QpE-rf-DFB"/>
                             <constraint firstItem="GnK-98-Zrg" firstAttribute="top" secondItem="0le-1T-r5f" secondAttribute="top" id="XSn-ja-Q3m"/>
                             <constraint firstAttribute="trailing" secondItem="l2M-TH-eCt" secondAttribute="trailing" constant="6" id="ced-22-S2H"/>
                             <constraint firstItem="f5l-5w-zmm" firstAttribute="top" secondItem="0le-1T-r5f" secondAttribute="top" id="cs5-Bc-qpt"/>
+                            <constraint firstItem="ogR-hg-OWq" firstAttribute="centerY" secondItem="0le-1T-r5f" secondAttribute="centerY" id="dZe-e4-Kid"/>
                             <constraint firstItem="uFG-OF-DJ5" firstAttribute="leading" secondItem="f5l-5w-zmm" secondAttribute="trailing" id="fpH-b3-2dm"/>
                             <constraint firstAttribute="bottom" secondItem="f5l-5w-zmm" secondAttribute="bottom" id="msC-WR-Ru1"/>
                             <constraint firstItem="f5l-5w-zmm" firstAttribute="leading" secondItem="0le-1T-r5f" secondAttribute="leading" id="tMy-fs-AYa"/>

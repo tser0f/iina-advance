@@ -401,7 +401,7 @@ struct Preference {
     static let uiCollapseViewSubAutoLoadAdvanced = Key("uiCollapseViewSubAutoLoadAdvanced")
     static let uiCollapseViewSubTextSubsAdvanced = Key("uiCollapseViewSubTextSubsAdvanced")
     static let uiPrefBindingsTableSearchString = Key("uiPrefBindingsTableSearchString")
-    static let uiPrefBindingsTableIncludeBindingsFromAllSources = Key("uiPrefBindingsTableIncludeBindingsFromAllSources")
+    static let showKeyBindingsFromAllSources = Key("showKeyBindingsFromAllSources")
     static let uiPrefBindingsTableScrollOffsetY = Key("uiPrefBindingsTableScrollOffsetY")
 
     static let uiInspectorWindowTabIndex = Key("uiInspectorWindowTabIndex")
@@ -1074,6 +1074,7 @@ struct Preference {
     .enablePiiMaskingInLog: true,
     .logKeyBindingsRebuild: false,
     .displayKeyBindingRawValues: false,
+    .showKeyBindingsFromAllSources: true,
     .useInlineEditorInsteadOfDialogForNewInputConf: true,
     .acceptRawTextAsKeyBindings: false,
     .animateKeyBindingTableReloadAll: true,
@@ -1093,7 +1094,6 @@ struct Preference {
     .uiCollapseViewSubAutoLoadAdvanced: false,
     .uiCollapseViewSubTextSubsAdvanced: false,
     .uiPrefBindingsTableSearchString: "",
-    .uiPrefBindingsTableIncludeBindingsFromAllSources: true,
     .uiPrefBindingsTableScrollOffsetY: 0,
     .uiInspectorWindowTabIndex: 0,
     .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayedDay.rawValue,

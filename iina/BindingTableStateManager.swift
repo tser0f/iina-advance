@@ -26,7 +26,7 @@ class BindingTableStateManager: NSObject {
     Logger.log("BindingTableStateManager init", level: .verbose)
     observers.append(NotificationCenter.default.addObserver(forName: .iinaAppInputConfigDidChange, object: nil, queue: .main, using: self.appInputConfigDidChange))
 
-    for key in [Preference.Key.uiPrefBindingsTableIncludeBindingsFromAllSources] {
+    for key in [Preference.Key.showKeyBindingsFromAllSources] {
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
   }
@@ -39,7 +39,7 @@ class BindingTableStateManager: NSObject {
 
     // Remove observers for IINA preferences.
     ObjcUtils.silenced {
-      for key in [Preference.Key.uiPrefBindingsTableIncludeBindingsFromAllSources] {
+      for key in [Preference.Key.showKeyBindingsFromAllSources] {
         UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
       }
     }
@@ -49,7 +49,7 @@ class BindingTableStateManager: NSObject {
 
     DispatchQueue.main.async {
       switch keyPath {
-      case Preference.Key.currentInputConfigName.rawValue:
+      case Preference.Key.showKeyBindingsFromAllSources.rawValue:
         self.applyStateUpdate(AppInputConfig.current)
       default:
         return
@@ -59,7 +59,7 @@ class BindingTableStateManager: NSObject {
 
   static func initialState() -> BindingTableState {
     let filterString = Preference.UIState.isRestoreEnabled ? Preference.string(for: .uiPrefBindingsTableSearchString) ?? "" : ""
-    let showAllBindings = Preference.bool(for: .uiPrefBindingsTableIncludeBindingsFromAllSources)
+    let showAllBindings = Preference.bool(for: .showKeyBindingsFromAllSources)
     return BindingTableState(AppInputConfig.current, filterString: filterString, inputConfFile: ConfTableState.manager.loadConfFile(),
                              showAllBindings: showAllBindings)
   }
@@ -200,15 +200,15 @@ class BindingTableStateManager: NSObject {
                                 newFilterString: String? = nil, newInputConfFile: InputConfFile? = nil) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
 
-    Logger.log("Updating Binding table state: hasUIChange=\(desiredTableUIChange != nil) filterUpdate=\(newFilterString ?? "nil")", level: .verbose)
+    let showAllBindings = Preference.bool(for: .showKeyBindingsFromAllSources)
+
+    Logger.log("Updating Binding table state: hasUIChange=\(desiredTableUIChange != nil) filterUpdate=\(newFilterString?.quoted ?? "nil") showAllBindings=\(showAllBindings)", level: .verbose)
     let oldState = BindingTableState.current
     if oldState.appInputConfig.version == appInputConfigNew.version
-        && desiredTableUIChange == nil && newFilterString == nil && newInputConfFile == nil {
-      Logger.log("applyStateUpdate(): ignoring update because nothing new: (v\(appInputConfigNew.version))", level: .verbose)
+        && desiredTableUIChange == nil && newFilterString == nil && newInputConfFile == nil && showAllBindings == oldState.showAllBindings {
+      Logger.log("BindingTableStateManager.applyStateUpdate(): ignoring update because nothing new: (v\(appInputConfigNew.version))", level: .verbose)
       return
     }
-
-    let showAllBindings = Preference.bool(for: .uiPrefBindingsTableIncludeBindingsFromAllSources)
 
     let newState = BindingTableState(appInputConfigNew,
                                      filterString: newFilterString ?? oldState.filterString,
