@@ -11,7 +11,7 @@ import Foundation
 /**
  Responsible for changing the state of the Key Bindings table by building new versions of `BindingTableState`.
  */
-class BindingTableStateManager {
+class BindingTableStateManager: NSObject {
   enum Key: String {
     case appInputConfig = "AppInputConfig"
     case tableUIChange = "BindingTableChange"
@@ -21,9 +21,14 @@ class BindingTableStateManager {
   private var undoHelper = PrefsWindowUndoHelper()
   private var observers: [NSObjectProtocol] = []
 
-  init() {
+  override init() {
+    super.init()
     Logger.log("BindingTableStateManager init", level: .verbose)
     observers.append(NotificationCenter.default.addObserver(forName: .iinaAppInputConfigDidChange, object: nil, queue: .main, using: self.appInputConfigDidChange))
+
+    for key in [Preference.Key.uiPrefBindingsTableIncludeBindingsFromAllSources] {
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
   }
 
   deinit {
@@ -31,11 +36,32 @@ class BindingTableStateManager {
       NotificationCenter.default.removeObserver(observer)
     }
     observers = []
+
+    // Remove observers for IINA preferences.
+    ObjcUtils.silenced {
+      for key in [Preference.Key.uiPrefBindingsTableIncludeBindingsFromAllSources] {
+        UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
+      }
+    }
+  }
+
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+
+    DispatchQueue.main.async {
+      switch keyPath {
+      case Preference.Key.currentInputConfigName.rawValue:
+        self.applyStateUpdate(AppInputConfig.current)
+      default:
+        return
+      }
+    }
   }
 
   static func initialState() -> BindingTableState {
     let filterString = Preference.UIState.isRestoreEnabled ? Preference.string(for: .uiPrefBindingsTableSearchString) ?? "" : ""
-    return BindingTableState(AppInputConfig.current, filterString: filterString, inputConfFile: ConfTableState.manager.loadConfFile())
+    let showAllBindings = Preference.bool(for: .uiPrefBindingsTableIncludeBindingsFromAllSources)
+    return BindingTableState(AppInputConfig.current, filterString: filterString, inputConfFile: ConfTableState.manager.loadConfFile(),
+                             showAllBindings: showAllBindings)
   }
 
   /**
@@ -182,9 +208,12 @@ class BindingTableStateManager {
       return
     }
 
+    let showAllBindings = Preference.bool(for: .uiPrefBindingsTableIncludeBindingsFromAllSources)
+
     let newState = BindingTableState(appInputConfigNew,
                                      filterString: newFilterString ?? oldState.filterString,
-                                     inputConfFile: newInputConfFile ?? oldState.inputConfFile)
+                                     inputConfFile: newInputConfFile ?? oldState.inputConfFile,
+                                     showAllBindings: showAllBindings)
 
     BindingTableState.current = newState
 

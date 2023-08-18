@@ -8,51 +8,53 @@
 
 import Foundation
 
-/*
- Represents a snapshot of the state of tbe Key Bindings table, closely tied to an instance of `AppInputConfig.
- Like `AppInputConfig`, each instance is read-only and is designed to be rebuilt & replaced each time there is a change,
- to help ensure the integrity of its data. See `BindingTableStateManager` for all changes.
- Provides create/remove/update/delete operations on the table, and also completely handles filtering,  but is decoupled from UI code so that everything is cleaner.
- Should not contain any API calls to UI code. Other classes should call this class's public methods to get & update data.
- This class is downstream from `AppInputConfig.current`
- */
+/// • Represents a snapshot of the state of tbe Key Bindings table, generated downstream from an instance of `AppInputConfig`.
+/// • Like `AppInputConfig`, each instance is read-only and is designed to be rebuilt & replaced each time there is a change,
+///   to help ensure the integrity of its data. See `BindingTableStateManager` for all changes.
+/// • Provides create/remove/update/delete operations on the table, and also completely handles filtering,  but is decoupled from UI code
+///   so that everything is cleaner.
+/// • Should not contain any API calls to UI code. Other classes should call this class's public methods to get & update data.
 struct BindingTableState {
   static var current: BindingTableState = BindingTableStateManager.initialState()
   static let manager: BindingTableStateManager = BindingTableStateManager()
 
-  init(_ appInputConfig: AppInputConfig, filterString: String, inputConfFile: InputConfFile) {
+  init(_ appInputConfig: AppInputConfig, filterString: String, inputConfFile: InputConfFile, showAllBindings: Bool) {
     self.appInputConfig = appInputConfig
     self.inputConfFile = inputConfFile
     self.filterString = filterString
-    self.filterBimap = BindingTableState.buildFilterBimap(from: appInputConfig.bindingCandidateList, by: filterString)
+    self.showAllBindings = showAllBindings
+    self.filterBimap = BindingTableState.buildFilterBimap(from: appInputConfig.bindingCandidateList, by: filterString, confBindingsOnly: !showAllBindings)
   }
 
   // MARK: Data
 
-  // The state of the AppInputConfig on which the state of this table is based.
-  // While in almost all cases this should be identical to AppInputConfig.current, it is way simpler and more performant
-  // to allow some tiny amount of drift. We treat each AppInputConfig object as a read-only version of the application state,
-  // and each new AppInputConfig is an atomic update which replaces the previously received one via asynchronous updates.
+  /// The state of the AppInputConfig on which the state of this table is based.
+  /// While in almost all cases this should be identical to `AppInputConfig.current`, it is way simpler and more performant
+  /// to allow some tiny amount of drift. We treat each `AppInputConfig` object as a read-only version of the application state,
+  /// and each new AppInputConfig is an atomic update which replaces the previously received one via asynchronous updates.
   let appInputConfig: AppInputConfig
 
-  // The input conf file from where the bindings originated.
-  // This reference is just for convenience in case its metadata is needed; for updates to this data, consult `InputConfFileCache`.
+  /// The input conf file from where the bindings originated.
+  /// This reference is just for convenience in case its metadata is needed; for updates to this data, consult `InputConfFileCache`.
   let inputConfFile: InputConfFile
 
-  // Should be kept current with the value which the user enters in the search box. Empty string means no filter applied
+  /// Should be kept current with the value which the user enters in the search box. Empty string means no filter applied.
   let filterString: String
 
-  // The table rows currently displayed, which will change depending on the current `filterString`
+  /// Whether to include bindings from all sources in the displayed list, or just the conf file bindings.
+  let showAllBindings: Bool
+
+  /// The table rows currently displayed, which will change depending on the current `filterString`.
   private let filterBimap: BiDictionary<Int, Int>?
 
-  // The current *unfiltered* list of table rows
+  /// The current *unfiltered* list of table rows
   private var allRows: [InputBinding] {
     appInputConfig.bindingCandidateList
   }
 
   // MARK: Bindings Table CRUD
 
-  // The currently displayed list of table rows. Subset of `allRows`; exact number depends on `filterString`
+  /// The currently displayed list of table rows. Subset of `allRows`; exact number depends on `filterString`
   var displayedRowIndexes: IndexSet {
     if let filterBimap = filterBimap {
       var displayedIndexes = IndexSet()
@@ -64,7 +66,7 @@ struct BindingTableState {
     return IndexSet(integersIn: 0..<allRows.count)
   }
 
-  // The currently displayed list of table rows. Subset of `allRows`; exact number depends on `filterString`
+  /// The currently displayed list of table rows. Subset of `allRows`; exact number depends on `filterString`
   var displayedRows: [InputBinding] {
     if let filterBimap = filterBimap {
       return allRows.enumerated().compactMap({ filterBimap.keys.contains($0.offset) ? $0.element : nil })
@@ -79,7 +81,7 @@ struct BindingTableState {
     return allRows.count
   }
 
-  // Avoids hard program crash if index is invalid (which would happen for array dereference)
+  /// Avoids hard program crash if index is invalid (which would happen for array dereference)
   func getDisplayedRow(at displayIndex: Int) -> InputBinding? {
     guard displayIndex >= 0 else { return nil }
     let allRowsIndex: Int
@@ -261,7 +263,7 @@ struct BindingTableState {
     self.getDisplayedRow(at: rowIndex)?.canBeModified ?? false
   }
 
-  // Set `returnUnfilteredIndex` to `true` to always return unfiltered index, never filtered
+  /// Set `returnUnfilteredIndex` to `true` to always return unfiltered index, never filtered
   func getClosestValidInsertIndex(from requestedIndex: Int, isAfterNotAt: Bool = false, returnUnfilteredIndex: Bool = false) -> Int {
     var insertIndex: Int
     if requestedIndex < 0 {
@@ -354,8 +356,8 @@ struct BindingTableState {
     return filterBimap[key: unfilteredIndex]
   }
 
-  // Returns the index into allRows corresponding to the given filtered index.
-  // Returns nil if given `filteredIndex` is invalid or there is no active filter
+  /// Returns the index into allRows corresponding to the given filtered index.
+  /// Returns nil if given `filteredIndex` is invalid or there is no active filter
   func getUnfilteredIndex(fromFiltered filteredIndex: Int) -> Int? {
     guard filteredIndex >= 0 else {
       return nil
@@ -387,8 +389,8 @@ struct BindingTableState {
     return unfiltered
   }
 
-  private static func buildFilterBimap(from unfilteredRows: [InputBinding], by filterString: String) -> BiDictionary<Int, Int>? {
-    if filterString.isEmpty {
+  private static func buildFilterBimap(from unfilteredRows: [InputBinding], by filterString: String, confBindingsOnly: Bool) -> BiDictionary<Int, Int>? {
+    if filterString.isEmpty && !confBindingsOnly {
       return nil
     }
 
@@ -399,18 +401,19 @@ struct BindingTableState {
       // Match all occurrences of normalized key. Useful for finding duplicates
       let key = filterString.dropFirst(5)
       if key.isEmpty {
-        return biDict
+        return biDict  // empty set
       }
       let normalizedMpvKey = KeyCodeHelper.normalizeMpv(String(key))
       for (indexUnfiltered, bindingRow) in unfilteredRows.enumerated() {
-        if bindingRow.keyMapping.normalizedMpvKey == normalizedMpvKey {
+        if (!confBindingsOnly || bindingRow.origin == .confFile) && bindingRow.keyMapping.normalizedMpvKey == normalizedMpvKey {
           biDict[key: indexUnfiltered] = biDict.values.count
         }
       }
 
     } else {
+      // Regular match
       for (indexUnfiltered, bindingRow) in unfilteredRows.enumerated() {
-        if matches(bindingRow, filterString) {
+        if matches(bindingRow, filterString, confBindingsOnly: confBindingsOnly) {
           biDict[key: indexUnfiltered] = biDict.values.count
         }
       }
@@ -419,8 +422,10 @@ struct BindingTableState {
     return biDict
   }
 
-  private static func matches(_ binding: InputBinding, _ filterString: String) -> Bool {
-    return binding.getKeyColumnDisplay(raw: true).localizedStandardContains(filterString)
-    || binding.getActionColumnDisplay(raw: true).localizedStandardContains(filterString)
+  private static func matches(_ binding: InputBinding, _ filterString: String, confBindingsOnly: Bool) -> Bool {
+    return (!confBindingsOnly || binding.origin == .confFile)
+      && (filterString.isEmpty
+      || binding.getKeyColumnDisplay(raw: true).localizedStandardContains(filterString)
+      || binding.getActionColumnDisplay(raw: true).localizedStandardContains(filterString))
   }
 }

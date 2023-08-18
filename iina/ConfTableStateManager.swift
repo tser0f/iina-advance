@@ -10,10 +10,10 @@ import Foundation
 
 fileprivate let changeSelectedConfActionName: String = "Change Active Config"
 
-/*
+/**
  Responsible for changing the state of the Key Bindings Configuration ("Conf") table by building new versions of `ConfTableState`.
  For the most part, methods in this class should only be directly called by `ConfTableState`; but only this class will read & write
- the associated preferences, and handle undo & redo on the Conf table. 'ConfTableStateManager' can be thought of as a repository
+ the associated preferences, and handle undo & redo on the Conf table. `ConfTableStateManager` can be thought of as a repository
  for the Conf table, and `ConfTableState` as a single revision of its data.
  */
 class ConfTableStateManager: NSObject {

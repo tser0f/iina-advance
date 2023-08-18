@@ -8,18 +8,18 @@
 
 import Foundation
 
-// Application-scoped input config (key bindings)
-// The currently active bindings for the IINA app. Includes key lookup table, list of binding candidates, & other data
+/// Application-scoped input config (key bindings)
+/// The currently active bindings for the IINA app. Includes key lookup table, list of binding candidates, & other data
 struct AppInputConfig {
-  // return true to send notifications; false otherwise
+  /// Return true to send notifications; false otherwise
   typealias NotificationData = [AnyHashable : Any]
 
   static unowned var log = Logger.Subsystem.input
 
   // MARK: Shared input sections
 
-  // Contains static sections which occupy the bottom of every stack.
-  // Sort of like a prototype, but a change to any of these sections will immediately affects all players.
+  /// Contains static sections which occupy the bottom of every stack.
+  /// Sort of like a prototype, but a change to any of these sections will immediately affects all players.
   static private let sharedSectionStack = InputSectionStack(initialEnabledSections: [
     SharedInputSection(name: SharedInputSection.USER_CONF_SECTION_NAME, isForce: true, origin: .confFile),
     SharedInputSection(name: SharedInputSection.AUDIO_FILTERS_SECTION_NAME, isForce: true, origin: .savedFilter),
@@ -41,7 +41,7 @@ struct AppInputConfig {
   }
 
 
-  // This can get called a lot for menu item bindings [by MacOS], so setting onlyIfDifferent=true can possibly cut down on redundant work.
+  /// This can get called a lot for menu item bindings [by MacOS], so setting onlyIfDifferent=true can possibly cut down on redundant work.
   static func replaceMappings(forSharedSectionName: String, with mappings: [KeyMapping],
                               onlyIfDifferent: Bool = false, attaching userData: NotificationData? = nil) {
     InputSectionStack.dq.sync {
@@ -74,24 +74,21 @@ struct AppInputConfig {
     Preference.bool(for: .logKeyBindingsRebuild)
   }
 
-  // The current instance. The app can only ever support one set of active key bindings at a time, so each time a change is made,
-  // the active bindings are rebuilt and the old set is discarded.
+  /// The current instance. The app can only ever support one set of active key bindings at a time, so each time a change is made,
+  /// the active bindings are rebuilt and the old set is discarded.
   static private(set) var current = AppInputConfig(version: 0, bindingCandidateList: [], resolverDict: [:], userConfSectionStartIndex: 0, userConfSectionEndIndex: 0)
 
-  /*
-   This attempts to mimick the logic in mpv's `get_cmd_from_keys()` function in input/input.c.
-   Rebuilds `appBindingsList` and `currentResolverDict`, updating menu item key equivalents along the way.
-   When done, notifies the Preferences > Key Bindings table of the update so it can refresh itself, as well
-   as notifies the other callbacks supplied here as needed.
-   */
+  /// This attempts to mimick the logic in mpv's `get_cmd_from_keys()` function in input/input.c.
+  /// Rebuilds `appBindingsList` and `currentResolverDict`, updating menu item key equivalents along the way.
+  /// When done, notifies the Preferences > Key Bindings table of the update so it can refresh itself, as well
+  /// as notifies the other callbacks supplied here as needed.
   static func rebuildCurrent(attaching userData: NotificationData? = nil) {
     let requestedVersion = AppInputConfig.lastStartedVersion + 1
     log.verbose("Requesting AppInputConfig build v\(requestedVersion)")
 
     DispatchQueue.main.async {
 
-      // Optimization: drop all but the most recent request.
-      // (but not if there is an attachment to deliver)
+      // Optimization: drop all but the most recent request (but not if there is an attachment to deliver)
       let hasAttachedData = (userData?.count ?? 0) > 0
       if requestedVersion <= AppInputConfig.lastStartedVersion && !hasAttachedData {
         return
@@ -122,27 +119,27 @@ struct AppInputConfig {
 
   let version: Int
 
-  // The list of all bindings including those with duplicate keys. The list `bindingRowsAll` of `BindingTableState` should be kept
-  // consistent with this one as much as possible, but some brief inconsistencies may be acceptable due to the asynchronous nature of UI.
+  /// The list of all bindings including those with duplicate keys. The list `allRows` of `BindingTableState` should be kept
+  /// consistent with this one as much as possible, but some brief inconsistencies may be acceptable due to the asynchronous nature of UI.
   let bindingCandidateList: [InputBinding]
 
-  // This structure results from merging the layers of enabled input sections for the currently active player using precedence rules.
-  // Contains only the bindings which are currently enabled for this player, plus extra dummy "ignored" bindings for partial key sequences.
-  // For lookup use `resolveMpvKey()` or `matchActiveKeyBinding()` from the active player's input config.
+  /// This structure results from merging the layers of enabled input sections for the currently active player using precedence rules.
+  /// Contains only the bindings which are currently enabled for this player, plus extra dummy "ignored" bindings for partial key sequences.
+  /// For lookup use `resolveMpvKey()` or `matchActiveKeyBinding()` from the active player's input config.
   let resolverDict: [String: InputBinding]
 
-  // (Note: These two fields are used for optimizing the Key Bindings UI  but are otherwise not important.)
-  // The index into `bindingCandidateList` of the first binding in the "default" (user conf) section.
-  // • If the "default" section has no bindings, then this will be the index of the next binding after it in the list,
-  // and also equal to `userConfSectionEndIndex` (thus, userConfSectionSize = userConfSectionEndIndex - userConfSectionStartIndex = 0).
-  // • If the "default" section has no bindings *and* there are no other "strong" sections in the table, then this will be equal to the
-  // size of the list (and not a valid index for lookup)
-  // [Remember that larger index in `bindingCandidateList` equals higher priority; all "weak" sections' bindings are placed at lower
-  // indexes than "default"; and all "strong" sections' bindings (other than default) are placed at higher indexes than "default"].
+  /// (Note: These two fields are used for optimizing the Key Bindings UI  but are otherwise not important.)
+  /// The index into `bindingCandidateList` of the first binding in the "default" (user conf) section.
+  /// • If the "default" section has no bindings, then this will be the index of the next binding after it in the list,
+  /// and also equal to `userConfSectionEndIndex` (thus, userConfSectionSize = userConfSectionEndIndex - userConfSectionStartIndex = 0).
+  /// • If the "default" section has no bindings *and* there are no other "strong" sections in the table, then this will be equal to the
+  /// size of the list (and not a valid index for lookup)
+  /// [Remember that larger index in `bindingCandidateList` signifies higher priority; all "weak" sections' bindings are placed at lower
+  /// indexes than "default"; and all "strong" sections' bindings (other than default) are placed at higher indexes than "default"].
   let userConfSectionStartIndex: Int
-  // The index into `bindingCandidateList` of the last binding in the "default" section.
-  // If the "default" section has no bindings, then this will be the index of the first binding belonging to the next "strong" section,
-  // or simply `bindingCandidateList.count` if there are no sections after it.
+  /// The index into `bindingCandidateList` of the last binding in the "default" section.
+  /// If the "default" section has no bindings, then this will be the index of the first binding belonging to the next "strong" section,
+  /// or simply `bindingCandidateList.count` if there are no sections after it.
   let userConfSectionEndIndex: Int
 
   var userConfSectionLength: Int {
