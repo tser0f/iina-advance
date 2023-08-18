@@ -14,6 +14,9 @@ class KeyMapping: NSObject, Codable {
 
   let isIINACommand: Bool
 
+  // The MPV comment
+  let comment: String?
+
   // If present, holds the action selector & data for a menu item action.
   // May not match the actual menu item which is present in the menus.
   var menuItem: NSMenuItem? = nil
@@ -76,9 +79,6 @@ class KeyMapping: NSObject, Codable {
     }
   }
 
-  // The MPV comment
-  let comment: String?
-
   // Convenience method. Returns true if action is "ignore"
   var isIgnored: Bool {
     return rawAction == MPVCommand.ignore.rawValue
@@ -102,7 +102,7 @@ class KeyMapping: NSObject, Codable {
     rawKey = try container.decode(String.self, forKey: .rawKey)
     rawAction = try container.decode(String.self, forKey: .rawAction)
     isIINACommand = try container.decode(Bool.self, forKey: .isIINACommand)
-    comment = try container.decode(String.self, forKey: .comment)
+    comment = try container.decodeIfPresent(String.self, forKey: .comment)
     normalizedMpvKey = KeyCodeHelper.normalizeMpv(rawKey)
     action = rawAction.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
   }
