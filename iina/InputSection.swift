@@ -9,10 +9,11 @@
 import Foundation
 
 enum InputBindingOrigin: Codable {
-  case confFile    // Input config file (can include @iina commands or mpv commands)
-  case iinaPlugin  // Plugin menu key equivalent
-  case savedFilter // Key equivalent for saved video or audio filter
-  case libmpv      // Set by input sections transmitted over libmpv (almost always Lua scripts, but could include other RPC clients)
+  case confFile        /// Input config file (can include @iina commands or mpv commands)
+  case libmpv          /// Set via mpv input sections sent from libmpv (usually Lua scripts, but could include other RPC clients)
+  case iinaPlugin      /// Plugin menu key equivalent
+  case savedFilter     /// Key equivalent for saved video or audio filter
+  case builtInMenuItem /// Key equivalent for built-in menu items which don't belong to the other groups
 }
 
 protocol InputSection: CustomStringConvertible {
@@ -21,17 +22,13 @@ protocol InputSection: CustomStringConvertible {
 
   var keyMappingList: [KeyMapping] { get }
 
-  /*
-   - If true, indicates that all bindings in `keyMappingList` are "force" (AKA "strong")
-     according to the mpv vocabulary: each will always override any previous binding with the same key.
-   - If false, indicates that they are all "weak" (AKA "default", AKA "builtin"): each will only be enabled
-     if no previous binding with the same key has been set.
-   */
+  /// - If true, indicates that all bindings in `keyMappingList` are "force" (AKA "strong")
+  ///   according to the mpv vocabulary: each will always override any previous binding with the same key.
+  /// - If false, indicates that they are all "weak" (AKA "default", AKA "builtin"): each will only be enabled
+  ///   if no previous binding with the same key has been set.
   var isForce: Bool { get }
 
-  /*
-   Where this section came from (category). Note: "origin" is only used for display purposes
-   */
+  /// Where this section came from (category). Note: "origin" is only used for display purposes
   var origin: InputBindingOrigin { get }
 }
 
@@ -67,18 +64,20 @@ class MPVInputSection: InputSection {
 }
 
 class SharedInputSection: MPVInputSection {
-  // The "default" section contains the bindings loaded from the user's currently
-  // selected input conf file, and will be shared for all `PlayerCore` instances.
-  // Note: mpv expects this section to be named "default", so this constant should not be changed.
+  /// The "default" section contains the bindings loaded from the user's currently
+  /// selected input conf file, and will be shared for all `PlayerCore` instances.
+  /// Note: mpv expects this section to be named "default", so this constant should not be changed.
   static let USER_CONF_SECTION_NAME = "default"
 
   static let VIDEO_FILTERS_SECTION_NAME = "IINA Video Filters"
   static let AUDIO_FILTERS_SECTION_NAME = "IINA Audio Filters"
 
-  // One section to store the key equivalents for all the IINA plugins.
-  // Only one instance of this exists for the whole IINA app.
-  // Its `keyMappingList` will be regenerated each time the Plugin menu is updated.
+  /// One section to store the key equivalents for all the IINA plugins.
+  /// Only one instance of this exists for the whole IINA app.
+  /// Its `keyMappingList` will be regenerated each time the Plugin menu is updated.
   static let PLUGINS_SECTION_NAME = "IINA Plugins"
+
+  static let BUILTIN_MENU_ITEMS_SECTION_NAME = "IINA Built-in Menu Items"
 
   init(name: String, isForce: Bool, origin: InputBindingOrigin) {
     super.init(name: name, [], isForce: isForce, origin: origin)

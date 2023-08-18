@@ -12,9 +12,9 @@ class AppInputConfigBuilder {
   private unowned var log = Logger.Subsystem.input
   private let sectionStack: InputSectionStack
 
-  // See `AppInputConfig.userConfSectionStartIndex`
+  /// See `AppInputConfig.userConfSectionStartIndex`
   private var userConfSectionStartIndex: Int? = nil
-  // See `AppInputConfig.userConfSectionEndIndex`
+  /// See `AppInputConfig.userConfSectionEndIndex`
   private var userConfSectionEndIndex: Int? = nil
 
   init(_ sectionStack: InputSectionStack) {
@@ -24,8 +24,8 @@ class AppInputConfigBuilder {
   func build(version: Int) -> AppInputConfig {
     log.verbose("Starting rebuild of AppInputConfig v\(version)")
 
-    // Build the list of InputBindings, including redundancies. We're not done setting each's `isEnabled` field though.
-    // This also sets `userConfSectionStartIndex` and `userConfSectionEndIndex`.
+    /// Build the list of `InputBinding`s, including redundancies. We're not done setting each's `isEnabled` field though.
+    /// This also sets `userConfSectionStartIndex` and `userConfSectionEndIndex`.
     let bindingCandidateList = self.combineEnabledSectionBindings()
     var resolverDict: [String: InputBinding] = [:]
 
@@ -53,6 +53,11 @@ class AppInputConfigBuilder {
 
     // Do this last, after everything has been inserted, so that there is no risk of blocking other bindings from being inserted.
     fillInPartialSequences(&resolverDict)
+
+    let menuController = (NSApp.delegate as! AppDelegate).menuController!
+
+    // This will update all standard menu item bindings, and also update the isMenuItem status of each:
+    menuController.updateKeyEquivalents(from: bindingCandidateList)
 
     let appBindings = AppInputConfig(version: version, bindingCandidateList: bindingCandidateList, resolverDict: resolverDict,
                                      userConfSectionStartIndex: userConfSectionStartIndex!, userConfSectionEndIndex: userConfSectionEndIndex!)
@@ -141,7 +146,7 @@ class AppInputConfigBuilder {
     }
   }
 
-  /*
+  /**
    Derive the binding's metadata from the binding, and check for certain disqualifying commands and/or syntax.
    If invalid, the returned object will have `isEnabled` set to `false`; otherwise `isEnabled` will be set to `true`.
    Note: this mey or may not also create a different `KeyMapping` object with modified contents than the one supplied,
@@ -160,9 +165,9 @@ class AppInputConfigBuilder {
       displayMessage = "IINA does not support default-level (\"builtin\") bindings"
       isEnabled = false
     } else if let destinationSectionName = keyMapping.destinationSection {
-      // Special case: does the command contain an explicit input section using curly braces? (Example line: `Meta+K {default} screenshot`)
+      /// Special case: does the command contain an explicit input section using curly braces? (Example line: `Meta+K {default} screenshot`)
       if destinationSectionName == section.name {
-        // Drop "{section}" because it is unnecessary and will get in the way of libmpv command execution
+        /// Drop "{section}" because it is unnecessary and will get in the way of libmpv command execution
         let newRawAction = Array(keyMapping.action.dropFirst()).joined(separator: " ")
         finalMapping = KeyMapping(rawKey: keyMapping.rawKey, rawAction: newRawAction, comment: keyMapping.comment)
         Logger.log("Modifying binding to remove redundant section specifier (\(destinationSectionName.quoted)) for key: \(keyMapping.rawKey.quoted)", level: .verbose)
@@ -179,7 +184,7 @@ class AppInputConfigBuilder {
     return InputBinding(finalMapping, origin: section.origin, srcSectionName: section.name, isEnabled: isEnabled, displayMessage: displayMessage)
   }
 
-  // Sets an explicit "ignore" for all partial key sequence matches. This is all done so that the player window doesn't beep.
+  /// Sets an explicit "ignore" for all partial key sequence matches. This is all done so that the player window doesn't beep.
   private func fillInPartialSequences(_ activeBindingsDict: inout [String: InputBinding]) {
     var addedCount = 0
     for (keySequence, binding) in activeBindingsDict {

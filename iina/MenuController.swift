@@ -421,6 +421,8 @@ class MenuController: NSObject, NSMenuDelegate {
 
     inspector.action = #selector(PlayerWindowController.menuShowInspector(_:))
     miniPlayer.action = #selector(PlayerWindowController.menuSwitchToMiniPlayer(_:))
+
+    updateBuiltInMenuItemBindings()
   }
 
   // MARK: - Update Menus
@@ -832,6 +834,50 @@ class MenuController: NSObject, NSMenuDelegate {
     AppInputConfig.replaceMappings(forSharedSectionName: sectionName, with: keyMappings)
   }
 
+  // Refreshes list of built-in menu items, replacing the lastmost input section. They override all other bindings.
+  // Instead of trying to keep track of them manually, just see which menu items have bindings which  haven't already been
+  // accounted for.
+  func updateBuiltInMenuItemBindings() {
+    let builtInMenuItemBindings: [KeyMapping] = self.getBuiltInMenuItems(filterOut: AppInputConfig.current.resolverDict)
+    AppInputConfig.replaceMappings(forSharedSectionName: SharedInputSection.BUILTIN_MENU_ITEMS_SECTION_NAME, with: builtInMenuItemBindings, onlyIfDifferent: true)
+  }
+
+  private func getBuiltInMenuItems(filterOut filterDict: [String: InputBinding]) -> [KeyMapping] {
+    var menuItemMappings: [KeyMapping] = []
+
+    for menu in NSApp.mainMenu!.items {
+      // Skip Edit menu; it is not used
+      if menu.hasSubmenu, menu.title != "Edit", let subMenu = menu.submenu {
+        for subMenuItem in subMenu.items {
+          forMenuItemAndAllDescendents(subMenuItem, do: { menuItem in
+            guard !menuItem.keyEquivalent.isEmpty else { return }
+            let rawKey = KeyCodeHelper.macOSToMpv(key: menuItem.keyEquivalent, modifiers: menuItem.keyEquivalentModifierMask)
+            guard !rawKey.isEmpty else {
+              return
+            }
+
+            if let binding = filterDict[rawKey], binding.menuItem?.action == menuItem.action {
+              return
+            }
+            menuItemMappings.append(MenuItemMapping(rawKey: rawKey, sourceName: "built-in", menuItem: menuItem,
+                                                    actionDescription: menuItem.menuPathDescription))
+          })
+        }
+      }
+    }
+
+    return menuItemMappings
+  }
+
+  private func forMenuItemAndAllDescendents(_ menuItem: NSMenuItem, do callback: (NSMenuItem) -> Void) {
+      callback(menuItem)
+      if menuItem.hasSubmenu, let subMenu = menuItem.submenu {
+        for subMenuItem in subMenu.items {
+          forMenuItemAndAllDescendents(subMenuItem, do: callback)
+        }
+      }
+  }
+
   // MARK: Set key equivalents
 
   func updateKeyEquivalents(from candidateBindings: [InputBinding]) {
@@ -985,7 +1031,7 @@ class MenuController: NSObject, NSMenuDelegate {
           } else {
             // First qualifying mapping
 
-            binding.associatedMenuItem = menuItem  // so we can indicate it in UI
+            binding.keyMapping.menuItem = menuItem  // so we can indicate it in UI
             binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
 
             updateMenuItem(menuItem, kEqv: kEqv, kMdf: kMdf, l10nKey: l10nKey, value: value, extraData: extraData)

@@ -17,6 +17,8 @@ fileprivate var pluginIconColor: NSColor!
 fileprivate var libmpvIconColor: NSColor!
 @available(macOS 10.14, *)
 fileprivate var filterIconColor: NSColor!
+@available(macOS 10.14, *)
+fileprivate var builtinMenuItemIconColor: NSColor!
 
 @available(macOS 10.14, *)
 private func recomputeCustomColors() {
@@ -24,6 +26,7 @@ private func recomputeCustomColors() {
   pluginIconColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
   libmpvIconColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
   filterIconColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
+  builtinMenuItemIconColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
 }
 
 fileprivate let keyColumnIndex = 0
@@ -179,6 +182,9 @@ extension BindingTableViewController: NSTableViewDelegate {
           case .savedFilter:
             imageView.image = NSImage(systemSymbolName: "camera.filters", accessibilityDescription: nil)!
             imageView.contentTintColor = filterIconColor
+          case .builtInMenuItem:
+            imageView.image = NSImage(systemSymbolName: "menubar.rectangle", accessibilityDescription: nil)!
+            imageView.contentTintColor = builtinMenuItemIconColor
           default:
             if bindingRow.menuItem != nil {
               imageView.image = NSImage(systemSymbolName: "menubar.rectangle", accessibilityDescription: nil)!
@@ -790,6 +796,8 @@ extension BindingTableViewController: NSMenuDelegate {
         culprit = "the saved filter \(sourceName.quoted)"
       case .libmpv:
         culprit = "a Lua script or other mpv interface"
+      case .builtInMenuItem:
+        culprit = "a built-in menu item"
       default:
         Logger.log("Unrecognized binding origin for rowIndex \(clickedRowIndex): \(clickedRow.origin)", level: .error)
         culprit = "<unknown>"

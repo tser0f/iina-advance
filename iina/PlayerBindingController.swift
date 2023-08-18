@@ -167,9 +167,9 @@ class PlayerBindingController {
       log.verbose("Checking keySeq: \(keySequence.quoted)")
 
       if let binding = appBindings.resolverDict[keySequence] {
-        if binding.origin == .iinaPlugin {
+        if keyPressHistory.count > 1 && (binding.origin != .confFile && binding.origin != .libmpv) {
           // Make extra sure we don't resolve plugin bindings here
-          log.error("Sequence \(keySequence.quoted) resolved to an IINA plugin (and will be ignored)! This indicates a bug which should be fixed")
+          log.error("Sequence \(keySequence.quoted) resolved to a non-mpv binding and will be ignored (source=\(binding.origin))! This indicates a bug which should be fixed")
           appBindings.logEnabledBindings()
           return nil
         }

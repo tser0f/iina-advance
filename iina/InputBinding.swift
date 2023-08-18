@@ -19,7 +19,7 @@
  An instance of this class encapsulates all the data needed to display a single row/line in the Key Bindings table.
  */
 class InputBinding: NSObject {
-  // Will be nil for plugin bindings.
+  /// Will be `nil` for plugin bindings.
   let keyMapping: KeyMapping
 
   let origin: InputBindingOrigin
@@ -35,11 +35,7 @@ class InputBinding: NSObject {
   
   var isEnabled: Bool
 
-  // The menu item, if any, which was matched with the `keyMapping`'s key using `MenuController`'s matching logic.
-  // If `keyMapping` is already a `MenuItemMapping`, this field is not needed or used.
-  var associatedMenuItem: NSMenuItem? = nil
-
-  // for use in UI only
+  /// for use in UI only
   var displayMessage: String
 
   init(_ keyMapping: KeyMapping, origin: InputBindingOrigin, srcSectionName: String, menuItem: NSMenuItem? = nil, isEnabled: Bool = true,
@@ -51,35 +47,29 @@ class InputBinding: NSObject {
     self.displayMessage = displayMessage
   }
 
-  // Only mpv bindings in the "default" section can be modified or deleted
+  /// Only mpv bindings in the "default" section can be modified or deleted
   var canBeModified: Bool {
     get {
       self.origin == .confFile
     }
   }
 
-  // Only mpv bindings can be copied
+  /// Only mpv bindings can be copied
   var canBeCopied: Bool {
     get {
       self.origin == .confFile || self.origin == .libmpv
     }
   }
 
-  // Clones this `InputBinding`, but using the given `keyMapping` if provided.
+  /// Clones this `InputBinding`, but using the given `keyMapping` if provided.
   func shallowClone(keyMapping: KeyMapping? = nil) -> InputBinding {
     return InputBinding(keyMapping ?? self.keyMapping, origin: self.origin, srcSectionName: self.srcSectionName)
   }
 
-  /*
-   Will be non-nil for all origin == `.iinaPlugin`, `.savedFilter`, and some `.conf`
-   */
+  /// Will be non-nil for all origin == `.iinaPlugin`, `.savedFilter`, and some `.conf`
   var menuItem: NSMenuItem? {
     get {
-      if let intrinsicMenuItem = self.keyMapping.menuItem {
-        return intrinsicMenuItem
-      } else {
-        return associatedMenuItem
-      }
+      return self.keyMapping.menuItem
     }
   }
 
@@ -87,7 +77,7 @@ class InputBinding: NSObject {
     return "{\(srcSectionName)} \(keyMapping)"
   }
 
-  // Hashable protocol conformance, to enable diffing
+  /// Hashable protocol conformance, to enable diffing
   override var hash: Int {
     var hasher = Hasher()
     hasher.combine(keyMapping.rawKey)
@@ -95,7 +85,7 @@ class InputBinding: NSObject {
     return hasher.finalize()
   }
 
-  // Equatable protocol conformance, to enable diffing
+  /// Equatable protocol conformance, to enable diffing
   override func isEqual(_ object: Any?) -> Bool {
     guard let other = object as? InputBinding else {
       return false

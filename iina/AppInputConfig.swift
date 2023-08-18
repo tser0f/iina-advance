@@ -24,7 +24,8 @@ struct AppInputConfig {
     SharedInputSection(name: SharedInputSection.USER_CONF_SECTION_NAME, isForce: true, origin: .confFile),
     SharedInputSection(name: SharedInputSection.AUDIO_FILTERS_SECTION_NAME, isForce: true, origin: .savedFilter),
     SharedInputSection(name: SharedInputSection.VIDEO_FILTERS_SECTION_NAME, isForce: true, origin: .savedFilter),
-    SharedInputSection(name: SharedInputSection.PLUGINS_SECTION_NAME, isForce: false, origin: .iinaPlugin)
+    SharedInputSection(name: SharedInputSection.PLUGINS_SECTION_NAME, isForce: false, origin: .iinaPlugin),
+    SharedInputSection(name: SharedInputSection.BUILTIN_MENU_ITEMS_SECTION_NAME, isForce: true, origin: .builtInMenuItem)
   ])
 
   static var sharedSections: [InputSection] {
@@ -104,9 +105,6 @@ struct AppInputConfig {
 
       let builder = activePlayerBindingController.makeAppInputConfigBuilder()
       let appInputConfigNew = builder.build(version: requestedVersion)
-
-      // This will update all standard menu item bindings, and also update the isMenuItem status of each:
-      (NSApp.delegate as! AppDelegate).menuController.updateKeyEquivalents(from: appInputConfigNew.bindingCandidateList)
 
       AppInputConfig.current = appInputConfigNew
 
