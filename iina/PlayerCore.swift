@@ -589,7 +589,7 @@ class PlayerCore: NSObject {
     miniPlayer.showWindow(self)
 
     videoView.videoLayer.draw(forced: true)
-    
+
     events.emit(.musicModeChanged, data: true)
   }
 
@@ -613,7 +613,7 @@ class PlayerCore: NSObject {
     videoView.videoLayer.draw(forced: true)
 
     mainWindow.updateTitle()
-    
+
     events.emit(.musicModeChanged, data: false)
     // show main window
     mainWindow.showWindow(self)
@@ -969,7 +969,7 @@ class PlayerCore: NSObject {
     }
     mpv.command(.set, args: [optionName, value.description])
   }
-  
+
   func loadExternalVideoFile(_ url: URL) {
     let code = mpv.command(.videoAdd, args: [url.path], checkError: false)
     if code < 0 {
