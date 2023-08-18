@@ -564,20 +564,22 @@ class KeyCodeHelper {
     return macKeyList.joined(separator: ", ")
   }
 
-  static func macOSToMpv(key: String, modifiers: NSEvent.ModifierFlags) -> String {
-    var mpvTokens: [String] = []
-    for (modifierFlag, mpvModifier) in modifierFlagsToMpv {
-      if modifiers.contains(modifierFlag) {
-        mpvTokens.append(mpvModifier)
+  static func macOSToMpv(key: String, modifiers: NSEvent.ModifierFlags, useExplicitShift: Bool = false) -> String {
+    var modifiers = modifiers
+    var key = key
+    // MacOS key equivalents always display single characters in uppercase, but mpv can also use "Shift+"
+    if let uScalar = key.first?.unicodeScalars.first, NSCharacterSet.uppercaseLetters.contains(uScalar) {
+      if useExplicitShift {
+        modifiers.insert(.shift)
+        key = key.count == 1 ? key.lowercased() : key
+      } else {
+        modifiers.remove(.shift)
       }
     }
 
-    // MacOS key equivalents always display single characters in uppercase, but mpv will interpret this as adding "Shift".
-    // If there is supposed to be a Shift key pressed, it will have been in the modifier flags above,
-    // and converted to explicit "+Shift".
-    let cleanKey = key.count == 1 ? key.lowercased() : key
-    mpvTokens.append(cleanKey)
-    return mpvTokens.joined(separator: "+")
+    var tokens = modifierFlagsToMpv.compactMap{ modifiers.contains($0.0) ? $0.1 : nil }
+    tokens.append(key)
+    return tokens.joined(separator: "+")
   }
 }
 
