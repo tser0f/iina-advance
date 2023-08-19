@@ -8,16 +8,14 @@
 
 import Foundation
 
-/**
- Each instance of this class:
- - Represents an atomic state change to the UI of an associated `EditableTableView`
- - Contains all the metadata (though not the actual data) needed to transition it from {State_N} to {State_N+1}, where each state refers
-   to a single user action or the response to some external update. All of thiis is needed in order to make AppKit animations work.
-
- In order to facilitate table animations, and to get around some AppKit limitations such as the tendency
- for it to lose track of the row selection, much additional boilerplate is needed to keep track of state.
- This objects attempts to provide as much of this as possible and provide future reusability.
- */
+/// Each instance of this class:
+/// • Represents an atomic state change to the UI of an associated `EditableTableView`
+/// • Contains all the metadata (though not the actual data) needed to transition from {State_N} to {State_N+1}, where each state refers
+///   to a single user action or the response to some external update. All of thiis is needed in order to make AppKit animations work.
+///
+/// In order to facilitate table animations, and to get around some AppKit limitations such as the tendency
+/// for it to lose track of the row selection, much additional boilerplate is needed to keep track of state.
+/// This objects attempts to provide as much of this as possible and provide future reusability.
 class TableUIChange {
   // MARK: - Static definitions
 
@@ -54,36 +52,38 @@ class TableUIChange {
   var toRemove: IndexSet? = nil
   var toInsert: IndexSet? = nil
   var toUpdate: IndexSet? = nil
-  // Used by ContentChangeType.moveRows. Ordered list of pairs of (fromIndex, toIndex)
+  /// Used by `ContentChangeType.moveRows`. Ordered list of pairs of (fromIndex, toIndex)
   var toMove: [(Int, Int)]? = nil
 
-  // NSTableView already updates previous selection indexes if added/removed rows cause them to move.
-  // To select added rows, or select next index after remove, etc, will need an explicit call to update selection afterwards.
-  // Will not call to update selection if this is nil.
+  /// `NSTableView` already updates previous selection indexes if added/removed rows cause them to move.
+  /// To select added rows, or select next index after remove, etc, will need an explicit call to update selection afterwards.
+  /// Will not call to update selection if this is nil.
   var newSelectedRowIndexes: IndexSet? = nil
 
-  // MARK: - Optional vars
+  /// MARK: - Optional vars
 
-  // Provide this to restore old selection when calculating the inverse of this change (when doing an undo of "move").
+  /// Provide this to restore old selection when calculating the inverse of this change (when doing an undo of "move").
   // TODO: (optimization) figure out how to calculate this from `toMove` instead of storing this
   var oldSelectedRowIndexes: IndexSet? = nil
 
-  // Optional animations
+  /// Optional animations
   var flashBefore: IndexSet? = nil
   var flashAfter: IndexSet? = nil
 
-  // Animation overrides. Leave nil to use the value from the table
+  /// Animation overrides. Leave nil to use the value from the table
   var rowInsertAnimation: NSTableView.AnimationOptions? = nil
   var rowRemoveAnimation: NSTableView.AnimationOptions? = nil
 
-  // If true, reload all existing rows after executing the primary differences (to cover the case that one of them may have changed)
+  /// If true, reload all existing rows after executing the primary differences (to cover the case that one of them may have changed)
   var reloadAllExistingRows: Bool = false
 
-  // If true, and only if there are selected row(s), scroll the table so that the first selected row is
-  // visible to the user. Does this after `reloadAllExistingRows` but before `completionHandler`.
-  var scrollToFirstSelectedRow: Bool = true
+  /// If true:
+  /// • If there are selected row(s), scroll the table so that the first selected row is visible to the user.
+  /// • Else if there are inserted rows, scroll the table so that the last inserted row is visible
+  /// Does this after `reloadAllExistingRows` but before `completionHandler`.
+  var scrollToShowChangedRow: Bool = true
 
-  // A method which, if supplied, is called at the end of execute()
+  /// A method which, if supplied, is called at the end of execute()
   let completionHandler: TableUIChange.CompletionHandler?
 
   var hasRemove: Bool {
@@ -147,7 +147,7 @@ class TableUIChange {
 
     // 3. Change row selection.
     // MUST NOT DO THIS IN THE SAME ANIMATION GROUP AS ROW UPDATES or else weird selection "burn-in" can result
-    animationGroups.append { context in
+    animationGroups.append { [self] context in
       // track this so we don't do it more than once (it fires the selectionChangedListener every time)
       let wantsReloadOfExistingRows: Bool
       if self.changeType == .reloadAll {
@@ -163,7 +163,7 @@ class TableUIChange {
 
       if wantsReloadOfExistingRows {
         Logger.log("TableUIChange: reloading existing rows", level: .verbose)
-        // Also uses `newSelectedRowIndexes`, if it is not nil:
+        /// Also uses `newSelectedRowIndexes`, if it is not nil:
         tableView.reloadExistingRows(reselectRowsAfter: true, usingNewSelection: self.newSelectedRowIndexes)
       } else if let newSelectedRowIndexes = self.newSelectedRowIndexes {
         Logger.log("TableUIChange: selecting \(newSelectedRowIndexes.count) rows", level: .verbose)
@@ -172,10 +172,27 @@ class TableUIChange {
         Logger.log("TableUIChange: no change to row selection", level: .verbose)
       }
 
-      if self.scrollToFirstSelectedRow,
-         let newSelectedRowIndexes = self.newSelectedRowIndexes,
-         let firstSelectedRow = newSelectedRowIndexes.first {
-        tableView.scrollRowToVisible(firstSelectedRow)
+      if self.scrollToShowChangedRow {
+        if let newSelectedRowIndexes = self.newSelectedRowIndexes,
+           let firstSelectedRowIndex = newSelectedRowIndexes.first {
+          Logger.log("TableUIChange: scrolling to first selected row index: \(firstSelectedRowIndex)", level: .verbose)
+          tableView.scrollRowToVisible(firstSelectedRowIndex)
+        } else if changeType == .wholeTableDiff {
+          // TODO: figure out how to show changed row while not changing if not necessary
+        } else if changeType != .reloadAll {
+          if let lastInsertedRowIndex = self.toInsert?.last {
+            Logger.log("TableUIChange: scrolling to last inserted row index: \(lastInsertedRowIndex)", level: .verbose)
+            tableView.scrollRowToVisible(lastInsertedRowIndex)
+          } else if let lastRemovedRowIndex = self.toRemove?.last {
+            let index = min(max(0, tableView.numberOfRows - 1), lastRemovedRowIndex)
+            Logger.log("TableUIChange: scrolling to last removed row index: \(index)", level: .verbose)
+            tableView.scrollRowToVisible(index)
+          } else if let (_, newIndex) = self.toMove?.last {
+            let index = min(max(0, tableView.numberOfRows - 1), newIndex)
+            Logger.log("TableUIChange: scrolling to last moved row index: \(index)", level: .verbose)
+            tableView.scrollRowToVisible(index)
+          }
+        }
       }
     }
 
@@ -263,7 +280,7 @@ class TableUIChange {
   }
 
   // Set up a flash animation to make it clear which rows were updated or removed.
-  // Don't need to worry about moves & inserts, because those will be highlighted
+  // Don't need to worry about moves & inserts, because those will be highlighted.
   func setUpFlashForChangedRows() {
     flashBefore = IndexSet()
     if let toRemove = self.toRemove {
@@ -307,7 +324,7 @@ class TableUIChange {
     clone.rowInsertAnimation = self.rowInsertAnimation
     clone.rowRemoveAnimation = self.rowRemoveAnimation
     clone.reloadAllExistingRows = self.reloadAllExistingRows
-    clone.scrollToFirstSelectedRow = self.scrollToFirstSelectedRow
+    clone.scrollToShowChangedRow = self.scrollToShowChangedRow
 
     return clone
   }
