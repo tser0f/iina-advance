@@ -27,7 +27,7 @@ fileprivate let isMacOS11: Bool = {
  Note that we can't use this trick to get it from our window instance directly, because our window has the
  `fullSizeContentView` style and so its `frameRect` does not include any extra space for its title bar.
  */
-fileprivate let StandardTitleBarHeight: CGFloat = {
+fileprivate let standardTitleBarHeight: CGFloat = {
   // Probably doesn't matter what dimensions we pick for the dummy contentRect, but to be safe let's make them nonzero.
   let dummyContentRect = NSRect(x: 0, y: 0, width: 10, height: 10)
   let dummyFrameRect = NSWindow.frameRect(forContentRect: dummyContentRect, styleMask: .titled)
@@ -79,13 +79,22 @@ class MainWindowController: PlayerWindowController {
     return NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
   }()
 
+  private var StandardTitleBarHeight: CGFloat {
+    get {
+      return standardTitleBarHeight
+      // TODO
+//      guard let window = window else { return 0 }
+//      return window.styleMask.contains(.titled) ? standardTitleBarHeight : 0
+    }
+  }
+
   lazy var reducedTitleBarHeight: CGFloat = {
     if let heightOfCloseButton = window?.standardWindowButton(.closeButton)?.frame.height {
       // add 2 because button's bounds seems to be a bit larger than its visible size
-      return StandardTitleBarHeight - ((StandardTitleBarHeight - heightOfCloseButton) / 2 + 2)
+      return standardTitleBarHeight - ((standardTitleBarHeight - heightOfCloseButton) / 2 + 2)
     }
     log.error("reducedTitleBarHeight may be incorrect (could not get close button)")
-    return StandardTitleBarHeight
+    return standardTitleBarHeight
   }()
 
   // MARK: - Objects, Views
@@ -727,6 +736,11 @@ class MainWindowController: PlayerWindowController {
     window.backgroundColor = .black
 //    window.backgroundColor = .clear
 
+//    window.styleMask.remove(.titled)
+//    window.styleMask.insert(.resizable)
+//    window.styleMask.insert(.closable)
+//    window.styleMask.insert(.miniaturizable)
+
     // Sidebars
 
     leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
@@ -741,21 +755,20 @@ class MainWindowController: PlayerWindowController {
     // Titlebar accessories
 
     // Update this here to reduce animation jitter on older versions of MacOS:
-    videoContainerTopOffsetFromTopBarTopConstraint.constant = StandardTitleBarHeight
+    videoContainerTopOffsetFromTopBarTopConstraint.constant = standardTitleBarHeight
 
     leadingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     leadingTitlebarAccesoryViewController.view = leadingTitleBarAccessoryView
     leadingTitlebarAccesoryViewController.layoutAttribute = .leading
-    window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
-    leadingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
-    leadingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight).isActive = true
 
     trailingTitlebarAccesoryViewController = NSTitlebarAccessoryViewController()
     trailingTitlebarAccesoryViewController.view = trailingTitleBarAccessoryView
     trailingTitlebarAccesoryViewController.layoutAttribute = .trailing
-    window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
-    trailingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
-    trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: StandardTitleBarHeight).isActive = true
+
+    leadingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: standardTitleBarHeight).isActive = true
+    trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: standardTitleBarHeight).isActive = true
+
+    addTitleBarAccessoryViews()
 
     // size
     window.minSize = AppData.minVideoSize
@@ -1903,6 +1916,9 @@ class MainWindowController: PlayerWindowController {
     if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
       window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController)
       window.addTitlebarAccessoryViewController(trailingTitlebarAccesoryViewController)
+
+      trailingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
+      leadingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
     }
   }
 
@@ -2071,7 +2087,7 @@ class MainWindowController: PlayerWindowController {
           oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
 
           oscFloatingLowerView.addSubview(fragPositionSliderView)
-          Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": fragPositionSliderView])
+          fragPositionSliderView.addConstraintsToFillSuperview()
           // center control bar
           let cph = Preference.float(for: .controlBarPositionHorizontal)
           let cpv = Preference.float(for: .controlBarPositionVertical)
@@ -2641,7 +2657,6 @@ class MainWindowController: PlayerWindowController {
         NSApp.presentationOptions.insert(.autoHideMenuBar)
         NSApp.presentationOptions.insert(.autoHideDock)
 
-        (window as! MainWindow).forceKeyAndMain = true
         window.level = .floating
       } else {
         /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
@@ -2787,7 +2802,6 @@ class MainWindowController: PlayerWindowController {
         window.styleMask.insert(.resizable)
         if #available(macOS 10.16, *) {
           window.styleMask.insert(.titled)
-          (window as! MainWindow).forceKeyAndMain = false
           window.level = .normal
         } else {
           window.styleMask.remove(.fullScreen)
@@ -3240,12 +3254,15 @@ class MainWindowController: PlayerWindowController {
   private func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = UIAnimation.DefaultDuration,
                                                  forceShowTopBar: Bool = false) -> [UIAnimation.Task] {
     var animationTasks: [UIAnimation.Task] = []
+    guard let window = window else { return animationTasks }
+
+    let showTopBar = forceShowTopBar || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover
 
     guard !player.disableUI && !isInInteractiveMode else {
       return animationTasks
     }
 
-    guard forceShowTopBar || fadeableViewsAnimationState == .hidden else {
+    guard showTopBar || fadeableViewsAnimationState == .hidden else {
       if restartFadeTimer {
         resetFadeTimer()
       } else {
@@ -3255,7 +3272,6 @@ class MainWindowController: PlayerWindowController {
     }
 
     let currentLayout = self.currentLayout
-    let showTopBar = forceShowTopBar || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover
 
     animationTasks.append(UIAnimation.Task(duration: duration, { [self] in
       log.verbose("Showing fadeable views")

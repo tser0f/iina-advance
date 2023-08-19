@@ -9,7 +9,6 @@
 import Cocoa
 
 class MainWindow: NSWindow {
-  var forceKeyAndMain = false
   private var useZeroDurationForNextResize = false
 
   /**
@@ -77,11 +76,17 @@ class MainWindow: NSWindow {
   }
 
   override var canBecomeKey: Bool {
-    forceKeyAndMain ? true : super.canBecomeKey
+    if !self.styleMask.contains(.titled) {
+      return true
+    }
+    return super.canBecomeKey
   }
   
   override var canBecomeMain: Bool {
-    forceKeyAndMain ? true : super.canBecomeMain
+    if !self.styleMask.contains(.titled) {
+      return true
+    }
+    return super.canBecomeMain
   }
 
   /// Setting `alphaValue=0` for Close & Miniaturize (red & green traffic lights) buttons causes `File` > `Close`
