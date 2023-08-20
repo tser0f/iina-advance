@@ -66,6 +66,9 @@ struct Preference {
     /** Enter fill screen when open (bool) */
     static let fullScreenWhenOpen = Key("fullScreenWhenOpen")
 
+    /// Use window `styleMask` which does not include `.titled`. Has sharp corners, and no title bar
+    static let useLegacyWindowedMode = Key("useLegacyWindowedMode")
+
     static let useLegacyFullScreen = Key("useLegacyFullScreen")
 
     /** Black out other monitors while fullscreen (bool) */
@@ -956,6 +959,7 @@ struct Preference {
     .osdTextSize: Float(20),
     .softVolume: 100,
     .arrowButtonAction: ArrowButtonAction.speed.rawValue,
+    .useLegacyWindowedMode: false,
     .pauseWhenOpen: false,
     .fullScreenWhenOpen: false,
     .useLegacyFullScreen: false,

@@ -79,15 +79,6 @@ class MainWindowController: PlayerWindowController {
     return NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
   }()
 
-  private var StandardTitleBarHeight: CGFloat {
-    get {
-      return standardTitleBarHeight
-      // TODO
-//      guard let window = window else { return 0 }
-//      return window.styleMask.contains(.titled) ? standardTitleBarHeight : 0
-    }
-  }
-
   lazy var reducedTitleBarHeight: CGFloat = {
     if let heightOfCloseButton = window?.standardWindowButton(.closeButton)?.frame.height {
       // add 2 because button's bounds seems to be a bit larger than its visible size
@@ -379,7 +370,8 @@ class MainWindowController: PlayerWindowController {
     .settingsTabGroupLocation,
     .playlistTabGroupLocation,
     .showLeadingSidebarToggleButton,
-    .showTrailingSidebarToggleButton
+    .showTrailingSidebarToggleButton,
+    .useLegacyWindowedMode
   ]
 
   override var observedPrefKeys: [Preference.Key] {
@@ -402,7 +394,8 @@ class MainWindowController: PlayerWindowController {
       PK.showTrailingSidebarToggleButton.rawValue,
       PK.oscBarToolbarIconSize.rawValue,
       PK.oscBarToolbarIconSpacing.rawValue,
-      PK.controlBarToolbarButtons.rawValue:
+      PK.controlBarToolbarButtons.rawValue,
+      PK.useLegacyWindowedMode.rawValue:
 
       updateTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
@@ -735,11 +728,6 @@ class MainWindowController: PlayerWindowController {
     // set background color to black
     window.backgroundColor = .black
 //    window.backgroundColor = .clear
-
-//    window.styleMask.remove(.titled)
-//    window.styleMask.insert(.resizable)
-//    window.styleMask.insert(.closable)
-//    window.styleMask.insert(.miniaturizable)
 
     // Sidebars
 
@@ -1241,6 +1229,7 @@ class MainWindowController: PlayerWindowController {
     let trailingSidebarPlacement: Preference.PanelPlacement
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
+    let useLegacyWindowedMode: Bool
 
     static func fromPreferences(andSpec prevSpec: LayoutSpec) -> LayoutSpec {
       // If in fullscreen, top & bottom bars are always .insideVideo
@@ -1251,7 +1240,8 @@ class MainWindowController: PlayerWindowController {
                         leadingSidebarPlacement: Preference.enum(for: .leadingSidebarPlacement),
                         trailingSidebarPlacement: Preference.enum(for: .trailingSidebarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
-                        oscPosition: Preference.enum(for: .oscPosition))
+                        oscPosition: Preference.enum(for: .oscPosition),
+                        useLegacyWindowedMode: Preference.bool(for: .useLegacyWindowedMode))
     }
 
     // Matches what is shown in the XIB
@@ -1264,7 +1254,8 @@ class MainWindowController: PlayerWindowController {
                         leadingSidebarPlacement:.insideVideo,
                         trailingSidebarPlacement: .insideVideo,
                         enableOSC: false,
-                        oscPosition: .floating)
+                        oscPosition: .floating,
+                        useLegacyWindowedMode: false)
     }
 
     // Specify any properties
@@ -1273,7 +1264,9 @@ class MainWindowController: PlayerWindowController {
                bottomBarPlacement: Preference.PanelPlacement? = nil,
                leadingSidebarPlacement: Preference.PanelPlacement? = nil,
                trailingSidebarPlacement: Preference.PanelPlacement? = nil,
-               enableOSC: Bool? = nil) -> LayoutSpec {
+               enableOSC: Bool? = nil,
+               oscPosition: Preference.OSCPosition? = nil,
+               useLegacyWindowedMode: Bool? = nil) -> LayoutSpec {
       return LayoutSpec(leadingSidebar: self.leadingSidebar,
                         trailingSidebar: self.trailingSidebar,
                         isFullScreen: isFullScreen ?? self.isFullScreen,
@@ -1282,7 +1275,8 @@ class MainWindowController: PlayerWindowController {
                         leadingSidebarPlacement: leadingSidebarPlacement ?? self.leadingSidebarPlacement,
                         trailingSidebarPlacement: trailingSidebarPlacement ?? self.trailingSidebarPlacement,
                         enableOSC: enableOSC ?? self.enableOSC,
-                        oscPosition: self.oscPosition)
+                        oscPosition: self.oscPosition,
+                        useLegacyWindowedMode: useLegacyWindowedMode ?? self.useLegacyWindowedMode)
     }
   }
 
@@ -1465,24 +1459,28 @@ class MainWindowController: PlayerWindowController {
       self.isInitialLayout = isInitialLayout
     }
 
+    var isTogglingTitledWindowStyle: Bool {
+      return fromLayout.spec.useLegacyWindowedMode != toLayout.spec.useLegacyWindowedMode
+    }
+
     var isTogglingFullScreen: Bool {
-      return self.fromLayout.isFullScreen != self.toLayout.isFullScreen
+      return fromLayout.isFullScreen != toLayout.isFullScreen
     }
 
     var isTogglingToFullScreen: Bool {
-      return !self.fromLayout.isFullScreen && self.toLayout.isFullScreen
+      return !fromLayout.isFullScreen && toLayout.isFullScreen
     }
 
     var isTogglingFromFullScreen: Bool {
-      return self.fromLayout.isFullScreen && !self.toLayout.isFullScreen
+      return fromLayout.isFullScreen && !toLayout.isFullScreen
     }
 
     var isTopBarPlacementChanging: Bool {
-      return self.fromLayout.topBarPlacement != self.toLayout.topBarPlacement
+      return fromLayout.topBarPlacement != toLayout.topBarPlacement
     }
 
     var isBottomBarPlacementChanging: Bool {
-      return self.fromLayout.bottomBarPlacement != self.toLayout.bottomBarPlacement
+      return fromLayout.bottomBarPlacement != toLayout.bottomBarPlacement
     }
   }
 
@@ -1627,12 +1625,14 @@ class MainWindowController: PlayerWindowController {
 
     // Title bar & title bar accessories:
 
+    let needToHideTopBar = transition.isTopBarPlacementChanging || transition.isTogglingTitledWindowStyle
+
     // Hide all title bar items if top bar placement is changing
-    if futureLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
+    if needToHideTopBar || futureLayout.titleIconAndText == .hidden {
       apply(visibility: .hidden, documentIconButton, titleTextField)
     }
 
-    if futureLayout.trafficLightButtons == .hidden || transition.isTopBarPlacementChanging {
+    if needToHideTopBar || futureLayout.trafficLightButtons == .hidden {
       /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
       /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
       for button in trafficLightButtons {
@@ -1640,7 +1640,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    if transition.isTopBarPlacementChanging || futureLayout.titlebarAccessoryViewControllers == .hidden {
+    if needToHideTopBar || futureLayout.titlebarAccessoryViewControllers == .hidden {
       // Hide all title bar accessories (if needed):
       leadingTitleBarAccessoryView.alphaValue = 0
       fadeableViewsTopBar.remove(leadingTitleBarAccessoryView)
@@ -1775,6 +1775,27 @@ class MainWindowController: PlayerWindowController {
     let futureLayout = transition.toLayout
     log.verbose("UpdateHiddenViewsAndConstraints")
 
+    /// if `isTogglingTitledWindowStyle==true && isTogglingFromFullScreen==true`, we are toggling out of legacy FS
+    /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
+    if transition.isTogglingTitledWindowStyle && !transition.isTogglingFromFullScreen {
+      if transition.toLayout.spec.useLegacyWindowedMode {
+          window.styleMask.remove(.titled)
+          window.styleMask.insert(.resizable)
+          window.styleMask.insert(.closable)
+          window.styleMask.insert(.miniaturizable)
+      } else {
+        window.styleMask.insert(.titled)
+
+        /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
+        for button in trafficLightButtons {
+          button.isHidden = true
+        }
+        window.titleVisibility = .hidden
+      }
+      // Changing the window style while paused will lose displayed video. Draw it again:
+      videoView.videoLayer.draw(forced: true)
+    }
+
     applyHiddenOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
     applyHiddenOnly(visibility: futureLayout.pinToTopButton, to: pinToTopButton)
@@ -1900,6 +1921,10 @@ class MainWindowController: PlayerWindowController {
           button.isHidden = false
         }
       }
+
+      /// Title bar accessories get removed by legacy fullscreen or if window `styleMask` did not include `.titled`.
+      /// Add them back:
+      addTitleBarAccessoryViews()
     }
 
     applyShowableOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
@@ -2037,10 +2062,10 @@ class MainWindowController: PlayerWindowController {
       futureLayout.topBarView = visibleState
       futureLayout.trafficLightButtons = visibleState
       futureLayout.titleIconAndText = visibleState
-      futureLayout.titleBarHeight = StandardTitleBarHeight  // may be overridden by OSC layout
+      futureLayout.titleBarHeight = layoutSpec.useLegacyWindowedMode ? 0 : standardTitleBarHeight  // may be overridden by OSC layout
 
       if futureLayout.topBarPlacement == .insideVideo {
-        futureLayout.osdMinOffsetFromTop = StandardTitleBarHeight + 8
+        futureLayout.osdMinOffsetFromTop = futureLayout.titleBarHeight + 8
       }
 
       futureLayout.titlebarAccessoryViewControllers = visibleState
@@ -2633,7 +2658,7 @@ class MainWindowController: PlayerWindowController {
     })
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
-    let fullscreenLayout = currentLayout.spec.clone(isFullScreen: true)
+    let fullscreenLayout = currentLayout.spec.clone(isFullScreen: true, useLegacyWindowedMode: isLegacy ? true : currentLayout.spec.useLegacyWindowedMode)
     let transition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
       if isLegacy {
         // set window frame and in some cases content view frame
@@ -2773,7 +2798,7 @@ class MainWindowController: PlayerWindowController {
 
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = currentLayout.spec.clone(isFullScreen: false)
+    let windowedLayout = currentLayout.spec.clone(isFullScreen: false, useLegacyWindowedMode: Preference.bool(for: .useLegacyWindowedMode))
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
@@ -2801,16 +2826,15 @@ class MainWindowController: PlayerWindowController {
         window.styleMask.remove(.borderless)
         window.styleMask.insert(.resizable)
         if #available(macOS 10.16, *) {
-          window.styleMask.insert(.titled)
+          if !transition.toLayout.spec.useLegacyWindowedMode {
+            window.styleMask.insert(.titled)
+          }
           window.level = .normal
         } else {
           window.styleMask.remove(.fullScreen)
         }
 
         restoreDockSettings()
-
-        // Title bar accessories get removed by legacy fullscreen. Add them back:
-        addTitleBarAccessoryViews()
       }
 
       constrainVideoViewForWindowedMode()
@@ -2921,12 +2945,12 @@ class MainWindowController: PlayerWindowController {
     log.verbose("Calling setFrame() entering legacy full screen, to: \(newWindowFrame)")
     window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
 
-    if let unusableHeight = screen.cameraHousingHeight {
-      // This screen contains an embedded camera. Shorten the height of the window's content view's
-      // frame to avoid having part of the window obscured by the camera housing.
-      let view = window.contentView!
-      view.setFrameSize(NSMakeSize(view.frame.width, screen.frame.height - unusableHeight))
-    }
+//    if let unusableHeight = screen.cameraHousingHeight {
+//      // This screen contains an embedded camera. Shorten the height of the window's content view's
+//      // frame to avoid having part of the window obscured by the camera housing.
+//      let view = window.contentView!
+//      view.setFrameSize(NSMakeSize(view.frame.width, screen.frame.height - unusableHeight))
+//    }
   }
 
   // MARK: - Window delegate: Resize
@@ -3661,10 +3685,10 @@ class MainWindowController: PlayerWindowController {
       isInInteractiveMode = true
       // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
       // the max region that the video view can occupy
-      let newVideoViewBounds = NSRect(x: StandardTitleBarHeight,
-                                      y: InteractiveModeBottomViewHeight + StandardTitleBarHeight,
-                                      width: window.frame.width - StandardTitleBarHeight - StandardTitleBarHeight,
-                                      height: window.frame.height - InteractiveModeBottomViewHeight - StandardTitleBarHeight - StandardTitleBarHeight)
+      let newVideoViewBounds = NSRect(x: standardTitleBarHeight,
+                                      y: InteractiveModeBottomViewHeight + standardTitleBarHeight,
+                                      width: window.frame.width - standardTitleBarHeight - standardTitleBarHeight,
+                                      height: window.frame.height - InteractiveModeBottomViewHeight - standardTitleBarHeight - standardTitleBarHeight)
       let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
       let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
