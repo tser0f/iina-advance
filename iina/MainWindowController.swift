@@ -1582,6 +1582,7 @@ class MainWindowController: PlayerWindowController {
 
     // Middle point: update style & constraints. Should have minimal visual changes
     transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
+      // This also can change window styleMask
       updateHiddenViewsAndConstraints(transition)
     })
 
@@ -1648,6 +1649,7 @@ class MainWindowController: PlayerWindowController {
         videoView.videoLayer.suspend()
 
         // stylemask
+        log.verbose("Removing window styleMask.titled")
         if #available(macOS 10.16, *) {
           window.styleMask.remove(.titled)
         } else {
@@ -1663,7 +1665,7 @@ class MainWindowController: PlayerWindowController {
     } else if transition.isTogglingFromFullScreen {
       // Exiting FullScreen
 
-      let isLegacy = transition.fromLayout.isLegacyFullScreen
+      let wasLegacy = transition.fromLayout.isLegacyFullScreen
 
       resetViewsForFullScreenTransition()
 
@@ -1671,7 +1673,7 @@ class MainWindowController: PlayerWindowController {
 
       fsState.startAnimatingToWindow()
 
-      if isLegacy {
+      if wasLegacy {
         videoView.videoLayer.suspend()
       } else {  // !isLegacy
         // Hide traffic light buttons & title during the animation:
@@ -1756,13 +1758,15 @@ class MainWindowController: PlayerWindowController {
     } else if transition.isTogglingFromFullScreen {
       // Exited FullScreen
 
-      let isLegacy = transition.fromLayout.isLegacyFullScreen
-      if isLegacy {
+      let wasLegacy = transition.fromLayout.isLegacyFullScreen
+      let isLegacyWindowedMode = transition.toLayout.spec.isLegacyMode
+      if wasLegacy {
         // Go back to titled style
         window.styleMask.remove(.borderless)
         window.styleMask.insert(.resizable)
         if #available(macOS 10.16, *) {
-          if !transition.toLayout.spec.isLegacyMode {
+          if !isLegacyWindowedMode {
+            log.verbose("Inserting window styleMask.titled")
             window.styleMask.insert(.titled)
           }
           window.level = .normal
@@ -1771,6 +1775,9 @@ class MainWindowController: PlayerWindowController {
         }
 
         restoreDockSettings()
+      } else if isLegacyWindowedMode {
+        log.verbose("Removing window styleMask.titled")
+        window.styleMask.remove(.titled)
       }
 
       constrainVideoViewForWindowedMode()
@@ -1798,7 +1805,7 @@ class MainWindowController: PlayerWindowController {
 
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
-      if isLegacy {
+      if wasLegacy {
         videoView.videoLayer.resume()
       }
 
@@ -1814,7 +1821,7 @@ class MainWindowController: PlayerWindowController {
       resetCollectionBehavior()
       updateWindowParametersForMPV()
 
-      if isLegacy {
+      if wasLegacy {
         // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
         apply(visibility: transition.toLayout.titleIconAndText, documentIconButton, titleTextField)
         for button in trafficLightButtons {
@@ -1829,6 +1836,8 @@ class MainWindowController: PlayerWindowController {
 
       player.events.emit(.windowFullscreenChanged, data: false)
     }
+    // Need to make sure this executes after styleMask is .titled
+    addTitleBarAccessoryViews()
   }
 
   private func fadeOutOldViews(_ transition: LayoutTransition) {
@@ -1991,11 +2000,13 @@ class MainWindowController: PlayerWindowController {
     /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
     if transition.isTogglingTitledWindowStyle && !transition.isTogglingFromFullScreen {
       if transition.toLayout.spec.isLegacyMode {
+          log.verbose("Removing window styleMask.titled")
           window.styleMask.remove(.titled)
           window.styleMask.insert(.resizable)
           window.styleMask.insert(.closable)
           window.styleMask.insert(.miniaturizable)
-      } else {
+      } else if !transition.toLayout.isFullScreen {
+        log.verbose("Inserting window styleMask.titled")
         window.styleMask.insert(.titled)
 
         /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
@@ -2856,7 +2867,6 @@ class MainWindowController: PlayerWindowController {
 
   // Animation: Enter FullScreen
   private func animateEntryIntoFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
-    guard let window = window else { return }
     log.verbose("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)")
 
     // Because the outside panels can change while in fullscreen, use the coords of the video frame instead
@@ -2904,7 +2914,6 @@ class MainWindowController: PlayerWindowController {
 
   // Animation: Exit FullScreen
   private func animateExitFromFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
-    guard let window = window else { return }
     Logger.log("Animating exit from \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
                level: .verbose, subsystem: player.subsystem)
 
@@ -2916,8 +2925,6 @@ class MainWindowController: PlayerWindowController {
     // quitting then mpv could be in the process of shutting down. Must not access mpv while it is
     // asynchronously processing stop and quit commands.
     guard !isClosing else { return }
-
-    guard let priorWindowedFrame = fsState.priorWindowedFrame else { return }
 
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
