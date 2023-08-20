@@ -417,6 +417,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       // Save ordered list of open windows each time the order of windows changed.
       observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
                                                               queue: .main, using: self.keyWindowDidChange))
+    } else {
+      // TODO: remove existing state...somewhere
+      Logger.log("Note: UI state saving is disabled")
     }
 
     if #available(macOS 10.13, *) {
@@ -748,6 +751,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     if Preference.UIState.isSaveEnabled {
       // unlock for new launch
+      Logger.log("Unlocking 'isSaveRestoreInUse' pref entry", level: .verbose)
       Preference.set(false, for: .isSaveRestoreInUse)
     }
 

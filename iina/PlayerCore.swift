@@ -411,6 +411,8 @@ class PlayerCore: NSObject {
     guard !didStart else { return }
     didStart = true
 
+    log.verbose("Player start (restore: \(restore))")
+
     /// If restoring, most playback properties need to be set via `mpv.mpvInit()`. Set this before calling `startMPV()`.
     if restore, let savedState = Preference.UIState.getPlayerUIState(playerID: label) {
       info.priorUIState = savedState
@@ -433,12 +435,12 @@ class PlayerCore: NSObject {
       path = customYtdlPath + ":" + path
     }
     setenv("PATH", path, 1)
-    Logger.log("Set path to \(path.pii)", subsystem: subsystem)
+    log.debug("Set env path to \(path.pii)")
 
     // set http proxy
     if let proxy = Preference.string(for: .httpProxy), !proxy.isEmpty {
       setenv("http_proxy", "http://" + proxy, 1)
-      Logger.log("Set http_proxy to \(proxy.pii)", subsystem: subsystem)
+      log.debug("Set env http_proxy to \(proxy.pii)")
     }
 
     mpv.mpvInit()
@@ -469,7 +471,7 @@ class PlayerCore: NSObject {
   }
 
   private func savePlayerUIState() {
-    Logger.log("Saving player state", level: .verbose, subsystem: subsystem)
+    Logger.log("Saving player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))", level: .verbose, subsystem: subsystem)
 
     saveUIState()
     savePlaybackPosition()
@@ -484,6 +486,8 @@ class PlayerCore: NSObject {
   // Finish restoring state of player from prior launch
   fileprivate func restoreUIState() {
     guard let savedState = info.priorUIState else { return }
+
+    log.verbose("Restoring player UI state")
 
     if let barsString = savedState.string(for: .bars) {
       let splitted = barsString.split(separator: " ")

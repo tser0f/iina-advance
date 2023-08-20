@@ -69,12 +69,13 @@ extension Preference {
 
     static func saveOpenWindowList(windowNamesBackToFront: [String]) {
       guard isSaveEnabled else { return }
-      //      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
+//      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
       let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")
       Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
     }
 
     static func clearOpenWindowList() {
+      Logger.log("Clearing saved list of open windows")
       saveOpenWindowList(windowNamesBackToFront: [])
     }
 

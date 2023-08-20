@@ -24,10 +24,10 @@
             <point key="canvasLocation" x="-1607" y="64"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior">
-            <rect key="frame" x="0.0" y="0.0" width="575" height="556"/>
+            <rect key="frame" x="0.0" y="0.0" width="575" height="588"/>
             <subviews>
                 <textField identifier="SectionTitleBehavior" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="38y-2I-MGs">
-                    <rect key="frame" x="-2" y="532" width="66" height="16"/>
+                    <rect key="frame" x="-2" y="564" width="66" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Behavior:" id="uQR-Fx-oEm">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -35,7 +35,7 @@
                     </textFieldCell>
                 </textField>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OXi-vL-mzp">
-                    <rect key="frame" x="118" y="532" width="65" height="16"/>
+                    <rect key="frame" x="118" y="564" width="65" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="At launch:" id="gqT-CB-Puw">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -43,7 +43,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bV8-LP-cwH">
-                    <rect key="frame" x="186" y="525" width="227" height="25"/>
+                    <rect key="frame" x="186" y="557" width="227" height="25"/>
                     <popUpButtonCell key="cell" type="push" title="Show welcome window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="z9T-8h-1T0" id="6y1-KS-0tJ">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -61,7 +61,7 @@
                     </connections>
                 </popUpButton>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="tRO-oH-MAp">
-                    <rect key="frame" x="118" y="507" width="425" height="18"/>
+                    <rect key="frame" x="118" y="539" width="425" height="18"/>
                     <buttonCell key="cell" type="check" title="Restore open windows and playback state from previous launches" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="izA-YX-std">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -70,8 +70,19 @@
                         <binding destination="IBP-Mz-Maa" name="value" keyPath="values.enableRestoreUIState" id="JBt-jY-qiD"/>
                     </connections>
                 </button>
+                <button translatesAutoresizingMaskIntoConstraints="NO" id="Tdv-Vn-5EA">
+                    <rect key="frame" x="138" y="515" width="194" height="18"/>
+                    <buttonCell key="cell" type="check" title="Always ask before restoring" bezelStyle="regularSquare" imagePosition="left" inset="2" id="10H-I3-TYU">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <binding destination="IBP-Mz-Maa" name="enabled" keyPath="values.enableRestoreUIState" id="tCc-LE-uKN"/>
+                        <binding destination="IBP-Mz-Maa" name="value" keyPath="values.alwaysAskBeforeRestoreAtLaunch" id="Dpt-nk-Mqg"/>
+                    </connections>
+                </button>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="aKH-Me-5XB" userLabel="WhenMediaIsOpened Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="411" width="455" height="89"/>
+                    <rect key="frame" x="120" y="415" width="455" height="89"/>
                     <subviews>
                         <customView id="Pga-vd-zGA">
                             <rect key="frame" x="0.0" y="72" width="455" height="17"/>
@@ -183,7 +194,7 @@
                     </customSpacing>
                 </stackView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="F6o-D4-gDa">
-                    <rect key="frame" x="118" y="386" width="363" height="18"/>
+                    <rect key="frame" x="118" y="390" width="363" height="18"/>
                     <buttonCell key="cell" type="check" title="Resume last playback using mpv's &quot;watch later&quot; feature" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="jOB-D3-WT3">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -193,7 +204,7 @@
                     </connections>
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="b7I-2V-MYa">
-                    <rect key="frame" x="118" y="362" width="416" height="18"/>
+                    <rect key="frame" x="118" y="366" width="416" height="18"/>
                     <buttonCell key="cell" type="check" title="Switch to &quot;music mode&quot; automatically when playing an audio file" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="KfL-r7-Uav">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -460,7 +471,8 @@
                 <constraint firstItem="Xi9-i5-9V4" firstAttribute="leading" secondItem="SsM-Tv-8AZ" secondAttribute="leading" id="2HC-NO-brG"/>
                 <constraint firstItem="F6o-D4-gDa" firstAttribute="top" secondItem="aKH-Me-5XB" secondAttribute="bottom" constant="8" id="42y-0l-iXa"/>
                 <constraint firstItem="OXi-vL-mzp" firstAttribute="leading" secondItem="6zR-96-iKB" secondAttribute="leading" constant="120" id="4O3-ht-PYG"/>
-                <constraint firstItem="8iE-FU-0g0" firstAttribute="top" secondItem="b7I-2V-MYa" secondAttribute="bottom" constant="8" id="59d-ue-PTZ"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Tdv-Vn-5EA" secondAttribute="trailing" id="551-iJ-txZ"/>
+                <constraint firstItem="8iE-FU-0g0" firstAttribute="top" secondItem="b7I-2V-MYa" secondAttribute="bottom" constant="12" id="59d-ue-PTZ"/>
                 <constraint firstItem="b7I-2V-MYa" firstAttribute="height" secondItem="tRO-oH-MAp" secondAttribute="height" id="5E8-cb-FOU"/>
                 <constraint firstItem="y2l-T9-GFV" firstAttribute="top" secondItem="Xi9-i5-9V4" secondAttribute="bottom" constant="8" id="6Jr-af-XZC"/>
                 <constraint firstAttribute="trailing" secondItem="aKH-Me-5XB" secondAttribute="trailing" id="7gW-uv-Fba"/>
@@ -483,7 +495,9 @@
                 <constraint firstItem="OXi-vL-mzp" firstAttribute="baseline" secondItem="38y-2I-MGs" secondAttribute="baseline" id="RqH-AX-8dj"/>
                 <constraint firstItem="8iE-FU-0g0" firstAttribute="leading" secondItem="aKH-Me-5XB" secondAttribute="leading" id="SRe-Ue-ubz"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="QvG-Ma-br0" secondAttribute="trailing" id="Sai-n4-ewq"/>
+                <constraint firstItem="y2l-T9-GFV" firstAttribute="leading" secondItem="Tdv-Vn-5EA" secondAttribute="leading" id="TD1-GE-rvU"/>
                 <constraint firstItem="y2l-T9-GFV" firstAttribute="height" secondItem="b7I-2V-MYa" secondAttribute="height" id="Txv-YK-LY3"/>
+                <constraint firstItem="Tdv-Vn-5EA" firstAttribute="top" secondItem="tRO-oH-MAp" secondAttribute="bottom" constant="8" id="VBA-xJ-PEy"/>
                 <constraint firstItem="6Hg-O4-cBP" firstAttribute="leading" secondItem="Gvk-MW-l4G" secondAttribute="leading" id="WOS-zR-ijI"/>
                 <constraint firstItem="hgu-y0-ExB" firstAttribute="leading" secondItem="SsM-Tv-8AZ" secondAttribute="trailing" constant="8" id="Wfd-Dl-hWc"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="tRO-oH-MAp" secondAttribute="trailing" id="XRL-jb-eef"/>
@@ -497,7 +511,7 @@
                 <constraint firstItem="tUl-6f-ClP" firstAttribute="leading" secondItem="ibu-Tq-kBr" secondAttribute="leading" id="d7A-WU-gG9"/>
                 <constraint firstItem="OXi-vL-mzp" firstAttribute="leading" secondItem="tRO-oH-MAp" secondAttribute="leading" id="drh-FX-kaL"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ONF-nX-zDm" secondAttribute="trailing" id="esl-VM-bcw"/>
-                <constraint firstItem="aKH-Me-5XB" firstAttribute="top" secondItem="tRO-oH-MAp" secondAttribute="bottom" constant="8" id="gTe-Cv-cgu"/>
+                <constraint firstItem="aKH-Me-5XB" firstAttribute="top" secondItem="Tdv-Vn-5EA" secondAttribute="bottom" constant="12" id="gTe-Cv-cgu"/>
                 <constraint firstItem="tRO-oH-MAp" firstAttribute="top" secondItem="OXi-vL-mzp" secondAttribute="bottom" constant="8" id="goS-m2-Fkb"/>
                 <constraint firstItem="6Hg-O4-cBP" firstAttribute="leading" secondItem="F6o-D4-gDa" secondAttribute="leading" id="hbH-qB-dC3"/>
                 <constraint firstItem="F6o-D4-gDa" firstAttribute="leading" secondItem="tRO-oH-MAp" secondAttribute="leading" id="k7U-Jx-SL5"/>
