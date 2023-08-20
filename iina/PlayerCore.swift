@@ -628,7 +628,7 @@ class PlayerCore: NSObject {
   func resume() {
     // FIXME: add a switch for this
     // Restart playback when reached EOF
-    if mpv.getFlag(MPVProperty.eofReached) {
+    if Preference.bool(for: .resumeFromEndRestartsPlayback) && mpv.getFlag(MPVProperty.eofReached) {
       seek(absoluteSecond: 0)
     }
     mpv.setFlag(MPVOption.PlaybackControl.pause, false)
@@ -1872,6 +1872,8 @@ class PlayerCore: NSObject {
       info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
     }
     DispatchQueue.main.async { [self] in
+      // don't let play/pause icon fall out of sync
+      mainWindow.playButton.state = info.isPaused ? .off : .on
       if self.isInMiniPlayer {
         miniPlayer.updatePlayTime(withDuration: isNetworkStream)
         miniPlayer.updateScrollingLabels()

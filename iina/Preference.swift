@@ -79,6 +79,9 @@ struct Preference {
     /** Keep player window open on end of file / playlist. (bool) */
     static let keepOpenOnFileEnd = Key("keepOpenOnFileEnd")
 
+    /// Pressing pause/resume when stopped at EOF to restart playback
+    static let resumeFromEndRestartsPlayback = Key("resumeFromEndRestartsPlayback")
+
     /** Resume from last position */
     static let resumeLastPosition = Key("resumeLastPosition")
 
@@ -1109,7 +1112,8 @@ struct Preference {
     .userDefinedConfDir: "~/.config/mpv/",
     .iinaEnablePluginSystem: false,
 
-      .keepOpenOnFileEnd: true,
+    .keepOpenOnFileEnd: true,
+    .resumeFromEndRestartsPlayback: true,
     .actionWhenNoOpenedWindow: ActionWhenNoOpenedWindow.none.rawValue,
     .useExactSeek: SeekOption.exact.rawValue,
     .followGlobalSeekTypeWhenAdjustSlider: false,
