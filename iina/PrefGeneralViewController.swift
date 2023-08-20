@@ -35,18 +35,6 @@ class PrefGeneralViewController: PreferenceViewController, PreferenceWindowEmbed
   @IBOutlet weak var afterOpenActionBox: NSBox!
   @IBOutlet weak var pauseActionBox: NSBox!
   
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    
-    if #available(macOS 10.16, *) {
-      afterOpenActionBox.heightAnchor.constraint(equalToConstant: 42).isActive = true
-      pauseActionBox.heightAnchor.constraint(equalToConstant: 146).isActive = true
-    } else {
-      afterOpenActionBox.heightAnchor.constraint(equalToConstant: 34).isActive = true
-      pauseActionBox.heightAnchor.constraint(equalToConstant: 126).isActive = true
-    }
-  }
-  
   // MARK: - IBAction
 
   @IBAction func chooseScreenshotPathAction(_ sender: AnyObject) {

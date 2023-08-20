@@ -116,8 +116,8 @@
 /* Class = "NSButtonCell"; title = "Enable playback history"; ObjectID = "iGS-qN-f5q"; */
 "iGS-qN-f5q.title" = "Enable playback history";
 
-/* Class = "NSButtonCell"; title = "Resume last playback position"; ObjectID = "jOB-D3-WT3"; */
-"jOB-D3-WT3.title" = "Resume last playback position";
+/* Class = "NSButtonCell"; title = "Resume last playback position using mpv's "watch later" feature"; ObjectID = "jOB-D3-WT3"; */
+"jOB-D3-WT3.title" = "Resume last playback position using mpv's \"watch later\" feature";
 
 /* Class = "NSTextFieldCell"; title = "History:"; ObjectID = "jeK-46-2BG"; */
 "jeK-46-2BG.title" = "History:";
