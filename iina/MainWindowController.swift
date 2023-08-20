@@ -1060,17 +1060,18 @@ class MainWindowController: PlayerWindowController {
 
   private func updateTopBarHeight(to topBarHeight: CGFloat, transition: LayoutTransition) {
     let placement = transition.toLayout.topBarPlacement
-    log.verbose("TopBar height: \(topBarHeight), placement: \(placement)")
+    let cameraHousingOffset = transition.toLayout.cameraHousingOffset
+    log.verbose("TopBar height: \(topBarHeight), placement: \(placement), cameraHousing: \(cameraHousingOffset)")
 
     switch placement {
     case .insideVideo:
       videoContainerTopOffsetFromTopBarBottomConstraint.animateToConstant(-topBarHeight)
       videoContainerTopOffsetFromTopBarTopConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0 + cameraHousingOffset)
     case .outsideVideo:
       videoContainerTopOffsetFromTopBarBottomConstraint.animateToConstant(0)
       videoContainerTopOffsetFromTopBarTopConstraint.animateToConstant(topBarHeight)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topBarHeight)
+      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topBarHeight + cameraHousingOffset)
     }
   }
 
@@ -1229,7 +1230,7 @@ class MainWindowController: PlayerWindowController {
     let trailingSidebarPlacement: Preference.PanelPlacement
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
-    let useLegacyWindowedMode: Bool
+    let isLegacyMode: Bool
 
     static func fromPreferences(andSpec prevSpec: LayoutSpec) -> LayoutSpec {
       // If in fullscreen, top & bottom bars are always .insideVideo
@@ -1241,7 +1242,7 @@ class MainWindowController: PlayerWindowController {
                         trailingSidebarPlacement: Preference.enum(for: .trailingSidebarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
                         oscPosition: Preference.enum(for: .oscPosition),
-                        useLegacyWindowedMode: Preference.bool(for: .useLegacyWindowedMode))
+                        isLegacyMode: prevSpec.isFullScreen ? prevSpec.isLegacyMode : Preference.bool(for: .useLegacyWindowedMode))
     }
 
     // Matches what is shown in the XIB
@@ -1255,7 +1256,7 @@ class MainWindowController: PlayerWindowController {
                         trailingSidebarPlacement: .insideVideo,
                         enableOSC: false,
                         oscPosition: .floating,
-                        useLegacyWindowedMode: false)
+                        isLegacyMode: false)
     }
 
     // Specify any properties
@@ -1266,7 +1267,7 @@ class MainWindowController: PlayerWindowController {
                trailingSidebarPlacement: Preference.PanelPlacement? = nil,
                enableOSC: Bool? = nil,
                oscPosition: Preference.OSCPosition? = nil,
-               useLegacyWindowedMode: Bool? = nil) -> LayoutSpec {
+               isLegacyMode: Bool? = nil) -> LayoutSpec {
       return LayoutSpec(leadingSidebar: self.leadingSidebar,
                         trailingSidebar: self.trailingSidebar,
                         isFullScreen: isFullScreen ?? self.isFullScreen,
@@ -1276,7 +1277,7 @@ class MainWindowController: PlayerWindowController {
                         trailingSidebarPlacement: trailingSidebarPlacement ?? self.trailingSidebarPlacement,
                         enableOSC: enableOSC ?? self.enableOSC,
                         oscPosition: self.oscPosition,
-                        useLegacyWindowedMode: useLegacyWindowedMode ?? self.useLegacyWindowedMode)
+                        isLegacyMode: isLegacyMode ?? self.isLegacyMode)
     }
   }
 
@@ -1308,6 +1309,7 @@ class MainWindowController: PlayerWindowController {
 
     // Geometry:
 
+    var cameraHousingOffset: CGFloat = 0
     var titleBarHeight: CGFloat = 0
     var topOSCHeight: CGFloat = 0
     var topBarHeight: CGFloat {
@@ -1352,6 +1354,10 @@ class MainWindowController: PlayerWindowController {
 
     var isFullScreen: Bool {
       return spec.isFullScreen
+    }
+
+    var isLegacyFullScreen: Bool {
+      return spec.isFullScreen && spec.isLegacyMode
     }
 
     var enableOSC: Bool {
@@ -1460,7 +1466,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     var isTogglingTitledWindowStyle: Bool {
-      return fromLayout.spec.useLegacyWindowedMode != toLayout.spec.useLegacyWindowedMode
+      return fromLayout.spec.isLegacyMode != toLayout.spec.isLegacyMode
     }
 
     var isTogglingFullScreen: Bool {
@@ -1778,7 +1784,7 @@ class MainWindowController: PlayerWindowController {
     /// if `isTogglingTitledWindowStyle==true && isTogglingFromFullScreen==true`, we are toggling out of legacy FS
     /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
     if transition.isTogglingTitledWindowStyle && !transition.isTogglingFromFullScreen {
-      if transition.toLayout.spec.useLegacyWindowedMode {
+      if transition.toLayout.spec.isLegacyMode {
           window.styleMask.remove(.titled)
           window.styleMask.insert(.resizable)
           window.styleMask.insert(.closable)
@@ -2056,13 +2062,18 @@ class MainWindowController: PlayerWindowController {
     if futureLayout.isFullScreen {
       futureLayout.titleIconAndText = .showAlways
       futureLayout.trafficLightButtons = .showAlways
+
+      if futureLayout.isLegacyFullScreen, let unusableHeight = window.screen?.cameraHousingHeight {
+        // This screen contains an embedded camera. Want to avoid having part of the window obscured by the camera housing.
+        futureLayout.cameraHousingOffset = unusableHeight
+      }
     } else {
       let visibleState: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
 
       futureLayout.topBarView = visibleState
       futureLayout.trafficLightButtons = visibleState
       futureLayout.titleIconAndText = visibleState
-      futureLayout.titleBarHeight = layoutSpec.useLegacyWindowedMode ? 0 : standardTitleBarHeight  // may be overridden by OSC layout
+      futureLayout.titleBarHeight = layoutSpec.isLegacyMode ? 0 : standardTitleBarHeight  // may be overridden by OSC layout
 
       if futureLayout.topBarPlacement == .insideVideo {
         futureLayout.osdMinOffsetFromTop = futureLayout.titleBarHeight + 8
@@ -2622,6 +2633,7 @@ class MainWindowController: PlayerWindowController {
       fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedGeometry)
       log.verbose("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)")
 
+      // Do not move this block. It needs to go here.
       if !isLegacy {
         // Hide traffic light buttons & title during the animation:
         hideBuiltInTitleBarItems()
@@ -2658,7 +2670,7 @@ class MainWindowController: PlayerWindowController {
     })
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
-    let fullscreenLayout = currentLayout.spec.clone(isFullScreen: true, useLegacyWindowedMode: isLegacy ? true : currentLayout.spec.useLegacyWindowedMode)
+    let fullscreenLayout = currentLayout.spec.clone(isFullScreen: true, isLegacyMode: isLegacy)
     let transition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
       if isLegacy {
         // set window frame and in some cases content view frame
@@ -2678,7 +2690,7 @@ class MainWindowController: PlayerWindowController {
         window.styleMask.insert(.borderless)
         window.styleMask.remove(.resizable)
 
-        // auto hide menubar and dock
+        // auto hide menubar and dock (this will freeze all other animations, so must do it last)
         NSApp.presentationOptions.insert(.autoHideMenuBar)
         NSApp.presentationOptions.insert(.autoHideDock)
 
@@ -2798,7 +2810,7 @@ class MainWindowController: PlayerWindowController {
 
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = currentLayout.spec.clone(isFullScreen: false, useLegacyWindowedMode: Preference.bool(for: .useLegacyWindowedMode))
+    let windowedLayout = currentLayout.spec.clone(isFullScreen: false, isLegacyMode: Preference.bool(for: .useLegacyWindowedMode))
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration, extraTaskFunc: { [self] transition in
@@ -2826,7 +2838,7 @@ class MainWindowController: PlayerWindowController {
         window.styleMask.remove(.borderless)
         window.styleMask.insert(.resizable)
         if #available(macOS 10.16, *) {
-          if !transition.toLayout.spec.useLegacyWindowedMode {
+          if !transition.toLayout.spec.isLegacyMode {
             window.styleMask.insert(.titled)
           }
           window.level = .normal
@@ -2944,13 +2956,6 @@ class MainWindowController: PlayerWindowController {
 
     log.verbose("Calling setFrame() entering legacy full screen, to: \(newWindowFrame)")
     window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-
-//    if let unusableHeight = screen.cameraHousingHeight {
-//      // This screen contains an embedded camera. Shorten the height of the window's content view's
-//      // frame to avoid having part of the window obscured by the camera housing.
-//      let view = window.contentView!
-//      view.setFrameSize(NSMakeSize(view.frame.width, screen.frame.height - unusableHeight))
-//    }
   }
 
   // MARK: - Window delegate: Resize
