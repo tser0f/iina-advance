@@ -55,7 +55,7 @@ extension PlayerWindowController {
     }
   }
 
-// MARK: - Control
+  // MARK: - Control
 
   @objc func menuTogglePause(_ sender: NSMenuItem) {
     player.togglePause()
@@ -289,7 +289,7 @@ extension PlayerWindowController {
     }
   }
 
-// MARK: - Sub
+  // MARK: - Sub
 
   @objc func menuLoadExternalSub(_ sender: NSMenuItem) {
     let currentDir = player.info.currentURL?.deletingLastPathComponent()
