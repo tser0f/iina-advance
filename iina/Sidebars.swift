@@ -155,7 +155,7 @@ extension MainWindowController {
     }
   }
 
-  // MARK: - Changing visibility
+  // MARK: - Showing/Hiding sidebars
 
   private enum VisibilityGoal {
     case show(tabToShow: SidebarTab)
@@ -469,26 +469,6 @@ extension MainWindowController {
     animationQueue.run(animationTasks)
   }
 
-  private func switchToTabInTabGroup(tab: SidebarTab) {
-    // Make it the active tab in its parent tab group (can do this whether or not it's shown):
-    switch tab.group {
-    case .playlist:
-      guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
-        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
-                   level: .error, subsystem: player.subsystem)
-        return
-      }
-      self.playlistView.pleaseSwitchToTab(tabType)
-    case .settings:
-      guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
-        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
-                   level: .error, subsystem: player.subsystem)
-        return
-      }
-      self.quickSettingView.pleaseSwitchToTab(tabType)
-    }
-  }
-
   /// Execute this prior to opening `leadingSidebar` to the given tab.
   private func prepareLayoutForOpeningLeadingSidebar(toTab leadingTabToShow: SidebarTab) {
     guard let window = window else { return }
@@ -620,7 +600,7 @@ extension MainWindowController {
 
     sidebarView.isHidden = false
 
-    updateDepthOrderOfPanels(topBar: currentLayout.topBarPlacement, bottomBar: currentLayout.bottomBarPlacement,
+    updateDepthOrderOfBars(topBar: currentLayout.topBarPlacement, bottomBar: currentLayout.bottomBarPlacement,
                              leadingSidebar: leadingSidebar.placement, trailingSidebar: trailingSidebar.placement)
 
     // Update blending mode instantaneously. It doesn't animate well
@@ -649,24 +629,6 @@ extension MainWindowController {
       sidebar.visibleTab = nil
       sidebarView.isHidden = true
       sidebar.animationState = .hidden
-    }
-  }
-
-  func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
-    switch sidebarID {
-    case .leadingSidebar:
-      // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-      if leadingSidebar.placement == .insideVideo || layout.isFullScreen {
-        leadingSidebarView.blendingMode = .withinWindow
-      } else {
-        leadingSidebarView.blendingMode = .behindWindow
-      }
-    case .trailingSidebar:
-      if trailingSidebar.placement == .insideVideo || layout.isFullScreen {
-        trailingSidebarView.blendingMode = .withinWindow
-      } else {
-        trailingSidebarView.blendingMode = .behindWindow
-      }
     }
   }
 
@@ -745,6 +707,54 @@ extension MainWindowController {
 
   // MARK: - Various functions
 
+  func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
+    switch sidebarID {
+    case .leadingSidebar:
+      // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+      if leadingSidebar.placement == .insideVideo || layout.isFullScreen {
+        leadingSidebarView.blendingMode = .withinWindow
+      } else {
+        leadingSidebarView.blendingMode = .behindWindow
+      }
+    case .trailingSidebar:
+      if trailingSidebar.placement == .insideVideo || layout.isFullScreen {
+        trailingSidebarView.blendingMode = .withinWindow
+      } else {
+        trailingSidebarView.blendingMode = .behindWindow
+      }
+    }
+  }
+
+  /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
+  func updateSidebarVerticalConstraints(layout futureLayout: LayoutPlan? = nil) {
+    let layout = futureLayout ?? currentLayout
+    let downshift: CGFloat
+    var tabHeight: CGFloat
+    if player.isInMiniPlayer || (!layout.isFullScreen && layout.topBarPlacement == Preference.PanelPlacement.outsideVideo) {
+      downshift = Constants.Sidebar.defaultDownshift
+      tabHeight = Constants.Sidebar.defaultTabHeight
+      log.verbose("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))")
+    } else {
+      // Downshift: try to match title bar height
+      if layout.isFullScreen || layout.topBarPlacement == Preference.PanelPlacement.outsideVideo {
+        downshift = Constants.Sidebar.defaultDownshift
+      } else {
+        // Need to adjust if has title bar
+        downshift = MainWindowController.reducedTitleBarHeight
+      }
+
+      tabHeight = layout.topOSCHeight
+      // Put some safeguards in place:
+      if tabHeight <= Constants.Sidebar.minTabHeight || tabHeight > Constants.Sidebar.maxTabHeight {
+        tabHeight = Constants.Sidebar.defaultTabHeight
+      }
+    }
+
+    log.verbose("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topBar: \(layout.topBarPlacement)")
+    quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+    playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+  }
+
   // For JavascriptAPICore:
   func isShowingSettingsSidebar() -> Bool {
     return leadingSidebar.visibleTabGroup == .settings || trailingSidebar.visibleTabGroup == .settings
@@ -752,6 +762,26 @@ extension MainWindowController {
 
   func isShowing(sidebarTab tab: SidebarTab) -> Bool {
     return leadingSidebar.visibleTab == tab || trailingSidebar.visibleTab == tab
+  }
+
+  private func switchToTabInTabGroup(tab: SidebarTab) {
+    // Make it the active tab in its parent tab group (can do this whether or not it's shown):
+    switch tab.group {
+    case .playlist:
+      guard let tabType = PlaylistViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to PlaylistView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.playlistView.pleaseSwitchToTab(tabType)
+    case .settings:
+      guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
+        Logger.log("Cannot switch to tab \(tab.name.quoted): could not convert to QuickSettingView tab!",
+                   level: .error, subsystem: player.subsystem)
+        return
+      }
+      self.quickSettingView.pleaseSwitchToTab(tabType)
+    }
   }
 
   // This is so that sidebar controllers can notify when they changed tabs in their tab groups, so that

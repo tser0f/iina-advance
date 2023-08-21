@@ -76,14 +76,14 @@ class MainWindow: NSWindow {
   }
 
   override var canBecomeKey: Bool {
-    if !self.styleMask.contains(.titled) {
+    if !styleMask.contains(.titled) {
       return true
     }
     return super.canBecomeKey
   }
   
   override var canBecomeMain: Bool {
-    if !self.styleMask.contains(.titled) {
+    if !styleMask.contains(.titled) {
       return true
     }
     return super.canBecomeMain
@@ -106,5 +106,10 @@ class MainWindow: NSWindow {
   /// See `validateUserInterfaceItem()`.
   override func performClose(_ sender: Any?) {
     self.close()
+  }
+
+  /// Need to override this for Minimize to work when `!styleMask.contains(.titled)`
+  override func performMiniaturize(_ sender: Any?) {
+    self.miniaturize(self)
   }
 }
