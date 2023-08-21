@@ -591,9 +591,16 @@ class MainWindowController: PlayerWindowController {
 
   var trafficLightButtons: [NSButton] {
     get {
-      return ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).compactMap {
-        window?.standardWindowButton($0)
+      if let window = window, window.styleMask.contains(.titled) {
+        return ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).compactMap {
+          window.standardWindowButton($0)
+        }
+      } else {
+        if let stackView = titleBarView.subviews.first as? NSStackView {
+          return stackView.subviews as! [NSButton]
+        }
       }
+      return []
     }
   }
 

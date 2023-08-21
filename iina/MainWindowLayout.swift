@@ -840,8 +840,38 @@ extension MainWindowController {
       documentIconButton?.alphaValue = 1
 
       if futureLayout.trafficLightButtons != .hidden {
-        for button in trafficLightButtons {
-          button.isHidden = false
+        if futureLayout.spec.isLegacyMode {
+          let trafficLightBtnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+
+          // Add fake traffic light buttons. Needs a lot of work...
+          let trafficLightButtons: [NSButton] = trafficLightBtnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
+          let hStackView = NSStackView(views: trafficLightButtons)
+          hStackView.orientation = .horizontal
+          titleBarView.addSubview(hStackView)
+
+          hStackView.addConstraintsToFillSuperview()
+          hStackView.detachesHiddenViews = false
+          hStackView.spacing = 6
+          /// Because of possible top OSC, `titleBarView` may have reduced height.
+          /// So do not vertically center the buttons. Use offset from top instead:
+          hStackView.alignment = .top
+          hStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
+          for btn in trafficLightButtons {
+            btn.isEnabled = true
+            btn.state = .on
+            btn.isHidden = false
+            btn.alphaValue = 1
+            btn.display()
+          }
+          hStackView.layout()
+        } else {
+          // Remove fake traffic light buttons (if any)
+          for subview in titleBarView.subviews {
+            subview.removeFromSuperview()
+          }
+          for button in trafficLightButtons {
+            button.isHidden = false
+          }
         }
       }
 
