@@ -679,6 +679,15 @@ extension MainWindowController {
         log.verbose("Inserting window styleMask.titled")
         window.styleMask.insert(.titled)
 
+        // Remove fake traffic light buttons (if any)
+        if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
+          for subview in fakeLeadingTitleBarView.subviews {
+            subview.removeFromSuperview()
+          }
+          fakeLeadingTitleBarView.removeFromSuperview()
+          self.fakeLeadingTitleBarView = nil
+        }
+
         /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
         for button in trafficLightButtons {
           button.isHidden = true
@@ -840,16 +849,19 @@ extension MainWindowController {
       documentIconButton?.alphaValue = 1
 
       if futureLayout.trafficLightButtons != .hidden {
-        if futureLayout.spec.isLegacyMode {
-          let trafficLightBtnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-
+        if futureLayout.spec.isLegacyMode && fakeLeadingTitleBarView == nil {
           // Add fake traffic light buttons. Needs a lot of work...
-          let trafficLightButtons: [NSButton] = trafficLightBtnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
+          let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+          let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
           let hStackView = NSStackView(views: trafficLightButtons)
+          hStackView.wantsLayer = true
+          hStackView.layer?.backgroundColor = .clear
           hStackView.orientation = .horizontal
-          titleBarView.addSubview(hStackView)
-
-          hStackView.addConstraintsToFillSuperview()
+          window.contentView!.addSubview(hStackView)
+          hStackView.leadingAnchor.constraint(equalTo: hStackView.superview!.leadingAnchor).isActive = true
+          hStackView.trailingAnchor.constraint(equalTo: hStackView.superview!.trailingAnchor).isActive = true
+          hStackView.topAnchor.constraint(equalTo: hStackView.superview!.topAnchor).isActive = true
+          hStackView.heightAnchor.constraint(equalToConstant: MainWindowController.standardTitleBarHeight).isActive = true
           hStackView.detachesHiddenViews = false
           hStackView.spacing = 6
           /// Because of possible top OSC, `titleBarView` may have reduced height.
@@ -857,21 +869,17 @@ extension MainWindowController {
           hStackView.alignment = .top
           hStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
           for btn in trafficLightButtons {
-            btn.isEnabled = true
             btn.state = .on
-            btn.isHidden = false
             btn.alphaValue = 1
             btn.display()
           }
           hStackView.layout()
-        } else {
-          // Remove fake traffic light buttons (if any)
-          for subview in titleBarView.subviews {
-            subview.removeFromSuperview()
-          }
-          for button in trafficLightButtons {
-            button.isHidden = false
-          }
+          fakeLeadingTitleBarView = hStackView
+        }
+
+        // This works for legacy too
+        for button in trafficLightButtons {
+          button.isHidden = false
         }
       }
 

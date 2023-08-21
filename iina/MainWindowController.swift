@@ -83,6 +83,8 @@ class MainWindowController: PlayerWindowController {
   /** The control view for interactive mode. */
   var cropSettingsView: CropBoxViewController?
 
+  var fakeLeadingTitleBarView: NSStackView? = nil
+
   // For Pinch To Magnify gesture:
   var lastMagnification: CGFloat = 0.0
   var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoFrame: NSRect(), videoAspectRatio: 1.0)
@@ -596,7 +598,7 @@ class MainWindowController: PlayerWindowController {
           window.standardWindowButton($0)
         }
       } else {
-        if let stackView = titleBarView.subviews.first as? NSStackView {
+        if let stackView = fakeLeadingTitleBarView {
           return stackView.subviews as! [NSButton]
         }
       }
