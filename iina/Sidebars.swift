@@ -170,6 +170,7 @@ extension MainWindowController {
     toggleVisibility(of: trailingSidebar)
   }
 
+  /// Toggles visibility of given `sidebar`
   func toggleVisibility(of sidebar: Sidebar) {
     Logger.log("Toggling visibility of sidebar: \(sidebar.locationID) (animationState: \(sidebar.animationState), isVisible: \(sidebar.isVisible))",
                level: .verbose, subsystem: player.subsystem)
@@ -184,6 +185,7 @@ extension MainWindowController {
     // Do nothing if side bar is in intermediate state
   }
 
+  /// Shows or toggles visibility of given `tabGroup`
   func showSidebar(forTabGroup tabGroup: SidebarTabGroup, force: Bool = false, hideIfAlreadyShown: Bool = true) {
     Logger.log("ShowSidebar for tabGroup: \(tabGroup.rawValue.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)",
                level: .verbose, subsystem: player.subsystem)
@@ -199,6 +201,7 @@ extension MainWindowController {
     }
   }
 
+  /// Shows or toggles visibility of given `tab`
   func showSidebar(tab: SidebarTab, force: Bool = false, hideIfAlreadyShown: Bool = true) {
     Logger.log("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)",
                level: .verbose, subsystem: player.subsystem)
@@ -217,15 +220,8 @@ extension MainWindowController {
     })
   }
 
-  // Hides any visible sidebars
-  func hideAllSidebars(animate: Bool = true, then doAfter: TaskFunc? = nil) {
-    Logger.log("Hiding all sidebars", level: .verbose, subsystem: player.subsystem)
-
-    changeVisibilityForSidebars(setLeadingTo: .hide, setTrailingTo: .hide, then: doAfter)
-  }
-
   // Updates placements (inside or outside) of both sidebars in the UI so they match the prefs.
-  // If placement of one/both sidebars change while open, closes & reopens the affected sidebars with the new placement.
+  // If placement of one/both affected sidebars is open, closes then reopens the affected bar(s) with the new placement.
   func updateSidebarPlacements() {
     let leadingPlacementNew: Preference.PanelPlacement = Preference.enum(for: .leadingSidebarPlacement)
     let needLeadingReopen = leadingSidebar.isVisible && leadingSidebar.placement != leadingPlacementNew
@@ -248,6 +244,15 @@ extension MainWindowController {
     })
   }
 
+  /// Hides all visible sidebars
+  func hideAllSidebars(animate: Bool = true, then doAfter: TaskFunc? = nil) {
+    Logger.log("Hiding all sidebars", level: .verbose, subsystem: player.subsystem)
+
+    changeVisibilityForSidebars(setLeadingTo: .hide, setTrailingTo: .hide, then: doAfter)
+  }
+
+  /// Shows or hides visibility of given `tab`. If the affected sidebar is showing the wrong `tabGroup`, it will be first be
+  /// hidden/closed and then shown again the the correct `tabGroup` & `tab`. Will do nothing if already showing the given `tab`.
   private func changeVisibility(forTab tab: SidebarTab, to shouldShow: Bool, then doAfter: TaskFunc? = nil) {
     guard !isInInteractiveMode else { return }
     Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(shouldShow ? "SHOW" : "HIDE")",
@@ -306,9 +311,13 @@ extension MainWindowController {
   }
 
   /**
-   In one case it is desired to closed both sidebars simultaneously. To do this safely, we need to add logic for both sidebars
-   to each animation block.
+   • Peforms the animation(s) and layout changes needed to show or hide one or both sidebars. All code for hiding or showing sidebars
+     calls this method.
+   • In one case it is desired to closed both sidebars simultaneously. To do this safely, we need to add logic for both sidebars
+     to each animation block.
+   • If showing a given sidebar, the desired tab must also be given (see class `VisibilityGoal`).
    */
+  // FIXME: integrate this into LayoutPlan
   private func changeVisibilityForSidebars(setLeadingTo: VisibilityGoal? = nil,
                                            setTrailingTo: VisibilityGoal? = nil,
                                            then doAfter: TaskFunc? = nil) {
@@ -523,7 +532,7 @@ extension MainWindowController {
       equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
     videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
 
-    prepareLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTabToShow)
+    prepareRemainingLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: leadingTabToShow)
   }
 
   /// Execute this prior to opening `trailingSidebar` to the given tab.
@@ -580,11 +589,12 @@ extension MainWindowController {
       equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
     videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.isActive = true
 
-    prepareLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: trailingTabToShow)
+    prepareRemainingLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: trailingTabToShow)
   }
 
-  /// Works for either `Sidebar`. Execute this prior to opening the given `Sidebar` with corresponding `sidebarView`
-  private func prepareLayoutForOpening(sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: SidebarTab) {
+  /// Prepares those layout components which are generic for either `Sidebar`.
+  /// Execute this prior to opening the given `Sidebar` with corresponding `sidebarView`
+  private func prepareRemainingLayoutForOpening(sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: SidebarTab) {
     Logger.log("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab",
                level: .error, subsystem: player.subsystem)
 
