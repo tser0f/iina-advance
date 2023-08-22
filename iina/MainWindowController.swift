@@ -1877,7 +1877,6 @@ class MainWindowController: PlayerWindowController {
       heightConstraint.isActive = true
 
       osdStackView.addView(accessoryView, in: .bottom)
-      Utility.quickConstraints(["H:|-0-[v(>=240)]-0-|"], ["v": accessoryView])
 
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0

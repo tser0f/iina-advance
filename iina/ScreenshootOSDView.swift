@@ -11,7 +11,6 @@ import Cocoa
 class ScreenshootOSDView: NSViewController {
   @IBOutlet weak var imageView: NSImageView!
   @IBOutlet weak var heightConstraint: NSLayoutConstraint!
-  @IBOutlet weak var widthConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomConstraint: NSLayoutConstraint!
   @IBOutlet weak var deleteBtn: NSButton!
   @IBOutlet weak var editBtn: NSButton!
@@ -30,8 +29,10 @@ class ScreenshootOSDView: NSViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
     view.translatesAutoresizingMaskIntoConstraints = false
-    widthConstraint.constant = size!.width
-    heightConstraint.constant = size!.height
+    let imageSize = size!
+    imageView.widthAnchor.constraint(equalTo: imageView.heightAnchor, multiplier: imageSize.aspect).isActive = true
+    imageView.widthAnchor.constraint(lessThanOrEqualToConstant: imageSize.width).isActive = true
+    imageView.heightAnchor.constraint(lessThanOrEqualToConstant: imageSize.height).isActive = true
     imageView.image = image
     imageView.wantsLayer = true
     imageView.layer?.borderColor = NSColor.gridColor.withAlphaComponent(0.6).cgColor
@@ -42,6 +43,7 @@ class ScreenshootOSDView: NSViewController {
       [deleteBtn, editBtn, revealBtn].forEach { $0?.isHidden = true }
       bottomConstraint.constant = 8
     }
+    self.view.needsLayout = true
   }
 
   @IBAction func deleteBtnAction(_ sender: Any) {
