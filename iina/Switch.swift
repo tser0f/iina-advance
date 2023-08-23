@@ -15,6 +15,11 @@ class Switch: NSView {
   private var _checked = false
   private var _switchOnLeft = false
 
+  /// For some panels (such as Video Settings sidebar) it is desirable to refuse first responder status, so that tab
+  /// navigation will skip over it and not highlight it. Defaults to `false`, but can be configured for each `Switch`
+  /// in the XIB via Interface Builder's Attributes Inspector.
+  @IBInspectable var refusesFirstResponder: Bool = false
+
   @IBInspectable var title: String {
     get {
       return _title
@@ -120,7 +125,8 @@ class Switch: NSView {
   private func setupSubViews() {
     if #available(macOS 10.15, *) {
       let label = NSTextField(labelWithString: title)
-      let nsSwitch = NonKeyViewSwitch()
+      let nsSwitch = FirstResponderOptionalSwitch()
+      nsSwitch.acceptsFirstResponder = !refusesFirstResponder
       nsSwitch.target = self
       nsSwitch.action = #selector(statusChanged)
       label.translatesAutoresizingMaskIntoConstraints = false
@@ -139,9 +145,11 @@ class Switch: NSView {
     } else {
       let checkbox: NSButton
       if #available(macOS 10.12, *) {
-        checkbox = NonKeyViewButton(checkboxWithTitle: title, target: self, action: #selector(statusChanged))
+        let cb = FirstResponderOptionalButton(checkboxWithTitle: title, target: self, action: #selector(statusChanged))
+        cb.acceptsFirstResponder = !refusesFirstResponder
+        checkbox = cb
       } else {
-        checkbox = NonKeyViewButton()
+        checkbox = FirstResponderOptionalButton()
         checkbox.setButtonType(.switch)
         checkbox.target = self
         checkbox.action = #selector(statusChanged)
@@ -175,15 +183,25 @@ class Switch: NSView {
   }
 
   @available(macOS 10.15, *)
-  class NonKeyViewSwitch: NSSwitch {
+  class FirstResponderOptionalSwitch: NSSwitch {
+    var _acceptsFirstResponder = true
     override var acceptsFirstResponder: Bool {
-      return false
+      get {
+        return _acceptsFirstResponder
+      } set {
+        _acceptsFirstResponder = newValue
+      }
     }
   }
 
-  class NonKeyViewButton: NSButton {
+  class FirstResponderOptionalButton: NSButton {
+    var _acceptsFirstResponder = true
     override var acceptsFirstResponder: Bool {
-      return false
+      get {
+        return _acceptsFirstResponder
+      } set {
+        _acceptsFirstResponder = newValue
+      }
     }
   }
 }

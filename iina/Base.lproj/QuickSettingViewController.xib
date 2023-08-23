@@ -584,6 +584,7 @@
                                                                         </constraints>
                                                                         <userDefinedRuntimeAttributes>
                                                                             <userDefinedRuntimeAttribute type="string" keyPath="title" value="quicksetting.hwdec"/>
+                                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="refusesFirstResponder" value="NO"/>
                                                                         </userDefinedRuntimeAttributes>
                                                                     </customView>
                                                                     <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="PyM-xa-vx9" userLabel="Horizontal Line 1">
@@ -596,6 +597,7 @@
                                                                         </constraints>
                                                                         <userDefinedRuntimeAttributes>
                                                                             <userDefinedRuntimeAttribute type="string" keyPath="title" value="quicksetting.deinterlace"/>
+                                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="refusesFirstResponder" value="NO"/>
                                                                         </userDefinedRuntimeAttributes>
                                                                     </customView>
                                                                     <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="qYi-uQ-6qo" userLabel="Horizontal Line 2">
@@ -608,6 +610,7 @@
                                                                         </constraints>
                                                                         <userDefinedRuntimeAttributes>
                                                                             <userDefinedRuntimeAttribute type="string" keyPath="title" value="quicksetting.hdr"/>
+                                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="refusesFirstResponder" value="NO"/>
                                                                         </userDefinedRuntimeAttributes>
                                                                     </customView>
                                                                 </subviews>
