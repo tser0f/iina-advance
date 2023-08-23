@@ -54,4 +54,45 @@ class MiniPlayerWindow: NSWindow {
     return false
   }
 
+  // MARK: - Duplicated from MainWindow
+  // (see notes there)
+
+  override var canBecomeKey: Bool {
+    if !styleMask.contains(.titled) {
+      return true
+    }
+    return super.canBecomeKey
+  }
+
+  override var canBecomeMain: Bool {
+    if !styleMask.contains(.titled) {
+      return true
+    }
+    return super.canBecomeMain
+  }
+
+  override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+    if item.action == #selector(self.performClose(_:)) {
+      return true
+    } else if item.action == #selector(self.performMiniaturize(_:)) {
+      return true
+    } else if item.action == #selector(self.performZoom(_:)) {
+      return true
+    } else {
+      return super.validateUserInterfaceItem(item)
+    }
+  }
+
+  override func performClose(_ sender: Any?) {
+    self.close()
+  }
+
+  /// Need to override this for Minimize to work when `!styleMask.contains(.titled)`
+  override func performMiniaturize(_ sender: Any?) {
+    self.miniaturize(self)
+  }
+
+  override func performZoom(_ sender: Any?) {
+    self.zoom(self)
+  }
 }

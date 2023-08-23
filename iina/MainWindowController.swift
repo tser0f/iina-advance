@@ -361,9 +361,13 @@ class MainWindowController: PlayerWindowController {
       PK.showTrailingSidebarToggleButton.rawValue,
       PK.oscBarToolbarIconSize.rawValue,
       PK.oscBarToolbarIconSpacing.rawValue,
-      PK.controlBarToolbarButtons.rawValue,
-      PK.useLegacyWindowedMode.rawValue:
+      PK.controlBarToolbarButtons.rawValue:
 
+      updateTitleBarAndOSC()
+    case PK.useLegacyWindowedMode.rawValue:
+      if player.isInMiniPlayer {
+        player.miniPlayer.updateLegacyWindowedMode()
+      }
       updateTitleBarAndOSC()
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {

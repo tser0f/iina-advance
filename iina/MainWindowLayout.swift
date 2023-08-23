@@ -853,28 +853,28 @@ extension MainWindowController {
           // Add fake traffic light buttons. Needs a lot of work...
           let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
           let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
-          let hStackView = NSStackView(views: trafficLightButtons)
-          hStackView.wantsLayer = true
-          hStackView.layer?.backgroundColor = .clear
-          hStackView.orientation = .horizontal
-          window.contentView!.addSubview(hStackView)
-          hStackView.leadingAnchor.constraint(equalTo: hStackView.superview!.leadingAnchor).isActive = true
-          hStackView.trailingAnchor.constraint(equalTo: hStackView.superview!.trailingAnchor).isActive = true
-          hStackView.topAnchor.constraint(equalTo: hStackView.superview!.topAnchor).isActive = true
-          hStackView.heightAnchor.constraint(equalToConstant: MainWindowController.standardTitleBarHeight).isActive = true
-          hStackView.detachesHiddenViews = false
-          hStackView.spacing = 6
+          let leadingStackView = NSStackView(views: trafficLightButtons)
+          leadingStackView.wantsLayer = true
+          leadingStackView.layer?.backgroundColor = .clear
+          leadingStackView.orientation = .horizontal
+          window.contentView!.addSubview(leadingStackView)
+          leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
+          leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
+          leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
+          leadingStackView.heightAnchor.constraint(equalToConstant: MainWindowController.standardTitleBarHeight).isActive = true
+          leadingStackView.detachesHiddenViews = false
+          leadingStackView.spacing = 6
           /// Because of possible top OSC, `titleBarView` may have reduced height.
           /// So do not vertically center the buttons. Use offset from top instead:
-          hStackView.alignment = .top
-          hStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
+          leadingStackView.alignment = .top
+          leadingStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
           for btn in trafficLightButtons {
-            btn.state = .on
             btn.alphaValue = 1
+            btn.isHighlighted = true
             btn.display()
           }
-          hStackView.layout()
-          fakeLeadingTitleBarView = hStackView
+          leadingStackView.layout()
+          fakeLeadingTitleBarView = leadingStackView
         }
 
         // This works for legacy too

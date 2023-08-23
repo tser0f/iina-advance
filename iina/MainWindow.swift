@@ -98,6 +98,8 @@ class MainWindow: NSWindow {
       return true
     } else if item.action == #selector(self.performMiniaturize(_:)) {
       return true
+    } else if item.action == #selector(self.performZoom(_:)) {
+      return true
     } else {
       return super.validateUserInterfaceItem(item)
     }
@@ -111,5 +113,10 @@ class MainWindow: NSWindow {
   /// Need to override this for Minimize to work when `!styleMask.contains(.titled)`
   override func performMiniaturize(_ sender: Any?) {
     self.miniaturize(self)
+  }
+
+  /// Need to override this for Minimize to work when `!styleMask.contains(.titled)`
+  override func performZoom(_ sender: Any?) {
+    self.zoom(self)
   }
 }

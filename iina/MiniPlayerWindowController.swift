@@ -104,18 +104,9 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     guard let window = window,
           let contentView = window.contentView else { return }
 
-    window.styleMask = [.fullSizeContentView, .titled, .resizable, .closable, .miniaturizable]
     window.isMovableByWindowBackground = true
-    window.titleVisibility = .hidden
-    ([.closeButton, .miniaturizeButton, .zoomButton, .documentIconButton] as [NSWindow.ButtonType]).forEach {
-      let button = window.standardWindowButton($0)
-      button?.isHidden = true
-      // The close button, being obscured by standard buttons, won't respond to clicking when window is inactive.
-      // i.e. clicking close button (or any position located in the standard buttons's frame) will only order the window
-      // to front, but it never becomes key or main window.
-      // Removing the button directly will also work but it causes crash on 10.12-, so for the sake of safety we don't use that way for now.
-      // FIXME: Not a perfect solution. It should respond to the first click.
-    }
+    window.styleMask = [.fullSizeContentView, .resizable, .closable, .miniaturizable]
+    updateLegacyWindowedMode()
 
     contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerMinWidth).isActive = true
     contentView.widthAnchor.constraint(lessThanOrEqualToConstant: MiniPlayerWindowController.maxWindowWidth).isActive = true
@@ -168,6 +159,30 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       adjustLayoutForVideoChange()
     }
     player.log.verbose("MiniPlayerWindow windowDidLoad done")
+  }
+
+  func updateLegacyWindowedMode() {
+    guard let window = window else { return }
+
+    if Preference.bool(for: .useLegacyWindowedMode) {
+      window.styleMask.remove(.titled)
+    } else {
+      window.styleMask.insert(.titled)
+      window.titleVisibility = .hidden
+
+      ([.closeButton, .miniaturizeButton, .zoomButton, .documentIconButton] as [NSWindow.ButtonType]).forEach {
+        if let button = window.standardWindowButton($0) {
+          button.isHidden = true
+        }
+        // The close button, being obscured by standard buttons, won't respond to clicking when window is inactive.
+        // i.e. clicking close button (or any position located in the standard buttons's frame) will only order the window
+        // to front, but it never becomes key or main window.
+        // Removing the button directly will also work but it causes crash on 10.12-, so for the sake of safety we don't use that way for now.
+        // FIXME: Not a perfect solution. It should respond to the first click.
+      }
+    }
+    // If paused, need explicit draw so that the video isn't lost after the style change
+    videoView.videoLayer.draw(forced: true)
   }
 
   override internal func setMaterial(_ theme: Preference.Theme?) {
