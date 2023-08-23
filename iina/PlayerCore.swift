@@ -111,6 +111,10 @@ class PlayerCore: NSObject {
   var mainWindow: MainWindowController!
   var miniPlayer: MiniPlayerWindowController!
 
+  var currentWindow: NSWindow? {
+    return isInMiniPlayer ? miniPlayer.window : mainWindow.window
+  }
+
   var mpv: MPVController!
   lazy var videoView: VideoView = VideoView(player: self)
 
@@ -160,10 +164,6 @@ class PlayerCore: NSObject {
 
   var isPlaylistVisible: Bool {
     isInMiniPlayer ? miniPlayer.isPlaylistVisible : mainWindow.isShowing(sidebarTab: .playlist)
-  }
-
-  var currentWindow: NSWindow? {
-    return isInMiniPlayer ? miniPlayer.window : mainWindow.window
   }
 
   var isOnlyOpenPlayer: Bool {
