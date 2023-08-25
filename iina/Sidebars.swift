@@ -105,10 +105,10 @@ extension MainWindowController {
       self.tabGroups = tabGroups
 
       /// some validation before setting `lastVisibleTab`
-      if let tab = lastVisibleTab, tabGroups.contains(tab.group) {
-        self.lastVisibleTab = lastVisibleTab
-      } else if let visibleTab = visibility.visibleTab {
+      if let visibleTab = visibility.visibleTab, tabGroups.contains(visibleTab.group) {
         self.lastVisibleTab = visibleTab
+      } else if let lastVisibleTab = lastVisibleTab, tabGroups.contains(lastVisibleTab.group) {
+        self.lastVisibleTab = lastVisibleTab
       } else {
         self.lastVisibleTab = nil
       }
@@ -122,14 +122,8 @@ extension MainWindowController {
         Logger.log("Can no longer show visible tab \(newVisibleTab.name) in \(self.locationID). The sidebar will close.", level: .verbose)
         newVisibility = .hide
       }
-      let newLastVisibleTab: Tab?
-      if let newVisibleTab = newVisibility.visibleTab, self.visibleTab != nil && newVisibleTab != self.visibleTab {
-        /// Save current tab, if present, as `lastVisibleTab`:
-        newLastVisibleTab = self.visibleTab ?? self.lastVisibleTab
-      } else {
-        /// No change to visibility: do not change `lastVisibleTab`
-        newLastVisibleTab = self.lastVisibleTab
-      }
+      /// Save current tab, if present, as `lastVisibleTab`:
+      let newLastVisibleTab: Tab? = self.visibleTab ?? self.lastVisibleTab
 
       return Sidebar(self.locationID,
                      tabGroups: newTabGroups,
@@ -155,6 +149,8 @@ extension MainWindowController {
       return visibility.visibleTab
     }
 
+    /// The currently visible tab, if sidebar is open/visible. If a tab was ever opened before that and is still valid with respect
+    /// to the current `tabGroups`, returns that. Otherwise returns `nil`.
     let lastVisibleTab: Sidebar.Tab?
 
     /// Tab group of `visibleTab`
@@ -319,7 +315,7 @@ extension MainWindowController {
     let leadingSidebar = layout.leadingSidebar
     let trailingSidebar = layout.trailingSidebar
 
-    var ΔLeft: CGFloat = 0
+    var ΔOutsideLeft: CGFloat = 0
     if let goal = leadingGoal {
       log.verbose("Setting leadingSidebar visibility to \(goal)")
       var shouldShow = false
@@ -339,11 +335,11 @@ extension MainWindowController {
       updateLeadingSidebarWidth(to: sidebarWidth, show: shouldShow, placement: leadingSidebar.placement)
       if leadingSidebar.placement == .outsideVideo {
         leadingSidebarTrailingBorder.isHidden = !shouldShow
-        ΔLeft = shouldShow ? sidebarWidth : -sidebarWidth
+        ΔOutsideLeft = shouldShow ? sidebarWidth : -sidebarWidth
       }
     }
 
-    var ΔRight: CGFloat = 0
+    var ΔOutsideRight: CGFloat = 0
     if let goal = trailingGoal {
       log.verbose("Setting trailingSidebar visibility to \(goal)")
       var shouldShow = false
@@ -363,24 +359,14 @@ extension MainWindowController {
       updateTrailingSidebarWidth(to: sidebarWidth, show: shouldShow, placement: trailingSidebar.placement)
       if trailingSidebar.placement == .outsideVideo {
         trailingSidebarLeadingBorder.isHidden = !shouldShow
-        ΔRight = shouldShow ? sidebarWidth : -sidebarWidth
+        ΔOutsideRight = shouldShow ? sidebarWidth : -sidebarWidth
       }
     }
 
-    if !currentLayout.isFullScreen && (ΔLeft != 0 || ΔRight != 0) {
-      let oldGeometry = buildGeometryFromCurrentLayout()
-      // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
-      // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
-      // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
-      // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-      let newGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
-                                                      newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft)
-      let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
-
-      Logger.log("Calling setFrame() from animateShowOrHideSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
-                 level: .debug, subsystem: player.subsystem)
-      (window as! MainWindow).setFrameImmediately(newWindowFrame)
+    if !currentLayout.isFullScreen && (ΔOutsideLeft != 0 || ΔOutsideRight != 0) {
+      updateWindowFrame(ΔLeftOutsideWidth: ΔOutsideLeft, ΔRightOutsideWidth: ΔOutsideRight)
     }
+
     updateSpacingForTitleBarAccessories(layout)
     updateSidebarVerticalConstraints(layout: layout)
     window?.contentView?.layoutSubtreeIfNeeded()
@@ -805,31 +791,26 @@ extension MainWindowController {
   // Returns true if handled; false if not
   func resizeSidebar(with dragEvent: NSEvent) -> Bool {
     let currentLocation = dragEvent.locationInWindow
-    let newWidth: CGFloat
     let newPlaylistWidth: CGFloat
     let layout = currentLayout
 
     if leadingSidebarIsResizing {
-      switch layout.leadingSidebarPlacement {
-      case .insideVideo:
-        newWidth = currentLocation.x + 2
-      case .outsideVideo:
-        newWidth = currentLocation.x + 2
-      }
+      let newWidth = currentLocation.x + 2
       newPlaylistWidth = clampPlaylistWidth(newWidth)
       UIAnimation.disableAnimation {
         updateLeadingSidebarWidth(to: newPlaylistWidth, show: true, placement: layout.leadingSidebarPlacement)
+        if layout.leadingSidebarPlacement == .outsideVideo {
+          updateWindowFrame()
+        }
       }
     } else if trailingSidebarIsResizing {
-      switch layout.trailingSidebarPlacement {
-      case .insideVideo:
-        newWidth = window!.frame.width - currentLocation.x - 2
-      case .outsideVideo:
-        newWidth = window!.frame.width - currentLocation.x - 2
-      }
+      let newWidth = window!.frame.width - currentLocation.x - 2
       newPlaylistWidth = clampPlaylistWidth(newWidth)
       UIAnimation.disableAnimation {
         updateTrailingSidebarWidth(to: newPlaylistWidth, show: true, placement: layout.trailingSidebarPlacement)
+        if layout.trailingSidebarPlacement == .outsideVideo {
+          updateWindowFrame()
+        }
       }
     } else {
       return false
@@ -838,6 +819,21 @@ extension MainWindowController {
     Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
     updateSpacingForTitleBarAccessories()
     return true
+  }
+
+  private func updateWindowFrame(ΔLeftOutsideWidth ΔLeft: CGFloat = 0, ΔRightOutsideWidth ΔRight: CGFloat = 0) {
+    let oldGeometry = buildGeometryFromCurrentLayout()
+    // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
+    // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
+    // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
+    // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
+    let newGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
+                                                                                  newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
+    let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
+
+    Logger.log("Calling setFrame() from animateShowOrHideSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
+               level: .debug, subsystem: player.subsystem)
+    (window as! MainWindow).setFrameImmediately(newWindowFrame)
   }
 
   func finishResizingSidebar(with dragEvent: NSEvent) -> Bool {
