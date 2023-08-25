@@ -332,6 +332,7 @@ extension MainWindowController {
     let fromLayout: LayoutPlan
     let toLayout: LayoutPlan
     let isInitialLayout: Bool
+    var windowGeometry: MainWindowGeometry? = nil
 
     var animationTasks: [UIAnimation.Task] = []
 
@@ -389,6 +390,10 @@ extension MainWindowController {
       return mustClose(.trailingSidebar)
     }()
 
+    lazy var isOpeningOrClosingAnySidebar: Bool = {
+      return mustOpenLeadingSidebar || mustOpenTrailingSidebar || mustCloseLeadingSidebar || mustCloseTrailingSidebar
+    }()
+
     func mustOpen(_ sidebarID: Preference.SidebarLocation) -> Bool {
       let oldState = fromLayout.sidebar(withID: sidebarID)
       let newState = toLayout.sidebar(withID: sidebarID)
@@ -436,8 +441,8 @@ extension MainWindowController {
     }
   }
 
-  func transitionToInitialLayout() {
-    log.verbose("Setting initial layout")
+  func setWindowLayoutFromPrefs() {
+    log.verbose("Transitioning to initial layout from prefs")
     let initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     let initialLayout = buildFutureLayoutPlan(from: initialLayoutSpec)
 
@@ -464,12 +469,14 @@ extension MainWindowController {
   // TODO: Prevent sidebars from opening if not enough space?
   /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
-  func buildLayoutTransition(to layoutSpec: LayoutSpec,
+  func buildLayoutTransition(from fromLayout: LayoutPlan,
+                             to layoutSpec: LayoutSpec,
                              totalStartingDuration: CGFloat? = nil,
                              totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
 
-    let futureLayout = buildFutureLayoutPlan(from: layoutSpec)
-    let transition = LayoutTransition(from: currentLayout, to: futureLayout, isInitialLayout: false)
+    let toLayout = buildFutureLayoutPlan(from: layoutSpec)
+    let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false)
+    transition.windowGeometry = buildGeometryFromCurrentLayout()
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {
@@ -482,7 +489,14 @@ extension MainWindowController {
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
 
-    let panelTimingName = transition.isTogglingFullScreen ? nil : CAMediaTimingFunctionName.easeIn
+    let panelTimingName: CAMediaTimingFunctionName?
+    if transition.isTogglingFullScreen {
+      panelTimingName = nil
+    } else if transition.isOpeningOrClosingAnySidebar {
+      panelTimingName = .easeIn
+    } else {
+      panelTimingName = .linear
+    }
 
     log.verbose("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
 
@@ -613,6 +627,13 @@ extension MainWindowController {
       }
 
       player.mpv.setFlag(MPVOption.Window.keepaspect, false)
+    }
+
+    if transition.mustCloseLeadingSidebar && leadingSidebarAnimationState == .shown {
+      leadingSidebarAnimationState = .willHide
+    }
+    if transition.mustCloseTrailingSidebar && trailingSidebarAnimationState == .shown {
+      trailingSidebarAnimationState = .willHide
     }
   }
 
@@ -1019,7 +1040,7 @@ extension MainWindowController {
           leadingStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
           for btn in trafficLightButtons {
             btn.alphaValue = 1
-            btn.isHighlighted = true
+//            btn.isHighlighted = true
             btn.display()
           }
           leadingStackView.layout()
@@ -1339,7 +1360,7 @@ extension MainWindowController {
     }
   }
 
-  // This method should only make a layout plan. It should not alter the current layout.
+  // This method should only make a layout plan. It should not alter or reference the current layout.
   func buildFutureLayoutPlan(from layoutSpec: LayoutSpec) -> LayoutPlan {
     let window = window!
 

@@ -76,6 +76,10 @@ class UIAnimation {
       run([task], then: doAfter)
     }
 
+    func runZeroDuration(_ runFunc: @escaping TaskFunc, then doAfter: TaskFunc? = nil) {
+      run(UIAnimation.zeroDurationTask(runFunc), then: doAfter)
+    }
+
     /// Recursive function which executes each of the given `AnimationTask`s one after another.
     /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `UIAnimation.disableAnimation()`.
     /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `UIAnimation.DefaultDuration`.

@@ -202,15 +202,17 @@ extension MainWindowController {
 
   /// Toggles visibility of given `sidebar`
   func toggleVisibility(of sidebarID: Preference.SidebarLocation) {
-    let sidebar = currentLayout.sidebar(withID: sidebarID)
-    log.verbose("Toggling visibility of sidebar: \(sidebarID) (isVisible: \(sidebar.isVisible))")
-    // Do nothing if sidebar has no configured tabs
-    guard let tab = sidebar.defaultTabToShow else { return }
+    animationQueue.runZeroDuration { [self] in
+      let sidebar = currentLayout.sidebar(withID: sidebarID)
+      log.verbose("Toggling visibility of sidebar: \(sidebarID) (isVisible: \(sidebar.isVisible))")
+      // Do nothing if sidebar has no configured tabs
+      guard let tab = sidebar.defaultTabToShow else { return }
 
-    if sidebar.isVisible {
-      changeVisibility(forTab: tab, to: false)
-    } else {
-      changeVisibility(forTab: tab, to: true)
+      if sidebar.isVisible {
+        changeVisibility(forTab: tab, to: false)
+      } else {
+        changeVisibility(forTab: tab, to: true)
+      }
     }
   }
 
@@ -235,7 +237,7 @@ extension MainWindowController {
     Logger.log("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)",
                level: .verbose, subsystem: player.subsystem)
 
-    animationQueue.run(UIAnimation.zeroDurationTask { [self] in
+    animationQueue.runZeroDuration { [self] in
       guard let destinationSidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
 
       if destinationSidebar.visibleTab == tab {
@@ -246,68 +248,91 @@ extension MainWindowController {
         // This will first change the sidebar to the displayed tab group if needed:
         changeVisibility(forTab: tab, to: true)
       }
-    })
+    }
   }
 
   // Updates placements (inside or outside) of both sidebars in the UI so they match the prefs.
   // If placement of one/both affected sidebars is open, closes then reopens the affected bar(s) with the new placement.
   func updateSidebarPlacements() {
-    let leadingSidebar = currentLayout.leadingSidebar.clone(placement: Preference.enum(for: .leadingSidebarPlacement))
-    let trailingSidebar = currentLayout.trailingSidebar.clone(placement: Preference.enum(for: .trailingSidebarPlacement))
+    animationQueue.runZeroDuration { [self] in
+      let oldLayout = currentLayout
+      let leadingSidebar = oldLayout.leadingSidebar.clone(placement: Preference.enum(for: .leadingSidebarPlacement))
+      let trailingSidebar = oldLayout.trailingSidebar.clone(placement: Preference.enum(for: .trailingSidebarPlacement))
 
-    guard currentLayout.leadingSidebarPlacement != leadingSidebar.placement ||
-            currentLayout.trailingSidebarPlacement != trailingSidebar.placement else {
-      return
+      guard oldLayout.leadingSidebarPlacement != leadingSidebar.placement ||
+              oldLayout.trailingSidebarPlacement != trailingSidebar.placement else {
+        return
+      }
+
+      let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
+      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
+      animationQueue.run(transition.animationTasks)
     }
-
-    let newLayoutSpec = currentLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-    let transition = buildLayoutTransition(to: newLayoutSpec)
-    animationQueue.run(transition.animationTasks)
   }
 
   /// Hides all visible sidebars
   func hideAllSidebars(animate: Bool = true) {
     Logger.log("Hiding all sidebars", level: .verbose, subsystem: player.subsystem)
 
-    let layout = currentLayout
-    let newLayoutSpec = layout.spec.clone(leadingSidebar: layout.leadingSidebar.clone(visibility: .hide),
-                                          trailingSidebar: layout.trailingSidebar.clone(visibility: .hide))
-    let transition = buildLayoutTransition(to: newLayoutSpec)
-    
-    if animate {
-      animationQueue.run(transition.animationTasks)
-    } else {
-      UIAnimation.disableAnimation{
+    animationQueue.runZeroDuration { [self] in
+      let oldLayout = currentLayout
+      let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
+                                               trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide))
+      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
+
+      if animate {
         animationQueue.run(transition.animationTasks)
+      } else {
+        UIAnimation.disableAnimation{
+          animationQueue.run(transition.animationTasks)
+        }
       }
     }
   }
 
   /// Shows or hides visibility of given `tab`. If the affected sidebar is showing the wrong `tabGroup`, it will be first be
   /// hidden/closed and then shown again the the correct `tabGroup` & `tab`. Will do nothing if already showing the given `tab`.
-  private func changeVisibility(forTab tab: Sidebar.Tab, to shouldShow: Bool, then doAfter: TaskFunc? = nil) {
+  private func changeVisibility(forTab tab: Sidebar.Tab, to shouldShow: Bool) {
     guard !isInInteractiveMode else { return }
-    Logger.log("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(shouldShow ? "SHOW" : "HIDE")",
-               level: .verbose, subsystem: player.subsystem)
+    log.verbose("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(shouldShow ? "SHOW" : "HIDE")")
 
     let newVisibilty: Sidebar.Visibility = shouldShow ? .show(tabToShow: tab) : .hide
-    let currentLayout = currentLayout
+    let oldLayout = currentLayout
 
-    var leadingSidebar: Sidebar = currentLayout.leadingSidebar
-    var trailingSidebar: Sidebar = currentLayout.trailingSidebar
+    var leadingSidebar: Sidebar = oldLayout.leadingSidebar
+    var trailingSidebar: Sidebar = oldLayout.trailingSidebar
     if leadingSidebar.tabGroups.contains(tab.group) {
+      let state = leadingSidebarAnimationState
+      if shouldShow && state == .hidden {
+        leadingSidebarAnimationState = .willShow
+      } else if !shouldShow && state == .shown {
+        leadingSidebarAnimationState = .willHide
+      } else {
+        log.verbose("Skipping show/hide for \(tab.name.quoted) because leadingSidebar is in state \(state))")
+        return
+      }
       leadingSidebar = leadingSidebar.clone(visibility: newVisibilty)
-      trailingSidebar = currentLayout.trailingSidebar
+      trailingSidebar = oldLayout.trailingSidebar
     } else if trailingSidebar.tabGroups.contains(tab.group) {
-      leadingSidebar = currentLayout.leadingSidebar
+      let state = trailingSidebarAnimationState
+      if shouldShow && state == .hidden {
+        trailingSidebarAnimationState = .willShow
+      } else if !shouldShow && state == .shown {
+        trailingSidebarAnimationState = .willHide
+      } else {
+        log.verbose("Skipping show/hide for \(tab.name.quoted) because trailingSidebar is in state \(state))")
+        return
+      }
+      leadingSidebar = oldLayout.leadingSidebar
       trailingSidebar = trailingSidebar.clone(visibility: newVisibilty)
     }
 
-    let newLayoutSpec = currentLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-    let transition = buildLayoutTransition(to: newLayoutSpec)
+    let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
+    let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
     animationQueue.run(transition.animationTasks)
   }
 
+  /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
   func animateShowOrHideSidebars(layout: LayoutPlan,
                                  setLeadingTo leadingGoal: Sidebar.Visibility? = nil,
                                  setTrailingTo trailingGoal: Sidebar.Visibility? = nil) {
@@ -324,12 +349,18 @@ extension MainWindowController {
       case .show(let tabToShow):
         sidebarWidth = tabToShow.group.width()
         shouldShow = true
+        if leadingSidebarAnimationState == .willShow {
+          leadingSidebarAnimationState = .shown
+        }
       case .hide:
         if let lastVisibleTab = leadingSidebar.lastVisibleTab {
           sidebarWidth = lastVisibleTab.group.width()
         } else {
           Logger.log("Failed to find lastVisibleTab for leadingSidebar", level: .error, subsystem: player.subsystem)
           sidebarWidth = 0
+        }
+        if leadingSidebarAnimationState == .willHide {
+          leadingSidebarAnimationState = .hidden
         }
       }
       updateLeadingSidebarWidth(to: sidebarWidth, show: shouldShow, placement: leadingSidebar.placement)
@@ -348,12 +379,18 @@ extension MainWindowController {
       case .show(let tabToShow):
         sidebarWidth = tabToShow.group.width()
         shouldShow = true
+        if trailingSidebarAnimationState == .willShow {
+          trailingSidebarAnimationState = .shown
+        }
       case .hide:
         if let lastVisibleTab = trailingSidebar.lastVisibleTab {
           sidebarWidth = lastVisibleTab.group.width()
         } else {
           Logger.log("Failed to find lastVisibleTab for trailingSidebar", level: .error, subsystem: player.subsystem)
           sidebarWidth = 0
+        }
+        if trailingSidebarAnimationState == .willHide {
+          trailingSidebarAnimationState = .hidden
         }
       }
       updateTrailingSidebarWidth(to: sidebarWidth, show: shouldShow, placement: trailingSidebar.placement)
@@ -372,10 +409,13 @@ extension MainWindowController {
     window?.contentView?.layoutSubtreeIfNeeded()
   }
 
-  /// Execute this prior to opening `leadingSidebar` to the given tab.
+  /// Executed prior to opening `leadingSidebar` to the given tab.
+  /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
   func prepareLayoutForOpening(leadingSidebar: Sidebar) {
     guard let window = window else { return }
     let tabToShow: Sidebar.Tab = leadingSidebar.visibleTab!
+
+    leadingSidebarAnimationState = .willShow
 
     // - Remove old:
     for constraint in [videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
@@ -430,10 +470,13 @@ extension MainWindowController {
     prepareRemainingLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: tabToShow)
   }
 
-  /// Execute this prior to opening `trailingSidebar` to the given tab.
+  /// Executed prior to opening `trailingSidebar` to the given tab.
+  /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
   func prepareLayoutForOpening(trailingSidebar: Sidebar) {
     guard let window = window else { return }
     let tabToShow: Sidebar.Tab = trailingSidebar.visibleTab!
+
+    trailingSidebarAnimationState = .willShow
 
     // - Remove old:
     for constraint in [videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint,
@@ -489,7 +532,7 @@ extension MainWindowController {
   }
 
   /// Prepares those layout components which are generic for either `Sidebar`.
-  /// Execute this prior to opening the given `Sidebar` with corresponding `sidebarView`
+  /// Executed prior to opening the given `Sidebar` with corresponding `sidebarView`
   private func prepareRemainingLayoutForOpening(sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: Sidebar.Tab) {
     Logger.log("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab",
                level: .error, subsystem: player.subsystem)
@@ -638,6 +681,21 @@ extension MainWindowController {
     playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
   }
 
+  private func updateWindowFrame(ΔLeftOutsideWidth ΔLeft: CGFloat = 0, ΔRightOutsideWidth ΔRight: CGFloat = 0) {
+    let oldGeometry = buildGeometryFromCurrentLayout()
+    // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
+    // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
+    // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
+    // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
+    let newGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
+                                                                                  newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
+    let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
+
+    Logger.log("Calling setFrame() from animateShowOrHideSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
+               level: .debug, subsystem: player.subsystem)
+    (window as! MainWindow).setFrameImmediately(newWindowFrame)
+  }
+
   // For JavascriptAPICore:
   func isShowingSettingsSidebar() -> Bool {
     let layout = currentLayout
@@ -703,40 +761,42 @@ extension MainWindowController {
 
   // If location of tab group changed to another sidebar (in user prefs), check if it is showing, and if so, hide it & show it on the other side
   func moveTabGroup(_ tabGroup: Sidebar.TabGroup, toSidebarLocation newLocationID: Preference.SidebarLocation) {
-    guard let currentLocationID = getConfiguredSidebar(forTabGroup: tabGroup)?.locationID else { return }
-    guard currentLocationID != newLocationID else { return }
+    animationQueue.runZeroDuration { [self] in
+      guard let currentLocationID = getConfiguredSidebar(forTabGroup: tabGroup)?.locationID else { return }
+      guard currentLocationID != newLocationID else { return }
 
-    let layout = currentLayout
-    let leadingSidebar = layout.leadingSidebar
-    var newLeadingTabGroups = leadingSidebar.tabGroups
-    var newLeadingSidebarVisibility: Sidebar.Visibility = leadingSidebar.visibility
-    let trailingSidebar = layout.trailingSidebar
-    var newTrailingTabGroups = trailingSidebar.tabGroups
-    var newTraillingSidebarVisibility: Sidebar.Visibility = trailingSidebar.visibility
+      let oldLayout = currentLayout
+      let leadingSidebar = oldLayout.leadingSidebar
+      var newLeadingTabGroups = leadingSidebar.tabGroups
+      var newLeadingSidebarVisibility: Sidebar.Visibility = leadingSidebar.visibility
+      let trailingSidebar = oldLayout.trailingSidebar
+      var newTrailingTabGroups = trailingSidebar.tabGroups
+      var newTraillingSidebarVisibility: Sidebar.Visibility = trailingSidebar.visibility
 
-    if newLocationID == .leadingSidebar {
-      newLeadingTabGroups.insert(tabGroup)
-      newTrailingTabGroups.remove(tabGroup)
-      if trailingSidebar.visibleTabGroup == tabGroup && !leadingSidebar.isVisible {
-        newTraillingSidebarVisibility = .hide
-        newLeadingSidebarVisibility = trailingSidebar.visibility
+      if newLocationID == .leadingSidebar {
+        newLeadingTabGroups.insert(tabGroup)
+        newTrailingTabGroups.remove(tabGroup)
+        if trailingSidebar.visibleTabGroup == tabGroup && !leadingSidebar.isVisible {
+          newTraillingSidebarVisibility = .hide
+          newLeadingSidebarVisibility = trailingSidebar.visibility
+        }
       }
-    }
 
-    if newLocationID == .trailingSidebar {
-      newTrailingTabGroups.insert(tabGroup)
-      newLeadingTabGroups.remove(tabGroup)
-      if leadingSidebar.visibleTabGroup == tabGroup && !trailingSidebar.isVisible {
-        newLeadingSidebarVisibility = .hide
-        newTraillingSidebarVisibility = leadingSidebar.visibility
+      if newLocationID == .trailingSidebar {
+        newTrailingTabGroups.insert(tabGroup)
+        newLeadingTabGroups.remove(tabGroup)
+        if leadingSidebar.visibleTabGroup == tabGroup && !trailingSidebar.isVisible {
+          newLeadingSidebarVisibility = .hide
+          newTraillingSidebarVisibility = leadingSidebar.visibility
+        }
       }
-    }
 
-    let newLayoutSpec = layout.spec.clone(
-      leadingSidebar: leadingSidebar.clone(tabGroups: newLeadingTabGroups, visibility: newLeadingSidebarVisibility),
-      trailingSidebar: trailingSidebar.clone(tabGroups: newTrailingTabGroups, visibility: newTraillingSidebarVisibility))
-    let transition = buildLayoutTransition(to: newLayoutSpec)
-    animationQueue.run(transition.animationTasks)
+      let newLayoutSpec = oldLayout.spec.clone(
+        leadingSidebar: leadingSidebar.clone(tabGroups: newLeadingTabGroups, visibility: newLeadingSidebarVisibility),
+        trailingSidebar: trailingSidebar.clone(tabGroups: newTrailingTabGroups, visibility: newTraillingSidebarVisibility))
+      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
+      animationQueue.run(transition.animationTasks)
+    }
   }
 
   // MARK: - Mouse events
@@ -821,21 +881,6 @@ extension MainWindowController {
     return true
   }
 
-  private func updateWindowFrame(ΔLeftOutsideWidth ΔLeft: CGFloat = 0, ΔRightOutsideWidth ΔRight: CGFloat = 0) {
-    let oldGeometry = buildGeometryFromCurrentLayout()
-    // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
-    // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
-    // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
-    // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-    let newGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
-                                                                                  newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
-    let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
-
-    Logger.log("Calling setFrame() from animateShowOrHideSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
-               level: .debug, subsystem: player.subsystem)
-    (window as! MainWindow).setFrameImmediately(newWindowFrame)
-  }
-
   func finishResizingSidebar(with dragEvent: NSEvent) -> Bool {
     guard resizeSidebar(with: dragEvent) else { return false }
     if leadingSidebarIsResizing {
@@ -853,19 +898,20 @@ extension MainWindowController {
   }
 
   func hideSidebarsOnClick() -> Bool {
-    let layout = currentLayout
-    let hideLeading = layout.leadingSidebar.isVisible && Preference.bool(for: .hideLeadingSidebarOnClick)
-    let hideTrailing = layout.trailingSidebar.isVisible && Preference.bool(for: .hideTrailingSidebarOnClick)
+    let oldLayout = currentLayout
+    let hideLeading = oldLayout.leadingSidebar.isVisible && Preference.bool(for: .hideLeadingSidebarOnClick)
+    let hideTrailing = oldLayout.trailingSidebar.isVisible && Preference.bool(for: .hideTrailingSidebarOnClick)
 
     if hideLeading || hideTrailing {
-      let newLayoutSpec = layout.spec.clone(leadingSidebar: hideLeading ? layout.leadingSidebar.clone(visibility: .hide) : nil,
-                                            trailingSidebar: hideTrailing ? layout.trailingSidebar.clone(visibility: .hide) : nil)
-      let transition = buildLayoutTransition(to: newLayoutSpec)
+      let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: hideLeading ? oldLayout.leadingSidebar.clone(visibility: .hide) : nil,
+                                            trailingSidebar: hideTrailing ? oldLayout.trailingSidebar.clone(visibility: .hide) : nil)
+      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
       animationQueue.run(transition.animationTasks)
       return true
     }
     return false
   }
+
 }
 
 // MARK: - SidebarTabGroupViewController

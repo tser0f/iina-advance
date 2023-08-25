@@ -299,6 +299,8 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  var leadingSidebarAnimationState: UIAnimationState = .hidden
+  var trailingSidebarAnimationState: UIAnimationState = .hidden
   var fadeableViewsAnimationState: UIAnimationState = .shown
   var fadeableTopBarAnimationState: UIAnimationState = .shown
   var osdAnimationState: UIAnimationState = .hidden
@@ -885,13 +887,16 @@ class MainWindowController: PlayerWindowController {
   }
 
   func updateTitleBarAndOSC() {
-    guard !isInInteractiveMode else {
-      log.verbose("Skipping layout refresh due to interactive mode")
-      return
+    animationQueue.runZeroDuration { [self] in
+      guard !isInInteractiveMode else {
+        log.verbose("Skipping layout refresh due to interactive mode")
+        return
+      }
+      let oldLayout = currentLayout
+      let futureLayoutSpec = LayoutSpec.fromPreferences(andSpec: oldLayout.spec)
+      let transition = buildLayoutTransition(from: oldLayout, to: futureLayoutSpec)
+      animationQueue.run(transition.animationTasks)
     }
-    let futureLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
-    let transition = buildLayoutTransition(to: futureLayoutSpec)
-    animationQueue.run(transition.animationTasks)
   }
 
   // MARK: - Key events
@@ -1282,7 +1287,7 @@ class MainWindowController: PlayerWindowController {
     videoView.videoLayer.draw(forced: true)
 
     // Set layout from prefs. Do not animate:
-    transitionToInitialLayout()
+    setWindowLayoutFromPrefs()
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -1334,6 +1339,7 @@ class MainWindowController: PlayerWindowController {
   // Animation: Enter FullScreen
   private func animateEntryIntoFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
     log.verbose("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)")
+    let oldLayout = currentLayout
 
     // Because the outside panels can change while in fullscreen, use the coords of the video frame instead
     let priorWindowedGeometry = buildGeometryFromCurrentLayout()
@@ -1341,8 +1347,8 @@ class MainWindowController: PlayerWindowController {
     log.verbose("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)")
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
-    let fullscreenLayout = currentLayout.spec.clone(isFullScreen: true, isLegacyMode: isLegacy)
-    let transition = buildLayoutTransition(to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
+    let fullscreenLayout = oldLayout.spec.clone(isFullScreen: true, isLegacyMode: isLegacy)
+    let transition = buildLayoutTransition(from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
     animationQueue.run(transition.animationTasks)
   }
 
@@ -1376,12 +1382,14 @@ class MainWindowController: PlayerWindowController {
     // asynchronously processing stop and quit commands.
     guard !isClosing else { return }
 
+    let oldLayout = currentLayout
+
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = currentLayout.spec.clone(isFullScreen: false, isLegacyMode: Preference.bool(for: .useLegacyWindowedMode))
+    let windowedLayout = oldLayout.spec.clone(isFullScreen: false, isLegacyMode: Preference.bool(for: .useLegacyWindowedMode))
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
-    let transition = buildLayoutTransition(to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
+    let transition = buildLayoutTransition(from: oldLayout, to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
 
     animationQueue.run(transition.animationTasks)
   }
@@ -1942,13 +1950,13 @@ class MainWindowController: PlayerWindowController {
 
     /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
     /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
-    let layout = currentLayout
-    let interactiveModeLayout = layout.spec.clone(leadingSidebar: layout.leadingSidebar.clone(visibility: .hide),
-                                                         trailingSidebar: layout.trailingSidebar.clone(visibility: .hide),
-                                                         isFullScreen: layout.isFullScreen,
+    let oldLayout = currentLayout
+    let interactiveModeLayout = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
+                                                         trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide),
+                                                         isFullScreen: oldLayout.isFullScreen,
                                                          topBarPlacement: .insideVideo,
                                                          enableOSC: false)
-    let transition = buildLayoutTransition(to: interactiveModeLayout, totalEndingDuration: 0)
+    let transition = buildLayoutTransition(from: oldLayout, to: interactiveModeLayout, totalEndingDuration: 0)
     var animationTasks: [UIAnimation.Task] = transition.animationTasks
 
     // Now animate into Interactive Mode:
@@ -2016,6 +2024,7 @@ class MainWindowController: PlayerWindowController {
 
   func exitInteractiveMode(immediately: Bool = false, then doAfter: @escaping () -> Void = {}) {
     guard let cropController = cropSettingsView else { return }
+    let oldLayout = currentLayout
     // if exit without animation
     let duration: CGFloat = immediately ? 0 : UIAnimation.CropAnimationDuration
     cropController.cropBoxView.isHidden = true
@@ -2042,7 +2051,7 @@ class MainWindowController: PlayerWindowController {
       self.cropSettingsView = nil
     })
 
-    let transition = buildLayoutTransition(to: LayoutSpec.fromPreferences(andSpec: currentLayout.spec),
+    let transition = buildLayoutTransition(from: oldLayout, to: LayoutSpec.fromPreferences(andSpec: oldLayout.spec),
                                            totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
 
     animationTasks.append(contentsOf: transition.animationTasks)
