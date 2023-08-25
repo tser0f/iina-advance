@@ -929,7 +929,7 @@ extension NSScrollView {
   // Combines the previous 2 functions into one
   func restoreAndObserveVerticalScroll(key: Preference.Key, defaultScrollAction: () -> Void) -> NSObjectProtocol {
     if !restoreVerticalScroll(key: key) {
-      Logger.log("Could not find stored value for key \(key.rawValue.quoted); will use default scroll action", level: .verbose)
+      Logger.log("Did not restore scroll (key: \(key.rawValue.quoted), isRestoreEnabled: \(Preference.UIState.isRestoreEnabled)); will use default scroll action", level: .verbose)
       defaultScrollAction()
     }
     return addVerticalScrollObserver(key: key)

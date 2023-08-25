@@ -187,11 +187,17 @@ class MainWindowController: PlayerWindowController {
 
   var isClosing = false
 
+  /// Sidebars: see file `Sidebars.swift`
+  var leadingSidebarIsResizing = false
+  var trailingSidebarIsResizing = false
+
   // MARK: - Enums
 
   // Window state
 
-  lazy var currentLayout = LayoutPlan(spec: LayoutSpec.initial(leadingSidebar: self.leadingSidebar, trailingSidebar: self.trailingSidebar))
+  lazy var currentLayout: LayoutPlan = {
+    return LayoutPlan(spec: LayoutSpec.initial())
+  }()
 
   enum FullScreenState: Equatable {
     case windowed
@@ -259,11 +265,6 @@ class MainWindowController: PlayerWindowController {
       }
     }
   }
-
-  /// Sidebars: see file `Sidebars.swift`
-  var leadingSidebar = Sidebar(.leadingSidebar)
-  var trailingSidebar = Sidebar(.trailingSidebar)
-  lazy var sidebarsByID: [Preference.SidebarLocation: Sidebar] = [ leadingSidebar.locationID: self.leadingSidebar, trailingSidebar.locationID: self.trailingSidebar]
 
   enum PIPStatus {
     case notInPIP
@@ -706,17 +707,6 @@ class MainWindowController: PlayerWindowController {
     // set background color to black
     window.backgroundColor = .black
 //    window.backgroundColor = .clear
-
-    // Sidebars
-
-    leadingSidebar.placement = Preference.enum(for: .leadingSidebarPlacement)
-    trailingSidebar.placement = Preference.enum(for: .trailingSidebarPlacement)
-
-    let settingsSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .settingsTabGroupLocation)
-    sidebarsByID[settingsSidebarLocation]?.tabGroups.insert(.settings)
-
-    let playlistSidebarLocation: Preference.SidebarLocation = Preference.enum(for: .playlistTabGroupLocation)
-    sidebarsByID[playlistSidebarLocation]?.tabGroups.insert(.playlist)
 
     // Titlebar accessories
 
@@ -1952,10 +1942,12 @@ class MainWindowController: PlayerWindowController {
 
     /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
     /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
-    let interactiveModeLayout = currentLayout.spec.clone(isFullScreen: currentLayout.isFullScreen,
+    let layout = currentLayout
+    let interactiveModeLayout = layout.spec.clone(leadingSidebar: layout.leadingSidebar.clone(visibility: .hide),
+                                                         trailingSidebar: layout.trailingSidebar.clone(visibility: .hide),
+                                                         isFullScreen: layout.isFullScreen,
                                                          topBarPlacement: .insideVideo,
                                                          enableOSC: false)
-
     let transition = buildLayoutTransition(to: interactiveModeLayout, totalEndingDuration: 0)
     var animationTasks: [UIAnimation.Task] = transition.animationTasks
 
@@ -2018,6 +2010,7 @@ class MainWindowController: PlayerWindowController {
       cropController.cropBoxView.layoutSubtreeIfNeeded()
     })
 
+    log.verbose("Entering interactive mode")
     animationQueue.run(animationTasks)
   }
 
@@ -2055,6 +2048,7 @@ class MainWindowController: PlayerWindowController {
 
     animationTasks.append(contentsOf: transition.animationTasks)
 
+    log.verbose("Exiting interactive mode")
     animationQueue.run(animationTasks, then: doAfter)
   }
 

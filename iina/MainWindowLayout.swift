@@ -38,62 +38,78 @@ extension MainWindowController {
 
   /// `struct LayoutSpec`: data structure which is the blueprint for building a `LayoutPlan`
   struct LayoutSpec {
-    // Not sure putting these here is a good idea...
     let leadingSidebar: Sidebar
     let trailingSidebar: Sidebar
 
     let isFullScreen:  Bool
     let topBarPlacement: Preference.PanelPlacement
     let bottomBarPlacement: Preference.PanelPlacement
-    let leadingSidebarPlacement: Preference.PanelPlacement
-    let trailingSidebarPlacement: Preference.PanelPlacement
+    var leadingSidebarPlacement: Preference.PanelPlacement { return leadingSidebar.placement }
+    var trailingSidebarPlacement: Preference.PanelPlacement { return trailingSidebar.placement }
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
     let isLegacyMode: Bool
 
-    static func fromPreferences(andSpec prevSpec: LayoutSpec) -> LayoutSpec {
-      // If in fullscreen, top & bottom bars are always .insideVideo
-      return LayoutSpec(leadingSidebar: prevSpec.leadingSidebar, trailingSidebar: prevSpec.trailingSidebar,
-                        isFullScreen: prevSpec.isFullScreen,
-                        topBarPlacement: Preference.enum(for: .topBarPlacement),
-                        bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
-                        leadingSidebarPlacement: Preference.enum(for: .leadingSidebarPlacement),
-                        trailingSidebarPlacement: Preference.enum(for: .trailingSidebarPlacement),
-                        enableOSC: Preference.bool(for: .enableOSC),
-                        oscPosition: Preference.enum(for: .oscPosition),
-                        isLegacyMode: prevSpec.isFullScreen ? prevSpec.isLegacyMode : Preference.bool(for: .useLegacyWindowedMode))
-    }
-
-    // Matches what is shown in the XIB
-    static func initial(leadingSidebar: Sidebar, trailingSidebar: Sidebar) -> LayoutSpec {
+    /// Factory method. Matches what is shown in the XIB
+    static func initial() -> LayoutSpec {
+      let leadingSidebar = Sidebar(.leadingSidebar, tabGroups: tabGroupsFromPrefs(for: .leadingSidebar),
+                                   placement: Preference.enum(for: .leadingSidebarPlacement),
+                                   visibility: .hide)
+      let trailingSidebar = Sidebar(.trailingSidebar, tabGroups: tabGroupsFromPrefs(for: .trailingSidebar),
+                                    placement: Preference.enum(for: .trailingSidebarPlacement),
+                                    visibility: .hide)
       return LayoutSpec(leadingSidebar: leadingSidebar,
                         trailingSidebar: trailingSidebar,
                         isFullScreen: false,
                         topBarPlacement:.insideVideo,
                         bottomBarPlacement: .insideVideo,
-                        leadingSidebarPlacement:.insideVideo,
-                        trailingSidebarPlacement: .insideVideo,
                         enableOSC: false,
                         oscPosition: .floating,
                         isLegacyMode: false)
     }
 
-    // Specify any properties
-    func clone(isFullScreen: Bool? = nil,
+    /// Factory method. Init from preferences (and fill in remainder from given `LayoutSpec`)
+    static func fromPreferences(andSpec prevSpec: LayoutSpec) -> LayoutSpec {
+      // If in fullscreen, top & bottom bars are always .insideVideo
+
+      let leadingSidebar = prevSpec.leadingSidebar.clone(tabGroups: tabGroupsFromPrefs(for: .leadingSidebar),
+                                                         placement: Preference.enum(for: .leadingSidebarPlacement))
+      let trailingSidebar = prevSpec.trailingSidebar.clone(tabGroups: tabGroupsFromPrefs(for: .trailingSidebar),
+                                                           placement: Preference.enum(for: .trailingSidebarPlacement))
+      return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar,
+                        isFullScreen: prevSpec.isFullScreen,
+                        topBarPlacement: Preference.enum(for: .topBarPlacement),
+                        bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
+                        enableOSC: Preference.bool(for: .enableOSC),
+                        oscPosition: Preference.enum(for: .oscPosition),
+                        isLegacyMode: prevSpec.isFullScreen ? prevSpec.isLegacyMode : Preference.bool(for: .useLegacyWindowedMode))
+    }
+
+    static private func tabGroupsFromPrefs(for locationID: Preference.SidebarLocation) -> Set<Sidebar.TabGroup> {
+      var tabGroups = Set<Sidebar.TabGroup>()
+      if Preference.enum(for: .settingsTabGroupLocation) == locationID {
+        tabGroups.insert(.settings)
+      }
+      if Preference.enum(for: .playlistTabGroupLocation) == locationID {
+        tabGroups.insert(.playlist)
+      }
+      return tabGroups
+    }
+
+    // Specify any properties to override; if nil, will use self's property values.
+    func clone(leadingSidebar: Sidebar? = nil,
+               trailingSidebar: Sidebar? = nil,
+               isFullScreen: Bool? = nil,
                topBarPlacement: Preference.PanelPlacement? = nil,
                bottomBarPlacement: Preference.PanelPlacement? = nil,
-               leadingSidebarPlacement: Preference.PanelPlacement? = nil,
-               trailingSidebarPlacement: Preference.PanelPlacement? = nil,
                enableOSC: Bool? = nil,
                oscPosition: Preference.OSCPosition? = nil,
                isLegacyMode: Bool? = nil) -> LayoutSpec {
-      return LayoutSpec(leadingSidebar: self.leadingSidebar,
-                        trailingSidebar: self.trailingSidebar,
+      return LayoutSpec(leadingSidebar: leadingSidebar ?? self.leadingSidebar,
+                        trailingSidebar: trailingSidebar ?? self.trailingSidebar,
                         isFullScreen: isFullScreen ?? self.isFullScreen,
                         topBarPlacement: topBarPlacement ?? self.topBarPlacement,
                         bottomBarPlacement: bottomBarPlacement ?? self.bottomBarPlacement,
-                        leadingSidebarPlacement: leadingSidebarPlacement ?? self.leadingSidebarPlacement,
-                        trailingSidebarPlacement: trailingSidebarPlacement ?? self.trailingSidebarPlacement,
                         enableOSC: enableOSC ?? self.enableOSC,
                         oscPosition: self.oscPosition,
                         isLegacyMode: isLegacyMode ?? self.isLegacyMode)
@@ -131,24 +147,30 @@ extension MainWindowController {
     var cameraHousingOffset: CGFloat = 0
     var titleBarHeight: CGFloat = 0
     var topOSCHeight: CGFloat = 0
+
+    /// Bar widths/heights:
+
     var topBarHeight: CGFloat {
       self.titleBarHeight + self.topOSCHeight
     }
+    /// NOTE: Is mutable!
     var trailingBarWidth: CGFloat {
-      // Is mutable
       return spec.trailingSidebar.currentWidth
     }
     var bottomBarHeight: CGFloat = 0
 
+    /// NOTE: Is mutable!
     var leadingBarWidth: CGFloat {
-      // Is mutable
       return spec.leadingSidebar.currentWidth
     }
+
+    /// Bar widths/heights IF `outsideVideo`:
 
     var topBarOutsideHeight: CGFloat {
       return topBarPlacement == .outsideVideo ? topBarHeight : 0
     }
 
+    /// NOTE: Is mutable!
     var trailingBarOutsideWidth: CGFloat {
       return trailingSidebarPlacement == .outsideVideo ? trailingBarWidth : 0
     }
@@ -157,6 +179,7 @@ extension MainWindowController {
       return bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
     }
 
+    /// NOTE: Is mutable!
     var leadingBarOutsideWidth: CGFloat {
       return leadingSidebarPlacement == .outsideVideo ? leadingBarWidth : 0
     }
@@ -170,6 +193,8 @@ extension MainWindowController {
     init(spec: LayoutSpec) {
       self.spec = spec
     }
+
+    // Derived attributes & convenience accesstors
 
     var isFullScreen: Bool {
       return spec.isFullScreen
@@ -203,6 +228,14 @@ extension MainWindowController {
       return spec.trailingSidebarPlacement
     }
 
+    var leadingSidebar: Sidebar {
+      return spec.leadingSidebar
+    }
+
+    var trailingSidebar: Sidebar {
+      return spec.trailingSidebar
+    }
+
     var hasFloatingOSC: Bool {
       return enableOSC && oscPosition == .floating
     }
@@ -214,6 +247,15 @@ extension MainWindowController {
     var hasPermanentOSC: Bool {
       return enableOSC && ((oscPosition == .top && topBarPlacement == .outsideVideo) ||
                            (oscPosition == .bottom && bottomBarPlacement == .outsideVideo))
+    }
+
+    func sidebar(withID id: Preference.SidebarLocation) -> Sidebar {
+      switch id {
+      case .leadingSidebar:
+        return leadingSidebar
+      case .trailingSidebar:
+        return trailingSidebar
+      }
     }
 
     func computePinToTopButtonVisibility(isOnTop: Bool) -> Visibility {
@@ -321,6 +363,76 @@ extension MainWindowController {
 
     var isBottomBarPlacementChanging: Bool {
       return fromLayout.bottomBarPlacement != toLayout.bottomBarPlacement
+    }
+
+    var isLeadingSidebarPlacementChanging: Bool {
+      return fromLayout.leadingSidebarPlacement != toLayout.leadingSidebarPlacement
+    }
+
+    var isTrailingSidebarPlacementChanging: Bool {
+      return fromLayout.trailingSidebarPlacement != toLayout.trailingSidebarPlacement
+    }
+
+    lazy var mustOpenLeadingSidebar: Bool = {
+      return mustOpen(.leadingSidebar)
+    }()
+
+    lazy var mustOpenTrailingSidebar: Bool = {
+      return mustOpen(.trailingSidebar)
+    }()
+
+    lazy var mustCloseLeadingSidebar: Bool = {
+      return mustClose(.leadingSidebar)
+    }()
+
+    lazy var mustCloseTrailingSidebar: Bool = {
+      return mustClose(.trailingSidebar)
+    }()
+
+    func mustOpen(_ sidebarID: Preference.SidebarLocation) -> Bool {
+      let oldState = fromLayout.sidebar(withID: sidebarID)
+      let newState = toLayout.sidebar(withID: sidebarID)
+      if !oldState.isVisible && newState.isVisible {
+        return true
+      }
+      return mustCloseAndReopen(sidebarID)
+    }
+
+    func mustClose(_ sidebarID: Preference.SidebarLocation) -> Bool {
+      let oldState = fromLayout.sidebar(withID: sidebarID)
+      let newState = toLayout.sidebar(withID: sidebarID)
+      if oldState.isVisible {
+        if !newState.isVisible {
+          return true
+        }
+        if let oldVisibleTabGroup = oldState.visibleTabGroup, let newVisibleTabGroup = newState.visibleTabGroup,
+           oldVisibleTabGroup != newVisibleTabGroup {
+          return true
+        }
+        if let visibleTabGroup = oldState.visibleTabGroup, !newState.tabGroups.contains(visibleTabGroup) {
+          Logger.log("mustClose(sidebarID:): visibleTabGroup \(visibleTabGroup.rawValue.quoted) is not present in newState!", level: .error)
+          return true
+        }
+      }
+      return mustCloseAndReopen(sidebarID)
+    }
+
+    func mustCloseAndReopen(_ sidebarID: Preference.SidebarLocation) -> Bool {
+      let oldState = fromLayout.sidebar(withID: sidebarID)
+      let newState = toLayout.sidebar(withID: sidebarID)
+      if oldState.isVisible && newState.isVisible {
+        if oldState.placement != newState.placement {
+          return true
+        }
+        guard let oldGroup = oldState.visibleTabGroup, let newGroup = newState.visibleTabGroup else {
+          Logger.log("needToCloseAndReopen(sidebarID:): visibleTabGroup missing!", level: .error)
+          return false
+        }
+        if oldGroup != newGroup {
+          return true
+        }
+      }
+      return false
     }
   }
 
@@ -658,6 +770,11 @@ extension MainWindowController {
       apply(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
     }
 
+    // Sidebars (if closing)
+    animateShowOrHideSidebars(layout: transition.fromLayout,
+                              setLeadingTo: transition.mustCloseLeadingSidebar ? .hide : nil,
+                              setTrailingTo: transition.mustCloseTrailingSidebar ? .hide : nil)
+
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
@@ -735,8 +852,38 @@ extension MainWindowController {
       updateBottomBarPlacement(placement: futureLayout.bottomBarPlacement)
     }
 
+    // Sidebars: finish closing (if closing)
+    if transition.mustCloseLeadingSidebar, let visibleTab = transition.fromLayout.leadingSidebar.visibleTab {
+      /// Remove `tabGroupView` from its parent (also removes constraints):
+      let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
+      viewController.view.removeFromSuperview()
+    }
+    if transition.mustCloseTrailingSidebar, let visibleTab = transition.fromLayout.trailingSidebar.visibleTab {
+      /// Remove `tabGroupView` from its parent (also removes constraints):
+      let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
+      viewController.view.removeFromSuperview()
+    }
+
+    // Sidebars: if (re)opening
+    if let tabToShow = transition.toLayout.leadingSidebar.visibleTab {
+      if transition.mustOpenLeadingSidebar {
+        prepareLayoutForOpening(leadingSidebar: transition.toLayout.leadingSidebar)
+      } else if transition.fromLayout.leadingSidebar.visibleTabGroup == transition.toLayout.leadingSidebar.visibleTabGroup {
+        // Tab group is already showing, but just need to switch tab
+        switchToTabInTabGroup(tab: tabToShow)
+      }
+    }
+    if let tabToShow = transition.toLayout.trailingSidebar.visibleTab {
+      if transition.mustOpenTrailingSidebar {
+        prepareLayoutForOpening(trailingSidebar: transition.toLayout.trailingSidebar)
+      } else if transition.fromLayout.trailingSidebar.visibleTabGroup == transition.toLayout.trailingSidebar.visibleTabGroup {
+        // Tab group is already showing, but just need to switch tab
+        switchToTabInTabGroup(tab: tabToShow)
+      }
+    }
+
     updateDepthOrderOfBars(topBar: futureLayout.topBarPlacement, bottomBar: futureLayout.bottomBarPlacement,
-                           leadingSidebar: leadingSidebar.placement, trailingSidebar: trailingSidebar.placement)
+                           leadingSidebar: futureLayout.leadingSidebarPlacement, trailingSidebar: futureLayout.trailingSidebarPlacement)
 
     // So that panels toggling between "inside" and "outside" don't change until they need to (different strategy than fullscreen)
     if !transition.isTogglingFullScreen {
@@ -766,8 +913,8 @@ extension MainWindowController {
       // Exiting FullScreen
       let topHeight = transition.toLayout.topBarOutsideHeight
       let bottomHeight = transition.toLayout.bottomBarOutsideHeight
-      let leadingWidth = leadingSidebar.currentOutsideWidth
-      let trailingWidth = trailingSidebar.currentOutsideWidth
+      let leadingWidth = transition.toLayout.leadingBarOutsideWidth
+      let trailingWidth = transition.toLayout.trailingBarOutsideWidth
 
       guard let priorFrame = fsState.priorWindowedFrame else { return }
       let priorWindowFrame = priorFrame.resizeOutsideBars(newTopHeight: topHeight,
@@ -817,6 +964,13 @@ extension MainWindowController {
       log.debug("Calling setFrame() from openNewPanels with newWindowFrame \(newWindowFrame)")
       (window as! MainWindow).setFrameImmediately(newWindowFrame)
     }
+
+    // Sidebars (if opening)
+    let leadingSidebar = transition.toLayout.leadingSidebar
+    let trailingSidebar = transition.toLayout.trailingSidebar
+    animateShowOrHideSidebars(layout: transition.toLayout,
+                              setLeadingTo: transition.mustOpenLeadingSidebar ? leadingSidebar.visibility : nil,
+                              setTrailingTo: transition.mustOpenTrailingSidebar ? trailingSidebar.visibility : nil)
 
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: futureLayout)
@@ -1191,7 +1345,7 @@ extension MainWindowController {
   }
 
   // This method should only make a layout plan. It should not alter the current layout.
-  private func buildFutureLayoutPlan(from layoutSpec: LayoutSpec) -> LayoutPlan {
+  func buildFutureLayoutPlan(from layoutSpec: LayoutSpec) -> LayoutPlan {
     let window = window!
 
     let futureLayout = LayoutPlan(spec: layoutSpec)
@@ -1221,12 +1375,12 @@ extension MainWindowController {
       futureLayout.titlebarAccessoryViewControllers = visibleState
 
       // LeadingSidebar toggle button
-      let hasLeadingSidebar = !leadingSidebar.tabGroups.isEmpty
+      let hasLeadingSidebar = !layoutSpec.leadingSidebar.tabGroups.isEmpty
       if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
         futureLayout.leadingSidebarToggleButton = visibleState
       }
       // TrailingSidebar toggle button
-      let hasTrailingSidebar = !trailingSidebar.tabGroups.isEmpty
+      let hasTrailingSidebar = !layoutSpec.trailingSidebar.tabGroups.isEmpty
       if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
         futureLayout.trailingSidebarToggleButton = visibleState
       }
@@ -1347,10 +1501,10 @@ extension MainWindowController {
 
     let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
 
-    let isSpaceNeededForSidebar = leadingSidebar.currentWidth > 0
+    let isSpaceNeededForSidebar = layout.leadingSidebar.currentWidth > 0
     if isSpaceNeededForSidebar {
       // Subtract space taken by the 3 standard buttons + other visible buttons
-      trailingSpace = max(0, leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
+      trailingSpace = max(0, layout.leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
     }
     leadingTitleBarTrailingSpaceConstraint.constant = trailingSpace
     leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
@@ -1369,9 +1523,9 @@ extension MainWindowController {
       spaceForButtons += pinToTopButton.frame.width
     }
 
-    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && trailingSidebar.currentWidth > 0
+    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && layout.trailingSidebar.currentWidth > 0
     if isSpaceNeededForSidebar {
-      leadingSpace = max(0, trailingSidebar.currentWidth - spaceForButtons)
+      leadingSpace = max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
     }
     trailingTitleBarLeadingSpaceConstraint.constant = leadingSpace
 
@@ -1587,8 +1741,8 @@ extension MainWindowController {
       bottomBarView.blendingMode = .behindWindow
     }
 
-    updateSidebarBlendingMode(leadingSidebar.locationID, layout: futureLayout)
-    updateSidebarBlendingMode(trailingSidebar.locationID, layout: futureLayout)
+    updateSidebarBlendingMode(.leadingSidebar, layout: futureLayout)
+    updateSidebarBlendingMode(.trailingSidebar, layout: futureLayout)
   }
 
 }

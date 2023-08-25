@@ -9,19 +9,19 @@
 import Foundation
 
 /**
- ┌─────────────────────────────────────────┐
- │`windowFrame`        ▲                   │
- │                     │`topBarHeight`     │
- │                     ▼                   │
- ├──────────────┬──────────┬───────────────┤
- │              │  Video   │               │
- │◄────────────►│   Frame  │◄─────────────►│
- │`leftBarWidth`│          │`rightBarWidth`│
- ├──────────────┴──────────┴───────────────┤
- │                 ▲                       │
- │                 │`bottomBarHeight`      │
- │                 ▼                       │
- └─────────────────────────────────────────┘
+ ┌───────────────────────────────────────────────┐
+ │`windowFrame`        ▲                         │
+ │                     │`topBarHeight`           │
+ │                     ▼                         │
+ ├─────────────────┬──────────┬──────────────────┤
+ │                 │  Video   │                  │
+ │◄───────────────►│   Frame  │◄────────────────►│
+ │`leadingBarWidth`│          │`trailingBarWidth`│
+ ├─────────────────┴──────────┴──────────────────┤
+ │                    ▲                          │
+ │                    │`bottomBarHeight`         │
+ │                    ▼                          │
+ └───────────────────────────────────────────────┘
  */
 struct MainWindowGeometry: Equatable {
   // MARK: - Stored properties
@@ -30,67 +30,71 @@ struct MainWindowGeometry: Equatable {
 
   // Outside panels
   let topBarHeight: CGFloat
-  let rightBarWidth: CGFloat
+  let trailingBarWidth: CGFloat
   let bottomBarHeight: CGFloat
-  let leftBarWidth: CGFloat
+  let leadingBarWidth: CGFloat
 
   let videoAspectRatio: CGFloat
 
   // MARK: - Initializers
 
-  init(windowFrame: NSRect, topBarHeight: CGFloat, rightBarWidth: CGFloat, bottomBarHeight: CGFloat, leftBarWidth: CGFloat, videoAspectRatio: CGFloat) {
+  init(windowFrame: NSRect,
+       topBarHeight: CGFloat, trailingBarWidth: CGFloat, bottomBarHeight: CGFloat, leadingBarWidth: CGFloat,
+       videoAspectRatio: CGFloat) {
     assert(topBarHeight >= 0, "Expected topBarHeight > 0, found \(topBarHeight)")
-    assert(rightBarWidth >= 0, "Expected rightBarWidth > 0, found \(rightBarWidth)")
+    assert(trailingBarWidth >= 0, "Expected trailingBarWidth > 0, found \(trailingBarWidth)")
     assert(bottomBarHeight >= 0, "Expected bottomBarHeight > 0, found \(bottomBarHeight)")
-    assert(leftBarWidth >= 0, "Expected leftBarWidth > 0, found \(leftBarWidth)")
-    assert(rightBarWidth >= 0, "Expected rightBarWidth > 0, found \(rightBarWidth)")
+    assert(leadingBarWidth >= 0, "Expected leadingBarWidth > 0, found \(leadingBarWidth)")
+    assert(trailingBarWidth >= 0, "Expected trailingBarWidth > 0, found \(trailingBarWidth)")
     self.windowFrame = windowFrame
     self.topBarHeight = topBarHeight
-    self.rightBarWidth = rightBarWidth
+    self.trailingBarWidth = trailingBarWidth
     self.bottomBarHeight = bottomBarHeight
-    self.leftBarWidth = leftBarWidth
+    self.leadingBarWidth = leadingBarWidth
     self.videoAspectRatio = videoAspectRatio
   }
 
-  init(windowFrame: CGRect, videoFrame: CGRect, videoAspectRatio: CGFloat) {
+  init(windowFrame: CGRect,
+       videoFrame: CGRect,
+       videoAspectRatio: CGFloat) {
     assert(videoFrame.height <= windowFrame.height, "videoFrame.height (\(videoFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
     assert(videoFrame.width <= windowFrame.width, "videoFrame.width (\(videoFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
 
-    let leftBarWidth = videoFrame.origin.x
+    let leadingBarWidth = videoFrame.origin.x
     let bottomBarHeight = videoFrame.origin.y
-    let rightBarWidth = windowFrame.width - videoFrame.width - leftBarWidth
-    let topBarHeight = windowFrame.height - videoFrame.height - bottomBarHeight
     self.init(windowFrame: windowFrame,
-              topBarHeight: topBarHeight, rightBarWidth: rightBarWidth,
-              bottomBarHeight: bottomBarHeight, leftBarWidth: leftBarWidth,
+              topBarHeight: windowFrame.height - videoFrame.height - bottomBarHeight,
+              trailingBarWidth: windowFrame.width - videoFrame.width - leadingBarWidth,
+              bottomBarHeight: videoFrame.origin.y,
+              leadingBarWidth: videoFrame.origin.x,
               videoAspectRatio: videoAspectRatio)
   }
 
   // MARK: - Derived properties
 
   var videoSize: NSSize {
-    return NSSize(width: windowFrame.width - rightBarWidth - leftBarWidth,
+    return NSSize(width: windowFrame.width - trailingBarWidth - leadingBarWidth,
                   height: windowFrame.height - topBarHeight - bottomBarHeight)
   }
 
   var videoFrameInScreenCoords: NSRect {
-    return NSRect(origin: CGPoint(x: windowFrame.origin.x + leftBarWidth, y: windowFrame.origin.y + bottomBarHeight), size: videoSize)
+    return NSRect(origin: CGPoint(x: windowFrame.origin.x + leadingBarWidth, y: windowFrame.origin.y + bottomBarHeight), size: videoSize)
   }
 
   var outsideBarsTotalSize: NSSize {
-    return NSSize(width: rightBarWidth + leftBarWidth, height: topBarHeight + bottomBarHeight)
+    return NSSize(width: trailingBarWidth + leadingBarWidth, height: topBarHeight + bottomBarHeight)
   }
 
   func clone(windowFrame: NSRect? = nil,
-             topBarHeight: CGFloat? = nil, rightBarWidth: CGFloat? = nil,
-             bottomBarHeight: CGFloat? = nil, leftBarWidth: CGFloat? = nil,
+             topBarHeight: CGFloat? = nil, trailingBarWidth: CGFloat? = nil,
+             bottomBarHeight: CGFloat? = nil, leadingBarWidth: CGFloat? = nil,
              videoAspectRatio: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
                               topBarHeight: topBarHeight ?? self.topBarHeight,
-                              rightBarWidth: rightBarWidth ?? self.rightBarWidth,
+                              trailingBarWidth: trailingBarWidth ?? self.trailingBarWidth,
                               bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
-                              leftBarWidth: leftBarWidth ?? self.leftBarWidth,
+                              leadingBarWidth: leadingBarWidth ?? self.leadingBarWidth,
                               videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
@@ -162,7 +166,7 @@ struct MainWindowGeometry: Equatable {
       ΔH += ΔTop
     }
     if let newTrailingWidth = newTrailingWidth {
-      let ΔRight = abs(newTrailingWidth) - self.rightBarWidth
+      let ΔRight = abs(newTrailingWidth) - self.trailingBarWidth
       ΔW += ΔRight
     }
     if let newBottomHeight = newBottomHeight {
@@ -171,7 +175,7 @@ struct MainWindowGeometry: Equatable {
       ΔY -= ΔBottom
     }
     if let newLeadingWidth = newLeadingWidth {
-      let ΔLeft = abs(newLeadingWidth) - self.leftBarWidth
+      let ΔLeft = abs(newLeadingWidth) - self.leadingBarWidth
       ΔW += ΔLeft
       ΔX -= ΔLeft
     }
@@ -179,8 +183,8 @@ struct MainWindowGeometry: Equatable {
                                 y: windowFrame.origin.y + ΔY,
                                 width: windowFrame.width + ΔW,
                                 height: windowFrame.height + ΔH)
-    return self.clone(windowFrame: newWindowFrame, topBarHeight: newTopHeight, rightBarWidth: newTrailingWidth,
-                      bottomBarHeight: newBottomHeight, leftBarWidth: newLeadingWidth)
+    return self.clone(windowFrame: newWindowFrame, topBarHeight: newTopHeight, trailingBarWidth: newTrailingWidth,
+                      bottomBarHeight: newBottomHeight, leadingBarWidth: newLeadingWidth)
   }
 }
 
@@ -473,9 +477,9 @@ extension MainWindowController {
       log.error("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (Video: \(videoFrame); Window: \(windowFrame))")
       return MainWindowGeometry(windowFrame: windowFrame,
                                 topBarHeight: currentLayout.topBarHeight,
-                                rightBarWidth: trailingSidebar.currentOutsideWidth,
+                                trailingBarWidth: currentLayout.trailingBarWidth,
                                 bottomBarHeight: currentLayout.bottomBarOutsideHeight,
-                                leftBarWidth: leadingSidebar.currentOutsideWidth,
+                                leadingBarWidth: currentLayout.leadingBarWidth,
                                 videoAspectRatio: videoAspectRatio)
     }
     return MainWindowGeometry(windowFrame: windowFrame, videoFrame: videoFrame,
@@ -528,7 +532,7 @@ extension MainWindowController {
       return window.frame.size
     }
 
-    let requestedVideoSize = NSSize(width: requestedSize.width - (trailingSidebar.currentOutsideWidth + leadingSidebar.currentOutsideWidth),
+    let requestedVideoSize = NSSize(width: requestedSize.width - (currentLayout.leadingBarWidth + currentLayout.trailingBarWidth),
                                     height: requestedSize.height - (currentLayout.topBarOutsideHeight + currentLayout.bottomBarOutsideHeight))
 
     // resize height based on requested width
