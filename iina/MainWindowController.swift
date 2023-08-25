@@ -2030,7 +2030,6 @@ class MainWindowController: PlayerWindowController {
 
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
       cropController.cropBoxView.removeFromSuperview()
-      self.hideAllSidebars(animate: false)
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       self.showFadeableViews(duration: 0)

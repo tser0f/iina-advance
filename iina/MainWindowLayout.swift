@@ -480,15 +480,9 @@ extension MainWindowController {
       startingAnimationDuration = UIAnimation.DefaultDuration
     }
 
-    var endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
-    if !transition.isTogglingFullScreen {
-      endingAnimationDuration /= 2
-    }
+    let endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
 
-    /// When toggling panel layout configurations, need to use `linear` or else panels of different sizes
-    /// won't line up as they move. But during the fullscreen transition, this looks tediously slow.
-    /// Fortunately, we don't need `linear` for the fullscreen transition.
-    let panelTimingName = transition.isTogglingFullScreen ? nil : CAMediaTimingFunctionName.linear
+    let panelTimingName = transition.isTogglingFullScreen ? nil : CAMediaTimingFunctionName.easeIn
 
     log.verbose("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
 
@@ -755,9 +749,10 @@ extension MainWindowController {
       updateSidebarVerticalConstraints(layout: futureLayout)
     }
 
+    let needsFrameUpdate = windowYDelta != 0 || windowHeightDelta != 0
     // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
     // Also do not apply when toggling fullscreen because it is not relevant and will cause glitches in the animation.
-    if !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
+    if needsFrameUpdate && !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
