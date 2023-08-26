@@ -1146,6 +1146,10 @@ class MainWindowController: PlayerWindowController {
     let mousePos = playSlider.convert(event.locationInWindow, from: nil)
     if isMouseInSlider {
       updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
+    } else {
+      // Just to be sure
+      timePreviewWhenSeek.isHidden = true
+      thumbnailPeekView.isHidden = true
     }
 
     if isMouseInWindow {

@@ -299,32 +299,50 @@ extension MainWindowController {
     let newVisibilty: Sidebar.Visibility = shouldShow ? .show(tabToShow: tab) : .hide
     let oldLayout = currentLayout
 
-    var leadingSidebar: Sidebar = oldLayout.leadingSidebar
+    var leadingSidebar: Sidebar
     var trailingSidebar: Sidebar = oldLayout.trailingSidebar
-    if leadingSidebar.tabGroups.contains(tab.group) {
+    if oldLayout.leadingSidebar.tabGroups.contains(tab.group) {
       let state = leadingSidebarAnimationState
       if shouldShow && state == .hidden {
+        // Sidebar is currently hidden. Need to show it
         leadingSidebarAnimationState = .willShow
+      } else if shouldShow && state == .shown, let visibleTabGroup = oldLayout.leadingSidebar.visibleTabGroup, visibleTabGroup == tab.group {
+        // Already showing the tab group. Just need to change current tab in group
+        switchToTabInTabGroup(tab: tab)
+        return
       } else if !shouldShow && state == .shown {
+        // Sidebar is currently shown. Need to hide it
         leadingSidebarAnimationState = .willHide
       } else {
+        // Drop request if already animating
         log.verbose("Skipping show/hide for \(tab.name.quoted) because leadingSidebar is in state \(state))")
         return
       }
-      leadingSidebar = leadingSidebar.clone(visibility: newVisibilty)
+      leadingSidebar = oldLayout.leadingSidebar.clone(visibility: newVisibilty)
       trailingSidebar = oldLayout.trailingSidebar
-    } else if trailingSidebar.tabGroups.contains(tab.group) {
+    } else if oldLayout.trailingSidebar.tabGroups.contains(tab.group) {
       let state = trailingSidebarAnimationState
       if shouldShow && state == .hidden {
+        // Sidebar is currently hidden. Need to show it
         trailingSidebarAnimationState = .willShow
+      } else if shouldShow && state == .shown, let visibleTabGroup = oldLayout.trailingSidebar.visibleTabGroup, visibleTabGroup == tab.group {
+        // Already showing the tab group. Just need to change current tab in group
+        switchToTabInTabGroup(tab: tab)
+        return
       } else if !shouldShow && state == .shown {
+        // Sidebar is currently shown. Need to hide it
         trailingSidebarAnimationState = .willHide
       } else {
+        // Drop request if already animating
         log.verbose("Skipping show/hide for \(tab.name.quoted) because trailingSidebar is in state \(state))")
         return
       }
       leadingSidebar = oldLayout.leadingSidebar
-      trailingSidebar = trailingSidebar.clone(visibility: newVisibilty)
+      trailingSidebar = oldLayout.trailingSidebar.clone(visibility: newVisibilty)
+    } else {
+      // Should never get here
+      log.error("Internal error: no sidebar found for tab group \(tab.group)!")
+      return
     }
 
     let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
@@ -735,18 +753,21 @@ extension MainWindowController {
       return
     }
 
-    let newVisibility = Sidebar.Visibility.show(tabToShow: tab)
-    let layout = currentLayout
-    var leadingSidebar: Sidebar? = nil
-    var trailingSidebar: Sidebar? = nil
-    if layout.leadingSidebar.tabGroups.contains(tab.group) {
-      leadingSidebar = layout.leadingSidebar.clone(visibility: newVisibility)
-    } else if layout.trailingSidebar.tabGroups.contains(tab.group) {
-      trailingSidebar = layout.trailingSidebar.clone(visibility: newVisibility)
+    // Try to avoid race conditions if possible
+    animationQueue.runZeroDuration { [self] in
+      let newVisibility = Sidebar.Visibility.show(tabToShow: tab)
+      let layout = currentLayout
+      var leadingSidebar: Sidebar? = nil
+      var trailingSidebar: Sidebar? = nil
+      if layout.leadingSidebar.tabGroups.contains(tab.group) {
+        leadingSidebar = layout.leadingSidebar.clone(visibility: newVisibility)
+      } else if layout.trailingSidebar.tabGroups.contains(tab.group) {
+        trailingSidebar = layout.trailingSidebar.clone(visibility: newVisibility)
+      }
+      let newLayoutSpec = layout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
+      let futureLayout = buildFutureLayoutPlan(from: newLayoutSpec)
+      currentLayout = futureLayout
     }
-    let newLayoutSpec = layout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-    let futureLayout = buildFutureLayoutPlan(from: newLayoutSpec)
-    currentLayout = futureLayout
   }
 
   private func getConfiguredSidebar(forTabGroup tabGroup: Sidebar.TabGroup) -> Sidebar? {
