@@ -446,7 +446,7 @@ extension VideoView {
     guard player.info.fileLoaded else { return }
     guard let displayId = currentDisplay else { return }
     if let screen = self.window?.screen {
-      NSScreen.log("Refreshing HDR for \(player.subsystem.rawValue) @ screen\(displayId)", screen)
+      screen.log("Refreshing HDR for \(player.subsystem.rawValue) @ screen\(displayId): ")
     } else {
       Logger.log("Refreshing HDR for \(player.subsystem.rawValue)", level: .verbose)
     }

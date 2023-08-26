@@ -88,7 +88,7 @@ extension Preference {
       let playerIDs = getPlayerIDs(from: windowNamesStrings.compactMap{WindowAutosaveName($0)})
       Logger.log("Clearing saved UI state of \(windowNamesStrings.count) windows, including \(playerIDs.count) player windows")
       for id in playerIDs {
-        Preference.UIState.removePlayerUIState(playerID: String(id))
+        Preference.UIState.clearPlayerUIState(forPlayerID: String(id))
       }
       clearOpenWindowList()
     }
@@ -134,8 +134,8 @@ extension Preference {
       let oldPlayerZeroString = WindowAutosaveName.mainPlayer(id: "0").string
       let newPlayerZeroString = WindowAutosaveName.mainPlayer(id: newPlayerZeroID).string
 
-      if let propList = Preference.UIState.getPlayerUIState(playerID: "0") {
-        Preference.UIState.setPlayerUIState(playerID: newPlayerZeroID, propList)
+      if let propList = Preference.UIState.getPlayerUIState(forPlayerID: "0") {
+        Preference.UIState.setPlayerUIState(forPlayerID: newPlayerZeroID, to: propList)
         Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
       } else {
         Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
@@ -145,12 +145,12 @@ extension Preference {
       Preference.UIState.saveOpenWindowList(windowNamesBackToFront: newWindowNamesStrings)
       Logger.log("Re-saved window list with remapped name: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
       // Remove old entry now that it's been re-mapped
-      Preference.UIState.removePlayerUIState(playerID: "0")
+      Preference.UIState.clearPlayerUIState(forPlayerID: "0")
 
       return newWindowNamesStrings.compactMap{WindowAutosaveName($0)}
     }
 
-    static func getPlayerUIState(playerID: String) -> PlayerUIState? {
+    static func getPlayerUIState(forPlayerID playerID: String) -> PlayerUIState? {
       guard isRestoreEnabled else { return nil }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       guard let propDict = UserDefaults.standard.dictionary(forKey: key) else {
@@ -159,13 +159,13 @@ extension Preference {
       return PlayerUIState(propDict)
     }
 
-    static func setPlayerUIState(playerID: String, _ state: PlayerUIState) {
+    static func setPlayerUIState(forPlayerID playerID: String, to state: PlayerUIState) {
       guard isSaveEnabled else { return }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       UserDefaults.standard.setValue(state.properties, forKey: key)
     }
 
-    static func removePlayerUIState(playerID: String) {
+    static func clearPlayerUIState(forPlayerID playerID: String) {
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       UserDefaults.standard.setValue(nil, forKey: key)
       Logger.log("Removed stored UI state for player \(playerID)", level: .verbose)
@@ -183,7 +183,7 @@ extension Preference {
       }
       player.log.verbose("Saving UI state")
       let state = PlayerUIState.from(player)
-      setPlayerUIState(playerID: player.label, state)
+      setPlayerUIState(forPlayerID: player.label, to: state)
     }
   }
 }

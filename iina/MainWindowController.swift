@@ -953,11 +953,12 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseDragged(with event: NSEvent) {
-    if resizeSidebar(with: event) {
+    let didResizeSidebar = resizeSidebar(with: event)
+    guard !didResizeSidebar else {
       return
-    } else if !fsState.isFullscreen {
-      guard !controlBarFloating.isDragging else { return }
+    }
 
+    if !fsState.isFullscreen && !controlBarFloating.isDragging {
       if let mousePosRelatedToWindow = mousePosRelatedToWindow {
         if !isDragging {
           /// Require that the user must drag the cursor at least a small distance for it to start a "drag" (`isDragging==true`)
@@ -1250,7 +1251,7 @@ class MainWindowController: PlayerWindowController {
     let currentScreen = window.selectDefaultScreen()
     NSScreen.screens.enumerated().forEach { (screenIndex, screen) in
       let currentString = (screen == currentScreen) ? "✅" : " "
-      NSScreen.log("\(currentString)Screen\(screenIndex)" , screen)
+      screen.log("\(currentString)Screen\(screenIndex): ")
     }
 
     resetCollectionBehavior()
@@ -1433,12 +1434,16 @@ class MainWindowController: PlayerWindowController {
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
   ///
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
-  func setWindowFrameForLegacyFullScreen() {
+  func setWindowFrameForLegacyFullScreen(animate: Bool = true) {
     guard let window = self.window else { return }
     let newWindowFrame = bestScreen.frame
 
-    log.verbose("Calling setFrame() entering legacy full screen, to: \(newWindowFrame)")
-    window.setFrame(newWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+    log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
+    if animate && !AccessibilityPreferences.motionReductionEnabled {
+      window.setFrame(newWindowFrame, display: true, animate: true)
+    } else {
+      (window as! MainWindow).setFrameImmediately(newWindowFrame)
+    }
   }
 
   // MARK: - Window Delegate: window move, screen changes
@@ -1463,14 +1468,34 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func windowDidChangeScreen(_ notification: Notification) {
+    guard let window = window else { return }
     super.windowDidChangeScreen(notification)
+    log.verbose("WindowDidChangeScreen, frame=\(window.frame)")
+    player.events.emit(.windowScreenChanged)
+
+    if currentLayout.isLegacyFullScreen {
+      /// Need to recompute legacy FS's window size so it exactly fills the new screen.
+      /// But looks like the OS will try to reposition the window on its own and can't be stopped...
+      /// Just wait until after it does its thing before calling `setFrame()`.
+      // TODO: in the future, keep strict track of window size & position, and call
+      /// `setFrame()` in `windowDidMove()` to preserve correctness
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+        setWindowFrameForLegacyFullScreen(animate: false)
+      }
+      return
+    }
     saveWindowFrame()
 
-    player.events.emit(.windowScreenChanged)
+  }
+
+  func windowWillMove(_ notification: Notification) {
+    guard let window = window else { return }
+    log.verbose("WindowWillMove, frame=\(window.frame)")
   }
 
   func windowDidMove(_ notification: Notification) {
     guard let window = window else { return }
+    log.verbose("WindowDidMove, frame=\(window.frame)")
     saveWindowFrame()
     player.events.emit(.windowMoved, data: window.frame)
   }

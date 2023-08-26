@@ -872,34 +872,32 @@ extension MainWindowController {
   // Returns true if handled; false if not
   func resizeSidebar(with dragEvent: NSEvent) -> Bool {
     let currentLocation = dragEvent.locationInWindow
-    let newPlaylistWidth: CGFloat
     let layout = currentLayout
 
-    if leadingSidebarIsResizing {
-      let newWidth = currentLocation.x + 2
-      newPlaylistWidth = clampPlaylistWidth(newWidth)
-      UIAnimation.disableAnimation {
+    return UIAnimation.disableAnimation {
+      let newPlaylistWidth: CGFloat
+      if leadingSidebarIsResizing {
+        let newWidth = currentLocation.x + 2
+        newPlaylistWidth = clampPlaylistWidth(newWidth)
         updateLeadingSidebarWidth(to: newPlaylistWidth, show: true, placement: layout.leadingSidebarPlacement)
         if layout.leadingSidebarPlacement == .outsideVideo {
           updateWindowFrame()
         }
-      }
-    } else if trailingSidebarIsResizing {
-      let newWidth = window!.frame.width - currentLocation.x - 2
-      newPlaylistWidth = clampPlaylistWidth(newWidth)
-      UIAnimation.disableAnimation {
+      } else if trailingSidebarIsResizing {
+        let newWidth = window!.frame.width - currentLocation.x - 2
+        newPlaylistWidth = clampPlaylistWidth(newWidth)
         updateTrailingSidebarWidth(to: newPlaylistWidth, show: true, placement: layout.trailingSidebarPlacement)
         if layout.trailingSidebarPlacement == .outsideVideo {
           updateWindowFrame()
         }
+      } else {
+        return false
       }
-    } else {
-      return false
-    }
 
-    Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
-    updateSpacingForTitleBarAccessories()
-    return true
+      Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
+      updateSpacingForTitleBarAccessories()
+      return true
+    }
   }
 
   func finishResizingSidebar(with dragEvent: NSEvent) -> Bool {

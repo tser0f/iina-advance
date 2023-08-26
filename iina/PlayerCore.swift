@@ -414,7 +414,7 @@ class PlayerCore: NSObject {
     log.verbose("Player start (restore: \(restore))")
 
     /// If restoring, most playback properties need to be set via `mpv.mpvInit()`. Set this before calling `startMPV()`.
-    if restore, let savedState = Preference.UIState.getPlayerUIState(playerID: label) {
+    if restore, let savedState = Preference.UIState.getPlayerUIState(forPlayerID: label) {
       info.priorUIState = savedState
     }
 
@@ -499,13 +499,23 @@ class PlayerCore: NSObject {
       }
     }
 
+    let isFullScreen: Bool = savedState.bool(for: .isFullScreen) ?? false
+
     if let csv = savedState.string(for: .windowFrame) {
       let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
       if dims.count == 4 {
         let windowFrame = NSRect(x: dims[0], y: dims[1], width: dims[2], height: dims[3])
-        log.debug("Restoring windowFrame to: \(windowFrame)")
-        // FIXME: constrain within screen (add to MainWindowGeometry)
-        mainWindow.window!.setFrame(windowFrame, display: false)
+        if isFullScreen {
+          log.debug("Restoring priorWindowedFrame to: \(windowFrame)")
+
+          // TODO: 
+//          let windowGeometry = MainWindowGeometry(windowFrame: windowFrame, topBarHeight: <#T##CGFloat#>, trailingBarWidth: <#T##CGFloat#>, bottomBarHeight: <#T##CGFloat#>, leadingBarWidth: <#T##CGFloat#>, videoAspectRatio: <#T##CGFloat#>)
+//          mainWindow.fsState.priorWindowedFrame = windowGeometry
+        } else {
+          log.debug("Restoring windowFrame to: \(windowFrame)")
+          // FIXME: constrain within screen (add to MainWindowGeometry)
+          mainWindow.window!.setFrame(windowFrame, display: false)
+        }
       } else {
         log.error("Could not restore UI state for property 'windowFrame': could not parse \(csv.quoted)")
       }

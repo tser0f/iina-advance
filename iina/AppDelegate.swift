@@ -642,7 +642,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     // Player window was closed? Need to remove some additional state
     if let player = (window.windowController as? MainWindowController)?.player {
-      Preference.UIState.removePlayerUIState(playerID: player.label)
+      Preference.UIState.clearPlayerUIState(forPlayerID: player.label)
 
       // Check whether this is the last player closed; show welcome or history window if configured.
       // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.

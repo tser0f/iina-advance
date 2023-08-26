@@ -62,15 +62,23 @@ struct PlayerUIState {
 
     // - Window state:
 
+    /// `isFullScreen`
+    props[PropName.isFullScreen.rawValue] = layout.isFullScreen
+
     /// `windowFrame`
-    if let frame = player.mainWindow.window?.frame {
+    let frame: NSRect?
+    if layout.isFullScreen {
+      frame = player.mainWindow.fsState.priorWindowedFrame?.windowFrame
+      // TODO: which screen...?
+    } else {
+      frame = player.mainWindow.window?.frame
+    }
+    if let frame = frame {
       props[PropName.windowFrame.rawValue] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
     }
 
     /// `bars`
     props[PropName.bars.rawValue] = bars(from: layout)
-    /// `isFullScreen`
-    props[PropName.isFullScreen.rawValue] = layout.isFullScreen
     /// TODO: `isMinimized`
 
     // - Video state:

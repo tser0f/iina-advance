@@ -280,6 +280,11 @@ not applying FFmpeg 9599 workaround
       if let startTime = savedState.string(for: .progress) {
         setOption(forName: MPVOption.PlaybackControl.start, toValue: startTime, type: .string)
       }
+
+      if let isFullScreen = savedState.bool(for: .isFullScreen) {
+        setOption(forName: MPVOption.Window.fullscreen, toValue: isFullScreen, type: .bool)
+      }
+
     }
 
     // - General
