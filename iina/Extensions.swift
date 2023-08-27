@@ -285,6 +285,10 @@ extension CGFloat {
     }
   }
 
+  var string: String {
+    String(format: "%f", self)
+  }
+
   var string2f: String {
     String(format: "%.2f", self)
   }
@@ -297,6 +301,18 @@ extension CGFloat {
 extension Bool {
   var yn: String {
     self ? "Y" : "N"
+  }
+
+  static func yn(_ yn: String?) -> Bool? {
+    guard let yn = yn else { return nil }
+    switch yn {
+    case "Y", "y":
+      return true
+    case "N", "n":
+      return false
+    default:
+      return nil
+    }
   }
 }
 

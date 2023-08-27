@@ -42,58 +42,49 @@ extension MainWindowController {
     let trailingSidebar: Sidebar
 
     let isFullScreen:  Bool
+    let isLegacyMode: Bool
+
     let topBarPlacement: Preference.PanelPlacement
     let bottomBarPlacement: Preference.PanelPlacement
     var leadingSidebarPlacement: Preference.PanelPlacement { return leadingSidebar.placement }
     var trailingSidebarPlacement: Preference.PanelPlacement { return trailingSidebar.placement }
+
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
-    let isLegacyMode: Bool
 
     /// Factory method. Matches what is shown in the XIB
     static func initial() -> LayoutSpec {
-      let leadingSidebar = Sidebar(.leadingSidebar, tabGroups: tabGroupsFromPrefs(for: .leadingSidebar),
+      let leadingSidebar = Sidebar(.leadingSidebar, tabGroups: Sidebar.TabGroup.fromPrefs(for: .leadingSidebar),
                                    placement: Preference.enum(for: .leadingSidebarPlacement),
                                    visibility: .hide)
-      let trailingSidebar = Sidebar(.trailingSidebar, tabGroups: tabGroupsFromPrefs(for: .trailingSidebar),
+      let trailingSidebar = Sidebar(.trailingSidebar, tabGroups: Sidebar.TabGroup.fromPrefs(for: .trailingSidebar),
                                     placement: Preference.enum(for: .trailingSidebarPlacement),
                                     visibility: .hide)
       return LayoutSpec(leadingSidebar: leadingSidebar,
                         trailingSidebar: trailingSidebar,
                         isFullScreen: false,
+                        isLegacyMode: false,
                         topBarPlacement:.insideVideo,
                         bottomBarPlacement: .insideVideo,
                         enableOSC: false,
-                        oscPosition: .floating,
-                        isLegacyMode: false)
+                        oscPosition: .floating)
     }
 
     /// Factory method. Init from preferences (and fill in remainder from given `LayoutSpec`)
     static func fromPreferences(andSpec prevSpec: LayoutSpec) -> LayoutSpec {
       // If in fullscreen, top & bottom bars are always .insideVideo
 
-      let leadingSidebar = prevSpec.leadingSidebar.clone(tabGroups: tabGroupsFromPrefs(for: .leadingSidebar),
+      let leadingSidebar = prevSpec.leadingSidebar.clone(tabGroups: Sidebar.TabGroup.fromPrefs(for: .leadingSidebar),
                                                          placement: Preference.enum(for: .leadingSidebarPlacement))
-      let trailingSidebar = prevSpec.trailingSidebar.clone(tabGroups: tabGroupsFromPrefs(for: .trailingSidebar),
+      let trailingSidebar = prevSpec.trailingSidebar.clone(tabGroups: Sidebar.TabGroup.fromPrefs(for: .trailingSidebar),
                                                            placement: Preference.enum(for: .trailingSidebarPlacement))
       return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar,
                         isFullScreen: prevSpec.isFullScreen,
+                        isLegacyMode: prevSpec.isFullScreen ? prevSpec.isLegacyMode : Preference.bool(for: .useLegacyWindowedMode),
                         topBarPlacement: Preference.enum(for: .topBarPlacement),
                         bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
-                        oscPosition: Preference.enum(for: .oscPosition),
-                        isLegacyMode: prevSpec.isFullScreen ? prevSpec.isLegacyMode : Preference.bool(for: .useLegacyWindowedMode))
-    }
-
-    static private func tabGroupsFromPrefs(for locationID: Preference.SidebarLocation) -> Set<Sidebar.TabGroup> {
-      var tabGroups = Set<Sidebar.TabGroup>()
-      if Preference.enum(for: .settingsTabGroupLocation) == locationID {
-        tabGroups.insert(.settings)
-      }
-      if Preference.enum(for: .playlistTabGroupLocation) == locationID {
-        tabGroups.insert(.playlist)
-      }
-      return tabGroups
+                        oscPosition: Preference.enum(for: .oscPosition))
     }
 
     // Specify any properties to override; if nil, will use self's property values.
@@ -108,11 +99,11 @@ extension MainWindowController {
       return LayoutSpec(leadingSidebar: leadingSidebar ?? self.leadingSidebar,
                         trailingSidebar: trailingSidebar ?? self.trailingSidebar,
                         isFullScreen: isFullScreen ?? self.isFullScreen,
+                        isLegacyMode: isLegacyMode ?? self.isLegacyMode,
                         topBarPlacement: topBarPlacement ?? self.topBarPlacement,
                         bottomBarPlacement: bottomBarPlacement ?? self.bottomBarPlacement,
                         enableOSC: enableOSC ?? self.enableOSC,
-                        oscPosition: self.oscPosition,
-                        isLegacyMode: isLegacyMode ?? self.isLegacyMode)
+                        oscPosition: self.oscPosition)
     }
   }
 

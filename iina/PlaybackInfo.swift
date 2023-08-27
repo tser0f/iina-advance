@@ -31,7 +31,7 @@ class PlaybackInfo {
     }
   }
 
-  var priorUIState: PlayerUIState? =  nil
+  var priorUIState: MainWindowController.PlayerUIState? =  nil
 
   var isRestoring: Bool {
     return priorUIState != nil

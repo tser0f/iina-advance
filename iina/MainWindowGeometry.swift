@@ -512,14 +512,11 @@ extension MainWindowController {
     if player.info.isRestoring {
       guard let savedState = player.info.priorUIState else { return window.frame.size }
 
-      if let csv = savedState.string(for: .windowFrame) {
-        let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
-        if dims.count == 4 {
-          // FIXME: constrain within screen (add to MainWindowGeometry)
-          let savedSize = NSSize(width: dims[2], height: dims[3])
-          log.verbose("WindowWillResize: denying request due to restore; returning \(savedSize)")
-          return savedSize
-        }
+      if let savedGeo = savedState.windowGeometry() {
+        // make sure it fits on current screen
+        let constrainedSize = savedGeo.constrainWithin(bestScreen.visibleFrame).windowFrame.size
+        log.verbose("WindowWillResize: denying request due to restore; returning \(constrainedSize)")
+        return constrainedSize
       }
       log.verbose("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
       return window.frame.size

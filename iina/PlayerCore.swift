@@ -480,7 +480,18 @@ class PlayerCore: NSObject {
   }
 
   func saveUIState() {
-    Preference.UIState.save(self)
+    guard Preference.UIState.isSaveEnabled else { return }
+    guard mainWindow.loaded else {
+      log.debug("Aborting save of UI state: player window is not loaded")
+      return
+    }
+    guard !info.isRestoring else {
+      log.warn("Aborting save of UI state: still restoring previous state")
+      return
+    }
+    log.verbose("Saving UI state")
+    let state = MainWindowController.PlayerUIState.from(self)
+    Preference.UIState.setPlayerUIState(forPlayerID: label, to: state)
   }
 
   // Finish restoring state of player from prior launch
@@ -489,38 +500,20 @@ class PlayerCore: NSObject {
 
     log.verbose("Restoring player UI state")
 
-    if let barsString = savedState.string(for: .bars) {
-      let splitted = barsString.split(separator: " ")
-      if splitted.count >= 2 {
-        let sizes = splitted[0].split(separator: ",")
-        let placements = splitted[1].split(separator: ",")
-        // TODO: restore opened sidebars
+    if let geometry = savedState.windowGeometry(), let layoutSpec = savedState.layoutSpec() {
+      // TODO: restore opened sidebars
 
-      }
-    }
-
-    let isFullScreen: Bool = savedState.bool(for: .isFullScreen) ?? false
-
-    if let csv = savedState.string(for: .windowFrame) {
-      let dims: [Double] = csv.components(separatedBy: ",").compactMap{Double($0)}
-      if dims.count == 4 {
-        let windowFrame = NSRect(x: dims[0], y: dims[1], width: dims[2], height: dims[3])
-        if isFullScreen {
-          log.debug("Restoring priorWindowedFrame to: \(windowFrame)")
-
-          // TODO: 
-//          let windowGeometry = MainWindowGeometry(windowFrame: windowFrame, topBarHeight: <#T##CGFloat#>, trailingBarWidth: <#T##CGFloat#>, bottomBarHeight: <#T##CGFloat#>, leadingBarWidth: <#T##CGFloat#>, videoAspectRatio: <#T##CGFloat#>)
-//          mainWindow.fsState.priorWindowedFrame = windowGeometry
-        } else {
-          log.debug("Restoring windowFrame to: \(windowFrame)")
-          // FIXME: constrain within screen (add to MainWindowGeometry)
-          mainWindow.window!.setFrame(windowFrame, display: false)
-        }
+      // Constrain within screen
+      if layoutSpec.isFullScreen {
+        log.debug("Restoring priorWindowedFrame to: \(geometry.windowFrame)")
+        mainWindow.fsState.priorWindowedFrame = geometry
       } else {
-        log.error("Could not restore UI state for property 'windowFrame': could not parse \(csv.quoted)")
+        let windowFrame = geometry.constrainWithin(mainWindow.bestScreen.visibleFrame).windowFrame
+        log.debug("Restoring windowFrame to: \(windowFrame)")
+        mainWindow.window!.setFrame(windowFrame, display: false)
       }
     } else {
-      Logger.log("Could not restore UI state for property 'windowFrame'", level: .error, subsystem: subsystem)
+      log.error("Failed to get player layout and/or geometry from prefs")
     }
 
     if let urlString = savedState.string(for: .url) {

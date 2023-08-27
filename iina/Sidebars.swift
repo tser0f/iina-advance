@@ -15,6 +15,8 @@ private func clampPlaylistWidth(_ width: CGFloat) -> CGFloat {
 /** Enapsulates code relating to leading & trailing sidebars in MainWindow. */
 extension MainWindowController {
 
+  // MARK: - Structs & Enums
+
   struct Sidebar {
     enum Visibility {
       case show(tabToShow: Sidebar.Tab)
@@ -43,6 +45,17 @@ extension MainWindowController {
           return clampPlaylistWidth(CGFloat(Preference.integer(for: .playlistWidth)))
         }
       }
+
+      static func fromPrefs(for locationID: Preference.SidebarLocation) -> Set<Sidebar.TabGroup> {
+        var tabGroups = Set<Sidebar.TabGroup>()
+        if Preference.enum(for: .settingsTabGroupLocation) == locationID {
+          tabGroups.insert(.settings)
+        }
+        if Preference.enum(for: .playlistTabGroupLocation) == locationID {
+          tabGroups.insert(.playlist)
+        }
+        return tabGroups
+      }
     }
 
     enum Tab: Equatable {
@@ -63,7 +76,10 @@ extension MainWindowController {
         }
       }
 
-      init?(name: String) {
+      init?(name: String?) {
+        guard let name = name else {
+          return nil
+        }
         switch name {
         case "playlist":
           self = .playlist
@@ -75,6 +91,8 @@ extension MainWindowController {
           self = .audio
         case "sub":
           self = .sub
+        case "nil":
+          return nil
         default:
           if name.hasPrefix("plugin:") {
             self = .plugin(id: String(name.dropFirst(7)))
@@ -96,12 +114,13 @@ extension MainWindowController {
       }
     }
 
+    // MARK: - Init
+
     init(_ locationID: Preference.SidebarLocation, tabGroups: Set<TabGroup>, placement: Preference.PanelPlacement,
          visibility: Sidebar.Visibility, lastVisibleTab: Sidebar.Tab? = nil) {
       self.locationID = locationID
       self.placement = placement
       self.visibility = visibility
-
       self.tabGroups = tabGroups
 
       /// some validation before setting `lastVisibleTab`
@@ -132,16 +151,29 @@ extension MainWindowController {
                      lastVisibleTab: newLastVisibleTab)
     }
 
+
+    // MARK: - Fields
+
+    /// `leadingSidebar` or `trailingSidebar`
     let locationID: Preference.SidebarLocation
 
-    // State:
-
-    let placement: Preference.PanelPlacement
-
+    /// One of `show(Sidebar.Tab)` or `hide`:
     let visibility: Visibility
 
-    // user configured:
+    /// If sidebar is showing, this should be the same as `visibleTab`. Otherwise this matches the last tab
+    /// which was shown since the current app launch, if it is still valid with respect to the current `tabGroups`.
+    /// Otherwise returns `nil`.
+    let lastVisibleTab: Sidebar.Tab?
+
+    // Should match prefs
+    let placement: Preference.PanelPlacement
+    /// The set of tab groups assigned to this sidebar as configured by prefs. May be empty.
+    /// If empty, this sidebar cannot be shown.
+    /// If `visibleTab` and `lastVisibleTab` must belong to a tab group in this list, respectively.
     let tabGroups: Set<Sidebar.TabGroup>
+
+
+    // MARK: - Derived Fields
 
     /// The currently visible tab, if sidebar is open/visible. Is `nil` if sidebar is closed/hidden.
     /// Use `lastVisibleTab` if the last shown tab needs to be known.
@@ -149,11 +181,7 @@ extension MainWindowController {
       return visibility.visibleTab
     }
 
-    /// The currently visible tab, if sidebar is open/visible. If a tab was ever opened before that and is still valid with respect
-    /// to the current `tabGroups`, returns that. Otherwise returns `nil`.
-    let lastVisibleTab: Sidebar.Tab?
-
-    /// Tab group of `visibleTab`
+    /// The parent `TabGroup` of `visibleTab`
     var visibleTabGroup: Sidebar.TabGroup? {
       return visibleTab?.group
     }
@@ -162,6 +190,8 @@ extension MainWindowController {
       return visibleTab != nil
     }
 
+    /// For `settings` tab group, is a hard-coded constant.
+    /// For `playlist` tab group, configured via app-wide pref.
     /// Returns `0` if sidebar is hidden.
     var currentWidth: CGFloat {
       return visibleTabGroup?.width() ?? 0

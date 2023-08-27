@@ -8,113 +8,236 @@
 
 import Foundation
 
-// Data structure for saving to prefs / restoring from prefs the UI state of a single player window
-struct PlayerUIState {
-  enum PropName: String {
-    case launchID = "launchID"
+extension MainWindowController {
+  // Data structure for saving to prefs / restoring from prefs the UI state of a single player window
+  struct PlayerUIState {
+    enum PropName: String {
+      case launchID = "launchID"
 
-    case playlist = "playlist"
+      case playlist = "playlist"
 
-    case windowFrame = "windowFrame"
-    case isFullScreen = "fullScreen"
-    case isMinimized = "minimized"
-    case bars = "bars"  /// "`TopSize`,`TrailingSize`,`BtmSize`,`LeadingSize` `TopPlacement`,`TrailingPlacement`,`BtmPlacement`"
+      case windowGeometry = "windowGeometry"
+      case layoutSpec = "layoutSpec"
+//      case windowFrame = "windowFrame"
+      case isMinimized = "minimized"
+//      case bars = "bars"  /// "`TopSize`,`TrailingSize`,`BtmSize`,`LeadingSize` `TopPlacement`,`TrailingPlacement`,`BtmPlacement`"
 
-    case url = "url"
-    case progress = "progress"
-    case paused = "paused"
-  }
-
-  let properties: [String: Any]
-
-  init(_ props: [String: Any]) {
-    self.properties = props
-  }
-
-  func string(for name: PropName) -> String? {
-    return properties[name.rawValue] as? String
-  }
-
-  func bool(for name: PropName) -> Bool? {
-    return properties[name.rawValue] as? Bool
-  }
-
-  func int(for name: PropName) -> Int? {
-    return properties[name.rawValue] as? Int
-  }
-
-  static private func bars(from layout: MainWindowController.LayoutPlan) -> String {
-    let barSizes: [CGFloat] = [layout.topBarHeight, layout.trailingBarWidth,
-                               layout.bottomBarHeight, layout.leadingBarWidth]
-    let barPlacements: [Int] = [layout.topBarPlacement.rawValue, layout.trailingSidebarPlacement.rawValue,
-                                layout.bottomBarPlacement.rawValue, layout.leadingSidebarPlacement.rawValue]
-    let barsSizesString = barSizes.map{$0.string2f}.joined(separator: ",")
-    let barsPlacementsString = barPlacements.map{String($0)}.joined(separator: ",")
-    return "\(barsSizesString) \(barsPlacementsString)"
-  }
-
-  static func from(_ player: PlayerCore) -> PlayerUIState {
-    var props: [String: Any] = [:]
-    let info = player.info
-    let layout = player.mainWindow.currentLayout
-
-    props[PropName.launchID.rawValue] = (NSApp.delegate as! AppDelegate).launchID
-
-    // - Window state:
-
-    /// `isFullScreen`
-    props[PropName.isFullScreen.rawValue] = layout.isFullScreen
-
-    /// `windowFrame`
-    let frame: NSRect?
-    if layout.isFullScreen {
-      frame = player.mainWindow.fsState.priorWindowedFrame?.windowFrame
-      // TODO: which screen...?
-    } else {
-      frame = player.mainWindow.window?.frame
-    }
-    if let frame = frame {
-      props[PropName.windowFrame.rawValue] = "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
+      case url = "url"
+      case progress = "progress"
+      case paused = "paused"
     }
 
-    /// `bars`
-    props[PropName.bars.rawValue] = bars(from: layout)
-    /// TODO: `isMinimized`
+    static private let specPrefStringVersion = "1"
+    static private let specErrPre = "Failed to parse LayoutSpec from string:"
+    static private let geoErrPre = "Failed to parse WindowGeometry from string:"
+    static private let geoPrefStringVersion = "1"
 
-    // - Video state:
+    let properties: [String: Any]
 
-    if let urlString = info.currentURL?.absoluteString ?? nil {
-      props[PropName.url.rawValue] = urlString
+    init(_ props: [String: Any]) {
+      self.properties = props
     }
 
-    if let videoPosition = info.videoPosition?.second {
-      props[PropName.progress.rawValue] = String(videoPosition)
+    func string(for name: PropName) -> String? {
+      return properties[name.rawValue] as? String
     }
-    props[PropName.paused.rawValue] = info.isPaused
 
-    /*
-     props["deinterlace"] = deinterlace
-     props["hwdec"] = hwdec
-     props["hdrEnabled"] = hdrEnabled
+    func bool(for name: PropName) -> Bool? {
+      return properties[name.rawValue] as? Bool
+    }
 
-     props["aid"] = aid
-     props["sid"] = sid
-     props["sid2"] = secondSid
-     props["vid"] = vid
+    func int(for name: PropName) -> Int? {
+      return properties[name.rawValue] as? Int
+    }
 
-     props["brightness"] = brightness
-     props["contrast"] = contrast
-     props["saturation"] = saturation
-     props["gamma"] = gamma
-     props["hue"] = hue
-     props["playSpeed"] = playSpeed
-     props["volume"] = volume
-     props["isMuted"] = isMuted
-     props["audioDelay"] = audioDelay
-     props["subDelay"] = subDelay
-     props["abLoopStatus"] = abLoopStatus.rawValue
-     props["userRotationDeg"] = userRotation
-     */
-    return PlayerUIState(props)
+    // Utility function for parsing complex object from CSV
+    private func fromCSV<T>(_ propName: PropName, expectedTokenCount: Int, version: String, errPreamble: String,
+                            _ closure: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
+      guard let csvString = string(for: propName) else {
+        return nil
+      }
+      let tokens = csvString.split(separator: ",").map{String($0)}
+      guard tokens.count == expectedTokenCount else {
+        Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
+        return nil
+      }
+      var iter = tokens.makeIterator()
+
+      let version = iter.next()
+      guard version == PlayerUIState.geoPrefStringVersion else {
+        Logger.log("\(errPreamble) bad version (expected \(PlayerUIState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
+        return nil
+      }
+
+      return try closure(errPreamble, &iter)
+    }
+
+    /// `LayoutSpec` -> String
+    private static func toPrefString(_ spec: LayoutSpec) -> String {
+      let leadingSidebarTab: String = spec.leadingSidebar.visibleTab?.name ?? "nil"
+      let trailingSidebarTab: String = spec.trailingSidebar.visibleTab?.name ?? "nil"
+      return [specPrefStringVersion,
+              leadingSidebarTab,
+              trailingSidebarTab,
+              spec.isFullScreen.yn,
+              spec.isLegacyMode.yn,
+              String(spec.topBarPlacement.rawValue),
+              String(spec.trailingSidebarPlacement.rawValue),
+              String(spec.bottomBarPlacement.rawValue),
+              String(spec.leadingSidebarPlacement.rawValue),
+              spec.enableOSC.yn,
+              String(spec.oscPosition.rawValue)
+      ].joined(separator: ",")
+    }
+
+    /// String -> `LayoutSpec`
+    func layoutSpec() -> LayoutSpec? {
+      return fromCSV(.layoutSpec, expectedTokenCount: 11, version: PlayerUIState.specPrefStringVersion,
+                     errPreamble: PlayerUIState.specErrPre, { errPreamble, iter in
+
+        let leadingSidebarTab = Sidebar.Tab(name: iter.next())
+        let traillingSidebarTab = Sidebar.Tab(name: iter.next())
+        
+        guard let isFullScreen = Bool.yn(iter.next()),
+              let isLegacyMode = Bool.yn(iter.next()) else {
+          Logger.log("\(errPreamble) could not parse isFullScreen or isLegacyMode", level: .error)
+          return nil
+        }
+
+        guard let topBarPlacement = placement(from: iter.next()),
+              let trailingSidebarPlacement = placement(from: iter.next()),
+              let bottomBarPlacement = placement(from: iter.next()),
+              let leadingSidebarPlacement = placement(from: iter.next()) else {
+          Logger.log("\(errPreamble) could not parse bar placements", level: .error)
+          return nil
+        }
+
+        guard let enableOSC = Bool.yn(iter.next()),
+              let oscPositionInt = Int(iter.next()!),
+              let oscPosition = Preference.OSCPosition(rawValue: oscPositionInt) else {
+          Logger.log("\(errPreamble) could not parse enableOSC or oscPosition", level: .error)
+          return nil
+        }
+
+        let leadingTabGroups = Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
+        let leadVis: Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
+        // TODO: account for invalid tab
+        //      if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
+        //        Logger.log("Visible tab \(visibleTab.name) in \("leadingSidebar") is outside its tab groups. The sidebar will close.", level: .error)
+        //        leadVis = .hide
+        //      }
+        let leadingSidebar = Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
+
+        let trailingTabGroups = Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
+        let trailVis: Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
+        // TODO: account for invalid tab
+        let trailingSidebar = Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
+
+        return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, isFullScreen: isFullScreen, isLegacyMode: isLegacyMode, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
+      })
+    }
+
+    private func placement(from token: String?) -> Preference.PanelPlacement? {
+      guard let token = token, let intVal = Int(token) else {
+        return nil
+      }
+      return Preference.PanelPlacement(rawValue: intVal)
+    }
+
+    /// `MainWindowGeometry` -> String
+    private static func toPrefString(_ geo: MainWindowGeometry) -> String {
+      return [geoPrefStringVersion,
+              geo.videoAspectRatio.string,
+              geo.topBarHeight.string2f, geo.trailingBarWidth.string2f,
+              geo.bottomBarHeight.string2f, geo.leadingBarWidth.string2f,
+              geo.windowFrame.origin.x.string2f, geo.windowFrame.origin.y.string2f,
+              geo.windowFrame.width.string2f, geo.windowFrame.height.string2f].joined(separator: ",")
+    }
+
+    /// String -> `MainWindowGeometry`
+    func windowGeometry() -> MainWindowGeometry? {
+      return fromCSV(.windowGeometry, expectedTokenCount: 10, version: PlayerUIState.geoPrefStringVersion,
+                     errPreamble: PlayerUIState.geoErrPre, { errPreamble, iter in
+
+        guard let videoAspectRatio = Double(iter.next()!),
+              let topBarHeight = Double(iter.next()!),
+              let trailingBarWidth = Double(iter.next()!),
+              let bottomBarHeight = Double(iter.next()!),
+              let leadingBarWidth = Double(iter.next()!),
+              let winOriginX = Double(iter.next()!),
+              let winOriginY = Double(iter.next()!),
+              let winWidth = Double(iter.next()!),
+              let winHeight = Double(iter.next()!) else {
+          Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
+          return nil
+        }
+
+        let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+        return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoAspectRatio: videoAspectRatio)
+      })
+    }
+
+    static func from(_ player: PlayerCore) -> PlayerUIState {
+      var props: [String: Any] = [:]
+      let info = player.info
+      let layout = player.mainWindow.currentLayout
+
+      props[PropName.launchID.rawValue] = (NSApp.delegate as! AppDelegate).launchID
+
+      // - Window state:
+
+      /// `layoutSpec`
+      props[PropName.layoutSpec.rawValue] = toPrefString(layout.spec)
+
+      /// `windowGeometry`
+      let geometry: MainWindowGeometry?
+      if layout.isFullScreen {
+        geometry = player.mainWindow.fsState.priorWindowedFrame
+        // TODO: which screen...?
+      } else {
+        geometry = player.mainWindow.buildGeometryFromCurrentLayout()
+      }
+      if let geometry = geometry {
+        props[PropName.windowGeometry.rawValue] = toPrefString(geometry)
+      }
+
+      /// TODO: `isMinimized`
+
+      // - Video state:
+
+      if let urlString = info.currentURL?.absoluteString ?? nil {
+        props[PropName.url.rawValue] = urlString
+      }
+
+      if let videoPosition = info.videoPosition?.second {
+        props[PropName.progress.rawValue] = String(videoPosition)
+      }
+      props[PropName.paused.rawValue] = info.isPaused
+
+      /*
+       props["deinterlace"] = deinterlace
+       props["hwdec"] = hwdec
+       props["hdrEnabled"] = hdrEnabled
+
+       props["aid"] = aid
+       props["sid"] = sid
+       props["sid2"] = secondSid
+       props["vid"] = vid
+
+       props["brightness"] = brightness
+       props["contrast"] = contrast
+       props["saturation"] = saturation
+       props["gamma"] = gamma
+       props["hue"] = hue
+       props["playSpeed"] = playSpeed
+       props["volume"] = volume
+       props["isMuted"] = isMuted
+       props["audioDelay"] = audioDelay
+       props["subDelay"] = subDelay
+       props["abLoopStatus"] = abLoopStatus.rawValue
+       props["userRotationDeg"] = userRotation
+       */
+      return PlayerUIState(props)
+    }
   }
 }

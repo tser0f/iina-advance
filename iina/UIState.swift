@@ -150,16 +150,16 @@ extension Preference {
       return newWindowNamesStrings.compactMap{WindowAutosaveName($0)}
     }
 
-    static func getPlayerUIState(forPlayerID playerID: String) -> PlayerUIState? {
+    static func getPlayerUIState(forPlayerID playerID: String) -> MainWindowController.PlayerUIState? {
       guard isRestoreEnabled else { return nil }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       guard let propDict = UserDefaults.standard.dictionary(forKey: key) else {
         return nil
       }
-      return PlayerUIState(propDict)
+      return MainWindowController.PlayerUIState(propDict)
     }
 
-    static func setPlayerUIState(forPlayerID playerID: String, to state: PlayerUIState) {
+    static func setPlayerUIState(forPlayerID playerID: String, to state: MainWindowController.PlayerUIState) {
       guard isSaveEnabled else { return }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       UserDefaults.standard.setValue(state.properties, forKey: key)
@@ -169,21 +169,6 @@ extension Preference {
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       UserDefaults.standard.setValue(nil, forKey: key)
       Logger.log("Removed stored UI state for player \(playerID)", level: .verbose)
-    }
-
-    static func save(_ player: PlayerCore) {
-      guard Preference.UIState.isSaveEnabled else { return }
-      guard player.mainWindow.loaded else {
-        player.log.debug("Aborting save of UI state: player window is not loaded")
-        return
-      }
-      guard !player.info.isRestoring else {
-        player.log.warn("Aborting save of UI state: still restoring previous state")
-        return
-      }
-      player.log.verbose("Saving UI state")
-      let state = PlayerUIState.from(player)
-      setPlayerUIState(forPlayerID: player.label, to: state)
     }
   }
 }
