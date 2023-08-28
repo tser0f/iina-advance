@@ -840,13 +840,29 @@ extension MainWindowController {
 
   private func updateWindowFrame(ΔLeftOutsideWidth ΔLeft: CGFloat = 0, ΔRightOutsideWidth ΔRight: CGFloat = 0) {
     let oldGeometry = buildGeometryFromCurrentLayout()
+
+    if ΔLeft + ΔRight > 0 {
+      // expanding the window: set the previous size as the preferred size
+      if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio), existingPreferredSize.width > oldGeometry.videoContainerSize.width {
+        // Probably a sidebar was opened before this. Don't overwrite its previously saved pref with a smaller one
+        log.verbose("Before outer sidebar open: will not update userPreferredVideoContainerSize; pref already exists and is larger")
+      } else {
+        log.verbose("Before outer sidebar open: saving previous userPreferredVideoContainerSize")
+        player.info.setUserPreferredVideoContainerSize(oldGeometry.videoContainerSize)
+      }
+    }
     // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
     // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
     // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
     // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
     let newGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
                                                                                   newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
-    let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
+    let newWindowFrame: NSRect
+    if let preferredVideoSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio) {
+      newWindowFrame = newGeometry.scale(desiredVideoSize: preferredVideoSize, constrainedWithin: bestScreen.visibleFrame).windowFrame
+    } else {
+      newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
+    }
 
     Logger.log("Calling setFrame() after updating sidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
                level: .debug, subsystem: player.subsystem)

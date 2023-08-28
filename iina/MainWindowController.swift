@@ -87,7 +87,7 @@ class MainWindowController: PlayerWindowController {
 
   // For Pinch To Magnify gesture:
   var lastMagnification: CGFloat = 0.0
-  var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoFrame: NSRect(), videoAspectRatio: 1.0)
+  var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(), videoSize: NSSize(), videoAspectRatio: 1.0)
   private lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
   }()
@@ -2151,8 +2151,8 @@ class MainWindowController: PlayerWindowController {
       thumbnailPeekView.imageView.image = imageToDisplay
       thumbnailPeekView.isHidden = false
 
-      if videoContainerView.frame.height < imageToDisplay.size.height {
-        thumbnailPeekView.frame.size = imageToDisplay.size.shrink(toSize: videoContainerView.frame.size)
+      if videoView.frame.height < imageToDisplay.size.height {
+        thumbnailPeekView.frame.size = imageToDisplay.size.shrink(toSize: videoView.frame.size)
       }
       thumbnailPeekView.frame.size = imageToDisplay.size
 //      Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)

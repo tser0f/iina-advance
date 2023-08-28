@@ -9,6 +9,11 @@
 import Foundation
 
 class PlaybackInfo {
+  unowned var log: Logger.Subsystem
+
+  init(log: Logger.Subsystem) {
+    self.log = log
+  }
 
   /// Enumeration representing the status of the [mpv](https://mpv.io/manual/stable/) A-B loop command.
   ///
@@ -79,6 +84,44 @@ class PlaybackInfo {
   var mpvMd5: String?
 
   // MARK: - Audio/Video
+
+  // When navigating in playlist, and user does not have any other predefined resizing strategy, try to maintain the same window width
+  // even for different video sizes and aspect ratios. Since it may not be possible to fit all videos onscreen, some videos will need to
+  // be shrunk down, and over time this would lead to the window shrinking into the smallest size. Instead, remember the last window size
+  // which the user manually chose, and try to match that across videos.
+  var userPreferredVideoContainerSizeWide: NSSize? = nil
+  // Track vertical videos separately since they are so different:
+  var userPreferredVideoContainerSizeTall: NSSize? = nil
+
+  // FIXME: may want to have a single preferred container size when allowing blackspace around video.
+  /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`videoContainerSize`.
+  /// Need to reconcile these requirements...
+  func setUserPreferredVideoContainerSize(_ newSize: NSSize) {
+    if newSize.aspect >= 1 {
+      // Video is wide or square
+      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSizeWide to \(newSize)")
+      userPreferredVideoContainerSizeWide = newSize
+    } else {
+      // Video is vertical: save to separate tall window pref
+      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSizeTall to \(newSize)")
+      userPreferredVideoContainerSizeTall = newSize
+    }
+  }
+
+  func getUserPreferredVideoContainerSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
+    if aspectRatio >= 1 {
+      guard let preferredVideoSize = userPreferredVideoContainerSizeWide else {
+        return nil
+      }
+      return NSSize(width: preferredVideoSize.width, height: preferredVideoSize.width / aspectRatio)
+    } else {
+      guard let preferredVideoSize = userPreferredVideoContainerSizeTall else {
+        return nil
+      }
+      // Preserve width in this case also. May need to revisit this strategy
+      return NSSize(width: preferredVideoSize.width, height: preferredVideoSize.width / aspectRatio)
+    }
+  }
 
   /// Current video's native stored dimensions, before aspect correction applied.
   /// In most cases `videoDisplayWidth` and `videoDisplayHeight` will be more useful.

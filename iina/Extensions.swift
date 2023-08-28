@@ -303,6 +303,10 @@ extension Bool {
     self ? "Y" : "N"
   }
 
+  var yesno: String {
+    self ? "YES" : "NO"
+  }
+
   static func yn(_ yn: String?) -> Bool? {
     guard let yn = yn else { return nil }
     switch yn {

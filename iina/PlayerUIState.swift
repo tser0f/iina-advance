@@ -140,6 +140,8 @@ extension MainWindowController {
     /// `MainWindowGeometry` -> String
     private static func toPrefString(_ geo: MainWindowGeometry) -> String {
       return [geoPrefStringVersion,
+              geo.videoSize.width.string2f,
+              geo.videoSize.height.string2f,
               geo.videoAspectRatio.string,
               geo.topBarHeight.string2f, geo.trailingBarWidth.string2f,
               geo.bottomBarHeight.string2f, geo.leadingBarWidth.string2f,
@@ -149,10 +151,12 @@ extension MainWindowController {
 
     /// String -> `MainWindowGeometry`
     func windowGeometry() -> MainWindowGeometry? {
-      return fromCSV(.windowGeometry, expectedTokenCount: 10, version: PlayerUIState.geoPrefStringVersion,
+      return fromCSV(.windowGeometry, expectedTokenCount: 12, version: PlayerUIState.geoPrefStringVersion,
                      errPreamble: PlayerUIState.geoErrPre, { errPreamble, iter in
 
-        guard let videoAspectRatio = Double(iter.next()!),
+        guard let videoWidth = Double(iter.next()!),
+              let videoHeight = Double(iter.next()!),
+              let videoAspectRatio = Double(iter.next()!),
               let topBarHeight = Double(iter.next()!),
               let trailingBarWidth = Double(iter.next()!),
               let bottomBarHeight = Double(iter.next()!),
@@ -165,8 +169,9 @@ extension MainWindowController {
           return nil
         }
 
+        let videoSize = CGSize(width: videoWidth, height: videoHeight)
         let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-        return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoAspectRatio: videoAspectRatio)
+        return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoSize: videoSize, videoAspectRatio: videoAspectRatio)
       })
     }
 

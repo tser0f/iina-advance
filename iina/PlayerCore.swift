@@ -130,7 +130,7 @@ class PlayerCore: NSObject {
     return controller
   }()
 
-  lazy var info: PlaybackInfo = PlaybackInfo()
+  lazy var info: PlaybackInfo = PlaybackInfo(log: log)
 
   // TODO: fold hideFadeableViewsTimer into this
   // TODO: fold hideOSDTimer into this
@@ -778,7 +778,7 @@ class PlayerCore: NSObject {
     DispatchQueue.main.async { [self] in
       let osdView = ScreenshootOSDView()
       // Shrink to some fraction of the currently displayed video
-      let relativeSize = mainWindow.videoContainerView.frame.size.multiply(0.3)
+      let relativeSize = mainWindow.videoView.frame.size.multiply(0.3)
       osdView.setImage(image,
                        size: image.size.shrink(toSize: relativeSize),
                        fileURL: saveToFile ? lastScreenshotURL : nil)
