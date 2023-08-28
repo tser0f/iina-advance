@@ -196,7 +196,7 @@ class MainWindowController: PlayerWindowController {
   // Window state
 
   lazy var currentLayout: LayoutPlan = {
-    return LayoutPlan(spec: LayoutSpec.initial())
+    return LayoutPlan(spec: LayoutSpec.defaultLayout())
   }()
 
   enum FullScreenState: Equatable {
@@ -772,8 +772,6 @@ class MainWindowController: PlayerWindowController {
       osdVisualEffectView.roundCorners(withRadius: roundedCornerRadius)
       additionalInfoView.roundCorners(withRadius: roundedCornerRadius)
     }
-    updateBufferIndicatorView()
-    updateOSDPosition()
     
     if player.disableUI { hideFadeableViews() }
 
@@ -1254,10 +1252,6 @@ class MainWindowController: PlayerWindowController {
       screen.log("\(currentString)Screen\(screenIndex): ")
     }
 
-    resetCollectionBehavior()
-    // update buffer indicator view
-    updateBufferIndicatorView()
-
     // start tracking mouse event
     if cv.trackingAreas.isEmpty {
       cv.addTrackingArea(NSTrackingArea(rect: cv.bounds,
@@ -1286,13 +1280,17 @@ class MainWindowController: PlayerWindowController {
     }
     updateTitle()  // Need to call this here, or else when opening directly to fullscreen, window title is just "Window"
 
+    resetCollectionBehavior()
+    updateBufferIndicatorView()
+    updateOSDPosition()
+
     addVideoViewToWindow()
     window.setIsVisible(true)
     player.initVideo()
     videoView.videoLayer.draw(forced: true)
 
     // Set layout from prefs. Do not animate:
-    setWindowLayoutFromPrefs()
+    setInitialWindowLayout()
   }
 
   func windowWillClose(_ notification: Notification) {

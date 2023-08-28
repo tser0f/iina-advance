@@ -513,10 +513,11 @@ extension MainWindowController {
       guard let savedState = player.info.priorUIState else { return window.frame.size }
 
       if let savedGeo = savedState.windowGeometry() {
-        // make sure it fits on current screen
-        let constrainedSize = savedGeo.constrainWithin(bestScreen.visibleFrame).windowFrame.size
-        log.verbose("WindowWillResize: denying request due to restore; returning \(constrainedSize)")
-        return constrainedSize
+        // If getting here, restore is in progress. Don't allow size changes, but don't worry
+        // about whether the saved size is valid. It will be handled elsewhere.
+        let priorSize = savedGeo.windowFrame.size
+        log.verbose("WindowWillResize: denying request due to restore; returning \(priorSize)")
+        return savedGeo.windowFrame.size
       }
       log.verbose("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
       return window.frame.size

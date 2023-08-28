@@ -104,10 +104,10 @@ extension MainWindowController {
           return nil
         }
 
-        guard let topBarPlacement = placement(from: iter.next()),
-              let trailingSidebarPlacement = placement(from: iter.next()),
-              let bottomBarPlacement = placement(from: iter.next()),
-              let leadingSidebarPlacement = placement(from: iter.next()) else {
+        guard let topBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+              let trailingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+              let bottomBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+              let leadingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)) else {
           Logger.log("\(errPreamble) could not parse bar placements", level: .error)
           return nil
         }
@@ -135,13 +135,6 @@ extension MainWindowController {
 
         return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, isFullScreen: isFullScreen, isLegacyMode: isLegacyMode, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
       })
-    }
-
-    private func placement(from token: String?) -> Preference.PanelPlacement? {
-      guard let token = token, let intVal = Int(token) else {
-        return nil
-      }
-      return Preference.PanelPlacement(rawValue: intVal)
     }
 
     /// `MainWindowGeometry` -> String

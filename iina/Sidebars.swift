@@ -12,7 +12,7 @@ private func clampPlaylistWidth(_ width: CGFloat) -> CGFloat {
   return width.clamped(to: Constants.Sidebar.minPlaylistWidth...Constants.Sidebar.maxPlaylistWidth).rounded()
 }
 
-/** Enapsulates code relating to leading & trailing sidebars in MainWindow. */
+/// Enapsulates code relating to leading & trailing sidebars in MainWindow.
 extension MainWindowController {
 
   // MARK: - Structs & Enums
@@ -32,7 +32,7 @@ extension MainWindowController {
       }
     }
 
-    /** Type of the view embedded in sidebar. */
+    /// Type of the view embedded in sidebar.
     enum TabGroup: String {
       case settings
       case playlist
@@ -66,15 +66,6 @@ extension MainWindowController {
       case audio
       case sub
       case plugin(id: String)
-
-      var group: Sidebar.TabGroup {
-        switch self {
-        case .playlist, .chapters:
-          return .playlist
-        case .video, .audio, .sub, .plugin(id: _):
-          return .settings
-        }
-      }
 
       init?(name: String?) {
         guard let name = name else {
@@ -112,9 +103,18 @@ extension MainWindowController {
         case .plugin(let id): return "plugin:\(id)"
         }
       }
+
+      var group: Sidebar.TabGroup {
+        switch self {
+        case .playlist, .chapters:
+          return .playlist
+        case .video, .audio, .sub, .plugin(id: _):
+          return .settings
+        }
+      }
     }
 
-    // MARK: - Init
+    // MARK: - Sidebar Init
 
     init(_ locationID: Preference.SidebarLocation, tabGroups: Set<TabGroup>, placement: Preference.PanelPlacement,
          visibility: Sidebar.Visibility, lastVisibleTab: Sidebar.Tab? = nil) {
@@ -152,7 +152,7 @@ extension MainWindowController {
     }
 
 
-    // MARK: - Fields
+    // MARK: - Stored Properties
 
     /// `leadingSidebar` or `trailingSidebar`
     let locationID: Preference.SidebarLocation
@@ -173,7 +173,7 @@ extension MainWindowController {
     let tabGroups: Set<Sidebar.TabGroup>
 
 
-    // MARK: - Derived Fields
+    // MARK: - Computed Properties
 
     /// The currently visible tab, if sidebar is open/visible. Is `nil` if sidebar is closed/hidden.
     /// Use `lastVisibleTab` if the last shown tab needs to be known.
@@ -220,7 +220,18 @@ extension MainWindowController {
     }
   }
 
-  // MARK: - Showing/Hiding sidebars
+  // MARK: - Show/Hide functions
+
+  // For JavascriptAPICore:
+  func isShowingSettingsSidebar() -> Bool {
+    let layout = currentLayout
+    return layout.leadingSidebar.visibleTabGroup == .settings || layout.trailingSidebar.visibleTabGroup == .settings
+  }
+
+  func isShowing(sidebarTab tab: Sidebar.Tab) -> Bool {
+    let layout = currentLayout
+    return layout.leadingSidebar.visibleTab == tab || layout.trailingSidebar.visibleTab == tab
+  }
 
   @IBAction func toggleLeadingSidebarVisibility(_ sender: NSButton) {
     toggleVisibility(of: .leadingSidebar)
@@ -381,7 +392,8 @@ extension MainWindowController {
   }
 
   /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
-  func animateShowOrHideSidebars(layout: LayoutPlan,
+  func animateShowOrHideSidebars(transition: LayoutTransition,
+                                 layout: LayoutPlan,
                                  setLeadingTo leadingGoal: Sidebar.Visibility? = nil,
                                  setTrailingTo trailingGoal: Sidebar.Visibility? = nil) {
     guard leadingGoal != nil || trailingGoal != nil else { return }
@@ -448,7 +460,7 @@ extension MainWindowController {
       }
     }
 
-    if !currentLayout.isFullScreen && (ΔOutsideLeft != 0 || ΔOutsideRight != 0) {
+    if !transition.isInitialLayout && !currentLayout.isFullScreen && (ΔOutsideLeft != 0 || ΔOutsideRight != 0) {
       updateWindowFrame(ΔLeftOutsideWidth: ΔOutsideLeft, ΔRightOutsideWidth: ΔOutsideRight)
     }
 
@@ -679,82 +691,8 @@ extension MainWindowController {
     videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(coefficients.2 * newWidth)
   }
 
-  // MARK: - Various functions
-
-  func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
-    switch sidebarID {
-    case .leadingSidebar:
-      // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-      if layout.leadingSidebarPlacement == .insideVideo || layout.isFullScreen {
-        leadingSidebarView.blendingMode = .withinWindow
-      } else {
-        leadingSidebarView.blendingMode = .behindWindow
-      }
-    case .trailingSidebar:
-      if layout.trailingSidebarPlacement == .insideVideo || layout.isFullScreen {
-        trailingSidebarView.blendingMode = .withinWindow
-      } else {
-        trailingSidebarView.blendingMode = .behindWindow
-      }
-    }
-  }
-
-  /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
-  func updateSidebarVerticalConstraints(layout futureLayout: LayoutPlan? = nil) {
-    let layout = futureLayout ?? currentLayout
-    let downshift: CGFloat
-    var tabHeight: CGFloat
-    if player.isInMiniPlayer || (!layout.isFullScreen && layout.topBarPlacement == Preference.PanelPlacement.outsideVideo) {
-      downshift = Constants.Sidebar.defaultDownshift
-      tabHeight = Constants.Sidebar.defaultTabHeight
-      log.verbose("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))")
-    } else {
-      // Downshift: try to match title bar height
-      if layout.isFullScreen || layout.topBarPlacement == Preference.PanelPlacement.outsideVideo {
-        downshift = Constants.Sidebar.defaultDownshift
-      } else {
-        // Need to adjust if has title bar
-        downshift = MainWindowController.reducedTitleBarHeight
-      }
-
-      tabHeight = layout.topOSCHeight
-      // Put some safeguards in place:
-      if tabHeight <= Constants.Sidebar.minTabHeight || tabHeight > Constants.Sidebar.maxTabHeight {
-        tabHeight = Constants.Sidebar.defaultTabHeight
-      }
-    }
-
-    log.verbose("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topBar: \(layout.topBarPlacement)")
-    quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
-    playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
-  }
-
-  private func updateWindowFrame(ΔLeftOutsideWidth ΔLeft: CGFloat = 0, ΔRightOutsideWidth ΔRight: CGFloat = 0) {
-    let oldGeometry = buildGeometryFromCurrentLayout()
-    // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
-    // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
-    // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
-    // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-    let newGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
-                                                                                  newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
-    let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
-
-    Logger.log("Calling setFrame() from animateShowOrHideSidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
-               level: .debug, subsystem: player.subsystem)
-    (window as! MainWindow).setFrameImmediately(newWindowFrame)
-  }
-
-  // For JavascriptAPICore:
-  func isShowingSettingsSidebar() -> Bool {
-    let layout = currentLayout
-    return layout.leadingSidebar.visibleTabGroup == .settings || layout.trailingSidebar.visibleTabGroup == .settings
-  }
-
-  func isShowing(sidebarTab tab: Sidebar.Tab) -> Bool {
-    let layout = currentLayout
-    return layout.leadingSidebar.visibleTab == tab || layout.trailingSidebar.visibleTab == tab
-  }
-
+  // MARK: - Changing tabs
+  
   func switchToTabInTabGroup(tab: Sidebar.Tab) {
     // Make it the active tab in its parent tab group (can do this whether or not it's shown):
     switch tab.group {
@@ -850,7 +788,72 @@ extension MainWindowController {
     }
   }
 
-  // MARK: - Mouse events
+  // MARK: - Various functions
+
+  func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
+    switch sidebarID {
+    case .leadingSidebar:
+      // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+      if layout.leadingSidebarPlacement == .insideVideo || layout.isFullScreen {
+        leadingSidebarView.blendingMode = .withinWindow
+      } else {
+        leadingSidebarView.blendingMode = .behindWindow
+      }
+    case .trailingSidebar:
+      if layout.trailingSidebarPlacement == .insideVideo || layout.isFullScreen {
+        trailingSidebarView.blendingMode = .withinWindow
+      } else {
+        trailingSidebarView.blendingMode = .behindWindow
+      }
+    }
+  }
+
+  /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
+  func updateSidebarVerticalConstraints(layout futureLayout: LayoutPlan? = nil) {
+    let layout = futureLayout ?? currentLayout
+    let downshift: CGFloat
+    var tabHeight: CGFloat
+    if player.isInMiniPlayer || (!layout.isFullScreen && layout.topBarPlacement == Preference.PanelPlacement.outsideVideo) {
+      downshift = Constants.Sidebar.defaultDownshift
+      tabHeight = Constants.Sidebar.defaultTabHeight
+      log.verbose("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))")
+    } else {
+      // Downshift: try to match title bar height
+      if layout.isFullScreen || layout.topBarPlacement == Preference.PanelPlacement.outsideVideo {
+        downshift = Constants.Sidebar.defaultDownshift
+      } else {
+        // Need to adjust if has title bar
+        downshift = MainWindowController.reducedTitleBarHeight
+      }
+
+      tabHeight = layout.topOSCHeight
+      // Put some safeguards in place:
+      if tabHeight <= Constants.Sidebar.minTabHeight || tabHeight > Constants.Sidebar.maxTabHeight {
+        tabHeight = Constants.Sidebar.defaultTabHeight
+      }
+    }
+
+    log.verbose("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topBar: \(layout.topBarPlacement)")
+    quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+    playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+  }
+
+  private func updateWindowFrame(ΔLeftOutsideWidth ΔLeft: CGFloat = 0, ΔRightOutsideWidth ΔRight: CGFloat = 0) {
+    let oldGeometry = buildGeometryFromCurrentLayout()
+    // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
+    // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
+    // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
+    // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
+    let newGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
+                                                                                  newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
+    let newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
+
+    Logger.log("Calling setFrame() after updating sidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
+               level: .debug, subsystem: player.subsystem)
+    (window as! MainWindow).setFrameImmediately(newWindowFrame)
+  }
+
+  // MARK: - Resize via mouse drag
 
   func isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: NSPoint) -> Bool {
     if currentLayout.leadingSidebar.visibleTabGroup == .playlist {
@@ -945,6 +948,8 @@ extension MainWindowController {
     }
     return false
   }
+
+  // MARK: - Other mouse events
 
   func hideSidebarsOnClick() -> Bool {
     let oldLayout = currentLayout

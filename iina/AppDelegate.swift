@@ -117,7 +117,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         guard let launchID = launchID, newLaunchID != launchID else { return }
         if newLaunchID < launchID {
           Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which looks invalid because it is below the current value! Will disable UI state load/save functionality to be safe.", level: .warning)
-          Preference.UIState.disablePersistentStateUntilNextLaunch()
+          Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
         } else {
           Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(self.launchID!)).")
           Logger.log("Will assume a newer instance of IINA has started; sending a ping to notify it.")
@@ -129,7 +129,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       if let pingID = change[.newKey] as? Int {
         if pingID >= 0 && pingID != launchID {
           Logger.log("Ping received: \(pingID). Will assume an instance of IINA is already running, and disable loading/saving UI state.")
-          Preference.UIState.disablePersistentStateUntilNextLaunch()
+          Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
         }
       } else if let pingValue = change[.newKey] {
         Logger.log("Ping unrecognized: \(pingValue)", level: .warning)
@@ -354,7 +354,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   private func startFromCommandLine() {
-    Preference.UIState.disablePersistentStateUntilNextLaunch()
+    Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
 
     var lastPlayerCore: PlayerCore? = nil
     let getNewPlayerCore = { () -> PlayerCore in
@@ -483,7 +483,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       if Preference.integer(for: .iinaPing) != launchID {
         Logger.log("Looks like another IINA instance is still running. Disabling restore/save of window state for this instance")
         Utility.showAlert("restore_cancelled", style: .informational)
-        Preference.UIState.disablePersistentStateUntilNextLaunch()
+        Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
         return false
       }
     } else {

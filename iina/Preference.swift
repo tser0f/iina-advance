@@ -521,6 +521,13 @@ struct Preference {
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
     }
+
+    init?(_ intValue: Int?) {
+      guard let intValue = intValue else {
+        return nil
+      }
+      self.init(rawValue: intValue)
+    }
   }
 
   enum ShowTopBarTrigger: Int, InitializingFromKey {

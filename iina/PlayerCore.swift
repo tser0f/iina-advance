@@ -447,6 +447,7 @@ class PlayerCore: NSObject {
     events.emit(.mpvInitialized)
 
     if !getAudioDevices().contains(where: { $0["name"] == Preference.string(for: .audioDevice)! }) {
+      log.verbose("Defaulting mpv audioDevice to 'auto'")
       setAudioDevice("auto")
     }
   }
@@ -468,6 +469,44 @@ class PlayerCore: NSObject {
     videoView.stopDisplayLink()
     videoView.uninit()
     didInitVideo = false
+  }
+
+  /// Finish restoring state of player from prior launch.
+  /// See also: `mpvInit()` in `MPVController`.
+  fileprivate func restoreUIState() {
+    guard let savedState = info.priorUIState else { return }
+
+    log.verbose("Restoring player UI state")
+
+    if let geometry = savedState.windowGeometry(), let layoutSpec = savedState.layoutSpec() {
+      log.verbose("Successfully parsed prior layout and geometry from prefs")
+
+      // TODO: restore MiniPlayer
+
+      // Constrain within screen
+      let windowFrame = geometry.windowFrame// geometry.constrainWithin(mainWindow.bestScreen.visibleFrame).windowFrame
+      /// If needing to restore full screen, will create & execute transition to fullscreen in `windowWillOpen`.
+      if mainWindow.fsState.isFullscreen {
+        // TODO: figure out if getting here is even possible. For now, be safe and set `priorWindowedFrame`
+        log.debug("Restoring priorWindowedFrame to: \(geometry.windowFrame)")
+        mainWindow.fsState.priorWindowedFrame = geometry
+      } else {
+        log.debug("Restoring windowFrame to: \(windowFrame)")
+        mainWindow.window!.setFrame(windowFrame, display: false)
+      }
+
+    } else {
+      log.error("Failed to get player layout and/or geometry from prefs")
+    }
+
+    if let urlString = savedState.string(for: .url) {
+      openMainWindow(url: URL(string: urlString))
+    } else {
+      Logger.log("Could not restore UI state for property 'url'", level: .error, subsystem: subsystem)
+    }
+
+    // TODO: much, much more
+
   }
 
   private func savePlayerUIState() {
@@ -492,39 +531,6 @@ class PlayerCore: NSObject {
     log.verbose("Saving UI state")
     let state = MainWindowController.PlayerUIState.from(self)
     Preference.UIState.setPlayerUIState(forPlayerID: label, to: state)
-  }
-
-  // Finish restoring state of player from prior launch
-  fileprivate func restoreUIState() {
-    guard let savedState = info.priorUIState else { return }
-
-    log.verbose("Restoring player UI state")
-
-    if let geometry = savedState.windowGeometry(), let layoutSpec = savedState.layoutSpec() {
-      // TODO: restore opened sidebars
-
-      // Constrain within screen
-      if layoutSpec.isFullScreen {
-        log.debug("Restoring priorWindowedFrame to: \(geometry.windowFrame)")
-        mainWindow.fsState.priorWindowedFrame = geometry
-      } else {
-        let windowFrame = geometry.constrainWithin(mainWindow.bestScreen.visibleFrame).windowFrame
-        log.debug("Restoring windowFrame to: \(windowFrame)")
-        mainWindow.window!.setFrame(windowFrame, display: false)
-      }
-    } else {
-      log.error("Failed to get player layout and/or geometry from prefs")
-    }
-
-    if let urlString = savedState.string(for: .url) {
-      openMainWindow(url: URL(string: urlString))
-      mainWindow.showWindow(self)
-    } else {
-      Logger.log("Could not restore UI state for property 'url'", level: .error, subsystem: subsystem)
-    }
-
-    // TODO: much, much more
-
   }
 
   /// Initiate shutdown of this player.
@@ -1360,6 +1366,7 @@ class PlayerCore: NSObject {
   }
 
   func setAudioDevice(_ name: String) {
+    log.verbose("Seting mpv audioDevice to \(name.pii.quoted)")
     mpv.setString(MPVProperty.audioDevice, name)
   }
 

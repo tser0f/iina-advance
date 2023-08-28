@@ -53,7 +53,7 @@ extension MainWindowController {
     let oscPosition: Preference.OSCPosition
 
     /// Factory method. Matches what is shown in the XIB
-    static func initial() -> LayoutSpec {
+    static func defaultLayout() -> LayoutSpec {
       let leadingSidebar = Sidebar(.leadingSidebar, tabGroups: Sidebar.TabGroup.fromPrefs(for: .leadingSidebar),
                                    placement: Preference.enum(for: .leadingSidebarPlacement),
                                    visibility: .hide)
@@ -432,9 +432,15 @@ extension MainWindowController {
     }
   }
 
-  func setWindowLayoutFromPrefs() {
-    log.verbose("Transitioning to initial layout from prefs")
-    let initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
+  func setInitialWindowLayout() {
+    let initialLayoutSpec: LayoutSpec
+    if let priorUIState = player.info.priorUIState, let priorLayoutSpec = priorUIState.layoutSpec() {
+      log.verbose("Transitioning to initial layout from prior window state")
+      initialLayoutSpec = priorLayoutSpec
+    } else {
+      log.verbose("Transitioning to initial layout from prefs")
+      initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
+    }
     let initialLayout = buildFutureLayoutPlan(from: initialLayoutSpec)
 
     let transition = LayoutTransition(from: currentLayout, to: initialLayout, isInitialLayout: true)
@@ -761,10 +767,10 @@ extension MainWindowController {
       updateSidebarVerticalConstraints(layout: futureLayout)
     }
 
-    let needsFrameUpdate = windowYDelta != 0 || windowHeightDelta != 0
+    let isWindowHeightChanging = windowYDelta != 0 || windowHeightDelta != 0
     // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
     // Also do not apply when toggling fullscreen because it is not relevant and will cause glitches in the animation.
-    if needsFrameUpdate && !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
+    if isWindowHeightChanging && !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
@@ -778,7 +784,8 @@ extension MainWindowController {
     }
 
     // Sidebars (if closing)
-    animateShowOrHideSidebars(layout: transition.fromLayout,
+    animateShowOrHideSidebars(transition: transition,
+                              layout: transition.fromLayout,
                               setLeadingTo: transition.mustCloseLeadingSidebar ? .hide : nil,
                               setTrailingTo: transition.mustCloseTrailingSidebar ? .hide : nil)
 
@@ -905,7 +912,7 @@ extension MainWindowController {
     let futureLayout = transition.toLayout
     log.verbose("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
 
-    // Fullscreen: change window frame
+    // Changing window frame for fullscreen?
     if transition.isTogglingToFullScreen {
       // Entering FullScreen
       if transition.toLayout.isLegacyFullScreen {
@@ -942,7 +949,6 @@ extension MainWindowController {
 
     // Update heights of top & bottom bars:
 
-    let windowFrame = window.frame
     var windowYDelta: CGFloat = 0
     var windowHeightDelta: CGFloat = 0
 
@@ -965,6 +971,7 @@ extension MainWindowController {
     updateBottomBarHeight(to: futureLayout.bottomBarHeight, transition: transition)
 
     if !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
+      let windowFrame = window.frame
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
@@ -975,7 +982,8 @@ extension MainWindowController {
     // Sidebars (if opening)
     let leadingSidebar = transition.toLayout.leadingSidebar
     let trailingSidebar = transition.toLayout.trailingSidebar
-    animateShowOrHideSidebars(layout: transition.toLayout,
+    animateShowOrHideSidebars(transition: transition,
+                              layout: transition.toLayout,
                               setLeadingTo: transition.mustOpenLeadingSidebar ? leadingSidebar.visibility : nil,
                               setTrailingTo: transition.mustOpenTrailingSidebar ? trailingSidebar.visibility : nil)
 

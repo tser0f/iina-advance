@@ -28,7 +28,7 @@ extension Preference {
       return !disableForThisInstance && Preference.bool(for: .enableRestoreUIState)
     }
 
-    static func disablePersistentStateUntilNextLaunch() {
+    static func disableSaveAndRestoreUntilNextLaunch() {
       disableForThisInstance = true
     }
 
