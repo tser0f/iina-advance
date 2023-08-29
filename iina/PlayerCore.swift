@@ -496,7 +496,7 @@ class PlayerCore: NSObject {
       }
 
     } else {
-      log.error("Failed to get player layout and/or geometry from prefs")
+      log.error("Failed to get player window layout and/or geometry from prefs")
     }
 
     if let urlString = savedState.string(for: .url) {

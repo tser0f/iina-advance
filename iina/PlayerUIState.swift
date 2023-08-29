@@ -143,10 +143,14 @@ extension MainWindowController {
               geo.videoSize.width.string2f,
               geo.videoSize.height.string2f,
               geo.videoAspectRatio.string,
-              geo.topBarHeight.string2f, geo.trailingBarWidth.string2f,
-              geo.bottomBarHeight.string2f, geo.leadingBarWidth.string2f,
-              geo.windowFrame.origin.x.string2f, geo.windowFrame.origin.y.string2f,
-              geo.windowFrame.width.string2f, geo.windowFrame.height.string2f].joined(separator: ",")
+              geo.topBarHeight.string2f,
+              geo.trailingBarWidth.string2f,
+              geo.bottomBarHeight.string2f,
+              geo.leadingBarWidth.string2f,
+              geo.windowFrame.origin.x.string2f,
+              geo.windowFrame.origin.y.string2f,
+              geo.windowFrame.width.string2f,
+              geo.windowFrame.height.string2f].joined(separator: ",")
     }
 
     /// String -> `MainWindowGeometry`

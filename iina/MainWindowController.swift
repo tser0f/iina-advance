@@ -1344,11 +1344,6 @@ class MainWindowController: PlayerWindowController {
     log.verbose("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)")
     let oldLayout = currentLayout
 
-    // Because the outside panels can change while in fullscreen, use the coords of the video frame instead
-    let priorWindowedGeometry = buildGeometryFromCurrentLayout()
-    fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedGeometry)
-    log.verbose("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)")
-
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = oldLayout.spec.clone(isFullScreen: true, isLegacyMode: isLegacy)
     let transition = buildLayoutTransition(from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)

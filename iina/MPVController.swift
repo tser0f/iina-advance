@@ -1443,9 +1443,9 @@ not applying FFmpeg 9599 workaround
       player.afChanged()
 
     case MPVOption.Window.fullscreen:
-      Logger.log("Got mpv prop: \(MPVOption.Window.fullscreen.quoted)", level: .verbose, subsystem: player.subsystem)
-      guard player.mainWindow.loaded else { break }
       let fs = getFlag(MPVOption.Window.fullscreen)
+      Logger.log("Got mpv prop: \(MPVOption.Window.fullscreen.quoted) = \(fs.yesno)", level: .verbose, subsystem: player.subsystem)
+      guard player.mainWindow.loaded else { break }
       if fs != player.mainWindow.fsState.isFullscreen {
         DispatchQueue.main.async(execute: self.player.mainWindow.toggleWindowFullScreen)
       }
@@ -1480,6 +1480,7 @@ not applying FFmpeg 9599 workaround
     case MPVProperty.idleActive:
       if let idleActive = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee, idleActive {
         if receivedEndFileWhileLoading && player.info.fileLoading {
+          player.log.error("Received MPV_EVENT_END_FILE and 'idle-active' while loading \(player.info.currentURL?.path.pii.quoted ?? "nil"). Will display alert to user and close window")
           player.errorOpeningFileAndCloseMainWindow()
           player.info.fileLoading = false
           player.info.currentURL = nil

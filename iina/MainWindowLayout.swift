@@ -433,14 +433,23 @@ extension MainWindowController {
   }
 
   func setInitialWindowLayout() {
+    var needsNativeFullScreen: Bool = false
     let initialLayoutSpec: LayoutSpec
     if let priorUIState = player.info.priorUIState, let priorLayoutSpec = priorUIState.layoutSpec() {
       log.verbose("Transitioning to initial layout from prior window state")
-      initialLayoutSpec = priorLayoutSpec
+
+      if priorLayoutSpec.isFullScreen && !priorLayoutSpec.isLegacyMode && !currentLayout.isFullScreen {
+        // Special handling for native fullscreen. Cannot avoid animation
+        initialLayoutSpec = priorLayoutSpec.clone(isFullScreen: false)
+        needsNativeFullScreen = true
+      } else {
+        initialLayoutSpec = priorLayoutSpec
+      }
     } else {
       log.verbose("Transitioning to initial layout from prefs")
       initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     }
+
     let initialLayout = buildFutureLayoutPlan(from: initialLayoutSpec)
 
     let transition = LayoutTransition(from: currentLayout, to: initialLayout, isInitialLayout: true)
@@ -449,17 +458,18 @@ extension MainWindowController {
 
     UIAnimation.disableAnimation{
       controlBarFloating.isDragging = false
-      currentLayout = initialLayout
+      doPreTransitionTask(transition)
       fadeOutOldViews(transition)
       closeOldPanels(transition)
       updateHiddenViewsAndConstraints(transition)
       openNewPanels(transition)
       fadeInNewViews(transition)
-      updatePanelBlendingModes(to: transition.toLayout)
-      apply(visibility: transition.toLayout.titleIconAndText, titleTextField, documentIconButton)
-      fadeableViewsAnimationState = .shown
-      fadeableTopBarAnimationState = .shown
-      resetFadeTimer()
+      doPostTransitionTask(transition)
+      log.verbose("Transitioning to initial layout done")
+    }
+
+    if needsNativeFullScreen {
+      window?.toggleFullScreen(self)
     }
   }
 
@@ -568,6 +578,10 @@ extension MainWindowController {
     if transition.isTogglingToFullScreen {
       // Entering FullScreen
       let isLegacy = transition.toLayout.isLegacyFullScreen
+
+      let priorWindowedGeometry = buildGeometryFromCurrentLayout()
+      fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedGeometry)
+      log.verbose("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)")
 
       // Do not move this block. It needs to go here.
       if !isLegacy {
@@ -1067,7 +1081,7 @@ extension MainWindowController {
   }
 
   private func doPostTransitionTask(_ transition: LayoutTransition) {
-    Logger.log("doPostTransitionTask")
+    Logger.log("DoPostTransitionTask")
     // Update blending mode:
     updatePanelBlendingModes(to: transition.toLayout)
     /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out
@@ -1135,7 +1149,6 @@ extension MainWindowController {
 
       fsState.finishAnimating()
       player.events.emit(.windowFullscreenChanged, data: true)
-      saveWindowFrame()
 
     } else if transition.isTogglingFromFullScreen {
       // Exited FullScreen
@@ -1220,6 +1233,9 @@ extension MainWindowController {
     }
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
+
+    log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyMode), FSState:\(fsState.isFullscreen.yn) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
+    saveWindowFrame()
   }
 
   // MARK: - Bars Layout

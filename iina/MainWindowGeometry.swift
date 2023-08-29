@@ -548,7 +548,7 @@ extension MainWindowController {
         log.verbose("WindowWillResize: denying request due to restore; returning \(priorSize)")
         return savedGeo.windowFrame.size
       }
-      log.verbose("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
+      log.error("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
       return window.frame.size
     }
 
