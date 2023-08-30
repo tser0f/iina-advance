@@ -648,21 +648,6 @@ class MainWindowController: PlayerWindowController {
 
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
-  struct VideoViewConstraints {
-    let eqOffsetTop: NSLayoutConstraint
-    let eqOffsetRight: NSLayoutConstraint
-    let eqOffsetBottom: NSLayoutConstraint
-    let eqOffsetLeft: NSLayoutConstraint
-
-    let gtOffsetTop: NSLayoutConstraint
-    let gtOffsetRight: NSLayoutConstraint
-    let gtOffsetBottom: NSLayoutConstraint
-    let gtOffsetLeft: NSLayoutConstraint
-
-    let centerX: NSLayoutConstraint
-    let centerY: NSLayoutConstraint
-  }
-
   var videoViewConstraints: VideoViewConstraints? = nil
 
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
@@ -855,7 +840,8 @@ class MainWindowController: PlayerWindowController {
     videoContainerView.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
-    constrainVideoViewForWindowedMode()
+    videoView.addConstraintsToFillSuperview(priority: .defaultLow)
+    constrainVideoViewForNormalOrFullScreen()
   }
 
   /** Set material for OSC and title bar */
@@ -2008,7 +1994,7 @@ class MainWindowController: PlayerWindowController {
       let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
       bottomBarBottomConstraint.animateToConstant(0)
-      constrainVideoViewForWindowedMode(
+      constrainVideoViewForSpecialMode(
         top: window.frame.height - newVideoViewFrame.maxY,
         right: newVideoViewFrame.maxX - window.frame.width,
         bottom: -newVideoViewFrame.minY,
@@ -2055,7 +2041,7 @@ class MainWindowController: PlayerWindowController {
     animationTasks.append(UIAnimation.Task(duration: duration, timing: .easeIn, { [self] in
       // Restore prev constraints:
       bottomBarBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
-      constrainVideoViewForWindowedMode()
+      constrainVideoViewForNormalOrFullScreen()
     }))
 
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in

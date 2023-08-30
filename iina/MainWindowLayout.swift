@@ -617,7 +617,6 @@ extension MainWindowController {
       player.mpv.setFlag(MPVOption.Window.keepaspect, true)
 
       resetViewsForFullScreenTransition()
-      constrainVideoViewForFullScreen()
 
     } else if transition.isTogglingFromFullScreen {
       // Exiting FullScreen
@@ -1175,8 +1174,6 @@ extension MainWindowController {
         window.styleMask.remove(.titled)
       }
 
-      constrainVideoViewForWindowedMode()
-
       if Preference.bool(for: .blackOutMonitor) {
         removeBlackWindows()
       }
@@ -1652,15 +1649,30 @@ extension MainWindowController {
 
   // MARK: - VideoView Constraints
 
-  private func addOrUpdate(_ existing: NSLayoutConstraint?,
+  struct VideoViewConstraints {
+    let eqOffsetTop: NSLayoutConstraint
+    let eqOffsetRight: NSLayoutConstraint
+    let eqOffsetBottom: NSLayoutConstraint
+    let eqOffsetLeft: NSLayoutConstraint
+
+    let gtOffsetTop: NSLayoutConstraint
+    let gtOffsetRight: NSLayoutConstraint
+    let gtOffsetBottom: NSLayoutConstraint
+    let gtOffsetLeft: NSLayoutConstraint
+
+    let centerX: NSLayoutConstraint
+    let centerY: NSLayoutConstraint
+  }
+
+  private func addOrUpdate(_ existingVideoViewConstraint: NSLayoutConstraint?,
                            _ attr: NSLayoutConstraint.Attribute, _ relation: NSLayoutConstraint.Relation, _ constant: CGFloat,
                            _ priority: NSLayoutConstraint.Priority) -> NSLayoutConstraint {
     let constraint: NSLayoutConstraint
-    if let existing = existing {
+    if let existing = existingVideoViewConstraint {
       constraint = existing
       constraint.animateToConstant(constant)
     } else {
-      constraint = existing ?? NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: relation, toItem: videoContainerView,
+      constraint = existingVideoViewConstraint ?? NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: relation, toItem: videoView.superview!,
                                                   attribute: attr, multiplier: 1, constant: constant)
     }
     constraint.priority = priority
@@ -1683,8 +1695,8 @@ extension MainWindowController {
       gtOffsetBottom: addOrUpdate(existing?.gtOffsetBottom, .bottom, .lessThanOrEqual, bottom, gtPriority),
       gtOffsetLeft: addOrUpdate(existing?.gtOffsetLeft, .left, .greaterThanOrEqual, left, gtPriority),
 
-      centerX: existing?.centerX ?? videoView.centerXAnchor.constraint(equalTo: videoContainerView.centerXAnchor),
-      centerY: existing?.centerY ?? videoView.centerYAnchor.constraint(equalTo: videoContainerView.centerYAnchor)
+      centerX: existing?.centerX ?? videoView.centerXAnchor.constraint(equalTo: videoView.superview!.centerXAnchor),
+      centerY: existing?.centerY ?? videoView.centerYAnchor.constraint(equalTo: videoView.superview!.centerYAnchor)
     )
     newConstraints.centerX.priority = centerPriority
     newConstraints.centerY.priority = centerPriority
@@ -1692,7 +1704,7 @@ extension MainWindowController {
   }
 
   // TODO: figure out why this 2px adjustment is necessary
-  func constrainVideoViewForWindowedMode(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
+  func constrainVideoViewForSpecialMode(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
     log.verbose("Contraining videoView for windowed mode")
     // Remove GT & center constraints. Use only EQ
     let existing = self.videoViewConstraints
@@ -1721,7 +1733,7 @@ extension MainWindowController {
     window?.layoutIfNeeded()
   }
 
-  private func constrainVideoViewForFullScreen() {
+  func constrainVideoViewForNormalOrFullScreen() {
     // GT + center constraints are main priority, but include EQ as hint for ideal placement
     let newConstraints = rebuildVideoViewConstraints(eqPriority: .defaultLow,
                                                      gtPriority: .required,

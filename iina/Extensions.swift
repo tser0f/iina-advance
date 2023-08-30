@@ -981,14 +981,22 @@ extension Process {
 }
 
 extension NSView {
-  func addConstraintsToFillSuperview(v: Bool = true, h: Bool = true) {
+  func addConstraintsToFillSuperview(v: Bool = true, h: Bool = true, priority: NSLayoutConstraint.Priority = .required) {
     if h {
-      leadingAnchor.constraint(equalTo: superview!.leadingAnchor).isActive = true
-      trailingAnchor.constraint(equalTo: superview!.trailingAnchor).isActive = true
+      let leadingConstraint = leadingAnchor.constraint(equalTo: superview!.leadingAnchor)
+      leadingConstraint.priority = priority
+      leadingConstraint.isActive = true
+      let trailingConstraint = trailingAnchor.constraint(equalTo: superview!.trailingAnchor)
+      trailingConstraint.priority = priority
+      trailingConstraint.isActive = true
     }
     if v {
-      topAnchor.constraint(equalTo: superview!.topAnchor).isActive = true
-      bottomAnchor.constraint(equalTo: superview!.bottomAnchor).isActive = true
+      let topConstraint = topAnchor.constraint(equalTo: superview!.topAnchor)
+      topConstraint.priority = priority
+      topConstraint.isActive = true
+      let bottomConstraint = bottomAnchor.constraint(equalTo: superview!.bottomAnchor)
+      bottomConstraint.priority = priority
+      bottomConstraint.isActive = true
     }
   }
 
