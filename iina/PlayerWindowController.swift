@@ -343,6 +343,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   
   
   override func mouseDown(with event: NSEvent) {
+    player.log.verbose("PlayerWindow mouseDown!")
     PluginInputManager.handle(
       input: PluginInputManager.Input.mouse, event: .mouseDown,
       player: player, arguments: mouseEventArgs(event)
@@ -354,9 +355,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Mouse / Trackpad events
 
   override func mouseUp(with event: NSEvent) {
-    Logger.log("PlayerWindow mouseUp!", level: .verbose, subsystem: player.subsystem)
+    player.log.verbose("PlayerWindow mouseUp!")
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else {
-      Logger.log("Click occurred in a disabled view; ignoring", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Click occurred in a disabled view; ignoring")
       return
     }
     PluginInputManager.handle(

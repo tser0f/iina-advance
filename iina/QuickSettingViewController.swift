@@ -913,6 +913,8 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
 class QuickSettingView: NSView {
 
-  override func mouseDown(with event: NSEvent) {}
+  override func mouseDown(with event: NSEvent) {
+    window?.windowController?.mouseDown(with: event)
+  }
 
 }
