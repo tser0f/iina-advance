@@ -77,8 +77,8 @@
                         <font key="font" metaFont="system"/>
                     </buttonCell>
                     <connections>
-                        <binding destination="IBP-Mz-Maa" name="enabled" keyPath="values.enableRestoreUIState" id="tCc-LE-uKN"/>
                         <binding destination="IBP-Mz-Maa" name="value" keyPath="values.alwaysAskBeforeRestoreAtLaunch" id="Dpt-nk-Mqg"/>
+                        <binding destination="IBP-Mz-Maa" name="enabled" keyPath="values.enableRestoreUIState" id="tCc-LE-uKN"/>
                     </connections>
                 </button>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="aKH-Me-5XB" userLabel="WhenMediaIsOpened Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">

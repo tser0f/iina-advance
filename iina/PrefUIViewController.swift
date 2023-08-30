@@ -39,13 +39,14 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 
   override var sectionViews: [NSView] {
-    return [sectionAppearanceView, sectionWindowView, sectionOSCView, sectionOSDView,
+    return [sectionAppearanceView, sectionWindowView, sectionFullScreenView, sectionOSCView, sectionOSDView,
             sectionSidebarsView, sectionThumbnailView, sectionPictureInPictureView]
   }
 
   private let toolbarSettingsSheetController = PrefOSCToolbarSettingsSheetController()
 
   @IBOutlet var sectionAppearanceView: NSView!
+  @IBOutlet var sectionFullScreenView: NSView!
   @IBOutlet var sectionWindowView: NSView!
   @IBOutlet var sectionOSCView: NSView!
   @IBOutlet var sectionOSDView: NSView!

@@ -1,5 +1,5 @@
 //
-//  PlayerUIState.swift
+//  PlayerSaveState.swift
 //  iina
 //
 //  Created by Matt Svoboda on 8/6/23.
@@ -10,7 +10,7 @@ import Foundation
 
 extension MainWindowController {
   // Data structure for saving to prefs / restoring from prefs the UI state of a single player window
-  struct PlayerUIState {
+  struct PlayerSaveState {
     enum PropName: String {
       case launchID = "launchID"
 
@@ -56,7 +56,7 @@ extension MainWindowController {
       guard let csvString = string(for: propName) else {
         return nil
       }
-      Logger.log("PlayerUIState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
+      Logger.log("PlayerSaveState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
       let tokens = csvString.split(separator: ",").map{String($0)}
       guard tokens.count == expectedTokenCount else {
         Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
@@ -65,8 +65,8 @@ extension MainWindowController {
       var iter = tokens.makeIterator()
 
       let version = iter.next()
-      guard version == PlayerUIState.geoPrefStringVersion else {
-        Logger.log("\(errPreamble) bad version (expected \(PlayerUIState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
+      guard version == PlayerSaveState.geoPrefStringVersion else {
+        Logger.log("\(errPreamble) bad version (expected \(PlayerSaveState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
         return nil
       }
 
@@ -93,8 +93,8 @@ extension MainWindowController {
 
     /// String -> `LayoutSpec`
     func layoutSpec() -> LayoutSpec? {
-      return fromCSV(.layoutSpec, expectedTokenCount: 11, version: PlayerUIState.specPrefStringVersion,
-                     errPreamble: PlayerUIState.specErrPre, { errPreamble, iter in
+      return fromCSV(.layoutSpec, expectedTokenCount: 11, version: PlayerSaveState.specPrefStringVersion,
+                     errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
 
         let leadingSidebarTab = Sidebar.Tab(name: iter.next())
         let traillingSidebarTab = Sidebar.Tab(name: iter.next())
@@ -156,8 +156,8 @@ extension MainWindowController {
 
     /// String -> `MainWindowGeometry`
     func windowGeometry() -> MainWindowGeometry? {
-      return fromCSV(.windowGeometry, expectedTokenCount: 12, version: PlayerUIState.geoPrefStringVersion,
-                     errPreamble: PlayerUIState.geoErrPre, { errPreamble, iter in
+      return fromCSV(.windowGeometry, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
+                     errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
         guard let videoWidth = Double(iter.next()!),
               let videoHeight = Double(iter.next()!),
@@ -180,7 +180,7 @@ extension MainWindowController {
       })
     }
 
-    static func generatePrefDictFrom(_ player: PlayerCore) -> PlayerUIState {
+    static func generatePrefDict(from player: PlayerCore) -> PlayerSaveState {
       var props: [String: Any] = [:]
       let info = player.info
       let layout = player.mainWindow.currentLayout
@@ -240,7 +240,7 @@ extension MainWindowController {
        props["abLoopStatus"] = abLoopStatus.rawValue
        props["userRotationDeg"] = userRotation
        */
-      return PlayerUIState(props)
+      return PlayerSaveState(props)
     }
   }
 }

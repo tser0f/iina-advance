@@ -414,7 +414,7 @@ class PlayerCore: NSObject {
     log.verbose("Player start (restore: \(restore))")
 
     /// If restoring, most playback properties need to be set via `mpv.mpvInit()`. Set this before calling `startMPV()`.
-    if restore, let savedState = Preference.UIState.getPlayerUIState(forPlayerID: label) {
+    if restore, let savedState = Preference.UIState.getPlayerSaveState(forPlayerID: label) {
       info.priorUIState = savedState
     }
 
@@ -511,7 +511,7 @@ class PlayerCore: NSObject {
 
   }
 
-  private func savePlayerUIState() {
+  private func savePlayerSaveState() {
     Logger.log("Saving player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))", level: .verbose, subsystem: subsystem)
 
     saveUIState()
@@ -530,9 +530,9 @@ class PlayerCore: NSObject {
       log.warn("Aborting save of UI state: still restoring previous state")
       return
     }
-    let stateDict = MainWindowController.PlayerUIState.generatePrefDictFrom(self)
+    let stateDict = MainWindowController.PlayerSaveState.generatePrefDict(from: self)
     log.verbose("Saving UI state: \(stateDict)")
-    Preference.UIState.setPlayerUIState(forPlayerID: label, to: stateDict)
+    Preference.UIState.setPlayerSaveState(forPlayerID: label, to: stateDict)
   }
 
   /// Initiate shutdown of this player.
@@ -546,7 +546,7 @@ class PlayerCore: NSObject {
     guard !isShuttingDown else { return }
     isShuttingDown = true
     Logger.log("Shutting down", subsystem: subsystem)
-    savePlayerUIState()
+    savePlayerSaveState()
     mpv.mpvQuit()
   }
 
@@ -558,7 +558,7 @@ class PlayerCore: NSObject {
     // If mpv shutdown was initiated by mpv then the player state has not been saved.
     if isMPVInitiated {
       isShuttingDown = true
-      savePlayerUIState()
+      savePlayerSaveState()
     }
     postNotification(.iinaPlayerShutdown)
   }

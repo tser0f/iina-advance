@@ -37,7 +37,7 @@ class PlaybackInfo {
   }
 
   /// Will be non-`nil` while restoring from a previous launch. Contains info needed to restore the UI state.
-  var priorUIState: MainWindowController.PlayerUIState? =  nil
+  var priorUIState: MainWindowController.PlayerSaveState? =  nil
 
   var isRestoring: Bool {
     return priorUIState != nil
