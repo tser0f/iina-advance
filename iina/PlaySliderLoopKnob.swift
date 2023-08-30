@@ -117,6 +117,9 @@ final class PlaySliderLoopKnob: NSView {
     let bar = cell.barRect(flipped: isFlipped)
     // The coordinate must be short of the end of the bar to keep the knob within the bar.
     let maxX = bar.maxX - cell.knobWidth
+    guard bar.minX <= maxX else {
+      return bar.minX
+    }
     return x.clamped(to: bar.minX...maxX)
   }
 

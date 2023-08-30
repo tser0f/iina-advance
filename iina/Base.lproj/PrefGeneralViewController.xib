@@ -354,8 +354,8 @@
                     </connections>
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="y2l-T9-GFV">
-                    <rect key="frame" x="138" y="95" width="286" height="18"/>
-                    <buttonCell key="cell" type="check" title="Starting playback again seeks to beginning" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="vDa-4g-6AP">
+                    <rect key="frame" x="138" y="95" width="357" height="18"/>
+                    <buttonCell key="cell" type="check" title="Starting playback at end of file restarts from beginning" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="vDa-4g-6AP">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
