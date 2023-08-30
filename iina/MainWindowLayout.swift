@@ -1390,7 +1390,9 @@ extension MainWindowController {
       futureLayout.topBarView = visibleState
       futureLayout.trafficLightButtons = visibleState
       futureLayout.titleIconAndText = visibleState
-      futureLayout.titleBarHeight = layoutSpec.isLegacyMode ? 0 : MainWindowController.standardTitleBarHeight  // may be overridden by OSC layout
+      // If legacy window mode, do not show title bar.
+      // May be overridden depending on OSC layout anyway
+      futureLayout.titleBarHeight = layoutSpec.isLegacyMode ? 0 : MainWindowController.standardTitleBarHeight
 
       if futureLayout.topBarPlacement == .insideVideo {
         futureLayout.osdMinOffsetFromTop = futureLayout.titleBarHeight + 8
@@ -1452,7 +1454,9 @@ extension MainWindowController {
         }
       case .top:
         if !futureLayout.isFullScreen {
-          futureLayout.titleBarHeight = MainWindowController.reducedTitleBarHeight
+          // If legacy window mode, do not show title bar.
+          // Otherwise reduce its height a bit because it will share space with OSC
+          futureLayout.titleBarHeight = layoutSpec.isLegacyMode ? 0 : MainWindowController.reducedTitleBarHeight
         }
 
         let visibility: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
