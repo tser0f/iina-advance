@@ -272,7 +272,8 @@ not applying FFmpeg 9599 workaround
 
     applyHardwareAccelerationWorkaround()
 
-    if let savedState = player.info.priorUIState {
+    // Restore from prior launch (if applicable)
+    if let savedState = player.info.priorState {
       if let wasPaused = savedState.bool(for: .paused) {
         setOption(forName: MPVOption.PlaybackControl.pause, toValue: wasPaused, type: .bool)
       }
@@ -280,6 +281,8 @@ not applying FFmpeg 9599 workaround
       if let startTime = savedState.string(for: .progress) {
         setOption(forName: MPVOption.PlaybackControl.start, toValue: startTime, type: .string)
       }
+
+
     }
 
     // - General
@@ -1320,7 +1323,7 @@ not applying FFmpeg 9599 workaround
         DispatchQueue.main.async {
           // FIXME: this isn't perfect - a bad frame briefly appears during transition
           Logger.log("Resetting videoView")
-          UIAnimation.disableAnimation {
+          CocoaAnimation.disableAnimation {
             self.player.mainWindow.rotationHandler.rotateVideoView(toDegrees: 0)
           }
         }

@@ -568,7 +568,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     defaultAlbumArt.isHidden = player.info.vid != 0
 
-    UIAnimation.runAsync(UIAnimation.Task{ [self] in
+    CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
       var newFrame = window.frame
       newFrame.size = constrainWindowSize(newFrame.size, animate: true)
       window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)

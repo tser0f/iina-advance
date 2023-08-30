@@ -23,12 +23,12 @@ class VideoRotationHandler {
     switch recognizer.state {
     case .began, .changed:
       let cgNewRotationDegrees = recognizer.rotationInDegrees
-      UIAnimation.disableAnimation {
+      CocoaAnimation.disableAnimation {
         rotateVideoView(toDegrees: cgNewRotationDegrees)
       }
       break
     case .failed, .cancelled:
-      UIAnimation.disableAnimation {
+      CocoaAnimation.disableAnimation {
         rotateVideoView(toDegrees: 0)
       }
       break
@@ -115,7 +115,7 @@ class VideoRotationHandler {
     videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     CATransaction.commit()
 
-    if UIAnimation.isAnimationEnabled {
+    if CocoaAnimation.isAnimationEnabled {
       Logger.log("Animating rotation from \(fromDegrees)° to \(toDegrees)°")
 
       CATransaction.begin()

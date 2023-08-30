@@ -411,8 +411,8 @@ extension MainWindowController {
     player.info.justOpenedFile = false
     player.info.justStartedFile = false
     shouldApplyInitialWindowSize = false
-    if player.info.priorUIState != nil {
-      player.info.priorUIState = nil
+    if player.info.priorState != nil {
+      player.info.priorState = nil
       log.debug("[AdjustFrameAfterVideoReconfig] Done with restore")
     } else {
       log.debug("[AdjustFrameAfterVideoReconfig] Done")
@@ -480,7 +480,7 @@ extension MainWindowController {
 
     if animate {
       // This seems to provide a better animation and plays better with other animations
-      animationQueue.run(UIAnimation.Task(duration: UIAnimation.DefaultDuration, timing: .easeInEaseOut, {
+      animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, {
         (window as! MainWindow).setFrameImmediately(newWindowFrame)
       }))
     } else {
@@ -551,9 +551,9 @@ extension MainWindowController {
     }
 
     if player.info.isRestoring {
-      guard let savedState = player.info.priorUIState else { return window.frame.size }
+      guard let savedState = player.info.priorState else { return window.frame.size }
 
-      if let savedGeo = savedState.windowGeometry() {
+      if let savedGeo = savedState.windowGeometry {
         // If getting here, restore is in progress. Don't allow size changes, but don't worry
         // about whether the saved size is valid. It will be handled elsewhere.
         let priorSize = savedGeo.windowFrame.size
@@ -630,7 +630,7 @@ extension MainWindowController {
       updateSpacingForTitleBarAccessories()
     }
 
-    UIAnimation.disableAnimation {
+    CocoaAnimation.disableAnimation {
       if isInInteractiveMode {
         // interactive mode
         cropSettingsView?.cropBoxView.resized(with: videoView.frame)

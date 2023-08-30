@@ -415,7 +415,7 @@ class PlayerCore: NSObject {
 
     /// If restoring, most playback properties need to be set via `mpv.mpvInit()`. Set this before calling `startMPV()`.
     if restore, let savedState = Preference.UIState.getPlayerSaveState(forPlayerID: label) {
-      info.priorUIState = savedState
+      info.priorState = savedState
     }
 
     startMPV()
@@ -474,11 +474,11 @@ class PlayerCore: NSObject {
   /// Finish restoring state of player from prior launch.
   /// See also: `mpvInit()` in `MPVController`.
   fileprivate func restoreUIState() {
-    guard let savedState = info.priorUIState else { return }
+    guard let savedState = info.priorState else { return }
 
     log.verbose("Restoring player UI state")
 
-    if let geometry = savedState.windowGeometry(), let layoutSpec = savedState.layoutSpec() {
+    if let geometry = savedState.windowGeometry, let layoutSpec = savedState.layoutSpec {
       log.verbose("Successfully parsed prior layout and geometry from prefs")
 
       videoView.aspectRatio = geometry.videoAspectRatio
@@ -486,7 +486,7 @@ class PlayerCore: NSObject {
       // TODO: restore MiniPlayer
 
       // Constrain within screen
-      let windowFrame = geometry.windowFrame// geometry.constrainWithin(mainWindow.bestScreen.visibleFrame).windowFrame
+      let windowFrame = geometry.windowFrame
       /// If needing to restore full screen, will create & execute transition to fullscreen in `windowWillOpen`.
       if mainWindow.fsState.isFullscreen {
         // TODO: figure out if getting here is even possible. For now, be safe and set `priorWindowedFrame`
@@ -504,7 +504,7 @@ class PlayerCore: NSObject {
     if let urlString = savedState.string(for: .url) {
       openMainWindow(url: URL(string: urlString))
     } else {
-      Logger.log("Could not restore UI state for property 'url'", level: .error, subsystem: subsystem)
+      log.error("Could not restore UI state for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
     }
 
     // TODO: much, much more
@@ -512,7 +512,7 @@ class PlayerCore: NSObject {
   }
 
   private func savePlayerSaveState() {
-    Logger.log("Saving player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))", level: .verbose, subsystem: subsystem)
+    log.verbose("Saving player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))")
 
     saveUIState()
     savePlaybackPosition()
@@ -530,9 +530,7 @@ class PlayerCore: NSObject {
       log.warn("Aborting save of UI state: still restoring previous state")
       return
     }
-    let stateDict = MainWindowController.PlayerSaveState.generatePrefDict(from: self)
-    log.verbose("Saving UI state: \(stateDict)")
-    Preference.UIState.setPlayerSaveState(forPlayerID: label, to: stateDict)
+    Preference.UIState.savePlayerState(for: self)
   }
 
   /// Initiate shutdown of this player.

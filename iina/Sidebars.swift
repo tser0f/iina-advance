@@ -324,7 +324,7 @@ extension MainWindowController {
       if animate {
         animationQueue.run(transition.animationTasks)
       } else {
-        UIAnimation.disableAnimation{
+        CocoaAnimation.disableAnimation{
           animationQueue.run(transition.animationTasks)
         }
       }
@@ -393,7 +393,7 @@ extension MainWindowController {
 
   /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
   func animateShowOrHideSidebars(transition: LayoutTransition,
-                                 layout: LayoutPlan,
+                                 layout: LayoutState,
                                  setLeadingTo leadingGoal: Sidebar.Visibility? = nil,
                                  setTrailingTo trailingGoal: Sidebar.Visibility? = nil) {
     guard leadingGoal != nil || trailingGoal != nil else { return }
@@ -733,7 +733,7 @@ extension MainWindowController {
         trailingSidebar = layout.trailingSidebar.clone(visibility: newVisibility)
       }
       let newLayoutSpec = layout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-      let futureLayout = buildFutureLayoutPlan(from: newLayoutSpec)
+      let futureLayout = buildFutureLayoutState(from: newLayoutSpec)
       currentLayout = futureLayout
     }
   }
@@ -790,7 +790,7 @@ extension MainWindowController {
 
   // MARK: - Various functions
 
-  func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutPlan) {
+  func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutState) {
     switch sidebarID {
     case .leadingSidebar:
       // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
@@ -809,7 +809,7 @@ extension MainWindowController {
   }
 
   /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
-  func updateSidebarVerticalConstraints(layout futureLayout: LayoutPlan? = nil) {
+  func updateSidebarVerticalConstraints(layout futureLayout: LayoutState? = nil) {
     let layout = futureLayout ?? currentLayout
     let downshift: CGFloat
     var tabHeight: CGFloat
@@ -937,7 +937,7 @@ extension MainWindowController {
     let currentLocation = dragEvent.locationInWindow
     let layout = currentLayout
 
-    return UIAnimation.disableAnimation {
+    return CocoaAnimation.disableAnimation {
       let newPlaylistWidth: CGFloat
       if leadingSidebarIsResizing {
         let newWidth = currentLocation.x + 2

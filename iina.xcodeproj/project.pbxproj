@@ -194,7 +194,7 @@
 		D1D87E042932086000737886 /* TableUIChangeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87E032932086000737886 /* TableUIChangeBuilder.swift */; };
 		D1D87E0629320F7C00737886 /* UndoHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87E0529320F7C00737886 /* UndoHelper.swift */; };
 		D1DC673128ED682100C419CB /* RemainingRemovalTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1DC673028ED682100C419CB /* RemainingRemovalTracker.swift */; };
-		D1E1446C29E3971C005DCEA3 /* UIAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1446B29E3971C005DCEA3 /* UIAnimation.swift */; };
+		D1E1446C29E3971C005DCEA3 /* CocoaAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1446B29E3971C005DCEA3 /* CocoaAnimation.swift */; };
 		D1EAF5E528E6B5DD0023BACF /* EditableTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1EAF5E428E6B5DD0023BACF /* EditableTextField.swift */; };
 		D1EAF5E728E6B6780023BACF /* TableUIChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1EAF5E628E6B6780023BACF /* TableUIChange.swift */; };
 		D1FA42E328E4323E00DF49DD /* InputSectionStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FA42E228E4323E00DF49DD /* InputSectionStack.swift */; };
@@ -1572,7 +1572,7 @@
 		D1D87E032932086000737886 /* TableUIChangeBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableUIChangeBuilder.swift; sourceTree = "<group>"; };
 		D1D87E0529320F7C00737886 /* UndoHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoHelper.swift; sourceTree = "<group>"; };
 		D1DC673028ED682100C419CB /* RemainingRemovalTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemainingRemovalTracker.swift; sourceTree = "<group>"; };
-		D1E1446B29E3971C005DCEA3 /* UIAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIAnimation.swift; sourceTree = "<group>"; };
+		D1E1446B29E3971C005DCEA3 /* CocoaAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocoaAnimation.swift; sourceTree = "<group>"; };
 		D1EAF5E428E6B5DD0023BACF /* EditableTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableTextField.swift; sourceTree = "<group>"; };
 		D1EAF5E628E6B6780023BACF /* TableUIChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableUIChange.swift; sourceTree = "<group>"; };
 		D1FA42E228E4323E00DF49DD /* InputSectionStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSectionStack.swift; sourceTree = "<group>"; };
@@ -2266,7 +2266,7 @@
 				84EB1F061D2F5E76004FA5A1 /* Utility.swift */,
 				8461C52F1D462488006E91FF /* VideoTime.swift */,
 				8434BAA61D5DF2DA003BECF2 /* Extensions.swift */,
-				D1E1446B29E3971C005DCEA3 /* UIAnimation.swift */,
+				D1E1446B29E3971C005DCEA3 /* CocoaAnimation.swift */,
 				84C8D5901D796F9700D98A0E /* Aspect.swift */,
 				84AABE961DBFB62F00D138FD /* FixedFontManager.h */,
 				84AABE971DBFB62F00D138FD /* FixedFontManager.m */,
@@ -3013,7 +3013,7 @@
 				84F5D4991E44E8AC0060A838 /* KeyBindingDataLoader.swift in Sources */,
 				E34C0C3124934D7B0065A0C6 /* Switch.swift in Sources */,
 				D1D87DFC2923A4E500737886 /* BindingTableStateManager.swift in Sources */,
-				D1E1446C29E3971C005DCEA3 /* UIAnimation.swift in Sources */,
+				D1E1446C29E3971C005DCEA3 /* CocoaAnimation.swift in Sources */,
 				84EC12831F4F939000137C1E /* FilterPresets.swift in Sources */,
 				E374160F20F3AF7E00B4F7F9 /* PrefUtilsViewController.swift in Sources */,
 				E3FC31461FE1501E00B9B86F /* PowerSource.swift in Sources */,

@@ -1,5 +1,5 @@
 //
-//  UIAnimation.swift
+//  CocoaAnimation.swift
 //  iina
 //
 //  Created by Matt Svoboda on 2023-04-09.
@@ -11,7 +11,7 @@ import Foundation
 typealias TaskFunc = (() -> Void)
 typealias AnimationBlock = (NSAnimationContext) -> Void
 
-class UIAnimation {
+class CocoaAnimation {
 
   // MARK: Constants
 
@@ -40,14 +40,14 @@ class UIAnimation {
     }
   }
 
-  // MARK: - UIAnimation.Task
+  // MARK: - CocoaAnimation.Task
 
   struct Task {
     let duration: CGFloat
     let timingFunction: CAMediaTimingFunction?
     let runFunc: TaskFunc
 
-    init(duration: CGFloat = UIAnimation.DefaultDuration,
+    init(duration: CGFloat = CocoaAnimation.DefaultDuration,
          timing timingName: CAMediaTimingFunctionName? = nil,
          _ runFunc: @escaping TaskFunc) {
       self.duration = duration
@@ -64,12 +64,12 @@ class UIAnimation {
     return Task(duration: 0, timing: nil, runFunc)
   }
 
-  // MARK: - UIAnimation.Queue
+  // MARK: - CocoaAnimation.SerialQueue
 
-  class Queue {
+  class SerialQueue {
 
     private var isRunning = false
-    private var queue = LinkedList<Task>()
+    private var taskQueue = LinkedList<Task>()
 
     /// Convenience function. Same as `run([Task])`, but for a single animation.
     func run(_ task: Task, then doAfter: TaskFunc? = nil) {
@@ -77,18 +77,18 @@ class UIAnimation {
     }
 
     func runZeroDuration(_ runFunc: @escaping TaskFunc, then doAfter: TaskFunc? = nil) {
-      run(UIAnimation.zeroDurationTask(runFunc), then: doAfter)
+      run(CocoaAnimation.zeroDurationTask(runFunc), then: doAfter)
     }
 
-    /// Recursive function which executes each of the given `AnimationTask`s one after another.
-    /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `UIAnimation.disableAnimation()`.
-    /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `UIAnimation.DefaultDuration`.
+    /// Recursive function which enqueues each of the given `AnimationTask`s for execution, one after another.
+    /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `CocoaAnimation.disableAnimation()`.
+    /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `CocoaAnimation.DefaultDuration`.
     func run(_ tasks: [Task], then doAfter: TaskFunc? = nil) {
 
       var needsLaunch = false
-      queue.appendAll(tasks)
+      taskQueue.appendAll(tasks)
       if let doAfter = doAfter {
-        queue.append(zeroDurationTask(doAfter))
+        taskQueue.append(zeroDurationTask(doAfter))
       }
 
       if isRunning {
@@ -104,21 +104,21 @@ class UIAnimation {
     }
 
     private func runTasks() {
-      var nextTask: UIAnimation.Task? = nil
+      var nextTask: CocoaAnimation.Task? = nil
 
       // Group zero-duration tasks together if possible
-      var zeroDurationTasks: [UIAnimation.Task] = []
-      while let task = self.queue.first, task.duration == 0 {
-        self.queue.removeFirst()
+      var zeroDurationTasks: [CocoaAnimation.Task] = []
+      while let task = self.taskQueue.first, task.duration == 0 {
+        self.taskQueue.removeFirst()
         zeroDurationTasks.append(task)
       }
       if !zeroDurationTasks.isEmpty {
-        nextTask = UIAnimation.zeroDurationTask{
+        nextTask = CocoaAnimation.zeroDurationTask{
           for task in zeroDurationTasks {
             task.runFunc()
           }
         }
-      } else if let poppedTask = queue.removeFirst() {
+      } else if let poppedTask = taskQueue.removeFirst() {
         nextTask = poppedTask
       } else {
         self.isRunning = false
@@ -174,7 +174,7 @@ extension NSLayoutConstraint {
   /// Using an explicit call to `animator()` seems to be required to guarantee it, but we do not always want it to animate.
   /// This function will automatically disable animations in case they are disabled.
   func animateToConstant(_ newConstantValue: CGFloat) {
-    if UIAnimation.isAnimationEnabled {
+    if CocoaAnimation.isAnimationEnabled {
       self.animator().constant = newConstantValue
     } else {
       self.constant = newConstantValue

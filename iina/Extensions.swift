@@ -329,6 +329,18 @@ extension Double {
       return "\(rounded)"
     }
   }
+
+  var string6f: String {
+    String(format: "%.6f", self)
+  }
+
+  var string2f: String {
+    String(format: "%.2f", self)
+  }
+
+  var twoDigitHex: String {
+    String(format: "%02X", self)
+  }
 }
 
 extension Comparable {

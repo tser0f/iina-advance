@@ -134,8 +134,8 @@ extension Preference {
       let oldPlayerZeroString = WindowAutosaveName.mainPlayer(id: "0").string
       let newPlayerZeroString = WindowAutosaveName.mainPlayer(id: newPlayerZeroID).string
 
-      if let propList = Preference.UIState.getPlayerSaveState(forPlayerID: "0") {
-        Preference.UIState.setPlayerSaveState(forPlayerID: newPlayerZeroID, to: propList)
+      if let saveState = Preference.UIState.getPlayerSaveState(forPlayerID: "0") {
+        Preference.UIState.savePlayerState(forPlayerID: newPlayerZeroID, properties: saveState.properties)
         Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
       } else {
         Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
@@ -150,19 +150,26 @@ extension Preference {
       return newWindowNamesStrings.compactMap{WindowAutosaveName($0)}
     }
 
-    static func getPlayerSaveState(forPlayerID playerID: String) -> MainWindowController.PlayerSaveState? {
+    static func getPlayerSaveState(forPlayerID playerID: String) -> PlayerSaveState? {
       guard isRestoreEnabled else { return nil }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       guard let propDict = UserDefaults.standard.dictionary(forKey: key) else {
         return nil
       }
-      return MainWindowController.PlayerSaveState(propDict)
+      return PlayerSaveState(propDict)
     }
 
-    static func setPlayerSaveState(forPlayerID playerID: String, to state: MainWindowController.PlayerSaveState) {
+    static func savePlayerState(forPlayerID playerID: String, properties: [String: Any]) {
       guard isSaveEnabled else { return }
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
-      UserDefaults.standard.setValue(state.properties, forKey: key)
+      UserDefaults.standard.setValue(properties, forKey: key)
+    }
+
+    static func savePlayerState(for player: PlayerCore) {
+      let key = WindowAutosaveName.mainPlayer(id: player.label).string
+      let properties = PlayerSaveState.generatePropDict(from: player)
+      player.log.verbose("Saving player state to prefs key \(key.quoted): \(properties)")
+      savePlayerState(forPlayerID: player.label, properties: properties)
     }
 
     static func clearPlayerSaveState(forPlayerID playerID: String) {

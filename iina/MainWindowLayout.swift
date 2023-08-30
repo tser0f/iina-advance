@@ -36,13 +36,13 @@ fileprivate extension NSStackView.VisibilityPriority {
 
 extension MainWindowController {
 
-  /// `struct LayoutSpec`: data structure which is the blueprint for building a `LayoutPlan`
+  /// `struct LayoutSpec`: data structure which is the blueprint for building a `LayoutState`
   struct LayoutSpec {
     let leadingSidebar: Sidebar
     let trailingSidebar: Sidebar
 
     let isFullScreen:  Bool
-    let isLegacyMode: Bool
+    let isLegacyStyle: Bool
 
     let topBarPlacement: Preference.PanelPlacement
     let bottomBarPlacement: Preference.PanelPlacement
@@ -63,7 +63,7 @@ extension MainWindowController {
       return LayoutSpec(leadingSidebar: leadingSidebar,
                         trailingSidebar: trailingSidebar,
                         isFullScreen: false,
-                        isLegacyMode: false,
+                        isLegacyStyle: false,
                         topBarPlacement:.insideVideo,
                         bottomBarPlacement: .insideVideo,
                         enableOSC: false,
@@ -80,7 +80,7 @@ extension MainWindowController {
                                                            placement: Preference.enum(for: .trailingSidebarPlacement))
       return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar,
                         isFullScreen: prevSpec.isFullScreen,
-                        isLegacyMode: prevSpec.isFullScreen ? prevSpec.isLegacyMode : Preference.bool(for: .useLegacyWindowedMode),
+                        isLegacyStyle: prevSpec.isFullScreen ? prevSpec.isLegacyStyle : Preference.bool(for: .useLegacyWindowedMode),
                         topBarPlacement: Preference.enum(for: .topBarPlacement),
                         bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
@@ -95,11 +95,11 @@ extension MainWindowController {
                bottomBarPlacement: Preference.PanelPlacement? = nil,
                enableOSC: Bool? = nil,
                oscPosition: Preference.OSCPosition? = nil,
-               isLegacyMode: Bool? = nil) -> LayoutSpec {
+               isLegacyStyle: Bool? = nil) -> LayoutSpec {
       return LayoutSpec(leadingSidebar: leadingSidebar ?? self.leadingSidebar,
                         trailingSidebar: trailingSidebar ?? self.trailingSidebar,
                         isFullScreen: isFullScreen ?? self.isFullScreen,
-                        isLegacyMode: isLegacyMode ?? self.isLegacyMode,
+                        isLegacyStyle: isLegacyStyle ?? self.isLegacyStyle,
                         topBarPlacement: topBarPlacement ?? self.topBarPlacement,
                         bottomBarPlacement: bottomBarPlacement ?? self.bottomBarPlacement,
                         enableOSC: enableOSC ?? self.enableOSC,
@@ -107,20 +107,21 @@ extension MainWindowController {
     }
   }
 
-  /// `LayoutPlan`: data structure which contains all the variables which describe a single way to layout the `MainWindow`.
+  /// `LayoutState`: data structure which contains all the variables which describe a single way to layout the `MainWindow`.
   /// ("Layout" might have been a better name for this class, but it's already used by AppKit). Notes:
   /// • With all the different window layout configurations which are now possible, it's crucial to use this class in order for animations
   ///   to work reliably.
   /// • It should be treated like a read-only object after it's built. Its member variables are only mutable to make it easier to build.
-  /// • When any member variable inside it needs to be changed, a new `LayoutPlan` object should be constructed to describe the new state,
+  /// • When any member variable inside it needs to be changed, a new `LayoutState` object should be constructed to describe the new state,
   ///   and a `LayoutTransition` should be built to describe the animations needs to go from old to new.
-  /// • The new `LayoutPlan`, once active, should be stored in the `currentLayout` of `MainWindowController` for future reference.
-  class LayoutPlan {
+  /// • The new `LayoutState`, once active, should be stored in the `currentLayout` of `MainWindowController` for future reference.
+  class LayoutState {
     // All other variables in this class are derived from this spec:
     let spec: LayoutSpec
 
     // Visiblity of views/categories:
 
+    var titleBar: Visibility = .hidden
     var titleIconAndText: Visibility = .hidden
     var trafficLightButtons: Visibility = .hidden
     var titlebarAccessoryViewControllers: Visibility = .hidden
@@ -192,7 +193,7 @@ extension MainWindowController {
     }
 
     var isLegacyFullScreen: Bool {
-      return spec.isFullScreen && spec.isLegacyMode
+      return spec.isFullScreen && spec.isLegacyStyle
     }
 
     var enableOSC: Bool {
@@ -261,15 +262,15 @@ extension MainWindowController {
 
       return .showAlways
     }
-  }  // end class LayoutPlan
+  }  // end class LayoutState
 
   // MARK: - Visibility States
 
   enum Visibility {
     case hidden
     case showAlways
-    case showFadeableTopBar  // fade in as part of the top bar
-    case showFadeableNonTopBar          // fade in as a fadeable view which is not top bar
+    case showFadeableTopBar     // fade in as part of the top bar
+    case showFadeableNonTopBar  // fade in as a fadeable view which is not top bar
 
     var isShowable: Bool {
       return self != .hidden
@@ -320,21 +321,21 @@ extension MainWindowController {
   // MARK: - Layout Transitions
 
   class LayoutTransition {
-    let fromLayout: LayoutPlan
-    let toLayout: LayoutPlan
+    let fromLayout: LayoutState
+    let toLayout: LayoutState
     let isInitialLayout: Bool
     var windowGeometry: MainWindowGeometry? = nil
 
-    var animationTasks: [UIAnimation.Task] = []
+    var animationTasks: [CocoaAnimation.Task] = []
 
-    init(from fromLayout: LayoutPlan, to toLayout: LayoutPlan, isInitialLayout: Bool = false) {
+    init(from fromLayout: LayoutState, to toLayout: LayoutState, isInitialLayout: Bool = false) {
       self.fromLayout = fromLayout
       self.toLayout = toLayout
       self.isInitialLayout = isInitialLayout
     }
 
     var isTogglingLegacyWindowStyle: Bool {
-      return fromLayout.spec.isLegacyMode != toLayout.spec.isLegacyMode
+      return fromLayout.spec.isLegacyStyle != toLayout.spec.isLegacyStyle
     }
 
     var isTogglingFullScreen: Bool {
@@ -435,10 +436,10 @@ extension MainWindowController {
   func setInitialWindowLayout() {
     var needsNativeFullScreen: Bool = false
     let initialLayoutSpec: LayoutSpec
-    if let priorUIState = player.info.priorUIState, let priorLayoutSpec = priorUIState.layoutSpec() {
+    if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
       log.verbose("Transitioning to initial layout from prior window state")
 
-      if priorLayoutSpec.isFullScreen && !priorLayoutSpec.isLegacyMode && !currentLayout.isFullScreen {
+      if priorLayoutSpec.isFullScreen && !priorLayoutSpec.isLegacyStyle && !currentLayout.isFullScreen {
         // Special handling for native fullscreen. Cannot avoid animation
         initialLayoutSpec = priorLayoutSpec.clone(isFullScreen: false)
         needsNativeFullScreen = true
@@ -450,13 +451,13 @@ extension MainWindowController {
       initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     }
 
-    let initialLayout = buildFutureLayoutPlan(from: initialLayoutSpec)
+    let initialLayout = buildFutureLayoutState(from: initialLayoutSpec)
 
     let transition = LayoutTransition(from: currentLayout, to: initialLayout, isInitialLayout: true)
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
 
-    UIAnimation.disableAnimation{
+    CocoaAnimation.disableAnimation{
       controlBarFloating.isDragging = false
       doPreTransitionTask(transition)
       fadeOutOldViews(transition)
@@ -474,14 +475,14 @@ extension MainWindowController {
   }
 
   // TODO: Prevent sidebars from opening if not enough space?
-  /// First builds a new `LayoutPlan` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
-  /// which contains all the information needed to animate the UI changes from the current `LayoutPlan` to the new one.
-  func buildLayoutTransition(from fromLayout: LayoutPlan,
+  /// First builds a new `LayoutState` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
+  /// which contains all the information needed to animate the UI changes from the current `LayoutState` to the new one.
+  func buildLayoutTransition(from fromLayout: LayoutState,
                              to layoutSpec: LayoutSpec,
                              totalStartingDuration: CGFloat? = nil,
                              totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
 
-    let toLayout = buildFutureLayoutPlan(from: layoutSpec)
+    let toLayout = buildFutureLayoutState(from: layoutSpec)
     let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false)
     transition.windowGeometry = buildGeometryFromCurrentLayout()
 
@@ -491,10 +492,10 @@ extension MainWindowController {
     } else if let totalStartingDuration = totalStartingDuration {
       startingAnimationDuration = totalStartingDuration / 3
     } else {
-      startingAnimationDuration = UIAnimation.DefaultDuration
+      startingAnimationDuration = CocoaAnimation.DefaultDuration
     }
 
-    let endingAnimationDuration: CGFloat = totalEndingDuration ?? UIAnimation.DefaultDuration
+    let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
     let panelTimingName: CAMediaTimingFunctionName?
     if transition.isTogglingFullScreen {
@@ -510,7 +511,7 @@ extension MainWindowController {
     // Starting animations:
 
     // Set initial var or other tasks which happen before main animations
-    transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
+    transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
       doPreTransitionTask(transition)
     })
 
@@ -520,19 +521,19 @@ extension MainWindowController {
     }
 
     // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
-    transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, { [self] in
+    transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, { [self] in
       fadeOutOldViews(transition)
     }))
 
     if !transition.isEnteringFullScreen {  // Avoid bounciness and possible unwanted video scaling animation (not needed for ->FS anyway)
       // StartingAnimation 3: Minimize panels which are no longer needed.
-      transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, timing: panelTimingName, { [self] in
+      transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
       }))
     }
 
     // Middle point: update style & constraints. Should have minimal visual changes
-    transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
+    transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
       // This also can change window styleMask
       updateHiddenViewsAndConstraints(transition)
     })
@@ -540,7 +541,7 @@ extension MainWindowController {
     // Ending animations:
 
     // EndingAnimation: Open new panels and fade in new views
-    transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
+    transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
       // If toggling fullscreen, this also changes the window frame:
       openNewPanels(transition)
 
@@ -551,13 +552,13 @@ extension MainWindowController {
     }))
 
     if !transition.isTogglingFullScreen {
-      transition.animationTasks.append(UIAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
+      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
         fadeInNewViews(transition)
       }))
     }
 
     // After animations all finish
-    transition.animationTasks.append(UIAnimation.zeroDurationTask{ [self] in
+    transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
       doPostTransitionTask(transition)
     })
 
@@ -806,7 +807,7 @@ extension MainWindowController {
     log.verbose("UpdateHiddenViewsAndConstraints")
 
     if transition.isTogglingLegacyWindowStyle {
-      if transition.toLayout.spec.isLegacyMode && !transition.isExitingFullScreen {
+      if transition.toLayout.spec.isLegacyStyle && !transition.isExitingFullScreen {
         log.verbose("Removing window styleMask.titled")
         window.styleMask.remove(.titled)
         window.styleMask.insert(.resizable)
@@ -1027,7 +1028,7 @@ extension MainWindowController {
       if futureLayout.trafficLightButtons != .hidden {
 
         // TODO: figure out whether to try to replicate title bar, or just leave it out
-        if false && futureLayout.spec.isLegacyMode && fakeLeadingTitleBarView == nil {
+        if false && futureLayout.spec.isLegacyStyle && fakeLeadingTitleBarView == nil {
           // Add fake traffic light buttons. Needs a lot of work...
           let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
           let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
@@ -1149,7 +1150,7 @@ extension MainWindowController {
       // Exited FullScreen
 
       let wasLegacy = transition.fromLayout.isLegacyFullScreen
-      let isLegacyWindowedMode = transition.toLayout.spec.isLegacyMode
+      let isLegacyWindowedMode = transition.toLayout.spec.isLegacyStyle
       if wasLegacy {
         // Go back to titled style
         window.styleMask.remove(.borderless)
@@ -1227,7 +1228,7 @@ extension MainWindowController {
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
 
-    log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyMode), FSState:\(fsState.isFullscreen.yn) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
+    log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), FSState:\(fsState.isFullscreen.yn) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
     saveWindowFrame()
   }
 
@@ -1369,10 +1370,10 @@ extension MainWindowController {
   }
 
   // This method should only make a layout plan. It should not alter or reference the current layout.
-  func buildFutureLayoutPlan(from layoutSpec: LayoutSpec) -> LayoutPlan {
+  func buildFutureLayoutState(from layoutSpec: LayoutSpec) -> LayoutState {
     let window = window!
 
-    let futureLayout = LayoutPlan(spec: layoutSpec)
+    let futureLayout = LayoutState(spec: layoutSpec)
 
     // Title bar & title bar accessories:
 
@@ -1388,31 +1389,37 @@ extension MainWindowController {
       let visibleState: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
 
       futureLayout.topBarView = visibleState
-      futureLayout.trafficLightButtons = visibleState
-      futureLayout.titleIconAndText = visibleState
+
       // If legacy window mode, do not show title bar.
-      // May be overridden depending on OSC layout anyway
-      futureLayout.titleBarHeight = layoutSpec.isLegacyMode ? 0 : MainWindowController.standardTitleBarHeight
+      if !layoutSpec.isLegacyStyle {
+        futureLayout.titleBar = visibleState
+
+        futureLayout.trafficLightButtons = visibleState
+        futureLayout.titleIconAndText = visibleState
+        // May be overridden depending on OSC layout anyway
+        futureLayout.titleBarHeight = MainWindowController.standardTitleBarHeight
+
+        futureLayout.titlebarAccessoryViewControllers = visibleState
+
+        // LeadingSidebar toggle button
+        let hasLeadingSidebar = !layoutSpec.leadingSidebar.tabGroups.isEmpty
+        if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
+          futureLayout.leadingSidebarToggleButton = visibleState
+        }
+        // TrailingSidebar toggle button
+        let hasTrailingSidebar = !layoutSpec.trailingSidebar.tabGroups.isEmpty
+        if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
+          futureLayout.trailingSidebarToggleButton = visibleState
+        }
+
+        // "On Top" (mpv) AKA "Pin to Top" (OS)
+        futureLayout.pinToTopButton = futureLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
+      }
 
       if futureLayout.topBarPlacement == .insideVideo {
         futureLayout.osdMinOffsetFromTop = futureLayout.titleBarHeight + 8
       }
 
-      futureLayout.titlebarAccessoryViewControllers = visibleState
-
-      // LeadingSidebar toggle button
-      let hasLeadingSidebar = !layoutSpec.leadingSidebar.tabGroups.isEmpty
-      if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
-        futureLayout.leadingSidebarToggleButton = visibleState
-      }
-      // TrailingSidebar toggle button
-      let hasTrailingSidebar = !layoutSpec.trailingSidebar.tabGroups.isEmpty
-      if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
-        futureLayout.trailingSidebarToggleButton = visibleState
-      }
-
-      // "On Top" (mpv) AKA "Pin to Top" (OS)
-      futureLayout.pinToTopButton = futureLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
     }
 
     // OSC:
@@ -1453,10 +1460,10 @@ extension MainWindowController {
           playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
         }
       case .top:
-        if !futureLayout.isFullScreen {
+        if futureLayout.titleBar.isShowable {
           // If legacy window mode, do not show title bar.
           // Otherwise reduce its height a bit because it will share space with OSC
-          futureLayout.titleBarHeight = layoutSpec.isLegacyMode ? 0 : MainWindowController.reducedTitleBarHeight
+          futureLayout.titleBarHeight = MainWindowController.reducedTitleBarHeight
         }
 
         let visibility: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
@@ -1515,7 +1522,7 @@ extension MainWindowController {
     }
   }
 
-  func updateSpacingForTitleBarAccessories(_ layout: LayoutPlan? = nil) {
+  func updateSpacingForTitleBarAccessories(_ layout: LayoutState? = nil) {
     let layout = layout ?? self.currentLayout
 
     updateSpacingForLeadingTitleBarAccessory(layout)
@@ -1524,7 +1531,7 @@ extension MainWindowController {
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
-  private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutPlan) {
+  private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutState) {
     var trailingSpace: CGFloat = 8  // Add standard space before title text by default
 
     let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
@@ -1540,7 +1547,7 @@ extension MainWindowController {
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
-  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutPlan) {
+  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutState) {
     var leadingSpace: CGFloat = 0
     var spaceForButtons: CGFloat = 0
 
@@ -1663,7 +1670,7 @@ extension MainWindowController {
     isMouseInSlider = false
   }
 
-  private func updatePanelBlendingModes(to futureLayout: LayoutPlan) {
+  private func updatePanelBlendingModes(to futureLayout: LayoutState) {
     // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
     if futureLayout.topBarPlacement == .insideVideo || futureLayout.isFullScreen {
       topBarView.blendingMode = .withinWindow
