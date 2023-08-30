@@ -460,7 +460,7 @@ extension MainWindowController {
       }
     }
 
-    if !transition.isInitialLayout && !currentLayout.isFullScreen && (ΔOutsideLeft != 0 || ΔOutsideRight != 0) {
+    if !transition.isInitialLayout && (ΔOutsideLeft != 0 || ΔOutsideRight != 0) {
       updateWindowFrame(ΔLeftOutsideWidth: ΔOutsideLeft, ΔRightOutsideWidth: ΔOutsideRight)
     }
 
@@ -838,8 +838,18 @@ extension MainWindowController {
     playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
   }
 
+  // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
   private func updateWindowFrame(ΔLeftOutsideWidth ΔLeft: CGFloat = 0, ΔRightOutsideWidth ΔRight: CGFloat = 0) {
-    let oldGeometry = buildGeometryFromCurrentLayout()
+    let isFullScreen: Bool
+    let oldGeometry: MainWindowGeometry
+
+    if let priorWindowedGeometry = fsState.priorWindowedFrame {
+      isFullScreen = true
+      oldGeometry = priorWindowedGeometry
+    } else {
+      isFullScreen = false
+      oldGeometry = buildGeometryFromCurrentLayout()
+    }
 
     if ΔLeft + ΔRight > 0 {
       // expanding the window: set the previous size as the preferred size
@@ -855,18 +865,22 @@ extension MainWindowController {
     // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
     // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
     // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-    let newGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
-                                                                                  newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
-    let newWindowFrame: NSRect
+    let resizedGeometry = (ΔLeft != 0 || ΔRight != 0) ? oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔRight,
+                                                                                      newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeft) : oldGeometry
+    let newGeometry: MainWindowGeometry
     if let preferredVideoSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio) {
-      newWindowFrame = newGeometry.scale(desiredVideoSize: preferredVideoSize, constrainedWithin: bestScreen.visibleFrame).windowFrame
+      newGeometry = resizedGeometry.scale(desiredVideoSize: preferredVideoSize, constrainedWithin: bestScreen.visibleFrame)
     } else {
-      newWindowFrame = newGeometry.constrainWithin(bestScreen.visibleFrame).windowFrame
+      newGeometry = resizedGeometry.constrainWithin(bestScreen.visibleFrame)
     }
 
-    Logger.log("Calling setFrame() after updating sidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
-               level: .debug, subsystem: player.subsystem)
-    (window as! MainWindow).setFrameImmediately(newWindowFrame)
+    if isFullScreen {
+      fsState.priorWindowedFrame = newGeometry
+    } else {
+      Logger.log("Calling setFrame() after updating sidebars. ΔLeft: \(ΔLeft), ΔRight: \(ΔRight)",
+                 level: .debug, subsystem: player.subsystem)
+      (window as! MainWindow).setFrameImmediately(newGeometry.windowFrame)
+    }
   }
 
   // MARK: - Resize via mouse drag

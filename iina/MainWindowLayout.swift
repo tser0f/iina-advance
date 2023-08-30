@@ -333,7 +333,7 @@ extension MainWindowController {
       self.isInitialLayout = isInitialLayout
     }
 
-    var isTogglingTitledWindowStyle: Bool {
+    var isTogglingLegacyWindowStyle: Bool {
       return fromLayout.spec.isLegacyMode != toLayout.spec.isLegacyMode
     }
 
@@ -341,11 +341,11 @@ extension MainWindowController {
       return fromLayout.isFullScreen != toLayout.isFullScreen
     }
 
-    var isTogglingToFullScreen: Bool {
+    var isEnteringFullScreen: Bool {
       return !fromLayout.isFullScreen && toLayout.isFullScreen
     }
 
-    var isTogglingFromFullScreen: Bool {
+    var isExitingFullScreen: Bool {
       return fromLayout.isFullScreen && !toLayout.isFullScreen
     }
 
@@ -524,7 +524,7 @@ extension MainWindowController {
       fadeOutOldViews(transition)
     }))
 
-    if !transition.isTogglingToFullScreen {  // Avoid bounciness and possible unwanted video scaling animation (not needed for ->FS anyway)
+    if !transition.isEnteringFullScreen {  // Avoid bounciness and possible unwanted video scaling animation (not needed for ->FS anyway)
       // StartingAnimation 3: Minimize panels which are no longer needed.
       transition.animationTasks.append(UIAnimation.Task(duration: startingAnimationDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
@@ -575,19 +575,17 @@ extension MainWindowController {
 
     guard let window = window else { return }
 
-    if transition.isTogglingToFullScreen {
+    if transition.isEnteringFullScreen {
       // Entering FullScreen
-      let isLegacy = transition.toLayout.isLegacyFullScreen
+      let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
 
       let priorWindowedGeometry = buildGeometryFromCurrentLayout()
-      fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedGeometry)
+      fsState.startAnimatingToFullScreen(legacy: transition.toLayout.isLegacyFullScreen, priorWindowedFrame: priorWindowedGeometry)
       log.verbose("Entering fullscreen, priorWindowedGeometry := \(priorWindowedGeometry)")
 
+      // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
-      if !isLegacy {
-        // Hide traffic light buttons & title during the animation:
-        hideBuiltInTitleBarItems()
-      }
+      hideBuiltInTitleBarItems()
 
       if #unavailable(macOS 10.14) {
         // Set the appearance to match the theme so the title bar matches the theme
@@ -600,7 +598,7 @@ extension MainWindowController {
 
       setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
-      if isLegacy {
+      if isTogglingLegacyStyle {
         // Legacy fullscreen cannot handle transition while playing and will result in a black flash or jittering.
         // This will briefly freeze the video output, which is slightly better
         videoView.videoLayer.suspend()
@@ -618,10 +616,8 @@ extension MainWindowController {
 
       resetViewsForFullScreenTransition()
 
-    } else if transition.isTogglingFromFullScreen {
+    } else if transition.isExitingFullScreen {
       // Exiting FullScreen
-
-      let wasLegacy = transition.fromLayout.isLegacyFullScreen
 
       resetViewsForFullScreenTransition()
 
@@ -629,12 +625,11 @@ extension MainWindowController {
 
       fsState.startAnimatingToWindow()
 
-      if wasLegacy {
+      if transition.isTogglingLegacyWindowStyle {
         videoView.videoLayer.suspend()
-      } else {  // !isLegacy
-        // Hide traffic light buttons & title during the animation:
-        hideBuiltInTitleBarItems()
       }
+      // Hide traffic light buttons & title during the animation:
+      hideBuiltInTitleBarItems()
 
       player.mpv.setFlag(MPVOption.Window.keepaspect, false)
     }
@@ -653,7 +648,7 @@ extension MainWindowController {
 
     // Title bar & title bar accessories:
 
-    let needToHideTopBar = transition.isTopBarPlacementChanging || transition.isTogglingTitledWindowStyle
+    let needToHideTopBar = transition.isTopBarPlacementChanging || transition.isTogglingLegacyWindowStyle
 
     // Hide all title bar items if top bar placement is changing
     if needToHideTopBar || futureLayout.titleIconAndText == .hidden {
@@ -810,16 +805,17 @@ extension MainWindowController {
     let futureLayout = transition.toLayout
     log.verbose("UpdateHiddenViewsAndConstraints")
 
-    /// if `isTogglingTitledWindowStyle==true && isTogglingFromFullScreen==true`, we are toggling out of legacy FS
-    /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
-    if transition.isTogglingTitledWindowStyle && !transition.isTogglingFromFullScreen {
-      if transition.toLayout.spec.isLegacyMode {
+    if transition.isTogglingLegacyWindowStyle {
+      if transition.toLayout.spec.isLegacyMode && !transition.isExitingFullScreen {
         log.verbose("Removing window styleMask.titled")
         window.styleMask.remove(.titled)
         window.styleMask.insert(.resizable)
         window.styleMask.insert(.closable)
         window.styleMask.insert(.miniaturizable)
-      } else if !transition.toLayout.isFullScreen {
+
+        /// if `isTogglingLegacyWindowStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
+        /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
+      } else if !transition.isTogglingFullScreen {
         log.verbose("Inserting window styleMask.titled")
         window.styleMask.insert(.titled)
 
@@ -857,7 +853,7 @@ extension MainWindowController {
 
     /// These should all be either 0 height or unchanged from `transition.fromLayout`
     apply(visibility: futureLayout.bottomBarView, to: bottomBarView)
-    if !transition.isTogglingToFullScreen {
+    if !transition.isEnteringFullScreen {
       apply(visibility: futureLayout.topBarView, to: topBarView)
     }
 
@@ -926,17 +922,17 @@ extension MainWindowController {
     log.verbose("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
 
     // Changing window frame for fullscreen?
-    if transition.isTogglingToFullScreen {
+    if transition.isEnteringFullScreen {
       // Entering FullScreen
       if transition.toLayout.isLegacyFullScreen {
-        // set window frame and in some cases content view frame
+        // Set window frame including camera housing (if any)
         setWindowFrameForLegacyFullScreen()
       } else {
         let screen = bestScreen
         Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
         window.setFrame(screen.frameWithoutCameraHousing, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
       }
-    } else if transition.isTogglingFromFullScreen {
+    } else if transition.isExitingFullScreen {
       // Exiting FullScreen
       let topHeight = transition.toLayout.topBarOutsideHeight
       let bottomHeight = transition.toLayout.bottomBarOutsideHeight
@@ -949,9 +945,7 @@ extension MainWindowController {
                                                           newBottomHeight: bottomHeight,
                                                           newLeadingWidth: leadingWidth).windowFrame
 
-      let isLegacy = transition.fromLayout.isLegacyFullScreen
-      Logger.log("Calling setFrame() exiting \(isLegacy ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)",
-                 level: .verbose, subsystem: player.subsystem)
+      log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
       window.setFrame(priorWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
     }
 
@@ -1031,7 +1025,9 @@ extension MainWindowController {
       documentIconButton?.alphaValue = 1
 
       if futureLayout.trafficLightButtons != .hidden {
-        if futureLayout.spec.isLegacyMode && fakeLeadingTitleBarView == nil {
+
+        // TODO: figure out whether to try to replicate title bar, or just leave it out
+        if false && futureLayout.spec.isLegacyMode && fakeLeadingTitleBarView == nil {
           // Add fake traffic light buttons. Needs a lot of work...
           let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
           let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
@@ -1092,7 +1088,7 @@ extension MainWindowController {
 
     guard let window = window else { return }
 
-    if transition.isTogglingToFullScreen {
+    if transition.isEnteringFullScreen {
       // Entered FullScreen
 
       let isLegacy = transition.toLayout.isLegacyFullScreen
@@ -1115,7 +1111,7 @@ extension MainWindowController {
 
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
-      if isLegacy {
+      if transition.isTogglingLegacyWindowStyle {
         videoView.videoLayer.resume()
       }
 
@@ -1149,7 +1145,7 @@ extension MainWindowController {
       fsState.finishAnimating()
       player.events.emit(.windowFullscreenChanged, data: true)
 
-    } else if transition.isTogglingFromFullScreen {
+    } else if transition.isExitingFullScreen {
       // Exited FullScreen
 
       let wasLegacy = transition.fromLayout.isLegacyFullScreen
@@ -1197,7 +1193,7 @@ extension MainWindowController {
 
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
-      if wasLegacy {
+      if transition.isTogglingLegacyWindowStyle {
         videoView.videoLayer.resume()
       }
 
@@ -1213,7 +1209,7 @@ extension MainWindowController {
       resetCollectionBehavior()
       updateWindowParametersForMPV()
 
-      if wasLegacy {
+      if !isLegacyWindowedMode {
         // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
         apply(visibility: transition.toLayout.titleIconAndText, documentIconButton, titleTextField)
         for button in trafficLightButtons {
@@ -1240,11 +1236,11 @@ extension MainWindowController {
   /**
    This ONLY updates the constraints to toggle between `inside` and `outside` placement types.
    Whether it is actually shown is a concern for somewhere else.
-   "Outside"
-   ┌─────────────┐
-   │  Title Bar  │   Top of    Top of
-   ├─────────────┤    Video    Video
-   │   Top OSC   │        │    │            "Inside"
+          "Outside"
+         ┌─────────────┐
+         │  Title Bar  │   Top of    Top of
+         ├─────────────┤    Video    Video
+         │   Top OSC   │        │    │            "Inside"
    ┌─────┼─────────────┼─────┐◄─┘    └─►┌─────┬─────────────┬─────┐
    │     │            V│     │          │     │  Title Bar V│     │
    │ Left│            I│Right│          │ Left├────────────I│Right│

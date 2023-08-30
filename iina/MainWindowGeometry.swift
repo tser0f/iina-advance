@@ -487,8 +487,10 @@ extension MainWindowController {
       window.setFrame(newWindowFrame, display: true, animate: false)
     }
 
-    // User has actively resized the video. Assume this is the new preferred resolution
-    player.info.setUserPreferredVideoContainerSize(newWindowGeo.videoContainerSize)
+    if fsState == .windowed {
+      // User has actively resized the video. Assume this is the new preferred resolution
+      player.info.setUserPreferredVideoContainerSize(newWindowGeo.videoContainerSize)
+    }
   }
 
   /// Same as `resizeVideo()`, but does not call `window.setFrame()`.
@@ -601,8 +603,10 @@ extension MainWindowController {
       } else {
         chosenGeometry = resizeFromWidthGeo
       }
-      // User has resized the video. Assume this is the new preferred resolution until told otherwise.
-      player.info.setUserPreferredVideoContainerSize(chosenGeometry.videoContainerSize)
+      if fsState == .windowed {
+        // User has resized the video. Assume this is the new preferred resolution until told otherwise.
+        player.info.setUserPreferredVideoContainerSize(chosenGeometry.videoContainerSize)
+      }
       newWindowSize = chosenGeometry.windowFrame.size
     } else {
       // Resize request is not coming from the user. Could be BetterTouchTool, Retangle, or some window manager, or the OS.
