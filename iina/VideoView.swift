@@ -42,6 +42,8 @@ class VideoView: NSView {
 
   private var displayIdleTimer: Timer?
 
+  var videoViewConstraints: VideoViewConstraints? = nil
+
   lazy var hdrSubsystem = Logger.makeSubsystem("hdr")
 
   static let SRGB = CGColorSpaceCreateDeviceRGB()
@@ -101,6 +103,110 @@ class VideoView: NSView {
     // do nothing
   }
 
+  // MARK: - VideoView Constraints
+
+  struct VideoViewConstraints {
+    let eqOffsetTop: NSLayoutConstraint
+    let eqOffsetRight: NSLayoutConstraint
+    let eqOffsetBottom: NSLayoutConstraint
+    let eqOffsetLeft: NSLayoutConstraint
+
+    let gtOffsetTop: NSLayoutConstraint
+    let gtOffsetRight: NSLayoutConstraint
+    let gtOffsetBottom: NSLayoutConstraint
+    let gtOffsetLeft: NSLayoutConstraint
+
+    let centerX: NSLayoutConstraint
+    let centerY: NSLayoutConstraint
+
+    func setActive(eq: Bool = true, gt: Bool = true, center: Bool = true, aspect: Bool = true) {
+      eqOffsetTop.isActive = eq
+      eqOffsetRight.isActive = eq
+      eqOffsetBottom.isActive = eq
+      eqOffsetLeft.isActive = eq
+
+      gtOffsetTop.isActive = gt
+      gtOffsetRight.isActive = gt
+      gtOffsetBottom.isActive = gt
+      gtOffsetLeft.isActive = gt
+
+      centerX.isActive = center
+      centerY.isActive = center
+    }
+  }
+
+  private func addOrUpdate(_ existingConstraint: NSLayoutConstraint?,
+                   _ attr: NSLayoutConstraint.Attribute, _ relation: NSLayoutConstraint.Relation, _ constant: CGFloat,
+                   _ priority: NSLayoutConstraint.Priority) -> NSLayoutConstraint {
+    let constraint: NSLayoutConstraint
+    if let existing = existingConstraint {
+      constraint = existing
+      constraint.animateToConstant(constant)
+    } else {
+      constraint = existingConstraint ?? NSLayoutConstraint(item: self, attribute: attr, relatedBy: relation, toItem: superview!,
+                                                                     attribute: attr, multiplier: 1, constant: constant)
+    }
+    constraint.priority = priority
+    return constraint
+  }
+
+  private func rebuildConstraints(top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0,
+                                   eqIsActive: Bool = true, eqPriority: NSLayoutConstraint.Priority = .required,
+                                   gtIsActive: Bool = true, gtPriority: NSLayoutConstraint.Priority = .required,
+                                   centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority = .required,
+                                   aspectIsActive: Bool = true) {
+    var existing = self.videoViewConstraints
+    self.videoViewConstraints = nil
+    let newConstraints = VideoViewConstraints(
+      eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
+      eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
+      eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
+      eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
+
+      gtOffsetTop: addOrUpdate(existing?.gtOffsetTop, .top, .greaterThanOrEqual, top, gtPriority),
+      gtOffsetRight: addOrUpdate(existing?.gtOffsetRight, .right, .lessThanOrEqual, right, gtPriority),
+      gtOffsetBottom: addOrUpdate(existing?.gtOffsetBottom, .bottom, .lessThanOrEqual, bottom, gtPriority),
+      gtOffsetLeft: addOrUpdate(existing?.gtOffsetLeft, .left, .greaterThanOrEqual, left, gtPriority),
+
+      centerX: existing?.centerX ?? centerXAnchor.constraint(equalTo: superview!.centerXAnchor),
+      centerY: existing?.centerY ?? centerYAnchor.constraint(equalTo: superview!.centerYAnchor)
+    )
+    newConstraints.centerX.priority = centerPriority
+    newConstraints.centerY.priority = centerPriority
+    existing = nil
+    videoViewConstraints = newConstraints
+
+    newConstraints.setActive(eq: eqIsActive, gt: gtIsActive, center: centerIsActive)
+    if aspectIsActive {
+      setAspectRatioConstraint()
+    } else {
+      removeAspectRatioConstraint()
+    }
+  }
+
+  // TODO: figure out why this 2px adjustment is necessary
+  func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
+    player.log.verbose("Contraining videoView for windowed mode")
+    // Use only EQ. Remove all other constraints
+    rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
+                       eqIsActive: true, eqPriority: .required,
+                       gtIsActive: false,
+                       centerIsActive: false,
+                       aspectIsActive: false)
+
+    window?.layoutIfNeeded()
+  }
+
+  func constrainForNormalLayout() {
+    // GT + center constraints are main priority, but include EQ as hint for ideal placement
+    rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,
+                       gtIsActive: true, gtPriority: .required,
+                       centerIsActive: true, centerPriority: .required,
+                       aspectIsActive: true)
+
+    window?.layoutIfNeeded()
+  }
+
   func updateAspectRatio(w width: CGFloat, h height: CGFloat) {
     let newAspectRatio: CGFloat = width == 0 || height == 0 ? 1 : width / height
     player.log.verbose("Updating videoView aspect ratio to \(newAspectRatio)")
@@ -111,7 +217,7 @@ class VideoView: NSView {
     }
   }
 
-  func setAspectRatioConstraint() {
+  private func setAspectRatioConstraint() {
     if let aspectRatioConstraint = aspectRatioConstraint {
       guard aspectRatioConstraint.multiplier != aspectRatio else {
         return
@@ -128,6 +234,8 @@ class VideoView: NSView {
       removeConstraint(aspectRatioConstraint)
     }
   }
+
+  // MARK: - Mouse events
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
     return Preference.bool(for: .videoViewAcceptsFirstMouse)

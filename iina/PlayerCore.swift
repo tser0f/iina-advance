@@ -592,8 +592,8 @@ class PlayerCore: NSObject {
     playlistView.addConstraintsToFillSuperview()
     // move video view
     videoView.removeFromSuperview()
-    videoView.removeAspectRatioConstraint()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
+    videoView.removeAspectRatioConstraint()
     videoView.addConstraintsToFillSuperview()
 
     // hide main window, and show mini player window

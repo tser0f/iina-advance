@@ -648,8 +648,6 @@ class MainWindowController: PlayerWindowController {
 
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
 
-  var videoViewConstraints: VideoViewConstraints? = nil
-
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
   override var mouseActionDisabledViews: [NSView?] {[leadingSidebarView, trailingSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
@@ -840,8 +838,7 @@ class MainWindowController: PlayerWindowController {
     videoContainerView.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
-    videoView.addConstraintsToFillSuperview(priority: .defaultLow)
-    constrainVideoViewForNormalOrFullScreen()
+    videoView.constrainForNormalLayout()
   }
 
   /** Set material for OSC and title bar */
@@ -1994,7 +1991,7 @@ class MainWindowController: PlayerWindowController {
       let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
       bottomBarBottomConstraint.animateToConstant(0)
-      constrainVideoViewForSpecialMode(
+      videoView.constrainLayoutToEqualsOffsetOnly(
         top: window.frame.height - newVideoViewFrame.maxY,
         right: newVideoViewFrame.maxX - window.frame.width,
         bottom: -newVideoViewFrame.minY,
@@ -2041,7 +2038,7 @@ class MainWindowController: PlayerWindowController {
     animationTasks.append(UIAnimation.Task(duration: duration, timing: .easeIn, { [self] in
       // Restore prev constraints:
       bottomBarBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
-      constrainVideoViewForNormalOrFullScreen()
+      videoView.constrainForNormalLayout()
     }))
 
     animationTasks.append(UIAnimation.zeroDurationTask { [self] in
