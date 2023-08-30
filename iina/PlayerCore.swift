@@ -592,6 +592,7 @@ class PlayerCore: NSObject {
     playlistView.addConstraintsToFillSuperview()
     // move video view
     videoView.removeFromSuperview()
+    videoView.removeAspectRatioConstraint()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
     videoView.addConstraintsToFillSuperview()
 

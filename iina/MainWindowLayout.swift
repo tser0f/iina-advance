@@ -1745,6 +1745,7 @@ extension MainWindowController {
 
     newConstraints.centerX.isActive = true
     newConstraints.centerY.isActive = true
+
     videoViewConstraints = newConstraints
 
     // Change aspectRatio into AutoLayout constraint to force the other constraints to work with it

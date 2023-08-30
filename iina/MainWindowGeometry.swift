@@ -300,7 +300,7 @@ extension MainWindowController {
 
     // Get "correct" video size from mpv
     let videoBaseDisplaySize = player.videoBaseDisplaySize ?? AppData.sizeWhenNoVideo
-    // Update aspect ratio
+    // Update aspect ratio & constraint
     videoView.updateAspectRatio(w: videoBaseDisplaySize.width, h: videoBaseDisplaySize.height)
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoBaseDisplaySize
