@@ -1962,8 +1962,7 @@ class MainWindowController: PlayerWindowController {
       window?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1)
     }
 
-    let origVideoSize = player.videoBaseDisplaySize
-    guard origVideoSize.width != 0 && origVideoSize.height != 0 else {
+    guard let origVideoSize = player.videoBaseDisplaySize, origVideoSize.width != 0 && origVideoSize.height != 0 else {
       Utility.showAlert("no_video_track")
       return
     }
@@ -2182,18 +2181,21 @@ class MainWindowController: PlayerWindowController {
   }
 
   func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
+    guard let videoWidth = player.videoBaseDisplaySize?.width, videoWidth > 0 else {
+      log.debug("Skipping update to mpv windowScale; could not get width from videoBaseDisplaySize")
+      return
+    }
+
+    log.verbose("Updating mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
     // this is also a good place to save state, if applicable
     saveWindowFrame()
 
-    let videoWidth = player.videoBaseDisplaySize.width
-    if videoWidth > 0 {
-      let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
-      let prevVideoScale = player.info.cachedWindowScale
-      if videoScale != prevVideoScale {
-        log.verbose("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")
-        player.info.cachedWindowScale = videoScale
-        player.mpv.setDouble(MPVProperty.windowScale, videoScale)
-      }
+    let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
+    let prevVideoScale = player.info.cachedWindowScale
+    if videoScale != prevVideoScale {
+      log.verbose("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")
+      player.info.cachedWindowScale = videoScale
+      player.mpv.setDouble(MPVProperty.windowScale, videoScale)
     }
   }
 

@@ -41,7 +41,11 @@ extension MainWindowController {
     case 2:  //  2: double
       setWindowScale(2)
     case 3:  // fit screen
-      let desiredVideoSize = player.videoBaseDisplaySize.satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
+      guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
+        log.error("FitToScreen failed: could not get videoBaseDisplaySize")
+        return
+      }
+      let desiredVideoSize = videoBaseDisplaySize.satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
       resizeVideo(desiredVideoSize: desiredVideoSize, centerOnScreen: true)
 
     case 10:  // smaller size

@@ -581,7 +581,7 @@ extension MainWindowController {
 
       let priorWindowedGeometry = buildGeometryFromCurrentLayout()
       fsState.startAnimatingToFullScreen(legacy: isLegacy, priorWindowedFrame: priorWindowedGeometry)
-      log.verbose("Entering fullscreen, priorWindowedFrame := \(priorWindowedGeometry)")
+      log.verbose("Entering fullscreen, priorWindowedGeometry := \(priorWindowedGeometry)")
 
       // Do not move this block. It needs to go here.
       if !isLegacy {

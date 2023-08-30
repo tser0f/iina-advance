@@ -481,6 +481,8 @@ class PlayerCore: NSObject {
     if let geometry = savedState.windowGeometry(), let layoutSpec = savedState.layoutSpec() {
       log.verbose("Successfully parsed prior layout and geometry from prefs")
 
+      videoView.aspectRatio = geometry.videoAspectRatio
+
       // TODO: restore MiniPlayer
 
       // Constrain within screen
@@ -528,9 +530,9 @@ class PlayerCore: NSObject {
       log.warn("Aborting save of UI state: still restoring previous state")
       return
     }
-    log.verbose("Saving UI state")
-    let state = MainWindowController.PlayerUIState.from(self)
-    Preference.UIState.setPlayerUIState(forPlayerID: label, to: state)
+    let stateDict = MainWindowController.PlayerUIState.generatePrefDictFrom(self)
+    log.verbose("Saving UI state: \(stateDict)")
+    Preference.UIState.setPlayerUIState(forPlayerID: label, to: stateDict)
   }
 
   /// Initiate shutdown of this player.
@@ -2197,22 +2199,14 @@ class PlayerCore: NSObject {
    Non-nil and non-zero width/height value calculated for video window, from current `dwidth`
    and `dheight` while taking pure audio files and video rotations into consideration.
    */
-  var videoBaseDisplaySize: CGSize {
+  var videoBaseDisplaySize: CGSize? {
     get {
-      var width: Int
-      var height: Int
-
-      if let w = info.videoDisplayWidth, let h = info.videoDisplayHeight {
-        // when width and height == 0 there's no video track
-        width = w == 0 ? AppData.widthWhenNoVideo : w
-        height = h == 0 ? AppData.heightWhenNoVideo : h
-      } else {
-        // we cannot get dwidth and dheight, which is unexpected. This block should never be executed
-        // but just in case, let's log the error.
-        Logger.log("videoBaseDisplaySize: Cannot get dwidth and dheight", level: .warning, subsystem: subsystem)
-        width = AppData.widthWhenNoVideo
-        height = AppData.heightWhenNoVideo
+      guard let w = info.videoDisplayWidth, let h = info.videoDisplayHeight else {
+        log.error("Failed to generate videoBaseDisplaySize: dwidth or dheight not present!")
+        return nil
       }
+      var width: Int = w
+      var height: Int = h
 
       // if video has rotation
       let mpvParamRotate = mpv.getInt(MPVProperty.videoParamsRotate)
@@ -2224,8 +2218,9 @@ class PlayerCore: NSObject {
       if mpvNetRotate == 90 || mpvNetRotate == 270 {
         swap(&width, &height)
       }
-      Logger.log("videoBaseDisplaySize: Rot=(\(mpvParamRotate) total, \(mpvVideoRotate) user)=\(mpvNetRotate), WxH: \(width)x\(height)", level: .verbose, subsystem: subsystem)
-      return CGSize(width: width, height: height)
+      let baseDisplaySize = CGSize(width: width, height: height)
+      log.verbose("From Rot=(\(mpvParamRotate) total, \(mpvVideoRotate) user)=\(mpvNetRotate), got videoBaseDisplaySize \(baseDisplaySize)")
+      return baseDisplaySize
     }
   }
 

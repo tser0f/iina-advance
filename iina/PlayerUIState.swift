@@ -56,6 +56,7 @@ extension MainWindowController {
       guard let csvString = string(for: propName) else {
         return nil
       }
+      Logger.log("PlayerUIState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
       let tokens = csvString.split(separator: ",").map{String($0)}
       guard tokens.count == expectedTokenCount else {
         Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
@@ -142,7 +143,7 @@ extension MainWindowController {
       return [geoPrefStringVersion,
               geo.videoSize.width.string2f,
               geo.videoSize.height.string2f,
-              geo.videoAspectRatio.string,
+              geo.videoAspectRatio.string6f,
               geo.topBarHeight.string2f,
               geo.trailingBarWidth.string2f,
               geo.bottomBarHeight.string2f,
@@ -179,7 +180,7 @@ extension MainWindowController {
       })
     }
 
-    static func from(_ player: PlayerCore) -> PlayerUIState {
+    static func generatePrefDictFrom(_ player: PlayerCore) -> PlayerUIState {
       var props: [String: Any] = [:]
       let info = player.info
       let layout = player.mainWindow.currentLayout

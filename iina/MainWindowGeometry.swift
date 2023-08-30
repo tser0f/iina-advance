@@ -291,30 +291,34 @@ extension MainWindowController {
 
     log.verbose("[AdjustFrameAfterVideoReconfig] Start")
 
-    let videoBaseDisplaySize = player.videoBaseDisplaySize
-
-    // set aspect ratio
-    videoView.updateAspectRatio(w: videoBaseDisplaySize.width, h: videoBaseDisplaySize.height)
-    if #available(macOS 10.12, *) {
-      pip.aspectRatio = videoBaseDisplaySize
-    }
-
-
-    // Scale only the video. Panels outside the video do not change size
+    let oldVideoAspectRatio = videoView.aspectRatio
+    // Will only change the video size & video container size. Panels outside the video do not change size
     let oldVideoSize = videoView.frame.size
     // TODO: figure out why these each == -2, and whether that is OK
     let outsidePanelsWidth = window.frame.width - oldVideoSize.width
     let outsidePanelsHeight = window.frame.height - oldVideoSize.height
+
+    // Get "correct" video size from mpv
+    let videoBaseDisplaySize = player.videoBaseDisplaySize ?? AppData.sizeWhenNoVideo
+    // Update aspect ratio
+    videoView.updateAspectRatio(w: videoBaseDisplaySize.width, h: videoBaseDisplaySize.height)
+    if #available(macOS 10.12, *) {
+      pip.aspectRatio = videoBaseDisplaySize
+    }
 
     var newVideoSize: NSSize
     var newWindowFrame: NSRect
     var scaleDownFactor: CGFloat? = nil
 
     if player.info.isRestoring {
-      if oldVideoSize.aspect == videoView.aspectRatio {
-        log.verbose("[AdjustFrameAfterVideoReconfig A] Restore is in progress: will not update windowSize")
+      // To account for imprecision(s) due to floats coming from multiple sources,
+      // just compare the first 6 digits after the decimal (strings make it easier)
+      let oldAspect = oldVideoAspectRatio.string6f
+      let newAspect = videoView.aspectRatio.string6f
+      if oldAspect == newAspect {
+        log.verbose("[AdjustFrameAfterVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       } else {
-        log.debug("[AdjustFrameAfterVideoReconfig B] bad aspect! Expected \(videoView.aspectRatio), found \(oldVideoSize.aspect)")
+        log.error("[AdjustFrameAfterVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect)")
         // FIXME: fix it!
       }
     } else {
@@ -403,13 +407,16 @@ extension MainWindowController {
       player.events.emit(.windowSizeAdjusted, data: newWindowFrame)
     }
 
-    log.debug("[AdjustFrameAfterVideoReconfig] Done")
-
     // maybe not a good position, consider putting these at playback-restart
     player.info.justOpenedFile = false
     player.info.justStartedFile = false
     shouldApplyInitialWindowSize = false
-    player.info.priorUIState = nil
+    if player.info.priorUIState != nil {
+      player.info.priorUIState = nil
+      log.debug("[AdjustFrameAfterVideoReconfig] Done with restore")
+    } else {
+      log.debug("[AdjustFrameAfterVideoReconfig] Done")
+    }
   }
 
   func shouldResizeWindowAfterVideoReconfig() -> Bool {
@@ -437,7 +444,10 @@ extension MainWindowController {
     guard fsState == .windowed else { return }
     guard let window = window else { return }
 
-    let videoBaseDisplaySize = player.videoBaseDisplaySize
+    guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
+      log.error("SetWindowScale failed: could not get videoBaseDisplaySize")
+      return
+    }
     var videoDesiredSize = CGSize(width: videoBaseDisplaySize.width * scale, height: videoBaseDisplaySize.height * scale)
 
     log.verbose("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) → videoDesiredSize=\(videoDesiredSize)")

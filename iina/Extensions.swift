@@ -285,8 +285,8 @@ extension CGFloat {
     }
   }
 
-  var string: String {
-    String(format: "%f", self)
+  var string6f: String {
+    String(format: "%.6f", self)
   }
 
   var string2f: String {
