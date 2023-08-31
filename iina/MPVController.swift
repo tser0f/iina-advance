@@ -247,10 +247,12 @@ not applying FFmpeg 9599 workaround
 
     // User default settings
 
-    if Preference.bool(for: .enableInitialVolume) {
-      setUserOption(PK.initialVolume, type: .int, forName: MPVOption.Audio.volume, sync: false)
-    } else {
-      setUserOption(PK.softVolume, type: .int, forName: MPVOption.Audio.volume, sync: false)
+    if !player.info.isRestoring {
+      if Preference.bool(for: .enableInitialVolume) {
+        setUserOption(PK.initialVolume, type: .int, forName: MPVOption.Audio.volume, sync: false)
+      } else {
+        setUserOption(PK.softVolume, type: .int, forName: MPVOption.Audio.volume, sync: false)
+      }
     }
 
     // - Advanced
@@ -328,11 +330,20 @@ not applying FFmpeg 9599 workaround
       if let isMuted = savedState.bool(for: .isMuted) {
         setOption(forName: MPVOption.Audio.mute, toValue: isMuted, type: .bool)
       }
+      if let maxVolume = savedState.int(for: .maxVolume) {
+        setOption(forName: MPVOption.Audio.volumeMax, toValue: maxVolume, type: .int)
+      }
       if let audioDelay = savedState.double(for: .audioDelay) {
         setOption(forName: MPVOption.Audio.audioDelay, toValue: audioDelay, type: .float)
       }
       if let subDelay = savedState.double(for: .subDelay) {
         setOption(forName: MPVOption.Subtitles.subDelay, toValue: subDelay, type: .float)
+      }
+      if let isSubVisible = savedState.bool(for: .isSubVisible) {
+        setOption(forName: MPVOption.Subtitles.subVisibility, toValue: isSubVisible, type: .bool)
+      }
+      if let isSub2Visible = savedState.bool(for: .isSub2Visible) {
+        setOption(forName: MPVOption.Subtitles.secondarySubVisibility, toValue: isSub2Visible, type: .bool)
       }
       if let abLoopA = savedState.double(for: .abLoopA) {
         if let abLoopB = savedState.double(for: .abLoopB) {

@@ -452,14 +452,6 @@ class PlayerCore: NSObject {
     videoView.startDisplayLink()
   }
 
-  // unload main window video view
-  func uninitVideo() {
-    guard didInitVideo else { return }
-    videoView.stopDisplayLink()
-    videoView.uninit()
-    didInitVideo = false
-  }
-
   /// Finish restoring state of player from prior launch.
   /// See also: `mpvInit()` in `MPVController`.
   fileprivate func restoreUIState() {
@@ -475,8 +467,6 @@ class PlayerCore: NSObject {
       log.verbose("Successfully parsed prior geometry from prefs")
 
       videoView.aspectRatio = geometry.videoAspectRatio
-
-      // TODO: restore MiniPlayer
 
       // Constrain within screen
       let windowFrame = geometry.windowFrame
@@ -499,6 +489,14 @@ class PlayerCore: NSObject {
     } else {
       log.error("Could not restore UI state for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
     }
+
+    let isOnTop = savedState.bool(for: .isOnTop) ?? false
+    mainWindow.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
+
+    // FIXME: Music Mode restore is broken
+//    if let isInMusicMode = savedState.bool(for: .isMusicMode), isInMusicMode {
+//      switchToMiniPlayer()
+//    }
 
     // TODO: much, much more
 
@@ -529,6 +527,14 @@ class PlayerCore: NSObject {
     }
     let properties = PlayerSaveState.generatePropDict(from: self)
     Preference.UIState.savePlayerState(forPlayerID: label, properties: properties)
+  }
+
+  // unload main window video view
+  func uninitVideo() {
+    guard didInitVideo else { return }
+    videoView.stopDisplayLink()
+    videoView.uninit()
+    didInitVideo = false
   }
 
   /// Initiate shutdown of this player.

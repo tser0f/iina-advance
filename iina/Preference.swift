@@ -1017,7 +1017,7 @@ struct Preference {
     .hardwareDecoder: HardwareDecoderOption.auto.rawValue,
     .forceDedicatedGPU: false,
     .loadIccProfile: true,
-    .enableHdrSupport: true,
+    .enableHdrSupport: false,
     .enableToneMapping: false,
     .toneMappingTargetPeak: 0,
     .toneMappingAlgorithm: "auto",
@@ -1119,7 +1119,7 @@ struct Preference {
     .userDefinedConfDir: "~/.config/mpv/",
     .iinaEnablePluginSystem: false,
 
-    .keepOpenOnFileEnd: true,
+      .keepOpenOnFileEnd: true,
     .resumeFromEndRestartsPlayback: true,
     .actionWhenNoOpenedWindow: ActionWhenNoOpenedWindow.none.rawValue,
     .useExactSeek: SeekOption.exact.rawValue,

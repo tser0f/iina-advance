@@ -200,8 +200,6 @@ class PlaybackInfo {
     if position.second > duration.second { videoPosition = duration }
   }
 
-  var chapter = 0
-
   /** Selected track IDs. Use these (instead of `isSelected` of a track) to check if selected */
   var aid: Int?
   var sid: Int?
@@ -212,6 +210,8 @@ class PlaybackInfo {
   var isSecondSubVisible = true
 
   // -- PERSISTENT PROPERTIES END --
+
+  var chapter = 0
 
   var chapters: [MPVChapter] = []
   var audioTracks: [MPVTrack] = []

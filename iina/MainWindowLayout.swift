@@ -1591,6 +1591,7 @@ extension MainWindowController {
       showFadeableViews()
     }
     updateSpacingForTitleBarAccessories()
+    player.saveUIState()
   }
 
   // MARK: - Controller content layout

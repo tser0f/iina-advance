@@ -19,6 +19,7 @@ struct PlayerSaveState {
     case layoutSpec = "layoutSpec"
     case isMinimized = "minimized"
     case isMusicMode = "musicMode"
+    case isOnTop = "onTop"
 
     case url = "url"
     case progress = "progress"        /// `MPVOption.PlaybackControl.start`
@@ -41,12 +42,16 @@ struct PlayerSaveState {
 
     case playSpeed = "playSpeed"      /// `MPVOption.PlaybackControl.speed`
     case volume = "volume"            /// `MPVOption.Audio.volume`
-    case isMuted = "isMuted"          /// `MPVOption.Audio.mute`
+    case isMuted = "muted"            /// `MPVOption.Audio.mute`
+    case maxVolume = "maxVolume"      /// `MPVOption.Audio.volumeMax`
     case audioDelay = "audioDelay"    /// `MPVOption.Audio.audioDelay`
     case subDelay = "subDelay"        /// `MPVOption.Subtitles.subDelay`
     case abLoopA = "abLoopA"          /// `MPVOption.PlaybackControl.abLoopA`
     case abLoopB = "abLoopB"          /// `MPVOption.PlaybackControl.abLoopB`
     case videoRotation = "videoRotate"/// `MPVOption.Video.videoRotate`
+
+    case isSubVisible = "subVisible"  /// `MPVOption.Subtitles.subVisibility`
+    case isSub2Visible = "sub2Visible"/// `MPVOption.Subtitles.secondarySubVisibility`
   }
 
   static private let specPrefStringVersion = "1"
@@ -267,6 +272,12 @@ struct PlayerSaveState {
       props[PropName.windowGeometry.rawValue] = toPrefString(geometry)
     }
 
+    if player.mainWindow.isOntop {
+      props[PropName.isOnTop.rawValue] = true.yn
+    }
+    if player.isInMiniPlayer {
+      props[PropName.isMusicMode.rawValue] = true.yn
+    }
     /// TODO: `isMinimized`
 
     // - Playback State
@@ -311,6 +322,9 @@ struct PlayerSaveState {
     props[PropName.audioDelay.rawValue] = info.audioDelay.string6f
     props[PropName.subDelay.rawValue] = info.subDelay.string6f
 
+    props[PropName.isSubVisible.rawValue] = info.isSubVisible.yn
+    props[PropName.isSub2Visible.rawValue] = info.isSecondSubVisible.yn
+
     let abLoopA: Double = player.abLoopA
     if abLoopA != 0 {
       props[PropName.abLoopA.rawValue] = abLoopA.string6f
@@ -321,6 +335,11 @@ struct PlayerSaveState {
     }
 
     props[PropName.videoRotation.rawValue] = String(info.userRotation)
+
+    let maxVolume = player.mpv.getInt(MPVOption.Audio.volumeMax)
+    if maxVolume != 100 {
+      props[PropName.maxVolume.rawValue] = String(maxVolume)
+    }
 
     return props
   }
