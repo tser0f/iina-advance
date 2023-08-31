@@ -278,18 +278,20 @@ extension NSMenu {
   }
 }
 
-// Formats a number to max 2 digits after the decimal, but will omit trailing zeroes
+// Formats a number to max 2 digits after the decimal, but will omit trailing zeroes, and no commas or other formatting for large numbers
 fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
   let fmt = NumberFormatter()
   fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
   fmt.maximumFractionDigits = 2
   return fmt
 }()
 
-// Formats a number to max 6 digits after the decimal, but will omit trailing zeroes
+// Formats a number to max 6 digits after the decimal, but will omit trailing zeroes, and no commas or other formatting for large numbers
 fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
   let fmt = NumberFormatter()
   fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
   fmt.maximumFractionDigits = 6
   return fmt
 }()

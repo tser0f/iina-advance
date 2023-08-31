@@ -165,13 +165,6 @@ extension Preference {
       UserDefaults.standard.setValue(properties, forKey: key)
     }
 
-    static func savePlayerState(for player: PlayerCore) {
-      let key = WindowAutosaveName.mainPlayer(id: player.label).string
-      let properties = PlayerSaveState.generatePropDict(from: player)
-      player.log.verbose("Saving player state to prefs key \(key.quoted): \(properties)")
-      savePlayerState(forPlayerID: player.label, properties: properties)
-    }
-
     static func clearPlayerSaveState(forPlayerID playerID: String) {
       let key = WindowAutosaveName.mainPlayer(id: playerID).string
       UserDefaults.standard.setValue(nil, forKey: key)

@@ -311,14 +311,13 @@ struct PlayerSaveState {
     props[PropName.audioDelay.rawValue] = info.audioDelay.string6f
     props[PropName.subDelay.rawValue] = info.subDelay.string6f
 
-    switch info.abLoopStatus {
-    case .bSet:
-      props[PropName.abLoopB.rawValue] = player.abLoopB.string6f
-      fallthrough
-    case .aSet:
-      props[PropName.abLoopA.rawValue] = player.abLoopA.string6f
-    default:
-      break
+    let abLoopA: Double = player.abLoopA
+    if abLoopA != 0 {
+      props[PropName.abLoopA.rawValue] = abLoopA.string6f
+    }
+    let abLoopB: Double = player.abLoopB
+    if abLoopB != 0 {
+      props[PropName.abLoopB.rawValue] = abLoopB.string6f
     }
 
     props[PropName.videoRotation.rawValue] = String(info.userRotation)
