@@ -278,19 +278,40 @@ extension NSMenu {
   }
 }
 
+// Formats a number to max 2 digits after the decimal, but will omit trailing zeroes
+fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.maximumFractionDigits = 2
+  return fmt
+}()
+
+// Formats a number to max 6 digits after the decimal, but will omit trailing zeroes
+fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.maximumFractionDigits = 6
+  return fmt
+}()
+
+/// Applies to `Double`, `CGFloat`, ...
+extension FloatingPoint {
+
+  var string2f: String {
+    return fmtDecimalMaxFractionDigits2.string(for: self)!
+  }
+
+  var string6f: String {
+    return fmtDecimalMaxFractionDigits6.string(for: self)!
+  }
+}
+
+
 extension CGFloat {
   var unifiedDouble: Double {
     get {
       return Double(copysign(1, self))
     }
-  }
-
-  var string6f: String {
-    String(format: "%.6f", self)
-  }
-
-  var string2f: String {
-    String(format: "%.2f", self)
   }
 
   var twoDigitHex: String {
@@ -328,18 +349,6 @@ extension Double {
     } else {
       return "\(rounded)"
     }
-  }
-
-  var string6f: String {
-    String(format: "%.6f", self)
-  }
-
-  var string2f: String {
-    String(format: "%.2f", self)
-  }
-
-  var twoDigitHex: String {
-    String(format: "%02X", self)
   }
 }
 

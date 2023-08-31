@@ -17,6 +17,7 @@ extension MainWindowController {
 
   // MARK: - Structs & Enums
 
+  // Sidebar layout state
   struct Sidebar {
     enum Visibility {
       case show(tabToShow: Sidebar.Tab)
@@ -58,6 +59,7 @@ extension MainWindowController {
       }
     }
 
+    // Includes all types of tabs possible in all tab groups
     enum Tab: Equatable {
       case playlist
       case chapters

@@ -18,31 +18,35 @@ struct PlayerSaveState {
     case windowGeometry = "windowGeometry"
     case layoutSpec = "layoutSpec"
     case isMinimized = "minimized"
+    case isMusicMode = "musicMode"
 
     case url = "url"
-    case progress = "progress"
-    case paused = "paused"
+    case progress = "progress"        /// `MPVOption.PlaybackControl.start`
+    case paused = "paused"            /// `MPVOption.PlaybackControl.pause`
 
-    case deinterlace = "deinterlace"
-    case hwdec = "hwdec"
+    case vid = "vid"                  /// `MPVOption.TrackSelection.vid`
+    case aid = "aid"                  /// `MPVOption.TrackSelection.aid`
+    case sid = "sid"                  /// `MPVOption.TrackSelection.sid`
+    case sid2 = "sid2"                /// `MPVOption.Subtitles.secondarySid`
+
+    case hwdec = "hwdec"              /// `MPVOption.Video.hwdec`
+    case deinterlace = "deinterlace"  /// `MPVOption.Video.deinterlace`
     case hdrEnabled = "hdrEnabled"
-    case vid = "vid"
-    case aid = "aid"
-    case sid = "sid"
-    case sid2 = "sid2"
 
-    case brightness = "brightness"
-    case contrast = "contrast"
-    case saturation = "saturation"
-    case gamma = "gamma"
-    case hue = "hue"
-    case playSpeed = "playSpeed"
-    case volume = "volume"
-    case isMuted = "isMuted"
-    case audioDelay = "audioDelay"
-    case subDelay = "subDelay"
-    case abLoopStatus = "abLoopStatus"
-    case userRotationDeg = "userRotationDeg"
+    case brightness = "brightness"    /// `MPVOption.Equalizer.brightness`
+    case contrast = "contrast"        /// `MPVOption.Equalizer.contrast`
+    case saturation = "saturation"    /// `MPVOption.Equalizer.saturation`
+    case gamma = "gamma"              /// `MPVOption.Equalizer.gamma`
+    case hue = "hue"                  /// `MPVOption.Equalizer.hue`
+
+    case playSpeed = "playSpeed"      /// `MPVOption.PlaybackControl.speed`
+    case volume = "volume"            /// `MPVOption.Audio.volume`
+    case isMuted = "isMuted"          /// `MPVOption.Audio.mute`
+    case audioDelay = "audioDelay"    /// `MPVOption.Audio.audioDelay`
+    case subDelay = "subDelay"        /// `MPVOption.Subtitles.subDelay`
+    case abLoopA = "abLoopA"          /// `MPVOption.PlaybackControl.abLoopA`
+    case abLoopB = "abLoopB"          /// `MPVOption.PlaybackControl.abLoopB`
+    case videoRotation = "videoRotate"/// `MPVOption.Video.videoRotate`
   }
 
   static private let specPrefStringVersion = "1"
@@ -66,15 +70,21 @@ struct PlayerSaveState {
   // MARK: - Deserialize from prefs
 
   func string(for name: PropName) -> String? {
-    return properties[name.rawValue] as? String
+    return PlayerSaveState.string(for: name, properties)
   }
 
+  /// Relies on `Bool` being serialized to `String` with value `Y` or `N`
   func bool(for name: PropName) -> Bool? {
-    return properties[name.rawValue] as? Bool
+    return PlayerSaveState.bool(for: name, properties)
   }
 
   func int(for name: PropName) -> Int? {
-    return properties[name.rawValue] as? Int
+    return PlayerSaveState.int(for: name, properties)
+  }
+
+  /// Relies on `Double` being serialized to `String`
+  func double(for name: PropName) -> Double? {
+    return PlayerSaveState.double(for: name, properties)
   }
 
   static private func string(for name: PropName, _ properties: [String: Any]) -> String? {
@@ -82,11 +92,22 @@ struct PlayerSaveState {
   }
 
   static private func bool(for name: PropName, _ properties: [String: Any]) -> Bool? {
-    return properties[name.rawValue] as? Bool
+    return Bool.yn(string(for: name, properties))
   }
 
   static private func int(for name: PropName, _ properties: [String: Any]) -> Int? {
-    return properties[name.rawValue] as? Int
+    if let intString = string(for: name, properties) {
+      return Int(intString)
+    }
+    return nil
+  }
+
+  /// Relies on `Double` being serialized to `String`
+  static private func double(for name: PropName, _ properties: [String: Any]) -> Double? {
+    if let doubleString = string(for: name, properties) {
+      return Double(doubleString)
+    }
+    return nil
   }
 
   /// String -> `LayoutSpec`
@@ -257,7 +278,7 @@ struct PlayerSaveState {
     if let videoPosition = info.videoPosition?.second {
       props[PropName.progress.rawValue] = String(videoPosition)
     }
-    props[PropName.paused.rawValue] = info.isPaused
+    props[PropName.paused.rawValue] = info.isPaused.yn
 
     // TODO: playlist
 
@@ -289,8 +310,18 @@ struct PlayerSaveState {
     props[PropName.isMuted.rawValue] = info.isMuted.yn
     props[PropName.audioDelay.rawValue] = info.audioDelay.string6f
     props[PropName.subDelay.rawValue] = info.subDelay.string6f
-    props[PropName.abLoopStatus.rawValue] = String(info.abLoopStatus.rawValue)
-    props[PropName.userRotationDeg.rawValue] = String(info.userRotation)
+
+    switch info.abLoopStatus {
+    case .bSet:
+      props[PropName.abLoopB.rawValue] = player.abLoopB.string6f
+      fallthrough
+    case .aSet:
+      props[PropName.abLoopA.rawValue] = player.abLoopA.string6f
+    default:
+      break
+    }
+
+    props[PropName.videoRotation.rawValue] = String(info.userRotation)
 
     return props
   }

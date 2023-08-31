@@ -478,6 +478,10 @@ class PlayerCore: NSObject {
 
     log.verbose("Restoring player UI state")
 
+    if let hdrEnabled = savedState.bool(for: .hdrEnabled) {
+      info.hdrEnabled = hdrEnabled
+    }
+
     if let geometry = savedState.windowGeometry, let layoutSpec = savedState.layoutSpec {
       log.verbose("Successfully parsed prior layout and geometry from prefs")
 

@@ -63,9 +63,6 @@ class MainWindowController: PlayerWindowController {
   var cachedScreenIDs = Set<UInt32>()
   var blackWindows: [NSWindow] = []
 
-  // Is non-nil if within the activation rect of one of the sidebars
-  var sidebarResizeCursor: NSCursor? = nil
-
   /** The quick setting sidebar (video, audio, subtitles). */
   lazy var quickSettingView: QuickSettingViewController = {
     let quickSettingView = QuickSettingViewController()
@@ -83,6 +80,8 @@ class MainWindowController: PlayerWindowController {
   /** The control view for interactive mode. */
   var cropSettingsView: CropBoxViewController?
 
+  // For legacy windowed mode
+  // TODO: not used. Decide whether to use this, or delete
   var fakeLeadingTitleBarView: NSStackView? = nil
 
   // For Pinch To Magnify gesture:
@@ -98,10 +97,6 @@ class MainWindowController: PlayerWindowController {
   private lazy var rotationGestureRecognizer: NSRotationGestureRecognizer = {
     return NSRotationGestureRecognizer(target: self, action: #selector(MainWindowController.handleRotationGesture(recognizer:)))
   }()
-
-  /** For auto hiding UI after a timeout. */
-  var hideFadeableViewsTimer: Timer?
-  var hideOSDTimer: Timer?
 
   let animationQueue = CocoaAnimation.SerialQueue()
 
@@ -123,25 +118,25 @@ class MainWindowController: PlayerWindowController {
   }
   private var isWindowHidden: Bool = false
 
-  var hasKeyboardFocus: Bool {
-    window?.isKeyWindow ?? false
-  }
+  var isClosing = false
+  var shouldApplyInitialWindowSize = true
+  var isWindowMiniaturizedDueToPip = false
+  
+  var denyNextWindowResize = false
+
+  var isPausedDueToInactive: Bool = false
+  var isPausedDueToMiniaturization: Bool = false
+  var isPausedPriorToInteractiveMode: Bool = false
 
   /** For mpv's `geometry` option. We cache the parsed structure
    so never need to parse it every time. */
   var cachedGeometry: GeometryDef?
 
+  // - Mouse
+
   var mousePosRelatedToWindow: CGPoint?
   var isDragging: Bool = false
-
   var isLiveResizingWidth = false
-
-  var pipStatus = PIPStatus.notInPIP
-  var isInInteractiveMode: Bool = false
-
-  var shouldApplyInitialWindowSize = true
-  var isWindowMiniaturizedDueToPip = false
-  var denyNextWindowResize = false
 
   // might use another obj to handle slider?
   var isMouseInWindow: Bool = false
@@ -149,16 +144,7 @@ class MainWindowController: PlayerWindowController {
 
   var isFastforwarding: Bool = false
 
-  var isPausedDueToInactive: Bool = false
-  var isPausedDueToMiniaturization: Bool = false
-  var isPausedPriorToInteractiveMode: Bool = false
-
-  /** Views that will show/hide when cursor moving in/out the window. */
-  var fadeableViews = Set<NSView>()
-  /** Similar to `fadeableViews`, but may fade in differently depending on configuration of top bar. */
-  var fadeableViewsTopBar = Set<NSView>()
-
-  // Left and right arrow buttons
+  // - Left and right arrow buttons
 
   /** The maximum pressure recorded when clicking on the arrow buttons. */
   var maxPressure: Int32 = 0
@@ -181,23 +167,51 @@ class MainWindowController: PlayerWindowController {
   /** For force touch action */
   var isCurrentPressInSecondStage = false
 
-  /** Whether current osd needs user interaction to be dismissed */
-  var isShowingPersistentOSD = false
-  var osdContext: Any?
+  // - Sidebars
 
-  var isClosing = false
-
-  /// Sidebars: see file `Sidebars.swift`
+  /// See file `Sidebars.swift`
   var leadingSidebarIsResizing = false
   var trailingSidebarIsResizing = false
 
-  // MARK: - Enums
+  var leadingSidebarAnimationState: UIAnimationState = .hidden
+  var trailingSidebarAnimationState: UIAnimationState = .hidden
 
-  // Window state
+  // Is non-nil if within the activation rect of one of the sidebars
+  var sidebarResizeCursor: NSCursor? = nil
+
+  // - Fadeable Views
+
+  /** Views that will show/hide when cursor moving in/out the window. */
+  var fadeableViews = Set<NSView>()
+  /** Similar to `fadeableViews`, but may fade in differently depending on configuration of top bar. */
+  var fadeableViewsTopBar = Set<NSView>()
+  var fadeableViewsAnimationState: UIAnimationState = .shown
+  var fadeableTopBarAnimationState: UIAnimationState = .shown
+  /** For auto hiding UI after a timeout. */
+  var hideFadeableViewsTimer: Timer?
+
+  // - OSD
+
+  /** Whether current osd needs user interaction to be dismissed */
+  var isShowingPersistentOSD = false
+  var osdContext: Any?
+  private var osdLastMessage: OSDMessage? = nil
+  var osdAnimationState: UIAnimationState = .hidden
+  var hideOSDTimer: Timer?
+
+  // - Window Layout State
+
+  // TODO: move to LayoutState
+  var pipStatus = PIPStatus.notInPIP
+  var isInInteractiveMode: Bool = false
 
   lazy var currentLayout: LayoutState = {
     return LayoutState(spec: LayoutSpec.defaultLayout())
   }()
+
+  // MARK: - Enums
+
+  // Window state
 
   enum FullScreenState: Equatable {
     case windowed
@@ -298,13 +312,6 @@ class MainWindowController: PlayerWindowController {
       return self == .willShow || self == .willHide
     }
   }
-
-  var leadingSidebarAnimationState: UIAnimationState = .hidden
-  var trailingSidebarAnimationState: UIAnimationState = .hidden
-  var fadeableViewsAnimationState: UIAnimationState = .shown
-  var fadeableTopBarAnimationState: UIAnimationState = .shown
-  var osdAnimationState: UIAnimationState = .hidden
-  private var osdLastMessage: OSDMessage? = nil
 
   // MARK: - Observed user defaults
 

@@ -274,15 +274,75 @@ not applying FFmpeg 9599 workaround
 
     // Restore from prior launch (if applicable)
     if let savedState = player.info.priorState {
-      if let wasPaused = savedState.bool(for: .paused) {
-        setOption(forName: MPVOption.PlaybackControl.pause, toValue: wasPaused, type: .bool)
-      }
-
       if let startTime = savedState.string(for: .progress) {
         setOption(forName: MPVOption.PlaybackControl.start, toValue: startTime, type: .string)
       }
 
+      if let wasPaused = savedState.bool(for: .paused) {
+        setOption(forName: MPVOption.PlaybackControl.pause, toValue: wasPaused, type: .bool)
+      }
 
+      if let vid = savedState.int(for: .vid) {
+        setOption(forName: MPVOption.TrackSelection.vid, toValue: vid, type: .int)
+      }
+      if let aid = savedState.int(for: .aid) {
+        setOption(forName: MPVOption.TrackSelection.aid, toValue: aid, type: .int)
+      }
+      if let sid = savedState.int(for: .sid) {
+        setOption(forName: MPVOption.TrackSelection.sid, toValue: sid, type: .int)
+      }
+      if let sid2 = savedState.int(for: .sid2) {
+        setOption(forName: MPVOption.Subtitles.secondarySid, toValue: sid2, type: .int)
+      }
+
+      if let hwdec = savedState.string(for: .hwdec) {
+        setOption(forName: MPVOption.Video.hwdec, toValue: hwdec, type: .string)
+      }
+
+      if let deinterlace = savedState.bool(for: .deinterlace) {
+        setOption(forName: MPVOption.Video.deinterlace, toValue: deinterlace, type: .bool)
+      }
+
+      if let brightness = savedState.int(for: .brightness) {
+        setOption(forName: MPVOption.Equalizer.brightness, toValue: brightness, type: .int)
+      }
+      if let contrast = savedState.int(for: .contrast) {
+        setOption(forName: MPVOption.Equalizer.contrast, toValue: contrast, type: .int)
+      }
+      if let saturation = savedState.int(for: .saturation) {
+        setOption(forName: MPVOption.Equalizer.saturation, toValue: saturation, type: .int)
+      }
+      if let gamma = savedState.int(for: .gamma) {
+        setOption(forName: MPVOption.Equalizer.gamma, toValue: gamma, type: .int)
+      }
+      if let hue = savedState.int(for: .hue) {
+        setOption(forName: MPVOption.Equalizer.hue, toValue: hue, type: .int)
+      }
+
+      if let playSpeed = savedState.double(for: .playSpeed) {
+        setOption(forName: MPVOption.PlaybackControl.speed, toValue: playSpeed, type: .float)
+      }
+      if let volume = savedState.double(for: .volume) {
+        setOption(forName: MPVOption.Audio.volume, toValue: volume, type: .float)
+      }
+      if let isMuted = savedState.bool(for: .isMuted) {
+        setOption(forName: MPVOption.Audio.mute, toValue: isMuted, type: .bool)
+      }
+      if let audioDelay = savedState.double(for: .audioDelay) {
+        setOption(forName: MPVOption.Audio.audioDelay, toValue: audioDelay, type: .float)
+      }
+      if let subDelay = savedState.double(for: .subDelay) {
+        setOption(forName: MPVOption.Subtitles.subDelay, toValue: subDelay, type: .float)
+      }
+      if let abLoopA = savedState.double(for: .abLoopA) {
+        if let abLoopB = savedState.double(for: .abLoopB) {
+          setOption(forName: MPVOption.PlaybackControl.abLoopB, toValue: abLoopB, type: .float)
+        }
+        setOption(forName: MPVOption.PlaybackControl.abLoopA, toValue: abLoopA, type: .float)
+      }
+      if let videoRotation = savedState.int(for: .videoRotation) {
+        setOption(forName: MPVOption.Video.videoRotate, toValue: videoRotation, type: .int)
+      }
     }
 
     // - General
