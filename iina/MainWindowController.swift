@@ -84,19 +84,11 @@ class MainWindowController: PlayerWindowController {
   // TODO: not used. Decide whether to use this, or delete
   var fakeLeadingTitleBarView: NSStackView? = nil
 
-  // For Pinch To Magnify gesture:
-  var lastMagnification: CGFloat = 0.0
-  var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(), videoSize: NSSize(), videoAspectRatio: 1.0)
-  private lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
-    return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
-  }()
-
   // For Rotate gesture:
-  /// Current rotation of `self.videoView`: see `VideoRotationHandler`
   let rotationHandler = VideoRotationHandler()
-  private lazy var rotationGestureRecognizer: NSRotationGestureRecognizer = {
-    return NSRotationGestureRecognizer(target: self, action: #selector(MainWindowController.handleRotationGesture(recognizer:)))
-  }()
+
+  // For Pinch To Magnify gesture:
+  let magnificationHandler = VideoMagnificationHandler()
 
   let animationQueue = CocoaAnimation.SerialQueue()
 
@@ -121,7 +113,7 @@ class MainWindowController: PlayerWindowController {
   var isClosing = false
   var shouldApplyInitialWindowSize = true
   var isWindowMiniaturizedDueToPip = false
-  
+
   var denyNextWindowResize = false
 
   var isPausedDueToInactive: Bool = false
@@ -317,7 +309,6 @@ class MainWindowController: PlayerWindowController {
 
   // Cached user default values
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
-  private lazy var pinchAction: Preference.PinchAction = Preference.enum(for: .pinchAction)
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
 
   private static let mainWindowPrefKeys: [Preference.Key] = PlayerWindowController.playerWindowPrefKeys + [
@@ -337,7 +328,6 @@ class MainWindowController: PlayerWindowController {
     .thumbnailLength,
     .showChapterPos,
     .arrowButtonAction,
-    .pinchAction,
     .blackOutMonitor,
     .useLegacyFullScreen,
     .displayTimeAndBatteryInFullScreen,
@@ -408,10 +398,6 @@ class MainWindowController: PlayerWindowController {
       if let newValue = change[.newKey] as? Int {
         arrowBtnFunction = Preference.ArrowButtonAction(rawValue: newValue)!
         updateArrowButtonImages()
-      }
-    case PK.pinchAction.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        pinchAction = Preference.PinchAction(rawValue: newValue)!
       }
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
@@ -720,8 +706,9 @@ class MainWindowController: PlayerWindowController {
 
     // gesture recognizers
     rotationHandler.mainWindowController = self
-    cv.addGestureRecognizer(magnificationGestureRecognizer)
-    cv.addGestureRecognizer(rotationGestureRecognizer)
+    magnificationHandler.mainWindow = self
+    cv.addGestureRecognizer(magnificationHandler.magnificationGestureRecognizer)
+    cv.addGestureRecognizer(rotationHandler.rotationGestureRecognizer)
 
     // Work around a bug in macOS Ventura where HDR content becomes dimmed when playing in full
     // screen mode once overlaying views are fully hidden (issue #3844). After applying this
@@ -1161,54 +1148,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
-    guard pinchAction != .none else { return }
-    guard !isInInteractiveMode else { return }
-
-    switch pinchAction {
-    case .none:
-      return
-    case .fullscreen:
-      // enter/exit fullscreen
-      if recognizer.state == .began {
-        let isEnlarge = recognizer.magnification > 0
-        if isEnlarge != fsState.isFullscreen {
-          recognizer.state = .recognized
-          self.toggleWindowFullScreen()
-        }
-      }
-    case .windowSize:
-      if fsState.isFullscreen { return }
-
-      // adjust window size
-      switch recognizer.state {
-      case .began:
-        // FIXME: confirm reset on video size change due to track change
-        windowGeometryAtMagnificationBegin = buildGeometryFromCurrentLayout()
-        scaleVideoFromPinchGesture(to: recognizer.magnification)
-      case .changed:
-        scaleVideoFromPinchGesture(to: recognizer.magnification)
-      case .ended:
-        scaleVideoFromPinchGesture(to: recognizer.magnification)
-        updateWindowParametersForMPV()
-      case .cancelled, .failed:
-        scaleVideoFromPinchGesture(to: 1.0)
-        break
-      default:
-        return
-      }
-
-    }
-  }
-
-  private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
-    // avoid zero and negative numbers because they will cause problems
-    let scale = max(0.0001, magnification + 1.0)
-    log.verbose("Scaling pinched video, target scale: \(scale)")
-
-    let origVideoSize = windowGeometryAtMagnificationBegin.videoSize
-    let newVideoSize = origVideoSize.multiply(scale);
-
-    resizeVideo(desiredVideoSize: newVideoSize, fromGeometry: windowGeometryAtMagnificationBegin, animate: false)
+    magnificationHandler.handleMagnifyGesture(recognizer: recognizer)
   }
 
   @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {

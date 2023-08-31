@@ -562,7 +562,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       case .audioFilter:
         showAudioFilterWindow(self)
       case .mainPlayer(let id):
-        PlayerCore.restoreFromPriorLaunch(forPlayerUID: id)
+        PlayerCoreManager.restoreFromPriorLaunch(playerID: id)
       case .miniPlayer(_):
         break
       default:
@@ -703,7 +703,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     timedOut = true
     Logger.log("Timed out waiting for players to stop and shutdown", level: .warning)
     // For debugging list players that have not terminated.
-    for player in PlayerCore.playerCores {
+    for player in PlayerCoreManager.playerCores {
       let label = player.label
       if !player.isStopped {
         Logger.log("Player \(label) failed to stop", level: .warning)
@@ -768,7 +768,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // command directly to mpv causing mpv and the player to shutdown before application
     // termination is initiated.
     var canTerminateNow = true
-    for player in PlayerCore.playerCores {
+    for player in PlayerCoreManager.playerCores {
       if !player.isShutdown {
         canTerminateNow = false
         break
@@ -847,7 +847,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         return
       }
       // If any player has not shutdown then continue waiting.
-      for player in PlayerCore.playerCores {
+      for player in PlayerCoreManager.playerCores {
         guard player.isShutdown else { return }
       }
       // All players have shutdown. Proceed with termination.
@@ -866,7 +866,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     observers.append(observer)
 
     // Instruct any players that are already stopped to start shutting down.
-    for player in PlayerCore.playerCores {
+    for player in PlayerCoreManager.playerCores {
       if player.isStopped && !player.isShutdown {
         player.shutdown()
       }

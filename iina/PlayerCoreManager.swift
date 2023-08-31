@@ -9,6 +9,22 @@
 import Foundation
 
 class PlayerCoreManager {
+
+  // MARK: - Static methods
+
+  static var playerCores: [PlayerCore] {
+    return PlayerCore.manager.getPlayerCores()
+  }
+
+  // Attempt to exactly restore play state & UI from last run of IINA (for given player)
+  static func restoreFromPriorLaunch(playerID id: String) {
+    Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: id).string.quoted)")
+    _ = PlayerCore.manager.createNewPlayerCore(withLabel: id, restore: true)
+    /// see `start(restore: Bool)` below
+  }
+
+  // MARK: - Since instance
+
   private let lock = Lock()
   private var playerCoreCounter = 0
 

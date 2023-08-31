@@ -11,12 +11,7 @@ import MediaPlayer
 
 class PlayerCore: NSObject {
   // MARK: - Multiple instances
-
-  static private let manager = PlayerCoreManager()
-
-  static var playerCores: [PlayerCore] {
-    return manager.getPlayerCores()
-  }
+  static var manager = PlayerCoreManager()
 
   /// TODO: make `lastActive` and `active` Optional, so creating an uncessary player randomly at startup isn't needed
 
@@ -47,13 +42,6 @@ class PlayerCore: NSObject {
 
   static var playing: [PlayerCore] {
     return manager.getNonIdle()
-  }
-
-  // Attempt to exactly restore play state & UI from last run of IINA (for given player)
-  static func restoreFromPriorLaunch(forPlayerUID uid: String) {
-    Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: uid).string.quoted)")
-    _ = manager.createNewPlayerCore(withLabel: uid, restore: true)
-    /// see `start(restore: Bool)` below
   }
 
   static func activeOrNewForMenuAction(isAlternative: Bool) -> PlayerCore {
@@ -167,7 +155,7 @@ class PlayerCore: NSObject {
   }
 
   var isOnlyOpenPlayer: Bool {
-    for player in PlayerCore.playerCores {
+    for player in PlayerCore.manager.getPlayerCores() {
       if player != self && player.mainWindow.isOpen {
         return false
       }
@@ -238,7 +226,7 @@ class PlayerCore: NSObject {
   // MARK: - Plugins
 
   static func reloadPluginForAll(_ plugin: JavascriptPlugin) {
-    playerCores.forEach { $0.reloadPlugin(plugin) }
+    manager.getPlayerCores().forEach { $0.reloadPlugin(plugin) }
     (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
   }
 
@@ -483,8 +471,8 @@ class PlayerCore: NSObject {
       info.hdrEnabled = hdrEnabled
     }
 
-    if let geometry = savedState.windowGeometry, let layoutSpec = savedState.layoutSpec {
-      log.verbose("Successfully parsed prior layout and geometry from prefs")
+    if let geometry = savedState.windowGeometry {
+      log.verbose("Successfully parsed prior geometry from prefs")
 
       videoView.aspectRatio = geometry.videoAspectRatio
 
