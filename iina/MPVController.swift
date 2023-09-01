@@ -1330,7 +1330,7 @@ not applying FFmpeg 9599 workaround
         player.sendOSD(paused ? .pause : .resume)
         DispatchQueue.main.sync {
           player.info.isPaused = paused
-          player.saveUIState()  // record the pause state
+          PlayerSaveState.save(player)  // record the pause state
           player.refreshSyncUITimer()
           if paused {
             player.videoView.displayIdle()
@@ -1394,6 +1394,7 @@ not applying FFmpeg 9599 workaround
       Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)", level: .verbose, subsystem: player.subsystem)
       player.info.userRotation = userRotation
       if self.player.mainWindow.loaded {
+        player.saveState()
         DispatchQueue.main.async {
           // FIXME: this isn't perfect - a bad frame briefly appears during transition
           Logger.log("Resetting videoView")
@@ -1404,9 +1405,9 @@ not applying FFmpeg 9599 workaround
       }
 
     case MPVOption.Audio.mute:
-      player.syncUI(.muteButton)
       if let data = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee {
         player.info.isMuted = data
+        player.syncUI(.muteButton)
         player.sendOSD(data ? OSDMessage.mute : OSDMessage.unMute)
       }
 

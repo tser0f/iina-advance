@@ -1407,7 +1407,7 @@ class MainWindowController: PlayerWindowController {
       }
       return
     }
-    saveWindowFrame()
+    player.saveState()
 
   }
 
@@ -1419,7 +1419,7 @@ class MainWindowController: PlayerWindowController {
   func windowDidMove(_ notification: Notification) {
     guard let window = window else { return }
     log.verbose("WindowDidMove, frame=\(window.frame)")
-    saveWindowFrame()
+    player.saveState()
     player.events.emit(.windowMoved, data: window.frame)
   }
 
@@ -1476,7 +1476,7 @@ class MainWindowController: PlayerWindowController {
         enterPIP()
       }
     }
-    saveWindowFrame()
+    player.saveState()
     player.events.emit(.windowMiniaturized)
   }
 
@@ -1491,7 +1491,7 @@ class MainWindowController: PlayerWindowController {
         exitPIP()
       }
     }
-    saveWindowFrame()
+    player.saveState()
     player.events.emit(.windowDeminiaturized)
   }
 
@@ -2070,16 +2070,18 @@ class MainWindowController: PlayerWindowController {
         }
       }
 
-      let imageToDisplay = image.resized(newWidth: thumbWidth, newHeight: thumbHeight).rotate(totalRotation)
+      let imageToDisplay = image.rotate(totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
+      let thumbnailSize = imageToDisplay.size
 
       thumbnailPeekView.imageView.image = imageToDisplay
-      thumbnailPeekView.isHidden = false
 
-      if videoView.frame.height < imageToDisplay.size.height {
-        thumbnailPeekView.frame.size = imageToDisplay.size.shrink(toSize: videoView.frame.size)
+      if videoView.frame.height < thumbnailSize.height {
+        thumbnailPeekView.frame.size = thumbnailSize.shrink(toSize: videoView.frame.size)
+      } else {
+        thumbnailPeekView.frame.size = thumbnailSize
       }
-      thumbnailPeekView.frame.size = imageToDisplay.size
-//      Logger.log("Displaying thumbnail: \(thumbWidth) W x \(thumbHeight) H", level: .verbose, subsystem: player.subsystem)
+      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H")
+      thumbnailPeekView.isHidden = false
       let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
       let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
       let thumbOriginY: CGFloat
@@ -2118,7 +2120,7 @@ class MainWindowController: PlayerWindowController {
 
     log.verbose("Updating mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
     // this is also a good place to save state, if applicable
-    saveWindowFrame()
+    player.saveState()
 
     let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
@@ -2373,10 +2375,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   // MARK: - Utility
-
-  func saveWindowFrame() {
-    player.saveUIState()
-  }
 
   internal override func handleIINACommand(_ cmd: IINACommand) {
     super.handleIINACommand(cmd)

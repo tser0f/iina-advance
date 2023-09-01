@@ -21,6 +21,8 @@ fileprivate let AlternativeMenuItemTag = 1
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
+  static var launchID: Int!
+
   /**
    Becomes true once `application(_:openFile:)` or `droppedText()` is called.
    Mainly used to distinguish normal launches from others triggered by drag-and-dropping files.
@@ -31,8 +33,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   private var commandLineStatus = CommandLineStatus()
 
   private(set) var isTerminating = false
-
-  var launchID: Int!
 
   private var observers: [NSObjectProtocol] = []
   var observedPrefKeys: [Preference.Key] = [
@@ -114,20 +114,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       /// Any IINA instance which detects a ping not match its own `launchID` will, if well-behaved, immediately disable its usage of shared UI state
       /// for the remainder of its run, so that multiple instances don't corrupt each other's shared state or create echo-like behavior.
       if let newLaunchID = change[.newKey] as? Int {
-        guard let launchID = launchID, newLaunchID != launchID else { return }
+        guard let launchID = AppDelegate.launchID, newLaunchID != launchID else { return }
         if newLaunchID < launchID {
           Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which looks invalid because it is below the current value! Will disable UI state load/save functionality to be safe.", level: .warning)
           Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
         } else {
-          Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(self.launchID!)).")
+          Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(AppDelegate.launchID!)).")
           Logger.log("Will assume a newer instance of IINA has started; sending a ping to notify it.")
-          Preference.set(launchID, for: .iinaPing)
+          Preference.set(AppDelegate.launchID, for: .iinaPing)
         }
       }
 
     case PK.iinaPing.rawValue:
       if let pingID = change[.newKey] as? Int {
-        if pingID >= 0 && pingID != launchID {
+        if pingID >= 0 && pingID != AppDelegate.launchID {
           Logger.log("Ping received: \(pingID). Will assume an instance of IINA is already running, and disable loading/saving UI state.")
           Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
         }
@@ -321,7 +321,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     menuController.updatePluginMenu()
 
     let nextID = Preference.integer(for: .iinaLaunchCount) + 1
-    launchID = nextID
+    AppDelegate.launchID = nextID
     Logger.log("LaunchID: \(nextID). Checking for other running instances of IINA...", level: .verbose)
     Preference.set(nextID, for: .iinaLaunchCount)
     Preference.set(nextID, for: .iinaPing)  // need to set this for comparison later
@@ -480,7 +480,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     if Preference.bool(for: .isSaveRestoreInUse) {
       Logger.log("Waiting 1s to see if another instance is still running...", level: .verbose)
       Thread.sleep(forTimeInterval: 1)
-      if Preference.integer(for: .iinaPing) != launchID {
+      if Preference.integer(for: .iinaPing) != AppDelegate.launchID {
         Logger.log("Looks like another IINA instance is still running. Disabling restore/save of window state for this instance")
         Utility.showAlert("restore_cancelled", style: .informational)
         Preference.UIState.disableSaveAndRestoreUntilNextLaunch()

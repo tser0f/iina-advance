@@ -516,35 +516,23 @@ class PlayerCore: NSObject {
 
   }
 
-  private func savePlayerState() {
-    log.verbose("Saving player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))")
+  private func savePlayerStateForShutdown() {
+    log.verbose("Cleaning up player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))")
 
-    saveUIState()
-    savePlaybackPosition()
-    refreshSyncUITimer()
-    uninitVideo()
+    isShuttingDown = true
+    saveState()            // Save state to IINA prefs (if enabled)
+    savePlaybackPosition() // Save state to mpv watch-later (if enabled)
+    refreshSyncUITimer()   // Shut down timer
+    uninitVideo()          // Shut down DisplayLink
   }
 
-  func saveUIState() {
-    guard Preference.UIState.isSaveEnabled else { return }
-    guard mainWindow.loaded else {
-      log.debug("Aborting save of player state: player window is not loaded")
-      return
-    }
-    guard !info.isRestoring else {
-      log.warn("Aborting save of player state: still restoring previous state")
-      return
-    }
-    guard !isShuttingDown else {
-      log.warn("Aborting save of player state: is shutting down")
-      return
-    }
-    let properties = PlayerSaveState.generatePropDict(from: self)
-    Preference.UIState.savePlayerState(forPlayerID: label, properties: properties)
+  func saveState() {
+    PlayerSaveState.save(self)  // record the pause state
   }
+
 
   // unload main window video view
-  func uninitVideo() {
+  private func uninitVideo() {
     guard didInitVideo else { return }
     videoView.stopDisplayLink()
     videoView.uninit()
@@ -560,9 +548,8 @@ class PlayerCore: NSObject {
   ///     until mpv finishes executing the quit command and shuts down.
   func shutdown() {
     guard !isShuttingDown else { return }
-    isShuttingDown = true
     Logger.log("Shutting down", subsystem: subsystem)
-    savePlayerState()
+    savePlayerStateForShutdown()
     mpv.mpvQuit()
   }
 
@@ -573,8 +560,7 @@ class PlayerCore: NSObject {
     isShutdown = true
     // If mpv shutdown was initiated by mpv then the player state has not been saved.
     if isMPVInitiated {
-      isShuttingDown = true
-      savePlayerState()
+      savePlayerStateForShutdown()
     }
     postNotification(.iinaPlayerShutdown)
   }
@@ -701,6 +687,7 @@ class PlayerCore: NSObject {
 
   func toggleMute(_ set: Bool? = nil) {
     let newState = set ?? !mpv.getFlag(MPVOption.Audio.mute)
+    info.isMuted = newState
     mpv.setFlag(MPVOption.Audio.mute, newState)
   }
 
@@ -877,6 +864,7 @@ class PlayerCore: NSObject {
     let appliedVolume = constrain ? constrainedVolume : volume
     info.volume = appliedVolume
     mpv.setDouble(MPVOption.Audio.volume, appliedVolume)
+    // Save default for future players:
     Preference.set(constrainedVolume, for: .softVolume)
   }
 
@@ -1677,7 +1665,7 @@ class PlayerCore: NSObject {
       }
     }
     DispatchQueue.main.async {
-      self.saveUIState()
+      PlayerSaveState.save(self)
       Timer.scheduledTimer(timeInterval: TimeInterval(0.2), target: self, selector: #selector(self.reEnableOSDAfterFileLoading), userInfo: nil, repeats: false)
     }
   }
@@ -2009,6 +1997,9 @@ class PlayerCore: NSObject {
         self.mainWindow.playlistView.updateLoopFileBtnStatus()
       }
     }
+
+    // All of the above reflect a state change. Save it:
+    saveState()
   }
 
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
@@ -2216,7 +2207,7 @@ class PlayerCore: NSObject {
                                          title: mpv.getString(MPVProperty.playlistNTitle(index)))
       info.playlist.append(playlistItem)
     }
-    saveUIState()  // save playlist URLs to prefs
+    PlayerSaveState.save(self)  // save playlist URLs to prefs
   }
 
   func reloadChapters() {

@@ -186,7 +186,7 @@
             <point key="canvasLocation" x="2" y="-403"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="lH7-Vv-0M1"/>
-        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window" propertyAccessControl="none">
+        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="491" height="392"/>
             <subviews>
                 <textField identifier="SectionTitleWindow" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RFk-nU-SGL">
@@ -628,6 +628,9 @@
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.usePhysicalResolution" id="4m2-yQ-JzX"/>
+                            </connections>
                         </button>
                         <customView hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="YUF-vq-LYN" userLabel="8pt Spacer">
                             <rect key="frame" x="0.0" y="32" width="1" height="8"/>
@@ -663,12 +666,12 @@
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                             <connections>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.alwaysShowOnTopIcon" id="hUu-Wt-XJt"/>
                                 <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.useLegacyWindowedMode" id="xaC-8y-M1x">
                                     <dictionary key="options">
                                         <string key="NSValueTransformerName">NSNegateBoolean</string>
                                     </dictionary>
                                 </binding>
-                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.alwaysShowOnTopIcon" id="hUu-Wt-XJt"/>
                             </connections>
                         </button>
                     </subviews>

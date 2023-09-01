@@ -1229,7 +1229,7 @@ extension MainWindowController {
     addTitleBarAccessoryViews()
 
     log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), FSState:\(fsState.isFullscreen.yn) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
-    saveWindowFrame()
+    player.saveState()
   }
 
   // MARK: - Bars Layout
@@ -1591,7 +1591,7 @@ extension MainWindowController {
       showFadeableViews()
     }
     updateSpacingForTitleBarAccessories()
-    player.saveUIState()
+    PlayerSaveState.save(player)
   }
 
   // MARK: - Controller content layout

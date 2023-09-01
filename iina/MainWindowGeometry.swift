@@ -508,7 +508,7 @@ extension MainWindowController {
   }
 
   func buildGeometryFromCurrentLayout() -> MainWindowGeometry {
-    let windowFrame = window!.frame
+    let windowFrame = window!.frame  // FIXME: main thread only!
     let videoContainerFrame = videoContainerView.frame
     let videoSize = videoView.frame.size
     let videoAspectRatio = videoView.aspectRatio

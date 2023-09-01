@@ -74,11 +74,11 @@ struct PlayerSaveState {
   init(_ props: [String: Any]) {
     self.properties = props
 
-    self.layoutSpec = PlayerSaveState.parseLayoutSpec(from: props)
-    self.windowGeometry = PlayerSaveState.parseWindowGeometry(from: props)
+    self.layoutSpec = PlayerSaveState.deserializeLayoutSpec(from: props)
+    self.windowGeometry = PlayerSaveState.deserializeWindowGeometry(from: props)
   }
 
-  // MARK: - Deserialize from prefs
+  // MARK: - Restore State / Deserialize from prefs
 
   func string(for name: PropName) -> String? {
     return PlayerSaveState.string(for: name, properties)
@@ -133,9 +133,32 @@ struct PlayerSaveState {
     return nil
   }
 
+  // Utility function for parsing complex object from CSV
+  static private func deserializeCSV<T>(_ propName: PropName, fromProperties properties: [String: Any], expectedTokenCount: Int, version: String,
+                                  errPreamble: String, _ parseFunc: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
+    guard let csvString = string(for: propName, properties) else {
+      return nil
+    }
+    Logger.log("PlayerSaveState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
+    let tokens = csvString.split(separator: ",").map{String($0)}
+    guard tokens.count == expectedTokenCount else {
+      Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
+      return nil
+    }
+    var iter = tokens.makeIterator()
+
+    let version = iter.next()
+    guard version == PlayerSaveState.geoPrefStringVersion else {
+      Logger.log("\(errPreamble) bad version (expected \(PlayerSaveState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
+      return nil
+    }
+
+    return try parseFunc(errPreamble, &iter)
+  }
+
   /// String -> `LayoutSpec`
-  static private func parseLayoutSpec(from properties: [String: Any]) -> MainWindowController.LayoutSpec? {
-    return splitCSV(.layoutSpec, fromProperties: properties, expectedTokenCount: 11, version: PlayerSaveState.specPrefStringVersion,
+  static private func deserializeLayoutSpec(from properties: [String: Any]) -> MainWindowController.LayoutSpec? {
+    return deserializeCSV(.layoutSpec, fromProperties: properties, expectedTokenCount: 11, version: PlayerSaveState.specPrefStringVersion,
                    errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
 
       let leadingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
@@ -181,8 +204,8 @@ struct PlayerSaveState {
   }
 
   /// String -> `MainWindowGeometry`
-  static private func parseWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
-    return splitCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
+  static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
+    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
                    errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
       guard let videoWidth = Double(iter.next()!),
@@ -206,33 +229,10 @@ struct PlayerSaveState {
     })
   }
 
-  // Utility function for parsing complex object from CSV
-  static private func splitCSV<T>(_ propName: PropName, fromProperties properties: [String: Any], expectedTokenCount: Int, version: String,
-                                  errPreamble: String, _ closure: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
-    guard let csvString = string(for: propName, properties) else {
-      return nil
-    }
-    Logger.log("PlayerSaveState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
-    let tokens = csvString.split(separator: ",").map{String($0)}
-    guard tokens.count == expectedTokenCount else {
-      Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
-      return nil
-    }
-    var iter = tokens.makeIterator()
-
-    let version = iter.next()
-    guard version == PlayerSaveState.geoPrefStringVersion else {
-      Logger.log("\(errPreamble) bad version (expected \(PlayerSaveState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
-      return nil
-    }
-
-    return try closure(errPreamble, &iter)
-  }
-
-  // MARK: - Serialize to prefs strings
+  // MARK: - Save State / Serialize to prefs strings
 
   /// `MainWindowGeometry` -> String
-  private static func toPrefString(_ geo: MainWindowGeometry) -> String {
+  private static func toCSV(_ geo: MainWindowGeometry) -> String {
     return [geoPrefStringVersion,
             geo.videoSize.width.string2f,
             geo.videoSize.height.string2f,
@@ -248,7 +248,7 @@ struct PlayerSaveState {
   }
 
   /// `LayoutSpec` -> String
-  private static func toPrefString(_ spec: MainWindowController.LayoutSpec) -> String {
+  private static func toCSV(_ spec: MainWindowController.LayoutSpec) -> String {
     let leadingSidebarTab: String = spec.leadingSidebar.visibleTab?.name ?? "nil"
     let trailingSidebarTab: String = spec.trailingSidebar.visibleTab?.name ?? "nil"
     return [specPrefStringVersion,
@@ -266,17 +266,17 @@ struct PlayerSaveState {
   }
 
   /// Generates a Dictionary of properties for storage into a Preference entry
-  static func generatePropDict(from player: PlayerCore) -> [String: Any] {
+  static private func generatePropDict(from player: PlayerCore) -> [String: Any] {
     var props: [String: Any] = [:]
     let info = player.info
     let layout = player.mainWindow.currentLayout
 
-    props[PropName.launchID.rawValue] = (NSApp.delegate as! AppDelegate).launchID
+    props[PropName.launchID.rawValue] = AppDelegate.launchID
 
     // - Window Layout & Geometry
 
     /// `layoutSpec`
-    props[PropName.layoutSpec.rawValue] = toPrefString(layout.spec)
+    props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
     /// `windowGeometry`
     let geometry: MainWindowGeometry?
@@ -287,7 +287,7 @@ struct PlayerSaveState {
       geometry = player.mainWindow.buildGeometryFromCurrentLayout()
     }
     if let geometry = geometry {
-      props[PropName.windowGeometry.rawValue] = toPrefString(geometry)
+      props[PropName.windowGeometry.rawValue] = toCSV(geometry)
     }
 
     if let size = info.userPreferredVideoContainerSizeWide {
@@ -376,4 +376,23 @@ struct PlayerSaveState {
 
     return props
   }
+
+  static func save(_ player: PlayerCore) {
+    guard Preference.UIState.isSaveEnabled else { return }
+    guard player.mainWindow.loaded else {
+      player.log.debug("Aborting save of player state: player window is not loaded")
+      return
+    }
+    guard !player.info.isRestoring else {
+      player.log.warn("Aborting save of player state: still restoring previous state")
+      return
+    }
+    guard !player.isShuttingDown else {
+      player.log.warn("Aborting save of player state: is shutting down")
+      return
+    }
+    let properties = generatePropDict(from: player)
+    Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
+  }
+
 }
