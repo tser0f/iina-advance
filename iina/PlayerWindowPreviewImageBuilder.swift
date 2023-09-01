@@ -48,11 +48,16 @@ fileprivate extension CGContext {
 class PlayerWindowPreviewImageBuilder {
   static var cgImageCache: [String: CGImage] = [:]
 
+  let isLegacyWindow = Preference.bool(for: .useLegacyWindowedMode)
   let oscEnabled = Preference.bool(for: .enableOSC)
   let oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
   let topBarPlacement: Preference.PanelPlacement = Preference.enum(for: .topBarPlacement)
   let bottomBarPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomBarPlacement)
   let appearance: NSAppearance
+
+  lazy var hasTopBar: Bool = {
+    return !isLegacyWindow || (oscEnabled && oscPosition == .top)
+  }()
 
   init(_ enclosingView: NSView) {
     self.appearance = enclosingView.iinaAppearance
@@ -86,8 +91,8 @@ class PlayerWindowPreviewImageBuilder {
       Logger.log("Cannot generate window preview image: failed to load asset(s)", level: .error)
       return nil
     }
-    let roundedCornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius)) * CGFloat(scaleFactor)
-    let titleBarButtonsWidth = CGFloat(titleBarHeight) * (CGFloat(titleBarButtonsImg.width) / CGFloat(titleBarButtonsImg.height))
+    let titleBarHeight = isLegacyWindow ? 0 : titleBarHeight  // No title bar for legacy window
+    let roundedCornerRadius = isLegacyWindow ? 0 : CGFloat(10.0) * CGFloat(scaleFactor)
 
     var videoViewOffsetY: Int = 0
     if oscEnabled && oscPosition == .bottom && bottomBarPlacement == .outsideVideo {
@@ -285,34 +290,37 @@ class PlayerWindowPreviewImageBuilder {
         }
       }
 
-      // Draw title bar
-      var titleBarOffsetY: Int = videoViewOffsetY + videoHeight
-      if topBarPlacement == .insideVideo {
-        titleBarOffsetY -= titleBarHeight
-      } else {  // outside
-        if oscEnabled && oscPosition == .top {
-          titleBarOffsetY += oscHeight
+      if titleBarHeight > 0 {
+        // Draw title bar
+        var titleBarOffsetY: Int = videoViewOffsetY + videoHeight
+        if topBarPlacement == .insideVideo {
+          titleBarOffsetY -= titleBarHeight
+        } else {  // outside
+          if oscEnabled && oscPosition == .top {
+            titleBarOffsetY += oscHeight
+          }
         }
-      }
 
-      let isTitleBarInside = topBarPlacement == .insideVideo
-      let drawTitleBarBackground: Bool
-      if isTitleBarInside || (oscEnabled && oscPosition == .top) {
-        drawTitleBarBackground = true
-      } else {
-        drawTitleBarBackground = true
-      }
+        let isTitleBarInside = topBarPlacement == .insideVideo
+        let drawTitleBarBackground: Bool
+        if isTitleBarInside || (oscEnabled && oscPosition == .top) {
+          drawTitleBarBackground = true
+        } else {
+          drawTitleBarBackground = true
+        }
 
-      if drawTitleBarBackground {
-        // Draw title bar background
-        let titleBarAlpha: CGFloat = isTitleBarInside ? overlayAlpha : opaqueControlAlpha
-        let titleBarColor: CGColor = addAlpha(titleBarAlpha, to: NSColor.windowBackgroundColor)
-        cgContext.setFillColor(titleBarColor)
-        cgContext.fill([CGRect(x: winOriginX, y: winOriginY + titleBarOffsetY, width: videoWidth, height: titleBarHeight)])
-      }
+        if drawTitleBarBackground {
+          // Draw title bar background
+          let titleBarAlpha: CGFloat = isTitleBarInside ? overlayAlpha : opaqueControlAlpha
+          let titleBarColor: CGColor = addAlpha(titleBarAlpha, to: NSColor.windowBackgroundColor)
+          cgContext.setFillColor(titleBarColor)
+          cgContext.fill([CGRect(x: winOriginX, y: winOriginY + titleBarOffsetY, width: videoWidth, height: titleBarHeight)])
+        }
 
-      // Draw traffic light buttons
-      draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY, width: Int(titleBarButtonsWidth), height: titleBarHeight)
+        // Draw traffic light buttons
+        let titleBarButtonsWidth = CGFloat(titleBarHeight) * (CGFloat(titleBarButtonsImg.width) / CGFloat(titleBarButtonsImg.height))
+        draw(image: titleBarButtonsImg, in: cgContext, x: winOriginX, y: winOriginY + titleBarOffsetY, width: Int(titleBarButtonsWidth), height: titleBarHeight)
+      }
     }  // drawingCalls
 
     let previewImage = drawImageInBitmapImageContext(width: outputImgWidth, height: outputImgHeight, drawingCalls: drawingCalls)?

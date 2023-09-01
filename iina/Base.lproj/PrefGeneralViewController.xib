@@ -23,11 +23,11 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="392"/>
             <point key="canvasLocation" x="-1607" y="64"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior">
-            <rect key="frame" x="0.0" y="0.0" width="575" height="588"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior" propertyAccessControl="all">
+            <rect key="frame" x="0.0" y="0.0" width="530" height="524"/>
             <subviews>
                 <textField identifier="SectionTitleBehavior" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="38y-2I-MGs">
-                    <rect key="frame" x="-2" y="564" width="66" height="16"/>
+                    <rect key="frame" x="-2" y="500" width="66" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Behavior:" id="uQR-Fx-oEm">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -35,7 +35,7 @@
                     </textFieldCell>
                 </textField>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OXi-vL-mzp">
-                    <rect key="frame" x="118" y="564" width="65" height="16"/>
+                    <rect key="frame" x="118" y="500" width="65" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="At launch:" id="gqT-CB-Puw">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -43,7 +43,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bV8-LP-cwH">
-                    <rect key="frame" x="186" y="557" width="227" height="25"/>
+                    <rect key="frame" x="186" y="493" width="227" height="25"/>
                     <popUpButtonCell key="cell" type="push" title="Show welcome window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="z9T-8h-1T0" id="6y1-KS-0tJ">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -61,7 +61,7 @@
                     </connections>
                 </popUpButton>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="tRO-oH-MAp">
-                    <rect key="frame" x="118" y="539" width="425" height="18"/>
+                    <rect key="frame" x="118" y="475" width="412" height="18"/>
                     <buttonCell key="cell" type="check" title="Restore open windows and playback state from previous launches" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="izA-YX-std">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -71,7 +71,7 @@
                     </connections>
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="Tdv-Vn-5EA">
-                    <rect key="frame" x="138" y="451" width="194" height="82"/>
+                    <rect key="frame" x="138" y="451" width="194" height="18"/>
                     <buttonCell key="cell" type="check" title="Always ask before restoring" bezelStyle="regularSquare" imagePosition="left" inset="2" id="10H-I3-TYU">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -82,10 +82,10 @@
                     </connections>
                 </button>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="aKH-Me-5XB" userLabel="WhenMediaIsOpened Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="351" width="455" height="89"/>
+                    <rect key="frame" x="120" y="351" width="410" height="89"/>
                     <subviews>
                         <customView id="Pga-vd-zGA">
-                            <rect key="frame" x="0.0" y="72" width="455" height="17"/>
+                            <rect key="frame" x="0.0" y="72" width="410" height="17"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="10b-EJ-N6W">
@@ -115,7 +115,7 @@
                             </constraints>
                         </customView>
                         <box identifier="Content0" verticalHuggingPriority="1000" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="DZT-7n-S4M">
-                            <rect key="frame" x="-3" y="-4" width="461" height="74"/>
+                            <rect key="frame" x="-3" y="-4" width="416" height="74"/>
                             <view key="contentView" horizontalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="867-m1-aVc">
                                 <rect key="frame" x="11" y="16" width="241" height="56"/>
                                 <subviews>
@@ -194,8 +194,8 @@
                     </customSpacing>
                 </stackView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="F6o-D4-gDa">
-                    <rect key="frame" x="118" y="326" width="363" height="18"/>
-                    <buttonCell key="cell" type="check" title="Resume last playback using mpv's &quot;watch later&quot; feature" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="jOB-D3-WT3">
+                    <rect key="frame" x="118" y="326" width="376" height="18"/>
+                    <buttonCell key="cell" type="check" title="Restore media playback using mpv's &quot;watch later&quot; feature" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="jOB-D3-WT3">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -204,7 +204,7 @@
                     </connections>
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="b7I-2V-MYa">
-                    <rect key="frame" x="118" y="302" width="416" height="18"/>
+                    <rect key="frame" x="118" y="302" width="412" height="18"/>
                     <buttonCell key="cell" type="check" title="Switch to &quot;music mode&quot; automatically when playing an audio file" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="KfL-r7-Uav">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -214,10 +214,10 @@
                     </connections>
                 </button>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8iE-FU-0g0" userLabel="PauseResumeWhen Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="144" width="455" height="147"/>
+                    <rect key="frame" x="120" y="144" width="410" height="147"/>
                     <subviews>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="W54-Em-Hx4">
-                            <rect key="frame" x="0.0" y="130" width="455" height="17"/>
+                            <rect key="frame" x="0.0" y="130" width="410" height="17"/>
                             <subviews>
                                 <button identifier="TriggerPauseResume" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="CaQ-Om-AFL">
                                     <rect key="frame" x="0.0" y="0.0" width="13" height="13"/>
@@ -246,9 +246,9 @@
                             </constraints>
                         </customView>
                         <box identifier="Content1" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="5RN-PV-pOZ">
-                            <rect key="frame" x="-3" y="-4" width="461" height="132"/>
+                            <rect key="frame" x="-3" y="-4" width="416" height="132"/>
                             <view key="contentView" id="gWB-X2-AzC">
-                                <rect key="frame" x="4" y="5" width="453" height="124"/>
+                                <rect key="frame" x="4" y="5" width="408" height="124"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UFY-vM-qHd">
@@ -473,6 +473,7 @@
                 <constraint firstItem="b7I-2V-MYa" firstAttribute="top" secondItem="F6o-D4-gDa" secondAttribute="bottom" constant="8" id="a76-ej-aJs"/>
                 <constraint firstItem="F6o-D4-gDa" firstAttribute="height" secondItem="tRO-oH-MAp" secondAttribute="height" id="b4z-5K-18k"/>
                 <constraint firstItem="tUl-6f-ClP" firstAttribute="leading" secondItem="ibu-Tq-kBr" secondAttribute="leading" id="d7A-WU-gG9"/>
+                <constraint firstItem="Tdv-Vn-5EA" firstAttribute="height" secondItem="tRO-oH-MAp" secondAttribute="height" id="dSt-m1-xqx"/>
                 <constraint firstItem="OXi-vL-mzp" firstAttribute="leading" secondItem="tRO-oH-MAp" secondAttribute="leading" id="drh-FX-kaL"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ONF-nX-zDm" secondAttribute="trailing" id="esl-VM-bcw"/>
                 <constraint firstItem="aKH-Me-5XB" firstAttribute="top" secondItem="Tdv-Vn-5EA" secondAttribute="bottom" constant="12" id="gTe-Cv-cgu"/>

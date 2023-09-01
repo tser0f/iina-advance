@@ -55,7 +55,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet var sectionPictureInPictureView: NSView!
 
   @IBOutlet weak var themeMenu: NSMenu!
-  @IBOutlet weak var showTitleBarTriggerContainerView: NSView!
+  @IBOutlet weak var topBarPositionContainerView: NSView!
+  @IBOutlet weak var showTopBarTriggerContainerView: NSView!
   @IBOutlet weak var windowPreviewImageView: NSImageView!
   @IBOutlet weak var oscBottomPlacementContainerView: NSView!
   @IBOutlet weak var oscSnapToCenterCheckboxContainerView: NSView!
@@ -100,6 +101,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .controlBarToolbarButtons,
     .oscBarToolbarIconSize,
     .oscBarToolbarIconSpacing,
+    .useLegacyWindowedMode
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -160,6 +162,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       PK.topBarPlacement.rawValue,
       PK.bottomBarPlacement.rawValue,
       PK.oscPosition.rawValue,
+      PK.useLegacyWindowedMode.rawValue,
       PK.themeMaterial.rawValue:
       refreshTitleBarAndOSCSection()
     case PK.settingsTabGroupLocation.rawValue, PK.playlistTabGroupLocation.rawValue:
@@ -220,9 +223,14 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         viewHidePairs.append((oscBottomPlacementContainerView, !oscIsBottom))
       }
 
-      let showShowTitleBarTrigger = ib.topBarPlacement == .insideVideo
-      if showTitleBarTriggerContainerView.isHidden != !showShowTitleBarTrigger {
-        viewHidePairs.append((showTitleBarTriggerContainerView, !showShowTitleBarTrigger))
+      let hasTopBar = ib.hasTopBar
+      if topBarPositionContainerView.isHidden != !hasTopBar {
+        viewHidePairs.append((topBarPositionContainerView, !hasTopBar))
+      }
+
+      let showTopBarTrigger = hasTopBar && ib.topBarPlacement == .insideVideo
+      if showTopBarTriggerContainerView.isHidden != !showTopBarTrigger {
+        viewHidePairs.append((showTopBarTriggerContainerView, !showTopBarTrigger))
       }
 
       for (view, shouldHide) in viewHidePairs {

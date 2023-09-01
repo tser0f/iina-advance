@@ -25,8 +25,9 @@
                 <outlet property="sectionSidebarsView" destination="iZa-Jl-fXs" id="MXu-01-lS4"/>
                 <outlet property="sectionThumbnailView" destination="3uJ-UU-1zw" id="Noy-VW-Uax"/>
                 <outlet property="sectionWindowView" destination="D77-Iw-nrY" id="qGB-hx-chL"/>
-                <outlet property="showTitleBarTriggerContainerView" destination="yqi-SP-x25" id="dMG-VQ-dEu"/>
+                <outlet property="showTopBarTriggerContainerView" destination="yqi-SP-x25" id="dMG-VQ-dEu"/>
                 <outlet property="themeMenu" destination="Cpu-U2-hGC" id="jer-bS-DhW"/>
+                <outlet property="topBarPositionContainerView" destination="TRL-kd-T5g" id="Qsc-RL-TkB"/>
                 <outlet property="trailingSidebarBox" destination="4b0-vT-JOG" id="dyy-6J-QPV"/>
                 <outlet property="view" destination="Hz6-mo-xeY" id="0bl-1N-x8E"/>
                 <outlet property="windowPosBox" destination="Mye-uz-WUr" id="lyj-Yi-EMu"/>
@@ -741,11 +742,11 @@
             </constraints>
             <point key="canvasLocation" x="8" y="-737"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="460" height="643"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="481" height="658"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
-                    <rect key="frame" x="-2" y="603" width="124" height="32"/>
+                    <rect key="frame" x="-2" y="618" width="124" height="32"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Title Bar and Controller:" id="g06-Ja-Ot8">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -753,94 +754,19 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="6" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4SE-r9-OnD" userLabel="Top-Bar Vertical Stack View">
-                    <rect key="frame" x="120" y="234" width="341" height="401"/>
+                    <rect key="frame" x="120" y="234" width="361" height="416"/>
                     <subviews>
-                        <customView identifier="topBarPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="TRL-kd-T5g" userLabel="Top-Bar-Position-Container View">
-                            <rect key="frame" x="0.0" y="379" width="341" height="22"/>
-                            <subviews>
-                                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
-                                    <rect key="frame" x="8" y="5" width="121" height="16"/>
-                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top bar placement:" id="EvR-Ml-f7d">
-                                        <font key="font" metaFont="system"/>
-                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                    </textFieldCell>
-                                </textField>
-                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Bar-Placement Popup">
-                                    <rect key="frame" x="132" y="-4" width="212" height="27"/>
-                                    <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Bar-Placement Popup Button Cell">
-                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                                        <font key="font" metaFont="menu"/>
-                                        <menu key="menu" id="CD9-hv-Dz3">
-                                            <items>
-                                                <menuItem title="Outside Video" tag="2" id="jwm-vt-kxK"/>
-                                                <menuItem title="Inside Video" state="on" tag="1" id="cDl-zI-S6p"/>
-                                            </items>
-                                        </menu>
-                                    </popUpButtonCell>
-                                    <connections>
-                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topBarPlacement" id="9yo-1M-9oW"/>
-                                    </connections>
-                                </popUpButton>
-                            </subviews>
-                            <constraints>
-                                <constraint firstItem="f7b-zH-WwI" firstAttribute="top" secondItem="TRL-kd-T5g" secondAttribute="top" id="R6J-Zp-2lU"/>
-                                <constraint firstItem="f7b-zH-WwI" firstAttribute="firstBaseline" secondItem="BTX-tO-uhL" secondAttribute="firstBaseline" id="RWZ-u9-VTw"/>
-                                <constraint firstItem="f7b-zH-WwI" firstAttribute="leading" secondItem="BTX-tO-uhL" secondAttribute="trailing" constant="8" id="cbY-ti-VEm"/>
-                                <constraint firstItem="BTX-tO-uhL" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="TRL-kd-T5g" secondAttribute="leading" id="dbd-eD-hjx"/>
-                                <constraint firstAttribute="height" constant="22" id="dwS-Sc-wT1"/>
-                                <constraint firstAttribute="bottom" secondItem="f7b-zH-WwI" secondAttribute="bottom" id="fYW-Oy-yd5"/>
-                                <constraint firstAttribute="trailing" secondItem="f7b-zH-WwI" secondAttribute="trailing" constant="1" id="uW5-UI-eAh"/>
-                            </constraints>
-                        </customView>
-                        <customView identifier="showTopBarTriggerContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="yqi-SP-x25" userLabel="Show-Top-Bar-Trigger-Container View">
-                            <rect key="frame" x="0.0" y="351" width="341" height="22"/>
-                            <subviews>
-                                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
-                                    <rect key="frame" x="5" y="5" width="124" height="16"/>
-                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Show top bar when:" id="RVj-MO-iHC">
-                                        <font key="font" metaFont="system"/>
-                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                    </textFieldCell>
-                                </textField>
-                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="67g-AK-VP6" userLabel="Show-Title-Bar-Trigger Popup">
-                                    <rect key="frame" x="132" y="-4" width="212" height="27"/>
-                                    <popUpButtonCell key="cell" type="push" title="Mouse moves inside window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Show-Title-Bar-Trigger Popup Button Cell">
-                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
-                                        <font key="font" metaFont="menu"/>
-                                        <menu key="menu" id="1Wl-Pc-ZHa">
-                                            <items>
-                                                <menuItem title="Mouse moves inside window" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
-                                                <menuItem title="Mouse moves inside top bar" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
-                                            </items>
-                                        </menu>
-                                    </popUpButtonCell>
-                                    <connections>
-                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.showTopBarTrigger" id="ng2-OR-2mp"/>
-                                    </connections>
-                                </popUpButton>
-                            </subviews>
-                            <constraints>
-                                <constraint firstAttribute="bottom" secondItem="67g-AK-VP6" secondAttribute="bottom" id="150-3q-kuO"/>
-                                <constraint firstItem="67g-AK-VP6" firstAttribute="leading" secondItem="KXy-D0-Irg" secondAttribute="trailing" constant="8" id="5qB-hb-6UP"/>
-                                <constraint firstItem="KXy-D0-Irg" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="yqi-SP-x25" secondAttribute="leading" id="5x1-8P-ox2"/>
-                                <constraint firstItem="67g-AK-VP6" firstAttribute="firstBaseline" secondItem="KXy-D0-Irg" secondAttribute="firstBaseline" id="nVk-tY-LPP"/>
-                                <constraint firstAttribute="trailing" secondItem="67g-AK-VP6" secondAttribute="trailing" constant="1" id="vOX-ny-1MF"/>
-                                <constraint firstItem="67g-AK-VP6" firstAttribute="top" secondItem="yqi-SP-x25" secondAttribute="top" id="wg8-lZ-dkV"/>
-                            </constraints>
-                        </customView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="HbB-K7-G5g" userLabel="Player-Window-Preview-Container View">
-                            <rect key="frame" x="0.0" y="78" width="340" height="267"/>
+                            <rect key="frame" x="0.0" y="134" width="360" height="282"/>
                             <subviews>
                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="2IQ-cb-xFe" userLabel="Player-Window-Preview-Border View" customClass="PlayerWindowPreviewView" customModule="IINA" customModuleProvider="target">
-                                    <rect key="frame" x="0.0" y="6" width="340" height="255"/>
+                                    <rect key="frame" x="0.0" y="6" width="360" height="270"/>
                                     <subviews>
                                         <imageView translatesAutoresizingMaskIntoConstraints="NO" id="yaR-pw-wfD" userLabel="Player-Window-Preview Image View">
-                                            <rect key="frame" x="0.0" y="0.0" width="340" height="255"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="360" height="270"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" secondItem="yaR-pw-wfD" secondAttribute="height" multiplier="4:3" id="UVK-Jg-ZLF"/>
-                                                <constraint firstAttribute="width" priority="900" constant="340" id="wmd-h6-lJH"/>
+                                                <constraint firstAttribute="width" priority="900" constant="360" id="wmd-h6-lJH"/>
                                             </constraints>
                                             <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" id="20k-jg-08x"/>
                                         </imageView>
@@ -860,8 +786,83 @@
                                 <constraint firstItem="2IQ-cb-xFe" firstAttribute="leading" secondItem="HbB-K7-G5g" secondAttribute="leading" id="Ouu-ry-t4G"/>
                             </constraints>
                         </customView>
+                        <customView identifier="topBarPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="TRL-kd-T5g" userLabel="Top-Bar-Position-Container View">
+                            <rect key="frame" x="0.0" y="106" width="361" height="22"/>
+                            <subviews>
+                                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
+                                    <rect key="frame" x="-2" y="5" width="121" height="16"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top bar placement:" id="EvR-Ml-f7d">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f7b-zH-WwI" userLabel="Top-Bar-Placement Popup">
+                                    <rect key="frame" x="152" y="-4" width="212" height="27"/>
+                                    <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="cDl-zI-S6p" id="uAv-5b-A4j" userLabel="Top-Bar-Placement Popup Button Cell">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                        <font key="font" metaFont="menu"/>
+                                        <menu key="menu" id="CD9-hv-Dz3">
+                                            <items>
+                                                <menuItem title="Outside Video" tag="2" id="jwm-vt-kxK"/>
+                                                <menuItem title="Inside Video" state="on" tag="1" id="cDl-zI-S6p"/>
+                                            </items>
+                                        </menu>
+                                    </popUpButtonCell>
+                                    <connections>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.topBarPlacement" id="9yo-1M-9oW"/>
+                                    </connections>
+                                </popUpButton>
+                            </subviews>
+                            <constraints>
+                                <constraint firstItem="f7b-zH-WwI" firstAttribute="top" secondItem="TRL-kd-T5g" secondAttribute="top" id="R6J-Zp-2lU"/>
+                                <constraint firstItem="f7b-zH-WwI" firstAttribute="firstBaseline" secondItem="BTX-tO-uhL" secondAttribute="firstBaseline" id="RWZ-u9-VTw"/>
+                                <constraint firstItem="f7b-zH-WwI" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="BTX-tO-uhL" secondAttribute="trailing" constant="8" id="cbY-ti-VEm"/>
+                                <constraint firstItem="BTX-tO-uhL" firstAttribute="leading" secondItem="TRL-kd-T5g" secondAttribute="leading" id="dbd-eD-hjx"/>
+                                <constraint firstAttribute="height" constant="22" id="dwS-Sc-wT1"/>
+                                <constraint firstAttribute="bottom" secondItem="f7b-zH-WwI" secondAttribute="bottom" id="fYW-Oy-yd5"/>
+                                <constraint firstAttribute="trailing" secondItem="f7b-zH-WwI" secondAttribute="trailing" constant="1" id="uW5-UI-eAh"/>
+                            </constraints>
+                        </customView>
+                        <customView identifier="showTopBarTriggerContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="yqi-SP-x25" userLabel="Show-Top-Bar-Trigger-Container View">
+                            <rect key="frame" x="0.0" y="78" width="361" height="22"/>
+                            <subviews>
+                                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KXy-D0-Irg">
+                                    <rect key="frame" x="18" y="5" width="124" height="16"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Show top bar when:" id="RVj-MO-iHC">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="67g-AK-VP6" userLabel="Show-Title-Bar-Trigger Popup">
+                                    <rect key="frame" x="152" y="-4" width="212" height="27"/>
+                                    <popUpButtonCell key="cell" type="push" title="Mouse moves inside window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="QzP-RR-FmW" id="ICI-eN-4Oy" userLabel="Show-Title-Bar-Trigger Popup Button Cell">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                        <font key="font" metaFont="menu"/>
+                                        <menu key="menu" id="1Wl-Pc-ZHa">
+                                            <items>
+                                                <menuItem title="Mouse moves inside window" state="on" tag="1" id="QzP-RR-FmW" userLabel="On Window Hover"/>
+                                                <menuItem title="Mouse moves inside top bar" tag="2" id="c4E-iU-1Lk" userLabel="On Single Click"/>
+                                            </items>
+                                        </menu>
+                                    </popUpButtonCell>
+                                    <connections>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.showTopBarTrigger" id="ng2-OR-2mp"/>
+                                    </connections>
+                                </popUpButton>
+                            </subviews>
+                            <constraints>
+                                <constraint firstAttribute="bottom" secondItem="67g-AK-VP6" secondAttribute="bottom" id="150-3q-kuO"/>
+                                <constraint firstItem="67g-AK-VP6" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="KXy-D0-Irg" secondAttribute="trailing" constant="8" id="5qB-hb-6UP"/>
+                                <constraint firstItem="KXy-D0-Irg" firstAttribute="leading" secondItem="yqi-SP-x25" secondAttribute="leading" constant="20" id="5x1-8P-ox2"/>
+                                <constraint firstItem="67g-AK-VP6" firstAttribute="firstBaseline" secondItem="KXy-D0-Irg" secondAttribute="firstBaseline" id="nVk-tY-LPP"/>
+                                <constraint firstAttribute="trailing" secondItem="67g-AK-VP6" secondAttribute="trailing" constant="1" id="vOX-ny-1MF"/>
+                                <constraint firstItem="67g-AK-VP6" firstAttribute="top" secondItem="yqi-SP-x25" secondAttribute="top" id="wg8-lZ-dkV"/>
+                            </constraints>
+                        </customView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="mJq-OS-xid" userLabel="OSC-Enablement-and-Position-Container View">
-                            <rect key="frame" x="0.0" y="50" width="341" height="22"/>
+                            <rect key="frame" x="0.0" y="50" width="361" height="22"/>
                             <subviews>
                                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bVg-yv-fOx">
                                     <rect key="frame" x="-2" y="4" width="131" height="18"/>
@@ -885,7 +886,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="GbG-nw-ict" userLabel="Controller-Position Popup">
-                                    <rect key="frame" x="195" y="-4" width="149" height="27"/>
+                                    <rect key="frame" x="195" y="-4" width="169" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Top" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="se2-DE-pJk" id="XRT-QK-HPy" userLabel="Controller-Position Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -915,7 +916,7 @@
                             </constraints>
                         </customView>
                         <customView identifier="oscBottomPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="mk9-4m-UZR" userLabel="Bottom-OSC-Placement-Container View">
-                            <rect key="frame" x="20" y="22" width="321" height="22"/>
+                            <rect key="frame" x="20" y="22" width="341" height="22"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Xua-UF-KwL">
                                     <rect key="frame" x="-2" y="5" width="174" height="16"/>
@@ -926,7 +927,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton verticalHuggingPriority="750" tag="3" translatesAutoresizingMaskIntoConstraints="NO" id="5FX-gc-1fJ" userLabel="Bottom-Bar-Placement Popup">
-                                    <rect key="frame" x="175" y="-4" width="149" height="27"/>
+                                    <rect key="frame" x="175" y="-4" width="169" height="27"/>
                                     <popUpButtonCell key="cell" type="push" title="Inside Video" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="0lA-gX-YQA" id="pEe-uZ-wjN" userLabel="Title-Bar-Placement Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -1006,7 +1007,7 @@
                     </customSpacing>
                 </stackView>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="q8D-b2-H0y" userLabel="Toolbar items:">
-                    <rect key="frame" x="269" y="207" width="90" height="16"/>
+                    <rect key="frame" x="289" y="207" width="90" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Toolbar items:" id="xP1-Vh-27X">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1014,7 +1015,7 @@
                     </textFieldCell>
                 </textField>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="gVR-so-xgt">
-                    <rect key="frame" x="358" y="197" width="109" height="34"/>
+                    <rect key="frame" x="378" y="197" width="109" height="34"/>
                     <buttonCell key="cell" type="push" title="Customize…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="1nM-AX-Ozm">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -1025,7 +1026,7 @@
                     </connections>
                 </button>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="omS-tS-OVJ" userLabel="Toolbar-Preview Box">
-                    <rect key="frame" x="407" y="182" width="56" height="16"/>
+                    <rect key="frame" x="427" y="182" width="56" height="16"/>
                     <view key="contentView" id="pBh-nz-cS5" userLabel="Toolbar-Preview-Box View">
                         <rect key="frame" x="4" y="5" width="48" height="8"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1074,7 +1075,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="SyB-0R-TLF" userLabel="Arrow-Button-Action Popup">
-                    <rect key="frame" x="292" y="152" width="172" height="27"/>
+                    <rect key="frame" x="311" y="152" width="173" height="27"/>
                     <popUpButtonCell key="cell" type="push" title="Speed" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="TWq-Xb-8Ee" id="8Ke-vJ-gp6" userLabel="Arrow-Button-Action Popup Button Cell">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -1226,6 +1227,7 @@
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="height" secondItem="nDu-Yq-tPI" secondAttribute="height" id="TCG-3o-gTV"/>
                 <constraint firstItem="HgG-px-UUt" firstAttribute="height" secondItem="jbc-22-59W" secondAttribute="height" id="TFK-n0-TM0"/>
                 <constraint firstItem="omS-tS-OVJ" firstAttribute="trailing" secondItem="gVR-so-xgt" secondAttribute="trailing" id="VsZ-ju-wCf"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="4SE-r9-OnD" secondAttribute="trailing" id="YVV-Zk-8Iw"/>
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="height" secondItem="bVg-yv-fOx" secondAttribute="height" id="Yhh-hb-boj"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="OMM-mG-Uts" secondAttribute="trailing" id="Yxo-AW-upP"/>
                 <constraint firstItem="vC3-U1-cHH" firstAttribute="centerY" secondItem="2Fc-2d-hIJ" secondAttribute="centerY" id="ZIt-uS-S1A"/>
