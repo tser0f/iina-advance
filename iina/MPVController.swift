@@ -401,16 +401,19 @@ not applying FFmpeg 9599 workaround
 
     // - Codec
 
+    if !player.info.isRestoring {
+      setUserOption(PK.hardwareDecoder, type: .other, forName: MPVOption.Video.hwdec) { key in
+        let value = Preference.integer(for: key)
+        return Preference.HardwareDecoderOption(rawValue: value)?.mpvString ?? "auto"
+      }
+
+      setUserOption(PK.maxVolume, type: .int, forName: MPVOption.Audio.volumeMax)
+    }
+
     setUserOption(PK.videoThreads, type: .int, forName: MPVOption.Video.vdLavcThreads)
     setUserOption(PK.audioThreads, type: .int, forName: MPVOption.Audio.adLavcThreads)
 
-    setUserOption(PK.hardwareDecoder, type: .other, forName: MPVOption.Video.hwdec) { key in
-      let value = Preference.integer(for: key)
-      return Preference.HardwareDecoderOption(rawValue: value)?.mpvString ?? "auto"
-    }
-
     setUserOption(PK.audioLanguage, type: .string, forName: MPVOption.TrackSelection.alang)
-    setUserOption(PK.maxVolume, type: .int, forName: MPVOption.Audio.volumeMax)
 
     var spdif: [String] = []
     if Preference.bool(for: PK.spdifAC3) { spdif.append("ac3") }

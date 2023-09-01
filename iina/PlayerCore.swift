@@ -463,6 +463,13 @@ class PlayerCore: NSObject {
       info.hdrEnabled = hdrEnabled
     }
 
+    if let size = savedState.nsSize(for: .userPreferredVideoContainerSizeWide) {
+      info.userPreferredVideoContainerSizeWide = size
+    }
+    if let size = savedState.nsSize(for: .userPreferredVideoContainerSizeTall) {
+      info.userPreferredVideoContainerSizeTall = size
+    }
+
     if let geometry = savedState.windowGeometry {
       log.verbose("Successfully parsed prior geometry from prefs")
 
@@ -484,14 +491,21 @@ class PlayerCore: NSObject {
       log.error("Failed to get player window layout and/or geometry from prefs")
     }
 
-    if let urlString = savedState.string(for: .url) {
-      openMainWindow(url: URL(string: urlString))
-    } else {
-      log.error("Could not restore UI state for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
+    guard let urlString = savedState.string(for: .url) else {
+      log.error("Could not restore player window: no value for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
+      return
     }
+
+    openMainWindow(url: URL(string: urlString))
 
     let isOnTop = savedState.bool(for: .isOnTop) ?? false
     mainWindow.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
+
+    if let playlistPathList = savedState.properties[PlayerSaveState.PropName.playlistPaths.rawValue] as? [String] {
+      if playlistPathList.count > 1 {
+        addFilesToPlaylist(pathList: playlistPathList)
+      }
+    }
 
     // FIXME: Music Mode restore is broken
 //    if let isInMusicMode = savedState.bool(for: .isMusicMode), isInMusicMode {
@@ -1057,6 +1071,34 @@ class PlayerCore: NSObject {
     mpv.setDouble(MPVOption.Subtitles.subDelay, delay)
   }
 
+  /// Adds all the media in `pathList` to the current playlist.
+  /// This checks whether the currently playing item is in the list, so that it may end up in the middle of the playlist.
+  /// Also note that each item in `pathList` may be either a file path or a
+  /// network URl.
+  func addFilesToPlaylist(pathList: [String]) {
+    var addedCurrentItem = false
+
+    log.debug("Adding \(pathList.count) files to playlist")
+    for path in pathList {
+      if path == info.currentURL?.path {
+        addedCurrentItem = true
+      } else if addedCurrentItem {
+        addToPlaylist(path, silent: true)
+      } else {
+        let count = mpv.getInt(MPVProperty.playlistCount)
+        let current = mpv.getInt(MPVProperty.playlistPos)
+        addToPlaylist(path, silent: true)
+        let err = mpv.command(.playlistMove, args: ["\(count)", "\(current)"], checkError: false)
+        if err != 0 {
+          log.error("Error \(err) when adding files to playlist")
+          if err == MPV_ERROR_COMMAND.rawValue {
+            return
+          }
+        }
+      }
+    }
+  }
+
   private func _addToPlaylist(_ path: String) {
     mpv.command(.loadfile, args: [path, "append"])
   }
@@ -1125,6 +1167,7 @@ class PlayerCore: NSObject {
   }
 
   func playFileInPlaylist(_ pos: Int) {
+    log.verbose("Changing mpv playlist-pos to \(pos)")
     mpv.setInt(MPVProperty.playlistPos, pos)
     reloadPlaylist()
   }
@@ -2173,6 +2216,7 @@ class PlayerCore: NSObject {
                                          title: mpv.getString(MPVProperty.playlistNTitle(index)))
       info.playlist.append(playlistItem)
     }
+    saveUIState()  // save playlist URLs to prefs
   }
 
   func reloadChapters() {

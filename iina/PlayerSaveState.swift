@@ -13,8 +13,10 @@ struct PlayerSaveState {
   enum PropName: String {
     case launchID = "launchID"
 
-    case playlist = "playlist"
+    case playlistPaths = "playlistPaths"
 
+    case userPreferredVideoContainerSizeWide = "userVidConSize_Wide"
+    case userPreferredVideoContainerSizeTall = "userVidConSize_Tall"
     case windowGeometry = "windowGeometry"
     case layoutSpec = "layoutSpec"
     case isMinimized = "minimized"
@@ -32,13 +34,17 @@ struct PlayerSaveState {
 
     case hwdec = "hwdec"              /// `MPVOption.Video.hwdec`
     case deinterlace = "deinterlace"  /// `MPVOption.Video.deinterlace`
-    case hdrEnabled = "hdrEnabled"
+    case hdrEnabled = "hdrEnabled"    /// IINA setting
 
     case brightness = "brightness"    /// `MPVOption.Equalizer.brightness`
     case contrast = "contrast"        /// `MPVOption.Equalizer.contrast`
     case saturation = "saturation"    /// `MPVOption.Equalizer.saturation`
     case gamma = "gamma"              /// `MPVOption.Equalizer.gamma`
     case hue = "hue"                  /// `MPVOption.Equalizer.hue`
+
+    // TODO: cropFilter
+    // TODO: aspectFilter
+    // TODO: audioEQ
 
     case playSpeed = "playSpeed"      /// `MPVOption.PlaybackControl.speed`
     case volume = "volume"            /// `MPVOption.Audio.volume`
@@ -90,6 +96,18 @@ struct PlayerSaveState {
   /// Relies on `Double` being serialized to `String`
   func double(for name: PropName) -> Double? {
     return PlayerSaveState.double(for: name, properties)
+  }
+
+  /// Expects to parse CSV `String` with two tokens
+  func nsSize(for name: PropName) -> NSSize? {
+    if let csv = string(for: name) {
+      let tokens = csv.split(separator: ",")
+      if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
+        return NSSize(width: width, height: height)
+      }
+      Logger.log("Failed to parse property as NSSize: \(name.rawValue.quoted)")
+    }
+    return nil
   }
 
   static private func string(for name: PropName, _ properties: [String: Any]) -> String? {
@@ -272,6 +290,16 @@ struct PlayerSaveState {
       props[PropName.windowGeometry.rawValue] = toPrefString(geometry)
     }
 
+    if let size = info.userPreferredVideoContainerSizeWide {
+      let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
+      props[PropName.userPreferredVideoContainerSizeWide.rawValue] = sizeString
+    }
+
+    if let size = info.userPreferredVideoContainerSizeTall {
+      let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
+      props[PropName.userPreferredVideoContainerSizeTall.rawValue] = sizeString
+    }
+
     if player.mainWindow.isOntop {
       props[PropName.isOnTop.rawValue] = true.yn
     }
@@ -284,6 +312,11 @@ struct PlayerSaveState {
 
     if let urlString = info.currentURL?.absoluteString ?? nil {
       props[PropName.url.rawValue] = urlString
+    }
+
+    let playlistPaths: [String] = info.playlist.compactMap{ $0.filename }
+    if playlistPaths.count > 1 {
+      props[PropName.playlistPaths.rawValue] = playlistPaths
     }
 
     if let videoPosition = info.videoPosition?.second {
