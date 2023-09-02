@@ -401,18 +401,14 @@ class PlayerCore: NSObject {
 
     log.verbose("Player start (restore: \(restore))")
 
-    /// If restoring, most playback properties need to be set via `mpv.mpvInit()`. Set this before calling `startMPV()`.
-    if restore, let savedState = Preference.UIState.getPlayerSaveState(forPlayerID: label) {
-      log.verbose("Loading player state for \(label.quoted): \(savedState.properties)")
-      info.priorState = savedState
-    }
-
     startMPV()
     loadPlugins()
 
-    /// Restore remaining non-mpv state here:
-    if restore {
-      restoreUIState()
+    if restore, let savedState = Preference.UIState.getPlayerSaveState(forPlayerID: label) {
+      log.verbose("Loading player state from prefs for \(label.quoted): \(savedState.properties)")
+      info.priorState = savedState
+
+      savedState.restoreTo(self)
     }
   }
 
@@ -450,76 +446,6 @@ class PlayerCore: NSObject {
     videoView.videoLayer.display()
     mpv.mpvInitRendering()
     videoView.startDisplayLink()
-  }
-
-  /// Finish restoring state of player from prior launch.
-  /// See also: `mpvInit()` in `MPVController`.
-  fileprivate func restoreUIState() {
-    guard let savedState = info.priorState else { return }
-
-    log.verbose("Restoring player state")
-
-    if let hdrEnabled = savedState.bool(for: .hdrEnabled) {
-      info.hdrEnabled = hdrEnabled
-    }
-
-    if let size = savedState.nsSize(for: .userPreferredVideoContainerSizeWide) {
-      info.userPreferredVideoContainerSizeWide = size
-    }
-    if let size = savedState.nsSize(for: .userPreferredVideoContainerSizeTall) {
-      info.userPreferredVideoContainerSizeTall = size
-    }
-
-    if let geometry = savedState.windowGeometry {
-      log.verbose("Successfully parsed prior geometry from prefs")
-
-      videoView.aspectRatio = geometry.videoAspectRatio
-
-      // Constrain within screen
-      let windowFrame = geometry.windowFrame
-      /// If needing to restore full screen, will create & execute transition to fullscreen in `windowWillOpen`.
-      if mainWindow.fsState.isFullscreen {
-        // TODO: figure out if getting here is even possible. For now, be safe and set `priorWindowedFrame`
-        log.debug("Restoring priorWindowedFrame to: \(geometry.windowFrame)")
-        mainWindow.fsState.priorWindowedFrame = geometry
-      } else {
-        log.debug("Restoring windowFrame to: \(windowFrame)")
-        mainWindow.window!.setFrame(windowFrame, display: false)
-      }
-
-    } else {
-      log.error("Failed to get player window layout and/or geometry from prefs")
-    }
-
-    guard let urlString = savedState.string(for: .url) else {
-      log.error("Could not restore player window: no value for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
-      return
-    }
-
-    openMainWindow(url: URL(string: urlString))
-
-    let isOnTop = savedState.bool(for: .isOnTop) ?? false
-    mainWindow.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
-
-    if let playlistPathList = savedState.properties[PlayerSaveState.PropName.playlistPaths.rawValue] as? [String] {
-      if playlistPathList.count > 1 {
-        addFilesToPlaylist(pathList: playlistPathList)
-      }
-    }
-
-    // Restore options from prior launch (if applicable).
-    // Must wait until after mpv init, otherwise they will stick
-    if let savedState = info.priorState {
-      savedState.restoreTo(self.mpv)
-    }
-
-    // FIXME: Music Mode restore is broken
-//    if let isInMusicMode = savedState.bool(for: .isMusicMode), isInMusicMode {
-//      switchToMiniPlayer()
-//    }
-
-    // TODO: much, much more
-
   }
 
   private func savePlayerStateForShutdown() {

@@ -78,157 +78,6 @@ struct PlayerSaveState {
     self.windowGeometry = PlayerSaveState.deserializeWindowGeometry(from: props)
   }
 
-  // MARK: - Restore State / Deserialize from prefs
-
-  func string(for name: PropName) -> String? {
-    return PlayerSaveState.string(for: name, properties)
-  }
-
-  /// Relies on `Bool` being serialized to `String` with value `Y` or `N`
-  func bool(for name: PropName) -> Bool? {
-    return PlayerSaveState.bool(for: name, properties)
-  }
-
-  func int(for name: PropName) -> Int? {
-    return PlayerSaveState.int(for: name, properties)
-  }
-
-  /// Relies on `Double` being serialized to `String`
-  func double(for name: PropName) -> Double? {
-    return PlayerSaveState.double(for: name, properties)
-  }
-
-  /// Expects to parse CSV `String` with two tokens
-  func nsSize(for name: PropName) -> NSSize? {
-    if let csv = string(for: name) {
-      let tokens = csv.split(separator: ",")
-      if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
-        return NSSize(width: width, height: height)
-      }
-      Logger.log("Failed to parse property as NSSize: \(name.rawValue.quoted)")
-    }
-    return nil
-  }
-
-  static private func string(for name: PropName, _ properties: [String: Any]) -> String? {
-    return properties[name.rawValue] as? String
-  }
-
-  static private func bool(for name: PropName, _ properties: [String: Any]) -> Bool? {
-    return Bool.yn(string(for: name, properties))
-  }
-
-  static private func int(for name: PropName, _ properties: [String: Any]) -> Int? {
-    if let intString = string(for: name, properties) {
-      return Int(intString)
-    }
-    return nil
-  }
-
-  /// Relies on `Double` being serialized to `String`
-  static private func double(for name: PropName, _ properties: [String: Any]) -> Double? {
-    if let doubleString = string(for: name, properties) {
-      return Double(doubleString)
-    }
-    return nil
-  }
-
-  // Utility function for parsing complex object from CSV
-  static private func deserializeCSV<T>(_ propName: PropName, fromProperties properties: [String: Any], expectedTokenCount: Int, version: String,
-                                  errPreamble: String, _ parseFunc: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
-    guard let csvString = string(for: propName, properties) else {
-      return nil
-    }
-    Logger.log("PlayerSaveState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
-    let tokens = csvString.split(separator: ",").map{String($0)}
-    guard tokens.count == expectedTokenCount else {
-      Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
-      return nil
-    }
-    var iter = tokens.makeIterator()
-
-    let version = iter.next()
-    guard version == PlayerSaveState.geoPrefStringVersion else {
-      Logger.log("\(errPreamble) bad version (expected \(PlayerSaveState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
-      return nil
-    }
-
-    return try parseFunc(errPreamble, &iter)
-  }
-
-  /// String -> `LayoutSpec`
-  static private func deserializeLayoutSpec(from properties: [String: Any]) -> MainWindowController.LayoutSpec? {
-    return deserializeCSV(.layoutSpec, fromProperties: properties, expectedTokenCount: 11, version: PlayerSaveState.specPrefStringVersion,
-                   errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
-
-      let leadingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
-      let traillingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
-
-      guard let modeInt = Int(iter.next()!), let mode = MainWindowController.WindowMode(rawValue: modeInt),
-            let isLegacyStyle = Bool.yn(iter.next()) else {
-        Logger.log("\(errPreamble) could not parse mode or isLegacyStyle", level: .error)
-        return nil
-      }
-
-      guard let topBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
-            let trailingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
-            let bottomBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
-            let leadingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)) else {
-        Logger.log("\(errPreamble) could not parse bar placements", level: .error)
-        return nil
-      }
-
-      guard let enableOSC = Bool.yn(iter.next()),
-            let oscPositionInt = Int(iter.next()!),
-            let oscPosition = Preference.OSCPosition(rawValue: oscPositionInt) else {
-        Logger.log("\(errPreamble) could not parse enableOSC or oscPosition", level: .error)
-        return nil
-      }
-
-      let leadingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
-      let leadVis: MainWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
-      // TODO: account for invalid tab
-      //      if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
-      //        Logger.log("Visible tab \(visibleTab.name) in \("leadingSidebar") is outside its tab groups. The sidebar will close.", level: .error)
-      //        leadVis = .hide
-      //      }
-      let leadingSidebar = MainWindowController.Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
-
-      let trailingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
-      let trailVis: MainWindowController.Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
-      // TODO: account for invalid tab
-      let trailingSidebar = MainWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
-
-      return MainWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
-    })
-  }
-
-  /// String -> `MainWindowGeometry`
-  static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
-    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
-                   errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
-
-      guard let videoWidth = Double(iter.next()!),
-            let videoHeight = Double(iter.next()!),
-            let videoAspectRatio = Double(iter.next()!),
-            let topBarHeight = Double(iter.next()!),
-            let trailingBarWidth = Double(iter.next()!),
-            let bottomBarHeight = Double(iter.next()!),
-            let leadingBarWidth = Double(iter.next()!),
-            let winOriginX = Double(iter.next()!),
-            let winOriginY = Double(iter.next()!),
-            let winWidth = Double(iter.next()!),
-            let winHeight = Double(iter.next()!) else {
-        Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
-        return nil
-      }
-
-      let videoSize = CGSize(width: videoWidth, height: videoHeight)
-      let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoSize: videoSize, videoAspectRatio: videoAspectRatio)
-    })
-  }
-
   // MARK: - Save State / Serialize to prefs strings
 
   /// `MainWindowGeometry` -> String
@@ -324,8 +173,6 @@ struct PlayerSaveState {
     }
     props[PropName.paused.rawValue] = info.isPaused.yn
 
-    // TODO: playlist
-
     // - Video, Audio, Subtitles Settings
 
     props[PropName.deinterlace.rawValue] = info.deinterlace.yn
@@ -395,7 +242,223 @@ struct PlayerSaveState {
     Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
   }
 
-  func restoreTo(_ mpv: MPVController) {
+  // MARK: - Restore State / Deserialize from prefs
+
+  func string(for name: PropName) -> String? {
+    return PlayerSaveState.string(for: name, properties)
+  }
+
+  /// Relies on `Bool` being serialized to `String` with value `Y` or `N`
+  func bool(for name: PropName) -> Bool? {
+    return PlayerSaveState.bool(for: name, properties)
+  }
+
+  func int(for name: PropName) -> Int? {
+    return PlayerSaveState.int(for: name, properties)
+  }
+
+  /// Relies on `Double` being serialized to `String`
+  func double(for name: PropName) -> Double? {
+    return PlayerSaveState.double(for: name, properties)
+  }
+
+  /// Expects to parse CSV `String` with two tokens
+  func nsSize(for name: PropName) -> NSSize? {
+    if let csv = string(for: name) {
+      let tokens = csv.split(separator: ",")
+      if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
+        return NSSize(width: width, height: height)
+      }
+      Logger.log("Failed to parse property as NSSize: \(name.rawValue.quoted)")
+    }
+    return nil
+  }
+
+  static private func string(for name: PropName, _ properties: [String: Any]) -> String? {
+    return properties[name.rawValue] as? String
+  }
+
+  static private func bool(for name: PropName, _ properties: [String: Any]) -> Bool? {
+    return Bool.yn(string(for: name, properties))
+  }
+
+  static private func int(for name: PropName, _ properties: [String: Any]) -> Int? {
+    if let intString = string(for: name, properties) {
+      return Int(intString)
+    }
+    return nil
+  }
+
+  /// Relies on `Double` being serialized to `String`
+  static private func double(for name: PropName, _ properties: [String: Any]) -> Double? {
+    if let doubleString = string(for: name, properties) {
+      return Double(doubleString)
+    }
+    return nil
+  }
+
+  // Utility function for parsing complex object from CSV
+  static private func deserializeCSV<T>(_ propName: PropName, fromProperties properties: [String: Any], expectedTokenCount: Int, version: String,
+                                        errPreamble: String, _ parseFunc: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
+    guard let csvString = string(for: propName, properties) else {
+      return nil
+    }
+    Logger.log("PlayerSaveState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
+    let tokens = csvString.split(separator: ",").map{String($0)}
+    guard tokens.count == expectedTokenCount else {
+      Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
+      return nil
+    }
+    var iter = tokens.makeIterator()
+
+    let version = iter.next()
+    guard version == PlayerSaveState.geoPrefStringVersion else {
+      Logger.log("\(errPreamble) bad version (expected \(PlayerSaveState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
+      return nil
+    }
+
+    return try parseFunc(errPreamble, &iter)
+  }
+
+  /// String -> `LayoutSpec`
+  static private func deserializeLayoutSpec(from properties: [String: Any]) -> MainWindowController.LayoutSpec? {
+    return deserializeCSV(.layoutSpec, fromProperties: properties, expectedTokenCount: 11, version: PlayerSaveState.specPrefStringVersion,
+                          errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
+
+      let leadingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
+      let traillingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
+
+      guard let modeInt = Int(iter.next()!), let mode = MainWindowController.WindowMode(rawValue: modeInt),
+            let isLegacyStyle = Bool.yn(iter.next()) else {
+        Logger.log("\(errPreamble) could not parse mode or isLegacyStyle", level: .error)
+        return nil
+      }
+
+      guard let topBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+            let trailingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+            let bottomBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+            let leadingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)) else {
+        Logger.log("\(errPreamble) could not parse bar placements", level: .error)
+        return nil
+      }
+
+      guard let enableOSC = Bool.yn(iter.next()),
+            let oscPositionInt = Int(iter.next()!),
+            let oscPosition = Preference.OSCPosition(rawValue: oscPositionInt) else {
+        Logger.log("\(errPreamble) could not parse enableOSC or oscPosition", level: .error)
+        return nil
+      }
+
+      let leadingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
+      let leadVis: MainWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
+      // TODO: account for invalid tab
+      //      if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
+      //        Logger.log("Visible tab \(visibleTab.name) in \("leadingSidebar") is outside its tab groups. The sidebar will close.", level: .error)
+      //        leadVis = .hide
+      //      }
+      let leadingSidebar = MainWindowController.Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
+
+      let trailingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
+      let trailVis: MainWindowController.Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
+      // TODO: account for invalid tab
+      let trailingSidebar = MainWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
+
+      return MainWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
+    })
+  }
+
+  /// String -> `MainWindowGeometry`
+  static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
+    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
+                          errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
+
+      guard let videoWidth = Double(iter.next()!),
+            let videoHeight = Double(iter.next()!),
+            let videoAspectRatio = Double(iter.next()!),
+            let topBarHeight = Double(iter.next()!),
+            let trailingBarWidth = Double(iter.next()!),
+            let bottomBarHeight = Double(iter.next()!),
+            let leadingBarWidth = Double(iter.next()!),
+            let winOriginX = Double(iter.next()!),
+            let winOriginY = Double(iter.next()!),
+            let winWidth = Double(iter.next()!),
+            let winHeight = Double(iter.next()!) else {
+        Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
+        return nil
+      }
+
+      let videoSize = CGSize(width: videoWidth, height: videoHeight)
+      let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+      return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoSize: videoSize, videoAspectRatio: videoAspectRatio)
+    })
+  }
+
+  /// Restore player state from prior launch
+  func restoreTo(_ player: PlayerCore) {
+    let log = player.log
+    log.verbose("Restoring player state from prior launch")
+    let info = player.info
+    let mainWindow = player.mainWindow!
+
+    if let hdrEnabled = bool(for: .hdrEnabled) {
+      info.hdrEnabled = hdrEnabled
+    }
+
+    if let size = nsSize(for: .userPreferredVideoContainerSizeWide) {
+      info.userPreferredVideoContainerSizeWide = size
+    }
+    if let size = nsSize(for: .userPreferredVideoContainerSizeTall) {
+      info.userPreferredVideoContainerSizeTall = size
+    }
+
+    if let geometry = windowGeometry {
+      log.verbose("Successfully parsed prior geometry from prefs")
+
+      player.videoView.aspectRatio = geometry.videoAspectRatio
+
+      // Constrain within screen
+      let windowFrame = geometry.windowFrame
+      /// If needing to restore full screen, will create & execute transition to fullscreen in `windowWillOpen`.
+      if mainWindow.fsState.isFullscreen {
+        // TODO: figure out if getting here is even possible. For now, be safe and set `priorWindowedFrame`
+        log.debug("Restoring priorWindowedFrame to: \(geometry.windowFrame)")
+        mainWindow.fsState.priorWindowedFrame = geometry
+      } else {
+        log.debug("Restoring windowFrame to: \(windowFrame)")
+        mainWindow.window!.setFrame(windowFrame, display: false)
+      }
+
+    } else {
+      log.error("Failed to get player window layout and/or geometry from prefs")
+    }
+
+    guard let urlString = string(for: .url), let url = URL(string: urlString) else {
+      log.error("Could not restore player window: no value for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
+      return
+    }
+
+    player.openURLs([url], shouldAutoLoad: false)
+
+    let isOnTop = bool(for: .isOnTop) ?? false
+    mainWindow.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
+
+    if let playlistPathList = properties[PlayerSaveState.PropName.playlistPaths.rawValue] as? [String] {
+      if playlistPathList.count > 1 {
+        player.addFilesToPlaylist(pathList: playlistPathList)
+      }
+    }
+
+    // FIXME: Music Mode restore is broken
+    //    if let isInMusicMode = savedState.bool(for: .isMusicMode), isInMusicMode {
+    //      switchToMiniPlayer()
+    //    }
+
+    // TODO: much, much more
+
+    // mpv properties
+
+    // Must wait until after mpv init, otherwise they will stick
+    let mpv: MPVController = player.mpv
     if let startTime = string(for: .progress) {
       // This is actaully a decimal number but mpv expects a string
       mpv.setString(MPVOption.PlaybackControl.start, startTime)
@@ -476,4 +539,5 @@ struct PlayerSaveState {
       mpv.setInt(MPVOption.Video.videoRotate, videoRotation)
     }
   }
+
 }
