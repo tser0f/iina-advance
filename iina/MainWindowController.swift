@@ -207,18 +207,18 @@ class MainWindowController: PlayerWindowController {
 
   enum FullScreenState: Equatable {
     case windowed
-    case animating(toFullscreen: Bool, legacy: Bool, priorWindowedFrame: MainWindowGeometry)
-    case fullscreen(legacy: Bool, priorWindowedFrame: MainWindowGeometry)
+    case animating(toFullscreen: Bool, legacy: Bool, priorWindowedGeometry: MainWindowGeometry)
+    case fullscreen(legacy: Bool, priorWindowedGeometry: MainWindowGeometry)
 
     var isFullscreen: Bool {
       switch self {
       case .fullscreen: return true
-      case let .animating(toFullscreen: toFullScreen, legacy: _, priorWindowedFrame: _): return toFullScreen
+      case let .animating(toFullscreen: toFullScreen, legacy: _, priorWindowedGeometry: _): return toFullScreen
       default: return false
       }
     }
 
-    var priorWindowedFrame: MainWindowGeometry? {
+    var priorWindowedGeometry: MainWindowGeometry? {
       get {
         switch self {
         case .windowed: return nil
@@ -231,20 +231,20 @@ class MainWindowController: PlayerWindowController {
         switch self {
         case .windowed: return
         case let .animating(toFullscreen, legacy, _):
-          self = .animating(toFullscreen: toFullscreen, legacy: legacy, priorWindowedFrame: newGeo)
+          self = .animating(toFullscreen: toFullscreen, legacy: legacy, priorWindowedGeometry: newGeo)
         case let .fullscreen(legacy, _):
-          self = .fullscreen(legacy: legacy, priorWindowedFrame: newGeo)
+          self = .fullscreen(legacy: legacy, priorWindowedGeometry: newGeo)
         }
       }
     }
 
-    mutating func startAnimatingToFullScreen(legacy: Bool, priorWindowedFrame: MainWindowGeometry) {
-      self = .animating(toFullscreen: true, legacy: legacy, priorWindowedFrame: priorWindowedFrame)
+    mutating func startAnimatingToFullScreen(legacy: Bool, priorWindowedGeometry: MainWindowGeometry) {
+      self = .animating(toFullscreen: true, legacy: legacy, priorWindowedGeometry: priorWindowedGeometry)
     }
 
     mutating func startAnimatingToWindow() {
-      guard case .fullscreen(let legacy, let priorWindowedFrame) = self else { return }
-      self = .animating(toFullscreen: false, legacy: legacy, priorWindowedFrame: priorWindowedFrame)
+      guard case .fullscreen(let legacy, let priorWindowedGeometry) = self else { return }
+      self = .animating(toFullscreen: false, legacy: legacy, priorWindowedGeometry: priorWindowedGeometry)
     }
 
     mutating func finishAnimating() {
@@ -252,7 +252,7 @@ class MainWindowController: PlayerWindowController {
       case .windowed, .fullscreen: assertionFailure("something went wrong with the state of the world. One must be .animating to finishAnimating. Not \(self)")
       case .animating(let toFullScreen, let legacy, let frame):
         if toFullScreen {
-          self = .fullscreen(legacy: legacy, priorWindowedFrame: frame)
+          self = .fullscreen(legacy: legacy, priorWindowedGeometry: frame)
         } else{
           self = .windowed
         }
@@ -1235,7 +1235,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
     // stop playing
-    if case .fullscreen(legacy: true, priorWindowedFrame: _) = fsState {
+    if case .fullscreen(legacy: true, priorWindowedGeometry: _) = fsState {
       restoreDockSettings()
     }
     player.stop()

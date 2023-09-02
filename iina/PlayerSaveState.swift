@@ -68,7 +68,10 @@ struct PlayerSaveState {
   let properties: [String: Any]
 
   /// Cached values parsed from `properties`
+
+  /// Describes the current layout configuration of the player window
   let layoutSpec: MainWindowController.LayoutSpec?
+  /// If in fullscreen, this is actually the `priorWindowedGeometry`
   let windowGeometry: MainWindowGeometry?
 
   init(_ props: [String: Any]) {
@@ -130,7 +133,7 @@ struct PlayerSaveState {
     /// `windowGeometry`
     let geometry: MainWindowGeometry?
     if layout.isFullScreen {
-      geometry = player.mainWindow.fsState.priorWindowedFrame
+      geometry = player.mainWindow.fsState.priorWindowedGeometry
       // TODO: which screen...?
     } else {
       geometry = player.mainWindow.buildGeometryFromCurrentLayout()
@@ -420,9 +423,9 @@ struct PlayerSaveState {
       let windowFrame = geometry.windowFrame
       /// If needing to restore full screen, will create & execute transition to fullscreen in `windowWillOpen`.
       if mainWindow.fsState.isFullscreen {
-        // TODO: figure out if getting here is even possible. For now, be safe and set `priorWindowedFrame`
+        // TODO: figure out if getting here is even possible. For now, be safe and set `priorWindowedGeometry`
         log.debug("Restoring priorWindowedFrame to: \(geometry.windowFrame)")
-        mainWindow.fsState.priorWindowedFrame = geometry
+        mainWindow.fsState.priorWindowedGeometry = geometry
       } else {
         log.debug("Restoring windowFrame to: \(windowFrame)")
         mainWindow.window!.setFrame(windowFrame, display: false)

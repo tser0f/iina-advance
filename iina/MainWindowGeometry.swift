@@ -9,24 +9,32 @@
 import Foundation
 
 /**
- ┌───────────────────────────────────────────────┐
- │`windowFrame`        ▲                         │
- │                     │`topBarHeight`           │
- │                     ▼                         │
- ├─────────────────┬──────────┬──────────────────┤
- │                 │  Video   │                  │
- │◄───────────────►│   Frame  │◄────────────────►│
- │`leadingBarWidth`│          │`trailingBarWidth`│
- ├─────────────────┴──────────┴──────────────────┤
- │                    ▲                          │
- │                    │`bottomBarHeight`         │
- │                    ▼                          │
- └───────────────────────────────────────────────┘
+`MainWindowGeometry`
+ Data structure which describes the size & position of an IINA player window which is in normal windowed mode.
+
+ Example of a player window with letterboxed video, where `videoContainerView` is taller than `videoView`:
+                 `videoContainerView` Width
+                 ◄───────────────►
+ ┌────────────────────────────────────────────────┐
+ │`windowFrame`               ▲                   │
+ │                            │`topBarHeight`     │
+ │                            ▼                   │
+ ├──────────────┬─────────────────┬───────────────┤
+ │              │                 │               │ ▲
+ │              │-----------------│               │ │
+ │◄────────────►|   `videoSize`   |◄─────────────►│ │`videoContainerView`
+ │`leftBarWidth`|                 |`rightBarWidth`│ │Height
+ │              │-----------------│               │ │
+ │              │                 │               │ ▼
+ ├──────────────┴─────────────────┴───────────────┤
+ │                 ▲                              │
+ │                 │`bottomBarHeight`             │
+ │                 ▼                              │
+ └────────────────────────────────────────────────┘
  */
 struct MainWindowGeometry: Equatable {
   // MARK: - Stored properties
 
-  let videoSize: NSSize
   let windowFrame: NSRect
 
   // Outside panels
@@ -35,6 +43,7 @@ struct MainWindowGeometry: Equatable {
   let bottomBarHeight: CGFloat
   let leadingBarWidth: CGFloat
 
+  let videoSize: NSSize
   let videoAspectRatio: CGFloat
 
   // MARK: - Initializers
@@ -372,7 +381,7 @@ extension MainWindowController {
             newWindowFrame = screenRect.centeredResize(to: newWindowSize)
             log.verbose("[AdjustFrameAfterVideoReconfig C ResultB] FitToScreen strategy. Using screen rect \(screenRect) → windowFrame: \(newWindowFrame)")
           } else {
-            let priorWindowFrame = fsState.priorWindowedFrame?.windowFrame ?? window.frame  // FIXME: need to save more information
+            let priorWindowFrame = fsState.priorWindowedGeometry?.windowFrame ?? window.frame  // FIXME: need to save more information
             newWindowFrame = priorWindowFrame.centeredResize(to: newWindowSize)
             log.verbose("[AdjustFrameAfterVideoReconfig C ResultC] Resizing priorWindowFrame \(priorWindowFrame) to videoSize + outside panels = \(newWindowSize) → windowFrame: \(newWindowFrame)")
           }
@@ -394,8 +403,8 @@ extension MainWindowController {
       /// Finally call `setFrame()`
       if fsState.isFullscreen {
         // FIXME: get this back
-        //      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedFrame to: \(newWindowFrame)", level: .verbose)
-        //      fsState.priorWindowedFrame = newWindowFrame
+        //      Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedGeometry to: \(newWindowFrame)", level: .verbose)
+        //      fsState.priorWindowedGeometry = newWindowFrame
       } else {
         log.verbose("[AdjustFrameAfterVideoReconfig] NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]")
         window.setFrame(newWindowFrame, display: true, animate: true)
@@ -597,6 +606,7 @@ extension MainWindowController {
 
     let newWindowSize: NSSize
     if window.inLiveResize {
+      return requestedSize
       /// Notes on the trickiness of live window resize:
       /// 1. We need to decide whether to (A) keep the width fixed, and resize the height, or (B) keep the height fixed, and resize the width.
       /// "A" works well when the user grabs the top or bottom sides of the window, but will not allow resizing if the user grabs the left

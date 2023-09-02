@@ -599,7 +599,7 @@ extension MainWindowController {
       let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
 
       let priorWindowedGeometry = buildGeometryFromCurrentLayout()
-      fsState.startAnimatingToFullScreen(legacy: transition.toLayout.isLegacyFullScreen, priorWindowedFrame: priorWindowedGeometry)
+      fsState.startAnimatingToFullScreen(legacy: transition.toLayout.isLegacyFullScreen, priorWindowedGeometry: priorWindowedGeometry)
       log.verbose("Entering fullscreen, priorWindowedGeometry := \(priorWindowedGeometry)")
 
       // Hide traffic light buttons & title during the animation.
@@ -958,11 +958,11 @@ extension MainWindowController {
       let leadingWidth = transition.toLayout.leadingBarOutsideWidth
       let trailingWidth = transition.toLayout.trailingBarOutsideWidth
 
-      guard let priorFrame = fsState.priorWindowedFrame else { return }
-      let priorWindowFrame = priorFrame.resizeOutsideBars(newTopHeight: topHeight,
-                                                          newTrailingWidth: trailingWidth,
-                                                          newBottomHeight: bottomHeight,
-                                                          newLeadingWidth: leadingWidth).windowFrame
+      guard let priorGeometry = fsState.priorWindowedGeometry else { return }
+      let priorWindowFrame = priorGeometry.resizeOutsideBars(newTopHeight: topHeight,
+                                                             newTrailingWidth: trailingWidth,
+                                                             newBottomHeight: bottomHeight,
+                                                             newLeadingWidth: leadingWidth).windowFrame
 
       log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
       window.setFrame(priorWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)

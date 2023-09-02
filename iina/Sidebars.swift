@@ -486,7 +486,7 @@ extension MainWindowController {
     let isFullScreen: Bool
     let oldGeometry: MainWindowGeometry
 
-    if let priorWindowedGeometry = fsState.priorWindowedFrame {
+    if let priorWindowedGeometry = fsState.priorWindowedGeometry {
       isFullScreen = true
       oldGeometry = priorWindowedGeometry
     } else {
@@ -550,7 +550,7 @@ extension MainWindowController {
     }
 
     if isFullScreen {
-      fsState.priorWindowedFrame = newGeometry
+      fsState.priorWindowedGeometry = newGeometry
     } else {
       Logger.log("Calling setFrame() after updating sidebars. ΔLeading: \(ΔLeading), ΔTrailing: \(ΔTrailing)",
                  level: .debug, subsystem: player.subsystem)

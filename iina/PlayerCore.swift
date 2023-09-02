@@ -506,6 +506,9 @@ class PlayerCore: NSObject {
                  level: .verbose, subsystem: subsystem)
     }
 
+    // TODO: save windowed frame
+    // TODO: switch layout
+
     // build mini player window offscreen for now
     miniPlayer.window?.orderOut(self)
     isInMiniPlayer = true

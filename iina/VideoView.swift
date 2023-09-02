@@ -189,7 +189,7 @@ class VideoView: NSView {
     player.log.verbose("Contraining videoView for windowed mode")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
-                       eqIsActive: true, eqPriority: .required,
+                       eqIsActive: true, eqPriority: .defaultHigh,
                        gtIsActive: false,
                        centerIsActive: false,
                        aspectIsActive: false)
