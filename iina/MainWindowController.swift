@@ -1275,7 +1275,7 @@ class MainWindowController: PlayerWindowController {
     let oldLayout = currentLayout
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
-    let fullscreenLayout = oldLayout.spec.clone(isFullScreen: true, isLegacyStyle: isLegacy)
+    let fullscreenLayout = oldLayout.spec.clone(mode: .fullScreen, isLegacyStyle: isLegacy)
     let transition = buildLayoutTransition(from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
     animationQueue.run(transition.animationTasks)
   }
@@ -1314,7 +1314,7 @@ class MainWindowController: PlayerWindowController {
 
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = oldLayout.spec.clone(isFullScreen: false, isLegacyStyle: Preference.bool(for: .useLegacyWindowedMode))
+    let windowedLayout = oldLayout.spec.clone(mode: .windowed, isLegacyStyle: Preference.bool(for: .useLegacyWindowedMode))
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(from: oldLayout, to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
@@ -1903,10 +1903,10 @@ class MainWindowController: PlayerWindowController {
     /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
     let oldLayout = currentLayout
     let interactiveModeLayout = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
-                                                         trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide),
-                                                         isFullScreen: oldLayout.isFullScreen,
-                                                         topBarPlacement: .insideVideo,
-                                                         enableOSC: false)
+                                                     trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide),
+                                                     mode: oldLayout.spec.mode,
+                                                     topBarPlacement: .insideVideo,
+                                                     enableOSC: false)
     let transition = buildLayoutTransition(from: oldLayout, to: interactiveModeLayout, totalEndingDuration: 0)
     var animationTasks: [CocoaAnimation.Task] = transition.animationTasks
 

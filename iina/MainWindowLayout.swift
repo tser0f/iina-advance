@@ -36,12 +36,21 @@ fileprivate extension NSStackView.VisibilityPriority {
 
 extension MainWindowController {
 
+  enum WindowMode: Int {
+    case windowed = 1
+    case fullScreen
+//    case pip
+//    case musicMode
+//    case interactiveWindow
+//    case interactiveFullScreen
+  }
+
   /// `struct LayoutSpec`: data structure which is the blueprint for building a `LayoutState`
   struct LayoutSpec {
     let leadingSidebar: Sidebar
     let trailingSidebar: Sidebar
 
-    let isFullScreen:  Bool
+    let mode: WindowMode
     let isLegacyStyle: Bool
 
     let topBarPlacement: Preference.PanelPlacement
@@ -62,7 +71,7 @@ extension MainWindowController {
                                     visibility: .hide)
       return LayoutSpec(leadingSidebar: leadingSidebar,
                         trailingSidebar: trailingSidebar,
-                        isFullScreen: false,
+                        mode: .windowed,
                         isLegacyStyle: false,
                         topBarPlacement:.insideVideo,
                         bottomBarPlacement: .insideVideo,
@@ -78,9 +87,10 @@ extension MainWindowController {
                                                          placement: Preference.enum(for: .leadingSidebarPlacement))
       let trailingSidebar = prevSpec.trailingSidebar.clone(tabGroups: Sidebar.TabGroup.fromPrefs(for: .trailingSidebar),
                                                            placement: Preference.enum(for: .trailingSidebarPlacement))
+      let isLegacyStyle = prevSpec.mode == .fullScreen ? Preference.bool(for: .useLegacyFullScreen) : Preference.bool(for: .useLegacyWindowedMode)
       return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar,
-                        isFullScreen: prevSpec.isFullScreen,
-                        isLegacyStyle: prevSpec.isFullScreen ? prevSpec.isLegacyStyle : Preference.bool(for: .useLegacyWindowedMode),
+                        mode: prevSpec.mode,
+                        isLegacyStyle: isLegacyStyle,
                         topBarPlacement: Preference.enum(for: .topBarPlacement),
                         bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
@@ -90,7 +100,7 @@ extension MainWindowController {
     // Specify any properties to override; if nil, will use self's property values.
     func clone(leadingSidebar: Sidebar? = nil,
                trailingSidebar: Sidebar? = nil,
-               isFullScreen: Bool? = nil,
+               mode: WindowMode? = nil,
                topBarPlacement: Preference.PanelPlacement? = nil,
                bottomBarPlacement: Preference.PanelPlacement? = nil,
                enableOSC: Bool? = nil,
@@ -98,12 +108,20 @@ extension MainWindowController {
                isLegacyStyle: Bool? = nil) -> LayoutSpec {
       return LayoutSpec(leadingSidebar: leadingSidebar ?? self.leadingSidebar,
                         trailingSidebar: trailingSidebar ?? self.trailingSidebar,
-                        isFullScreen: isFullScreen ?? self.isFullScreen,
+                        mode: mode ?? self.mode,
                         isLegacyStyle: isLegacyStyle ?? self.isLegacyStyle,
                         topBarPlacement: topBarPlacement ?? self.topBarPlacement,
                         bottomBarPlacement: bottomBarPlacement ?? self.bottomBarPlacement,
                         enableOSC: enableOSC ?? self.enableOSC,
                         oscPosition: self.oscPosition)
+    }
+
+    var isNativeFullScreen: Bool {
+      return mode == .fullScreen && !isLegacyStyle
+    }
+
+    var isLegacyFullScreen: Bool {
+      return mode == .fullScreen && isLegacyStyle
     }
   }
 
@@ -189,11 +207,11 @@ extension MainWindowController {
     // Derived attributes & convenience accesstors
 
     var isFullScreen: Bool {
-      return spec.isFullScreen
+      return spec.mode == .fullScreen
     }
 
     var isLegacyFullScreen: Bool {
-      return spec.isFullScreen && spec.isLegacyStyle
+      return isFullScreen && spec.isLegacyStyle
     }
 
     var enableOSC: Bool {
@@ -439,9 +457,9 @@ extension MainWindowController {
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
       log.verbose("Transitioning to initial layout from prior window state")
 
-      if priorLayoutSpec.isFullScreen && !priorLayoutSpec.isLegacyStyle && !currentLayout.isFullScreen {
+      if priorLayoutSpec.isNativeFullScreen && !currentLayout.isFullScreen {
         // Special handling for native fullscreen. Cannot avoid animation
-        initialLayoutSpec = priorLayoutSpec.clone(isFullScreen: false)
+        initialLayoutSpec = priorLayoutSpec.clone(mode: currentLayout.spec.mode)
         needsNativeFullScreen = true
       } else {
         initialLayoutSpec = priorLayoutSpec

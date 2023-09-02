@@ -96,6 +96,8 @@ class PlayerCore: NSObject {
    */
   @Atomic var backgroundQueueTicket = 0
 
+  // Windows
+
   var mainWindow: MainWindowController!
   var miniPlayer: MiniPlayerWindowController!
 
@@ -163,7 +165,6 @@ class PlayerCore: NSObject {
     return true
   }
 
-  // TODO: move to MPVController
   /// The A loop point established by the [mpv](https://mpv.io/manual/stable/) A-B loop command.
   var abLoopA: Double {
     /// Returns the value of the A loop point, a timestamp in seconds if set, otherwise returns zero.
@@ -184,7 +185,6 @@ class PlayerCore: NSObject {
     }
   }
 
-  // TODO: move to MPVController
   /// The B loop point established by the [mpv](https://mpv.io/manual/stable/) A-B loop command.
   var abLoopB: Double {
     /// Returns the value of the B loop point, a timestamp in seconds if set, otherwise returns zero.

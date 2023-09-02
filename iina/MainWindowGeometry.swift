@@ -121,6 +121,10 @@ struct MainWindowGeometry: Equatable {
   }
 
   // FIXME: this assumes that videoSize == videoContainerView.size
+  func scale(desiredVideoContainerSize: NSSize, constrainedWithin containerFrame: NSRect) -> MainWindowGeometry {
+    return scale(desiredVideoSize: desiredVideoContainerSize, constrainedWithin: containerFrame)
+  }
+
   func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect) -> MainWindowGeometry {
     Logger.log("Scaling MainWindowGeometry desiredVideoSize:\(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
@@ -166,6 +170,7 @@ struct MainWindowGeometry: Equatable {
     return self.clone(windowFrame: newWindowFrame, videoSize: newVideoSize)
   }
 
+  // Resizes the window appropriately
   func resizeOutsideBars(newTopHeight: CGFloat? = nil, newTrailingWidth: CGFloat? = nil,
                          newBottomHeight: CGFloat? = nil, newLeadingWidth: CGFloat? = nil) -> MainWindowGeometry {
 
@@ -191,11 +196,13 @@ struct MainWindowGeometry: Equatable {
       ΔW += ΔLeft
       ΔX -= ΔLeft
     }
+
     let newWindowFrame = CGRect(x: windowFrame.origin.x + ΔX,
                                 y: windowFrame.origin.y + ΔY,
                                 width: windowFrame.width + ΔW,
                                 height: windowFrame.height + ΔH)
-    return self.clone(windowFrame: newWindowFrame, topBarHeight: newTopHeight, trailingBarWidth: newTrailingWidth,
+    return self.clone(windowFrame: newWindowFrame,
+                      topBarHeight: newTopHeight, trailingBarWidth: newTrailingWidth,
                       bottomBarHeight: newBottomHeight, leadingBarWidth: newLeadingWidth)
   }
 }
@@ -376,6 +383,7 @@ extension MainWindowController {
         // This often isn't possible for vertical videos, which will end up shrinking the width.
         // So try to remember the preferred width so it can be restored when possible
         let userPreferredVideoSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoBaseDisplaySize.aspect)
+        // FIXME: refactor for videoContainerSize
         let newVideoWidth = userPreferredVideoSize?.width ?? oldVideoSize.width
         let newVideoHeight = newVideoWidth / videoBaseDisplaySize.aspect
         newVideoSize = NSSize(width: newVideoWidth, height: newVideoHeight)
@@ -507,8 +515,12 @@ extension MainWindowController {
     return newScaleGeo
   }
 
+  // Must be called from the main thread
   func buildGeometryFromCurrentLayout() -> MainWindowGeometry {
-    let windowFrame = window!.frame  // FIXME: main thread only!
+    // TODO:
+//    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
+    let windowFrame = window!.frame
     let videoContainerFrame = videoContainerView.frame
     let videoSize = videoView.frame.size
     let videoAspectRatio = videoView.aspectRatio
@@ -571,6 +583,7 @@ extension MainWindowController {
       return window.frame.size
     }
 
+    // FIXME: refactor! This is videoSize. Need videoContainerSize
     let requestedVideoSize = NSSize(width: requestedSize.width - (currentLayout.leadingBarWidth + currentLayout.trailingBarWidth),
                                     height: requestedSize.height - (currentLayout.topBarOutsideHeight + currentLayout.bottomBarOutsideHeight))
 

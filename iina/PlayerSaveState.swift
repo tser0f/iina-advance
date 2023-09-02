@@ -164,9 +164,9 @@ struct PlayerSaveState {
       let leadingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
       let traillingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
 
-      guard let isFullScreen = Bool.yn(iter.next()),
+      guard let modeInt = Int(iter.next()!), let mode = MainWindowController.WindowMode(rawValue: modeInt),
             let isLegacyStyle = Bool.yn(iter.next()) else {
-        Logger.log("\(errPreamble) could not parse isFullScreen or isLegacyStyle", level: .error)
+        Logger.log("\(errPreamble) could not parse mode or isLegacyStyle", level: .error)
         return nil
       }
 
@@ -199,7 +199,7 @@ struct PlayerSaveState {
       // TODO: account for invalid tab
       let trailingSidebar = MainWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
 
-      return MainWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, isFullScreen: isFullScreen, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
+      return MainWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
     })
   }
 
@@ -254,7 +254,7 @@ struct PlayerSaveState {
     return [specPrefStringVersion,
             leadingSidebarTab,
             trailingSidebarTab,
-            spec.isFullScreen.yn,
+            String(spec.mode.rawValue),
             spec.isLegacyStyle.yn,
             String(spec.topBarPlacement.rawValue),
             String(spec.trailingSidebarPlacement.rawValue),
