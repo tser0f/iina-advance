@@ -211,6 +211,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   func reloadData(playlist: Bool, chapters: Bool) {
     if playlist {
       player.reloadPlaylist()
+      player.log.verbose("Reloading playlist table")
       playlistTableView.reloadData()
 
       var currentPlayItemIndex = 0

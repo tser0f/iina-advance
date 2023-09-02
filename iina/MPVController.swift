@@ -274,88 +274,6 @@ not applying FFmpeg 9599 workaround
 
     applyHardwareAccelerationWorkaround()
 
-    // Restore from prior launch (if applicable)
-    if let savedState = player.info.priorState {
-      if let startTime = savedState.string(for: .progress) {
-        setOption(forName: MPVOption.PlaybackControl.start, toValue: startTime, type: .string)
-      }
-
-      if let wasPaused = savedState.bool(for: .paused) {
-        setOption(forName: MPVOption.PlaybackControl.pause, toValue: wasPaused, type: .bool)
-      }
-
-      if let vid = savedState.int(for: .vid) {
-        setOption(forName: MPVOption.TrackSelection.vid, toValue: vid, type: .int)
-      }
-      if let aid = savedState.int(for: .aid) {
-        setOption(forName: MPVOption.TrackSelection.aid, toValue: aid, type: .int)
-      }
-      if let sid = savedState.int(for: .sid) {
-        setOption(forName: MPVOption.TrackSelection.sid, toValue: sid, type: .int)
-      }
-      if let sid2 = savedState.int(for: .sid2) {
-        setOption(forName: MPVOption.Subtitles.secondarySid, toValue: sid2, type: .int)
-      }
-
-      if let hwdec = savedState.string(for: .hwdec) {
-        setOption(forName: MPVOption.Video.hwdec, toValue: hwdec, type: .string)
-      }
-
-      if let deinterlace = savedState.bool(for: .deinterlace) {
-        setOption(forName: MPVOption.Video.deinterlace, toValue: deinterlace, type: .bool)
-      }
-
-      if let brightness = savedState.int(for: .brightness) {
-        setOption(forName: MPVOption.Equalizer.brightness, toValue: brightness, type: .int)
-      }
-      if let contrast = savedState.int(for: .contrast) {
-        setOption(forName: MPVOption.Equalizer.contrast, toValue: contrast, type: .int)
-      }
-      if let saturation = savedState.int(for: .saturation) {
-        setOption(forName: MPVOption.Equalizer.saturation, toValue: saturation, type: .int)
-      }
-      if let gamma = savedState.int(for: .gamma) {
-        setOption(forName: MPVOption.Equalizer.gamma, toValue: gamma, type: .int)
-      }
-      if let hue = savedState.int(for: .hue) {
-        setOption(forName: MPVOption.Equalizer.hue, toValue: hue, type: .int)
-      }
-
-      if let playSpeed = savedState.double(for: .playSpeed) {
-        setOption(forName: MPVOption.PlaybackControl.speed, toValue: playSpeed, type: .float)
-      }
-      if let volume = savedState.double(for: .volume) {
-        setOption(forName: MPVOption.Audio.volume, toValue: volume, type: .float)
-      }
-      if let isMuted = savedState.bool(for: .isMuted) {
-        setOption(forName: MPVOption.Audio.mute, toValue: isMuted, type: .bool)
-      }
-      if let maxVolume = savedState.int(for: .maxVolume) {
-        setOption(forName: MPVOption.Audio.volumeMax, toValue: maxVolume, type: .int)
-      }
-      if let audioDelay = savedState.double(for: .audioDelay) {
-        setOption(forName: MPVOption.Audio.audioDelay, toValue: audioDelay, type: .float)
-      }
-      if let subDelay = savedState.double(for: .subDelay) {
-        setOption(forName: MPVOption.Subtitles.subDelay, toValue: subDelay, type: .float)
-      }
-      if let isSubVisible = savedState.bool(for: .isSubVisible) {
-        setOption(forName: MPVOption.Subtitles.subVisibility, toValue: isSubVisible, type: .bool)
-      }
-      if let isSub2Visible = savedState.bool(for: .isSub2Visible) {
-        setOption(forName: MPVOption.Subtitles.secondarySubVisibility, toValue: isSub2Visible, type: .bool)
-      }
-      if let abLoopA = savedState.double(for: .abLoopA) {
-        if let abLoopB = savedState.double(for: .abLoopB) {
-          setOption(forName: MPVOption.PlaybackControl.abLoopB, toValue: abLoopB, type: .float)
-        }
-        setOption(forName: MPVOption.PlaybackControl.abLoopA, toValue: abLoopA, type: .float)
-      }
-      if let videoRotation = savedState.int(for: .videoRotation) {
-        setOption(forName: MPVOption.Video.videoRotate, toValue: videoRotation, type: .int)
-      }
-    }
-
     // - General
 
     let setScreenshotPath = { (key: Preference.Key) -> String in
@@ -401,14 +319,12 @@ not applying FFmpeg 9599 workaround
 
     // - Codec
 
-    if !player.info.isRestoring {
-      setUserOption(PK.hardwareDecoder, type: .other, forName: MPVOption.Video.hwdec) { key in
-        let value = Preference.integer(for: key)
-        return Preference.HardwareDecoderOption(rawValue: value)?.mpvString ?? "auto"
-      }
-
-      setUserOption(PK.maxVolume, type: .int, forName: MPVOption.Audio.volumeMax)
+    setUserOption(PK.hardwareDecoder, type: .other, forName: MPVOption.Video.hwdec) { key in
+      let value = Preference.integer(for: key)
+      return Preference.HardwareDecoderOption(rawValue: value)?.mpvString ?? "auto"
     }
+
+    setUserOption(PK.maxVolume, type: .int, forName: MPVOption.Audio.volumeMax)
 
     setUserOption(PK.videoThreads, type: .int, forName: MPVOption.Video.vdLavcThreads)
     setUserOption(PK.audioThreads, type: .int, forName: MPVOption.Audio.adLavcThreads)
@@ -502,7 +418,9 @@ not applying FFmpeg 9599 workaround
     setUserOption(PK.ytdlEnabled, type: .bool, forName: MPVOption.ProgramBehavior.ytdl)
     setUserOption(PK.ytdlRawOptions, type: .string, forName: MPVOption.ProgramBehavior.ytdlRawOptions)
     chkErr(mpv_set_option_string(mpv, MPVOption.ProgramBehavior.resetOnNextFile,
-                                 "\(MPVOption.PlaybackControl.abLoopA),\(MPVOption.PlaybackControl.abLoopB)"))
+                                 [MPVOption.PlaybackControl.abLoopA,
+                                  MPVOption.PlaybackControl.abLoopB,
+                                  MPVOption.PlaybackControl.start].joined(separator: ",")))
 
     // Set user defined conf dir.
     if Preference.bool(for: .enableAdvancedSettings),
@@ -574,7 +492,7 @@ not applying FFmpeg 9599 workaround
     // sub-visibility, but the option secondary-sub-visibility is missing. This inconsistency is
     // likely to confuse users, so insure the visibility setting for secondary subtitles is also
     // saved in watch later files.
-    if  let watchLaterOptions = getString(MPVOption.WatchLater.watchLaterOptions),
+    if let watchLaterOptions = getString(MPVOption.WatchLater.watchLaterOptions),
         watchLaterOptions.contains(MPVOption.Subtitles.subVisibility),
         !watchLaterOptions.contains(MPVOption.Subtitles.secondarySubVisibility) {
       setString(MPVOption.WatchLater.watchLaterOptions, watchLaterOptions + "," +

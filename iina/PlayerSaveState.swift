@@ -320,7 +320,7 @@ struct PlayerSaveState {
     }
 
     if let videoPosition = info.videoPosition?.second {
-      props[PropName.progress.rawValue] = String(videoPosition)
+      props[PropName.progress.rawValue] = videoPosition.string6f
     }
     props[PropName.paused.rawValue] = info.isPaused.yn
 
@@ -395,4 +395,85 @@ struct PlayerSaveState {
     Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
   }
 
+  func restoreTo(_ mpv: MPVController) {
+    if let startTime = string(for: .progress) {
+      // This is actaully a decimal number but mpv expects a string
+      mpv.setString(MPVOption.PlaybackControl.start, startTime)
+    }
+
+    if let wasPaused = bool(for: .paused) {
+      mpv.setFlag(MPVOption.PlaybackControl.pause, wasPaused)
+    }
+
+    if let vid = int(for: .vid) {
+      mpv.setInt(MPVOption.TrackSelection.vid, vid)
+    }
+    if let aid = int(for: .aid) {
+      mpv.setInt(MPVOption.TrackSelection.aid, aid)
+    }
+    if let sid = int(for: .sid) {
+      mpv.setInt(MPVOption.TrackSelection.sid, sid)
+    }
+    if let sid2 = int(for: .sid2) {
+      mpv.setInt(MPVOption.Subtitles.secondarySid, sid2)
+    }
+
+    if let hwdec = string(for: .hwdec) {
+      mpv.setString(MPVOption.Video.hwdec, hwdec)
+    }
+
+    if let deinterlace = bool(for: .deinterlace) {
+      mpv.setFlag(MPVOption.Video.deinterlace, deinterlace)
+    }
+
+    if let brightness = int(for: .brightness) {
+      mpv.setInt(MPVOption.Equalizer.brightness, brightness)
+    }
+    if let contrast = int(for: .contrast) {
+      mpv.setInt(MPVOption.Equalizer.contrast, contrast)
+    }
+    if let saturation = int(for: .saturation) {
+      mpv.setInt(MPVOption.Equalizer.saturation, saturation)
+    }
+    if let gamma = int(for: .gamma) {
+      mpv.setInt(MPVOption.Equalizer.gamma, gamma)
+    }
+    if let hue = int(for: .hue) {
+      mpv.setInt(MPVOption.Equalizer.hue, hue)
+    }
+
+    if let playSpeed = double(for: .playSpeed) {
+      mpv.setDouble(MPVOption.PlaybackControl.speed, playSpeed)
+    }
+    if let volume = double(for: .volume) {
+      mpv.setDouble(MPVOption.Audio.volume, volume)
+    }
+    if let isMuted = bool(for: .isMuted) {
+      mpv.setFlag(MPVOption.Audio.mute, isMuted)
+    }
+    if let maxVolume = int(for: .maxVolume) {
+      mpv.setInt(MPVOption.Audio.volumeMax, maxVolume)
+    }
+    if let audioDelay = double(for: .audioDelay) {
+      mpv.setDouble(MPVOption.Audio.audioDelay, audioDelay)
+    }
+    if let subDelay = double(for: .subDelay) {
+      mpv.setDouble(MPVOption.Subtitles.subDelay, subDelay)
+    }
+    if let isSubVisible = bool(for: .isSubVisible) {
+      mpv.setFlag(MPVOption.Subtitles.subVisibility, isSubVisible)
+    }
+    if let isSub2Visible = bool(for: .isSub2Visible) {
+      mpv.setFlag(MPVOption.Subtitles.secondarySubVisibility, isSub2Visible)
+    }
+    if let abLoopA = double(for: .abLoopA) {
+      if let abLoopB = double(for: .abLoopB) {
+        mpv.setDouble(MPVOption.PlaybackControl.abLoopB, abLoopB)
+      }
+      mpv.setDouble(MPVOption.PlaybackControl.abLoopA, abLoopA)
+    }
+    if let videoRotation = int(for: .videoRotation) {
+      mpv.setInt(MPVOption.Video.videoRotate, videoRotation)
+    }
+  }
 }

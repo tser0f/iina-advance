@@ -665,7 +665,7 @@ extension MainWindowController {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return }
 
-//    updateWindowParametersForMPV()
+    updateWindowParametersForMPV()
   }
 
   private func updateFloatingOSCAfterWindowDidResize() {

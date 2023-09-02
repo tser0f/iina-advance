@@ -507,6 +507,12 @@ class PlayerCore: NSObject {
       }
     }
 
+    // Restore options from prior launch (if applicable).
+    // Must wait until after mpv init, otherwise they will stick
+    if let savedState = info.priorState {
+      savedState.restoreTo(self.mpv)
+    }
+
     // FIXME: Music Mode restore is broken
 //    if let isInMusicMode = savedState.bool(for: .isMusicMode), isInMusicMode {
 //      switchToMiniPlayer()
@@ -644,7 +650,6 @@ class PlayerCore: NSObject {
   }
 
   func resume() {
-    // FIXME: add a switch for this
     // Restart playback when reached EOF
     if Preference.bool(for: .resumeFromEndRestartsPlayback) && mpv.getFlag(MPVProperty.eofReached) {
       seek(absoluteSecond: 0)
@@ -838,6 +843,7 @@ class PlayerCore: NSObject {
     // The play slider has knobs representing the loop points, make insure the slider is in sync.
     mainWindow?.syncSlider()
     Logger.log("Synchronized info.abLoopStatus \(info.abLoopStatus)")
+    saveState()
   }
 
   func toggleFileLoop() {
@@ -1565,7 +1571,7 @@ class PlayerCore: NSObject {
 
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
-    log.debug("File loaded")
+    log.debug("File loaded: \(info.currentURL?.absoluteString.quoted ?? "nil")")
     triedUsingExactSeekForCurrentFile = false
     info.fileLoading = false
     info.fileLoaded = true
@@ -2198,8 +2204,10 @@ class PlayerCore: NSObject {
   }
 
   func reloadPlaylist() {
+    log.verbose("Removing all items from playlist")
     info.playlist.removeAll()
     let playlistCount = mpv.getInt(MPVProperty.playlistCount)
+    log.verbose("Adding \(playlistCount) items to playlist")
     for index in 0..<playlistCount {
       let playlistItem = MPVPlaylistItem(filename: mpv.getString(MPVProperty.playlistNFilename(index))!,
                                          isCurrent: mpv.getFlag(MPVProperty.playlistNCurrent(index)),
