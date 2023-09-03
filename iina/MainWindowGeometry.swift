@@ -10,23 +10,35 @@ import Foundation
 
 /**
 `MainWindowGeometry`
- Data structure which describes the size & position of an IINA player window which is in normal windowed mode.
+ Data structure which describes:
+ 1. The size & position (`windowFrame`) of an IINA player window which is in normal windowed mode
+    (not fullscreen, music mode, etc.)
+ 2. The distance between each of the 4 `outsideVideo` panels and the video container. If a given outside panel is
+    hidden or instead is shown as `insideVideo`, its value will be `0`.
+ 3. The size of the video container (`videoContainerView`), whose size is inferred by subtracting the bar sizes
+    from `windowFrame`.
+ 4. The size of the video itself (`videoView`), which may or may not be equal to the size of `videoContainerView`,
+    depending on whether empty space is allowed around the video.
+ 5. The video aspect ratio. This is stored here mainly to create a central reference for it, to avoid differing
+    values which can arise if calculating it from disparate sources.
 
- Example of a player window with letterboxed video, where `videoContainerView` is taller than `videoView`:
-                 `videoContainerView` Width
-                 ◄───────────────►
- ┌────────────────────────────────────────────────┐
- │`windowFrame`               ▲                   │
- │                            │`topBarHeight`     │
- │                            ▼                   │
- ├──────────────┬─────────────────┬───────────────┤
+ Below is an example of a player window with letterboxed video, where `videoContainerView` is taller than `videoView`.
+ The `windowFrame` is the outermost rectangle.
+ •
+ •              `videoContainerSize` (W)
+ •              │◄───────────────►│
+ ┌────────────────────────────────────────────────┐`windowFrame`
+ │                     ▲                          │
+ │                     │`topBarHeight`            │
+ │                     ▼                          │
+ ├──────────────┬─────────────────┬───────────────┤ ─
  │              │                 │               │ ▲
  │              │-----------------│               │ │
- │◄────────────►|   `videoSize`   |◄─────────────►│ │`videoContainerView`
- │`leftBarWidth`|                 |`rightBarWidth`│ │Height
+ │◄────────────►|   `videoSize`   |◄─────────────►│ │`videoContainerSize`
+ │`leftBarWidth`|                 |`rightBarWidth`│ │ (H)
  │              │-----------------│               │ │
  │              │                 │               │ ▼
- ├──────────────┴─────────────────┴───────────────┤
+ ├──────────────┴─────────────────┴───────────────┤ ─
  │                 ▲                              │
  │                 │`bottomBarHeight`             │
  │                 ▼                              │
@@ -592,6 +604,11 @@ extension MainWindowController {
       return window.frame.size
     }
 
+    if window.inLiveResize && Preference.bool(for: .allowEmptySpaceAroundVideo) {
+      // TODO: constrain to screen size
+      return requestedSize
+    }
+
     // FIXME: refactor! This is videoSize. Need videoContainerSize
     let requestedVideoSize = NSSize(width: requestedSize.width - (currentLayout.leadingBarWidth + currentLayout.trailingBarWidth),
                                     height: requestedSize.height - (currentLayout.topBarOutsideHeight + currentLayout.bottomBarOutsideHeight))
@@ -606,7 +623,6 @@ extension MainWindowController {
 
     let newWindowSize: NSSize
     if window.inLiveResize {
-      return requestedSize
       /// Notes on the trickiness of live window resize:
       /// 1. We need to decide whether to (A) keep the width fixed, and resize the height, or (B) keep the height fixed, and resize the width.
       /// "A" works well when the user grabs the top or bottom sides of the window, but will not allow resizing if the user grabs the left

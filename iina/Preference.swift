@@ -74,6 +74,11 @@ struct Preference {
     /** Black out other monitors while fullscreen (bool) */
     static let blackOutMonitor = Key("blackOutMonitor")
 
+    /// For windowed mode only.
+    /// `false`: restrict window size to conform to video aspect ratio.
+    /// `true`: allow user to resize window and show black bars.
+    static let allowEmptySpaceAroundVideo = Key("allowEmptySpaceAroundVideo")
+
     static let actionWhenNoOpenedWindow = Key("actionWhenNoOpenedWindow")
 
     /** Keep player window open on end of file / playlist. (bool) */
@@ -970,6 +975,7 @@ struct Preference {
     .softVolume: 100,
     .arrowButtonAction: ArrowButtonAction.speed.rawValue,
     .useLegacyWindowedMode: false,
+    .allowEmptySpaceAroundVideo: false,
     .pauseWhenOpen: false,
     .fullScreenWhenOpen: false,
     .useLegacyFullScreen: false,

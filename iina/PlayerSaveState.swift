@@ -241,8 +241,10 @@ struct PlayerSaveState {
       player.log.warn("Aborting save of player state: is shutting down")
       return
     }
-    let properties = generatePropDict(from: player)
-    Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
+    DispatchQueue.main.async {
+      let properties = generatePropDict(from: player)
+      Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
+    }
   }
 
   // MARK: - Restore State / Deserialize from prefs

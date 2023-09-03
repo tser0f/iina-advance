@@ -125,7 +125,7 @@ extension MainWindowController {
     }
   }
 
-  /// `LayoutState`: data structure which contains all the variables which describe a single way to layout the `MainWindow`.
+  /// `LayoutState`: data structure which contains all the variables which describe a single layout configuration of the `MainWindow`.
   /// ("Layout" might have been a better name for this class, but it's already used by AppKit). Notes:
   /// • With all the different window layout configurations which are now possible, it's crucial to use this class in order for animations
   ///   to work reliably.
