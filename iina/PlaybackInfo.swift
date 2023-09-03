@@ -93,11 +93,11 @@ class PlaybackInfo {
   // Track vertical videos separately since they are so different:
   var userPreferredVideoContainerSizeTall: NSSize? = nil
 
-  // FIXME: may want to have a single preferred container size when allowing blackspace around video.
+  /// Use a single preferred container size when allowing blackspace around video.
   /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`videoContainerSize`.
   /// Need to reconcile these requirements...
   func setUserPreferredVideoContainerSize(_ newSize: NSSize) {
-    if newSize.aspect >= 1 {
+    if Preference.bool(for: .allowEmptySpaceAroundVideo) || newSize.aspect >= 1 {
       // Video is wide or square
       log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSizeWide to \(newSize)")
       userPreferredVideoContainerSizeWide = newSize
@@ -109,17 +109,10 @@ class PlaybackInfo {
   }
 
   func getUserPreferredVideoContainerSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
-    if aspectRatio >= 1 {
-      guard let preferredVideoSize = userPreferredVideoContainerSizeWide else {
-        return nil
-      }
-      return NSSize(width: preferredVideoSize.width, height: preferredVideoSize.width / aspectRatio)
+    if Preference.bool(for: .allowEmptySpaceAroundVideo) || aspectRatio >= 1 {
+      return userPreferredVideoContainerSizeWide
     } else {
-      guard let preferredVideoSize = userPreferredVideoContainerSizeTall else {
-        return nil
-      }
-      // Preserve width in this case also. May need to revisit this strategy
-      return NSSize(width: preferredVideoSize.width, height: preferredVideoSize.width / aspectRatio)
+      return userPreferredVideoContainerSizeTall
     }
   }
 

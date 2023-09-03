@@ -207,8 +207,10 @@ class VideoView: NSView {
     window?.layoutIfNeeded()
   }
 
-  func updateAspectRatio(w width: CGFloat, h height: CGFloat) {
-    let newAspectRatio: CGFloat = width == 0 || height == 0 ? 1 : width / height
+  func updateAspectRatio(to newAspectRatio: CGFloat) {
+    guard newAspectRatio != 0 else {
+      Logger.fatal("Cannot update videoView aspectRatio to 0!")
+    }
     player.log.verbose("Updating videoView aspect ratio to \(newAspectRatio)")
     aspectRatio = newAspectRatio
 
