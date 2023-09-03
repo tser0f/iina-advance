@@ -133,7 +133,7 @@ struct MainWindowGeometry: Equatable {
 
   // MARK: - Functions
 
-  private func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
+  private func computeMaxVideoContainerSize(in containerSize: NSSize) -> NSSize {
     // Resize only the video. Panels outside the video do not change size.
     // To do this, subtract the "outside" panels from the container frame
     let outsideBarsSize = self.outsideBarsTotalSize
@@ -141,46 +141,55 @@ struct MainWindowGeometry: Equatable {
                   height: containerSize.height - outsideBarsSize.height)
   }
 
+  // TODO: revisit this and make sure it's still valid
   func constrainWithin(_ containerFrame: NSRect) -> MainWindowGeometry {
     return scale(desiredVideoSize: self.videoSize, constrainedWithin: containerFrame)
+  }
+
+  private func constrainBetweenMinAndMax(desiredVideoContainerSize: NSSize, maxSize: NSSize) -> NSSize {
+    let outsideBarsTotalSize = self.outsideBarsTotalSize
+    return NSSize(width: max(AppData.minVideoSize.width, min(desiredVideoContainerSize.width, maxSize.width - outsideBarsTotalSize.width)),
+                  height: max(AppData.minVideoSize.height, min(desiredVideoContainerSize.height, maxSize.height - outsideBarsTotalSize.height)))
+  }
+
+  static private func computeLargestVideoSize(toFillIn videoContainerSize: NSSize, usingAspectRatio videoAspectRatio: CGFloat) -> NSSize {
+    /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
+    if videoAspectRatio < videoContainerSize.aspect {  // video is taller, shrink to meet height
+      return NSSize(width: videoContainerSize.height * videoAspectRatio, height: videoContainerSize.height)
+    } else {  // video is wider, shrink to meet width
+      return NSSize(width: videoContainerSize.width, height: videoContainerSize.width / videoAspectRatio)
+    }
   }
 
   func scale(desiredVideoContainerSize: NSSize, constrainedWithin containerFrame: NSRect) -> MainWindowGeometry {
     Logger.log("Scaling MainWindowGeometry desiredVideoContainerSize: \(desiredVideoContainerSize)", level: .verbose)
 
-    // Constrain size min & max (within container) right away:
-    let newVidConSize = NSSize(width: max(AppData.minVideoSize.width, min(desiredVideoContainerSize.width, containerFrame.width)),
-                               height: max(AppData.minVideoSize.width, min(desiredVideoContainerSize.height, containerFrame.height)))
+    /// Constrain videoContainerSize between `minVideoSize` and `containerFrame`:
+    var newVidConSize = constrainBetweenMinAndMax(desiredVideoContainerSize: desiredVideoContainerSize, maxSize: containerFrame.size)
 
-    let newVideoSize: NSSize
-    if videoAspectRatio < newVidConSize.aspect {  // video is taller, shrink to meet height
-      newVideoSize = NSSize(width: newVidConSize.height * videoAspectRatio, height: newVidConSize.height)
-    } else {  // video is wider, shrink to meet width
-      newVideoSize = NSSize(width: newVidConSize.width, height: newVidConSize.width / videoAspectRatio)
+    /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
+    let newVideoSize = MainWindowGeometry.computeLargestVideoSize(toFillIn: newVidConSize, usingAspectRatio: videoAspectRatio)
+
+    if !allowEmptySpaceAroundVideo {
+      newVidConSize = newVideoSize
     }
 
-    if allowEmptySpaceAroundVideo {
-      let outsideBarsSize = self.outsideBarsTotalSize
-      let newWindowSize = NSSize(width: round(newVidConSize.width + outsideBarsSize.width),
-                                 height: round(newVidConSize.height + outsideBarsSize.height))
+    let outsideBarsSize = self.outsideBarsTotalSize
+    let newWindowSize = NSSize(width: round(newVidConSize.width + outsideBarsSize.width),
+                           height: round(newVidConSize.height + outsideBarsSize.height))
 
-      // Round the results to prevent excessive window drift due to small imprecisions in calculation
-      let deltaX = round((newWindowSize.width - windowFrame.size.width) / 2)
-      let deltaY = round((newWindowSize.height - windowFrame.size.height) / 2)
-      let newWindowOrigin = NSPoint(x: windowFrame.origin.x - deltaX,
-                                    y: windowFrame.origin.y - deltaY)
+    // Round the results to prevent excessive window drift due to small imprecisions in calculation
+    let deltaX = round((newWindowSize.width - windowFrame.size.width) / 2)
+    let deltaY = round((newWindowSize.height - windowFrame.size.height) / 2)
+    let newWindowOrigin = NSPoint(x: windowFrame.origin.x - deltaX,
+                                  y: windowFrame.origin.y - deltaY)
 
-      // Move window if needed to make sure the window is not offscreen
-      let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: containerFrame)
-
-      Logger.log("Scaled MainWindowGeometry result: \(newWindowFrame)", level: .verbose)
-      return self.clone(windowFrame: newWindowFrame, videoSize: newVideoSize)
-    } else {
-      return scale(desiredVideoSize: newVideoSize, constrainedWithin: containerFrame)
-    }
+    // Move window if needed to make sure the window is not offscreen
+    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: containerFrame)
+    Logger.log("Scaled MainWindowGeometry result: \(newWindowFrame)", level: .verbose)
+    return self.clone(windowFrame: newWindowFrame, videoSize: newVideoSize)
   }
 
-  // FIXME: need to take into account video container
   func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect) -> MainWindowGeometry {
     Logger.log("Scaling MainWindowGeometry desiredVideoSize:\(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
@@ -192,39 +201,18 @@ struct MainWindowGeometry: Equatable {
       Logger.log("While scaling: applied aspectRatio (\(videoAspectRatio)): changed newVideoSize.height by \(newVideoSize.height - desiredVideoSize.height)", level: .debug)
     }
 
-    /// Clamp video between max and min video sizes, maintaining aspect ratio of `desiredVideoSize`.
-    /// (`desiredVideoSize` is assumed to be correct aspect ratio of the video.)
-
-    // Max
-    let maxVideoSize = computeMaxVideoSize(in: containerFrame.size)
-    if newVideoSize.height > maxVideoSize.height {
-      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-    }
-    if newVideoSize.width > maxVideoSize.width {
-      newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-    }
-
-    // Min
-    if newVideoSize.height < AppData.minVideoSize.height {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
-    }
-    if newVideoSize.width < AppData.minVideoSize.width {
-      newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
+    var newVideoContainerSize: NSSize
+    if allowEmptySpaceAroundVideo {
+      if videoAspectRatio < containerFrame.size.aspect {  // video is taller, expand to meet height (and maybe width)
+        newVideoContainerSize = NSSize(width: min(newVideoSize.width, containerFrame.width), height: newVideoSize.height)
+      } else {  // video is wider, expand to meet width (and maybe height)
+        newVideoContainerSize = NSSize(width: newVideoSize.width, height: min(newVideoSize.height, containerFrame.height))
+      }
+    } else {
+      newVideoContainerSize = newVideoSize
     }
 
-    let outsideBarsSize = self.outsideBarsTotalSize
-    let newWindowSize = NSSize(width: round(newVideoSize.width + outsideBarsSize.width),
-                               height: round(newVideoSize.height + outsideBarsSize.height))
-
-    // Round the results to prevent excessive window drift due to small imprecisions in calculation
-    let deltaX = round((newVideoSize.width - videoSize.width) / 2)
-    let deltaY = round((newVideoSize.height - videoSize.height) / 2)
-    let newWindowOrigin = NSPoint(x: windowFrame.origin.x - deltaX,
-                                  y: windowFrame.origin.y - deltaY)
-
-    // Move window if needed to make sure the window is not offscreen
-    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: containerFrame)
-    return self.clone(windowFrame: newWindowFrame, videoSize: newVideoSize)
+    return scale(desiredVideoContainerSize: newVideoContainerSize, constrainedWithin: containerFrame)
   }
 
   // Resizes the window appropriately
@@ -441,7 +429,14 @@ extension MainWindowController {
         // user is navigating in playlist. retain same window width.
         // This often isn't possible for vertical videos, which will end up shrinking the width.
         // So try to remember the preferred width so it can be restored when possible
-        var desiredVidConSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoBaseDisplaySize.aspect) ?? oldVideoSize
+        var desiredVidConSize: NSSize
+        if !Preference.bool(for: .allowEmptySpaceAroundVideo),
+            let prefVidConSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoBaseDisplaySize.aspect)  {
+          // Just use existing size in this case:
+          desiredVidConSize = prefVidConSize
+        } else {
+          desiredVidConSize = currentWindowGeometry.videoContainerSize
+        }
         let minNewVidConHeight = desiredVidConSize.width / videoBaseDisplaySize.aspect
         if desiredVidConSize.height < minNewVidConHeight {
           // Try to increase height if possible, though it may still be shrunk to fit screen
