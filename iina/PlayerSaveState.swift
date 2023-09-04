@@ -42,9 +42,8 @@ struct PlayerSaveState {
     case gamma = "gamma"              /// `MPVOption.Equalizer.gamma`
     case hue = "hue"                  /// `MPVOption.Equalizer.hue`
 
-    // TODO: cropFilter
-    // TODO: aspectFilter
-    // TODO: audioEQ
+    case videoFilters = "vf"          /// `MPVProperty.vf`
+    case audioFilters = "af"          /// `MPVProperty.af`
 
     case playSpeed = "playSpeed"      /// `MPVOption.PlaybackControl.speed`
     case volume = "volume"            /// `MPVOption.Audio.volume`
@@ -203,6 +202,7 @@ struct PlayerSaveState {
     props[PropName.saturation.rawValue] = String(info.saturation)
     props[PropName.gamma.rawValue] = String(info.gamma)
     props[PropName.hue.rawValue] = String(info.hue)
+
     props[PropName.playSpeed.rawValue] = info.playSpeed.string6f
     props[PropName.volume.rawValue] = info.volume.string6f
     props[PropName.isMuted.rawValue] = info.isMuted.yn
@@ -227,6 +227,9 @@ struct PlayerSaveState {
     if maxVolume != 100 {
       props[PropName.maxVolume.rawValue] = String(maxVolume)
     }
+
+    props[PropName.videoFilters.rawValue] = player.mpv.getString(MPVProperty.vf)
+    props[PropName.audioFilters.rawValue] = player.mpv.getString(MPVProperty.af)
 
     props[PropName.subScale.rawValue] = player.mpv.getDouble(MPVOption.Subtitles.subScale).string2f
     props[PropName.subPos.rawValue] = String(player.mpv.getInt(MPVOption.Subtitles.subPos))
@@ -561,6 +564,13 @@ struct PlayerSaveState {
     }
     if let videoRotation = int(for: .videoRotation) {
       mpv.setInt(MPVOption.Video.videoRotate, videoRotation)
+    }
+
+    if let audioFilters = string(for: .audioFilters) {
+      mpv.setString(MPVProperty.af, audioFilters)
+    }
+    if let videoFilters = string(for: .videoFilters) {
+      mpv.setString(MPVProperty.vf, videoFilters)
     }
   }
 
