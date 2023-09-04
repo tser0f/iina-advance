@@ -386,11 +386,13 @@ class PlayerCore: NSObject {
     isStopped = false
     mpv.command(.loadfile, args: [path])
 
-    if Preference.bool(for: .enablePlaylistLoop) {
-      mpv.setString(MPVOption.PlaybackControl.loopPlaylist, "inf")
-    }
-    if Preference.bool(for: .enableFileLoop) {
-      mpv.setString(MPVOption.PlaybackControl.loopFile, "inf")
+    if !info.isRestoring {  // restore state has higher precedence
+      if Preference.bool(for: .enablePlaylistLoop) {
+        mpv.setString(MPVOption.PlaybackControl.loopPlaylist, "inf")
+      }
+      if Preference.bool(for: .enableFileLoop) {
+        mpv.setString(MPVOption.PlaybackControl.loopFile, "inf")
+      }
     }
   }
 
@@ -1571,6 +1573,7 @@ class PlayerCore: NSObject {
 
   func needReloadQuickSettingsView() {
     guard !isShuttingDown, !isShutdown else { return }
+    saveState()
     DispatchQueue.main.async {
       self.mainWindow.quickSettingView.reload()
     }

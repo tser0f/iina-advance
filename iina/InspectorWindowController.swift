@@ -453,12 +453,16 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
   @IBAction func removeWatchAction(_ sender: AnyObject) {
     let rowIndex = watchTableView.selectedRow
-    guard rowIndex >= 0 else { return }
-
+    guard rowIndex >= 0 && rowIndex < watchTableView.numberOfRows else { return }
+    let rowCountAfterRemove = watchTableView.numberOfRows - 1
     watchProperties.remove(at: rowIndex)
     saveWatchList()
 
     watchTableView.removeRows(at: IndexSet(integer: rowIndex), withAnimation: AccessibilityPreferences.motionReductionEnabled ? [] : .slideUp)
+    // Select next row down so that user doesn't have to keep selecting if they want to delete multiple rows. If row was last row, select the one above it
+    if watchTableView.numberOfRows > 0 {
+      watchTableView.selectRowIndexes(IndexSet(integer: rowIndex >= rowCountAfterRemove ? rowIndex - 1 : rowIndex), byExtendingSelection: false)
+    }
     tableHeightConstraint?.constant = computeMinTableHeight()
   }
 

@@ -58,6 +58,10 @@ struct PlayerSaveState {
 
     case isSubVisible = "subVisible"  /// `MPVOption.Subtitles.subVisibility`
     case isSub2Visible = "sub2Visible"/// `MPVOption.Subtitles.secondarySubVisibility`
+    case subScale = "subScale"        /// `MPVOption.Subtitles.subScale`
+    case subPos = "subPos"            /// `MPVOption.Subtitles.subPos`
+    case loopPlaylist = "loopPlaylist"/// `MPVOption.PlaybackControl.loopPlaylist`
+    case loopFile = "loopFile"        /// `MPVOption.PlaybackControl.loopFile`
   }
 
   static private let specPrefStringVersion = "1"
@@ -224,6 +228,11 @@ struct PlayerSaveState {
       props[PropName.maxVolume.rawValue] = String(maxVolume)
     }
 
+    props[PropName.subScale.rawValue] = player.mpv.getDouble(MPVOption.Subtitles.subScale).string2f
+    props[PropName.subPos.rawValue] = String(player.mpv.getInt(MPVOption.Subtitles.subPos))
+
+    props[PropName.loopPlaylist.rawValue] = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
+    props[PropName.loopFile.rawValue] = player.mpv.getString(MPVOption.PlaybackControl.loopFile)
     return props
   }
 
@@ -458,8 +467,6 @@ struct PlayerSaveState {
     //      switchToMiniPlayer()
     //    }
 
-    // TODO: much, much more
-
     // mpv properties
 
     // Must wait until after mpv init, otherwise they will stick
@@ -533,6 +540,18 @@ struct PlayerSaveState {
     }
     if let isSub2Visible = bool(for: .isSub2Visible) {
       mpv.setFlag(MPVOption.Subtitles.secondarySubVisibility, isSub2Visible)
+    }
+    if let subScale = double(for: .subScale) {
+      mpv.setDouble(MPVOption.Subtitles.subScale, subScale)
+    }
+    if let subPos = int(for: .subPos) {
+      mpv.setInt(MPVOption.Subtitles.subPos, subPos)
+    }
+    if let loopPlaylist = string(for: .loopPlaylist) {
+      mpv.setString(MPVOption.PlaybackControl.loopPlaylist, loopPlaylist)
+    }
+    if let loopFile = string(for: .loopFile) {
+      mpv.setString(MPVOption.PlaybackControl.loopFile, loopFile)
     }
     if let abLoopA = double(for: .abLoopA) {
       if let abLoopB = double(for: .abLoopB) {
