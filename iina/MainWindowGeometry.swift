@@ -424,18 +424,21 @@ extension MainWindowController {
         // user is navigating in playlist. retain same window width.
         // This often isn't possible for vertical videos, which will end up shrinking the width.
         // So try to remember the preferred width so it can be restored when possible
+        let allowEmptySpaceAroundVideo = Preference.bool(for: .allowEmptySpaceAroundVideo)
         var desiredVidConSize: NSSize
-        if !Preference.bool(for: .allowEmptySpaceAroundVideo),
+        if !allowEmptySpaceAroundVideo,
             let prefVidConSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoBaseDisplaySize.aspect)  {
           // Just use existing size in this case:
           desiredVidConSize = prefVidConSize
         } else {
           desiredVidConSize = currentWindowGeometry.videoContainerSize
         }
-        let minNewVidConHeight = desiredVidConSize.width / videoBaseDisplaySize.aspect
-        if desiredVidConSize.height < minNewVidConHeight {
-          // Try to increase height if possible, though it may still be shrunk to fit screen
-          desiredVidConSize = NSSize(width: desiredVidConSize.width, height: minNewVidConHeight)
+        if !allowEmptySpaceAroundVideo {
+          let minNewVidConHeight = desiredVidConSize.width / videoBaseDisplaySize.aspect
+          if desiredVidConSize.height < minNewVidConHeight {
+            // Try to increase height if possible, though it may still be shrunk to fit screen
+            desiredVidConSize = NSSize(width: desiredVidConSize.width, height: minNewVidConHeight)
+          }
         }
         newGeo = currentWindowGeometry.scale(desiredVideoContainerSize: desiredVidConSize, constrainedWithin: bestScreen.visibleFrame)
         newWindowFrame = newGeo.windowFrame
