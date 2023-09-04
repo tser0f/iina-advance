@@ -63,9 +63,9 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     let scale = max(0.0001, magnification + 1.0)
     mainWindow.log.verbose("Scaling pinched video, target scale: \(scale)")
 
-    let origVideoSize = windowGeometryAtMagnificationBegin.videoSize
-    let newVideoSize = origVideoSize.multiply(scale);
+    let origVideoContainerSize = windowGeometryAtMagnificationBegin.videoContainerSize
+    let newVideoContainerSize = origVideoContainerSize.multiply(scale);
 
-    mainWindow.resizeVideo(desiredVideoSize: newVideoSize, fromGeometry: windowGeometryAtMagnificationBegin, animate: false)
+    mainWindow.resizeVideoContainer(desiredVideoContainerSize: newVideoContainerSize, fromGeometry: windowGeometryAtMagnificationBegin, animate: false)
   }
 }

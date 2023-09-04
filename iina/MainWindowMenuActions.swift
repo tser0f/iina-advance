@@ -41,12 +41,7 @@ extension MainWindowController {
     case 2:  //  2: double
       setWindowScale(2)
     case 3:  // fit screen
-      guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
-        log.error("FitToScreen failed: could not get videoBaseDisplaySize")
-        return
-      }
-      let desiredVideoSize = videoBaseDisplaySize.satisfyMinSizeWithSameAspectRatio(bestScreen.visibleFrame.size)
-      resizeVideo(desiredVideoSize: desiredVideoSize, centerOnScreen: true)
+      resizeVideoContainer(desiredVideoContainerSize: bestScreen.visibleFrame.size, centerOnScreen: true)
 
     case 10:  // smaller size
       scaleVideoByIncrement(-AppData.scaleStep)
@@ -57,13 +52,12 @@ extension MainWindowController {
     }
   }
 
-  func scaleVideoByIncrement(_ step: CGFloat) {
-    let currentVideoSize = videoView.frame.size
-    let newWidth = currentVideoSize.width + step
-    let newHeight = newWidth / currentVideoSize.aspect
-    let desiredVideoSize = CGSize(width: currentVideoSize.width + step, height: newHeight)
-    Logger.log("Incrementing video width by \(step), to desired size \(desiredVideoSize)", level: .verbose, subsystem: player.subsystem)
-    resizeVideo(desiredVideoSize: desiredVideoSize)
+  func scaleVideoByIncrement(_ widthStep: CGFloat) {
+    let currentVideoContainerSize = videoContainerView.frame.size
+    let heightStep = widthStep / currentVideoContainerSize.aspect
+    let desiredVideoContainerSize = CGSize(width: currentVideoContainerSize.width + widthStep, height: currentVideoContainerSize.height + heightStep)
+    log.verbose("Incrementing videoContainer width by \(widthStep), to desired size \(desiredVideoContainerSize)")
+    resizeVideoContainer(desiredVideoContainerSize: desiredVideoContainerSize)
   }
 
   @objc func menuAlwaysOnTop(_ sender: AnyObject) {
