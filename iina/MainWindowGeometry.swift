@@ -141,11 +141,6 @@ struct MainWindowGeometry: Equatable {
                   height: containerSize.height - outsideBarsSize.height)
   }
 
-  // TODO: revisit this and make sure it's still valid
-  func constrainWithin(_ containerFrame: NSRect) -> MainWindowGeometry {
-    return scale(desiredVideoSize: self.videoSize, constrainedWithin: containerFrame)
-  }
-
   private func constrainBetweenMinAndMax(desiredVideoContainerSize: NSSize, maxSize: NSSize) -> NSSize {
     let outsideBarsTotalSize = self.outsideBarsTotalSize
     return NSSize(width: max(AppData.minVideoSize.width, min(desiredVideoContainerSize.width, maxSize.width - outsideBarsTotalSize.width)),

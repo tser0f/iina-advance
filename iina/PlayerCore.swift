@@ -525,7 +525,6 @@ class PlayerCore: NSObject {
     // move playist view
     playlistView.removeFromSuperview()
     // make sure isInMiniPlayer==true before setting this:
-    mainWindow.playlistView.useCompactTabHeight = true
     mainWindow.updateSidebarVerticalConstraints()
     miniPlayer.playlistWrapperView.addSubview(playlistView)
     playlistView.addConstraintsToFillSuperview()
@@ -551,15 +550,15 @@ class PlayerCore: NSObject {
       Logger.log("Changed overrideAutoSwitchToMusicMode to \(overrideAutoSwitchToMusicMode)",
                  level: .verbose, subsystem: subsystem)
     }
+    isInMiniPlayer = false
+    // make sure isInMiniPlayer is updated before setting this:
     mainWindow.playlistView.view.removeFromSuperview()
-    mainWindow.playlistView.useCompactTabHeight = false
     mainWindow.updateSidebarVerticalConstraints()
     // add back video view
     videoView.removeFromSuperview()
     mainWindow.addVideoViewToWindow()
     // hide mini player
     miniPlayer.window?.orderOut(nil)
-    isInMiniPlayer = false
 
     videoView.videoLayer.draw(forced: true)
 

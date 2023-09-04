@@ -500,7 +500,8 @@ extension MainWindowController {
       // FIXME: need to rework sidebar resize...
       let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔTrailing,
                                                           newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeading)
-      newGeometry = resizedGeometry.constrainWithin(bestScreen.visibleFrame)
+
+      newGeometry = resizedGeometry.scale(desiredVideoContainerSize: resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
 //      let ΔVideoWidth = -(ΔLeading + ΔTrailing)
 //      let newVideoWidth = videoSize.width + ΔVideoWidth
 //      let newVideoSize = NSSize(width: newVideoWidth, height: newVideoWidth / videoAspectRatio)
@@ -540,13 +541,9 @@ extension MainWindowController {
       let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔTrailing,
                                                           newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeading)
 
-      if let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio) {
-        // Work off of previously stored size (see notes above)
-        // FIXME: not container
-        newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize, constrainedWithin: bestScreen.visibleFrame)
-      } else {
-        newGeometry = resizedGeometry.constrainWithin(bestScreen.visibleFrame)
-      }
+      let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio)
+      // Work off of previously stored size (see notes above)
+      newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
     }
 
     if isFullScreen {
@@ -901,31 +898,9 @@ extension MainWindowController {
   /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
   func updateSidebarVerticalConstraints(layout futureLayout: LayoutState? = nil) {
     let layout = futureLayout ?? currentLayout
-    let downshift: CGFloat
-    var tabHeight: CGFloat
-    if player.isInMiniPlayer || (!layout.isFullScreen && layout.topBarPlacement == Preference.PanelPlacement.outsideVideo) {
-      downshift = Constants.Sidebar.defaultDownshift
-      tabHeight = Constants.Sidebar.defaultTabHeight
-      log.verbose("MainWindow: using default downshift (\(downshift)) and tab height (\(tabHeight))")
-    } else {
-      // Downshift: try to match title bar height
-      if layout.isFullScreen || layout.topBarPlacement == Preference.PanelPlacement.outsideVideo {
-        downshift = Constants.Sidebar.defaultDownshift
-      } else {
-        // Need to adjust if has title bar
-        downshift = MainWindowController.reducedTitleBarHeight
-      }
-
-      tabHeight = layout.topOSCHeight
-      // Put some safeguards in place:
-      if tabHeight <= Constants.Sidebar.minTabHeight || tabHeight > Constants.Sidebar.maxTabHeight {
-        tabHeight = Constants.Sidebar.defaultTabHeight
-      }
-    }
-
-    log.verbose("Sidebars downshift: \(downshift), tabHeight: \(tabHeight), fullScreen: \(layout.isFullScreen), topBar: \(layout.topBarPlacement)")
-    quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
-    playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+    log.verbose("Sidebars downshift: \(layout.sidebarDownshift), tabHeight: \(layout.sidebarTabHeight)")
+    quickSettingView.setVerticalConstraints(downshift: layout.sidebarDownshift, tabHeight: layout.sidebarTabHeight)
+    playlistView.setVerticalConstraints(downshift: layout.sidebarDownshift, tabHeight: layout.sidebarTabHeight)
   }
 
   // MARK: - Resize via mouse drag

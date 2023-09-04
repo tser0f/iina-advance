@@ -100,15 +100,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   private var downshift: CGFloat = 0
   private var tabHeight: CGFloat = 0
 
-  func setVerticalConstraints(downshift: CGFloat, tabHeight requestedTabHeight: CGFloat) {
-    let tabHeight: CGFloat
-    if let customTabHeight = customTabHeight {
-      // customTabHeight overrides any other height value
-      tabHeight = customTabHeight
-    } else {
-      tabHeight = requestedTabHeight
-    }
-
+  func setVerticalConstraints(downshift: CGFloat, tabHeight: CGFloat) {
     if self.downshift != downshift || self.tabHeight != tabHeight {
       self.downshift = downshift
       self.tabHeight = tabHeight
@@ -121,12 +113,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     self.buttonTopConstraint?.animateToConstant(downshift)
     self.tabHeightConstraint?.animateToConstant(tabHeight)
     view.layoutSubtreeIfNeeded()
-  }
-
-  var useCompactTabHeight = false
-
-  var customTabHeight: CGFloat? {
-    return useCompactTabHeight ? 32 : nil
   }
 
   override func viewDidLoad() {

@@ -166,6 +166,7 @@ struct Constants {
     /// Sidebar tab buttons
     static let defaultDownshift: CGFloat = 0
     static let defaultTabHeight: CGFloat = 48
+    static let musicModeTabHeight: CGFloat = 32
     static let minTabHeight: CGFloat = 16
     static let maxTabHeight: CGFloat = 70
   }

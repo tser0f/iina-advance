@@ -40,7 +40,7 @@ extension MainWindowController {
     case windowed = 1
     case fullScreen
 //    case pip
-//    case musicMode
+    case musicMode
 //    case interactiveWindow
 //    case interactiveFullScreen
   }
@@ -157,6 +157,9 @@ extension MainWindowController {
     var cameraHousingOffset: CGFloat = 0
     var titleBarHeight: CGFloat = 0
     var topOSCHeight: CGFloat = 0
+
+    var sidebarDownshift: CGFloat = Constants.Sidebar.defaultDownshift
+    var sidebarTabHeight: CGFloat = Constants.Sidebar.defaultTabHeight
 
     /// Bar widths/heights:
 
@@ -747,6 +750,11 @@ extension MainWindowController {
     } else if futureLayout.topBarHeight < transition.fromLayout.topBarHeight {
       needsTopBarHeightUpdate = true
       newTopBarHeight = futureLayout.topBarHeight
+    } else if futureLayout.cameraHousingOffset < transition.fromLayout.cameraHousingOffset {
+      // Exiting legacy fullscreen on MacBook display with magic camera bar.
+      // Need to update camera housing constraint for a better animation
+      needsTopBarHeightUpdate = true
+      newTopBarHeight = transition.fromLayout.topBarHeight  // leave the same
     }
 
     if needsTopBarHeightUpdate {
@@ -803,6 +811,11 @@ extension MainWindowController {
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)")
       (window as! MainWindow).setFrameImmediately(newWindowFrame)
+    } else if transition.fromLayout.isLegacyFullScreen && transition.fromLayout.cameraHousingOffset > 0 {
+      // Exiting legacy FS: get rid of camera housing immediately for nicer animation
+      if let newWindowFrame = window.screen?.frameWithoutCameraHousing {
+        (window as! MainWindow).setFrameImmediately(newWindowFrame)
+      }
     }
 
     if transition.fromLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
@@ -1442,9 +1455,9 @@ extension MainWindowController {
 
     // OSC:
 
-    if futureLayout.enableOSC {
+    if layoutSpec.enableOSC {
       // add fragment views
-      switch futureLayout.oscPosition {
+      switch layoutSpec.oscPosition {
       case .floating:
         futureLayout.controlBarFloating = .showFadeableNonTopBar  // floating is always fadeable
 
@@ -1506,6 +1519,24 @@ extension MainWindowController {
       }
     } else {  // No OSC
       currentControlBar = nil
+    }
+
+    /// Sidebar tabHeight and downshift.
+    /// Downshift: try to match height of title bar
+    /// Tab height: if top OSC is `insideVideo`, try to match its height
+    if futureLayout.spec.mode == .musicMode {
+      /// Special case for music mode. Only really applies to `playlistView`,
+      /// because `quickSettingView` is never shown in this mode.
+      futureLayout.sidebarTabHeight = Constants.Sidebar.musicModeTabHeight
+    } else if futureLayout.topBarView.isShowable && futureLayout.topBarPlacement == .insideVideo {
+      futureLayout.sidebarDownshift = futureLayout.titleBarHeight
+
+      let tabHeight = futureLayout.topOSCHeight
+      // Put some safeguards in place. Don't want to waste space or be too tiny to read.
+      // Leave default height if not in reasonable range.
+      if tabHeight >= Constants.Sidebar.minTabHeight && tabHeight <= Constants.Sidebar.maxTabHeight {
+        futureLayout.sidebarTabHeight = tabHeight
+      }
     }
 
     return futureLayout
