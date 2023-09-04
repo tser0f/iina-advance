@@ -686,6 +686,11 @@ class MainWindowController: PlayerWindowController {
     window.backgroundColor = .black
 //    window.backgroundColor = .clear
 
+    /// Set `videoContainerView`'s background to black so that when `allowEmptySpaceAroundVideo`
+    /// pref is enabled, sidebars do not bleed through during their open/close animations.
+    videoContainerView.wantsLayer = true
+    videoContainerView.layer?.backgroundColor = .black
+
     // Titlebar accessories
 
     // Update this here to reduce animation jitter on older versions of MacOS:
