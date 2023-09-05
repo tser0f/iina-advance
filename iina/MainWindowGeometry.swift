@@ -227,7 +227,7 @@ struct MainWindowGeometry: Equatable {
   }
 
   func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect? = nil) -> MainWindowGeometry {
-    Logger.log("Scaling MainWindowGeometry desiredVideoSize:\(desiredVideoSize)", level: .debug)
+    Logger.log("Scaling MainWindowGeometry desiredVideoSize: \(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
     /// Enforce `videoView.aspectRatio`: Recalculate height, trying to preserve width
@@ -628,6 +628,7 @@ extension MainWindowController {
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return requestedSize }
+    log.verbose("WindowWillResize: requestedSize \(requestedSize)")
 
     defer {
       updateSpacingForTitleBarAccessories()
@@ -667,11 +668,11 @@ extension MainWindowController {
     let currentGeo = buildGeometryFromCurrentLayout()
     let screenVisibleFrame = bestScreen.visibleFrame
 
-    let requestedGeo = currentGeo.scale(desiredWindowSize: requestedSize)
-    let requestedVideoContainerSize = requestedGeo.videoContainerSize
-
     if Preference.bool(for: .allowEmptySpaceAroundVideo) {
       // No need to resize window to match video aspect ratio.
+
+      let requestedGeo = currentGeo.scale(desiredWindowSize: requestedSize)
+      let requestedVideoContainerSize = requestedGeo.videoContainerSize
 
       if fsState == .windowed && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
@@ -681,6 +682,9 @@ extension MainWindowController {
       return requestedGeoConstrained.windowFrame.size
     }
 
+    let outsideBarsTotalSize = currentGeo.outsideBarsTotalSize
+    let requestedVideoContainerSize = NSSize(width: requestedSize.width - outsideBarsTotalSize.width, height: requestedSize.height - outsideBarsTotalSize.height)
+
     // resize height based on requested width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoContainerSize.width, height: requestedVideoContainerSize.width / videoView.aspectRatio)
     let resizeFromWidthGeo = currentGeo.scale(desiredVideoSize: resizeFromWidthRequestedVideoSize, constrainedWithin: screenVisibleFrame)
@@ -689,7 +693,7 @@ extension MainWindowController {
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoContainerSize.height * videoView.aspectRatio, height: requestedVideoContainerSize.height)
     let resizeFromHeightGeo = currentGeo.scale(desiredVideoSize: resizeFromHeightRequestedVideoSize, constrainedWithin: screenVisibleFrame)
 
-    let newWindowSize: NSSize
+    let chosenGeometry: MainWindowGeometry
     if window.inLiveResize {
       /// Notes on the trickiness of live window resize:
       /// 1. We need to decide whether to (A) keep the width fixed, and resize the height, or (B) keep the height fixed, and resize the width.
@@ -704,29 +708,29 @@ extension MainWindowController {
       if window.frame.height != requestedSize.height {
         isLiveResizingWidth = true
       }
-      let chosenGeometry: MainWindowGeometry
+
       if isLiveResizingWidth {
         chosenGeometry = resizeFromHeightGeo
       } else {
         chosenGeometry = resizeFromWidthGeo
       }
+      
       if fsState == .windowed {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise.
         player.info.setUserPreferredVideoContainerSize(chosenGeometry.videoContainerSize)
       }
-      newWindowSize = chosenGeometry.windowFrame.size
     } else {
       // Resize request is not coming from the user. Could be BetterTouchTool, Retangle, or some window manager, or the OS.
       // These tools seem to expect that both dimensions of the returned size are less than the requested dimensions, so check for this.
 
       if resizeFromWidthGeo.windowFrame.width <= requestedSize.width && resizeFromWidthGeo.windowFrame.height <= requestedSize.height {
-        newWindowSize = resizeFromWidthGeo.windowFrame.size
+        chosenGeometry = resizeFromWidthGeo
       } else {
-        newWindowSize = resizeFromHeightGeo.windowFrame.size
+        chosenGeometry = resizeFromHeightGeo
       }
     }
-    log.verbose("WindowWillResize returning \(newWindowSize) from \(requestedSize)")
-    return newWindowSize
+    log.verbose("WindowWillResize isLive=\(window.inLiveResize.yn) req=\(requestedSize). Returning \(chosenGeometry.windowFrame.size)")
+    return chosenGeometry.windowFrame.size
   }
 
   func windowDidResize(_ notification: Notification) {
