@@ -808,7 +808,7 @@ extension MainWindowController {
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)")
       (window as! MainWindow).setFrameImmediately(newWindowFrame)
-    } else if transition.fromLayout.isLegacyFullScreen && transition.fromLayout.cameraHousingOffset > 0 {
+    } else if transition.isTogglingFullScreen && transition.fromLayout.isLegacyFullScreen && transition.fromLayout.cameraHousingOffset > 0 {
       // Exiting legacy FS: get rid of camera housing immediately for nicer animation
       if let newWindowFrame = window.screen?.frameWithoutCameraHousing {
         (window as! MainWindow).setFrameImmediately(newWindowFrame)

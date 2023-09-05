@@ -159,11 +159,12 @@ class MainWindowController: PlayerWindowController {
   /** For force touch action */
   var isCurrentPressInSecondStage = false
 
-  // - Sidebars
+  /// - Sidebars: See file `Sidebars.swift`
 
-  /// See file `Sidebars.swift`
+  /// For resize of `playlist` tab group
   var leadingSidebarIsResizing = false
   var trailingSidebarIsResizing = false
+  var windowGeometryAtResizeStart: MainWindowGeometry? = nil
 
   var leadingSidebarAnimationState: UIAnimationState = .hidden
   var trailingSidebarAnimationState: UIAnimationState = .hidden

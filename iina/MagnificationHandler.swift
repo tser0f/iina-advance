@@ -9,8 +9,7 @@
 import Foundation
 
 class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
-  var lastMagnification: CGFloat = 0.0
-  var windowGeometryAtMagnificationBegin = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(), videoSize: NSSize(), videoAspectRatio: 1.0)
+  private var windowGeometryAtMagnificationStart = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(), videoAspectRatio: 1.0)
 
   lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
@@ -42,7 +41,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       switch recognizer.state {
       case .began:
         // FIXME: confirm reset on video size change due to track change
-        windowGeometryAtMagnificationBegin = mainWindow.buildGeometryFromCurrentLayout()
+        windowGeometryAtMagnificationStart = mainWindow.buildGeometryFromCurrentLayout()
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
@@ -63,9 +62,9 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     let scale = max(0.0001, magnification + 1.0)
     mainWindow.log.verbose("Scaling pinched video, target scale: \(scale)")
 
-    let origVideoContainerSize = windowGeometryAtMagnificationBegin.videoContainerSize
+    let origVideoContainerSize = windowGeometryAtMagnificationStart.videoContainerSize
     let newVideoContainerSize = origVideoContainerSize.multiply(scale);
 
-    mainWindow.resizeVideoContainer(desiredVideoContainerSize: newVideoContainerSize, fromGeometry: windowGeometryAtMagnificationBegin, animate: false)
+    mainWindow.resizeVideoContainer(desiredVideoContainerSize: newVideoContainerSize, fromGeometry: windowGeometryAtMagnificationStart, animate: false)
   }
 }

@@ -424,7 +424,7 @@ extension MainWindowController {
         if let lastVisibleTab = leadingSidebar.lastVisibleTab {
           sidebarWidth = lastVisibleTab.group.width()
         } else {
-          Logger.log("Failed to find lastVisibleTab for leadingSidebar", level: .error, subsystem: player.subsystem)
+          log.error("Failed to find lastVisibleTab for leadingSidebar")
           sidebarWidth = 0
         }
         if leadingSidebarAnimationState == .willHide {
@@ -454,7 +454,7 @@ extension MainWindowController {
         if let lastVisibleTab = trailingSidebar.lastVisibleTab {
           sidebarWidth = lastVisibleTab.group.width()
         } else {
-          Logger.log("Failed to find lastVisibleTab for trailingSidebar", level: .error, subsystem: player.subsystem)
+          log.error("Failed to find lastVisibleTab for trailingSidebar")
           sidebarWidth = 0
         }
         if trailingSidebarAnimationState == .willHide {
@@ -479,78 +479,60 @@ extension MainWindowController {
 
   // Resizes window to accomodate open/close of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
-  private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat = 0, ΔTrailingOutsideWidth ΔTrailing: CGFloat = 0,
-                                 sidebarIsResizing: Bool = false) {
+  private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat = 0, ΔTrailingOutsideWidth ΔTrailing: CGFloat = 0) {
     guard ΔLeading != 0 || ΔTrailing != 0 else { return }
 
-    let isFullScreen: Bool
-    let oldGeometry: MainWindowGeometry
-
-    if let priorWindowedGeometry = fsState.priorWindowedGeometry {
-      isFullScreen = true
-      oldGeometry = priorWindowedGeometry
-    } else {
-      isFullScreen = false
-      oldGeometry = buildGeometryFromCurrentLayout()
+    let oldGeometry = windowGeometryAtResizeStart ?? buildGeometryFromCurrentLayout()
+    let isExpandingWindow = ΔLeading + ΔTrailing > 0
+    if isExpandingWindow {
+      // Is expanding the window to open a sidebar. First save the current size as the preferred size.
+      // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
+      // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
+      if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio),
+         existingPreferredSize.width > oldGeometry.videoContainerSize.width {
+        // Probably a sidebar was opened before this. Don't overwrite its previously saved pref with a smaller one
+        log.verbose("Before outer sidebar open: will not update userPreferredVideoContainerSize; pref already exists and is larger")
+      } else {
+        log.verbose("Before outer sidebar open: saving previous userPreferredVideoContainerSize")
+        player.info.setUserPreferredVideoContainerSize(oldGeometry.videoContainerSize)
+      }
     }
 
+    let newLeadingWidth = oldGeometry.leadingBarWidth + ΔLeading
+    let newTrailingWidth = oldGeometry.trailingBarWidth + ΔTrailing
+    updateWindowFrame(newLeadingWidth: newLeadingWidth, newTrailingWidth: newTrailingWidth)
+  }
+
+  private func updateWindowFrame(newLeadingWidth: CGFloat = 0, newTrailingWidth: CGFloat = 0) {
+    let oldGeometry = windowGeometryAtResizeStart ?? buildGeometryFromCurrentLayout()
     let newGeometry: MainWindowGeometry
 
-    if sidebarIsResizing {
-      // FIXME: need to rework sidebar resize...
-      let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔTrailing,
-                                                          newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeading)
-
-      newGeometry = resizedGeometry.scale(desiredVideoContainerSize: resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
-//      let ΔVideoWidth = -(ΔLeading + ΔTrailing)
-//      let newVideoWidth = videoSize.width + ΔVideoWidth
-//      let newVideoSize = NSSize(width: newVideoWidth, height: newVideoWidth / videoAspectRatio)
-//      let newWindowWidth = newVideoSize.width + (newLeadingWidth ?? leadingBarWidth) + (newTrailingWidth ?? trailingBarWidth)
-//      let newWindowHeight = newVideoSize.height + topBarHeight + bottomBarHeight
-//      let ΔWindowWidth = newWindowWidth - self.windowFrame.width
-//      let ΔWindowHeight = newWindowHeight - self.windowFrame.height
-//
-//      let newWindowFrame = CGRect(x: windowFrame.origin.x,
-//                                  y: (windowFrame.origin.y - (ΔWindowHeight / 2.0)).rounded(),
-//                                  width: newWindowWidth,
-//                                  height: newWindowHeight)
-//      newGeometry = resizedGeometry.clone(windowFrame: newWindowFrame,
-//                        topBarHeight: newTopHeight, trailingBarWidth: newTrailingWidth,
-//                        bottomBarHeight: newBottomHeight, leadingBarWidth: newLeadingWidth,
-//                        videoSize: newVideoSize).constrainWithin(bestScreen.visibleFrame)
-    } else {
-      let isExpandingWindow = ΔLeading + ΔTrailing > 0
-      if isExpandingWindow {
-        // Is expanding the window to open a sidebar. First save the current size as the preferred size.
-        // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
-        // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
-        if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio),
-           existingPreferredSize.width > oldGeometry.videoContainerSize.width {
-          // Probably a sidebar was opened before this. Don't overwrite its previously saved pref with a smaller one
-          log.verbose("Before outer sidebar open: will not update userPreferredVideoContainerSize; pref already exists and is larger")
-        } else {
-          log.verbose("Before outer sidebar open: saving previous userPreferredVideoContainerSize")
-          player.info.setUserPreferredVideoContainerSize(oldGeometry.videoContainerSize)
-        }
-      }
-
-      // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
-      // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
-      // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
-      // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-      let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: oldGeometry.trailingBarWidth + ΔTrailing,
-                                                          newLeadingWidth: oldGeometry.leadingBarWidth + ΔLeading)
-
-      let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio)
-      // Work off of previously stored size (see notes above)
-      newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+    // Can happen for stale stored layout state. Try to recover
+    if newLeadingWidth < 0 {
+      log.error("Cannot set negative sidebar width (given: \(newLeadingWidth))! Will set leadingSidebar width to 0 instead")
     }
+    if newTrailingWidth < 0 {
+      log.error("Cannot set negative sidebar width (given: \(newTrailingWidth))! Will set trailingSidebar width to 0 instead")
+    }
+    let newLeadingWidth = max(0, newLeadingWidth)
+    let newTrailingWidth = max(0, newTrailingWidth)
 
-    if isFullScreen {
+    // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
+    // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
+    // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
+    // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
+    let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: newTrailingWidth,
+                                                        newLeadingWidth: newLeadingWidth)
+
+    let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio)
+    // Work off of previously stored size (see notes above)
+    newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+
+    // TODO: package this into a MainWindow apply() function or something
+    if fsState.isFullscreen {
       fsState.priorWindowedGeometry = newGeometry
     } else {
-      Logger.log("Calling setFrame() after updating sidebars. ΔLeading: \(ΔLeading), ΔTrailing: \(ΔTrailing)",
-                 level: .debug, subsystem: player.subsystem)
+      log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
       (window as! MainWindow).setFrameImmediately(newGeometry.windowFrame)
     }
     player.saveState()
@@ -681,8 +663,7 @@ extension MainWindowController {
   /// Prepares those layout components which are generic for either `Sidebar`.
   /// Executed prior to opening the given `Sidebar` with corresponding `sidebarView`
   private func prepareRemainingLayoutForOpening(sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: Sidebar.Tab) {
-    Logger.log("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab",
-               level: .error, subsystem: player.subsystem)
+    log.verbose("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab")
 
 
     let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
@@ -943,9 +924,11 @@ extension MainWindowController {
     if isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
       Logger.log("User started resize of leading sidebar", level: .verbose, subsystem: player.subsystem)
       leadingSidebarIsResizing = true
+      windowGeometryAtResizeStart = buildGeometryFromCurrentLayout()
       return true
     } else if isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
       Logger.log("User started resize of trailing sidebar", level: .verbose, subsystem: player.subsystem)
+      windowGeometryAtResizeStart = buildGeometryFromCurrentLayout()
       trailingSidebarIsResizing = true
       return true
     }
@@ -961,17 +944,9 @@ extension MainWindowController {
       let newPlaylistWidth: CGFloat
       if leadingSidebarIsResizing {
         newPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
-        if layout.leadingSidebarPlacement == .outsideVideo {
-          let ΔWidth = newPlaylistWidth - layout.leadingBarOutsideWidth
-          updateWindowFrame(ΔLeadingOutsideWidth: ΔWidth, sidebarIsResizing: true)
-        }
         updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.leadingSidebarPlacement)
       } else if trailingSidebarIsResizing {
         newPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
-        if layout.trailingSidebarPlacement == .outsideVideo {
-          let ΔWidth = newPlaylistWidth - layout.trailingBarOutsideWidth
-          updateWindowFrame(ΔTrailingOutsideWidth: ΔWidth, sidebarIsResizing: true)
-        }
         updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.trailingSidebarPlacement)
       } else {
         return false
@@ -988,11 +963,21 @@ extension MainWindowController {
     if leadingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       leadingSidebarIsResizing = false
+      if let priorWindowedGeometry = fsState.priorWindowedGeometry {
+        // If in fullscreen, need to update saved windowed geometry
+        fsState.priorWindowedGeometry = priorWindowedGeometry.clone(leadingBarWidth: CGFloat(Preference.integer(for: .playlistWidth)))
+      }
+      windowGeometryAtResizeStart = nil
       log.verbose("New width of left sidebar playlist is \(currentLayout.leadingSidebar.currentWidth)")
       return true
     } else if trailingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       trailingSidebarIsResizing = false
+      if let priorWindowedGeometry = fsState.priorWindowedGeometry {
+        // If in fullscreen, need to update saved windowed geometry
+        fsState.priorWindowedGeometry = priorWindowedGeometry.clone(trailingBarWidth: CGFloat(Preference.integer(for: .playlistWidth)))
+      }
+      windowGeometryAtResizeStart = nil
       log.verbose("New width of right sidebar playlist is \(currentLayout.trailingSidebar.currentWidth)")
       return true
     }

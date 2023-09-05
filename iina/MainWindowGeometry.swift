@@ -55,8 +55,8 @@ struct MainWindowGeometry: Equatable {
   let bottomBarHeight: CGFloat
   let leadingBarWidth: CGFloat
 
-  let videoSize: NSSize
   let videoAspectRatio: CGFloat
+  let videoSize: NSSize
 
   var allowEmptySpaceAroundVideo: Bool {
     return Preference.bool(for: .allowEmptySpaceAroundVideo)
@@ -66,7 +66,7 @@ struct MainWindowGeometry: Equatable {
 
   init(windowFrame: NSRect,
        topBarHeight: CGFloat, trailingBarWidth: CGFloat, bottomBarHeight: CGFloat, leadingBarWidth: CGFloat,
-       videoSize: NSSize, videoAspectRatio: CGFloat) {
+       videoAspectRatio: CGFloat) {
     assert(topBarHeight >= 0, "Expected topBarHeight > 0, found \(topBarHeight)")
     assert(trailingBarWidth >= 0, "Expected trailingBarWidth > 0, found \(trailingBarWidth)")
     assert(bottomBarHeight >= 0, "Expected bottomBarHeight > 0, found \(bottomBarHeight)")
@@ -77,13 +77,13 @@ struct MainWindowGeometry: Equatable {
     self.trailingBarWidth = trailingBarWidth
     self.bottomBarHeight = bottomBarHeight
     self.leadingBarWidth = leadingBarWidth
-    self.videoSize = videoSize
     self.videoAspectRatio = videoAspectRatio
+    let videoContainerSize = MainWindowGeometry.computeVideoContainerSize(from: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth)
+    self.videoSize = MainWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
   }
 
   init(windowFrame: NSRect,
        videoContainerFrame: NSRect,
-       videoSize: NSSize,
        videoAspectRatio: CGFloat) {
     assert(videoContainerFrame.height <= windowFrame.height, "videoContainerFrame.height (\(videoContainerFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
     assert(videoContainerFrame.width <= windowFrame.width, "videoContainerFrame.width (\(videoContainerFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
@@ -95,14 +95,12 @@ struct MainWindowGeometry: Equatable {
               trailingBarWidth: windowFrame.width - videoContainerFrame.width - leadingBarWidth,
               bottomBarHeight: videoContainerFrame.origin.y,
               leadingBarWidth: videoContainerFrame.origin.x,
-              videoSize: videoSize,
               videoAspectRatio: videoAspectRatio)
   }
 
   func clone(windowFrame: NSRect? = nil,
              topBarHeight: CGFloat? = nil, trailingBarWidth: CGFloat? = nil,
              bottomBarHeight: CGFloat? = nil, leadingBarWidth: CGFloat? = nil,
-             videoSize: NSSize? = nil,
              videoAspectRatio: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
@@ -110,11 +108,10 @@ struct MainWindowGeometry: Equatable {
                               trailingBarWidth: trailingBarWidth ?? self.trailingBarWidth,
                               bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
                               leadingBarWidth: leadingBarWidth ?? self.leadingBarWidth,
-                              videoSize: videoSize ?? self.videoSize,
                               videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
-  // MARK: - Derived properties
+  // MARK: - Computed properties
 
   /// This will be equal to `videoSize`, unless IINA is configured to allow the window to expand beyond
   /// the bounds of the video for a letterbox/pillarbox effect (separate from anything mpv includes)
@@ -133,12 +130,27 @@ struct MainWindowGeometry: Equatable {
 
   // MARK: - Functions
 
+  static private func computeVideoContainerSize(from windowFrame: NSRect,
+                                                topBarHeight: CGFloat, trailingBarWidth: CGFloat,
+                                                bottomBarHeight: CGFloat, leadingBarWidth: CGFloat) -> NSSize {
+    return NSSize(width: windowFrame.width - trailingBarWidth - leadingBarWidth,
+                  height: windowFrame.height - topBarHeight - bottomBarHeight)
+  }
+
+  static private func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn videoContainerSize: NSSize) -> NSSize {
+    /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
+    if videoAspectRatio < videoContainerSize.aspect {  // video is taller, shrink to meet height
+      return NSSize(width: videoContainerSize.height * videoAspectRatio, height: videoContainerSize.height)
+    } else {  // video is wider, shrink to meet width
+      return NSSize(width: videoContainerSize.width, height: videoContainerSize.width / videoAspectRatio)
+    }
+  }
+
   private func computeMaxVideoContainerSize(in containerSize: NSSize) -> NSSize {
     // Resize only the video. Panels outside the video do not change size.
     // To do this, subtract the "outside" panels from the container frame
-    let outsideBarsSize = self.outsideBarsTotalSize
-    return NSSize(width: containerSize.width - outsideBarsSize.width,
-                  height: containerSize.height - outsideBarsSize.height)
+    return NSSize(width: containerSize.width - outsideBarsTotalSize.width,
+                  height: containerSize.height - outsideBarsTotalSize.height)
   }
 
   private func constrainAboveMin(desiredVideoContainerSize: NSSize) -> NSSize {
@@ -150,15 +162,6 @@ struct MainWindowGeometry: Equatable {
     let outsideBarsTotalSize = self.outsideBarsTotalSize
     return NSSize(width: min(desiredVideoContainerSize.width, maxSize.width - outsideBarsTotalSize.width),
                   height: min(desiredVideoContainerSize.height, maxSize.height - outsideBarsTotalSize.height))
-  }
-
-  static private func computeLargestVideoSize(toFillIn videoContainerSize: NSSize, usingAspectRatio videoAspectRatio: CGFloat) -> NSSize {
-    /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
-    if videoAspectRatio < videoContainerSize.aspect {  // video is taller, shrink to meet height
-      return NSSize(width: videoContainerSize.height * videoAspectRatio, height: videoContainerSize.height)
-    } else {  // video is wider, shrink to meet width
-      return NSSize(width: videoContainerSize.width, height: videoContainerSize.width / videoAspectRatio)
-    }
   }
 
   func constrainWithin(_ containerFrame: NSRect) -> MainWindowGeometry {
@@ -201,7 +204,7 @@ struct MainWindowGeometry: Equatable {
     }
 
     /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
-    let newVideoSize = MainWindowGeometry.computeLargestVideoSize(toFillIn: newVidConSize, usingAspectRatio: videoAspectRatio)
+    let newVideoSize = MainWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newVidConSize)
 
     if !allowEmptySpaceAroundVideo {
       newVidConSize = newVideoSize
@@ -223,7 +226,7 @@ struct MainWindowGeometry: Equatable {
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
     }
     Logger.log("Scaled MainWindowGeometry result: \(newWindowFrame)", level: .verbose)
-    return self.clone(windowFrame: newWindowFrame, videoSize: newVideoSize)
+    return self.clone(windowFrame: newWindowFrame)
   }
 
   func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect? = nil) -> MainWindowGeometry {
@@ -449,7 +452,7 @@ extension MainWindowController {
             log.verbose("[AdjustFrameAfterVideoReconfig C ResultC] Resizing priorWindowFrame \(priorWindowFrame) to videoSize + outside panels = \(newWindowSize) → windowFrame: \(newWindowFrame)")
           }
         }
-        newGeo = currentWindowGeometry.clone(windowFrame: newWindowFrame, videoSize: newVideoSize, videoAspectRatio: videoView.aspectRatio)
+        newGeo = currentWindowGeometry.clone(windowFrame: newWindowFrame, videoAspectRatio: videoView.aspectRatio)
 
       } else {
         // user is navigating in playlist. retain same window width.
@@ -600,7 +603,6 @@ extension MainWindowController {
 
     let windowFrame = window!.frame
     let videoContainerFrame = videoContainerView.frame
-    let videoSize = videoView.frame.size
     let videoAspectRatio = videoView.aspectRatio
 
     guard videoContainerFrame.width <= windowFrame.width && videoContainerFrame.height <= windowFrame.height else {
@@ -610,11 +612,10 @@ extension MainWindowController {
                                 trailingBarWidth: currentLayout.trailingBarWidth,
                                 bottomBarHeight: currentLayout.bottomBarOutsideHeight,
                                 leadingBarWidth: currentLayout.leadingBarWidth,
-                                videoSize: videoSize,
                                 videoAspectRatio: videoAspectRatio)
     }
     return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
-                              videoSize: videoSize, videoAspectRatio: videoAspectRatio)
+                              videoAspectRatio: videoAspectRatio)
   }
 
   func windowWillStartLiveResize(_ notification: Notification) {
@@ -714,7 +715,7 @@ extension MainWindowController {
       } else {
         chosenGeometry = resizeFromWidthGeo
       }
-      
+ 
       if fsState == .windowed {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise.
         player.info.setUserPreferredVideoContainerSize(chosenGeometry.videoContainerSize)

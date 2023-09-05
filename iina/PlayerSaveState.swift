@@ -134,16 +134,8 @@ struct PlayerSaveState {
     props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
     /// `windowGeometry`
-    let geometry: MainWindowGeometry?
-    if layout.isFullScreen {
-      geometry = player.mainWindow.fsState.priorWindowedGeometry
-      // TODO: which screen...?
-    } else {
-      geometry = player.mainWindow.buildGeometryFromCurrentLayout()
-    }
-    if let geometry = geometry {
-      props[PropName.windowGeometry.rawValue] = toCSV(geometry)
-    }
+    let geometry = player.mainWindow.buildGeometryFromCurrentLayout()
+    props[PropName.windowGeometry.rawValue] = toCSV(geometry)
 
     if let size = info.userPreferredVideoContainerSizeWide {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
@@ -406,7 +398,7 @@ struct PlayerSaveState {
 
       let videoSize = CGSize(width: videoWidth, height: videoHeight)
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoSize: videoSize, videoAspectRatio: videoAspectRatio)
+      return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoAspectRatio: videoAspectRatio)
     })
   }
 
