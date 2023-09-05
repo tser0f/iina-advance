@@ -561,9 +561,9 @@ extension MainWindowController {
    The window's position will also be updated to maintain its current center if possible, but also to
    ensure it is placed entirely inside `bestScreen.visibleFrame`.
    */
-  func resizeVideoContainer(desiredVideoContainerSize: CGSize, fromGeometry: MainWindowGeometry? = nil,
+  func resizeVideoContainer(desiredVideoContainerSize: CGSize? = nil, fromGeometry: MainWindowGeometry? = nil,
                             centerOnScreen: Bool = false, animate: Bool = true) {
-    guard !isInInteractiveMode, let window = window else { return }
+    guard !isInInteractiveMode, fsState == .windowed, let window = window else { return }
 
     let oldGeo = fromGeometry ?? buildGeometryFromCurrentLayout()
     let newGeoUnconstrained = oldGeo.scale(desiredVideoContainerSize: desiredVideoContainerSize)
@@ -585,10 +585,8 @@ extension MainWindowController {
       window.setFrame(newWindowFrame, display: true, animate: false)
     }
 
-    if fsState == .windowed {
-      // User has actively resized the video. Assume this is the new preferred resolution
-      player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
-    }
+    // User has actively resized the video. Assume this is the new preferred resolution
+    player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
   }
 
   // Must be called from the main thread
@@ -672,10 +670,10 @@ extension MainWindowController {
     let requestedGeo = currentGeo.scale(desiredWindowSize: requestedSize)
     let requestedVideoContainerSize = requestedGeo.videoContainerSize
 
-    if window.inLiveResize && Preference.bool(for: .allowEmptySpaceAroundVideo) {
+    if Preference.bool(for: .allowEmptySpaceAroundVideo) {
       // No need to resize window to match video aspect ratio.
 
-      if fsState == .windowed {
+      if fsState == .windowed && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
         player.info.setUserPreferredVideoContainerSize(requestedVideoContainerSize)
       }
@@ -727,7 +725,7 @@ extension MainWindowController {
         newWindowSize = resizeFromHeightGeo.windowFrame.size
       }
     }
-    log.verbose("WindowWillResize returning: \(newWindowSize) from:\(requestedSize)")
+    log.verbose("WindowWillResize returning \(newWindowSize) from \(requestedSize)")
     return newWindowSize
   }
 

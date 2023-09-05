@@ -338,7 +338,8 @@ class MainWindowController: PlayerWindowController {
     .playlistTabGroupLocation,
     .showLeadingSidebarToggleButton,
     .showTrailingSidebarToggleButton,
-    .useLegacyWindowedMode
+    .useLegacyWindowedMode,
+    .allowEmptySpaceAroundVideo
   ]
 
   override var observedPrefKeys: [Preference.Key] {
@@ -369,6 +370,11 @@ class MainWindowController: PlayerWindowController {
         player.miniPlayer.updateLegacyWindowedMode()
       }
       updateTitleBarAndOSC()
+    case PK.allowEmptySpaceAroundVideo.rawValue:
+      if let isAllowed = change[.newKey] as? Bool, !isAllowed {
+        log.debug("Pref \(keyPath.quoted) changed to \(isAllowed): resizing window to remove any black space")
+        resizeVideoContainer()
+      }
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
