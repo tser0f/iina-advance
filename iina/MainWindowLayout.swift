@@ -29,9 +29,8 @@ fileprivate let oscTitleBarToolbarButtonIconSize: CGFloat = 14
 fileprivate let oscTitleBarToolbarButtonIconPadding: CGFloat = 5
 
 fileprivate extension NSStackView.VisibilityPriority {
-  static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
-  static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 800)
-  static let detachEarliest = NSStackView.VisibilityPriority(rawValue: 750)
+  static let detachEarly = NSStackView.VisibilityPriority(rawValue: 950)
+  static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 900)
 }
 
 extension MainWindowController {
@@ -200,8 +199,6 @@ extension MainWindowController {
     /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
     /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
     var osdMinOffsetFromTop: CGFloat = 8
-
-    var setupControlBarInternalViews: TaskFunc? = nil
 
     init(spec: LayoutSpec) {
       self.spec = spec
@@ -894,17 +891,31 @@ extension MainWindowController {
       view?.removeFromSuperview()
     }
 
-    if let setupControlBarInternalViews = futureLayout.setupControlBarInternalViews {
-      log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
-      setupControlBarInternalViews()
-    }
-
     if transition.isTopBarPlacementChanging {
       updateTopBarPlacement(placement: futureLayout.topBarPlacement)
     }
 
     if transition.isBottomBarPlacementChanging {
       updateBottomBarPlacement(placement: futureLayout.bottomBarPlacement)
+    }
+
+    if futureLayout.enableOSC {
+      log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
+      switch futureLayout.oscPosition {
+      case .top:
+        currentControlBar = controlBarTop
+        addControlBarViews(to: oscTopMainView,
+                           playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
+
+      case .bottom:
+        currentControlBar = bottomBarView
+        addControlBarViews(to: oscBottomMainView,
+                           playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
+
+      case .floating:
+        // Wait to add these in the next task. For some reason, adding too soon here causes
+        break
+      }
     }
 
     // Sidebars: finish closing (if closing)
@@ -1028,6 +1039,37 @@ extension MainWindowController {
 
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: futureLayout)
+
+    // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
+    if futureLayout.enableOSC && futureLayout.hasFloatingOSC {
+      currentControlBar = controlBarFloating
+
+      oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
+      // There sweems to be a race condition when adding to these StackViews.
+      // Sometimes it still contains the old view, and then trying to add again will cause a crash.
+      // Must check if it already contains the view before adding.
+      if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
+        oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+      }
+      let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
+      oscFloatingUpperView.addView(toolbarView, in: .trailing)
+      fragToolbarView = toolbarView
+
+      oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
+      oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
+      oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+
+      oscFloatingLowerView.addSubview(fragPositionSliderView)
+      fragPositionSliderView.addConstraintsToFillSuperview()
+      // center control bar
+      let cph = Preference.float(for: .controlBarPositionHorizontal)
+      let cpv = Preference.float(for: .controlBarPositionVertical)
+      controlBarFloating.xConstraint.constant = window.frame.width * CGFloat(cph)
+      controlBarFloating.yConstraint.constant = window.frame.height * CGFloat(cpv)
+
+      playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
+      playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
+    }
 
     bottomBarView.layoutSubtreeIfNeeded()
     window.contentView?.layoutSubtreeIfNeeded()
@@ -1460,36 +1502,6 @@ extension MainWindowController {
       switch layoutSpec.oscPosition {
       case .floating:
         futureLayout.controlBarFloating = .showFadeableNonTopBar  // floating is always fadeable
-
-        futureLayout.setupControlBarInternalViews = { [self] in
-          currentControlBar = controlBarFloating
-
-          oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
-          // There sweems to be a race condition when adding to these StackViews.
-          // Sometimes it still contains the old view, and then trying to add again will cause a crash.
-          // Must check if it already contains the view before adding.
-          if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
-            oscFloatingUpperView.addView(fragVolumeView, in: .leading)
-          }
-          let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
-          oscFloatingUpperView.addView(toolbarView, in: .trailing)
-          fragToolbarView = toolbarView
-
-          oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
-          oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
-          oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-
-          oscFloatingLowerView.addSubview(fragPositionSliderView)
-          fragPositionSliderView.addConstraintsToFillSuperview()
-          // center control bar
-          let cph = Preference.float(for: .controlBarPositionHorizontal)
-          let cpv = Preference.float(for: .controlBarPositionVertical)
-          controlBarFloating.xConstraint.constant = window.frame.width * CGFloat(cph)
-          controlBarFloating.yConstraint.constant = window.frame.height * CGFloat(cpv)
-
-          playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
-          playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
-        }
       case .top:
         if futureLayout.titleBar.isShowable {
           // If legacy window mode, do not show title bar.
@@ -1500,22 +1512,9 @@ extension MainWindowController {
         let visibility: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
         futureLayout.topBarView = visibility
         futureLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
-
-        futureLayout.setupControlBarInternalViews = { [self] in
-          currentControlBar = controlBarTop
-          addControlBarViews(to: oscTopMainView,
-                             playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
-        }
-
       case .bottom:
         futureLayout.bottomBarHeight = OSCToolbarButton.oscBarHeight
         futureLayout.bottomBarView = (futureLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
-
-        futureLayout.setupControlBarInternalViews = { [self] in
-          currentControlBar = bottomBarView
-          addControlBarViews(to: oscBottomMainView,
-                             playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
-        }
       }
     } else {  // No OSC
       currentControlBar = nil

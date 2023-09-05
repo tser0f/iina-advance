@@ -141,10 +141,15 @@ struct MainWindowGeometry: Equatable {
                   height: containerSize.height - outsideBarsSize.height)
   }
 
-  private func constrainBetweenMinAndMax(desiredVideoContainerSize: NSSize, maxSize: NSSize) -> NSSize {
+  private func constrainAboveMin(desiredVideoContainerSize: NSSize) -> NSSize {
+    return NSSize(width: max(AppData.minVideoSize.width, desiredVideoContainerSize.width),
+                  height: max(AppData.minVideoSize.height, desiredVideoContainerSize.height))
+  }
+
+  private func constrainBelowMax(desiredVideoContainerSize: NSSize, maxSize: NSSize) -> NSSize {
     let outsideBarsTotalSize = self.outsideBarsTotalSize
-    return NSSize(width: max(AppData.minVideoSize.width, min(desiredVideoContainerSize.width, maxSize.width - outsideBarsTotalSize.width)),
-                  height: max(AppData.minVideoSize.height, min(desiredVideoContainerSize.height, maxSize.height - outsideBarsTotalSize.height)))
+    return NSSize(width: min(desiredVideoContainerSize.width, maxSize.width - outsideBarsTotalSize.width),
+                  height: min(desiredVideoContainerSize.height, maxSize.height - outsideBarsTotalSize.height))
   }
 
   static private func computeLargestVideoSize(toFillIn videoContainerSize: NSSize, usingAspectRatio videoAspectRatio: CGFloat) -> NSSize {
@@ -175,15 +180,24 @@ struct MainWindowGeometry: Equatable {
     }
   }
 
-  /// If `containerFrame` is not specified, center point & size of resulting `windowFrame` will not be changed.
+  /// Computes a new `MainWindowGeometry` from this one.
+  /// • If `desiredVideoContainerSize` is given, the `windowFrame` will be shrunk or grown as needed, as will the `videoSize` which will
+  /// be resized to fit in the new `videoContainerSize` based on `videoAspectRatio`.
+  /// • If `allowEmptySpaceAroundVideo` is enabled, `videoContainerSize` will be shrunk to the same size as `videoSize`, and
+  /// `windowFrame` will be resized accordingly.
+  /// • If `containerFrame` is given, resulting `windowFrame` (and its subviews) will be sized and repositioned as ncessary to fit within it.
   /// (The `containerFrame` will typically be `screen.visibleFrame`)
+  /// • If `containerFrame` is `nil`, center point & size of resulting `windowFrame` will not be changed.
   func scale(desiredVideoContainerSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil) -> MainWindowGeometry {
     var newVidConSize = desiredVideoContainerSize ?? videoContainerSize
     Logger.log("Scaling MainWindowGeometry newVidConSize: \(newVidConSize)", level: .verbose)
 
-    /// If `containerFrame` is specified, constrain `videoContainerSize` between `minVideoSize` and `containerFrame`:
+    /// Make sure `videoContainerSize` is at least as large as `minVideoSize`:
+    newVidConSize = constrainAboveMin(desiredVideoContainerSize: newVidConSize)
+
+    /// If `containerFrame` is specified, constrain `videoContainerSize` within `containerFrame`:
     if let containerFrame = containerFrame {
-      newVidConSize = constrainBetweenMinAndMax(desiredVideoContainerSize: newVidConSize, maxSize: containerFrame.size)
+      newVidConSize = constrainBelowMax(desiredVideoContainerSize: newVidConSize, maxSize: containerFrame.size)
     }
 
     /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:

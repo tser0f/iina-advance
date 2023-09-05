@@ -1523,7 +1523,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = CocoaAnimation.DefaultDuration,
-                                                 forceShowTopBar: Bool = false) -> [CocoaAnimation.Task] {
+                                         forceShowTopBar: Bool = false) -> [CocoaAnimation.Task] {
     var animationTasks: [CocoaAnimation.Task] = []
 
     let showTopBar = forceShowTopBar || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover
