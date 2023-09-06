@@ -423,20 +423,9 @@ struct PlayerSaveState {
     if let geometry = windowGeometry {
       log.verbose("Successfully parsed prior geometry from prefs")
 
-      player.videoView.aspectRatio = geometry.videoAspectRatio
-
-      // Constrain within screen
-      let windowFrame = geometry.windowFrame
-      /// If needing to restore full screen, will create & execute transition to fullscreen in `windowWillOpen`.
-      if mainWindow.fsState.isFullscreen {
-        // TODO: figure out if getting here is even possible. For now, be safe and set `priorWindowedGeometry`
-        log.debug("Restoring priorWindowedFrame to: \(geometry.windowFrame)")
-        mainWindow.fsState.priorWindowedGeometry = geometry
-      } else {
-        log.debug("Restoring windowFrame to: \(windowFrame)")
-        mainWindow.window!.setFrame(windowFrame, display: false)
-      }
-
+      log.debug("Restoring windowFrame to \(geometry.windowFrame), videoAspectRatio: \(geometry.videoAspectRatio)")
+      player.videoView.updateAspectRatio(to: geometry.videoAspectRatio)
+      mainWindow.setCurrentWindowGeometry(to: geometry, animate: false)
     } else {
       log.error("Failed to get player window layout and/or geometry from prefs")
     }

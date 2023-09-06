@@ -1375,11 +1375,7 @@ class MainWindowController: PlayerWindowController {
     let newWindowFrame = bestScreen.frame
 
     log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
-    if animate && !AccessibilityPreferences.motionReductionEnabled {
-      window.setFrame(newWindowFrame, display: true, animate: true)
-    } else {
-      (window as! MainWindow).setFrameImmediately(newWindowFrame)
-    }
+    (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: animate && !AccessibilityPreferences.motionReductionEnabled)
   }
 
   // MARK: - Window Delegate: window move, screen changes

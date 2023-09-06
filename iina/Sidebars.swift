@@ -527,14 +527,10 @@ extension MainWindowController {
     // Work off of previously stored size (see notes above)
     newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
 
-    // TODO: package this into a MainWindow apply() function or something
-    if fsState.isFullscreen {
-      fsState.priorWindowedGeometry = newGeometry
-    } else {
+    if !fsState.isFullscreen {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
-      (window as! MainWindow).setFrameImmediately(newGeometry.windowFrame)
     }
-    player.saveState()
+    setCurrentWindowGeometry(to: newGeometry, animate: false)
   }
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
@@ -959,13 +955,7 @@ extension MainWindowController {
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
           let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
 
-          // TODO: put this in a separate function since it's called so often
-          if fsState.isFullscreen {
-            fsState.priorWindowedGeometry = resizedWindowGeo
-          } else {
-            log.verbose("Calling setFrame() after resizing sidebars")
-            (window as! MainWindow).setFrameImmediately(resizedWindowGeo.windowFrame)
-          }
+          setCurrentWindowGeometry(to: resizedWindowGeo, animate: false)
         }
 
       } else if trailingSidebarIsResizing {
@@ -981,13 +971,7 @@ extension MainWindowController {
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
           let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
 
-          // TODO: put this in a separate function since it's called so often
-          if fsState.isFullscreen {
-            fsState.priorWindowedGeometry = resizedWindowGeo
-          } else {
-            log.verbose("Calling setFrame() after resizing sidebars")
-            (window as! MainWindow).setFrameImmediately(resizedWindowGeo.windowFrame)
-          }
+          setCurrentWindowGeometry(to: resizedWindowGeo, animate: false)
         }
 
       } else {

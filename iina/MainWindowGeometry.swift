@@ -405,7 +405,7 @@ extension MainWindowController {
       }
     } else {
       let currentWindowGeometry = getCurrentWindowGeometry()
-      let newGeo: MainWindowGeometry
+      let newWindowGeo: MainWindowGeometry
       if shouldResizeWindowAfterVideoReconfig() {
         // get videoSize on screen
         newVideoSize = videoBaseDisplaySize
@@ -453,7 +453,7 @@ extension MainWindowController {
             log.verbose("[AdjustFrameAfterVideoReconfig C ResultC] Resizing priorWindowFrame \(priorWindowFrame) to videoSize + outside panels = \(newWindowSize) → windowFrame: \(newWindowFrame)")
           }
         }
-        newGeo = currentWindowGeometry.clone(windowFrame: newWindowFrame, videoAspectRatio: videoView.aspectRatio)
+        newWindowGeo = currentWindowGeometry.clone(windowFrame: newWindowFrame, videoAspectRatio: videoView.aspectRatio)
 
       } else {
         // user is navigating in playlist. retain same window width.
@@ -474,20 +474,17 @@ extension MainWindowController {
           }
         }
 
-        newGeo = currentWindowGeometry.scale(desiredVideoContainerSize: desiredVidConSize, constrainedWithin: bestScreen.visibleFrame)
-        newWindowFrame = newGeo.windowFrame
-        newVideoSize = newGeo.videoSize
+        newWindowGeo = currentWindowGeometry.scale(desiredVideoContainerSize: desiredVidConSize, constrainedWithin: bestScreen.visibleFrame)
+        newWindowFrame = newWindowGeo.windowFrame
+        newVideoSize = newWindowGeo.videoSize
         log.verbose("[AdjustFrameAfterVideoReconfig Assuming user is navigating in playlist. Applying desiredVidConSize \(desiredVidConSize)")
       }
 
       /// Finally call `setFrame()`
-      if fsState.isFullscreen {
-        Logger.log("AdjustFrameAfterVideoReconfig: Window is in fullscreen; setting priorWindowedGeometry to: \(newWindowFrame)", level: .verbose)
-        fsState.priorWindowedGeometry = newGeo
-      } else {
-        log.verbose("[AdjustFrameAfterVideoReconfig] NewVideoSize: \(newVideoSize) [OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame)]")
-        window.setFrame(newWindowFrame, display: true, animate: true)
+      log.verbose("[AdjustFrameAfterVideoReconfig] NewVideoSize: \(newVideoSize), OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame), isFS:\(fsState.isFullscreen.yn)")
+      setCurrentWindowGeometry(to: newWindowGeo, animate: true)
 
+      if !fsState.isFullscreen {
         // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
         let mpvVideoSize: CGSize
         if let scaleDownFactor = scaleDownFactor {
@@ -567,7 +564,7 @@ extension MainWindowController {
    */
   func resizeVideoContainer(desiredVideoContainerSize: CGSize? = nil, fromGeometry: MainWindowGeometry? = nil,
                             centerOnScreen: Bool = false, animate: Bool = true) {
-    guard !isInInteractiveMode, fsState == .windowed, let window = window else { return }
+    guard !isInInteractiveMode, fsState == .windowed else { return }
 
     let oldGeo = fromGeometry ?? getCurrentWindowGeometry()
     let newGeoUnconstrained = oldGeo.scale(desiredVideoContainerSize: desiredVideoContainerSize)
@@ -577,17 +574,8 @@ extension MainWindowController {
       newGeo = newGeo.clone(windowFrame: newWindowFrame)
     }
 
-    let newWindowFrame = newGeo.windowFrame
-    log.verbose("Calling setFrame() from resizeVideoContainer (center=\(centerOnScreen.yn) animate=\(animate.yn)), to: \(newWindowFrame)")
-
-    if animate {
-      // This seems to provide a better animation and plays better with other animations
-      animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, {
-        (window as! MainWindow).setFrameImmediately(newWindowFrame)
-      }))
-    } else {
-      window.setFrame(newWindowFrame, display: true, animate: false)
-    }
+    log.verbose("\(fsState.isFullscreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn) animate=\(animate.yn)), to: \(newGeo.windowFrame)")
+    setCurrentWindowGeometry(to: newGeo, animate: animate)
 
     // User has actively resized the video. Assume this is the new preferred resolution
     player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
@@ -618,6 +606,28 @@ extension MainWindowController {
     }
     return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
                               videoAspectRatio: videoAspectRatio)
+  }
+
+  func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, animate: Bool = true) {
+    let newWindowFrame = newGeometry.windowFrame
+    if fsState.isFullscreen {
+      log.verbose("Updating priorWindowedGeometry because window is in full screen, with windowFrame \(newWindowFrame)")
+      fsState.priorWindowedGeometry = newGeometry
+      return
+    }
+
+    guard let window = window else { return }
+
+    /// Using `setFrameImmediately()` seems to provide a smoother animation and plays better with other animations
+    if animate && AccessibilityPreferences.motionReductionEnabled {
+      animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, {
+        (window as! MainWindow).setFrameImmediately(newWindowFrame)
+      }))
+    } else {
+      (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: false)
+    }
+
+    player.saveState()
   }
 
   func windowWillStartLiveResize(_ notification: Notification) {

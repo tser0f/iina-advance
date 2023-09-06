@@ -23,7 +23,7 @@ class VideoView: NSView {
   @Atomic var isUninited = false
 
   // The currently enforced aspect ratio of the video (width/height)
-  var aspectRatio: CGFloat = 1
+  private(set) var aspectRatio: CGFloat = 1
 
   // cached indicator to prevent unnecessary updates of DisplayLink
   var currentDisplay: UInt32?

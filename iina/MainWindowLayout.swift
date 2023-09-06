@@ -1024,7 +1024,7 @@ extension MainWindowController {
       } else {
         let screen = bestScreen
         Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
-        window.setFrame(screen.frameWithoutCameraHousing, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+        (window as! MainWindow).setFrameImmediately(screen.frameWithoutCameraHousing)
       }
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
@@ -1040,7 +1040,7 @@ extension MainWindowController {
                                                              newLeadingWidth: leadingWidth).windowFrame
 
       log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
-      window.setFrame(priorWindowFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
+      (window as! MainWindow).setFrameImmediately(priorWindowFrame)
     }
 
     // Update heights to their final values:
