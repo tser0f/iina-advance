@@ -41,7 +41,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       switch recognizer.state {
       case .began:
         // FIXME: confirm reset on video size change due to track change
-        windowGeometryAtMagnificationStart = mainWindow.buildGeometryFromCurrentLayout()
+        windowGeometryAtMagnificationStart = mainWindow.getCurrentWindowGeometry()
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)

@@ -132,7 +132,7 @@ struct PlayerSaveState {
     props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
     /// `windowGeometry`
-    let geometry = player.mainWindow.buildGeometryFromCurrentLayout()
+    let geometry = player.mainWindow.getCurrentWindowGeometry()
     props[PropName.windowGeometry.rawValue] = toCSV(geometry)
 
     if let size = info.userPreferredVideoContainerSizeWide {

@@ -481,7 +481,7 @@ extension MainWindowController {
   private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat = 0, ΔTrailingOutsideWidth ΔTrailing: CGFloat = 0) {
     guard ΔLeading != 0 || ΔTrailing != 0 else { return }
 
-    let oldGeometry = windowGeometryAtResizeStart ?? buildGeometryFromCurrentLayout()
+    let oldGeometry = windowGeometryAtResizeStart ?? getCurrentWindowGeometry()
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
       // Is expanding the window to open a sidebar. First save the current size as the preferred size.
@@ -503,7 +503,7 @@ extension MainWindowController {
   }
 
   private func updateWindowFrame(newLeadingWidth: CGFloat = 0, newTrailingWidth: CGFloat = 0) {
-    let oldGeometry = windowGeometryAtResizeStart ?? buildGeometryFromCurrentLayout()
+    let oldGeometry = windowGeometryAtResizeStart ?? getCurrentWindowGeometry()
     let newGeometry: MainWindowGeometry
 
     // Can happen for stale stored layout state. Try to recover
@@ -923,11 +923,11 @@ extension MainWindowController {
     if isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
       Logger.log("User started resize of leading sidebar", level: .verbose, subsystem: player.subsystem)
       leadingSidebarIsResizing = true
-      windowGeometryAtResizeStart = buildGeometryFromCurrentLayout()
+      windowGeometryAtResizeStart = getCurrentWindowGeometry()
       return true
     } else if isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
       Logger.log("User started resize of trailing sidebar", level: .verbose, subsystem: player.subsystem)
-      windowGeometryAtResizeStart = buildGeometryFromCurrentLayout()
+      windowGeometryAtResizeStart = getCurrentWindowGeometry()
       trailingSidebarIsResizing = true
       return true
     }

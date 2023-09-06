@@ -210,6 +210,16 @@ extension MainWindowController {
       return leadingSidebarPlacement == .outsideVideo ? leadingBarWidth : 0
     }
 
+    /// NOTE: Is mutable!
+    var leadingBarInsideWidth: CGFloat {
+      return leadingSidebarPlacement == .insideVideo ? leadingBarWidth : 0
+    }
+
+    /// NOTE: Is mutable!
+    var trailingBarInsideWidth: CGFloat {
+      return trailingSidebarPlacement == .outsideVideo ? trailingBarWidth : 0
+    }
+
     /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
     /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
     var osdMinOffsetFromTop: CGFloat = 8
@@ -495,13 +505,13 @@ extension MainWindowController {
 
     CocoaAnimation.disableAnimation{
       controlBarFloating.isDragging = false
-      doPreTransitionTask(transition)
+      doPreTransitionWork(transition)
       fadeOutOldViews(transition)
       closeOldPanels(transition)
       updateHiddenViewsAndConstraints(transition)
       openNewPanels(transition)
       fadeInNewViews(transition)
-      doPostTransitionTask(transition)
+      doPostTransitionWork(transition)
       log.verbose("Done with transition to initial layout")
     }
 
@@ -543,7 +553,7 @@ extension MainWindowController {
 
     let toLayout = buildFutureLayoutState(from: layoutSpec)
     let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false)
-    transition.windowGeometry = buildGeometryFromCurrentLayout()
+    transition.windowGeometry = getCurrentWindowGeometry()
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {
@@ -571,7 +581,7 @@ extension MainWindowController {
 
     // Set initial var or other tasks which happen before main animations
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
-      doPreTransitionTask(transition)
+      doPreTransitionWork(transition)
     })
 
     // StartingAnimation 1: Show fadeable views from current layout
@@ -618,7 +628,7 @@ extension MainWindowController {
 
     // After animations all finish
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
-      doPostTransitionTask(transition)
+      doPostTransitionWork(transition)
     })
 
     return transition
@@ -626,8 +636,8 @@ extension MainWindowController {
 
   // MARK: Transition Tasks
 
-  private func doPreTransitionTask(_ transition: LayoutTransition) {
-    log.verbose("DoPreTransitionTask")
+  private func doPreTransitionWork(_ transition: LayoutTransition) {
+    log.verbose("DoPreTransitionWork")
     controlBarFloating.isDragging = false
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
@@ -639,7 +649,7 @@ extension MainWindowController {
       // Entering FullScreen
       let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
 
-      let priorWindowedGeometry = buildGeometryFromCurrentLayout()
+      let priorWindowedGeometry = getCurrentWindowGeometry()
       fsState.startAnimatingToFullScreen(legacy: transition.toLayout.isLegacyFullScreen, priorWindowedGeometry: priorWindowedGeometry)
       log.verbose("Entering fullscreen, priorWindowedGeometry := \(priorWindowedGeometry)")
 
@@ -1190,8 +1200,8 @@ extension MainWindowController {
     applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
   }
 
-  private func doPostTransitionTask(_ transition: LayoutTransition) {
-    log.verbose("DoPostTransitionTask")
+  private func doPostTransitionWork(_ transition: LayoutTransition) {
+    log.verbose("DoPostTransitionWork")
     // Update blending mode:
     updatePanelBlendingModes(to: transition.toLayout)
     /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out

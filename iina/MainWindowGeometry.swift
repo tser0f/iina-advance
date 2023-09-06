@@ -401,9 +401,10 @@ extension MainWindowController {
       } else {
         log.error("[AdjustFrameAfterVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect). Will attempt to correct by resizing window.")
 
+        resizeVideoContainer()
       }
     } else {
-      let currentWindowGeometry = buildGeometryFromCurrentLayout()
+      let currentWindowGeometry = getCurrentWindowGeometry()
       let newGeo: MainWindowGeometry
       if shouldResizeWindowAfterVideoReconfig() {
         // get videoSize on screen
@@ -568,7 +569,7 @@ extension MainWindowController {
                             centerOnScreen: Bool = false, animate: Bool = true) {
     guard !isInInteractiveMode, fsState == .windowed, let window = window else { return }
 
-    let oldGeo = fromGeometry ?? buildGeometryFromCurrentLayout()
+    let oldGeo = fromGeometry ?? getCurrentWindowGeometry()
     let newGeoUnconstrained = oldGeo.scale(desiredVideoContainerSize: desiredVideoContainerSize)
     var newGeo = newGeoUnconstrained.constrainWithin(bestScreen.visibleFrame)
     if centerOnScreen {
@@ -577,7 +578,7 @@ extension MainWindowController {
     }
 
     let newWindowFrame = newGeo.windowFrame
-    log.verbose("Calling setFrame() from resizeVideoContainer, to: \(newWindowFrame)")
+    log.verbose("Calling setFrame() from resizeVideoContainer (center=\(centerOnScreen.yn) animate=\(animate.yn)), to: \(newWindowFrame)")
 
     if animate {
       // This seems to provide a better animation and plays better with other animations
@@ -592,12 +593,13 @@ extension MainWindowController {
     player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
   }
 
-  // Must be called from the main thread
-  func buildGeometryFromCurrentLayout() -> MainWindowGeometry {
+  /// If in fullscreen, returns `fsState.priorWindowedGeometry`. Else builds from `currentLayout` and other variables.
+  /// Must be called from the main thread.
+  func getCurrentWindowGeometry() -> MainWindowGeometry {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
 
     if let priorGeo = fsState.priorWindowedGeometry {
-      log.debug("buildGeometryFromCurrentLayout(): looks like we are in full screen. Returning priorWindowedGeometry")
+      log.debug("GetCurrentWindowGeometry(): looks like we are in full screen. Returning priorWindowedGeometry")
       return priorGeo
     }
 
@@ -666,7 +668,7 @@ extension MainWindowController {
     // Need to resize window to match video aspect ratio, while
     // taking into account any outside panels
 
-    let currentGeo = buildGeometryFromCurrentLayout()
+    let currentGeo = getCurrentWindowGeometry()
     let screenVisibleFrame = bestScreen.visibleFrame
 
     if Preference.bool(for: .allowEmptySpaceAroundVideo) {
