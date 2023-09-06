@@ -399,8 +399,8 @@ extension MainWindowController {
       if oldAspect == newAspect {
         log.verbose("[AdjustFrameAfterVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       } else {
-        log.error("[AdjustFrameAfterVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect)")
-        // FIXME: fix it!
+        log.error("[AdjustFrameAfterVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect). Will attempt to correct by resizing window.")
+
       }
     } else {
       let currentWindowGeometry = buildGeometryFromCurrentLayout()
@@ -673,25 +673,25 @@ extension MainWindowController {
       // No need to resize window to match video aspect ratio.
 
       let requestedGeo = currentGeo.scale(desiredWindowSize: requestedSize)
-      let requestedVideoContainerSize = requestedGeo.videoContainerSize
 
       if fsState == .windowed && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
-        player.info.setUserPreferredVideoContainerSize(requestedVideoContainerSize)
+        player.info.setUserPreferredVideoContainerSize(requestedGeo.videoContainerSize)
       }
       let requestedGeoConstrained = requestedGeo.constrainWithin(screenVisibleFrame)
       return requestedGeoConstrained.windowFrame.size
     }
 
     let outsideBarsTotalSize = currentGeo.outsideBarsTotalSize
-    let requestedVideoContainerSize = NSSize(width: requestedSize.width - outsideBarsTotalSize.width, height: requestedSize.height - outsideBarsTotalSize.height)
 
     // resize height based on requested width
-    let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoContainerSize.width, height: requestedVideoContainerSize.width / videoView.aspectRatio)
+    let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width
+    let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth, height: requestedVideoWidth / videoView.aspectRatio)
     let resizeFromWidthGeo = currentGeo.scale(desiredVideoSize: resizeFromWidthRequestedVideoSize, constrainedWithin: screenVisibleFrame)
 
     // resize width based on requested height
-    let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoContainerSize.height * videoView.aspectRatio, height: requestedVideoContainerSize.height)
+    let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height
+    let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * videoView.aspectRatio, height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeo.scale(desiredVideoSize: resizeFromHeightRequestedVideoSize, constrainedWithin: screenVisibleFrame)
 
     let chosenGeometry: MainWindowGeometry

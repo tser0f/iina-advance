@@ -976,6 +976,7 @@ class MainWindowController: PlayerWindowController {
       // if it's a mouseup after dragging window
       isDragging = false
     } else if finishResizingSidebar(with: event) {
+      player.saveState()
       return
     } else {
       // if it's a mouseup after clicking

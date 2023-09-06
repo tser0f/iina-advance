@@ -945,9 +945,52 @@ extension MainWindowController {
       if leadingSidebarIsResizing {
         newPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
         updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.leadingSidebarPlacement)
+
+        /// Updating the sidebar width when it is in "outside" mode will cause the video width to
+        /// grow or shrink, which will require its height to change according to its aspectRatio.
+        /// If `allowEmptySpaceAroundVideo` is `false`, it is necessary to resize the window to
+        /// accomodate the change in height to avoid black bars. But even if it is `true`, it
+        /// seems more useful to scale the whole video container, which will avoid creating
+        /// new horizontal black bars where they don't exist.
+        if layout.leadingSidebar.placement == .outsideVideo, let currentGeo = windowGeometryAtResizeStart {
+          let playlistWidthDifference = newPlaylistWidth - currentGeo.leadingBarWidth
+          let videoContainerSize = currentGeo.videoContainerSize
+          let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
+          let resizedPlaylistGeo = currentGeo.clone(leadingBarWidth: newPlaylistWidth)
+          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
+          let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+
+          // TODO: put this in a separate function since it's called so often
+          if fsState.isFullscreen {
+            fsState.priorWindowedGeometry = resizedWindowGeo
+          } else {
+            log.verbose("Calling setFrame() after resizing sidebars")
+            (window as! MainWindow).setFrameImmediately(resizedWindowGeo.windowFrame)
+          }
+        }
+
       } else if trailingSidebarIsResizing {
         newPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
         updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.trailingSidebarPlacement)
+
+        // See comments for leading sidebar above
+        if layout.trailingSidebar.placement == .outsideVideo, let currentGeo = windowGeometryAtResizeStart {
+          let playlistWidthDifference = newPlaylistWidth - currentGeo.trailingBarWidth
+          let videoContainerSize = currentGeo.videoContainerSize
+          let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
+          let resizedPlaylistGeo = currentGeo.clone(trailingBarWidth: newPlaylistWidth)
+          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
+          let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+
+          // TODO: put this in a separate function since it's called so often
+          if fsState.isFullscreen {
+            fsState.priorWindowedGeometry = resizedWindowGeo
+          } else {
+            log.verbose("Calling setFrame() after resizing sidebars")
+            (window as! MainWindow).setFrameImmediately(resizedWindowGeo.windowFrame)
+          }
+        }
+
       } else {
         return false
       }
@@ -963,10 +1006,6 @@ extension MainWindowController {
     if leadingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       leadingSidebarIsResizing = false
-      if let priorWindowedGeometry = fsState.priorWindowedGeometry {
-        // If in fullscreen, need to update saved windowed geometry
-        fsState.priorWindowedGeometry = priorWindowedGeometry.clone(leadingBarWidth: CGFloat(Preference.integer(for: .playlistWidth)))
-      }
       windowGeometryAtResizeStart = nil
       log.verbose("New width of left sidebar playlist is \(currentLayout.leadingSidebar.currentWidth)")
       return true

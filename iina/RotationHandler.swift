@@ -115,8 +115,8 @@ class VideoRotationHandler {
     CATransaction.setDisableActions(true)
     // Rotate about center point. Also need to change position because.
     let centerPoint = CGPointMake(NSMidX(videoView.frame), NSMidY(videoView.frame))
-    videoView.layer?.position = centerPoint
-    videoView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+    videoView.videoLayer.position = centerPoint
+    videoView.videoLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     CATransaction.commit()
 
     if CocoaAnimation.isAnimationEnabled {
@@ -130,7 +130,7 @@ class VideoRotationHandler {
       rotateAnimation.fromValue = degToRad(fromDegrees)
       rotateAnimation.toValue = toRadians
       rotateAnimation.duration = 0.2
-      videoView.layer?.add(rotateAnimation, forKey: "transform")
+      videoView.videoLayer.add(rotateAnimation, forKey: "transform")
       CATransaction.commit()
     }
 
@@ -138,7 +138,7 @@ class VideoRotationHandler {
     // Need to call this even if running the animation above, or else layer will revert to its prev appearance after
     CATransaction.begin()
     CATransaction.setDisableActions(true)
-    videoView.layer?.transform = CATransform3DMakeRotation(toRadians, 0, 0, 1)
+    videoView.videoLayer.transform = CATransform3DMakeRotation(toRadians, 0, 0, 1)
     CATransaction.commit()
 
     cgCurrentRotationDegrees = toDegrees

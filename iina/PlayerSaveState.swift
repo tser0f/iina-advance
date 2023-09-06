@@ -89,8 +89,6 @@ struct PlayerSaveState {
   /// `MainWindowGeometry` -> String
   private static func toCSV(_ geo: MainWindowGeometry) -> String {
     return [geoPrefStringVersion,
-            geo.videoSize.width.string2f,
-            geo.videoSize.height.string2f,
             geo.videoAspectRatio.string6f,
             geo.topBarHeight.string2f,
             geo.trailingBarWidth.string2f,
@@ -234,15 +232,15 @@ struct PlayerSaveState {
   static func save(_ player: PlayerCore) {
     guard Preference.UIState.isSaveEnabled else { return }
     guard player.mainWindow.loaded else {
-      player.log.debug("Aborting save of player state: player window is not loaded")
+      player.log.debug("Skipping player state save: player window is not loaded")
       return
     }
     guard !player.info.isRestoring else {
-      player.log.warn("Aborting save of player state: still restoring previous state")
+//      player.log.verbose("Skipping player state save: still restoring previous state")
       return
     }
     guard !player.isShuttingDown else {
-      player.log.warn("Aborting save of player state: is shutting down")
+      player.log.warn("Skipping player state save: is shutting down")
       return
     }
     DispatchQueue.main.async {
@@ -378,12 +376,10 @@ struct PlayerSaveState {
 
   /// String -> `MainWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
-    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
+    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 10, version: PlayerSaveState.geoPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
-      guard let videoWidth = Double(iter.next()!),
-            let videoHeight = Double(iter.next()!),
-            let videoAspectRatio = Double(iter.next()!),
+      guard let videoAspectRatio = Double(iter.next()!),
             let topBarHeight = Double(iter.next()!),
             let trailingBarWidth = Double(iter.next()!),
             let bottomBarHeight = Double(iter.next()!),
@@ -396,7 +392,6 @@ struct PlayerSaveState {
         return nil
       }
 
-      let videoSize = CGSize(width: videoWidth, height: videoHeight)
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
       return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoAspectRatio: videoAspectRatio)
     })
