@@ -356,18 +356,23 @@ struct PlayerSaveState {
         return nil
       }
 
-      let leadingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
+      var leadingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
       let leadVis: MainWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
-      // TODO: account for invalid tab
-      //      if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
-      //        Logger.log("Visible tab \(visibleTab.name) in \("leadingSidebar") is outside its tab groups. The sidebar will close.", level: .error)
-      //        leadVis = .hide
-      //      }
+      // If the tab groups prefs changed somehow since the last run, just add it for now so that the geometry can be restored.
+      // Will correct this at the end of restore.
+      if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
+        Logger.log("Restore state is invalid: leadingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
+        leadingTabGroups.insert(visibleTab.group)
+      }
       let leadingSidebar = MainWindowController.Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
 
-      let trailingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
+      var trailingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
       let trailVis: MainWindowController.Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
-      // TODO: account for invalid tab
+      // Account for invalid visible tab (see note above)
+      if let visibleTab = trailVis.visibleTab, !trailingTabGroups.contains(visibleTab.group) {
+        Logger.log("Restore state is invalid: trailingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
+        trailingTabGroups.insert(visibleTab.group)
+      }
       let trailingSidebar = MainWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
 
       return MainWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)

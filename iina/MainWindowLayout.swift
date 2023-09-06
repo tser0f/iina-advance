@@ -122,6 +122,20 @@ extension MainWindowController {
     var isLegacyFullScreen: Bool {
       return mode == .fullScreen && isLegacyStyle
     }
+
+    /// Returns `true` if `otherSpec` has the same values which are configured from IINA app-wide prefs
+    func hasSamePrefsValues(as otherSpec: LayoutSpec) -> Bool {
+      return otherSpec.enableOSC == enableOSC
+      && otherSpec.oscPosition == oscPosition
+      && otherSpec.isLegacyStyle == isLegacyStyle
+      && otherSpec.topBarPlacement == topBarPlacement
+      && otherSpec.bottomBarPlacement == bottomBarPlacement
+      && otherSpec.leadingSidebarPlacement == leadingSidebarPlacement
+      && otherSpec.trailingSidebarPlacement == trailingSidebarPlacement
+      && otherSpec.leadingSidebar.tabGroups == leadingSidebar.tabGroups
+      && otherSpec.trailingSidebar.tabGroups == trailingSidebar.tabGroups
+    }
+
   }
 
   /// `LayoutState`: data structure which contains all the variables which describe a single layout configuration of the `MainWindow`.
@@ -454,18 +468,22 @@ extension MainWindowController {
   func setInitialWindowLayout() {
     var needsNativeFullScreen: Bool = false
     let initialLayoutSpec: LayoutSpec
+    let isRestoringFromPrevLaunch: Bool
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
       log.verbose("Transitioning to initial layout from prior window state")
+      isRestoringFromPrevLaunch = true
 
       if priorLayoutSpec.isNativeFullScreen && !currentLayout.isFullScreen {
-        // Special handling for native fullscreen. Cannot avoid animation
+        // Special handling for native fullscreen. Cannot avoid animation.
+        // So instead restore windowed layout first, then toggle fullscreen explicitly
         initialLayoutSpec = priorLayoutSpec.clone(mode: currentLayout.spec.mode)
         needsNativeFullScreen = true
       } else {
         initialLayoutSpec = priorLayoutSpec
       }
     } else {
-      log.verbose("Transitioning to initial layout from prefs")
+      log.verbose("Transitioning to initial layout from global prefs")
+      isRestoringFromPrevLaunch = false
       initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     }
 
@@ -484,11 +502,34 @@ extension MainWindowController {
       openNewPanels(transition)
       fadeInNewViews(transition)
       doPostTransitionTask(transition)
-      log.verbose("Transitioning to initial layout done")
+      log.verbose("Done with transition to initial layout")
     }
 
-    if needsNativeFullScreen {
-      window?.toggleFullScreen(self)
+    guard isRestoringFromPrevLaunch else { return }
+
+    /// Stored window state may not be consistent with global IINA prefs.
+    /// To check this, build another `LayoutSpec` from the global prefs, then compare it to the player's.
+    let prefsSpec = LayoutSpec.fromPreferences(andSpec: initialLayoutSpec)
+    let isConsistentWithPrefValues = initialLayoutSpec.hasSamePrefsValues(as: prefsSpec)
+    if isConsistentWithPrefValues {
+      log.verbose("Saved layout is consistent with IINA global prefs")
+
+      if needsNativeFullScreen {
+        log.verbose("Transitioning to native fullscreen from initial state")
+        window?.toggleFullScreen(self)
+      }
+    } else {
+      // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
+      log.debug("Player's saved layout does not match IINA global prefs. Will build and apply a corrected layout")
+      let fixerTransition = buildLayoutTransition(from: initialLayout, to: prefsSpec)
+      var tasks = fixerTransition.animationTasks
+      if needsNativeFullScreen {
+        tasks.append(CocoaAnimation.zeroDurationTask { [self] in
+          log.verbose("Transitioning to native fullscreen from corrected initial state")
+          window?.toggleFullScreen(self)
+        })
+      }
+      animationQueue.run(tasks)
     }
   }
 
@@ -586,7 +627,7 @@ extension MainWindowController {
   // MARK: Transition Tasks
 
   private func doPreTransitionTask(_ transition: LayoutTransition) {
-    Logger.log("doPreTransitionTask")
+    log.verbose("DoPreTransitionTask")
     controlBarFloating.isDragging = false
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
@@ -1150,7 +1191,7 @@ extension MainWindowController {
   }
 
   private func doPostTransitionTask(_ transition: LayoutTransition) {
-    Logger.log("DoPostTransitionTask")
+    log.verbose("DoPostTransitionTask")
     // Update blending mode:
     updatePanelBlendingModes(to: transition.toLayout)
     /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out

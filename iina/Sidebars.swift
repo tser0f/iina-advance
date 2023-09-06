@@ -473,7 +473,6 @@ extension MainWindowController {
     }
 
     updateSpacingForTitleBarAccessories(layout)
-    updateSidebarVerticalConstraints(layout: layout)
     window?.contentView?.layoutSubtreeIfNeeded()
   }
 
