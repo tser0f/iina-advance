@@ -146,11 +146,17 @@ struct MainWindowGeometry: Equatable {
     }
   }
 
-  private func computeMaxVideoContainerSize(in containerSize: NSSize) -> NSSize {
+  fileprivate func computeMaxVideoContainerSize(in containerSize: NSSize) -> NSSize {
     // Resize only the video. Panels outside the video do not change size.
     // To do this, subtract the "outside" panels from the container frame
     return NSSize(width: containerSize.width - outsideBarsTotalSize.width,
                   height: containerSize.height - outsideBarsTotalSize.height)
+  }
+
+  // Computes & returns the max video size with proper aspect ratio which can fit in the given container, after subtracting outside bars
+  fileprivate func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
+    let maxVidConSize = computeMaxVideoContainerSize(in: containerSize)
+    return MainWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: maxVidConSize)
   }
 
   private func constrainAboveMin(desiredVideoContainerSize: NSSize) -> NSSize {
@@ -164,11 +170,11 @@ struct MainWindowGeometry: Equatable {
                   height: min(desiredVideoContainerSize.height, maxSize.height - outsideBarsTotalSize.height))
   }
 
-  func constrainWithin(_ containerFrame: NSRect) -> MainWindowGeometry {
-    return scale(desiredVideoContainerSize: nil, constrainedWithin: containerFrame)
+  func constrainWithin(_ containerFrame: NSRect, centerInContainer: Bool = false) -> MainWindowGeometry {
+    return scale(desiredVideoContainerSize: nil, constrainedWithin: containerFrame, centerInContainer: centerInContainer)
   }
 
-  func scale(desiredWindowSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil) -> MainWindowGeometry {
+  func scale(desiredWindowSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
     if let desiredWindowSize = desiredWindowSize {
       let outsideBarsTotalSize = outsideBarsTotalSize
       let requestedVideoContainerSize = NSSize(width: desiredWindowSize.width - outsideBarsTotalSize.width,
@@ -176,7 +182,7 @@ struct MainWindowGeometry: Equatable {
       return scale(desiredVideoContainerSize: requestedVideoContainerSize, constrainedWithin: containerFrame)
     }
     if let containerFrame = containerFrame {
-      return constrainWithin(containerFrame)
+      return constrainWithin(containerFrame, centerInContainer: centerInContainer)
     } else {
       Logger.log("Call made to MainWindowGeometry scale() but all args are nil! Doing nothing.", level: .warning)
       return self
@@ -191,7 +197,7 @@ struct MainWindowGeometry: Equatable {
   /// • If `containerFrame` is given, resulting `windowFrame` (and its subviews) will be sized and repositioned as ncessary to fit within it.
   /// (The `containerFrame` will typically be `screen.visibleFrame`)
   /// • If `containerFrame` is `nil`, center point & size of resulting `windowFrame` will not be changed.
-  func scale(desiredVideoContainerSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil) -> MainWindowGeometry {
+  func scale(desiredVideoContainerSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
     var newVidConSize = desiredVideoContainerSize ?? videoContainerSize
     Logger.log("Scaling MainWindowGeometry newVidConSize: \(newVidConSize)", level: .verbose)
 
@@ -224,12 +230,16 @@ struct MainWindowGeometry: Equatable {
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
     if let containerFrame = containerFrame {
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
+      if centerInContainer {
+        newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)
+      }
     }
+
     Logger.log("Scaled MainWindowGeometry result: \(newWindowFrame)", level: .verbose)
     return self.clone(windowFrame: newWindowFrame)
   }
 
-  func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect? = nil) -> MainWindowGeometry {
+  func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
     Logger.log("Scaling MainWindowGeometry desiredVideoSize: \(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
@@ -241,7 +251,7 @@ struct MainWindowGeometry: Equatable {
     }
 
     /// Use `videoSize` for `desiredVideoContainerSize`:
-    return scale(desiredVideoContainerSize: newVideoSize, constrainedWithin: containerFrame)
+    return scale(desiredVideoContainerSize: newVideoSize, constrainedWithin: containerFrame, centerInContainer: centerInContainer)
   }
 
   // Resizes the window appropriately
@@ -279,92 +289,90 @@ struct MainWindowGeometry: Equatable {
                       topBarHeight: newTopHeight, trailingBarWidth: newTrailingWidth,
                       bottomBarHeight: newBottomHeight, leadingBarWidth: newLeadingWidth)
   }
+
+  /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
+  func apply(mpvGeometry: GeometryDef, andDesiredVideoSize desiredVideoSize: NSSize? = nil, inScreenFrame screenFrame: NSRect) -> MainWindowGeometry {
+    let maxVideoSize = computeMaxVideoSize(in: screenFrame.size)
+
+    var newVideoSize = videoSize
+    if let desiredVideoSize = desiredVideoSize {
+      newVideoSize.width = desiredVideoSize.width
+      newVideoSize.height = desiredVideoSize.height
+    }
+    var widthOrHeightIsSet = false
+    // w and h can't take effect at same time
+    if let strw = mpvGeometry.w, strw != "0" {
+      var w: CGFloat
+      if strw.hasSuffix("%") {
+        w = CGFloat(Double(String(strw.dropLast()))! * 0.01 * Double(maxVideoSize.width))
+      } else {
+        w = CGFloat(Int(strw)!)
+      }
+      w = max(AppData.minVideoSize.width, w)
+      newVideoSize.width = w
+      newVideoSize.height = w / videoAspectRatio
+      widthOrHeightIsSet = true
+    } else if let strh = mpvGeometry.h, strh != "0" {
+      var h: CGFloat
+      if strh.hasSuffix("%") {
+        h = CGFloat(Double(String(strh.dropLast()))! * 0.01 * Double(maxVideoSize.height))
+      } else {
+        h = CGFloat(Int(strh)!)
+      }
+      h = max(AppData.minVideoSize.height, h)
+      newVideoSize.height = h
+      newVideoSize.width = h * videoAspectRatio
+      widthOrHeightIsSet = true
+    }
+
+    var newOrigin = NSPoint()
+    // x, origin is window center
+    if let strx = mpvGeometry.x, let xSign = mpvGeometry.xSign {
+      let x: CGFloat
+      if strx.hasSuffix("%") {
+        x = CGFloat(Double(String(strx.dropLast()))! * 0.01 * Double(maxVideoSize.width)) - newVideoSize.width / 2
+      } else {
+        x = CGFloat(Int(strx)!)
+      }
+      newOrigin.x = xSign == "+" ? x : maxVideoSize.width - x
+      // if xSign equals "-", need set right border as origin
+      if (xSign == "-") {
+        newOrigin.x -= maxVideoSize.width
+      }
+    }
+    // y
+    if let stry = mpvGeometry.y, let ySign = mpvGeometry.ySign {
+      let y: CGFloat
+      if stry.hasSuffix("%") {
+        y = CGFloat(Double(String(stry.dropLast()))! * 0.01 * Double(maxVideoSize.height)) - maxVideoSize.height / 2
+      } else {
+        y = CGFloat(Int(stry)!)
+      }
+      newOrigin.y = ySign == "+" ? y : maxVideoSize.height - y
+      if (ySign == "-") {
+        newOrigin.y -= maxVideoSize.height
+      }
+    }
+    // if x and y are not specified
+    if mpvGeometry.x == nil && mpvGeometry.y == nil && widthOrHeightIsSet {
+      newOrigin.x = (screenFrame.width - newVideoSize.width) / 2
+      newOrigin.y = (screenFrame.height - newVideoSize.height) / 2
+    }
+
+    // if the screen has offset
+    newOrigin.x += screenFrame.origin.x
+    newOrigin.y += screenFrame.origin.y
+
+    let outsideBarsTotalSize = self.outsideBarsTotalSize
+    let newWindowFrame = NSRect(origin: newOrigin, size: NSSize(width: newVideoSize.width + outsideBarsTotalSize.width, height: newVideoSize.height + outsideBarsTotalSize.height))
+    return self.clone(windowFrame: newWindowFrame)
+  }
+
 }
 
 extension MainWindowController {
 
   // MARK: - UI: Window size / aspect
-
-  /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
-  func windowFrameFromGeometry(newSize: NSSize? = nil, screen: NSScreen? = nil) -> NSRect? {
-    guard let geometry = cachedGeometry ?? player.getGeometry(), let screenFrame = (screen ?? window?.screen)?.visibleFrame else {
-      log.verbose("WindowFrameFromGeometry: returning nil")
-      return nil
-    }
-    log.verbose("WindowFrameFromGeometry: using \(geometry), screenFrame: \(screenFrame)")
-
-    cachedGeometry = geometry
-    // FIXME: should not use this
-    var winFrame = window!.frame
-    if let ns = newSize {
-      winFrame.size.width = ns.width
-      winFrame.size.height = ns.height
-    }
-    let winAspect = winFrame.size.aspect
-    var widthOrHeightIsSet = false
-    // w and h can't take effect at same time
-    if let strw = geometry.w, strw != "0" {
-      var w: CGFloat
-      if strw.hasSuffix("%") {
-        w = CGFloat(Double(String(strw.dropLast()))! * 0.01 * Double(screenFrame.width))
-      } else {
-        w = CGFloat(Int(strw)!)
-      }
-      w = max(AppData.minVideoSize.width, w)
-      winFrame.size.width = w
-      winFrame.size.height = w / winAspect
-      widthOrHeightIsSet = true
-    } else if let strh = geometry.h, strh != "0" {
-      var h: CGFloat
-      if strh.hasSuffix("%") {
-        h = CGFloat(Double(String(strh.dropLast()))! * 0.01 * Double(screenFrame.height))
-      } else {
-        h = CGFloat(Int(strh)!)
-      }
-      h = max(AppData.minVideoSize.height, h)
-      winFrame.size.height = h
-      winFrame.size.width = h * winAspect
-      widthOrHeightIsSet = true
-    }
-    // x, origin is window center
-    if let strx = geometry.x, let xSign = geometry.xSign {
-      let x: CGFloat
-      if strx.hasSuffix("%") {
-        x = CGFloat(Double(String(strx.dropLast()))! * 0.01 * Double(screenFrame.width)) - winFrame.width / 2
-      } else {
-        x = CGFloat(Int(strx)!)
-      }
-      winFrame.origin.x = xSign == "+" ? x : screenFrame.width - x
-      // if xSign equals "-", need set right border as origin
-      if (xSign == "-") {
-        winFrame.origin.x -= winFrame.width
-      }
-    }
-    // y
-    if let stry = geometry.y, let ySign = geometry.ySign {
-      let y: CGFloat
-      if stry.hasSuffix("%") {
-        y = CGFloat(Double(String(stry.dropLast()))! * 0.01 * Double(screenFrame.height)) - winFrame.height / 2
-      } else {
-        y = CGFloat(Int(stry)!)
-      }
-      winFrame.origin.y = ySign == "+" ? y : screenFrame.height - y
-      if (ySign == "-") {
-        winFrame.origin.y -= winFrame.height
-      }
-    }
-    // if x and y are not specified
-    if geometry.x == nil && geometry.y == nil && widthOrHeightIsSet {
-      winFrame.origin.x = (screenFrame.width - winFrame.width) / 2
-      winFrame.origin.y = (screenFrame.height - winFrame.height) / 2
-    }
-    // if the screen has offset
-    winFrame.origin.x += screenFrame.origin.x
-    winFrame.origin.y += screenFrame.origin.y
-
-    log.verbose("WindowFrameFromGeometry: resulting windowFrame: \(winFrame)")
-    return winFrame
-  }
 
   /** Set window size when info available, or video size changed. Called in response to receiving 'video-reconfig' msg  */
   func adjustFrameAfterVideoReconfig() {
@@ -375,9 +383,6 @@ extension MainWindowController {
     let oldVideoAspectRatio = videoView.aspectRatio
     // Will only change the video size & video container size. Panels outside the video do not change size
     let oldVideoSize = videoView.frame.size
-    // TODO: figure out why these each == -2, and whether that is OK
-    let outsidePanelsWidth = window.frame.width - oldVideoSize.width
-    let outsidePanelsHeight = window.frame.height - oldVideoSize.height
 
     // Get "correct" video size from mpv
     let videoBaseDisplaySize = player.videoBaseDisplaySize ?? AppData.sizeWhenNoVideo
@@ -387,8 +392,6 @@ extension MainWindowController {
       pip.aspectRatio = videoBaseDisplaySize
     }
 
-    var newVideoSize: NSSize
-    var newWindowFrame: NSRect
     var scaleDownFactor: CGFloat? = nil
 
     if player.info.isRestoring {
@@ -400,66 +403,54 @@ extension MainWindowController {
         log.verbose("[AdjustFrameAfterVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       } else {
         log.error("[AdjustFrameAfterVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect). Will attempt to correct by resizing window.")
-
         resizeVideoContainer()
       }
+
     } else {
-      let currentWindowGeometry = getCurrentWindowGeometry()
+      let currentWindowGeo = getCurrentWindowGeometry()
       let newWindowGeo: MainWindowGeometry
+
       if shouldResizeWindowAfterVideoReconfig() {
         // get videoSize on screen
-        newVideoSize = videoBaseDisplaySize
-        log.verbose("[AdjustFrameAfterVideoReconfig C Resize01]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
+        var newVideoSize: NSSize = videoBaseDisplaySize
+        log.verbose("[AdjustFrameAfterVideoReconfig C step1]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
 
         // TODO
         if false && Preference.bool(for: .usePhysicalResolution) {
           let invertedScaleFactor = 1.0 / window.backingScaleFactor
           scaleDownFactor = invertedScaleFactor
           newVideoSize = videoBaseDisplaySize.multiplyThenRound(invertedScaleFactor)
-          log.verbose("[AdjustFrameAfterVideoReconfig C Resize02] Converted newVideoSize to physical resolution → \(newVideoSize)")
+          log.verbose("[AdjustFrameAfterVideoReconfig C step2] Converted newVideoSize to physical resolution → \(newVideoSize)")
         }
 
         let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
         if let strategy = resizeWindowStrategy, strategy != .fitScreen {
           let resizeRatio = strategy.ratio
           newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-          log.verbose("[AdjustFrameAfterVideoReconfig C Resize03] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
+          log.verbose("[AdjustFrameAfterVideoReconfig C step3] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
         }
 
-        let screenRect = bestScreen.visibleFrame
-        let maxVideoSize = NSSize(width: screenRect.width - outsidePanelsWidth,
-                                  height: screenRect.height - outsidePanelsHeight)
+        let screenVisibleFrame = bestScreen.visibleFrame
 
-        // check screen size
-        newVideoSize = newVideoSize.satisfyMaxSizeWithSameAspectRatio(maxVideoSize)
-        log.verbose("[AdjustFrameAfterVideoReconfig C Resize04] Constrained newVideoSize to maxVideoSize \(maxVideoSize) → \(newVideoSize)")
-        // guard min size
-        // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
-        newVideoSize = newVideoSize.satisfyMinSizeWithSameAspectRatio(AppData.minVideoSize)
-        log.verbose("[AdjustFrameAfterVideoReconfig C Resize05] Constrained videoSize to min size: \(AppData.minVideoSize) → \(newVideoSize)")
         // check if have geometry set (initial window position/size)
-        if shouldApplyInitialWindowSize, let wfg = windowFrameFromGeometry(newSize: newVideoSize) {
-          log.verbose("[AdjustFrameAfterVideoReconfig C ResultA] shouldApplyInitialWindowSize=Y. Got windowFrame from mpv geometry → \(wfg)")
-          newWindowFrame = wfg
+        if shouldApplyInitialWindowSize, let mpvGeometry = player.getGeometry() {
+          log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionA] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
+          newWindowGeo = currentWindowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize, inScreenFrame: screenVisibleFrame)
         } else {
-          let newWindowSize = NSSize(width: newVideoSize.width + outsidePanelsWidth,
-                                     height: newVideoSize.height + outsidePanelsHeight)
           if let strategy = resizeWindowStrategy, strategy == .fitScreen {
-            newWindowFrame = screenRect.centeredResize(to: newWindowSize)
-            log.verbose("[AdjustFrameAfterVideoReconfig C ResultB] FitToScreen strategy. Using screen rect \(screenRect) → windowFrame: \(newWindowFrame)")
+            log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionB] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
+            newWindowGeo = currentWindowGeo.scale(desiredVideoContainerSize: screenVisibleFrame.size, constrainedWithin: screenVisibleFrame, centerInContainer: true)
           } else {
-            let priorWindowFrame = currentWindowGeometry.windowFrame
-            newWindowFrame = priorWindowFrame.centeredResize(to: newWindowSize)
-            log.verbose("[AdjustFrameAfterVideoReconfig C ResultC] Resizing priorWindowFrame \(priorWindowFrame) to videoSize + outside panels = \(newWindowSize) → windowFrame: \(newWindowFrame)")
+            log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing priorWindowFrame \(currentWindowGeo.windowFrame) to videoSize + outside panels → windowFrame")
+            newWindowGeo = currentWindowGeo.scale(desiredVideoSize: newVideoSize, constrainedWithin: screenVisibleFrame, centerInContainer: true)
           }
         }
-        newWindowGeo = currentWindowGeometry.clone(windowFrame: newWindowFrame, videoAspectRatio: videoView.aspectRatio)
 
-      } else {
+      } else {  /// `!shouldResizeWindowAfterVideoReconfig()`
         // user is navigating in playlist. retain same window width.
         // This often isn't possible for vertical videos, which will end up shrinking the width.
         // So try to remember the preferred width so it can be restored when possible
-        var desiredVidConSize = currentWindowGeometry.videoContainerSize
+        var desiredVidConSize = currentWindowGeo.videoContainerSize
 
         if !Preference.bool(for: .allowEmptySpaceAroundVideo) {
           if let prefVidConSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoBaseDisplaySize.aspect)  {
@@ -474,30 +465,28 @@ extension MainWindowController {
           }
         }
 
-        newWindowGeo = currentWindowGeometry.scale(desiredVideoContainerSize: desiredVidConSize, constrainedWithin: bestScreen.visibleFrame)
-        newWindowFrame = newWindowGeo.windowFrame
-        newVideoSize = newWindowGeo.videoSize
-        log.verbose("[AdjustFrameAfterVideoReconfig Assuming user is navigating in playlist. Applying desiredVidConSize \(desiredVidConSize)")
+        newWindowGeo = currentWindowGeo.scale(desiredVideoContainerSize: desiredVidConSize, constrainedWithin: bestScreen.visibleFrame)
+        log.verbose("[AdjustFrameAfterVideoReconfig D] Assuming user is navigating in playlist. Applying desiredVidConSize \(desiredVidConSize)")
       }
 
       /// Finally call `setFrame()`
-      log.verbose("[AdjustFrameAfterVideoReconfig] NewVideoSize: \(newVideoSize), OldVideoSize: \(oldVideoSize) NewWindowFrame: \(newWindowFrame), isFS:\(fsState.isFullscreen.yn)")
+      log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), oldVideoSize: \(oldVideoSize), isFS:\(fsState.isFullscreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
       setCurrentWindowGeometry(to: newWindowGeo, animate: true)
 
       if !fsState.isFullscreen {
         // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
         let mpvVideoSize: CGSize
         if let scaleDownFactor = scaleDownFactor {
-          mpvVideoSize = newVideoSize.multiplyThenRound(scaleDownFactor)
+          mpvVideoSize = newWindowGeo.videoSize.multiplyThenRound(scaleDownFactor)
         } else {
-          mpvVideoSize = newVideoSize
+          mpvVideoSize = newWindowGeo.videoSize
         }
         updateWindowParametersForMPV(withSize: mpvVideoSize)
       }
 
       // UI and slider
       updatePlayTime(withDuration: true)
-      player.events.emit(.windowSizeAdjusted, data: newWindowFrame)
+      player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
     }
 
     // maybe not a good position, consider putting these at playback-restart
@@ -518,13 +507,13 @@ extension MainWindowController {
       let resizeTiming = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
       switch resizeTiming {
       case .always:
-        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming=Always → returning YES for shouldResize")
+        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming='Always' → returning YES for shouldResize")
         return true
       case .onlyWhenOpen:
-        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming=OnlyWhenOpen → returning justOpenedFile (\(player.info.justOpenedFile.yesno)) for shouldResize")
+        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming='OnlyWhenOpen' → returning justOpenedFile (\(player.info.justOpenedFile.yesno)) for shouldResize")
         return player.info.justOpenedFile
       case .never:
-        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming=Never → returning NO for shouldResize")
+        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming='Never' → returning NO for shouldResize")
         return false
       }
     }
@@ -568,17 +557,12 @@ extension MainWindowController {
 
     let oldGeo = fromGeometry ?? getCurrentWindowGeometry()
     let newGeoUnconstrained = oldGeo.scale(desiredVideoContainerSize: desiredVideoContainerSize)
-    var newGeo = newGeoUnconstrained.constrainWithin(bestScreen.visibleFrame)
-    if centerOnScreen {
-      let newWindowFrame = newGeo.windowFrame.size.centeredRect(in: bestScreen.visibleFrame)
-      newGeo = newGeo.clone(windowFrame: newWindowFrame)
-    }
-
-    log.verbose("\(fsState.isFullscreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn) animate=\(animate.yn)), to: \(newGeo.windowFrame)")
-    setCurrentWindowGeometry(to: newGeo, animate: animate)
-
     // User has actively resized the video. Assume this is the new preferred resolution
     player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
+
+    let newGeometry = newGeoUnconstrained.constrainWithin(bestScreen.visibleFrame, centerInContainer: centerOnScreen)
+    log.verbose("\(fsState.isFullscreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn) animate=\(animate.yn)), to: \(newGeometry.windowFrame)")
+    setCurrentWindowGeometry(to: newGeometry, animate: animate)
   }
 
   /// If in fullscreen, returns `fsState.priorWindowedGeometry`. Else builds from `currentLayout` and other variables.

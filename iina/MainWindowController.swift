@@ -120,10 +120,6 @@ class MainWindowController: PlayerWindowController {
   var isPausedDueToMiniaturization: Bool = false
   var isPausedPriorToInteractiveMode: Bool = false
 
-  /** For mpv's `geometry` option. We cache the parsed structure
-   so never need to parse it every time. */
-  var cachedGeometry: GeometryDef?
-
   // - Mouse
 
   var mousePosRelatedToWindow: CGPoint?

@@ -455,7 +455,7 @@ extension MainWindowController {
       return isHiding(.trailingSidebar)
     }()
 
-    lazy var isTogglingAnySidebarVisibility: Bool = {
+    lazy var isTogglingVisibilityOfAnySidebar: Bool = {
       return isShowingLeadingSidebar || isShowingTrailingSidebar || isHidingLeadingSidebar || isHidingTrailingSidebar
     }()
 
@@ -605,7 +605,7 @@ extension MainWindowController {
     let panelTimingName: CAMediaTimingFunctionName?
     if transition.isTogglingFullScreen {
       panelTimingName = nil
-    } else if transition.isTogglingAnySidebarVisibility {
+    } else if transition.isTogglingVisibilityOfAnySidebar {
       panelTimingName = .easeIn
     } else {
       panelTimingName = .linear
