@@ -618,8 +618,31 @@ extension MainWindowController {
 
     guard let window = window else { return }
 
+    /*
+    let (closeLeadingSidebar, closeTrailingSidebar) = currentLayout.spec.hasSpaceForSidebars(in: newGeometry.videoContainerSize.width)
+    if closeLeadingSidebar || closeTrailingSidebar {
+      log.verbose("Closing leadingSidebar:\(closeLeadingSidebar.yn) trailingSidebar:\(closeTrailingSidebar.yn) because videoContainer is not wide enough")
+      animationQueue.runZeroDuration { [self] in
+        let oldLayout = currentLayout
+        let leadingSidebar = closeLeadingSidebar ? oldLayout.leadingSidebar.clone(visibility: .hide) : oldLayout.leadingSidebar
+        let trailingSidebar = closeTrailingSidebar ? oldLayout.trailingSidebar.clone(visibility: .hide) : oldLayout.trailingSidebar
+        let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar,
+                                                 trailingSidebar: trailingSidebar)
+        let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
+
+        var animationTasks = transition.animationTasks
+
+        animationTasks.append(CocoaAnimation.Task(duration: 0, timing: .easeInEaseOut, {
+          (window as! MainWindow).setFrameImmediately(newWindowFrame)
+        }))
+        animationQueue.run(animationTasks)
+      }
+      return
+    }
+     */
+
     /// Using `setFrameImmediately()` seems to provide a smoother animation and plays better with other animations
-    if animate && AccessibilityPreferences.motionReductionEnabled {
+    if animate {
       animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, {
         (window as! MainWindow).setFrameImmediately(newWindowFrame)
       }))

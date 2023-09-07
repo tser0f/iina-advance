@@ -199,6 +199,16 @@ extension MainWindowController {
       return visibleTabGroup?.width() ?? 0
     }
 
+    /// NOTE: Is mutable if showing `playlist` tab group!
+    var insideWidth: CGFloat {
+      return placement == .insideVideo ? currentWidth : 0
+    }
+
+    /// NOTE: Is mutable if showing `playlist` tab group!
+    var outsideWidth: CGFloat {
+      return placement == .outsideVideo ? currentWidth : 0
+    }
+
     var defaultTabToShow: Sidebar.Tab? {
       // Use last visible tab if still valid:
       if let lastVisibleTab = lastVisibleTab, tabGroups.contains(lastVisibleTab.group) {
@@ -308,8 +318,7 @@ extension MainWindowController {
       }
 
       let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
-      animationQueue.run(transition.animationTasks)
+      buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
     }
   }
 
@@ -321,7 +330,7 @@ extension MainWindowController {
       let oldLayout = currentLayout
       let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
                                                trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide))
-      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
+      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0)
 
       if animate {
         animationQueue.run(transition.animationTasks)
@@ -395,8 +404,7 @@ extension MainWindowController {
     }
 
     let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-    let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
-    animationQueue.run(transition.animationTasks)
+    buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
   }
 
   /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
@@ -846,8 +854,7 @@ extension MainWindowController {
       let newLayoutSpec = oldLayout.spec.clone(
         leadingSidebar: leadingSidebar.clone(tabGroups: newLeadingTabGroups, visibility: newLeadingSidebarVisibility),
         trailingSidebar: trailingSidebar.clone(tabGroups: newTrailingTabGroups, visibility: newTraillingSidebarVisibility))
-      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
-      animationQueue.run(transition.animationTasks)
+      buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
     }
   }
 
@@ -1016,8 +1023,7 @@ extension MainWindowController {
     if hideLeading || hideTrailing {
       let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: hideLeading ? oldLayout.leadingSidebar.clone(visibility: .hide) : nil,
                                             trailingSidebar: hideTrailing ? oldLayout.trailingSidebar.clone(visibility: .hide) : nil)
-      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
-      animationQueue.run(transition.animationTasks)
+      buildLayoutTransition(from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0, thenRun: true)
       return true
     }
     return false

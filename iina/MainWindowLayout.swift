@@ -136,6 +136,34 @@ extension MainWindowController {
       && otherSpec.trailingSidebar.tabGroups == trailingSidebar.tabGroups
     }
 
+    private func hasSpaceFor(leadingSidebarWidth: CGFloat, trailingSidebarWidth: CGFloat, in videoContainerWidth: CGFloat) -> Bool {
+      return leadingSidebarWidth + trailingSidebarWidth + 240 < videoContainerWidth
+    }
+
+    func hasSpaceForSidebars(in videoContainerWidth: CGFloat) -> (Bool, Bool) {
+      var leadingSidebarSpace = leadingSidebar.insideWidth
+      var trailingSidebarSpace = trailingSidebar.insideWidth
+      var vidConSpace = videoContainerWidth
+
+      var closeLeadingSidebar = false
+      var closeTrailingSidebar = false
+      if leadingSidebarSpace + trailingSidebarSpace > 0 {
+        while !hasSpaceFor(leadingSidebarWidth: leadingSidebarSpace, trailingSidebarWidth: trailingSidebarSpace, in: vidConSpace) {
+          if leadingSidebarSpace > 0 && leadingSidebarSpace >= trailingSidebarSpace {
+            closeLeadingSidebar = true
+            leadingSidebarSpace = 0
+            vidConSpace -= leadingSidebarSpace
+          } else if trailingSidebarSpace > 0 && trailingSidebarSpace >= leadingSidebarSpace {
+            closeTrailingSidebar = true
+            trailingSidebarSpace = 0
+            vidConSpace -= trailingSidebarSpace
+          } else {
+            break
+          }
+        }
+      }
+      return (closeLeadingSidebar, closeTrailingSidebar)
+    }
   }
 
   /// `LayoutState`: data structure which contains all the variables which describe a single layout configuration of the `MainWindow`.
@@ -147,10 +175,14 @@ extension MainWindowController {
   ///   and a `LayoutTransition` should be built to describe the animations needs to go from old to new.
   /// • The new `LayoutState`, once active, should be stored in the `currentLayout` of `MainWindowController` for future reference.
   class LayoutState {
+    init(spec: LayoutSpec) {
+      self.spec = spec
+    }
+
     // All other variables in this class are derived from this spec:
     let spec: LayoutSpec
 
-    // Visiblity of views/categories:
+    // Visibility of views/categories
 
     var titleBar: Visibility = .hidden
     var titleIconAndText: Visibility = .hidden
@@ -165,24 +197,29 @@ extension MainWindowController {
     var bottomBarView: Visibility = .hidden
     var topBarView: Visibility = .hidden
 
-    // Geometry:
+    // Sizes / offsets
 
     var cameraHousingOffset: CGFloat = 0
-    var titleBarHeight: CGFloat = 0
-    var topOSCHeight: CGFloat = 0
+
+    /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
+    /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
+    var osdMinOffsetFromTop: CGFloat = 8
 
     var sidebarDownshift: CGFloat = Constants.Sidebar.defaultDownshift
     var sidebarTabHeight: CGFloat = Constants.Sidebar.defaultTabHeight
 
-    /// Bar widths/heights:
+    var titleBarHeight: CGFloat = 0
+    var topOSCHeight: CGFloat = 0
 
     var topBarHeight: CGFloat {
       self.titleBarHeight + self.topOSCHeight
     }
+
     /// NOTE: Is mutable!
     var trailingBarWidth: CGFloat {
       return spec.trailingSidebar.currentWidth
     }
+
     var bottomBarHeight: CGFloat = 0
 
     /// NOTE: Is mutable!
@@ -190,15 +227,10 @@ extension MainWindowController {
       return spec.leadingSidebar.currentWidth
     }
 
-    /// Bar widths/heights IF `outsideVideo`:
+    /// Bar widths/heights IF `outsideVideo`
 
     var topBarOutsideHeight: CGFloat {
       return topBarPlacement == .outsideVideo ? topBarHeight : 0
-    }
-
-    /// NOTE: Is mutable!
-    var trailingBarOutsideWidth: CGFloat {
-      return trailingSidebarPlacement == .outsideVideo ? trailingBarWidth : 0
     }
 
     var bottomBarOutsideHeight: CGFloat {
@@ -206,29 +238,28 @@ extension MainWindowController {
     }
 
     /// NOTE: Is mutable!
-    var leadingBarOutsideWidth: CGFloat {
-      return leadingSidebarPlacement == .outsideVideo ? leadingBarWidth : 0
+    var trailingBarOutsideWidth: CGFloat {
+      return spec.trailingSidebar.outsideWidth
     }
 
     /// NOTE: Is mutable!
+    var leadingBarOutsideWidth: CGFloat {
+      return spec.leadingSidebar.outsideWidth
+    }
+
+    /// Bar widths/heights IF `insideVideo`
+
+    /// NOTE: Is mutable!
     var leadingBarInsideWidth: CGFloat {
-      return leadingSidebarPlacement == .insideVideo ? leadingBarWidth : 0
+      return spec.leadingSidebar.insideWidth
     }
 
     /// NOTE: Is mutable!
     var trailingBarInsideWidth: CGFloat {
-      return trailingSidebarPlacement == .outsideVideo ? trailingBarWidth : 0
+      return spec.trailingSidebar.insideWidth
     }
 
-    /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
-    /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
-    var osdMinOffsetFromTop: CGFloat = 8
-
-    init(spec: LayoutSpec) {
-      self.spec = spec
-    }
-
-    // Derived attributes & convenience accesstors
+    // Derived properties & convenience accessors
 
     var isFullScreen: Bool {
       return spec.mode == .fullScreen
@@ -408,36 +439,38 @@ extension MainWindowController {
       return fromLayout.trailingSidebarPlacement != toLayout.trailingSidebarPlacement
     }
 
-    lazy var mustOpenLeadingSidebar: Bool = {
-      return mustOpen(.leadingSidebar)
+    lazy var isShowingLeadingSidebar: Bool = {
+      return isShowing(.leadingSidebar)
     }()
 
-    lazy var mustOpenTrailingSidebar: Bool = {
-      return mustOpen(.trailingSidebar)
+    lazy var isShowingTrailingSidebar: Bool = {
+      return isShowing(.trailingSidebar)
     }()
 
-    lazy var mustCloseLeadingSidebar: Bool = {
-      return mustClose(.leadingSidebar)
+    lazy var isHidingLeadingSidebar: Bool = {
+      return isHiding(.leadingSidebar)
     }()
 
-    lazy var mustCloseTrailingSidebar: Bool = {
-      return mustClose(.trailingSidebar)
+    lazy var isHidingTrailingSidebar: Bool = {
+      return isHiding(.trailingSidebar)
     }()
 
-    lazy var isOpeningOrClosingAnySidebar: Bool = {
-      return mustOpenLeadingSidebar || mustOpenTrailingSidebar || mustCloseLeadingSidebar || mustCloseTrailingSidebar
+    lazy var isTogglingAnySidebarVisibility: Bool = {
+      return isShowingLeadingSidebar || isShowingTrailingSidebar || isHidingLeadingSidebar || isHidingTrailingSidebar
     }()
 
-    func mustOpen(_ sidebarID: Preference.SidebarLocation) -> Bool {
+    /// Is opening given sidebar?
+    func isShowing(_ sidebarID: Preference.SidebarLocation) -> Bool {
       let oldState = fromLayout.sidebar(withID: sidebarID)
       let newState = toLayout.sidebar(withID: sidebarID)
       if !oldState.isVisible && newState.isVisible {
         return true
       }
-      return mustCloseAndReopen(sidebarID)
+      return isHidingAndThenShowing(sidebarID)
     }
 
-    func mustClose(_ sidebarID: Preference.SidebarLocation) -> Bool {
+    /// Is closing given sidebar?
+    func isHiding(_ sidebarID: Preference.SidebarLocation) -> Bool {
       let oldState = fromLayout.sidebar(withID: sidebarID)
       let newState = toLayout.sidebar(withID: sidebarID)
       if oldState.isVisible {
@@ -449,14 +482,14 @@ extension MainWindowController {
           return true
         }
         if let visibleTabGroup = oldState.visibleTabGroup, !newState.tabGroups.contains(visibleTabGroup) {
-          Logger.log("mustClose(sidebarID:): visibleTabGroup \(visibleTabGroup.rawValue.quoted) is not present in newState!", level: .error)
+          Logger.log("isHiding(sidebarID:): visibleTabGroup \(visibleTabGroup.rawValue.quoted) is not present in newState!", level: .error)
           return true
         }
       }
-      return mustCloseAndReopen(sidebarID)
+      return isHidingAndThenShowing(sidebarID)
     }
 
-    func mustCloseAndReopen(_ sidebarID: Preference.SidebarLocation) -> Bool {
+    func isHidingAndThenShowing(_ sidebarID: Preference.SidebarLocation) -> Bool {
       let oldState = fromLayout.sidebar(withID: sidebarID)
       let newState = toLayout.sidebar(withID: sidebarID)
       if oldState.isVisible && newState.isVisible {
@@ -543,17 +576,20 @@ extension MainWindowController {
     }
   }
 
-  // TODO: Prevent sidebars from opening if not enough space?
   /// First builds a new `LayoutState` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutState` to the new one.
+  @discardableResult
   func buildLayoutTransition(from fromLayout: LayoutState,
-                             to layoutSpec: LayoutSpec,
+                             to givenSpec: LayoutSpec,
                              totalStartingDuration: CGFloat? = nil,
-                             totalEndingDuration: CGFloat? = nil) -> LayoutTransition {
+                             totalEndingDuration: CGFloat? = nil,
+                             thenRun: Bool = false) -> LayoutTransition {
+
+    // TODO: Prevent sidebars from opening if not enough space
+    let layoutSpec: LayoutSpec = givenSpec
 
     let toLayout = buildFutureLayoutState(from: layoutSpec)
     let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false)
-    transition.windowGeometry = getCurrentWindowGeometry()
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {
@@ -569,7 +605,7 @@ extension MainWindowController {
     let panelTimingName: CAMediaTimingFunctionName?
     if transition.isTogglingFullScreen {
       panelTimingName = nil
-    } else if transition.isOpeningOrClosingAnySidebar {
+    } else if transition.isTogglingAnySidebarVisibility {
       panelTimingName = .easeIn
     } else {
       panelTimingName = .linear
@@ -631,6 +667,9 @@ extension MainWindowController {
       doPostTransitionWork(transition)
     })
 
+    if thenRun {
+      animationQueue.run(transition.animationTasks)
+    }
     return transition
   }
 
@@ -704,10 +743,10 @@ extension MainWindowController {
       player.mpv.setFlag(MPVOption.Window.keepaspect, false)
     }
 
-    if transition.mustCloseLeadingSidebar && leadingSidebarAnimationState == .shown {
+    if transition.isHidingLeadingSidebar && leadingSidebarAnimationState == .shown {
       leadingSidebarAnimationState = .willHide
     }
-    if transition.mustCloseTrailingSidebar && trailingSidebarAnimationState == .shown {
+    if transition.isHidingTrailingSidebar && trailingSidebarAnimationState == .shown {
       trailingSidebarAnimationState = .willHide
     }
   }
@@ -874,8 +913,8 @@ extension MainWindowController {
     // Sidebars (if closing)
     animateShowOrHideSidebars(transition: transition,
                               layout: transition.fromLayout,
-                              setLeadingTo: transition.mustCloseLeadingSidebar ? .hide : nil,
-                              setTrailingTo: transition.mustCloseTrailingSidebar ? .hide : nil)
+                              setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
+                              setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
 
     window.contentView?.layoutSubtreeIfNeeded()
   }
@@ -964,18 +1003,18 @@ extension MainWindowController {
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
       case .floating:
-        // Wait to add these in the next task. For some reason, adding too soon here causes
+        // Wait to add these in the next task. For some reason, adding too soon here can cause volume slider to disappear
         break
       }
     }
 
     // Sidebars: finish closing (if closing)
-    if transition.mustCloseLeadingSidebar, let visibleTab = transition.fromLayout.leadingSidebar.visibleTab {
+    if transition.isHidingLeadingSidebar, let visibleTab = transition.fromLayout.leadingSidebar.visibleTab {
       /// Remove `tabGroupView` from its parent (also removes constraints):
       let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
       viewController.view.removeFromSuperview()
     }
-    if transition.mustCloseTrailingSidebar, let visibleTab = transition.fromLayout.trailingSidebar.visibleTab {
+    if transition.isHidingTrailingSidebar, let visibleTab = transition.fromLayout.trailingSidebar.visibleTab {
       /// Remove `tabGroupView` from its parent (also removes constraints):
       let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
       viewController.view.removeFromSuperview()
@@ -983,7 +1022,7 @@ extension MainWindowController {
 
     // Sidebars: if (re)opening
     if let tabToShow = transition.toLayout.leadingSidebar.visibleTab {
-      if transition.mustOpenLeadingSidebar {
+      if transition.isShowingLeadingSidebar {
         prepareLayoutForOpening(leadingSidebar: transition.toLayout.leadingSidebar)
       } else if transition.fromLayout.leadingSidebar.visibleTabGroup == transition.toLayout.leadingSidebar.visibleTabGroup {
         // Tab group is already showing, but just need to switch tab
@@ -991,7 +1030,7 @@ extension MainWindowController {
       }
     }
     if let tabToShow = transition.toLayout.trailingSidebar.visibleTab {
-      if transition.mustOpenTrailingSidebar {
+      if transition.isShowingTrailingSidebar {
         prepareLayoutForOpening(trailingSidebar: transition.toLayout.trailingSidebar)
       } else if transition.fromLayout.trailingSidebar.visibleTabGroup == transition.toLayout.trailingSidebar.visibleTabGroup {
         // Tab group is already showing, but just need to switch tab
@@ -1014,34 +1053,6 @@ extension MainWindowController {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
     log.verbose("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
-
-    // Changing window frame for fullscreen?
-    if transition.isEnteringFullScreen {
-      // Entering FullScreen
-      if transition.toLayout.isLegacyFullScreen {
-        // Set window frame including camera housing (if any)
-        setWindowFrameForLegacyFullScreen()
-      } else {
-        let screen = bestScreen
-        Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
-        (window as! MainWindow).setFrameImmediately(screen.frameWithoutCameraHousing)
-      }
-    } else if transition.isExitingFullScreen {
-      // Exiting FullScreen
-      let topHeight = transition.toLayout.topBarOutsideHeight
-      let bottomHeight = transition.toLayout.bottomBarOutsideHeight
-      let leadingWidth = transition.toLayout.leadingBarOutsideWidth
-      let trailingWidth = transition.toLayout.trailingBarOutsideWidth
-
-      guard let priorGeometry = fsState.priorWindowedGeometry else { return }
-      let priorWindowFrame = priorGeometry.resizeOutsideBars(newTopHeight: topHeight,
-                                                             newTrailingWidth: trailingWidth,
-                                                             newBottomHeight: bottomHeight,
-                                                             newLeadingWidth: leadingWidth).windowFrame
-
-      log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
-      (window as! MainWindow).setFrameImmediately(priorWindowFrame)
-    }
 
     // Update heights to their final values:
     topOSCHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
@@ -1078,6 +1089,31 @@ extension MainWindowController {
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       log.debug("Calling setFrame() from openNewPanels with newWindowFrame \(newWindowFrame)")
       (window as! MainWindow).setFrameImmediately(newWindowFrame)
+    } else if transition.isEnteringFullScreen {
+      // Entering FullScreen
+      if transition.toLayout.isLegacyFullScreen {
+        // Set window frame including camera housing (if any)
+        setWindowFrameForLegacyFullScreen()
+      } else {
+        let screen = bestScreen
+        Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
+        (window as! MainWindow).setFrameImmediately(screen.frameWithoutCameraHousing)
+      }
+    } else if transition.isExitingFullScreen {
+      // Exiting FullScreen
+      let topHeight = transition.toLayout.topBarOutsideHeight
+      let bottomHeight = transition.toLayout.bottomBarOutsideHeight
+      let leadingWidth = transition.toLayout.leadingBarOutsideWidth
+      let trailingWidth = transition.toLayout.trailingBarOutsideWidth
+
+      guard let priorGeometry = fsState.priorWindowedGeometry else { return }
+      let priorWindowFrame = priorGeometry.resizeOutsideBars(newTopHeight: topHeight,
+                                                             newTrailingWidth: trailingWidth,
+                                                             newBottomHeight: bottomHeight,
+                                                             newLeadingWidth: leadingWidth).windowFrame
+
+      log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
+      (window as! MainWindow).setFrameImmediately(priorWindowFrame)
     }
 
     // Sidebars (if opening)
@@ -1085,8 +1121,8 @@ extension MainWindowController {
     let trailingSidebar = transition.toLayout.trailingSidebar
     animateShowOrHideSidebars(transition: transition,
                               layout: transition.toLayout,
-                              setLeadingTo: transition.mustOpenLeadingSidebar ? leadingSidebar.visibility : nil,
-                              setTrailingTo: transition.mustOpenTrailingSidebar ? trailingSidebar.visibility : nil)
+                              setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
+                              setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
 
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: futureLayout)
