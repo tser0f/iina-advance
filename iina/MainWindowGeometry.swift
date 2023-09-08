@@ -174,7 +174,8 @@ struct MainWindowGeometry: Equatable {
     return scale(desiredVideoContainerSize: nil, constrainedWithin: containerFrame, centerInContainer: centerInContainer)
   }
 
-  func scale(desiredWindowSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
+  func scale(desiredWindowSize: NSSize? = nil,
+             constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
     if let desiredWindowSize = desiredWindowSize {
       let outsideBarsTotalSize = outsideBarsTotalSize
       let requestedVideoContainerSize = NSSize(width: desiredWindowSize.width - outsideBarsTotalSize.width,
@@ -197,7 +198,9 @@ struct MainWindowGeometry: Equatable {
   /// • If `containerFrame` is given, resulting `windowFrame` (and its subviews) will be sized and repositioned as ncessary to fit within it.
   /// (The `containerFrame` will typically be `screen.visibleFrame`)
   /// • If `containerFrame` is `nil`, center point & size of resulting `windowFrame` will not be changed.
-  func scale(desiredVideoContainerSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
+  /// • If `centerInContainer` is `true`, `windowFrame` will be centered inside `containerFrame` (will be ignored if `containerFrame` is nil)
+  func scale(desiredVideoContainerSize: NSSize? = nil,
+             constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
     var newVidConSize = desiredVideoContainerSize ?? videoContainerSize
     Logger.log("Scaling MainWindowGeometry newVidConSize: \(newVidConSize)", level: .verbose)
 
@@ -239,7 +242,8 @@ struct MainWindowGeometry: Equatable {
     return self.clone(windowFrame: newWindowFrame)
   }
 
-  func scale(desiredVideoSize: NSSize, constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
+  func scale(desiredVideoSize: NSSize,
+             constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> MainWindowGeometry {
     Logger.log("Scaling MainWindowGeometry desiredVideoSize: \(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
@@ -582,13 +586,12 @@ extension MainWindowController {
       log.error("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (VideoContainer: \(videoContainerFrame); Window: \(windowFrame))")
       return MainWindowGeometry(windowFrame: windowFrame,
                                 topBarHeight: currentLayout.topBarHeight,
-                                trailingBarWidth: currentLayout.trailingBarWidth,
+                                trailingBarWidth: currentLayout.trailingBarOutsideWidth,
                                 bottomBarHeight: currentLayout.bottomBarOutsideHeight,
-                                leadingBarWidth: currentLayout.leadingBarWidth,
+                                leadingBarWidth: currentLayout.leadingBarOutsideWidth,
                                 videoAspectRatio: videoAspectRatio)
     }
-    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
-                              videoAspectRatio: videoAspectRatio)
+    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame, videoAspectRatio: videoAspectRatio)
   }
 
   func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {

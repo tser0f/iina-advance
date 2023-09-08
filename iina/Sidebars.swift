@@ -403,6 +403,7 @@ extension MainWindowController {
       return
     }
 
+    log.verbose("Transitioning to layout with \(leadingSidebar.locationID)=\(leadingSidebar.visibility) (state: \(leadingSidebarAnimationState)), \(trailingSidebar.locationID)=\(trailingSidebar.visibility) (state: \(trailingSidebarAnimationState))")
     let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
     buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
   }
@@ -484,7 +485,7 @@ extension MainWindowController {
     window?.contentView?.layoutSubtreeIfNeeded()
   }
 
-  // Resizes window to accomodate open/close of "outside" sidebars.
+  // Resizes window to accomodate show or hide of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
   private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat = 0, ΔTrailingOutsideWidth ΔTrailing: CGFloat = 0) {
     guard ΔLeading != 0 || ΔTrailing != 0 else { return }
@@ -505,35 +506,28 @@ extension MainWindowController {
       }
     }
 
-    let newLeadingWidth = oldGeometry.leadingBarWidth + ΔLeading
-    let newTrailingWidth = oldGeometry.trailingBarWidth + ΔTrailing
-    updateWindowFrame(newLeadingWidth: newLeadingWidth, newTrailingWidth: newTrailingWidth)
-  }
-
-  private func updateWindowFrame(newLeadingWidth: CGFloat = 0, newTrailingWidth: CGFloat = 0) {
-    let oldGeometry = windowGeometryAtResizeStart ?? getCurrentWindowGeometry()
-    let newGeometry: MainWindowGeometry
+    var newLeadingWidth = oldGeometry.leadingBarWidth + ΔLeading
+    var newTrailingWidth = oldGeometry.trailingBarWidth + ΔTrailing
 
     // Can happen for stale stored layout state. Try to recover
     if newLeadingWidth < 0 {
       log.error("Cannot set negative sidebar width (given: \(newLeadingWidth))! Will set leadingSidebar width to 0 instead")
+      newLeadingWidth = 0
     }
     if newTrailingWidth < 0 {
       log.error("Cannot set negative sidebar width (given: \(newTrailingWidth))! Will set trailingSidebar width to 0 instead")
+      newTrailingWidth = 0
     }
-    let newLeadingWidth = max(0, newLeadingWidth)
-    let newTrailingWidth = max(0, newTrailingWidth)
 
     // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
     // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
     // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
     // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-    let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: newTrailingWidth,
-                                                        newLeadingWidth: newLeadingWidth)
+    let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: newTrailingWidth, newLeadingWidth: newLeadingWidth)
 
     let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio)
     // Work off of previously stored size (see notes above)
-    newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+    let newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
 
     if !fsState.isFullscreen {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
@@ -773,6 +767,7 @@ extension MainWindowController {
                    level: .error, subsystem: player.subsystem)
         return
       }
+      log.verbose("Switching to tab \(tab.name.quoted) in playlistView")
       self.playlistView.pleaseSwitchToTab(tabType)
     case .settings:
       guard let tabType = QuickSettingViewController.TabViewType(name: tab.name) else {
@@ -780,6 +775,7 @@ extension MainWindowController {
                    level: .error, subsystem: player.subsystem)
         return
       }
+      log.verbose("Switching to tab \(tab.name.quoted) in quickSettingView")
       self.quickSettingView.pleaseSwitchToTab(tabType)
     }
   }
