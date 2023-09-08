@@ -471,7 +471,7 @@ extension MainWindowController {
 
       /// Finally call `setFrame()`
       log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), oldVideoSize: \(oldVideoSize), isFS:\(fsState.isFullscreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-      setCurrentWindowGeometry(to: newWindowGeo)
+      setCurrentWindowGeometry(to: newWindowGeo, enqueueAnimation: false, setFrameImmediately: false)
 
       if !fsState.isFullscreen {
         // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
@@ -590,7 +590,7 @@ extension MainWindowController {
                               videoAspectRatio: videoAspectRatio)
   }
 
-  func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true) {
+  func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
     let newWindowFrame = newGeometry.windowFrame
     if fsState.isFullscreen {
       log.verbose("Updating priorWindowedGeometry because window is in full screen, with windowFrame \(newWindowFrame)")
@@ -623,13 +623,22 @@ extension MainWindowController {
     }
      */
 
-    /// Using `setFrameImmediately()` seems to provide a smoother animation and plays better with other animations
+    /// Using `setFrameImmediately()` usually provides a smoother animation and plays better with other animations,
+    /// although this is not true in every case.
     if enqueueAnimation {
       animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, {
-        (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: animate)
+        if setFrameImmediately {
+          (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: animate)
+        } else {
+          window.setFrame(newWindowFrame, display: true, animate: animate)
+        }
       }))
     } else {
-      (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: animate)
+      if setFrameImmediately {
+        (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: animate)
+      } else {
+        window.setFrame(newWindowFrame, display: true, animate: animate)
+      }
     }
 
     player.saveState()
