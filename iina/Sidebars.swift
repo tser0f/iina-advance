@@ -538,7 +538,7 @@ extension MainWindowController {
     if !fsState.isFullscreen {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
     }
-    setCurrentWindowGeometry(to: newGeometry, animate: false)
+    setCurrentWindowGeometry(to: newGeometry, enqueueAnimation: false)
   }
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
@@ -962,7 +962,7 @@ extension MainWindowController {
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
           let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
 
-          setCurrentWindowGeometry(to: resizedWindowGeo, animate: false)
+          setCurrentWindowGeometry(to: resizedWindowGeo, enqueueAnimation: false)
         }
 
       } else if trailingSidebarIsResizing {
@@ -978,7 +978,7 @@ extension MainWindowController {
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
           let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
 
-          setCurrentWindowGeometry(to: resizedWindowGeo, animate: false)
+          setCurrentWindowGeometry(to: resizedWindowGeo, enqueueAnimation: false)
         }
 
       } else {

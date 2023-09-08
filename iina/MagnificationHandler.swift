@@ -65,6 +65,11 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     let origVideoContainerSize = windowGeometryAtMagnificationStart.videoContainerSize
     let newVideoContainerSize = origVideoContainerSize.multiply(scale);
 
-    mainWindow.resizeVideoContainer(desiredVideoContainerSize: newVideoContainerSize, fromGeometry: windowGeometryAtMagnificationStart, animate: false)
+    let newGeoUnconstrained = windowGeometryAtMagnificationStart.scale(desiredVideoContainerSize: newVideoContainerSize)
+    // User has actively resized the video. Assume this is the new preferred resolution
+    mainWindow.player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
+
+    let newGeometry = newGeoUnconstrained.constrainWithin(mainWindow.bestScreen.visibleFrame)
+    mainWindow.setCurrentWindowGeometry(to: newGeometry, enqueueAnimation: false, animate: false)
   }
 }

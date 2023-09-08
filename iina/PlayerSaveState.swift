@@ -425,7 +425,7 @@ struct PlayerSaveState {
 
       log.debug("Restoring windowFrame to \(geometry.windowFrame), videoAspectRatio: \(geometry.videoAspectRatio)")
       player.videoView.updateAspectRatio(to: geometry.videoAspectRatio)
-      mainWindow.setCurrentWindowGeometry(to: geometry, animate: false)
+      mainWindow.setCurrentWindowGeometry(to: geometry, enqueueAnimation: false)
     } else {
       log.error("Failed to get player window layout and/or geometry from prefs")
     }
