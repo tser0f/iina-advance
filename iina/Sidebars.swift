@@ -287,14 +287,14 @@ extension MainWindowController {
 
   /// Shows or toggles visibility of given `tab`
   func showSidebar(tab: Sidebar.Tab, force: Bool = false, hideIfAlreadyShown: Bool = true) {
-    Logger.log("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)",
-               level: .verbose, subsystem: player.subsystem)
+    log.verbose("ShowSidebar for tab: \(tab.name.quoted), force: \(force), hideIfAlreadyShown: \(hideIfAlreadyShown)")
 
     animationQueue.runZeroDuration { [self] in
       guard let destinationSidebar = getConfiguredSidebar(forTabGroup: tab.group) else { return }
 
       if destinationSidebar.visibleTab == tab {
         if hideIfAlreadyShown {
+          log.verbose("Will hide \(destinationSidebar.locationID) instead because it is in state \(destinationSidebar.visibility)")
           changeVisibility(forTab: tab, to: false)
         }
       } else {

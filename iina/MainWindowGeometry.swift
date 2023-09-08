@@ -441,7 +441,7 @@ extension MainWindowController {
             log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionB] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
             newWindowGeo = currentWindowGeo.scale(desiredVideoContainerSize: screenVisibleFrame.size, constrainedWithin: screenVisibleFrame, centerInContainer: true)
           } else {
-            log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing priorWindowFrame \(currentWindowGeo.windowFrame) to videoSize + outside panels → windowFrame")
+            log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing windowFrame \(currentWindowGeo.windowFrame) to videoSize + outside panels → windowFrame")
             newWindowGeo = currentWindowGeo.scale(desiredVideoSize: newVideoSize, constrainedWithin: screenVisibleFrame, centerInContainer: true)
           }
         }

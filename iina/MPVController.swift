@@ -1458,11 +1458,10 @@ not applying FFmpeg 9599 workaround
 
     case MPVOption.Window.windowScale:
       let windowScale = getDouble(MPVOption.Window.windowScale)
-      Logger.log("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale)", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale)")
       guard player.mainWindow.loaded else { break }
       let needsUpdate = fabs(windowScale - player.info.cachedWindowScale) > 10e-10
-      Logger.log("Scale(IINA): \(player.info.cachedWindowScale), Scale(mpv): \(windowScale) -> changed: \(needsUpdate)",
-                 level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Scale(IINA): \(player.info.cachedWindowScale), Scale(mpv): \(windowScale) → changed=\(needsUpdate.yn)")
       if needsUpdate {
         DispatchQueue.main.async {
           self.player.mainWindow.setWindowScale(CGFloat(windowScale))

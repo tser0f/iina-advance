@@ -407,6 +407,44 @@ extension MainWindowController {
       self.isInitialLayout = isInitialLayout
     }
 
+    var isOSCChanging: Bool {
+      return (fromLayout.enableOSC != toLayout.enableOSC) || (fromLayout.oscPosition != toLayout.oscPosition)
+    }
+
+    var needsFadeOutOldViews: Bool {
+      return isTogglingLegacyWindowStyle || isTopBarPlacementChanging
+      || (fromLayout.spec.mode != toLayout.spec.mode)
+      || (fromLayout.bottomBarPlacement == .insideVideo && toLayout.bottomBarPlacement == .outsideVideo)
+      || (fromLayout.enableOSC != toLayout.enableOSC)
+      || (fromLayout.enableOSC && (fromLayout.oscPosition != toLayout.oscPosition))
+      || (fromLayout.leadingSidebarToggleButton.isShowable && !toLayout.leadingSidebarToggleButton.isShowable)
+      || (fromLayout.trailingSidebarToggleButton.isShowable && !toLayout.trailingSidebarToggleButton.isShowable)
+      || (fromLayout.pinToTopButton.isShowable && !toLayout.pinToTopButton.isShowable)
+    }
+
+    var needsFadeInNewViews: Bool {
+      return isTogglingLegacyWindowStyle || isTopBarPlacementChanging
+      || (fromLayout.spec.mode != toLayout.spec.mode)
+      || (fromLayout.bottomBarPlacement == .outsideVideo && toLayout.bottomBarPlacement == .insideVideo)
+      || (fromLayout.enableOSC != toLayout.enableOSC)
+      || (toLayout.enableOSC && (fromLayout.oscPosition != toLayout.oscPosition))
+      || (!fromLayout.leadingSidebarToggleButton.isShowable && toLayout.leadingSidebarToggleButton.isShowable)
+      || (!fromLayout.trailingSidebarToggleButton.isShowable && toLayout.trailingSidebarToggleButton.isShowable)
+      || (!fromLayout.pinToTopButton.isShowable && toLayout.pinToTopButton.isShowable)
+    }
+
+    var needsCloseOldPanels: Bool {
+      if isEnteringFullScreen {
+        // Avoid bounciness and possible unwanted video scaling animation (not needed for ->FS anyway)
+        return false
+      }
+      return isHidingLeadingSidebar || isHidingTrailingSidebar || isTopBarPlacementChanging || isBottomBarPlacementChanging
+      || (fromLayout.spec.isLegacyStyle != toLayout.spec.isLegacyStyle)
+      || (fromLayout.spec.mode != toLayout.spec.mode)
+      || (fromLayout.enableOSC != toLayout.enableOSC)
+      || (fromLayout.enableOSC && (fromLayout.oscPosition != toLayout.oscPosition))
+    }
+
     var isTogglingLegacyWindowStyle: Bool {
       return fromLayout.spec.isLegacyStyle != toLayout.spec.isLegacyStyle
     }
@@ -542,7 +580,7 @@ extension MainWindowController {
       fadeOutOldViews(transition)
       closeOldPanels(transition)
       updateHiddenViewsAndConstraints(transition)
-      openNewPanels(transition)
+      openNewPanelsAndFinalizeOffsets(transition)
       fadeInNewViews(transition)
       doPostTransitionWork(transition)
       log.verbose("Done with transition to initial layout")
@@ -611,6 +649,9 @@ extension MainWindowController {
       panelTimingName = .linear
     }
 
+    let needsFadeOutOldViews = transition.needsFadeOutOldViews
+    let needsFadeInNewViews = transition.needsFadeInNewViews
+
     log.verbose("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
 
     // Starting animations:
@@ -620,17 +661,20 @@ extension MainWindowController {
       doPreTransitionWork(transition)
     })
 
-    // StartingAnimation 1: Show fadeable views from current layout
-    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopBar: true) {
-      transition.animationTasks.append(fadeAnimation)
+    if needsFadeOutOldViews {
+      // StartingAnimation 1: Show fadeable views from current layout
+      for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopBar: true) {
+        transition.animationTasks.append(fadeAnimation)
+      }
+
+      // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
+      transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, { [self] in
+        fadeOutOldViews(transition)
+      }))
     }
 
-    // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
-    transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, { [self] in
-      fadeOutOldViews(transition)
-    }))
 
-    if !transition.isEnteringFullScreen {  // Avoid bounciness and possible unwanted video scaling animation (not needed for ->FS anyway)
+    if transition.needsCloseOldPanels {
       // StartingAnimation 3: Minimize panels which are no longer needed.
       transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
@@ -648,7 +692,7 @@ extension MainWindowController {
     // EndingAnimation: Open new panels and fade in new views
     transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
       // If toggling fullscreen, this also changes the window frame:
-      openNewPanels(transition)
+      openNewPanelsAndFinalizeOffsets(transition)
 
       if transition.isTogglingFullScreen {
         // Fullscreen animations don't have much time. Combine fadeIn step in same animation:
@@ -656,7 +700,7 @@ extension MainWindowController {
       }
     }))
 
-    if !transition.isTogglingFullScreen {
+    if !transition.isTogglingFullScreen && needsFadeInNewViews {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
         fadeInNewViews(transition)
       }))
@@ -797,6 +841,11 @@ extension MainWindowController {
       }
     }
 
+    if transition.fromLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
+      // Hide floating OSC
+      apply(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
+    }
+
     // Change blending modes
     if transition.isTogglingFullScreen {
       /// Need to use `.withinWindow` during animation or else panel tint can change in odd ways
@@ -812,13 +861,13 @@ extension MainWindowController {
     let futureLayout = transition.toLayout
     log.verbose("CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)")
 
-    if futureLayout.titleBarHeight == 0 {
+    if transition.fromLayout.titleBarHeight > 0 && futureLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
     }
-    if futureLayout.topOSCHeight == 0 {
+    if transition.fromLayout.topOSCHeight > 0 && futureLayout.topOSCHeight == 0 {
       topOSCHeightConstraint.animateToConstant(0)
     }
-    if futureLayout.osdMinOffsetFromTop == 0 {
+    if transition.fromLayout.osdMinOffsetFromTop > 0 && futureLayout.osdMinOffsetFromTop == 0 {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
 
@@ -855,6 +904,9 @@ extension MainWindowController {
       }
 
       updateTopBarHeight(to: newTopBarHeight, transition: transition)
+
+      // Update sidebar vertical alignments to match:
+      updateSidebarVerticalConstraints(layout: futureLayout)
     }
 
     var needsBottomBarHeightUpdate = false
@@ -884,11 +936,6 @@ extension MainWindowController {
       updateBottomBarHeight(to: newBottomBarHeight, transition: transition)
     }
 
-    // Update sidebar vertical alignments to match:
-    if futureLayout.topBarHeight < transition.fromLayout.topBarHeight {
-      updateSidebarVerticalConstraints(layout: futureLayout)
-    }
-
     let isWindowHeightChanging = windowYDelta != 0 || windowHeightDelta != 0
     // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
     // Also do not apply when toggling fullscreen because it is not relevant and will cause glitches in the animation.
@@ -903,11 +950,6 @@ extension MainWindowController {
       if let newWindowFrame = window.screen?.frameWithoutCameraHousing {
         (window as! MainWindow).setFrameImmediately(newWindowFrame)
       }
-    }
-
-    if transition.fromLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
-      // Hide floating OSC
-      apply(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
     }
 
     // Sidebars (if closing)
@@ -976,9 +1018,11 @@ extension MainWindowController {
       apply(visibility: futureLayout.topBarView, to: topBarView)
     }
 
-    // Remove subviews from OSC
-    for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
-      view?.removeFromSuperview()
+    if transition.isOSCChanging {
+      // Remove subviews from OSC
+      for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
+        view?.removeFromSuperview()
+      }
     }
 
     if transition.isTopBarPlacementChanging {
@@ -989,15 +1033,16 @@ extension MainWindowController {
       updateBottomBarPlacement(placement: futureLayout.bottomBarPlacement)
     }
 
-    if futureLayout.enableOSC {
-      log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
+    if transition.isOSCChanging && futureLayout.enableOSC {
       switch futureLayout.oscPosition {
       case .top:
+        log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
         currentControlBar = controlBarTop
         addControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
       case .bottom:
+        log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
         currentControlBar = bottomBarView
         addControlBarViews(to: oscBottomMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
@@ -1049,10 +1094,10 @@ extension MainWindowController {
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
-  private func openNewPanels(_ transition: LayoutTransition) {
+  private func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    log.verbose("OpenNewPanels. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
+    log.verbose("OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
 
     // Update heights to their final values:
     topOSCHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
@@ -1087,7 +1132,7 @@ extension MainWindowController {
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
-      log.debug("Calling setFrame() from openNewPanels with newWindowFrame \(newWindowFrame)")
+      log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       (window as! MainWindow).setFrameImmediately(newWindowFrame)
     } else if transition.isEnteringFullScreen {
       // Entering FullScreen
@@ -1128,7 +1173,7 @@ extension MainWindowController {
     updateSidebarVerticalConstraints(layout: futureLayout)
 
     // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
-    if futureLayout.enableOSC && futureLayout.hasFloatingOSC {
+    if transition.isOSCChanging && futureLayout.enableOSC && futureLayout.hasFloatingOSC {
       currentControlBar = controlBarFloating
 
       oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
