@@ -502,6 +502,7 @@ extension MainWindowController {
   }
 
   func shouldResizeWindowAfterVideoReconfig() -> Bool {
+    // FIXME: when rapidly moving between files this can fall out of sync. Find a better solution
     if player.info.justStartedFile {
       // resize option applies
       let resizeTiming = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
@@ -601,7 +602,7 @@ extension MainWindowController {
     guard let window = window else { return }
 
     /*
-    let (closeLeadingSidebar, closeTrailingSidebar) = currentLayout.spec.hasSpaceForSidebars(in: newGeometry.videoContainerSize.width)
+    let (closeLeadingSidebar, closeTrailingSidebar) = currentLayout.spec.isHideSidebarNeeded(in: newGeometry.videoContainerSize.width)
     if closeLeadingSidebar || closeTrailingSidebar {
       log.verbose("Closing leadingSidebar:\(closeLeadingSidebar.yn) trailingSidebar:\(closeTrailingSidebar.yn) because videoContainer is not wide enough")
       animationQueue.runZeroDuration { [self] in
@@ -626,12 +627,13 @@ extension MainWindowController {
     /// Using `setFrameImmediately()` usually provides a smoother animation and plays better with other animations,
     /// although this is not true in every case.
     if enqueueAnimation {
-      animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, {
+      animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         if setFrameImmediately {
           (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: animate)
         } else {
           window.setFrame(newWindowFrame, display: true, animate: animate)
         }
+        player.saveState()
       }))
     } else {
       if setFrameImmediately {
@@ -639,9 +641,8 @@ extension MainWindowController {
       } else {
         window.setFrame(newWindowFrame, display: true, animate: animate)
       }
+      player.saveState()
     }
-
-    player.saveState()
   }
 
   func windowWillStartLiveResize(_ notification: Notification) {

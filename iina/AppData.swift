@@ -163,6 +163,8 @@ struct Constants {
     static let maxPlaylistWidth: CGFloat = 800
     static let settingsWidth: CGFloat = 360
 
+    static let minSpaceBetweenInsideSidebars: CGFloat = 220
+
     /// Sidebar tab buttons
     static let defaultDownshift: CGFloat = 0
     static let defaultTabHeight: CGFloat = 48

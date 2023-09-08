@@ -136,25 +136,29 @@ extension MainWindowController {
       && otherSpec.trailingSidebar.tabGroups == trailingSidebar.tabGroups
     }
 
-    private func hasSpaceFor(leadingSidebarWidth: CGFloat, trailingSidebarWidth: CGFloat, in videoContainerWidth: CGFloat) -> Bool {
-      return leadingSidebarWidth + trailingSidebarWidth + 240 < videoContainerWidth
+    func getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: CGFloat? = nil, trailingSidebarWidth: CGFloat? = nil, in videoContainerWidth: CGFloat) -> CGFloat {
+      let lead = leadingSidebarWidth ?? leadingSidebar.insideWidth
+      let trail = trailingSidebarWidth ?? trailingSidebar.insideWidth
+      return videoContainerWidth - (lead + trail + Constants.Sidebar.minSpaceBetweenInsideSidebars)
     }
 
-    func hasSpaceForSidebars(in videoContainerWidth: CGFloat) -> (Bool, Bool) {
+    /// Returns `(shouldCloseLeadingSidebar, shouldCloseTrailingSidebar)`, indicating which sidebars should be hidden
+    /// due to lack of space in the videoContainer.
+    func isHideSidebarNeeded(in videoContainerWidth: CGFloat) -> (Bool, Bool) {
       var leadingSidebarSpace = leadingSidebar.insideWidth
       var trailingSidebarSpace = trailingSidebar.insideWidth
       var vidConSpace = videoContainerWidth
 
-      var closeLeadingSidebar = false
-      var closeTrailingSidebar = false
+      var shouldCloseLeadingSidebar = false
+      var shouldCloseTrailingSidebar = false
       if leadingSidebarSpace + trailingSidebarSpace > 0 {
-        while !hasSpaceFor(leadingSidebarWidth: leadingSidebarSpace, trailingSidebarWidth: trailingSidebarSpace, in: vidConSpace) {
+        while getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: leadingSidebarSpace, trailingSidebarWidth: trailingSidebarSpace, in: vidConSpace) < 0 {
           if leadingSidebarSpace > 0 && leadingSidebarSpace >= trailingSidebarSpace {
-            closeLeadingSidebar = true
+            shouldCloseLeadingSidebar = true
             leadingSidebarSpace = 0
             vidConSpace -= leadingSidebarSpace
           } else if trailingSidebarSpace > 0 && trailingSidebarSpace >= leadingSidebarSpace {
-            closeTrailingSidebar = true
+            shouldCloseTrailingSidebar = true
             trailingSidebarSpace = 0
             vidConSpace -= trailingSidebarSpace
           } else {
@@ -162,7 +166,7 @@ extension MainWindowController {
           }
         }
       }
-      return (closeLeadingSidebar, closeTrailingSidebar)
+      return (shouldCloseLeadingSidebar, shouldCloseTrailingSidebar)
     }
   }
 
@@ -396,14 +400,17 @@ extension MainWindowController {
   class LayoutTransition {
     let fromLayout: LayoutState
     let toLayout: LayoutState
+    /// (Optional) the originally requested spec, if `toLayout.spec` ended up being different
+    let requestedSpec: LayoutSpec?
     let isInitialLayout: Bool
     var windowGeometry: MainWindowGeometry? = nil
 
     var animationTasks: [CocoaAnimation.Task] = []
 
-    init(from fromLayout: LayoutState, to toLayout: LayoutState, isInitialLayout: Bool = false) {
+    init(from fromLayout: LayoutState, to toLayout: LayoutState, isInitialLayout: Bool = false, requestedSpec: LayoutSpec? = nil) {
       self.fromLayout = fromLayout
       self.toLayout = toLayout
+      self.requestedSpec = requestedSpec
       self.isInitialLayout = isInitialLayout
     }
 
@@ -491,6 +498,29 @@ extension MainWindowController {
 
     lazy var isHidingTrailingSidebar: Bool = {
       return isHiding(.trailingSidebar)
+    }()
+
+    // For running an animation which tries to show a sidebar but fails due to lack of space
+    lazy var isFailingToShowLeadingSidebar: Bool = {
+      if let requestedSpec = requestedSpec {
+        if (!fromLayout.spec.leadingSidebar.isVisible && fromLayout.spec.leadingSidebarPlacement == .insideVideo)
+          && (requestedSpec.leadingSidebar.isVisible && requestedSpec.leadingSidebarPlacement == .insideVideo)
+            && (!toLayout.spec.leadingSidebar.isVisible && toLayout.spec.leadingSidebarPlacement == .insideVideo) {
+          return true
+        }
+      }
+      return false
+    }()
+
+    lazy var isFailingToShowTrailingSidebar: Bool = {
+      if let requestedSpec = requestedSpec {
+        if (!fromLayout.spec.trailingSidebar.isVisible && fromLayout.spec.trailingSidebarPlacement == .insideVideo)
+            && (requestedSpec.trailingSidebar.isVisible && requestedSpec.trailingSidebarPlacement == .insideVideo)
+            && (!toLayout.spec.trailingSidebar.isVisible && toLayout.spec.trailingSidebarPlacement == .insideVideo) {
+          return true
+        }
+      }
+      return false
     }()
 
     lazy var isTogglingVisibilityOfAnySidebar: Bool = {
@@ -618,16 +648,28 @@ extension MainWindowController {
   /// which contains all the information needed to animate the UI changes from the current `LayoutState` to the new one.
   @discardableResult
   func buildLayoutTransition(from fromLayout: LayoutState,
-                             to givenSpec: LayoutSpec,
+                             to requestedSpec: LayoutSpec,
                              totalStartingDuration: CGFloat? = nil,
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
     // TODO: Prevent sidebars from opening if not enough space
-    let layoutSpec: LayoutSpec = givenSpec
+    let currentGeo = getCurrentWindowGeometry()
+    let (shouldCloseLeadingSidebar, shouldCloseTrailingSidebar) = requestedSpec.isHideSidebarNeeded(in: currentGeo.videoContainerSize.width)
+    let layoutSpec: LayoutSpec
+    let originalSpec: LayoutSpec?
+    if shouldCloseLeadingSidebar || shouldCloseTrailingSidebar {
+      let leadingSidebar = shouldCloseLeadingSidebar ? requestedSpec.leadingSidebar.clone(visibility: .hide) : requestedSpec.leadingSidebar
+      let trailingSidebar = shouldCloseTrailingSidebar ? requestedSpec.trailingSidebar.clone(visibility: .hide) : requestedSpec.trailingSidebar
+      layoutSpec = requestedSpec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
+      originalSpec = requestedSpec
+    } else {
+      layoutSpec = requestedSpec
+      originalSpec = nil
+    }
 
     let toLayout = buildFutureLayoutState(from: layoutSpec)
-    let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false)
+    let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false, requestedSpec: originalSpec)
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {

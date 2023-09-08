@@ -217,7 +217,7 @@ class VideoView: NSView {
     }
     Logger.log("Updating videoView aspect ratio constraint to \(aspectRatio)")
     aspectRatioConstraint = widthAnchor.constraint(equalTo: heightAnchor, multiplier: aspectRatio)
-    aspectRatioConstraint.isActive = true
+    aspectRatioConstraint.animator().isActive = true
   }
 
   func removeAspectRatioConstraint() {

@@ -945,7 +945,15 @@ extension MainWindowController {
     return CocoaAnimation.disableAnimation {
       let newPlaylistWidth: CGFloat
       if leadingSidebarIsResizing {
-        newPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
+        let desiredPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
+        // Stop sidebar from resizing when the videoContainerView is not wide enough to fit it.
+        let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
+        newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
+        if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
+          // should not happen in theory, because playlist shouldn't have been shown when resize started
+          log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
+          return true
+        }
         updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.leadingSidebarPlacement)
 
         /// Updating the sidebar width when it is in "outside" mode will cause the video width to
@@ -966,7 +974,14 @@ extension MainWindowController {
         }
 
       } else if trailingSidebarIsResizing {
-        newPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
+        let desiredPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
+        let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
+
+        newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
+        if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
+          log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
+          return true
+        }
         updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.trailingSidebarPlacement)
 
         // See comments for leading sidebar above
