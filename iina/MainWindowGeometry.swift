@@ -143,12 +143,8 @@ struct MainWindowGeometry: Equatable {
   }
 
   var minVideoHeight: CGFloat {
-    if allowEmptySpaceAroundVideo {
-      return AppData.minVideoSize.height
-    } else {
-      // Cannot have black space around video. This means that the min video height may need to be much larger
-      return minVideoWidth / videoAspectRatio
-    }
+    // Limiting factor will most likely be sidebars
+    return minVideoWidth / videoAspectRatio
   }
 
   var minVideoWidth: CGFloat {
@@ -637,29 +633,6 @@ extension MainWindowController {
     }
 
     guard let window = window else { return }
-
-    /*
-    let (closeLeadingSidebar, closeTrailingSidebar) = currentLayout.spec.isHideSidebarNeeded(in: newGeometry.videoContainerSize.width)
-    if closeLeadingSidebar || closeTrailingSidebar {
-      log.verbose("Closing leadingSidebar:\(closeLeadingSidebar.yn) trailingSidebar:\(closeTrailingSidebar.yn) because videoContainer is not wide enough")
-      animationQueue.runZeroDuration { [self] in
-        let oldLayout = currentLayout
-        let leadingSidebar = closeLeadingSidebar ? oldLayout.leadingSidebar.clone(visibility: .hide) : oldLayout.leadingSidebar
-        let trailingSidebar = closeTrailingSidebar ? oldLayout.trailingSidebar.clone(visibility: .hide) : oldLayout.trailingSidebar
-        let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar,
-                                                 trailingSidebar: trailingSidebar)
-        let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec)
-
-        var animationTasks = transition.animationTasks
-
-        animationTasks.append(CocoaAnimation.Task(duration: 0, timing: .easeInEaseOut, {
-          (window as! MainWindow).setFrameImmediately(newWindowFrame)
-        }))
-        animationQueue.run(animationTasks)
-      }
-      return
-    }
-     */
 
     /// Using `setFrameImmediately()` usually provides a smoother animation and plays better with other animations,
     /// although this is not true in every case.

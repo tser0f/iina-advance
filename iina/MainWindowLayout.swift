@@ -400,17 +400,14 @@ extension MainWindowController {
   class LayoutTransition {
     let fromLayout: LayoutState
     let toLayout: LayoutState
-    /// (Optional) the originally requested spec, if `toLayout.spec` ended up being different
-    let requestedSpec: LayoutSpec?
     let isInitialLayout: Bool
     var windowGeometry: MainWindowGeometry? = nil
 
     var animationTasks: [CocoaAnimation.Task] = []
 
-    init(from fromLayout: LayoutState, to toLayout: LayoutState, isInitialLayout: Bool = false, requestedSpec: LayoutSpec? = nil) {
+    init(from fromLayout: LayoutState, to toLayout: LayoutState, isInitialLayout: Bool = false) {
       self.fromLayout = fromLayout
       self.toLayout = toLayout
-      self.requestedSpec = requestedSpec
       self.isInitialLayout = isInitialLayout
     }
 
@@ -498,29 +495,6 @@ extension MainWindowController {
 
     lazy var isHidingTrailingSidebar: Bool = {
       return isHiding(.trailingSidebar)
-    }()
-
-    // For running an animation which tries to show a sidebar but fails due to lack of space
-    lazy var isFailingToShowLeadingSidebar: Bool = {
-      if let requestedSpec = requestedSpec {
-        if (!fromLayout.spec.leadingSidebar.isVisible && fromLayout.spec.leadingSidebarPlacement == .insideVideo)
-          && (requestedSpec.leadingSidebar.isVisible && requestedSpec.leadingSidebarPlacement == .insideVideo)
-            && (!toLayout.spec.leadingSidebar.isVisible && toLayout.spec.leadingSidebarPlacement == .insideVideo) {
-          return true
-        }
-      }
-      return false
-    }()
-
-    lazy var isFailingToShowTrailingSidebar: Bool = {
-      if let requestedSpec = requestedSpec {
-        if (!fromLayout.spec.trailingSidebar.isVisible && fromLayout.spec.trailingSidebarPlacement == .insideVideo)
-            && (requestedSpec.trailingSidebar.isVisible && requestedSpec.trailingSidebarPlacement == .insideVideo)
-            && (!toLayout.spec.trailingSidebar.isVisible && toLayout.spec.trailingSidebarPlacement == .insideVideo) {
-          return true
-        }
-      }
-      return false
     }()
 
     lazy var isTogglingVisibilityOfAnySidebar: Bool = {
@@ -653,23 +627,8 @@ extension MainWindowController {
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
-    // TODO: Prevent sidebars from opening if not enough space
-    let currentGeo = getCurrentWindowGeometry()
-    let (shouldCloseLeadingSidebar, shouldCloseTrailingSidebar) = requestedSpec.isHideSidebarNeeded(in: currentGeo.videoContainerSize.width)
-    let layoutSpec: LayoutSpec
-    let originalSpec: LayoutSpec?
-    if shouldCloseLeadingSidebar || shouldCloseTrailingSidebar {
-      let leadingSidebar = shouldCloseLeadingSidebar ? requestedSpec.leadingSidebar.clone(visibility: .hide) : requestedSpec.leadingSidebar
-      let trailingSidebar = shouldCloseTrailingSidebar ? requestedSpec.trailingSidebar.clone(visibility: .hide) : requestedSpec.trailingSidebar
-      layoutSpec = requestedSpec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-      originalSpec = requestedSpec
-    } else {
-      layoutSpec = requestedSpec
-      originalSpec = nil
-    }
-
-    let toLayout = buildFutureLayoutState(from: layoutSpec)
-    let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false, requestedSpec: originalSpec)
+    let toLayout = buildFutureLayoutState(from: requestedSpec)
+    let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false)
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {
@@ -1154,9 +1113,7 @@ extension MainWindowController {
     if transition.fromLayout.topBarPlacement == .outsideVideo {
       windowHeightDelta -= videoContainerTopOffsetFromContentViewTopConstraint.constant
     }
-    if transition.toLayout.topBarPlacement == .outsideVideo {
-      windowHeightDelta += futureLayout.topBarHeight
-    }
+    windowHeightDelta += futureLayout.topBarOutsideHeight
     updateTopBarHeight(to: futureLayout.topBarHeight, transition: transition)
 
     if transition.fromLayout.bottomBarPlacement == .outsideVideo {
@@ -1169,14 +1126,7 @@ extension MainWindowController {
     }
     updateBottomBarHeight(to: futureLayout.bottomBarHeight, transition: transition)
 
-    if !transition.isInitialLayout && !transition.isTogglingFullScreen && !futureLayout.isFullScreen {
-      let windowFrame = window.frame
-      let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
-      let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
-      let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
-      log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
-      (window as! MainWindow).setFrameImmediately(newWindowFrame)
-    } else if transition.isEnteringFullScreen {
+    if transition.isEnteringFullScreen {
       // Entering FullScreen
       if transition.toLayout.isLegacyFullScreen {
         // Set window frame including camera housing (if any)
@@ -1201,6 +1151,13 @@ extension MainWindowController {
 
       log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
       (window as! MainWindow).setFrameImmediately(priorWindowFrame)
+    } else if !transition.isInitialLayout && !futureLayout.isFullScreen {
+      let windowFrame = window.frame
+      let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
+      let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
+      let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
+      log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
+      (window as! MainWindow).setFrameImmediately(newWindowFrame)
     }
 
     // Sidebars (if opening)

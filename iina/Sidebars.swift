@@ -490,7 +490,7 @@ extension MainWindowController {
   private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat = 0, ΔTrailingOutsideWidth ΔTrailing: CGFloat = 0) {
     guard ΔLeading != 0 || ΔTrailing != 0 else { return }
 
-    let oldGeometry = windowGeometryAtResizeStart ?? getCurrentWindowGeometry()
+    let oldGeometry = getCurrentWindowGeometry()
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
       // Is expanding the window to open a sidebar. First save the current size as the preferred size.
@@ -942,13 +942,17 @@ extension MainWindowController {
       let newPlaylistWidth: CGFloat
       if leadingSidebarIsResizing {
         let desiredPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
-        // Stop sidebar from resizing when the videoContainerView is not wide enough to fit it.
-        let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
-        newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
-        if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
-          // should not happen in theory, because playlist shouldn't have been shown when resize started
-          log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
-          return true
+        if layout.leadingSidebar.placement == .insideVideo {
+          // Stop sidebar from resizing when the videoContainerView is not wide enough to fit it.
+          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
+          newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
+          if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
+            // should not happen in theory, because playlist shouldn't have been shown when resize started
+            log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
+            return true
+          }
+        } else {
+          newPlaylistWidth = desiredPlaylistWidth
         }
         updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.leadingSidebarPlacement)
 
@@ -971,12 +975,16 @@ extension MainWindowController {
 
       } else if trailingSidebarIsResizing {
         let desiredPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
-        let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
+        if layout.trailingSidebar.placement == .insideVideo {
+          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
 
-        newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
-        if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
-          log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
-          return true
+          newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
+          if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
+            log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
+            return true
+          }
+        } else {
+          newPlaylistWidth = desiredPlaylistWidth
         }
         updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.trailingSidebarPlacement)
 
