@@ -487,9 +487,7 @@ extension MainWindowController {
 
   // Resizes window to accomodate show or hide of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
-  private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat = 0, ΔTrailingOutsideWidth ΔTrailing: CGFloat = 0) {
-    guard ΔLeading != 0 || ΔTrailing != 0 else { return }
-
+  private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) {
     let oldGeometry = getCurrentWindowGeometry()
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
