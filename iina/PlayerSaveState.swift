@@ -94,6 +94,8 @@ struct PlayerSaveState {
             geo.trailingBarWidth.string2f,
             geo.bottomBarHeight.string2f,
             geo.leadingBarWidth.string2f,
+            geo.insideBarLeadingWidth.string2f,
+            geo.insideBarTrailingWidth.string2f,
             geo.windowFrame.origin.x.string2f,
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
@@ -381,7 +383,7 @@ struct PlayerSaveState {
 
   /// String -> `MainWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
-    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 10, version: PlayerSaveState.geoPrefStringVersion,
+    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
       guard let videoAspectRatio = Double(iter.next()!),
@@ -389,6 +391,8 @@ struct PlayerSaveState {
             let trailingBarWidth = Double(iter.next()!),
             let bottomBarHeight = Double(iter.next()!),
             let leadingBarWidth = Double(iter.next()!),
+            let insideLeadingWidth = Double(iter.next()!),
+            let insideTrailingWidth = Double(iter.next()!),
             let winOriginX = Double(iter.next()!),
             let winOriginY = Double(iter.next()!),
             let winWidth = Double(iter.next()!),
@@ -398,7 +402,7 @@ struct PlayerSaveState {
       }
 
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, videoAspectRatio: videoAspectRatio)
+      return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, insideBarLeadingWidth: insideLeadingWidth, insideBarTrailingWidth: insideTrailingWidth, videoAspectRatio: videoAspectRatio)
     })
   }
 

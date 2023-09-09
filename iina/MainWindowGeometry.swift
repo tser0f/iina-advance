@@ -55,6 +55,10 @@ struct MainWindowGeometry: Equatable {
   let bottomBarHeight: CGFloat
   let leadingBarWidth: CGFloat
 
+  // Inside panels
+  let insideBarLeadingWidth: CGFloat
+  let insideBarTrailingWidth: CGFloat
+
   let videoAspectRatio: CGFloat
   let videoSize: NSSize
 
@@ -66,17 +70,22 @@ struct MainWindowGeometry: Equatable {
 
   init(windowFrame: NSRect,
        topBarHeight: CGFloat, trailingBarWidth: CGFloat, bottomBarHeight: CGFloat, leadingBarWidth: CGFloat,
+       insideBarLeadingWidth: CGFloat, insideBarTrailingWidth: CGFloat,
        videoAspectRatio: CGFloat) {
-    assert(topBarHeight >= 0, "Expected topBarHeight > 0, found \(topBarHeight)")
-    assert(trailingBarWidth >= 0, "Expected trailingBarWidth > 0, found \(trailingBarWidth)")
-    assert(bottomBarHeight >= 0, "Expected bottomBarHeight > 0, found \(bottomBarHeight)")
-    assert(leadingBarWidth >= 0, "Expected leadingBarWidth > 0, found \(leadingBarWidth)")
-    assert(trailingBarWidth >= 0, "Expected trailingBarWidth > 0, found \(trailingBarWidth)")
+    assert(topBarHeight >= 0, "Expected topBarHeight >= 0, found \(topBarHeight)")
+    assert(trailingBarWidth >= 0, "Expected trailingBarWidth >= 0, found \(trailingBarWidth)")
+    assert(bottomBarHeight >= 0, "Expected bottomBarHeight >= 0, found \(bottomBarHeight)")
+    assert(leadingBarWidth >= 0, "Expected leadingBarWidth >= 0, found \(leadingBarWidth)")
+    assert(trailingBarWidth >= 0, "Expected trailingBarWidth >= 0, found \(trailingBarWidth)")
+    assert(insideBarLeadingWidth >= 0, "Expected insideBarLeadingWidth >= 0, found \(insideBarLeadingWidth)")
+    assert(insideBarTrailingWidth >= 0, "Expected insideBarTrailingWidth >= 0, found \(insideBarTrailingWidth)")
     self.windowFrame = windowFrame
     self.topBarHeight = topBarHeight
     self.trailingBarWidth = trailingBarWidth
     self.bottomBarHeight = bottomBarHeight
     self.leadingBarWidth = leadingBarWidth
+    self.insideBarLeadingWidth = insideBarLeadingWidth
+    self.insideBarTrailingWidth = insideBarTrailingWidth
     self.videoAspectRatio = videoAspectRatio
     let videoContainerSize = MainWindowGeometry.computeVideoContainerSize(from: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth)
     self.videoSize = MainWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
@@ -84,6 +93,7 @@ struct MainWindowGeometry: Equatable {
 
   init(windowFrame: NSRect,
        videoContainerFrame: NSRect,
+       insideBarLeadingWidth: CGFloat, insideBarTrailingWidth: CGFloat,
        videoAspectRatio: CGFloat) {
     assert(videoContainerFrame.height <= windowFrame.height, "videoContainerFrame.height (\(videoContainerFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
     assert(videoContainerFrame.width <= windowFrame.width, "videoContainerFrame.width (\(videoContainerFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
@@ -95,12 +105,14 @@ struct MainWindowGeometry: Equatable {
               trailingBarWidth: windowFrame.width - videoContainerFrame.width - leadingBarWidth,
               bottomBarHeight: videoContainerFrame.origin.y,
               leadingBarWidth: videoContainerFrame.origin.x,
+              insideBarLeadingWidth: insideBarLeadingWidth, insideBarTrailingWidth: insideBarTrailingWidth,
               videoAspectRatio: videoAspectRatio)
   }
 
   func clone(windowFrame: NSRect? = nil,
              topBarHeight: CGFloat? = nil, trailingBarWidth: CGFloat? = nil,
              bottomBarHeight: CGFloat? = nil, leadingBarWidth: CGFloat? = nil,
+             insideBarLeadingWidth: CGFloat? = nil, insideBarTrailingWidth: CGFloat? = nil,
              videoAspectRatio: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
@@ -108,6 +120,8 @@ struct MainWindowGeometry: Equatable {
                               trailingBarWidth: trailingBarWidth ?? self.trailingBarWidth,
                               bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
                               leadingBarWidth: leadingBarWidth ?? self.leadingBarWidth,
+                              insideBarLeadingWidth: insideBarLeadingWidth ?? self.insideBarLeadingWidth,
+                              insideBarTrailingWidth: insideBarTrailingWidth ?? self.insideBarTrailingWidth,
                               videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
@@ -126,6 +140,19 @@ struct MainWindowGeometry: Equatable {
 
   var outsideBarsTotalSize: NSSize {
     return NSSize(width: trailingBarWidth + leadingBarWidth, height: topBarHeight + bottomBarHeight)
+  }
+
+  var minVideoHeight: CGFloat {
+    if allowEmptySpaceAroundVideo {
+      return AppData.minVideoSize.height
+    } else {
+      // Cannot have black space around video. This means that the min video height may need to be much larger
+      return minVideoWidth / videoAspectRatio
+    }
+  }
+
+  var minVideoWidth: CGFloat {
+    return max(AppData.minVideoSize.width, insideBarLeadingWidth + insideBarTrailingWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars)
   }
 
   // MARK: - Functions
@@ -160,8 +187,9 @@ struct MainWindowGeometry: Equatable {
   }
 
   private func constrainAboveMin(desiredVideoContainerSize: NSSize) -> NSSize {
-    return NSSize(width: max(AppData.minVideoSize.width, desiredVideoContainerSize.width),
-                  height: max(AppData.minVideoSize.height, desiredVideoContainerSize.height))
+    let constrainedWidth = max(minVideoWidth, desiredVideoContainerSize.width)
+    let constrainedHeight = max(minVideoHeight, desiredVideoContainerSize.height)
+    return NSSize(width: constrainedWidth, height: constrainedHeight)
   }
 
   private func constrainBelowMax(desiredVideoContainerSize: NSSize, maxSize: NSSize) -> NSSize {
@@ -247,8 +275,9 @@ struct MainWindowGeometry: Equatable {
     Logger.log("Scaling MainWindowGeometry desiredVideoSize: \(desiredVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
-    /// Enforce `videoView.aspectRatio`: Recalculate height, trying to preserve width
-    newVideoSize = NSSize(width: desiredVideoSize.width, height: (desiredVideoSize.width / videoAspectRatio).rounded())
+    let newWidth = max(minVideoWidth, desiredVideoSize.width)
+    /// Enforce `videoView.aspectRatio`: Recalculate height using width
+    newVideoSize = NSSize(width: newWidth, height: (newWidth / videoAspectRatio).rounded())
     if newVideoSize.height != desiredVideoSize.height {
       // We don't want to see too much of this ideally
       Logger.log("While scaling: applied aspectRatio (\(videoAspectRatio)): changed newVideoSize.height by \(newVideoSize.height - desiredVideoSize.height)", level: .debug)
@@ -312,7 +341,7 @@ struct MainWindowGeometry: Equatable {
       } else {
         w = CGFloat(Int(strw)!)
       }
-      w = max(AppData.minVideoSize.width, w)
+      w = max(minVideoWidth, w)
       newVideoSize.width = w
       newVideoSize.height = w / videoAspectRatio
       widthOrHeightIsSet = true
@@ -589,9 +618,14 @@ extension MainWindowController {
                                 trailingBarWidth: currentLayout.trailingBarOutsideWidth,
                                 bottomBarHeight: currentLayout.bottomBarOutsideHeight,
                                 leadingBarWidth: currentLayout.leadingBarOutsideWidth,
+                                insideBarLeadingWidth: currentLayout.leadingBarInsideWidth,
+                                insideBarTrailingWidth: currentLayout.trailingBarInsideWidth,
                                 videoAspectRatio: videoAspectRatio)
     }
-    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame, videoAspectRatio: videoAspectRatio)
+    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
+                              insideBarLeadingWidth: currentLayout.leadingBarInsideWidth,
+                              insideBarTrailingWidth: currentLayout.trailingBarInsideWidth,
+                              videoAspectRatio: videoAspectRatio)
   }
 
   func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
@@ -686,7 +720,11 @@ extension MainWindowController {
       return window.frame.size
     }
 
-    if !window.inLiveResize && (requestedSize.height <= AppData.minVideoSize.height || requestedSize.width <= AppData.minVideoSize.width) {
+    let currentGeo = getCurrentWindowGeometry()
+    let outsideBarsSize = currentGeo.outsideBarsTotalSize
+
+    if !window.inLiveResize && ((requestedSize.height < currentGeo.minVideoHeight + outsideBarsSize.height)
+                                || (requestedSize.width < currentGeo.minVideoWidth + outsideBarsSize.width)) {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
       log.verbose("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(window.frame.size)")
@@ -696,7 +734,6 @@ extension MainWindowController {
     // Need to resize window to match video aspect ratio, while
     // taking into account any outside panels
 
-    let currentGeo = getCurrentWindowGeometry()
     let screenVisibleFrame = bestScreen.visibleFrame
 
     if Preference.bool(for: .allowEmptySpaceAroundVideo) {

@@ -9,7 +9,10 @@
 import Foundation
 
 class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
-  private var windowGeometryAtMagnificationStart = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(), videoAspectRatio: 1.0)
+  // Just init with dummy data for now so that this doesn't need to be optional
+  private var windowGeometryAtMagnificationStart = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(),
+                                                                      insideBarLeadingWidth: 0, insideBarTrailingWidth: 0,
+                                                                      videoAspectRatio: 1.0)
 
   lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
