@@ -787,13 +787,6 @@ extension MainWindowController {
 
       player.mpv.setFlag(MPVOption.Window.keepaspect, false)
     }
-
-    if transition.isHidingLeadingSidebar && leadingSidebarAnimationState == .shown {
-      leadingSidebarAnimationState = .willHide
-    }
-    if transition.isHidingTrailingSidebar && trailingSidebarAnimationState == .shown {
-      trailingSidebarAnimationState = .willHide
-    }
   }
 
   private func fadeOutOldViews(_ transition: LayoutTransition) {
@@ -1431,10 +1424,6 @@ extension MainWindowController {
     }
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
-
-    // Make sure these stay in sync
-    leadingSidebarAnimationState = transition.toLayout.leadingSidebar.isVisible ? .shown : .hidden
-    trailingSidebarAnimationState = transition.toLayout.trailingSidebar.isVisible ? .shown : .hidden
 
     log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), FSState:\(fsState.isFullscreen.yn) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
     player.saveState()

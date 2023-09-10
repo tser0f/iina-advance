@@ -162,9 +162,6 @@ class MainWindowController: PlayerWindowController {
   var trailingSidebarIsResizing = false
   var windowGeometryAtResizeStart: MainWindowGeometry? = nil
 
-  var leadingSidebarAnimationState: UIAnimationState = .hidden
-  var trailingSidebarAnimationState: UIAnimationState = .hidden
-
   // Is non-nil if within the activation rect of one of the sidebars
   var sidebarResizeCursor: NSCursor? = nil
 

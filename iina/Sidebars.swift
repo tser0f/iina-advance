@@ -354,14 +354,10 @@ extension MainWindowController {
     var leadingSidebar: Sidebar
     var trailingSidebar: Sidebar = oldLayout.trailingSidebar
     if oldLayout.leadingSidebar.tabGroups.contains(tab.group) {  // Leading sidebar
-      let state = leadingSidebarAnimationState
-      if shouldShow && state == .hidden {
-        // Sidebar is currently hidden. Need to show it
-        leadingSidebarAnimationState = .willShow
-      } else if !shouldShow && state == .shown {
-        // Sidebar is currently shown. Need to hide it
-        leadingSidebarAnimationState = .willHide
-      } else if shouldShow && state == .shown, let visibleTabGroup = oldLayout.leadingSidebar.visibleTabGroup {
+      let isShown = oldLayout.leadingSidebar.isVisible
+      if shouldShow != isShown {
+        // good
+      } else if isShown, let visibleTabGroup = oldLayout.leadingSidebar.visibleTabGroup {
         if visibleTabGroup == tab.group {
           // Already showing the tab group. Just need to change current tab in group
           switchToTabInTabGroup(tab: tab)
@@ -370,20 +366,16 @@ extension MainWindowController {
         // Otherwise need to change tab group. Drop through.
       } else {
         // Drop request if already animating
-        log.verbose("Skipping \(shouldShow ? "SHOW" : "HIDE") for \(tab.name.quoted) because leadingSidebar is in state \(state)")
+        log.verbose("Skipping \(shouldShow ? "SHOW" : "HIDE") for \(tab.name.quoted) because leadingSidebar isShown=\(isShown.yn)")
         return
       }
       leadingSidebar = oldLayout.leadingSidebar.clone(visibility: newVisibilty)
       trailingSidebar = oldLayout.trailingSidebar
     } else if oldLayout.trailingSidebar.tabGroups.contains(tab.group) {  // Trailing sidebar
-      let state = trailingSidebarAnimationState
-      if shouldShow && state == .hidden {
-        // Sidebar is currently hidden. Need to show it
-        trailingSidebarAnimationState = .willShow
-      } else if !shouldShow && state == .shown {
-        // Sidebar is currently shown. Need to hide it
-        trailingSidebarAnimationState = .willHide
-      } else if shouldShow && state == .shown, let visibleTabGroup = oldLayout.trailingSidebar.visibleTabGroup {
+      let isShown = oldLayout.trailingSidebar.isVisible
+      if shouldShow != isShown {
+        // good
+      } else if isShown, let visibleTabGroup = oldLayout.trailingSidebar.visibleTabGroup {
         if visibleTabGroup == tab.group {
           // Already showing the tab group. Just need to change current tab in group
           switchToTabInTabGroup(tab: tab)
@@ -392,7 +384,7 @@ extension MainWindowController {
         // Otherwise need to change tab group. Drop through.
       } else {
         // Drop request if already animating or already in desired state
-        log.verbose("Skipping show/hide for \(tab.name.quoted) because trailingSidebar is in state \(state))")
+        log.verbose("Skipping \(shouldShow ? "SHOW" : "HIDE") for \(tab.name.quoted) because trailingSidebar isShown=\(isShown.yn)")
         return
       }
       leadingSidebar = oldLayout.leadingSidebar
@@ -403,7 +395,7 @@ extension MainWindowController {
       return
     }
 
-    log.verbose("Transitioning to layout with \(leadingSidebar.locationID)=\(leadingSidebar.visibility) (state: \(leadingSidebarAnimationState)), \(trailingSidebar.locationID)=\(trailingSidebar.visibility) (state: \(trailingSidebarAnimationState))")
+    log.verbose("Transitioning to layout with \(leadingSidebar.locationID)=\(leadingSidebar.visibility) \(trailingSidebar.locationID)=\(trailingSidebar.visibility)")
     let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
     buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
   }
@@ -426,18 +418,12 @@ extension MainWindowController {
       case .show(let tabToShow):
         sidebarWidth = tabToShow.group.width()
         shouldShow = true
-        if leadingSidebarAnimationState == .willShow {
-          leadingSidebarAnimationState = .shown
-        }
       case .hide:
         if let lastVisibleTab = leadingSidebar.lastVisibleTab {
           sidebarWidth = lastVisibleTab.group.width()
         } else {
           log.error("Failed to find lastVisibleTab for leadingSidebar")
           sidebarWidth = 0
-        }
-        if leadingSidebarAnimationState == .willHide {
-          leadingSidebarAnimationState = .hidden
         }
       }
       updateLeadingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: leadingSidebar.placement)
@@ -456,18 +442,12 @@ extension MainWindowController {
       case .show(let tabToShow):
         sidebarWidth = tabToShow.group.width()
         shouldShow = true
-        if trailingSidebarAnimationState == .willShow {
-          trailingSidebarAnimationState = .shown
-        }
       case .hide:
         if let lastVisibleTab = trailingSidebar.lastVisibleTab {
           sidebarWidth = lastVisibleTab.group.width()
         } else {
           log.error("Failed to find lastVisibleTab for trailingSidebar")
           sidebarWidth = 0
-        }
-        if trailingSidebarAnimationState == .willHide {
-          trailingSidebarAnimationState = .hidden
         }
       }
       updateTrailingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: trailingSidebar.placement)
@@ -538,8 +518,6 @@ extension MainWindowController {
     guard let window = window else { return }
     let tabToShow: Sidebar.Tab = leadingSidebar.visibleTab!
 
-    leadingSidebarAnimationState = .willShow
-
     // - Remove old:
     for constraint in [videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
                        videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint,
@@ -598,8 +576,6 @@ extension MainWindowController {
   func prepareLayoutForOpening(trailingSidebar: Sidebar) {
     guard let window = window else { return }
     let tabToShow: Sidebar.Tab = trailingSidebar.visibleTab!
-
-    trailingSidebarAnimationState = .willShow
 
     // - Remove old:
     for constraint in [videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint,
