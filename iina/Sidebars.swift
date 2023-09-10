@@ -481,7 +481,6 @@ extension MainWindowController {
       updateWindowFrame(ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
     }
 
-    updateSpacingForTitleBarAccessories(layout)
     window?.contentView?.layoutSubtreeIfNeeded()
   }
 

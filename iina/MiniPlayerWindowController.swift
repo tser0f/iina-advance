@@ -11,7 +11,7 @@ import Cocoa
 // Hide playlist if its height is too small to display at least 3 items:
 fileprivate let PlaylistMinHeight: CGFloat = 138
 fileprivate let AnimationDurationShowControl: TimeInterval = 0.2
-fileprivate let MiniPlayerMinWidth: CGFloat = 300
+fileprivate let MiniPlayerMinWidth: CGFloat = 240
 
 class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 

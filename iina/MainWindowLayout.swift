@@ -662,12 +662,12 @@ extension MainWindowController {
       doPreTransitionWork(transition)
     })
 
-    if needsFadeOutOldViews {
-      // StartingAnimation 1: Show fadeable views from current layout
-      for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopBar: true) {
-        transition.animationTasks.append(fadeAnimation)
-      }
+    // StartingAnimation 1: Show fadeable views from current layout
+    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopBar: true) {
+      transition.animationTasks.append(fadeAnimation)
+    }
 
+    if needsFadeOutOldViews {
       // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
       transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, { [self] in
         fadeOutOldViews(transition)
@@ -958,6 +958,7 @@ extension MainWindowController {
                               layout: transition.fromLayout,
                               setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
                               setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
+    updateSpacingForTitleBarAccessories(transition.toLayout)
 
     window.contentView?.layoutSubtreeIfNeeded()
   }
@@ -1003,8 +1004,6 @@ extension MainWindowController {
     applyHiddenOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
     applyHiddenOnly(visibility: futureLayout.pinToTopButton, to: pinToTopButton)
-
-    updateSpacingForTitleBarAccessories(futureLayout)
 
     if futureLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
@@ -1167,6 +1166,7 @@ extension MainWindowController {
                               layout: transition.toLayout,
                               setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
                               setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
+    updateSpacingForTitleBarAccessories(transition.toLayout)
 
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: futureLayout)
@@ -1715,23 +1715,19 @@ extension MainWindowController {
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
   // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
   private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutState) {
-    var trailingSpace: CGFloat = 8  // Add standard space before title text by default
-
     let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
 
-    let isSpaceNeededForSidebar = layout.leadingSidebar.currentWidth > 0
-    if isSpaceNeededForSidebar {
-      // Subtract space taken by the 3 standard buttons + other visible buttons
-      trailingSpace = max(0, layout.leadingSidebar.currentWidth - trafficLightButtonsWidth - sidebarButtonSpace)
-    }
-    leadingTitleBarTrailingSpaceConstraint.constant = trailingSpace
+    // Subtract space taken by the 3 standard buttons + other visible buttons
+    // Add standard space before title text by default
+    let trailingSpace: CGFloat = layout.topBarPlacement == .outsideVideo ? 8 : max(8, layout.leadingSidebar.insideWidth - trafficLightButtonsWidth - sidebarButtonSpace)
+    leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
+
     leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
   private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutState) {
-    var leadingSpace: CGFloat = 0
     var spaceForButtons: CGFloat = 0
 
     if layout.trailingSidebarToggleButton.isShowable {
@@ -1741,16 +1737,14 @@ extension MainWindowController {
       spaceForButtons += pinToTopButton.frame.width
     }
 
-    let isSpaceNeededForSidebar = layout.topBarPlacement == .insideVideo && layout.trailingSidebar.currentWidth > 0
-    if isSpaceNeededForSidebar {
-      leadingSpace = max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
-    }
-    trailingTitleBarLeadingSpaceConstraint.constant = leadingSpace
+    let leadingSpace: CGFloat = layout.topBarPlacement == .outsideVideo ? 0 : max(0, layout.trailingSidebar.insideWidth - spaceForButtons)
+    trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
 
     // Add padding to the side for buttons
     let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || layout.pinToTopButton.isShowable
     let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
-    trailingTitleBarTrailingSpaceConstraint.constant = buttonMargin
+    trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
+
     trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
