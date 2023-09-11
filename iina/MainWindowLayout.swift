@@ -1726,7 +1726,10 @@ extension MainWindowController {
       spaceForButtons += pinToTopButton.frame.width
     }
 
-    let leadingSpace: CGFloat = layout.topBarPlacement == .outsideVideo ? 0 : max(0, layout.trailingSidebar.insideWidth - spaceForButtons)
+    let leadingSpaceNeeded: CGFloat = layout.topBarPlacement == .outsideVideo ? 0 : max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
+    // The title icon & text looks very bad if we try to push it too far to the left. Try to detect this and just remove the offset in this case
+    let maxSpaceAllowed: CGFloat = max(0, getCurrentWindowGeometry().windowFrame.width * 0.5 - 20)
+    let leadingSpace = leadingSpaceNeeded > maxSpaceAllowed ? 0 : leadingSpaceNeeded
     trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
 
     // Add padding to the side for buttons

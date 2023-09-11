@@ -428,7 +428,7 @@
                                     <action selector="removeBindingBtnAction:" target="-2" id="aeN-fq-0zS"/>
                                 </connections>
                             </button>
-                            <button toolTip="Show all key bindings from IINA in the list" translatesAutoresizingMaskIntoConstraints="NO" id="ogR-hg-OWq" userLabel="Show bindings from all sources Button">
+                            <button toolTip="Also show key bindings which are currently active but cannot be configured here" translatesAutoresizingMaskIntoConstraints="NO" id="ogR-hg-OWq" userLabel="Show bindings from all sources Button">
                                 <rect key="frame" x="6" y="5" width="203" height="11"/>
                                 <buttonCell key="cell" type="check" title="Show bindings from all sources" bezelStyle="regularSquare" imagePosition="left" controlSize="mini" state="on" inset="2" id="ofM-Fl-e5N">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
