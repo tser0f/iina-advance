@@ -13,9 +13,8 @@ fileprivate let PlaylistMinHeight: CGFloat = 138
 fileprivate let AnimationDurationShowControl: TimeInterval = 0.2
 fileprivate let MiniPlayerMinWidth: CGFloat = 240
 
-class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
-
-  override var windowNibName: NSNib.Name {
+class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
+  override var nibName: NSNib.Name {
     return NSNib.Name("MiniPlayerWindowController")
   }
 
@@ -23,6 +22,13 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     let fontSize = NSFont.systemFontSize(for: .mini)
     return NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
   }()
+
+  @IBOutlet weak var volumeSlider: NSSlider!
+  @IBOutlet weak var muteButton: NSButton!
+  @IBOutlet weak var playButton: NSButton!
+  @IBOutlet weak var playSlider: PlaySlider!
+  @IBOutlet weak var rightLabel: DurationDisplayTextField!
+  @IBOutlet weak var leftLabel: DurationDisplayTextField!
 
   @IBOutlet weak var volumeButton: NSButton!
   @IBOutlet var volumePopover: NSPopover!
@@ -37,9 +43,9 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBOutlet weak var backButtonVE: NSButton!
   @IBOutlet weak var closeButtonBox: NSButton!
   @IBOutlet weak var backButtonBox: NSButton!
-  @IBOutlet weak var videoWrapperView: NSView!
-  @IBOutlet var videoWrapperViewBottomConstraint: NSLayoutConstraint!
-  @IBOutlet var controlViewTopConstraint: NSLayoutConstraint!
+//  @IBOutlet weak var videoWrapperView: NSView!
+//  @IBOutlet var videoWrapperViewBottomConstraint: NSLayoutConstraint!
+//  @IBOutlet var controlViewTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var playlistWrapperView: NSVisualEffectView!
   @IBOutlet weak var mediaInfoView: NSView!
   @IBOutlet weak var controlView: NSView!
@@ -47,15 +53,28 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   @IBOutlet weak var titleLabelTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var artistAlbumLabel: ScrollingTextField!
   @IBOutlet weak var volumeLabel: NSTextField!
-  @IBOutlet weak var defaultAlbumArt: NSView!
+//  @IBOutlet weak var defaultAlbumArt: NSView!
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
+
+  unowned var mainWindow: MainWindowController!
+  var player: PlayerCore {
+    return mainWindow.player
+  }
+
+  var window: NSWindow? {
+    return mainWindow.window
+  }
+
+  var log: Logger.Subsystem {
+    return mainWindow.log
+  }
 
   /// When resizing the window, need to control the aspect ratio of `videoView`. But cannot use an `aspectRatio` constraint,
   /// because: when playlist is hidden but videoView is shown, that prevents the window from being expanded when the user drags
   /// from the right window edge. Possibly AppKit treats it like a fixed-width constraint. Workaround: use only a `height` constraint
   /// and recalculate it from the video's aspect ratio whenever the window's width changes.
-  private var videoWrapperViewHeightConstraint: NSLayoutConstraint!
+//  private var videoWrapperViewHeightConstraint: NSLayoutConstraint!
 
   var isPlaylistVisible: Bool {
     get {
@@ -84,55 +103,32 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
   }()
 
-  override var mouseActionDisabledViews: [NSView?] {[backgroundView, playlistWrapperView] as [NSView?]}
-
   // MARK: - Initialization
 
-  override init(playerCore: PlayerCore) {
-    super.init(playerCore: playerCore)
-    self.windowFrameAutosaveName = WindowAutosaveName.miniPlayer(id: playerCore.label).string
-    Logger.log("MiniPlayerWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)", level: .verbose, subsystem: playerCore.subsystem)
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-
-  override func windowDidLoad() {
-    super.windowDidLoad()
-
-    guard let window = window,
-          let contentView = window.contentView else { return }
-
-    window.isMovableByWindowBackground = true
-    window.styleMask = [.fullSizeContentView, .resizable, .closable, .miniaturizable]
-    updateLegacyWindowedMode()
-
-    contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerMinWidth).isActive = true
-    contentView.widthAnchor.constraint(lessThanOrEqualToConstant: MiniPlayerWindowController.maxWindowWidth).isActive = true
+  override func viewDidLoad() {
+    super.viewDidLoad()
 
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: PlaylistMinHeight).isActive = true
 
-    controlViewTopConstraint.isActive = false
+//    controlViewTopConstraint.isActive = false
 
-    // tracking area
-    let trackingView = NSView()
-    trackingView.translatesAutoresizingMaskIntoConstraints = false
-    contentView.addSubview(trackingView, positioned: .above, relativeTo: nil)
-    trackingView.addConstraintsToFillSuperview(v: false, h: true)
-    NSLayoutConstraint.activate([
-      NSLayoutConstraint(item: trackingView, attribute: .bottom, relatedBy: .equal, toItem: backgroundView, attribute: .bottom, multiplier: 1, constant: 0),
-      NSLayoutConstraint(item: trackingView, attribute: .top, relatedBy: .equal, toItem: videoWrapperView, attribute: .top, multiplier: 1, constant: 0)
-    ])
-    trackingView.addTrackingArea(NSTrackingArea(rect: trackingView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
+    if let window = window, let contentView = window.contentView {
+      contentView.addTrackingArea(NSTrackingArea(rect: contentView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
+    }
+
+    if playSlider.trackingAreas.isEmpty {
+      playSlider.addTrackingArea(NSTrackingArea(rect: playSlider.bounds,
+                                                options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
+                                                owner: self, userInfo: ["obj": 1]))
+    }
 
     // default album art
-    defaultAlbumArt.wantsLayer = true
-    defaultAlbumArt.layer?.contents = #imageLiteral(resourceName: "default-album-art")
+//    defaultAlbumArt.wantsLayer = true
+//    defaultAlbumArt.layer?.contents = #imageLiteral(resourceName: "default-album-art")
 
     // close button
-    closeButtonVE.action = #selector(self.close)
-    closeButtonBox.action = #selector(self.close)
+    closeButtonVE.action = #selector(mainWindow.close)
+    closeButtonBox.action = #selector(mainWindow.close)
     closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
 
     // hide controls initially
@@ -149,80 +145,59 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     closeButtonVE.toolTip = NSLocalizedString("mini_player.close", comment: "close")
     backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
 
-    if Preference.bool(for: .alwaysFloatOnTop) {
-      setWindowFloatingOnTop(true)
-    }
-    volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
     volumePopover.delegate = self
 
-    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
-      adjustLayoutForVideoChange()
-    }
-    player.log.verbose("MiniPlayerWindow windowDidLoad done")
+    leftLabel.mode = .current
+    rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
+
+//    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
+//      adjustLayoutForVideoChange()
+//    }
+    log.verbose("MiniPlayer viewDidLoad done")
   }
 
-  func updateLegacyWindowedMode() {
-    guard let window = window else { return }
+//  func updateLegacyWindowedMode() {
+//    guard let window = window else { return }
+//
+//    if Preference.bool(for: .useLegacyWindowedMode) {
+//      window.styleMask.remove(.titled)
+//    } else {
+//      window.styleMask.insert(.titled)
+//      window.titleVisibility = .hidden
+//
+//      ([.closeButton, .miniaturizeButton, .zoomButton, .documentIconButton] as [NSWindow.ButtonType]).forEach {
+//        if let button = window.standardWindowButton($0) {
+//          button.isHidden = true
+//        }
+//        // The close button, being obscured by standard buttons, won't respond to clicking when window is inactive.
+//        // i.e. clicking close button (or any position located in the standard buttons's frame) will only order the window
+//        // to front, but it never becomes key or main window.
+//        // Removing the button directly will also work but it causes crash on 10.12-, so for the sake of safety we don't use that way for now.
+//        // FIXME: Not a perfect solution. It should respond to the first click.
+//      }
+//    }
+//    // If paused, need explicit draw so that the video isn't lost after the style change
+//    mainWindow.videoView.videoLayer.draw(forced: true)
+//  }
 
-    if Preference.bool(for: .useLegacyWindowedMode) {
-      window.styleMask.remove(.titled)
-    } else {
-      window.styleMask.insert(.titled)
-      window.titleVisibility = .hidden
-
-      ([.closeButton, .miniaturizeButton, .zoomButton, .documentIconButton] as [NSWindow.ButtonType]).forEach {
-        if let button = window.standardWindowButton($0) {
-          button.isHidden = true
-        }
-        // The close button, being obscured by standard buttons, won't respond to clicking when window is inactive.
-        // i.e. clicking close button (or any position located in the standard buttons's frame) will only order the window
-        // to front, but it never becomes key or main window.
-        // Removing the button directly will also work but it causes crash on 10.12-, so for the sake of safety we don't use that way for now.
-        // FIXME: Not a perfect solution. It should respond to the first click.
-      }
-    }
-    // If paused, need explicit draw so that the video isn't lost after the style change
-    videoView.videoLayer.draw(forced: true)
-  }
-
-  override internal func setMaterial(_ theme: Preference.Theme?) {
-    if #available(macOS 10.14, *) {
-      super.setMaterial(theme)
-      return
-    }
-    guard let window = window, let theme = theme else { return }
-
-    let (appearance, material) = Utility.getAppearanceAndMaterial(from: theme)
-
-    [backgroundView, closeButtonBackgroundViewVE, playlistWrapperView].forEach {
-      $0?.appearance = appearance
-      $0?.material = material
-    }
-
-    window.appearance = appearance
-  }
+//  override internal func setMaterial(_ theme: Preference.Theme?) {
+//    if #available(macOS 10.14, *) {
+//      super.setMaterial(theme)
+//      return
+//    }
+//    guard let window = mainWindow.window, let theme = theme else { return }
+//
+//    let (appearance, material) = Utility.getAppearanceAndMaterial(from: theme)
+//
+//    [backgroundView, closeButtonBackgroundViewVE, playlistWrapperView].forEach {
+//      $0?.appearance = appearance
+//      $0?.material = material
+//    }
+//
+//    window.appearance = appearance
+//  }
 
   // MARK: - Mouse / Trackpad events
-
-  override func mouseDown(with event: NSEvent) {
-    window?.makeFirstResponder(window)
-    super.mouseDown(with: event)
-  }
-
-  override func scrollWheel(with event: NSEvent) {
-    if isMouseEvent(event, inAnyOf: [playSlider]) && playSlider.isEnabled {
-      seekOverride = true
-    } else if isMouseEvent(event, inAnyOf: [volumeSliderView]) && volumeSlider.isEnabled {
-      volumeOverride = true
-    } else {
-      guard !isMouseEvent(event, inAnyOf: [backgroundView]) else { return }
-    }
-
-    super.scrollWheel(with: event)
-
-    seekOverride = false
-    volumeOverride = false
-  }
 
   override func mouseEntered(with event: NSEvent) {
     showControl()
@@ -235,57 +210,48 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // MARK: - Window delegate: Open / Close
 
-  override func showWindow(_ sender: Any?) {
-    /// Video aspect ratio may have changed if a different video is being shown than last time.
-    /// Use `constrainWindowSize()` and `setFrame()` to gracefully adapt layout as needed
-    adjustLayoutForVideoChange()
-
-    super.showWindow(sender)
-  }
-
-  func windowWillClose(_ notification: Notification) {
-    if !player.isShuttingDown {
-      // not needed if called when terminating the whole app
-      player.overrideAutoSwitchToMusicMode = false
-      player.switchBackFromMiniPlayer(automatically: true)
-    }
-    player.mainWindow.close()
-  }
+//  override func showWindow(_ sender: Any?) {
+//    /// Video aspect ratio may have changed if a different video is being shown than last time.
+//    /// Use `constrainWindowSize()` and `setFrame()` to gracefully adapt layout as needed
+//    adjustLayoutForVideoChange()
+//
+//    super.showWindow(sender)
+//  }
 
   // MARK: - Window delegate: Size
 
-  func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    resetScrollingLabels()
-
-    if !window.inLiveResize && requestedSize.width <= MiniPlayerMinWidth {
-      // Responding with the current size seems to work much better with certain window management tools
-      // (e.g. BetterTouchTool's window snapping) than trying to respond with the min size,
-      // which seems to result in the window manager retrying with different sizes, which results in flickering.
-      Logger.log("WindowWillResize: requestedSize smaller than min \(MiniPlayerMinWidth); returning existing size", level: .verbose, subsystem: player.subsystem)
-      return window.frame.size
-    }
-
-    return constrainWindowSize(requestedSize)
-  }
-
-  func windowDidResize(_ notification: Notification) {
-    guard let window = window, !window.inLiveResize else { return }
-
-    // Re-evaluate space requirements for labels. May need to scroll
-    resetScrollingLabels()
-    updateVideoViewHeightConstraint()
-
-    videoView.videoLayer.draw()
-  }
-
-  func windowDidEndLiveResize(_ notification: Notification) {
-    let playlistHeight = round(currentPlaylistHeight)
-    if playlistHeight >= PlaylistMinHeight {
-      // save playlist height
-      Logger.log("Saving playlist height: \(playlistHeight)")
-      Preference.set(playlistHeight, for: .musicModePlaylistHeight)
-    }
-  }
+//  func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
+//    resetScrollingLabels()
+//
+//    if !window.inLiveResize && requestedSize.width <= MiniPlayerMinWidth {
+//      // Responding with the current size seems to work much better with certain window management tools
+//      // (e.g. BetterTouchTool's window snapping) than trying to respond with the min size,
+//      // which seems to result in the window manager retrying with different sizes, which results in flickering.
+//      Logger.log("WindowWillResize: requestedSize smaller than min \(MiniPlayerMinWidth); returning existing size", level: .verbose, subsystem: player.subsystem)
+//      return window.frame.size
+//    }
+//
+//    return constrainWindowSize(requestedSize)
+//  }
+//
+//  func windowDidResize(_ notification: Notification) {
+//    guard let window = window, !window.inLiveResize else { return }
+//
+//    // Re-evaluate space requirements for labels. May need to scroll
+//    resetScrollingLabels()
+//    updateVideoViewHeightConstraint()
+//
+//    videoView.videoLayer.draw()
+//  }
+//
+//  func windowDidEndLiveResize(_ notification: Notification) {
+//    let playlistHeight = round(currentPlaylistHeight)
+//    if playlistHeight >= PlaylistMinHeight {
+//      // save playlist height
+//      Logger.log("Saving playlist height: \(playlistHeight)")
+//      Preference.set(playlistHeight, for: .musicModePlaylistHeight)
+//    }
+//  }
 
   // MARK: - UI: Show / Hide
 
@@ -319,11 +285,8 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     artistAlbumLabel.reset()
   }
 
-  @objc
-  override func updateTitle() {
-    let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
+  func updateTitle(mediaTitle: String, mediaAlbum: String, mediaArtist: String) {
     titleLabel.stringValue = mediaTitle
-    window?.title = mediaTitle
     // hide artist & album label when info not available
     if mediaArtist.isEmpty && mediaAlbum.isEmpty {
       titleLabelTopConstraint.constant = 6 + 10
@@ -334,28 +297,6 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
         artistAlbumLabel.stringValue = "\(mediaArtist)\(mediaAlbum)"
       } else {
         artistAlbumLabel.stringValue = "\(mediaArtist) - \(mediaAlbum)"
-      }
-    }
-  }
-
-  override func updateVolume() {
-    guard loaded else { return }
-    super.updateVolume()
-    volumeLabel.intValue = Int32(player.info.volume)
-    if player.info.isMuted {
-      volumeButton.image = NSImage(named: "mute")
-    } else {
-      switch volumeLabel.intValue {
-        case 0:
-          volumeButton.image = NSImage(named: "volume-0")
-        case 1...33:
-          volumeButton.image = NSImage(named: "volume-1")
-        case 34...66:
-          volumeButton.image = NSImage(named: "volume-2")
-        case 67...1000:
-          volumeButton.image = NSImage(named: "volume")
-        default:
-          break
       }
     }
   }
@@ -393,12 +334,42 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   // MARK: - IBActions
 
-  @objc func menuAlwaysOnTop(_ sender: AnyObject) {
-    setWindowFloatingOnTop(!isOntop)
+  @IBAction func playSliderChanges(_ sender: NSSlider) {
+    mainWindow.playSliderChanges(sender)
+  }
+
+  @IBAction func volumeSliderChanges(_ sender: NSSlider) {
+    mainWindow.volumeSliderChanges(sender)
+  }
+
+  @IBAction func muteButtonAction(_ sender: NSButton) {
+    player.toggleMute()
+  }
+
+  func updateVolumeUI() {
+    let vol = player.info.volume
+    volumeSlider.doubleValue = vol
+    volumeLabel.intValue = Int32(vol)
+    if player.info.isMuted {
+      volumeButton.image = NSImage(named: "mute")
+    } else {
+      switch volumeLabel.intValue {
+      case 0:
+        volumeButton.image = NSImage(named: "volume-0")
+      case 1...33:
+        volumeButton.image = NSImage(named: "volume-1")
+      case 34...66:
+        volumeButton.image = NSImage(named: "volume-2")
+      case 67...1000:
+        volumeButton.image = NSImage(named: "volume")
+      default:
+        break
+      }
+    }
   }
 
   @IBAction func backBtnAction(_ sender: NSButton) {
-    player.switchBackFromMiniPlayer()
+    player.exitMusicMode()
   }
 
   @IBAction func nextBtnAction(_ sender: NSButton) {
@@ -413,12 +384,13 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     if volumePopover.isShown {
       volumePopover.performClose(self)
     } else {
+      updateVolumeUI()
       volumePopover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }
   }
 
   @IBAction func togglePlaylist(_ sender: Any) {
-    guard let window = window else { return }
+    guard let window = mainWindow.window else { return }
     guard let screen = window.screen else { return }
     let showPlaylist = !isPlaylistVisible
     Logger.log("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)", level: .verbose)
@@ -427,7 +399,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     var newFrame = window.frame
 
     if showPlaylist {
-      player.mainWindow.playlistView.reloadData(playlist: true, chapters: true)
+      mainWindow.playlistView.reloadData(playlist: true, chapters: true)
 
       // Try to show playlist using previous height
       let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
@@ -454,11 +426,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
-    guard let window = window else { return }
+    guard let window = mainWindow.window else { return }
     isVideoVisible = !isVideoVisible
     Logger.log("Toggling videoView visibility from \((!isVideoVisible).yn) to \(isVideoVisible.yn)", level: .verbose)
     updateVideoViewLayout()
-    let videoViewHeight = round(videoView.frame.height)
+    let videoViewHeight = round(mainWindow.videoView.frame.height)
     var frame = window.frame
     if isVideoVisible {
       frame.size.height += videoViewHeight
@@ -472,8 +444,8 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - Layout
 
   private func updateVideoViewLayout() {
-    videoWrapperViewBottomConstraint.isActive = isVideoVisible
-    controlViewTopConstraint.isActive = !isVideoVisible
+//    videoWrapperViewBottomConstraint.isActive = isVideoVisible
+//    controlViewTopConstraint.isActive = !isVideoVisible
     closeButtonBackgroundViewVE.isHidden = !isVideoVisible
     closeButtonBackgroundViewBox.isHidden = isVideoVisible
   }
@@ -490,7 +462,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     /// When the window's width changes, the video scales to match while keeping its aspect ratio,
     /// and the control bar (`backgroundView`) and playlist are pushed down.
     /// Calculate the maximum width/height the art can grow to so that `backgroundView` is not pushed off the screen.
-    let videoAspectRatio = videoView.aspectRatio
+    let videoAspectRatio = mainWindow.videoView.aspectRatio
     let visibleScreenSize = screen.visibleFrame.size
     let minPlaylistHeight = isPlaylistVisible ? PlaylistMinHeight : 0
 
@@ -524,49 +496,49 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
     Logger.log("Constraining miniPlayer. VideoAspect=\(videoAspectRatio.string2f), ReqSize=\(requestedSize), NewSize=\(newWindowSize)", level: .verbose)
 
-    updateVideoViewHeightConstraint(height: videoHeight, animate: animate)
+//    updateVideoViewHeightConstraint(height: videoHeight, animate: animate)
     return newWindowSize
   }
 
   // Returns the current height of the window,
   // including the album art, but not including the playlist.
   private var windowHeightWithoutPlaylist: CGFloat {
-    guard let window = window else { return backgroundView.frame.height }
-    return backgroundView.frame.height + (isVideoVisible ? window.frame.width / videoView.aspectRatio : 0)
+    guard let window = mainWindow.window else { return backgroundView.frame.height }
+    return backgroundView.frame.height + (isVideoVisible ? window.frame.width / mainWindow.videoView.aspectRatio : 0)
   }
 
   private var currentPlaylistHeight: CGFloat {
-    guard let window = window else { return 0 }
+    guard let window = mainWindow.window else { return 0 }
     return window.frame.height - windowHeightWithoutPlaylist
   }
 
-  private func updateVideoViewHeightConstraint(height: CGFloat? = nil, animate: Bool = false) {
-    let newHeight: CGFloat
-    guard isVideoVisible else { return }
-    guard let window = window else { return }
-
-    newHeight = height ?? window.frame.width / videoView.aspectRatio
-
-    if let videoWrapperViewHeightConstraint = videoWrapperViewHeightConstraint {
-      if animate {
-        videoWrapperViewHeightConstraint.animateToConstant(newHeight)
-      } else {
-        videoWrapperViewHeightConstraint.constant = newHeight
-      }
-    } else {
-      videoWrapperViewHeightConstraint = videoWrapperView.heightAnchor.constraint(equalToConstant: newHeight)
-      videoWrapperViewHeightConstraint.isActive = true
-    }
-    videoWrapperView.superview!.layout()
-  }
+//  private func updateVideoViewHeightConstraint(height: CGFloat? = nil, animate: Bool = false) {
+//    let newHeight: CGFloat
+//    guard isVideoVisible else { return }
+//    guard let window = window else { return }
+//
+//    newHeight = height ?? window.frame.width / mainWindow.videoView.aspectRatio
+//
+//    if let videoWrapperViewHeightConstraint = videoWrapperViewHeightConstraint {
+//      if animate {
+//        videoWrapperViewHeightConstraint.animateToConstant(newHeight)
+//      } else {
+//        videoWrapperViewHeightConstraint.constant = newHeight
+//      }
+//    } else {
+//      videoWrapperViewHeightConstraint = videoWrapperView.heightAnchor.constraint(equalToConstant: newHeight)
+//      videoWrapperViewHeightConstraint.isActive = true
+//    }
+//    videoWrapperView.superview!.layout()
+//  }
 
   // MARK: - Utils
 
   private func adjustLayoutForVideoChange() {
-    guard let window = window else { return }
+    guard let window = mainWindow.window else { return }
     resetScrollingLabels()
 
-    defaultAlbumArt.isHidden = player.info.vid != 0
+//    defaultAlbumArt.isHidden = player.info.vid != 0
 
     CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
       var newFrame = window.frame

@@ -397,7 +397,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           // Command line usage error.
           exit(EX_USAGE)
         }
-        pc.switchToMiniPlayer()
+        pc.enterMusicMode()
       } else if #available(macOS 10.12, *), commandLineStatus.enterPIP {
         Logger.log("Entering PIP as specified via command line", level: .verbose)
         pc.mainWindow.enterPIP()

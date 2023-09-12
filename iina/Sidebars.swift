@@ -256,6 +256,7 @@ extension MainWindowController {
   /// Toggles visibility of given `sidebar`
   func toggleVisibility(of sidebarID: Preference.SidebarLocation) {
     animationQueue.runZeroDuration { [self] in
+      guard currentLayout.canShowSidebars else { return }
       let sidebar = currentLayout.sidebar(withID: sidebarID)
       log.verbose("Toggling visibility of sidebar: \(sidebarID) (isVisible: \(sidebar.isVisible))")
       // Do nothing if sidebar has no configured tabs
@@ -345,7 +346,7 @@ extension MainWindowController {
   /// Shows or hides visibility of given `tab`. If the affected sidebar is showing the wrong `tabGroup`, it will be first be
   /// hidden/closed and then shown again the the correct `tabGroup` & `tab`. Will do nothing if already showing the given `tab`.
   private func changeVisibility(forTab tab: Sidebar.Tab, to shouldShow: Bool) {
-    guard !isInInteractiveMode else { return }
+    guard !isInInteractiveMode, currentLayout.canShowSidebars else { return }
     log.verbose("Changing visibility of sidebar for tab \(tab.name.quoted) to: \(shouldShow ? "SHOW" : "HIDE")")
 
     let newVisibilty: Sidebar.Visibility = shouldShow ? .show(tabToShow: tab) : .hide

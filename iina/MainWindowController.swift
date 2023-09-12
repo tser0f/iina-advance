@@ -77,6 +77,12 @@ class MainWindowController: PlayerWindowController {
     return playlistView
   }()
 
+  lazy var miniPlayer: MiniPlayerWindowController = {
+    let controller = MiniPlayerWindowController()
+    controller.mainWindow = self
+    return controller
+  }()
+
   /** The control view for interactive mode. */
   var cropSettingsView: CropBoxViewController?
 
@@ -360,9 +366,6 @@ class MainWindowController: PlayerWindowController {
 
       updateTitleBarAndOSC()
     case PK.useLegacyWindowedMode.rawValue:
-      if player.isInMiniPlayer {
-        player.miniPlayer.updateLegacyWindowedMode()
-      }
       updateTitleBarAndOSC()
     case PK.allowEmptySpaceAroundVideo.rawValue:
       if let isAllowed = change[.newKey] as? Bool, !isAllowed {
@@ -557,7 +560,7 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var oscFloatingPlayButtonsContainerView: NSStackView!
   @IBOutlet weak var oscFloatingUpperView: NSStackView!
   @IBOutlet weak var oscFloatingLowerView: NSStackView!
-  @IBOutlet weak var oscBottomMainView: NSStackView!
+  @IBOutlet var oscBottomMainView: NSStackView!
   @IBOutlet weak var oscTopMainView: NSStackView!
 
   var fragToolbarView: NSStackView? = nil
@@ -1045,7 +1048,8 @@ class MainWindowController: PlayerWindowController {
 
     if isMouseEvent(event, inAnyOf: [fragPositionSliderView]) && playSlider.isEnabled {
       seekOverride = true
-    } else if isMouseEvent(event, inAnyOf: [fragVolumeView]) && volumeSlider.isEnabled {
+    } else if volumeSlider.isEnabled && (player.isInMiniPlayer && isMouseEvent(event, inAnyOf: [miniPlayer.volumeSliderView])
+                                         || isMouseEvent(event, inAnyOf: [fragVolumeView])) {
       volumeOverride = true
     } else {
       guard !isMouseEvent(event, inAnyOf: [currentControlBar]) else { return }
@@ -1234,6 +1238,7 @@ class MainWindowController: PlayerWindowController {
 
     isClosing = true
     shouldApplyInitialWindowSize = true
+    player.overrideAutoSwitchToMusicMode = false
     // Close PIP
     if pipStatus == .inPIP {
       if #available(macOS 10.12, *) {
@@ -1341,7 +1346,7 @@ class MainWindowController: PlayerWindowController {
 
   func enterFullScreen() {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    guard !player.isInMiniPlayer else { return }
+    guard currentLayout.spec.mode == .windowed else { return }
 
     if Preference.bool(for: .useLegacyFullScreen) {
       animateEntryIntoFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
@@ -1438,9 +1443,7 @@ class MainWindowController: PlayerWindowController {
   func windowDidResignKey(_ notification: Notification) {
     // keyWindow is nil: The whole app is inactive
     // keyWindow is another MainWindow: Switched to another video window
-    if NSApp.keyWindow == nil ||
-      (NSApp.keyWindow?.windowController is MainWindowController ||
-        (NSApp.keyWindow?.windowController is MiniPlayerWindowController && NSApp.keyWindow?.windowController != player.miniPlayer)) {
+    if NSApp.keyWindow == nil || (NSApp.keyWindow?.windowController is MainWindowController) {
       if Preference.bool(for: .pauseWhenInactive), player.info.isPlaying {
         player.pause()
         isPausedDueToInactive = true
@@ -1697,7 +1700,11 @@ class MainWindowController: PlayerWindowController {
 
   @objc
   override func updateTitle() {
-    if player.info.isNetworkResource {
+    if player.isInMiniPlayer {
+      let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
+      window?.title = mediaTitle
+      miniPlayer.updateTitle(mediaTitle: mediaTitle, mediaAlbum: mediaAlbum, mediaArtist: mediaArtist)
+    } else if player.info.isNetworkResource {
       window?.title = player.getMediaTitle()
     } else {
       window?.representedURL = player.info.currentURL
@@ -2135,6 +2142,36 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Others
 
+  override func updateVolumeUI() {
+    guard loaded else { return }
+    super.updateVolumeUI()
+    if player.isInMiniPlayer {
+      miniPlayer.updateVolumeUI()
+    }
+  }
+
+  func enterMusicMode() {
+    /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
+    /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
+    let oldLayout = currentLayout
+    let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
+    buildLayoutTransition(from: oldLayout, to: miniPlayerLayout, thenRun: true)
+
+    // TODO: save windowed frame
+    // TODO: switch layout
+  }
+
+  func exitMusicMode() {
+    /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
+    /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
+    let miniPlayerLayout = currentLayout
+    // TODO: restore old layout
+
+    let newSpec = miniPlayerLayout.spec.clone(mode: .windowed)
+    let prevLayout = LayoutSpec.fromPreferences(andSpec: newSpec)
+    buildLayoutTransition(from: miniPlayerLayout, to: prevLayout, thenRun: true)
+  }
+
   func blackOutOtherMonitors() {
     let screens = NSScreen.screens.filter { $0 != window?.screen }
 
@@ -2358,7 +2395,7 @@ class MainWindowController: PlayerWindowController {
     case .fullScreen:
       toggleWindowFullScreen()
     case .musicMode:
-      player.switchToMiniPlayer()
+      player.enterMusicMode()
     case .pip:
       if #available(macOS 10.12, *) {
         if pipStatus == .inPIP {

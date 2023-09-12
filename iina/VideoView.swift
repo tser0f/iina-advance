@@ -208,7 +208,7 @@ class VideoView: NSView {
     }
   }
 
-  private func setAspectRatioConstraint() {
+  func setAspectRatioConstraint() {
     if let aspectRatioConstraint = aspectRatioConstraint {
       guard aspectRatioConstraint.multiplier != aspectRatio else {
         return

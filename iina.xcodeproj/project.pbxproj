@@ -187,7 +187,6 @@
 		D1AE04CE2A9317CD00F58860 /* MainWindowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AE04CD2A9317CD00F58860 /* MainWindowLayout.swift */; };
 		D1AF3D7928F16CA4002A15A7 /* CellEditTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AF3D7828F16CA4002A15A7 /* CellEditTracker.swift */; };
 		D1B492E62AA0BB9A00212E9C /* MagnificationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */; };
-		D1B4E24C2A3AE61B00E36F1D /* MiniPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B4E24B2A3AE61B00E36F1D /* MiniPlayerWindow.swift */; };
 		D1B787DB29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B787DA29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift */; };
 		D1D87DFC2923A4E500737886 /* BindingTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */; };
 		D1D87E002924F92100737886 /* ConfTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */; };
@@ -1566,7 +1565,6 @@
 		D1AE04CD2A9317CD00F58860 /* MainWindowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowLayout.swift; sourceTree = "<group>"; };
 		D1AF3D7828F16CA4002A15A7 /* CellEditTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CellEditTracker.swift; sourceTree = "<group>"; };
 		D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagnificationHandler.swift; sourceTree = "<group>"; };
-		D1B4E24B2A3AE61B00E36F1D /* MiniPlayerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerWindow.swift; sourceTree = "<group>"; };
 		D1B787DA29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerWindowPreviewImageBuilder.swift; sourceTree = "<group>"; };
 		D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingTableStateManager.swift; sourceTree = "<group>"; };
 		D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfTableStateManager.swift; sourceTree = "<group>"; };
@@ -2219,7 +2217,6 @@
 				D1A44D882A5E18B10089B283 /* MainWindow */,
 				84A0BA931D2F9E9600BC8DA1 /* MainMenu.xib */,
 				E38BD4AE20054BD9007635FC /* MainWindow.swift */,
-				D1B4E24B2A3AE61B00E36F1D /* MiniPlayerWindow.swift */,
 				84CFC92523F8DDE000381E5B /* PlayerWindowController.swift */,
 				84A0BA9C1D2FAD4000BC8DA1 /* MainWindowController.swift */,
 				D1AE04CD2A9317CD00F58860 /* MainWindowLayout.swift */,
@@ -3005,7 +3002,6 @@
 				E3530702214935DE008FE492 /* JavascriptAPIConsole.swift in Sources */,
 				840D47A01DFEFC49000D9A64 /* KeyRecordView.swift in Sources */,
 				84791C8B1D405E9D0069E28A /* PlaybackInfo.swift in Sources */,
-				D1B4E24C2A3AE61B00E36F1D /* MiniPlayerWindow.swift in Sources */,
 				E322A4F820A8442E00C67D32 /* PlaylistPlaybackProgressView.swift in Sources */,
 				84D123B41ECAA405004E0D53 /* TouchBarSupport.swift in Sources */,
 				E36E8D7C24F6052F00B8C097 /* GuideWindowController.swift in Sources */,

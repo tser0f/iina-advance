@@ -60,6 +60,29 @@ extension MainWindowController {
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
 
+    init(leadingSidebar: Sidebar, trailingSidebar: Sidebar, mode: WindowMode, isLegacyStyle: Bool,
+         topBarPlacement: Preference.PanelPlacement, bottomBarPlacement: Preference.PanelPlacement,
+         enableOSC: Bool,
+         oscPosition: Preference.OSCPosition) {
+      self.mode = mode
+      self.isLegacyStyle = isLegacyStyle
+      if mode == .musicMode {
+        // Override most properties for music mode
+        self.leadingSidebar = leadingSidebar.clone(visibility: .hide)
+        self.trailingSidebar = trailingSidebar.clone(visibility: .hide)
+        self.topBarPlacement = .insideVideo
+        self.bottomBarPlacement = .outsideVideo
+        self.enableOSC = false
+      } else {
+        self.leadingSidebar = leadingSidebar
+        self.trailingSidebar = trailingSidebar
+        self.topBarPlacement = topBarPlacement
+        self.bottomBarPlacement = bottomBarPlacement
+        self.enableOSC = enableOSC
+      }
+      self.oscPosition = oscPosition
+    }
+
     /// Factory method. Matches what is shown in the XIB
     static func defaultLayout() -> LayoutSpec {
       let leadingSidebar = Sidebar(.leadingSidebar, tabGroups: Sidebar.TabGroup.fromPrefs(for: .leadingSidebar),
@@ -207,7 +230,7 @@ extension MainWindowController {
 
     /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
     /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
-    var osdMinOffsetFromTop: CGFloat = 8
+    var osdMinOffsetFromTop: CGFloat = 0
 
     var sidebarDownshift: CGFloat = Constants.Sidebar.defaultDownshift
     var sidebarTabHeight: CGFloat = Constants.Sidebar.defaultTabHeight
@@ -273,6 +296,10 @@ extension MainWindowController {
       return isFullScreen && spec.isLegacyStyle
     }
 
+    var isMusicMode: Bool {
+      return spec.mode == .musicMode
+    }
+
     var enableOSC: Bool {
       return spec.enableOSC
     }
@@ -303,6 +330,10 @@ extension MainWindowController {
 
     var trailingSidebar: Sidebar {
       return spec.trailingSidebar
+    }
+
+    var canShowSidebars: Bool {
+      return spec.mode == .windowed || spec.mode == .fullScreen
     }
 
     var hasFloatingOSC: Bool {
@@ -463,6 +494,18 @@ extension MainWindowController {
 
     var isExitingFullScreen: Bool {
       return fromLayout.isFullScreen && !toLayout.isFullScreen
+    }
+
+    var isEnteringMusicMode: Bool {
+      return (fromLayout.spec.mode != .musicMode) && (toLayout.spec.mode == .musicMode)
+    }
+
+    var isExitingMusicMode: Bool {
+      return (fromLayout.spec.mode == .musicMode) && (toLayout.spec.mode != .musicMode)
+    }
+
+    var isTogglingMusicMode: Bool {
+      return (fromLayout.spec.mode == .musicMode) != (toLayout.spec.mode == .musicMode)
     }
 
     var isTopBarPlacementChanging: Bool {
@@ -848,6 +891,10 @@ extension MainWindowController {
       leadingSidebarView.blendingMode = .withinWindow
       trailingSidebarView.blendingMode = .withinWindow
     }
+
+    if transition.isEnteringMusicMode {
+      hideOSD()
+    }
   }
 
   private func closeOldPanels(_ transition: LayoutTransition) {
@@ -905,7 +952,7 @@ extension MainWindowController {
 
     var needsBottomBarHeightUpdate = false
     var newBottomBarHeight: CGFloat = 0
-    if !transition.isInitialLayout && transition.isBottomBarPlacementChanging {
+    if !transition.isInitialLayout && transition.isBottomBarPlacementChanging || transition.isTogglingMusicMode {
       needsBottomBarHeightUpdate = true
       // close completely. will animate reopening if needed later
       newBottomBarHeight = 0
@@ -1037,6 +1084,10 @@ extension MainWindowController {
       case .bottom:
         log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
         currentControlBar = bottomBarView
+        if !bottomBarView.subviews.contains(oscBottomMainView) {
+          bottomBarView.addSubview(oscBottomMainView)
+          oscBottomMainView.addConstraintsToFillSuperview(top: 0, bottom: 0, leading: 8, trailing: 8)
+        }
         addControlBarViews(to: oscBottomMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
@@ -1056,6 +1107,32 @@ extension MainWindowController {
       /// Remove `tabGroupView` from its parent (also removes constraints):
       let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
       viewController.view.removeFromSuperview()
+    }
+
+    // Music Mode
+    if transition.isEnteringMusicMode {
+      oscBottomMainView.removeFromSuperview()
+      bottomBarView.addSubview(miniPlayer.view, positioned: .above, relativeTo: oscBottomMainView)
+      miniPlayer.view.addConstraintsToFillSuperview(top: 0, leading: 8, trailing: 8)
+
+      let bottomConstraint = miniPlayer.view.superview!.bottomAnchor.constraint(equalTo: miniPlayer.view.bottomAnchor, constant: 0)
+      bottomConstraint.priority = .defaultHigh
+      bottomConstraint.isActive = true
+
+      // move playist view
+      let playlistView = playlistView.view
+      playlistView.removeFromSuperview()
+      miniPlayer.playlistWrapperView.addSubview(playlistView)
+      playlistView.addConstraintsToFillSuperview()
+      updateTitle()
+      
+    } else if transition.isExitingMusicMode {
+      miniPlayer.view.removeFromSuperview()
+
+      /// Remove `playlistView` from wrapper. It will be added when opening sidebar if it is needed there
+      playlistView.view.removeFromSuperview()
+
+
     }
 
     // Sidebars: if (re)opening
@@ -1083,6 +1160,10 @@ extension MainWindowController {
     if !transition.isTogglingFullScreen {
       updatePanelBlendingModes(to: futureLayout)
     }
+
+    // Refresh volume & play time in UI
+    updateVolumeUI()
+    player.syncUITime()
 
     window.contentView?.layoutSubtreeIfNeeded()
   }
@@ -1582,7 +1663,7 @@ extension MainWindowController {
         // This screen contains an embedded camera. Want to avoid having part of the window obscured by the camera housing.
         futureLayout.cameraHousingOffset = unusableHeight
       }
-    } else {
+    } else if !futureLayout.isMusicMode {
       let visibleState: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
 
       futureLayout.topBarView = visibleState
@@ -1642,6 +1723,12 @@ extension MainWindowController {
       }
     } else {  // No OSC
       currentControlBar = nil
+
+      if layoutSpec.mode == .musicMode {
+        assert(futureLayout.bottomBarPlacement == .outsideVideo)
+        futureLayout.bottomBarView = .showAlways
+        futureLayout.bottomBarHeight = 500
+      }
     }
 
     /// Sidebar tabHeight and downshift.

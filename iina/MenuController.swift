@@ -493,7 +493,7 @@ class MenuController: NSObject, NSMenuDelegate {
         Constants.String.videoPanel
     let isInFullScreen = player.mainWindow.fsState.isFullscreen
     let isInPIP = player.mainWindow.pipStatus == .inPIP
-    let isOntop = player.isInMiniPlayer ? player.miniPlayer.isOntop : player.mainWindow.isOntop
+    let isOntop = player.mainWindow.isOntop
     let isDelogo = player.info.delogoFilter != nil
     alwaysOnTop.state = isOntop ? .on : .off
     deinterlace.state = player.info.deinterlace ? .on : .off

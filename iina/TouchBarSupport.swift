@@ -252,14 +252,6 @@ extension MainWindowController {
   }
 }
 
-@available(macOS 10.12.2, *)
-extension MiniPlayerWindowController {
-
-  override func makeTouchBar() -> NSTouchBar? {
-    return player.makeTouchBar()
-  }
-}
-
 // MARK: - Slider
 
 class TouchBarPlaySlider: NSSlider {

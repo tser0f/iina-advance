@@ -452,7 +452,7 @@ struct PlayerSaveState {
 
     // FIXME: Music Mode restore is broken
     //    if let isInMusicMode = savedState.bool(for: .isMusicMode), isInMusicMode {
-    //      switchToMiniPlayer()
+    //      enterMusicMode()
     //    }
 
     // mpv properties

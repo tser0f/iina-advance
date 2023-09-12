@@ -75,6 +75,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case PK.showRemainingTime.rawValue:
       if let newValue = change[.newKey] as? Bool {
         rightLabel.mode = newValue ? .remaining : .duration
+        if player.isInMiniPlayer {
+          player.mainWindow.miniPlayer.rightLabel.mode = newValue ? .remaining : .duration
+        }
       }
     case PK.alwaysFloatOnTop.rawValue:
       if let newValue = change[.newKey] as? Bool {
@@ -176,7 +179,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     leftLabel.mode = .current
     rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
 
-    updateVolume()
+    updateVolumeUI()
 
     observedPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
@@ -274,19 +277,21 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func abLoop() -> Int32 {
     let returnValue = player.abLoop()
     if returnValue == 0 {
-      syncSlider()
+      syncPlaySliderABLoop()
     }
     return returnValue
   }
 
-  func syncSlider() {
+  func syncPlaySliderABLoop() {
     let a = player.abLoopA
-    playSlider.abLoopA.isHidden = a == 0
-    playSlider.abLoopA.doubleValue = secondsToPercent(a)
     let b = player.abLoopB
-    playSlider.abLoopB.isHidden = b == 0
-    playSlider.abLoopB.doubleValue = secondsToPercent(b)
-    playSlider.needsDisplay = true
+    if let slider = player.isInMiniPlayer ? player.mainWindow.playSlider : playSlider {
+      slider.abLoopA.isHidden = a == 0
+      slider.abLoopA.doubleValue = secondsToPercent(a)
+      slider.abLoopB.isHidden = b == 0
+      slider.abLoopB.doubleValue = secondsToPercent(b)
+      slider.needsDisplay = true
+    }
   }
 
   /// Returns the percent of the total duration of the video the given position in seconds represents.
@@ -456,8 +461,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else {
       scrollAction = scrollDirection == .horizontal ? horizontalScrollAction : verticalScrollAction
       // show volume popover when volume seek begins and hide on end
-      if let miniPlayer = self as? MiniPlayerWindowController, scrollAction == .volume {
-        miniPlayer.handleVolumePopover(isTrackpadBegan, isTrackpadEnd, isMouse)
+      if scrollAction == .volume && player.isInMiniPlayer {
+        player.mainWindow.miniPlayer.handleVolumePopover(isTrackpadBegan, isTrackpadEnd, isMouse)
       }
     }
 
@@ -505,7 +510,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // don't use precised delta for mouse
       let newVolume = player.info.volume + (isMouse ? delta : AppData.volumeMap[volumeScrollAmount] * delta)
       player.setVolume(newVolume)
-      volumeSlider.doubleValue = newVolume
+      if player.isInMiniPlayer {
+        player.mainWindow.miniPlayer.volumeSlider.doubleValue = newVolume
+      } else {
+        volumeSlider.doubleValue = newVolume
+      }
     default:
       break
     }
@@ -569,11 +578,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     fatalError("Must implement in the subclass")
   }
   
-  func updateVolume() {
-    volumeSlider.doubleValue = player.info.volume
-    muteButton.state = player.info.isMuted ? .on : .off
+  func updateVolumeUI() {
+    if let volumeSlider = player.isInMiniPlayer ? player.mainWindow.miniPlayer.volumeSlider : volumeSlider {
+      volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
+      volumeSlider.doubleValue = player.info.volume
+    }
+    if let muteButton = player.isInMiniPlayer ? player.mainWindow.miniPlayer.muteButton : muteButton {
+      muteButton.state = player.info.isMuted ? .on : .off
+    }
   }
-  
+
   func updatePlayTime(withDuration: Bool) {
     // IINA listens for changes to mpv properties such as chapter that can occur during file loading
     // resulting in this function being called before mpv has set its position and duration
@@ -589,20 +603,29 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       Logger.log("Video position not available", subsystem: player.subsystem)
       return
     }
-    [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
-    if #available(macOS 10.12.2, *) {
-      player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
-    }
     let percentage = (pos.second / duration.second) * 100
-    playSlider.doubleValue = percentage
+    if player.isInMiniPlayer {
+      // Music mode
+      _ = player.mainWindow.miniPlayer.view // make sure it is loaded
+      player.mainWindow.miniPlayer.playSlider.doubleValue = percentage
+      [player.mainWindow.miniPlayer.leftLabel, player.mainWindow.miniPlayer.rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+    } else {
+      // Normal player
+      [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+      playSlider.doubleValue = percentage
+    }
+    // Touch bar
     if #available(macOS 10.12.2, *) {
       player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
+      player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
     }
   }
   
   func updatePlayButtonState(_ state: NSControl.StateValue) {
     guard loaded else { return }
-    playButton.state = state
+    if let playButton = player.isInMiniPlayer ? player.mainWindow.miniPlayer.playButton : playButton {
+      playButton.state = state
+    }
   }
 
   func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
@@ -617,9 +640,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @objc func menuSwitchToMiniPlayer(_ sender: NSMenuItem) {
     if player.isInMiniPlayer {
-      player.switchBackFromMiniPlayer()
+      player.exitMusicMode()
     } else {
-      player.switchToMiniPlayer()
+      player.enterMusicMode()
     }
   }
 
