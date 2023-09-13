@@ -696,7 +696,7 @@ extension MainWindowController {
     let needsFadeOutOldViews = transition.needsFadeOutOldViews
     let needsFadeInNewViews = transition.needsFadeInNewViews
 
-    log.verbose("Refreshing title bar & OSC layout. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
+    log.verbose("Building layout transition. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
 
     // Starting animations:
 
@@ -974,7 +974,7 @@ extension MainWindowController {
         windowYDelta += newBottomBarHeight
       }
 
-      updateBottomBarHeight(to: newBottomBarHeight, transition: transition)
+      updateBottomBarHeight(to: newBottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
     }
 
     let isWindowHeightChanging = windowYDelta != 0 || windowHeightDelta != 0
@@ -1109,7 +1109,7 @@ extension MainWindowController {
       viewController.view.removeFromSuperview()
     }
 
-    // Music Mode
+    // Music mode
     if transition.isEnteringMusicMode {
       oscBottomMainView.removeFromSuperview()
       bottomBarView.addSubview(miniPlayer.view, positioned: .above, relativeTo: oscBottomMainView)
@@ -1124,15 +1124,14 @@ extension MainWindowController {
       playlistView.removeFromSuperview()
       miniPlayer.playlistWrapperView.addSubview(playlistView)
       playlistView.addConstraintsToFillSuperview()
+
+      // Update music mode UI
       updateTitle()
+      setMaterial(Preference.enum(for: .themeMaterial))
       
     } else if transition.isExitingMusicMode {
-      miniPlayer.view.removeFromSuperview()
-
-      /// Remove `playlistView` from wrapper. It will be added when opening sidebar if it is needed there
-      playlistView.view.removeFromSuperview()
-
-
+      _ = miniPlayer.view
+      miniPlayer.cleanUpForMusicModeExit()
     }
 
     // Sidebars: if (re)opening
@@ -1197,7 +1196,7 @@ extension MainWindowController {
       windowHeightDelta += futureLayout.bottomBarHeight
       windowYDelta += futureLayout.bottomBarHeight
     }
-    updateBottomBarHeight(to: futureLayout.bottomBarHeight, transition: transition)
+    updateBottomBarHeight(to: futureLayout.bottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
 
     if transition.isEnteringFullScreen {
       // Entering FullScreen
@@ -1631,11 +1630,10 @@ extension MainWindowController {
     bottomBarTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateBottomBarHeight(to bottomBarHeight: CGFloat, transition: LayoutTransition) {
-    let placement = transition.toLayout.bottomBarPlacement
-    log.verbose("Updating bottomBar height to: \(bottomBarHeight), placement: \(placement)")
+  func updateBottomBarHeight(to bottomBarHeight: CGFloat, bottomBarPlacement: Preference.PanelPlacement) {
+    log.verbose("Updating bottomBar height to: \(bottomBarHeight), placement: \(bottomBarPlacement)")
 
-    switch placement {
+    switch bottomBarPlacement {
     case .insideVideo:
       videoContainerBottomOffsetFromBottomBarTopConstraint.animateToConstant(bottomBarHeight)
       videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(0)
@@ -1727,7 +1725,11 @@ extension MainWindowController {
       if layoutSpec.mode == .musicMode {
         assert(futureLayout.bottomBarPlacement == .outsideVideo)
         futureLayout.bottomBarView = .showAlways
-        futureLayout.bottomBarHeight = 500
+
+        _ = miniPlayer.view
+
+        let playlistHeight: CGFloat = miniPlayer.isPlaylistVisible ? CGFloat(Preference.float(for: .musicModePlaylistHeight)) : 0
+        futureLayout.bottomBarHeight = miniPlayer.backgroundView.frame.height + playlistHeight
       }
     }
 

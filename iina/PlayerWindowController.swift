@@ -117,7 +117,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         player.mainWindow.playlistView.playlistTableView.reloadData()
       }
     case PK.autoSwitchToMusicMode.rawValue:
-      player.overrideAutoSwitchToMusicMode = false
+      player.overrideAutoMusicMode = false
     default:
       return
     }

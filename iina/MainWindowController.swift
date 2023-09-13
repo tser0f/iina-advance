@@ -769,6 +769,14 @@ class MainWindowController: PlayerWindowController {
     addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
+
+      if player.isInMiniPlayer {
+        _ = miniPlayer.view  // load if not loaded to prevent nil dereference due to race conditions
+
+        /// Video aspect ratio may have changed if a different video is being shown than last time.
+        /// Use `constrainWindowSize()` and `setFrame()` to gracefully adapt layout as needed
+        miniPlayer.adjustLayoutForVideoChange()
+      }
     }
 
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
@@ -864,6 +872,15 @@ class MainWindowController: PlayerWindowController {
     for sidebar in [leadingSidebarView, trailingSidebarView] {
       sidebar?.material = .dark
       sidebar?.appearance = NSAppearance(named: .vibrantDark)
+    }
+
+    if player.isInMiniPlayer {
+      _ = miniPlayer.view  // load XIB if not loaded to prevent unboxing nils
+
+      for view in [miniPlayer.backgroundView, miniPlayer.closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
+        view?.appearance = appearance
+        view?.material = material
+      }
     }
 
     window.appearance = appearance
@@ -1237,8 +1254,6 @@ class MainWindowController: PlayerWindowController {
     log.verbose("Window will close")
 
     isClosing = true
-    shouldApplyInitialWindowSize = true
-    player.overrideAutoSwitchToMusicMode = false
     // Close PIP
     if pipStatus == .inPIP {
       if #available(macOS 10.12, *) {
@@ -1249,12 +1264,17 @@ class MainWindowController: PlayerWindowController {
     if case .fullscreen(legacy: true, priorWindowedGeometry: _) = fsState {
       restoreDockSettings()
     }
+    // This will save state if configured to do so
     player.stop()
     // stop tracking mouse event
     guard let w = self.window, let cv = w.contentView else { return }
     cv.trackingAreas.forEach(cv.removeTrackingArea)
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
-    
+
+    // Reset state flags
+    shouldApplyInitialWindowSize = true
+    player.overrideAutoMusicMode = false
+
     player.events.emit(.windowWillClose)
   }
 

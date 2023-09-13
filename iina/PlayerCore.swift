@@ -146,7 +146,7 @@ class PlayerCore: NSObject {
   /// Set this to `true` if user changes "music mode" status manually. This disables `autoSwitchToMusicMode`
   /// functionality for the duration of this player even if the preference is `true`. But if they manually change the
   /// "music mode" status again, change this to `false` so that the preference is honored again.
-  var overrideAutoSwitchToMusicMode = false
+  var overrideAutoMusicMode = false
 
   var isSearchingOnlineSubtitle = false
 
@@ -499,8 +499,8 @@ class PlayerCore: NSObject {
     log.debug("Switch to mini player, automatically=\(automatically)")
     if !automatically {
       // Toggle manual override
-      overrideAutoSwitchToMusicMode = !overrideAutoSwitchToMusicMode
-      log.verbose("Changed overrideAutoSwitchToMusicMode to \(overrideAutoSwitchToMusicMode)")
+      overrideAutoMusicMode = !overrideAutoMusicMode
+      log.verbose("Changed overrideAutoMusicMode to \(overrideAutoMusicMode)")
     }
     mainWindow.enterMusicMode()
     events.emit(.musicModeChanged, data: true)
@@ -509,8 +509,8 @@ class PlayerCore: NSObject {
   func exitMusicMode(automatically: Bool = false) {
     Logger.log("Switch to normal window from mini player, automatically=\(automatically)", subsystem: subsystem)
     if !automatically {
-      overrideAutoSwitchToMusicMode = !overrideAutoSwitchToMusicMode
-      Logger.log("Changed overrideAutoSwitchToMusicMode to \(overrideAutoSwitchToMusicMode)",
+      overrideAutoMusicMode = !overrideAutoMusicMode
+      Logger.log("Changed overrideAutoMusicMode to \(overrideAutoMusicMode)",
                  level: .verbose, subsystem: subsystem)
     }
     mainWindow.exitMusicMode()
@@ -1600,8 +1600,8 @@ class PlayerCore: NSObject {
 
     // if need to switch to music mode
     if Preference.bool(for: .autoSwitchToMusicMode) {
-      if overrideAutoSwitchToMusicMode {
-        Logger.log("Skipping music mode auto-switch because overrideAutoSwitchToMusicMode is true",
+      if overrideAutoMusicMode || (info.priorState?.bool(for: .overrideAutoMusicMode) ?? false) {
+        Logger.log("Skipping music mode auto-switch because overrideAutoMusicMode is true",
                    level: .verbose, subsystem: subsystem)
       } else if audioStatus == .isAudio && !isInMiniPlayer && !mainWindow.fsState.isFullscreen {
         Logger.log("Current media is audio: auto-switching to mini player", subsystem: subsystem)

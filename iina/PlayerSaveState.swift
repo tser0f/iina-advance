@@ -20,7 +20,7 @@ struct PlayerSaveState {
     case windowGeometry = "windowGeometry"
     case layoutSpec = "layoutSpec"
     case isMinimized = "minimized"
-    case isMusicMode = "musicMode"
+    case overrideAutoMusicMode = "overrideAutoMusicMode"
     case isOnTop = "onTop"
 
     case url = "url"
@@ -150,9 +150,7 @@ struct PlayerSaveState {
     if player.mainWindow.isOntop {
       props[PropName.isOnTop.rawValue] = true.yn
     }
-    if player.isInMiniPlayer {
-      props[PropName.isMusicMode.rawValue] = true.yn
-    }
+    props[PropName.overrideAutoMusicMode.rawValue] = player.overrideAutoMusicMode.yn
     /// TODO: `isMinimized`
 
     // - Playback State
@@ -247,6 +245,7 @@ struct PlayerSaveState {
     }
     DispatchQueue.main.async {
       let properties = generatePropDict(from: player)
+//      player.log.verbose("Saving player state: \(properties)")
       Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
     }
   }
@@ -331,7 +330,9 @@ struct PlayerSaveState {
 
   /// String -> `LayoutSpec`
   static private func deserializeLayoutSpec(from properties: [String: Any]) -> MainWindowController.LayoutSpec? {
-    return deserializeCSV(.layoutSpec, fromProperties: properties, expectedTokenCount: 11, version: PlayerSaveState.specPrefStringVersion,
+    return deserializeCSV(.layoutSpec, fromProperties: properties,
+                          expectedTokenCount: 11,
+                          version: PlayerSaveState.specPrefStringVersion,
                           errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
 
       let leadingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
@@ -383,7 +384,9 @@ struct PlayerSaveState {
 
   /// String -> `MainWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
-    return deserializeCSV(.windowGeometry, fromProperties: properties, expectedTokenCount: 12, version: PlayerSaveState.geoPrefStringVersion,
+    return deserializeCSV(.windowGeometry, fromProperties: properties,
+                          expectedTokenCount: 12,
+                          version: PlayerSaveState.geoPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
       guard let videoAspectRatio = Double(iter.next()!),
@@ -402,7 +405,11 @@ struct PlayerSaveState {
       }
 
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return MainWindowGeometry(windowFrame: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth, insideBarLeadingWidth: insideLeadingWidth, insideBarTrailingWidth: insideTrailingWidth, videoAspectRatio: videoAspectRatio)
+      return MainWindowGeometry(windowFrame: windowFrame,
+                                topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth,
+                                bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth,
+                                insideBarLeadingWidth: insideLeadingWidth, insideBarTrailingWidth: insideTrailingWidth,
+                                videoAspectRatio: videoAspectRatio)
     })
   }
 
@@ -450,10 +457,9 @@ struct PlayerSaveState {
       }
     }
 
-    // FIXME: Music Mode restore is broken
-    //    if let isInMusicMode = savedState.bool(for: .isMusicMode), isInMusicMode {
-    //      enterMusicMode()
-    //    }
+    if let overrideAutoMusicMode = bool(for: .overrideAutoMusicMode) {
+      player.overrideAutoMusicMode = overrideAutoMusicMode
+    }
 
     // mpv properties
 

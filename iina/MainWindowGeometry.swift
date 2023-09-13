@@ -603,25 +603,15 @@ extension MainWindowController {
       return priorGeo
     }
 
-    let windowFrame = window!.frame
-    let videoContainerFrame = videoContainerView.frame
-    let videoAspectRatio = videoView.aspectRatio
-
-    guard videoContainerFrame.width <= windowFrame.width && videoContainerFrame.height <= windowFrame.height else {
-      log.error("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (VideoContainer: \(videoContainerFrame); Window: \(windowFrame))")
-      return MainWindowGeometry(windowFrame: windowFrame,
-                                topBarHeight: currentLayout.topBarHeight,
-                                trailingBarWidth: currentLayout.trailingBarOutsideWidth,
-                                bottomBarHeight: currentLayout.bottomBarOutsideHeight,
-                                leadingBarWidth: currentLayout.leadingBarOutsideWidth,
-                                insideBarLeadingWidth: currentLayout.leadingBarInsideWidth,
-                                insideBarTrailingWidth: currentLayout.trailingBarInsideWidth,
-                                videoAspectRatio: videoAspectRatio)
-    }
-    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
-                              insideBarLeadingWidth: currentLayout.leadingBarInsideWidth,
-                              insideBarTrailingWidth: currentLayout.trailingBarInsideWidth,
-                              videoAspectRatio: videoAspectRatio)
+    let layout = currentLayout
+    return MainWindowGeometry(windowFrame: window!.frame,
+                              topBarHeight: layout.topBarHeight,
+                              trailingBarWidth: layout.trailingBarOutsideWidth,
+                              bottomBarHeight: layout.bottomBarOutsideHeight,
+                              leadingBarWidth: layout.leadingBarOutsideWidth,
+                              insideBarLeadingWidth: layout.leadingBarInsideWidth,
+                              insideBarTrailingWidth: layout.trailingBarInsideWidth,
+                              videoAspectRatio: videoView.aspectRatio)
   }
 
   func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
@@ -667,6 +657,11 @@ extension MainWindowController {
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return requestedSize }
     log.verbose("WindowWillResize: requestedSize \(requestedSize)")
+
+    if player.isInMiniPlayer {
+      _ = miniPlayer.view
+      return miniPlayer.windowWillResize(window, to: requestedSize)
+    }
 
     defer {
       updateSpacingForTitleBarAccessories()
@@ -778,6 +773,14 @@ extension MainWindowController {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
     log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
+
+    if player.isInMiniPlayer {
+      _ = miniPlayer.view
+      // Re-evaluate space requirements for labels. May need to toggle scroll
+      miniPlayer.windowDidResize()
+      return
+    }
+
     defer {
       updateSpacingForTitleBarAccessories()
     }
@@ -803,6 +806,12 @@ extension MainWindowController {
 
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return }
+
+    if player.isInMiniPlayer {
+      _ = miniPlayer.view
+      miniPlayer.saveCurrentPlaylistHeight()
+      return
+    }
 
     updateWindowParametersForMPV()
   }
