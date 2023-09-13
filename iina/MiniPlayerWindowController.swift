@@ -216,6 +216,28 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     }
   }
 
+  func updateVolumeUI() {
+    let vol = player.info.volume
+    volumeSlider.doubleValue = vol
+    volumeLabel.intValue = Int32(vol)
+    if player.info.isMuted {
+      volumeButton.image = NSImage(named: "mute")
+    } else {
+      switch volumeLabel.intValue {
+      case 0:
+        volumeButton.image = NSImage(named: "volume-0")
+      case 1...33:
+        volumeButton.image = NSImage(named: "volume-1")
+      case 34...66:
+        volumeButton.image = NSImage(named: "volume-2")
+      case 67...1000:
+        volumeButton.image = NSImage(named: "volume")
+      default:
+        break
+      }
+    }
+  }
+
   // MARK: - NSPopoverDelegate
 
   func popoverWillClose(_ notification: Notification) {
@@ -261,30 +283,12 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     player.toggleMute()
   }
 
-  func updateVolumeUI() {
-    let vol = player.info.volume
-    volumeSlider.doubleValue = vol
-    volumeLabel.intValue = Int32(vol)
-    if player.info.isMuted {
-      volumeButton.image = NSImage(named: "mute")
-    } else {
-      switch volumeLabel.intValue {
-      case 0:
-        volumeButton.image = NSImage(named: "volume-0")
-      case 1...33:
-        volumeButton.image = NSImage(named: "volume-1")
-      case 34...66:
-        volumeButton.image = NSImage(named: "volume-2")
-      case 67...1000:
-        volumeButton.image = NSImage(named: "volume")
-      default:
-        break
-      }
-    }
-  }
-
   @IBAction func backBtnAction(_ sender: NSButton) {
     player.exitMusicMode()
+  }
+
+  @IBAction func playButtonAction(_ sender: NSButton) {
+    mainWindow.playButtonAction(sender)
   }
 
   @IBAction func nextBtnAction(_ sender: NSButton) {
@@ -341,7 +345,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     let videoHeight = isVideoVisible ? newWindowFrame.width / mainWindow.videoView.aspectRatio : 0
     let bottomBarHeight = newWindowFrame.height - videoHeight
 
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: 0, timing: .easeInEaseOut, { [self] in
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       updateVideoHeightConstraint(height: videoHeight, animate: true)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
@@ -367,7 +371,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     let videoHeight = isVideoVisible ? videoHeightIfVisible : 0
     let bottomBarHeight = newWindowFrame.height - videoHeight
 
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: 0, timing: .easeInEaseOut, { [self] in
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: true)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
@@ -394,10 +398,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
     let newWindowSize = constrainWindowSize(requestedSize)
 
-    let videoHeight = isVideoVisible ? newWindowSize.width / mainWindow.videoView.aspectRatio : 0
-    let bottomBarHeight = newWindowSize.height - videoHeight
-
     CocoaAnimation.disableAnimation{
+      let videoHeight = isVideoVisible ? newWindowSize.width / mainWindow.videoView.aspectRatio : 0
+      let bottomBarHeight = newWindowSize.height - videoHeight
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: false)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
     }
@@ -418,7 +421,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   /// 3. `playlistWrapperView`: Visible if `isPlaylistVisible` is true. Height is user resizable, and must be >= `PlaylistMinHeight`
   /// Must also ensure that window stays within the bounds of the screen it is in. Almost all of the time the window  will be
   /// height-bounded instead of width-bounded.
-  private func constrainWindowSize(_ requestedSize: NSSize, animate: Bool = false) -> NSSize {
+  private func constrainWindowSize(_ requestedSize: NSSize) -> NSSize {
     guard let screen = window?.screen else { return requestedSize }
     /// When the window's width changes, the video scales to match while keeping its aspect ratio,
     /// and the control bar (`backgroundView`) and playlist are pushed down.
@@ -468,7 +471,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     guard let window = window else { return }
 
     newHeight = height ?? window.frame.width / mainWindow.videoView.aspectRatio
-    log.verbose("New videoView HEIGHT: \(newHeight)")
 
     if let videoHeightConstraint = videoHeightConstraint {
       if animate {
@@ -516,11 +518,17 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
 //    defaultAlbumArt.isHidden = player.info.vid != 0
 
-//    CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
-//      var newFrame = window.frame
-//      newFrame.size = constrainWindowSize(newFrame.size, animate: true)
-//      window.animator().setFrame(newFrame, display: true, animate: !AccessibilityPreferences.motionReductionEnabled)
-//    })
+    CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
+      var newWindowFrame = window.frame
+      newWindowFrame.size = constrainWindowSize(newWindowFrame.size)
+
+      let videoHeight = isVideoVisible ? newWindowFrame.width / mainWindow.videoView.aspectRatio : 0
+      let bottomBarHeight = newWindowFrame.height - videoHeight
+      updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: true)
+      mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
+
+      (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
+    })
   }
 
 }

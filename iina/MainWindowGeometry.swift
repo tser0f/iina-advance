@@ -421,9 +421,13 @@ extension MainWindowController {
       pip.aspectRatio = videoBaseDisplaySize
     }
 
+
     var scaleDownFactor: CGFloat? = nil
 
-    if player.info.isRestoring {
+    if player.isInMiniPlayer {
+      log.debug("[AdjustFrameAfterVideoReconfig] Player is in music mode; ignoring mpv video-reconfig")
+
+    } else if player.info.isRestoring {
       // To account for imprecision(s) due to floats coming from multiple sources,
       // just compare the first 6 digits after the decimal (strings make it easier)
       let oldAspect = oldVideoAspectRatio.string6f

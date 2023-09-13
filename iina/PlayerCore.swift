@@ -1386,7 +1386,7 @@ class PlayerCore: NSObject {
   // MARK: - Listeners
 
   func fileStarted(path: String) {
-    Logger.log("File started", subsystem: subsystem)
+    log.debug("File started")
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
     currentMediaIsAudio = .unknown
@@ -1461,8 +1461,6 @@ class PlayerCore: NSObject {
     isStopping = false
     isStopped = false
     info.haveDownloadedSub = false
-    isStopping = false
-    isStopped = false
 
     // Kick off thumbnails load/gen - it can happen in background
     reloadThumbnails()
