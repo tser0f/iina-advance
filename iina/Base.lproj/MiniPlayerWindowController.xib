@@ -9,14 +9,7 @@
         <customObject id="-2" userLabel="File's Owner" customClass="MiniPlayerWindowController" customModule="IINA" customModuleProvider="target">
             <connections>
                 <outlet property="artistAlbumLabel" destination="qHK-Ae-PRZ" id="3LX-ZY-yPR"/>
-                <outlet property="backButtonBox" destination="lvP-n1-chB" id="Vc7-iU-cir"/>
-                <outlet property="backButtonVE" destination="QO8-OL-54u" id="uHF-BV-wxK"/>
                 <outlet property="backgroundView" destination="Q6R-eL-qkW" id="2OU-bR-LVG"/>
-                <outlet property="closeButtonBackgroundViewBox" destination="A84-Hk-Fu3" id="PHO-Yc-ub5"/>
-                <outlet property="closeButtonBackgroundViewVE" destination="pJ6-sw-lt5" id="zWq-BD-hW1"/>
-                <outlet property="closeButtonBox" destination="RBL-nE-wSG" id="Ket-BO-Oee"/>
-                <outlet property="closeButtonVE" destination="1mi-24-1Qm" id="Idx-pr-Yri"/>
-                <outlet property="closeButtonView" destination="bi0-lC-FPL" id="W5B-hb-zAe"/>
                 <outlet property="controlView" destination="Wxl-Ex-FWV" id="Qyk-3u-ay1"/>
                 <outlet property="leftLabel" destination="HsE-Wq-L5N" id="OTn-83-Ohn"/>
                 <outlet property="mediaInfoView" destination="Cef-Fd-eDH" id="ngB-gq-f49"/>
@@ -242,103 +235,6 @@
                         <constraint firstAttribute="trailing" secondItem="9gg-yc-YXV" secondAttribute="trailing" id="xxm-Yf-dG4"/>
                     </constraints>
                 </visualEffectView>
-                <customView translatesAutoresizingMaskIntoConstraints="NO" id="bi0-lC-FPL" userLabel="WindowButtons View">
-                    <rect key="frame" x="4" y="34" width="19" height="34"/>
-                    <subviews>
-                        <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="pJ6-sw-lt5" userLabel="CloseButtonBackgroundVE View">
-                            <rect key="frame" x="0.0" y="0.0" width="19" height="34"/>
-                            <subviews>
-                                <button toolTip="Close Mini Player" translatesAutoresizingMaskIntoConstraints="NO" id="1mi-24-1Qm" userLabel="CloseBtnVE Button">
-                                    <rect key="frame" x="4" y="16" width="11" height="17"/>
-                                    <constraints>
-                                        <constraint firstAttribute="height" constant="11" id="8B6-iO-1vd"/>
-                                        <constraint firstAttribute="width" secondItem="1mi-24-1Qm" secondAttribute="height" multiplier="1:1" id="gbL-x7-G3r"/>
-                                    </constraints>
-                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="OsJ-QS-0pQ">
-                                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                        <font key="font" metaFont="system"/>
-                                    </buttonCell>
-                                </button>
-                                <button toolTip="Back to video mode" translatesAutoresizingMaskIntoConstraints="NO" id="QO8-OL-54u" userLabel="BackBtnVE Button">
-                                    <rect key="frame" x="4" y="4" width="11" height="11"/>
-                                    <constraints>
-                                        <constraint firstAttribute="width" secondItem="QO8-OL-54u" secondAttribute="height" multiplier="1:1" id="A0i-4h-r60"/>
-                                        <constraint firstAttribute="height" constant="11" id="pTn-Vp-GuJ"/>
-                                    </constraints>
-                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="back" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="s9A-i9-Eww">
-                                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                        <font key="font" metaFont="system"/>
-                                    </buttonCell>
-                                    <connections>
-                                        <action selector="backBtnAction:" target="-2" id="LQp-1W-YL6"/>
-                                    </connections>
-                                </button>
-                            </subviews>
-                            <constraints>
-                                <constraint firstAttribute="bottom" secondItem="QO8-OL-54u" secondAttribute="bottom" constant="4" id="0mj-du-kKs"/>
-                                <constraint firstItem="QO8-OL-54u" firstAttribute="leading" secondItem="pJ6-sw-lt5" secondAttribute="leading" constant="4" id="Ef9-X3-ifU"/>
-                                <constraint firstItem="1mi-24-1Qm" firstAttribute="top" secondItem="pJ6-sw-lt5" secondAttribute="top" constant="4" id="LLi-4G-mDB"/>
-                                <constraint firstItem="QO8-OL-54u" firstAttribute="top" secondItem="1mi-24-1Qm" secondAttribute="bottom" constant="4" id="LqG-xr-FeN"/>
-                                <constraint firstAttribute="trailing" secondItem="1mi-24-1Qm" secondAttribute="trailing" constant="4" id="Oww-q5-Bg6"/>
-                                <constraint firstItem="1mi-24-1Qm" firstAttribute="leading" secondItem="pJ6-sw-lt5" secondAttribute="leading" constant="4" id="UXQ-rO-Qc9"/>
-                                <constraint firstAttribute="trailing" secondItem="QO8-OL-54u" secondAttribute="trailing" constant="4" id="zl1-z9-60w"/>
-                            </constraints>
-                        </visualEffectView>
-                        <box boxType="custom" cornerRadius="8" title="Box" translatesAutoresizingMaskIntoConstraints="NO" id="A84-Hk-Fu3" userLabel="CloseBtnBackgroundView Box">
-                            <rect key="frame" x="2" y="2" width="17" height="30"/>
-                            <view key="contentView" id="dTt-sQ-Tsx">
-                                <rect key="frame" x="1" y="1" width="15" height="28"/>
-                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                <subviews>
-                                    <button toolTip="Close Mini Player" translatesAutoresizingMaskIntoConstraints="NO" id="RBL-nE-wSG" userLabel="CloseBtnBox Button">
-                                        <rect key="frame" x="2" y="12" width="11" height="17"/>
-                                        <constraints>
-                                            <constraint firstAttribute="height" constant="11" id="gvb-gz-vTG"/>
-                                            <constraint firstAttribute="width" secondItem="RBL-nE-wSG" secondAttribute="height" multiplier="1:1" id="tZx-Fi-HuG"/>
-                                        </constraints>
-                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="UIh-bM-h8o">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                            <font key="font" metaFont="system"/>
-                                        </buttonCell>
-                                    </button>
-                                    <button toolTip="Back to video mode" translatesAutoresizingMaskIntoConstraints="NO" id="lvP-n1-chB" userLabel="BackBtnBox Button">
-                                        <rect key="frame" x="2" y="2" width="11" height="11"/>
-                                        <constraints>
-                                            <constraint firstAttribute="height" constant="11" id="GzP-ge-der"/>
-                                            <constraint firstAttribute="width" secondItem="lvP-n1-chB" secondAttribute="height" multiplier="1:1" id="Xog-gk-vuZ"/>
-                                        </constraints>
-                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="back" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="TaH-Be-YUX">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                            <font key="font" metaFont="system"/>
-                                        </buttonCell>
-                                        <connections>
-                                            <action selector="backBtnAction:" target="-2" id="CGT-FI-ReY"/>
-                                        </connections>
-                                    </button>
-                                </subviews>
-                                <constraints>
-                                    <constraint firstAttribute="trailing" secondItem="RBL-nE-wSG" secondAttribute="trailing" constant="2" id="39l-9M-6hP"/>
-                                    <constraint firstItem="RBL-nE-wSG" firstAttribute="top" secondItem="dTt-sQ-Tsx" secondAttribute="top" constant="2" id="Lzu-ua-I8N"/>
-                                    <constraint firstAttribute="trailing" secondItem="lvP-n1-chB" secondAttribute="trailing" constant="2" id="POo-UL-b66"/>
-                                    <constraint firstAttribute="bottom" secondItem="lvP-n1-chB" secondAttribute="bottom" constant="2" id="XMm-Eh-mrJ"/>
-                                    <constraint firstItem="RBL-nE-wSG" firstAttribute="leading" secondItem="dTt-sQ-Tsx" secondAttribute="leading" constant="2" id="dCM-sE-Ta6"/>
-                                    <constraint firstItem="lvP-n1-chB" firstAttribute="leading" secondItem="dTt-sQ-Tsx" secondAttribute="leading" constant="2" id="hUt-jy-z7U"/>
-                                </constraints>
-                            </view>
-                            <color key="borderColor" red="0.57045853140000002" green="0.57047235969999999" blue="0.57046490910000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                            <color key="fillColor" red="0.85688321570000003" green="0.85688321570000003" blue="0.85688321570000003" alpha="0.0" colorSpace="custom" customColorSpace="displayP3"/>
-                        </box>
-                    </subviews>
-                    <constraints>
-                        <constraint firstItem="pJ6-sw-lt5" firstAttribute="leading" secondItem="bi0-lC-FPL" secondAttribute="leading" id="LIa-GX-fIB"/>
-                        <constraint firstItem="A84-Hk-Fu3" firstAttribute="leading" secondItem="bi0-lC-FPL" secondAttribute="leading" constant="2" id="QeO-Zl-Hpd"/>
-                        <constraint firstAttribute="trailing" secondItem="pJ6-sw-lt5" secondAttribute="trailing" id="TqM-lf-Rsc"/>
-                        <constraint firstAttribute="bottom" secondItem="A84-Hk-Fu3" secondAttribute="bottom" constant="2" id="Xdn-lq-N7h"/>
-                        <constraint firstItem="pJ6-sw-lt5" firstAttribute="top" secondItem="bi0-lC-FPL" secondAttribute="top" id="f6A-Dq-hzv"/>
-                        <constraint firstItem="A84-Hk-Fu3" firstAttribute="top" secondItem="bi0-lC-FPL" secondAttribute="top" constant="2" id="lAr-ih-g5W"/>
-                        <constraint firstAttribute="bottom" secondItem="pJ6-sw-lt5" secondAttribute="bottom" id="std-R2-936"/>
-                    </constraints>
-                </customView>
             </subviews>
             <constraints>
                 <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="Q6R-eL-qkW" secondAttribute="bottom" id="0Gh-vQ-qTN"/>
@@ -352,10 +248,8 @@
                 <constraint firstAttribute="trailing" secondItem="Q6R-eL-qkW" secondAttribute="trailing" id="aFO-ag-c2T"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="qHK-Ae-PRZ" secondAttribute="trailing" priority="499" id="mvA-Hm-ujy"/>
                 <constraint firstItem="qHK-Ae-PRZ" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="n4z-DE-xyQ"/>
-                <constraint firstItem="bi0-lC-FPL" firstAttribute="top" secondItem="98Q-Fi-3N5" secondAttribute="top" constant="4" id="peA-7Z-oZY"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="jAX-WD-i2a" secondAttribute="trailing" priority="499" id="red-gP-AmK"/>
                 <constraint firstItem="jAX-WD-i2a" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="uDk-4s-KAt"/>
-                <constraint firstItem="bi0-lC-FPL" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" constant="4" id="vsJ-xU-oDx"/>
                 <constraint firstItem="2bL-q1-qry" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="yJm-hm-4s8"/>
             </constraints>
             <point key="canvasLocation" x="-125" y="24"/>
@@ -425,8 +319,6 @@
         </popover>
     </objects>
     <resources>
-        <image name="NSStopProgressFreestandingTemplate" width="20" height="20"/>
-        <image name="back" width="11" height="11"/>
         <image name="mute" width="16" height="14"/>
         <image name="nextl" width="24" height="24"/>
         <image name="nextr" width="24" height="24"/>

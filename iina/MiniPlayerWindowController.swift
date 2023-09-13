@@ -34,15 +34,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   @IBOutlet var volumePopover: NSPopover!
   @IBOutlet weak var volumeSliderView: NSView!
   @IBOutlet weak var backgroundView: NSVisualEffectView!
-  @IBOutlet weak var closeButtonView: NSView!
-  // Mini island containing window buttons which hover over album art / video:
-  @IBOutlet weak var closeButtonBackgroundViewVE: NSVisualEffectView!
-  // Mini island containing window buttons which appear next to controls (when video not visible):
-  @IBOutlet weak var closeButtonBackgroundViewBox: NSBox!
-  @IBOutlet weak var closeButtonVE: NSButton!
-  @IBOutlet weak var backButtonVE: NSButton!
-  @IBOutlet weak var closeButtonBox: NSButton!
-  @IBOutlet weak var backButtonBox: NSButton!
   @IBOutlet weak var playlistWrapperView: NSVisualEffectView!
   @IBOutlet weak var mediaInfoView: NSView!
   @IBOutlet weak var controlView: NSView!
@@ -118,23 +109,22 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 //    defaultAlbumArt.layer?.contents = #imageLiteral(resourceName: "default-album-art")
 
     // close button
-    closeButtonVE.action = #selector(mainWindow.close)
-    closeButtonBox.action = #selector(mainWindow.close)
-    closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
+    mainWindow.closeButtonVE.action = #selector(mainWindow.close)
+    mainWindow.closeButtonBox.action = #selector(mainWindow.close)
+    mainWindow.closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
 
     // hide controls initially
-    closeButtonBackgroundViewBox.isHidden = true
-    closeButtonView.alphaValue = 0
+    mainWindow.closeButtonBackgroundViewBox.isHidden = true
+    mainWindow.closeButtonBackgroundViewVE.isHidden = true
+    mainWindow.closeButtonView.alphaValue = 0
     controlView.alphaValue = 0
-
-    updateVideoViewLayout()
     
     // tool tips
     togglePlaylistButton.toolTip = Preference.ToolBarButton.playlist.description()
     toggleAlbumArtButton.toolTip = NSLocalizedString("mini_player.album_art", comment: "album_art")
     volumeButton.toolTip = NSLocalizedString("mini_player.volume", comment: "volume")
-    closeButtonVE.toolTip = NSLocalizedString("mini_player.close", comment: "close")
-    backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
+    mainWindow.closeButtonVE.toolTip = NSLocalizedString("mini_player.close", comment: "close")
+    mainWindow.backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
 
     volumePopover.delegate = self
 
@@ -158,21 +148,19 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   // MARK: - UI: Show / Hide
 
   private func showControl() {
-    NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AnimationDurationShowControl
-      closeButtonView.animator().alphaValue = 1
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: AnimationDurationShowControl, { [self] in
+      mainWindow.closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
-    })
+    }))
   }
 
   private func hideControl() {
-    NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AnimationDurationShowControl
-      closeButtonView.animator().alphaValue = 0
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: AnimationDurationShowControl, { [self] in
+      mainWindow.closeButtonView.animator().alphaValue = 0
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1
-    })
+    }))
   }
 
   // MARK: - UI
@@ -279,10 +267,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     player.toggleMute()
   }
 
-  @IBAction func backBtnAction(_ sender: NSButton) {
-    player.exitMusicMode()
-  }
-
   @IBAction func playButtonAction(_ sender: NSButton) {
     mainWindow.playButtonAction(sender)
   }
@@ -353,7 +337,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     guard let window = mainWindow.window else { return }
     isVideoVisible = !isVideoVisible
     Logger.log("Toggling videoView visibility from \((!isVideoVisible).yn) to \(isVideoVisible.yn)", level: .verbose)
-    updateVideoViewLayout()
+    mainWindow.updateMusicModeButtonsVisibility()
     var newWindowFrame = window.frame
     let videoHeightIfVisible = newWindowFrame.width / mainWindow.videoView.aspectRatio
     if isVideoVisible {
@@ -403,11 +387,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     }
 
     return newWindowSize
-  }
-
-  private func updateVideoViewLayout() {
-    closeButtonBackgroundViewVE.isHidden = !isVideoVisible
-    closeButtonBackgroundViewBox.isHidden = isVideoVisible
   }
 
   /// The MiniPlayerWindow's width must be between `MiniPlayerMinWidth` and `Preference.musicModeMaxWidth`.

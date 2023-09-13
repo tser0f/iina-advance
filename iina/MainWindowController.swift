@@ -511,6 +511,17 @@ class MainWindowController: PlayerWindowController {
 
   // - Outlets: Views
 
+  // MiniPlayer buttons
+  @IBOutlet weak var closeButtonView: NSView!
+  // Mini island containing window buttons which hover over album art / video:
+  @IBOutlet weak var closeButtonBackgroundViewVE: NSVisualEffectView!
+  // Mini island containing window buttons which appear next to controls (when video not visible):
+  @IBOutlet weak var closeButtonBackgroundViewBox: NSBox!
+  @IBOutlet weak var closeButtonVE: NSButton!
+  @IBOutlet weak var backButtonVE: NSButton!
+  @IBOutlet weak var closeButtonBox: NSButton!
+  @IBOutlet weak var backButtonBox: NSButton!
+
   @IBOutlet var leadingTitleBarAccessoryView: NSView!
   @IBOutlet var trailingTitleBarAccessoryView: NSView!
   /** "Pin to Top" button in title bar, if configured to  be shown */
@@ -877,7 +888,7 @@ class MainWindowController: PlayerWindowController {
     if player.isInMiniPlayer {
       _ = miniPlayer.view  // load XIB if not loaded to prevent unboxing nils
 
-      for view in [miniPlayer.backgroundView, miniPlayer.closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
+      for view in [miniPlayer.backgroundView, closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
         view?.appearance = appearance
         view?.material = material
       }
@@ -2262,7 +2273,16 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
+  func updateMusicModeButtonsVisibility() {
+    closeButtonBackgroundViewVE.isHidden = !player.isInMiniPlayer || !miniPlayer.isVideoVisible
+    closeButtonBackgroundViewBox.isHidden = !player.isInMiniPlayer || miniPlayer.isVideoVisible
+  }
+
   // MARK: - IBActions
+
+  @IBAction func backBtnAction(_ sender: NSButton) {
+    player.exitMusicMode()
+  }
 
   @IBAction override func playButtonAction(_ sender: NSButton) {
     super.playButtonAction(sender)

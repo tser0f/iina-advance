@@ -1132,10 +1132,12 @@ extension MainWindowController {
       // Update music mode UI
       updateTitle()
       setMaterial(Preference.enum(for: .themeMaterial))
+      updateMusicModeButtonsVisibility()
       
     } else if transition.isExitingMusicMode {
       _ = miniPlayer.view
       miniPlayer.cleanUpForMusicModeExit()
+      updateMusicModeButtonsVisibility()
     }
 
     // Sidebars: if (re)opening
