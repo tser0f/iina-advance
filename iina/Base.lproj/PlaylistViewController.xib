@@ -135,7 +135,7 @@
                                                                 </tableCellView>
                                                             </prototypeCellViews>
                                                         </tableColumn>
-                                                        <tableColumn identifier="TrackName" editable="NO" width="205" minWidth="100" maxWidth="1000" id="csQ-Z4-hxP">
+                                                        <tableColumn identifier="TrackName" editable="NO" width="205" minWidth="100" maxWidth="4000" id="csQ-Z4-hxP">
                                                             <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left">
                                                                 <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
@@ -442,7 +442,7 @@
                                                                 </tableCellView>
                                                             </prototypeCellViews>
                                                         </tableColumn>
-                                                        <tableColumn identifier="TrackName" editable="NO" width="206" minWidth="100" maxWidth="1000" id="hXk-TJ-Mf4">
+                                                        <tableColumn identifier="TrackName" editable="NO" width="206" minWidth="100" maxWidth="4000" id="hXk-TJ-Mf4">
                                                             <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left">
                                                                 <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>

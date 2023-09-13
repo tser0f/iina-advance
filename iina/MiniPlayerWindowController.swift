@@ -82,7 +82,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     }
   }
 
-  static let maxWindowWidth = CGFloat(Preference.float(for: .musicModeMaxWidth))
+  static var maxWindowWidth: CGFloat {
+    return CGFloat(Preference.float(for: .musicModeMaxWidth))
+  }
 
   lazy var hideVolumePopover: DispatchWorkItem = {
     DispatchWorkItem {
@@ -99,10 +101,8 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: PlaylistMinHeight).isActive = true
 
     /// Set up tracking area to show controller when hovering over it
-    if let window = window {
-      mainWindow.videoContainerView.addTrackingArea(NSTrackingArea(rect: mainWindow.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
-      backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
-    }
+    mainWindow.videoContainerView.addTrackingArea(NSTrackingArea(rect: mainWindow.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
+    backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
 
     // default album art
 //    defaultAlbumArt.wantsLayer = true
