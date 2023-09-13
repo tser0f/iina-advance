@@ -608,14 +608,26 @@ extension MainWindowController {
     }
 
     let layout = currentLayout
-    return MainWindowGeometry(windowFrame: window!.frame,
-                              topBarHeight: layout.topBarHeight,
-                              trailingBarWidth: layout.trailingBarOutsideWidth,
-                              bottomBarHeight: layout.bottomBarOutsideHeight,
-                              leadingBarWidth: layout.leadingBarOutsideWidth,
+    let windowFrame = window!.frame
+    let videoContainerFrame = videoContainerView.frame
+    let videoAspectRatio = videoView.aspectRatio
+
+    guard videoContainerFrame.width <= windowFrame.width && videoContainerFrame.height <= windowFrame.height else {
+      log.error("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (VideoContainer: \(videoContainerFrame); Window: \(windowFrame))")
+      // FIXME: this creates a small letterbox and doesn't match the other constructor
+      return MainWindowGeometry(windowFrame: windowFrame,
+                                topBarHeight: layout.topBarHeight,
+                                trailingBarWidth: layout.trailingBarOutsideWidth,
+                                bottomBarHeight: layout.bottomBarOutsideHeight,
+                                leadingBarWidth: layout.leadingBarOutsideWidth,
+                                insideBarLeadingWidth: layout.leadingBarInsideWidth,
+                                insideBarTrailingWidth: layout.trailingBarInsideWidth,
+                                videoAspectRatio: videoAspectRatio)
+    }
+    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
                               insideBarLeadingWidth: layout.leadingBarInsideWidth,
                               insideBarTrailingWidth: layout.trailingBarInsideWidth,
-                              videoAspectRatio: videoView.aspectRatio)
+                              videoAspectRatio: videoAspectRatio)
   }
 
   func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {

@@ -459,7 +459,8 @@ extension MainWindowController {
     }
 
     if !transition.isInitialLayout {
-      updateWindowFrame(ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
+      log.verbose("Calling updateWindowFrame() after show/hide sidebars. ΔOutsideLeft: \(ΔOutsideLeft), ΔOutsideRight: \(ΔOutsideRight)")
+      updateWindowFrame(fromGeometry: transition.fromWindowGeometry!, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
     }
 
     window?.contentView?.layoutSubtreeIfNeeded()
@@ -467,8 +468,8 @@ extension MainWindowController {
 
   // Resizes window to accomodate show or hide of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
-  private func updateWindowFrame(ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) {
-    let oldGeometry = getCurrentWindowGeometry()
+  private func updateWindowFrame(fromGeometry oldGeometry: MainWindowGeometry,
+                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) {
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
       // Is expanding the window to open a sidebar. First save the current size as the preferred size.

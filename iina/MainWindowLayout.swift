@@ -429,10 +429,11 @@ extension MainWindowController {
   // MARK: - Layout Transitions
 
   class LayoutTransition {
+    var fromWindowGeometry: MainWindowGeometry? = nil
     let fromLayout: LayoutState
     let toLayout: LayoutState
+
     let isInitialLayout: Bool
-    var windowGeometry: MainWindowGeometry? = nil
 
     var animationTasks: [CocoaAnimation.Task] = []
 
@@ -766,6 +767,9 @@ extension MainWindowController {
   private func doPreTransitionWork(_ transition: LayoutTransition) {
     log.verbose("DoPreTransitionWork")
     controlBarFloating.isDragging = false
+    /// Do this BEFORE updating `currentLayout`!
+    transition.fromWindowGeometry = getCurrentWindowGeometry()
+
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
     currentLayout = transition.toLayout
