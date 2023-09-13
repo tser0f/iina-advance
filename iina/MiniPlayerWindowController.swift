@@ -107,14 +107,10 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: PlaylistMinHeight).isActive = true
 
-    if let window = window, let contentView = window.contentView {
-      contentView.addTrackingArea(NSTrackingArea(rect: contentView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
-    }
-
-    if playSlider.trackingAreas.isEmpty {
-      playSlider.addTrackingArea(NSTrackingArea(rect: playSlider.bounds,
-                                                options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
-                                                owner: self, userInfo: ["obj": 1]))
+    /// Set up tracking area to show controller when hovering over it
+    if let window = window {
+      mainWindow.videoContainerView.addTrackingArea(NSTrackingArea(rect: mainWindow.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
+      backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
     }
 
     // default album art
@@ -403,8 +399,8 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       let bottomBarHeight = newWindowSize.height - videoHeight
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: false)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
+//      player.saveState()
     }
-    player.saveState()
 
     return newWindowSize
   }

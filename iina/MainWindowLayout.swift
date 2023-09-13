@@ -998,11 +998,11 @@ extension MainWindowController {
     }
 
     // Sidebars (if closing)
-    animateShowOrHideSidebars(transition: transition,
-                              layout: transition.fromLayout,
-                              setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
-                              setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
-    updateSpacingForTitleBarAccessories(transition.toLayout)
+    let newWindowGeometry = animateShowOrHideSidebars(transition: transition,
+                                                      layout: transition.fromLayout,
+                                                      setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
+                                                      setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
+    updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: newWindowGeometry.windowFrame.width)
 
     window.contentView?.layoutSubtreeIfNeeded()
   }
@@ -1239,11 +1239,11 @@ extension MainWindowController {
     // Sidebars (if opening)
     let leadingSidebar = transition.toLayout.leadingSidebar
     let trailingSidebar = transition.toLayout.trailingSidebar
-    animateShowOrHideSidebars(transition: transition,
-                              layout: transition.toLayout,
-                              setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
-                              setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
-    updateSpacingForTitleBarAccessories(transition.toLayout)
+    let newWindowGeometry = animateShowOrHideSidebars(transition: transition,
+                                                      layout: transition.toLayout,
+                                                      setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
+                                                      setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
+    updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: newWindowGeometry.windowFrame.width)
 
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: futureLayout)
@@ -1787,11 +1787,11 @@ extension MainWindowController {
     }
   }
 
-  func updateSpacingForTitleBarAccessories(_ layout: LayoutState? = nil) {
+  func updateSpacingForTitleBarAccessories(_ layout: LayoutState? = nil, windowWidth: CGFloat) {
     let layout = layout ?? self.currentLayout
 
     updateSpacingForLeadingTitleBarAccessory(layout)
-    updateSpacingForTrailingTitleBarAccessory(layout)
+    updateSpacingForTrailingTitleBarAccessory(layout, windowWidth: windowWidth)
   }
 
   // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
@@ -1809,7 +1809,7 @@ extension MainWindowController {
 
   // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
-  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutState) {
+  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutState, windowWidth: CGFloat) {
     var spaceForButtons: CGFloat = 0
 
     if layout.trailingSidebarToggleButton.isShowable {
@@ -1821,7 +1821,7 @@ extension MainWindowController {
 
     let leadingSpaceNeeded: CGFloat = layout.topBarPlacement == .outsideVideo ? 0 : max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
     // The title icon & text looks very bad if we try to push it too far to the left. Try to detect this and just remove the offset in this case
-    let maxSpaceAllowed: CGFloat = max(0, getCurrentWindowGeometry().windowFrame.width * 0.5 - 20)
+    let maxSpaceAllowed: CGFloat = max(0, windowWidth * 0.5 - 20)
     let leadingSpace = leadingSpaceNeeded > maxSpaceAllowed ? 0 : leadingSpaceNeeded
     trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
 
@@ -1852,7 +1852,9 @@ extension MainWindowController {
     if buttonVisibility == .showFadeableTopBar {
       showFadeableViews()
     }
-    updateSpacingForTitleBarAccessories()
+    if let window = window {
+      updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
+    }
     PlayerSaveState.save(player)
   }
 

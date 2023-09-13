@@ -2094,7 +2094,7 @@ class PlayerCore: NSObject {
                                          title: mpv.getString(MPVProperty.playlistNTitle(index)))
       info.playlist.append(playlistItem)
     }
-    PlayerSaveState.save(self)  // save playlist URLs to prefs
+//    PlayerSaveState.save(self)  // save playlist URLs to prefs
   }
 
   func reloadChapters() {

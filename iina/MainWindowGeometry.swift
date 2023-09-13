@@ -679,10 +679,13 @@ extension MainWindowController {
       return miniPlayer.windowWillResize(window, to: requestedSize)
     }
 
-    defer {
-      updateSpacingForTitleBarAccessories()
-    }
+    let newSize = tryToResizeWindow(window, to: requestedSize)
 
+    updateSpacingForTitleBarAccessories(windowWidth: newSize.width)
+    return newSize
+  }
+
+  private func tryToResizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     if denyNextWindowResize {
       let currentSize = window.frame.size
       log.verbose("WindowWillResize: denying this resize; will stay at \(currentSize)")
@@ -798,7 +801,7 @@ extension MainWindowController {
     }
 
     defer {
-      updateSpacingForTitleBarAccessories()
+      updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
     }
 
     CocoaAnimation.disableAnimation {

@@ -405,8 +405,12 @@ extension MainWindowController {
   func animateShowOrHideSidebars(transition: LayoutTransition,
                                  layout: LayoutState,
                                  setLeadingTo leadingGoal: Sidebar.Visibility? = nil,
-                                 setTrailingTo trailingGoal: Sidebar.Visibility? = nil) {
-    guard leadingGoal != nil || trailingGoal != nil else { return }
+                                 setTrailingTo trailingGoal: Sidebar.Visibility? = nil) -> MainWindowGeometry {
+
+    guard leadingGoal != nil || trailingGoal != nil else {
+      return transition.fromWindowGeometry!
+    }
+    
     let leadingSidebar = layout.leadingSidebar
     let trailingSidebar = layout.trailingSidebar
 
@@ -458,18 +462,22 @@ extension MainWindowController {
       }
     }
 
-    if !transition.isInitialLayout {
+    let newWindowGeometry: MainWindowGeometry
+    if transition.isInitialLayout {
+      newWindowGeometry = transition.fromWindowGeometry!
+    } else {
       log.verbose("Calling updateWindowFrame() after show/hide sidebars. ΔOutsideLeft: \(ΔOutsideLeft), ΔOutsideRight: \(ΔOutsideRight)")
-      updateWindowFrame(fromGeometry: transition.fromWindowGeometry!, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
+      newWindowGeometry = updateWindowFrame(fromGeometry: transition.fromWindowGeometry!, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
     }
 
     window?.contentView?.layoutSubtreeIfNeeded()
+    return newWindowGeometry
   }
 
   // Resizes window to accomodate show or hide of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
   private func updateWindowFrame(fromGeometry oldGeometry: MainWindowGeometry,
-                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) {
+                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) -> MainWindowGeometry {
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
       // Is expanding the window to open a sidebar. First save the current size as the preferred size.
@@ -512,6 +520,7 @@ extension MainWindowController {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
     }
     setCurrentWindowGeometry(to: newGeometry, enqueueAnimation: false)
+    return newGeometry
   }
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
@@ -980,7 +989,7 @@ extension MainWindowController {
       }
 
       Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
-      updateSpacingForTitleBarAccessories()
+      updateSpacingForTitleBarAccessories(windowWidth: windowGeometryAtResizeStart!.windowFrame.width)
       return true
     }
   }
