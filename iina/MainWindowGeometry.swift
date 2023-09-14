@@ -25,24 +25,24 @@ import Foundation
  Below is an example of a player window with letterboxed video, where `videoContainerView` is taller than `videoView`.
  The `windowFrame` is the outermost rectangle.
  •
- •              `videoContainerSize` (W)
- •              │◄───────────────►│
- ┌────────────────────────────────────────────────┐`windowFrame`
- │                     ▲                          │
- │                     │`topBarHeight`            │
- │                     ▼                          │
- ├──────────────┬─────────────────┬───────────────┤ ─
- │              │                 │               │ ▲
- │              │-----------------│               │ │
- │◄────────────►|   `videoSize`   |◄─────────────►│ │`videoContainerSize`
- │`leftBarWidth`|                 |`rightBarWidth`│ │ (H)
- │              │-----------------│               │ │
- │              │                 │               │ ▼
- ├──────────────┴─────────────────┴───────────────┤ ─
- │                 ▲                              │
- │                 │`bottomBarHeight`             │
- │                 ▼                              │
- └────────────────────────────────────────────────┘
+ •                        `videoContainerSize` (W)
+ •                        │◄───────────────►│
+ ┌─────────────────────────────────────────────────────────────────────┐`windowFrame`
+ │                               ▲                                     │
+ │                               │`outsideTopBarHeight`                │
+ │                               ▼                                     │
+ ├────────────────────────┬─────────────────┬──────────────────────────┤ ─
+ │                        │                 │                          │ ▲
+ │                        │-----------------│                          │ │
+ │◄──────────────────────►|   `videoSize`   |◄────────────────────────►│ │`videoContainerSize`
+ │`outsideLeadingBarWidth`|                 | `outsideTrailingBarWidth`│ │ (H)
+ │                        │-----------------│                          │ │
+ │                        │                 │                          │ ▼
+ ├────────────────────────┴─────────────────┴──────────────────────────┤ ─
+ │                            ▲                                        │
+ │                            │`outsideBottomBarHeight`                │
+ │                            ▼                                        │
+ └─────────────────────────────────────────────────────────────────────┘
  */
 struct MainWindowGeometry: Equatable {
   // MARK: - Stored properties
@@ -50,14 +50,14 @@ struct MainWindowGeometry: Equatable {
   let windowFrame: NSRect
 
   // Outside panels
-  let topBarHeight: CGFloat
-  let trailingBarWidth: CGFloat
-  let bottomBarHeight: CGFloat
-  let leadingBarWidth: CGFloat
+  let outsideTopBarHeight: CGFloat
+  let outsideTrailingBarWidth: CGFloat
+  let outsideBottomBarHeight: CGFloat
+  let outsideLeadingBarWidth: CGFloat
 
   // Inside panels
-  let insideBarLeadingWidth: CGFloat
-  let insideBarTrailingWidth: CGFloat
+  let insideLeadingBarWidth: CGFloat
+  let insideTrailingBarWidth: CGFloat
 
   let videoAspectRatio: CGFloat
   let videoSize: NSSize
@@ -69,59 +69,58 @@ struct MainWindowGeometry: Equatable {
   // MARK: - Initializers
 
   init(windowFrame: NSRect,
-       topBarHeight: CGFloat, trailingBarWidth: CGFloat, bottomBarHeight: CGFloat, leadingBarWidth: CGFloat,
-       insideBarLeadingWidth: CGFloat, insideBarTrailingWidth: CGFloat,
+       outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
+       insideLeadingBarWidth: CGFloat, insideTrailingBarWidth: CGFloat,
        videoAspectRatio: CGFloat) {
-    assert(topBarHeight >= 0, "Expected topBarHeight >= 0, found \(topBarHeight)")
-    assert(trailingBarWidth >= 0, "Expected trailingBarWidth >= 0, found \(trailingBarWidth)")
-    assert(bottomBarHeight >= 0, "Expected bottomBarHeight >= 0, found \(bottomBarHeight)")
-    assert(leadingBarWidth >= 0, "Expected leadingBarWidth >= 0, found \(leadingBarWidth)")
-    assert(trailingBarWidth >= 0, "Expected trailingBarWidth >= 0, found \(trailingBarWidth)")
-    assert(insideBarLeadingWidth >= 0, "Expected insideBarLeadingWidth >= 0, found \(insideBarLeadingWidth)")
-    assert(insideBarTrailingWidth >= 0, "Expected insideBarTrailingWidth >= 0, found \(insideBarTrailingWidth)")
+    assert(outsideTopBarHeight >= 0, "Expected outsideTopBarHeight >= 0, found \(outsideTopBarHeight)")
+    assert(outsideTrailingBarWidth >= 0, "Expected outsideTrailingBarWidth >= 0, found \(outsideTrailingBarWidth)")
+    assert(outsideBottomBarHeight >= 0, "Expected outsideBottomBarHeight >= 0, found \(outsideBottomBarHeight)")
+    assert(outsideLeadingBarWidth >= 0, "Expected outsideLeadingBarWidth >= 0, found \(outsideLeadingBarWidth)")
+    assert(insideLeadingBarWidth >= 0, "Expected insideLeadingBarWidth >= 0, found \(insideLeadingBarWidth)")
+    assert(insideTrailingBarWidth >= 0, "Expected insideTrailingBarWidth >= 0, found \(insideTrailingBarWidth)")
     self.windowFrame = windowFrame
-    self.topBarHeight = topBarHeight
-    self.trailingBarWidth = trailingBarWidth
-    self.bottomBarHeight = bottomBarHeight
-    self.leadingBarWidth = leadingBarWidth
-    self.insideBarLeadingWidth = insideBarLeadingWidth
-    self.insideBarTrailingWidth = insideBarTrailingWidth
+    self.outsideTopBarHeight = outsideTopBarHeight
+    self.outsideTrailingBarWidth = outsideTrailingBarWidth
+    self.outsideBottomBarHeight = outsideBottomBarHeight
+    self.outsideLeadingBarWidth = outsideLeadingBarWidth
+    self.insideLeadingBarWidth = insideLeadingBarWidth
+    self.insideTrailingBarWidth = insideTrailingBarWidth
     self.videoAspectRatio = videoAspectRatio
-    let videoContainerSize = MainWindowGeometry.computeVideoContainerSize(from: windowFrame, topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth, bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth)
+    let videoContainerSize = MainWindowGeometry.computeVideoContainerSize(from: windowFrame, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
     self.videoSize = MainWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
   }
 
   init(windowFrame: NSRect,
        videoContainerFrame: NSRect,
-       insideBarLeadingWidth: CGFloat, insideBarTrailingWidth: CGFloat,
+       insideLeadingBarWidth: CGFloat, insideTrailingBarWidth: CGFloat,
        videoAspectRatio: CGFloat) {
     assert(videoContainerFrame.height <= windowFrame.height, "videoContainerFrame.height (\(videoContainerFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
     assert(videoContainerFrame.width <= windowFrame.width, "videoContainerFrame.width (\(videoContainerFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
 
-    let leadingBarWidth = videoContainerFrame.origin.x
-    let bottomBarHeight = videoContainerFrame.origin.y
+    let outsideLeadingBarWidth = videoContainerFrame.origin.x
+    let outsideBottomBarHeight = videoContainerFrame.origin.y
     self.init(windowFrame: windowFrame,
-              topBarHeight: windowFrame.height - videoContainerFrame.height - bottomBarHeight,
-              trailingBarWidth: windowFrame.width - videoContainerFrame.width - leadingBarWidth,
-              bottomBarHeight: videoContainerFrame.origin.y,
-              leadingBarWidth: videoContainerFrame.origin.x,
-              insideBarLeadingWidth: insideBarLeadingWidth, insideBarTrailingWidth: insideBarTrailingWidth,
+              outsideTopBarHeight: windowFrame.height - videoContainerFrame.height - outsideBottomBarHeight,
+              outsideTrailingBarWidth: windowFrame.width - videoContainerFrame.width - outsideLeadingBarWidth,
+              outsideBottomBarHeight: videoContainerFrame.origin.y,
+              outsideLeadingBarWidth: videoContainerFrame.origin.x,
+              insideLeadingBarWidth: insideLeadingBarWidth, insideTrailingBarWidth: insideTrailingBarWidth,
               videoAspectRatio: videoAspectRatio)
   }
 
   func clone(windowFrame: NSRect? = nil,
-             topBarHeight: CGFloat? = nil, trailingBarWidth: CGFloat? = nil,
-             bottomBarHeight: CGFloat? = nil, leadingBarWidth: CGFloat? = nil,
-             insideBarLeadingWidth: CGFloat? = nil, insideBarTrailingWidth: CGFloat? = nil,
+             outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
+             outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
+             insideLeadingBarWidth: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
              videoAspectRatio: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
-                              topBarHeight: topBarHeight ?? self.topBarHeight,
-                              trailingBarWidth: trailingBarWidth ?? self.trailingBarWidth,
-                              bottomBarHeight: bottomBarHeight ?? self.bottomBarHeight,
-                              leadingBarWidth: leadingBarWidth ?? self.leadingBarWidth,
-                              insideBarLeadingWidth: insideBarLeadingWidth ?? self.insideBarLeadingWidth,
-                              insideBarTrailingWidth: insideBarTrailingWidth ?? self.insideBarTrailingWidth,
+                              outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
+                              outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
+                              outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
+                              outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
+                              insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
+                              insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
                               videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
@@ -130,16 +129,16 @@ struct MainWindowGeometry: Equatable {
   /// This will be equal to `videoSize`, unless IINA is configured to allow the window to expand beyond
   /// the bounds of the video for a letterbox/pillarbox effect (separate from anything mpv includes)
   var videoContainerSize: NSSize {
-    return NSSize(width: windowFrame.width - trailingBarWidth - leadingBarWidth,
-                  height: windowFrame.height - topBarHeight - bottomBarHeight)
+    return NSSize(width: windowFrame.width - outsideTrailingBarWidth - outsideLeadingBarWidth,
+                  height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight)
   }
 
   var videoFrameInScreenCoords: NSRect {
-    return NSRect(origin: CGPoint(x: windowFrame.origin.x + leadingBarWidth, y: windowFrame.origin.y + bottomBarHeight), size: videoSize)
+    return NSRect(origin: CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth, y: windowFrame.origin.y + outsideBottomBarHeight), size: videoSize)
   }
 
   var outsideBarsTotalSize: NSSize {
-    return NSSize(width: trailingBarWidth + leadingBarWidth, height: topBarHeight + bottomBarHeight)
+    return NSSize(width: outsideTrailingBarWidth + outsideLeadingBarWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
   }
 
   var minVideoHeight: CGFloat {
@@ -148,16 +147,16 @@ struct MainWindowGeometry: Equatable {
   }
 
   var minVideoWidth: CGFloat {
-    return max(AppData.minVideoSize.width, insideBarLeadingWidth + insideBarTrailingWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars)
+    return max(AppData.minVideoSize.width, insideLeadingBarWidth + insideTrailingBarWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars)
   }
 
   // MARK: - Functions
 
   static private func computeVideoContainerSize(from windowFrame: NSRect,
-                                                topBarHeight: CGFloat, trailingBarWidth: CGFloat,
-                                                bottomBarHeight: CGFloat, leadingBarWidth: CGFloat) -> NSSize {
-    return NSSize(width: windowFrame.width - trailingBarWidth - leadingBarWidth,
-                  height: windowFrame.height - topBarHeight - bottomBarHeight)
+                                                outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat,
+                                                outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat) -> NSSize {
+    return NSSize(width: windowFrame.width - outsideTrailingBarWidth - outsideLeadingBarWidth,
+                  height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight)
   }
 
   static private func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn videoContainerSize: NSSize) -> NSSize {
@@ -284,28 +283,28 @@ struct MainWindowGeometry: Equatable {
   }
 
   // Resizes the window appropriately
-  func resizeOutsideBars(newTopHeight: CGFloat? = nil, newTrailingWidth: CGFloat? = nil,
-                         newBottomHeight: CGFloat? = nil, newLeadingWidth: CGFloat? = nil) -> MainWindowGeometry {
+  func resizeOutsideBars(newOutsideTopHeight: CGFloat? = nil, newOutsideTrailingWidth: CGFloat? = nil,
+                         newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingWidth: CGFloat? = nil) -> MainWindowGeometry {
 
     var ΔW: CGFloat = 0
     var ΔH: CGFloat = 0
     var ΔX: CGFloat = 0
     var ΔY: CGFloat = 0
-    if let newTopHeight = newTopHeight {
-      let ΔTop = abs(newTopHeight) - self.topBarHeight
+    if let newOutsideTopHeight = newOutsideTopHeight {
+      let ΔTop = abs(newOutsideTopHeight) - self.outsideTopBarHeight
       ΔH += ΔTop
     }
-    if let newTrailingWidth = newTrailingWidth {
-      let ΔRight = abs(newTrailingWidth) - self.trailingBarWidth
+    if let newOutsideTrailingWidth = newOutsideTrailingWidth {
+      let ΔRight = abs(newOutsideTrailingWidth) - self.outsideTrailingBarWidth
       ΔW += ΔRight
     }
-    if let newBottomHeight = newBottomHeight {
-      let ΔBottom = abs(newBottomHeight) - self.bottomBarHeight
+    if let newOutsideBottomBarHeight = newOutsideBottomBarHeight {
+      let ΔBottom = abs(newOutsideBottomBarHeight) - self.outsideBottomBarHeight
       ΔH += ΔBottom
       ΔY -= ΔBottom
     }
-    if let newLeadingWidth = newLeadingWidth {
-      let ΔLeft = abs(newLeadingWidth) - self.leadingBarWidth
+    if let newOutsideLeadingWidth = newOutsideLeadingWidth {
+      let ΔLeft = abs(newOutsideLeadingWidth) - self.outsideLeadingBarWidth
       ΔW += ΔLeft
       ΔX -= ΔLeft
     }
@@ -315,8 +314,8 @@ struct MainWindowGeometry: Equatable {
                                 width: windowFrame.width + ΔW,
                                 height: windowFrame.height + ΔH)
     return self.clone(windowFrame: newWindowFrame,
-                      topBarHeight: newTopHeight, trailingBarWidth: newTrailingWidth,
-                      bottomBarHeight: newBottomHeight, leadingBarWidth: newLeadingWidth)
+                      outsideTopBarHeight: newOutsideTopHeight, outsideTrailingBarWidth: newOutsideTrailingWidth,
+                      outsideBottomBarHeight: newOutsideBottomBarHeight, outsideLeadingBarWidth: newOutsideLeadingWidth)
   }
 
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
@@ -607,27 +606,7 @@ extension MainWindowController {
       return priorGeo
     }
 
-    let layout = currentLayout
-    let windowFrame = window!.frame
-    let videoContainerFrame = videoContainerView.frame
-    let videoAspectRatio = videoView.aspectRatio
-
-    guard videoContainerFrame.width <= windowFrame.width && videoContainerFrame.height <= windowFrame.height else {
-      log.error("VideoContainerFrame is invalid: height or width cannot exceed those of windowFrame! Will try to fix it. (VideoContainer: \(videoContainerFrame); Window: \(windowFrame))")
-      // FIXME: this creates a small letterbox and doesn't match the other constructor
-      return MainWindowGeometry(windowFrame: windowFrame,
-                                topBarHeight: layout.topBarHeight,
-                                trailingBarWidth: layout.trailingBarOutsideWidth,
-                                bottomBarHeight: layout.bottomBarOutsideHeight,
-                                leadingBarWidth: layout.leadingBarOutsideWidth,
-                                insideBarLeadingWidth: layout.leadingBarInsideWidth,
-                                insideBarTrailingWidth: layout.trailingBarInsideWidth,
-                                videoAspectRatio: videoAspectRatio)
-    }
-    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
-                              insideBarLeadingWidth: layout.leadingBarInsideWidth,
-                              insideBarTrailingWidth: layout.trailingBarInsideWidth,
-                              videoAspectRatio: videoAspectRatio)
+    return windowGeometry
   }
 
   func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
@@ -637,6 +616,8 @@ extension MainWindowController {
       fsState.priorWindowedGeometry = newGeometry
       return
     }
+
+    windowGeometry = newGeometry
 
     guard let window = window else { return }
 

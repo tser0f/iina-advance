@@ -405,12 +405,10 @@ extension MainWindowController {
   func animateShowOrHideSidebars(transition: LayoutTransition,
                                  layout: LayoutState,
                                  setLeadingTo leadingGoal: Sidebar.Visibility? = nil,
-                                 setTrailingTo trailingGoal: Sidebar.Visibility? = nil) -> MainWindowGeometry {
+                                 setTrailingTo trailingGoal: Sidebar.Visibility? = nil) {
 
-    guard leadingGoal != nil || trailingGoal != nil else {
-      return transition.fromWindowGeometry!
-    }
-    
+    guard leadingGoal != nil || trailingGoal != nil else { return }
+
     let leadingSidebar = layout.leadingSidebar
     let trailingSidebar = layout.trailingSidebar
 
@@ -462,16 +460,12 @@ extension MainWindowController {
       }
     }
 
-    let newWindowGeometry: MainWindowGeometry
-    if transition.isInitialLayout {
-      newWindowGeometry = transition.fromWindowGeometry!
-    } else {
+    if !transition.isInitialLayout {
       log.verbose("Calling updateWindowFrame() after show/hide sidebars. ΔOutsideLeft: \(ΔOutsideLeft), ΔOutsideRight: \(ΔOutsideRight)")
-      newWindowGeometry = updateWindowFrame(fromGeometry: transition.fromWindowGeometry!, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
+      updateWindowFrame(fromGeometry: transition.fromWindowGeometry, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
     }
 
     window?.contentView?.layoutSubtreeIfNeeded()
-    return newWindowGeometry
   }
 
   // Resizes window to accomodate show or hide of "outside" sidebars.
@@ -483,7 +477,7 @@ extension MainWindowController {
       // Is expanding the window to open a sidebar. First save the current size as the preferred size.
       // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
-      if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio),
+      if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeometry.videoAspectRatio),
          existingPreferredSize.width > oldGeometry.videoContainerSize.width {
         // Probably a sidebar was opened before this. Don't overwrite its previously saved pref with a smaller one
         log.verbose("Before outer sidebar open: will not update userPreferredVideoContainerSize; pref already exists and is larger")
@@ -493,8 +487,8 @@ extension MainWindowController {
       }
     }
 
-    var newLeadingWidth = oldGeometry.leadingBarWidth + ΔLeading
-    var newTrailingWidth = oldGeometry.trailingBarWidth + ΔTrailing
+    var newLeadingWidth = oldGeometry.outsideLeadingBarWidth + ΔLeading
+    var newTrailingWidth = oldGeometry.outsideTrailingBarWidth + ΔTrailing
 
     // Can happen for stale stored layout state. Try to recover
     if newLeadingWidth < 0 {
@@ -510,9 +504,9 @@ extension MainWindowController {
     // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
     // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
     // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-    let resizedGeometry = oldGeometry.resizeOutsideBars(newTrailingWidth: newTrailingWidth, newLeadingWidth: newLeadingWidth)
+    let resizedGeometry = oldGeometry.resizeOutsideBars(newOutsideTrailingWidth: newTrailingWidth, newOutsideLeadingWidth: newLeadingWidth)
 
-    let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoView.aspectRatio)
+    let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeometry.videoAspectRatio)
     // Work off of previously stored size (see notes above)
     let newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
 
@@ -947,10 +941,10 @@ extension MainWindowController {
         /// seems more useful to scale the whole video container, which will avoid creating
         /// new horizontal black bars where they don't exist.
         if layout.leadingSidebar.placement == .outsideVideo, let currentGeo = windowGeometryAtResizeStart {
-          let playlistWidthDifference = newPlaylistWidth - currentGeo.leadingBarWidth
+          let playlistWidthDifference = newPlaylistWidth - currentGeo.outsideLeadingBarWidth
           let videoContainerSize = currentGeo.videoContainerSize
           let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
-          let resizedPlaylistGeo = currentGeo.clone(leadingBarWidth: newPlaylistWidth)
+          let resizedPlaylistGeo = currentGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
           let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
 
@@ -974,10 +968,10 @@ extension MainWindowController {
 
         // See comments for leading sidebar above
         if layout.trailingSidebar.placement == .outsideVideo, let currentGeo = windowGeometryAtResizeStart {
-          let playlistWidthDifference = newPlaylistWidth - currentGeo.trailingBarWidth
+          let playlistWidthDifference = newPlaylistWidth - currentGeo.outsideTrailingBarWidth
           let videoContainerSize = currentGeo.videoContainerSize
           let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
-          let resizedPlaylistGeo = currentGeo.clone(trailingBarWidth: newPlaylistWidth)
+          let resizedPlaylistGeo = currentGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
           let resizedWindowGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
 
@@ -1007,7 +1001,7 @@ extension MainWindowController {
       trailingSidebarIsResizing = false
       if let priorWindowedGeometry = fsState.priorWindowedGeometry {
         // If in fullscreen, need to update saved windowed geometry
-        fsState.priorWindowedGeometry = priorWindowedGeometry.clone(trailingBarWidth: CGFloat(Preference.integer(for: .playlistWidth)))
+        fsState.priorWindowedGeometry = priorWindowedGeometry.clone(outsideTrailingBarWidth: CGFloat(Preference.integer(for: .playlistWidth)))
       }
       windowGeometryAtResizeStart = nil
       log.verbose("New width of right sidebar playlist is \(currentLayout.trailingSidebar.currentWidth)")
@@ -1024,9 +1018,11 @@ extension MainWindowController {
     let hideTrailing = oldLayout.trailingSidebar.isVisible && Preference.bool(for: .hideTrailingSidebarOnClick)
 
     if hideLeading || hideTrailing {
-      let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: hideLeading ? oldLayout.leadingSidebar.clone(visibility: .hide) : nil,
-                                            trailingSidebar: hideTrailing ? oldLayout.trailingSidebar.clone(visibility: .hide) : nil)
-      buildLayoutTransition(from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0, thenRun: true)
+      animationQueue.runZeroDuration { [self] in
+        let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: hideLeading ? oldLayout.leadingSidebar.clone(visibility: .hide) : nil,
+                                                 trailingSidebar: hideTrailing ? oldLayout.trailingSidebar.clone(visibility: .hide) : nil)
+        buildLayoutTransition(from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0, thenRun: true)
+      }
       return true
     }
     return false

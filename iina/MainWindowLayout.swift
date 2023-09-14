@@ -247,8 +247,6 @@ extension MainWindowController {
       return spec.trailingSidebar.currentWidth
     }
 
-    var bottomBarHeight: CGFloat = 0
-
     /// NOTE: Is mutable!
     var leadingBarWidth: CGFloat {
       return spec.leadingSidebar.currentWidth
@@ -258,10 +256,6 @@ extension MainWindowController {
 
     var topBarOutsideHeight: CGFloat {
       return topBarPlacement == .outsideVideo ? topBarHeight : 0
-    }
-
-    var bottomBarOutsideHeight: CGFloat {
-      return bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
     }
 
     /// NOTE: Is mutable!
@@ -429,17 +423,22 @@ extension MainWindowController {
   // MARK: - Layout Transitions
 
   class LayoutTransition {
-    var fromWindowGeometry: MainWindowGeometry? = nil
     let fromLayout: LayoutState
     let toLayout: LayoutState
+    let fromWindowGeometry: MainWindowGeometry
+    let toWindowGeometry: MainWindowGeometry
 
     let isInitialLayout: Bool
 
     var animationTasks: [CocoaAnimation.Task] = []
 
-    init(from fromLayout: LayoutState, to toLayout: LayoutState, isInitialLayout: Bool = false) {
+    init(from fromLayout: LayoutState, from fromGeometry: MainWindowGeometry,
+         to toLayout: LayoutState, to toGeometry: MainWindowGeometry,
+         isInitialLayout: Bool = false) {
       self.fromLayout = fromLayout
+      self.fromWindowGeometry = fromGeometry
       self.toLayout = toLayout
+      self.toWindowGeometry = toGeometry
       self.isInitialLayout = isInitialLayout
     }
 
@@ -597,10 +596,15 @@ extension MainWindowController {
   func setInitialWindowLayout() {
     var needsNativeFullScreen: Bool = false
     let initialLayoutSpec: LayoutSpec
+    var initialGeometry: MainWindowGeometry? = nil
     let isRestoringFromPrevLaunch: Bool
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
       log.verbose("Transitioning to initial layout from prior window state")
       isRestoringFromPrevLaunch = true
+
+      if priorLayoutSpec.mode == .musicMode {
+        player.overrideAutoMusicMode = true
+      }
 
       if priorLayoutSpec.isNativeFullScreen && !currentLayout.isFullScreen {
         // Special handling for native fullscreen. Cannot avoid animation.
@@ -610,6 +614,11 @@ extension MainWindowController {
       } else {
         initialLayoutSpec = priorLayoutSpec
       }
+
+      if let priorGeometry = priorState.windowGeometry {
+        // FIXME: what about full screen?
+        initialGeometry = priorGeometry
+      }
     } else {
       log.verbose("Transitioning to initial layout from global prefs")
       isRestoringFromPrevLaunch = false
@@ -618,10 +627,22 @@ extension MainWindowController {
 
     let initialLayout = buildFutureLayoutState(from: initialLayoutSpec)
 
-    let transition = LayoutTransition(from: currentLayout, to: initialLayout, isInitialLayout: true)
+    if initialGeometry == nil {
+      log.verbose("Building initial geometry from current window")
+      let windowFrame = window!.frame
+      let videoContainerFrame = videoContainerView.frame
+      let videoAspectRatio = videoView.aspectRatio
+
+      initialGeometry = MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
+                                           insideLeadingBarWidth: initialLayout.leadingBarInsideWidth,
+                                           insideTrailingBarWidth: initialLayout.trailingBarInsideWidth,
+                                           videoAspectRatio: videoAspectRatio)
+    }
+
+    let transition = LayoutTransition(from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
+
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
-
     CocoaAnimation.disableAnimation{
       controlBarFloating.isDragging = false
       doPreTransitionWork(transition)
@@ -672,7 +693,24 @@ extension MainWindowController {
                              thenRun: Bool = false) -> LayoutTransition {
 
     let toLayout = buildFutureLayoutState(from: requestedSpec)
-    let transition = LayoutTransition(from: fromLayout, to: toLayout, isInitialLayout: false)
+
+    let fromGeometry = getCurrentWindowGeometry()
+
+    // Geometry
+    let bottomBarHeight: CGFloat
+    if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
+      bottomBarHeight = OSCToolbarButton.oscBarHeight
+    } else if requestedSpec.mode == .musicMode {
+      _ = miniPlayer.view
+      // TODO: add fields for `playlistHeight`, `isPlaylistVisible`, `isVideoVisible`
+      let playlistHeight: CGFloat = miniPlayer.isPlaylistVisible ? CGFloat(Preference.float(for: .musicModePlaylistHeight)) : 0
+      bottomBarHeight = miniPlayer.backgroundView.frame.height + playlistHeight
+    } else {
+      bottomBarHeight = 0
+    }
+    let toGeometry = MainWindowGeometry(windowFrame: fromGeometry.windowFrame, outsideTopBarHeight: toLayout.topBarOutsideHeight, outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth, outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0, outsideLeadingBarWidth: toLayout.leadingBarOutsideWidth, insideLeadingBarWidth: toLayout.leadingBarInsideWidth, insideTrailingBarWidth: toLayout.trailingBarInsideWidth, videoAspectRatio: fromGeometry.videoAspectRatio)
+
+    let transition = LayoutTransition(from: fromLayout, from: fromGeometry, to: toLayout, to: toGeometry, isInitialLayout: false)
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {
@@ -767,8 +805,6 @@ extension MainWindowController {
   private func doPreTransitionWork(_ transition: LayoutTransition) {
     log.verbose("DoPreTransitionWork")
     controlBarFloating.isDragging = false
-    /// Do this BEFORE updating `currentLayout`!
-    transition.fromWindowGeometry = getCurrentWindowGeometry()
 
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
@@ -960,9 +996,9 @@ extension MainWindowController {
       needsBottomBarHeightUpdate = true
       // close completely. will animate reopening if needed later
       newBottomBarHeight = 0
-    } else if futureLayout.bottomBarHeight < transition.fromLayout.bottomBarHeight {
+    } else if transition.toWindowGeometry.outsideBottomBarHeight < transition.fromWindowGeometry.outsideBottomBarHeight {
       needsBottomBarHeightUpdate = true
-      newBottomBarHeight = futureLayout.bottomBarHeight
+      newBottomBarHeight = transition.toWindowGeometry.outsideBottomBarHeight
     }
 
     if needsBottomBarHeightUpdate {
@@ -998,11 +1034,11 @@ extension MainWindowController {
     }
 
     // Sidebars (if closing)
-    let newWindowGeometry = animateShowOrHideSidebars(transition: transition,
+    animateShowOrHideSidebars(transition: transition,
                                                       layout: transition.fromLayout,
                                                       setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
                                                       setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
-    updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: newWindowGeometry.windowFrame.width)
+    updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
 
     window.contentView?.layoutSubtreeIfNeeded()
   }
@@ -1199,10 +1235,10 @@ extension MainWindowController {
       windowYDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
     }
     if transition.toLayout.bottomBarPlacement == .outsideVideo {
-      windowHeightDelta += futureLayout.bottomBarHeight
-      windowYDelta += futureLayout.bottomBarHeight
+      windowHeightDelta += transition.toWindowGeometry.outsideBottomBarHeight
+      windowYDelta += transition.toWindowGeometry.outsideBottomBarHeight
     }
-    updateBottomBarHeight(to: futureLayout.bottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
+    updateBottomBarHeight(to: transition.toWindowGeometry.outsideBottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
 
     if transition.isEnteringFullScreen {
       // Entering FullScreen
@@ -1217,15 +1253,15 @@ extension MainWindowController {
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
       let topHeight = transition.toLayout.topBarOutsideHeight
-      let bottomHeight = transition.toLayout.bottomBarOutsideHeight
+      let bottomHeight = transition.toWindowGeometry.outsideBottomBarHeight
       let leadingWidth = transition.toLayout.leadingBarOutsideWidth
       let trailingWidth = transition.toLayout.trailingBarOutsideWidth
 
       guard let priorGeometry = fsState.priorWindowedGeometry else { return }
-      let priorWindowFrame = priorGeometry.resizeOutsideBars(newTopHeight: topHeight,
-                                                             newTrailingWidth: trailingWidth,
-                                                             newBottomHeight: bottomHeight,
-                                                             newLeadingWidth: leadingWidth).windowFrame
+      let priorWindowFrame = priorGeometry.resizeOutsideBars(newOutsideTopHeight: topHeight,
+                                                             newOutsideTrailingWidth: trailingWidth,
+                                                             newOutsideBottomBarHeight: bottomHeight,
+                                                             newOutsideLeadingWidth: leadingWidth).windowFrame
 
       log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
       (window as! MainWindow).setFrameImmediately(priorWindowFrame)
@@ -1241,11 +1277,11 @@ extension MainWindowController {
     // Sidebars (if opening)
     let leadingSidebar = transition.toLayout.leadingSidebar
     let trailingSidebar = transition.toLayout.trailingSidebar
-    let newWindowGeometry = animateShowOrHideSidebars(transition: transition,
-                                                      layout: transition.toLayout,
-                                                      setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
-                                                      setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
-    updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: newWindowGeometry.windowFrame.width)
+    animateShowOrHideSidebars(transition: transition,
+                              layout: transition.toLayout,
+                              setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
+                              setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
+    updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
 
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: futureLayout)
@@ -1722,7 +1758,6 @@ extension MainWindowController {
         futureLayout.topBarView = visibility
         futureLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
       case .bottom:
-        futureLayout.bottomBarHeight = OSCToolbarButton.oscBarHeight
         futureLayout.bottomBarView = (futureLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
       }
     } else {  // No OSC
@@ -1731,11 +1766,6 @@ extension MainWindowController {
       if layoutSpec.mode == .musicMode {
         assert(futureLayout.bottomBarPlacement == .outsideVideo)
         futureLayout.bottomBarView = .showAlways
-
-        _ = miniPlayer.view
-
-        let playlistHeight: CGFloat = miniPlayer.isPlaylistVisible ? CGFloat(Preference.float(for: .musicModePlaylistHeight)) : 0
-        futureLayout.bottomBarHeight = miniPlayer.backgroundView.frame.height + playlistHeight
       }
     }
 

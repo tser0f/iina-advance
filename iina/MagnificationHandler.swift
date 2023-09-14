@@ -11,7 +11,7 @@ import Foundation
 class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
   // Just init with dummy data for now so that this doesn't need to be optional
   private var windowGeometryAtMagnificationStart = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(),
-                                                                      insideBarLeadingWidth: 0, insideBarTrailingWidth: 0,
+                                                                      insideLeadingBarWidth: 0, insideTrailingBarWidth: 0,
                                                                       videoAspectRatio: 1.0)
 
   lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
@@ -106,7 +106,8 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         mainWindow.miniPlayer.updateVideoHeightConstraint(height: newVideoHeight, animate: true)
         mainWindow.updateBottomBarHeight(to: newBottomBarHeight, bottomBarPlacement: .outsideVideo)
         (mainWindow.window as! MainWindow).setFrameImmediately(newWindowFrame, animate: false)
-//        mainWindow.player.saveState()
+        // TODO: save geometry
+        mainWindow.player.saveState()
       }
       return
     }

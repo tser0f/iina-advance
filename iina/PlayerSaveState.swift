@@ -90,12 +90,12 @@ struct PlayerSaveState {
   private static func toCSV(_ geo: MainWindowGeometry) -> String {
     return [geoPrefStringVersion,
             geo.videoAspectRatio.string6f,
-            geo.topBarHeight.string2f,
-            geo.trailingBarWidth.string2f,
-            geo.bottomBarHeight.string2f,
-            geo.leadingBarWidth.string2f,
-            geo.insideBarLeadingWidth.string2f,
-            geo.insideBarTrailingWidth.string2f,
+            geo.outsideTopBarHeight.string2f,
+            geo.outsideTrailingBarWidth.string2f,
+            geo.outsideBottomBarHeight.string2f,
+            geo.outsideLeadingBarWidth.string2f,
+            geo.insideLeadingBarWidth.string2f,
+            geo.insideTrailingBarWidth.string2f,
             geo.windowFrame.origin.x.string2f,
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
@@ -150,7 +150,15 @@ struct PlayerSaveState {
     if player.mainWindow.isOntop {
       props[PropName.isOnTop.rawValue] = true.yn
     }
-    props[PropName.overrideAutoMusicMode.rawValue] = player.overrideAutoMusicMode.yn
+    if Preference.bool(for: .autoSwitchToMusicMode) {
+      var overrideAutoMusicMode = player.overrideAutoMusicMode
+      if (player.currentMediaIsAudio == .notAudio && player.isInMiniPlayer) || (player.currentMediaIsAudio == .isAudio && !player.isInMiniPlayer) {
+        /// Need to set this so that when restoring, the player won't immediately overcorrect and auto-switch music mode.
+        /// This can happen because the `tracklistChanged` event will be fired by mpv very soon after restore is done, which is where it switches.
+        overrideAutoMusicMode = true
+      }
+      props[PropName.overrideAutoMusicMode.rawValue] = overrideAutoMusicMode.yn
+    }
     /// TODO: `isMinimized`
 
     // - Playback State
@@ -390,10 +398,10 @@ struct PlayerSaveState {
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
       guard let videoAspectRatio = Double(iter.next()!),
-            let topBarHeight = Double(iter.next()!),
-            let trailingBarWidth = Double(iter.next()!),
-            let bottomBarHeight = Double(iter.next()!),
-            let leadingBarWidth = Double(iter.next()!),
+            let outsideTopBarHeight = Double(iter.next()!),
+            let outsideTrailingBarWidth = Double(iter.next()!),
+            let outsideBottomBarHeight = Double(iter.next()!),
+            let outsideLeadingBarWidth = Double(iter.next()!),
             let insideLeadingWidth = Double(iter.next()!),
             let insideTrailingWidth = Double(iter.next()!),
             let winOriginX = Double(iter.next()!),
@@ -406,9 +414,9 @@ struct PlayerSaveState {
 
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
       return MainWindowGeometry(windowFrame: windowFrame,
-                                topBarHeight: topBarHeight, trailingBarWidth: trailingBarWidth,
-                                bottomBarHeight: bottomBarHeight, leadingBarWidth: leadingBarWidth,
-                                insideBarLeadingWidth: insideLeadingWidth, insideBarTrailingWidth: insideTrailingWidth,
+                                outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                insideLeadingBarWidth: insideLeadingWidth, insideTrailingBarWidth: insideTrailingWidth,
                                 videoAspectRatio: videoAspectRatio)
     })
   }

@@ -378,8 +378,10 @@ class PlayerCore: NSObject {
     // Send load file command
     info.fileLoading = true
     info.justOpenedFile = true
+    // Reset state flags
     isStopping = false
     isStopped = false
+
     mpv.command(.loadfile, args: [path])
 
     if !info.isRestoring {  // restore state has higher precedence
@@ -1598,7 +1600,7 @@ class PlayerCore: NSObject {
 
     // if need to switch to music mode
     if Preference.bool(for: .autoSwitchToMusicMode) {
-      if overrideAutoMusicMode || (info.priorState?.bool(for: .overrideAutoMusicMode) ?? false) {
+      if overrideAutoMusicMode {
         Logger.log("Skipping music mode auto-switch because overrideAutoMusicMode is true",
                    level: .verbose, subsystem: subsystem)
       } else if audioStatus == .isAudio && !isInMiniPlayer && !mainWindow.fsState.isFullscreen {

@@ -201,6 +201,14 @@ class MainWindowController: PlayerWindowController {
     return LayoutState(spec: LayoutSpec.defaultLayout())
   }()
 
+  lazy var windowGeometry: MainWindowGeometry = {
+    let layout = currentLayout
+    return MainWindowGeometry(windowFrame: window!.frame, videoContainerFrame: videoContainerView.frame,
+                              insideLeadingBarWidth: layout.leadingBarInsideWidth,
+                              insideTrailingBarWidth: layout.trailingBarInsideWidth,
+                              videoAspectRatio: videoView.aspectRatio)
+  }()
+
   // MARK: - Enums
 
   // Window state
@@ -1257,7 +1265,7 @@ class MainWindowController: PlayerWindowController {
     player.initVideo()
     videoView.videoLayer.draw(forced: true)
 
-    // Set layout from prefs. Do not animate:
+    // Restore layout from last launch or configure from prefs. Do not animate:
     setInitialWindowLayout()
   }
 
@@ -2182,25 +2190,28 @@ class MainWindowController: PlayerWindowController {
   }
 
   func enterMusicMode() {
-    /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
-    /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
-    let oldLayout = currentLayout
-    let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
-    buildLayoutTransition(from: oldLayout, to: miniPlayerLayout, thenRun: true)
-
+    animationQueue.runZeroDuration { [self] in
+      /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
+      /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
+      let oldLayout = currentLayout
+      let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
+      buildLayoutTransition(from: oldLayout, to: miniPlayerLayout, thenRun: true)
+    }
     // TODO: save windowed frame
     // TODO: switch layout
   }
 
   func exitMusicMode() {
-    /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
-    /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
-    let miniPlayerLayout = currentLayout
-    // TODO: restore old layout
-
-    let newSpec = miniPlayerLayout.spec.clone(mode: .windowed)
-    let prevLayout = LayoutSpec.fromPreferences(andSpec: newSpec)
-    buildLayoutTransition(from: miniPlayerLayout, to: prevLayout, thenRun: true)
+    animationQueue.runZeroDuration { [self] in
+      /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
+      /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
+      let miniPlayerLayout = currentLayout
+      // TODO: restore old layout
+      
+      let newSpec = miniPlayerLayout.spec.clone(mode: .windowed)
+      let prevLayout = LayoutSpec.fromPreferences(andSpec: newSpec)
+      buildLayoutTransition(from: miniPlayerLayout, to: prevLayout, thenRun: true)
+    }
   }
 
   func blackOutOtherMonitors() {

@@ -13,7 +13,7 @@ import Cocoa
 class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   static let minWindowWidth: CGFloat = 240
   static let PlaylistMinHeight: CGFloat = 138
-  static let AnimationDurationShowControl: TimeInterval = 0.2
+  static private let animationDurationShowControl: TimeInterval = 0.2
 
   override var nibName: NSNib.Name {
     return NSNib.Name("MiniPlayerWindowController")
@@ -149,7 +149,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   // MARK: - UI: Show / Hide
 
   private func showControl() {
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerWindowController.AnimationDurationShowControl, { [self] in
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerWindowController.animationDurationShowControl, { [self] in
       mainWindow.closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
@@ -157,7 +157,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   }
 
   private func hideControl() {
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerWindowController.AnimationDurationShowControl, { [self] in
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerWindowController.animationDurationShowControl, { [self] in
       mainWindow.closeButtonView.animator().alphaValue = 0
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1
@@ -330,6 +330,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       updateVideoHeightConstraint(height: videoHeight, animate: true)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
+      // TODO: save geometry
       player.saveState()
     }))
   }
@@ -356,6 +357,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: true)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
+      // TODO: save geometry
       player.saveState()
     }))
   }
@@ -384,7 +386,8 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       let bottomBarHeight = newWindowSize.height - videoHeight
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: false)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
-//      player.saveState()
+      // TODO: save geometry
+      player.saveState()
     }
 
     return newWindowSize
@@ -502,8 +505,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       let bottomBarHeight = newWindowFrame.height - videoHeight
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: true)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
-
+      // TODO: save geometry
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
+      player.saveState()
     })
   }
 
