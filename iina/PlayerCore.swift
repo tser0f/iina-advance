@@ -1480,7 +1480,7 @@ class PlayerCore: NSObject {
         touchBarSupport.setupTouchBarUI()
       }
     }
-    if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
+    if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.isFullScreen && !isInMiniPlayer {
       Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
       DispatchQueue.main.async(execute: self.mainWindow.enterFullScreen)
     }
@@ -1603,7 +1603,7 @@ class PlayerCore: NSObject {
       if overrideAutoMusicMode {
         Logger.log("Skipping music mode auto-switch because overrideAutoMusicMode is true",
                    level: .verbose, subsystem: subsystem)
-      } else if audioStatus == .isAudio && !isInMiniPlayer && !mainWindow.fsState.isFullscreen {
+      } else if audioStatus == .isAudio && !isInMiniPlayer && !mainWindow.isFullScreen {
         Logger.log("Current media is audio: auto-switching to mini player", subsystem: subsystem)
         DispatchQueue.main.sync {
           enterMusicMode(automatically: true)
@@ -1693,7 +1693,7 @@ class PlayerCore: NSObject {
     guard mainWindow.loaded else { return }
 
     let fs = mpv.getFlag(MPVOption.Window.fullscreen)
-    if fs != mainWindow.fsState.isFullscreen {
+    if fs != mainWindow.isFullScreen {
       DispatchQueue.main.async {
         self.mainWindow.toggleWindowFullScreen()
       }

@@ -502,10 +502,10 @@ extension MainWindowController {
       }
 
       /// Finally call `setFrame()`
-      log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), oldVideoSize: \(oldVideoSize), isFS:\(fsState.isFullscreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
+      log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), oldVideoSize: \(oldVideoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
       setCurrentWindowGeometry(to: newWindowGeo, enqueueAnimation: false, setFrameImmediately: false)
 
-      if !fsState.isFullscreen {
+      if !isFullScreen {
         // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
         let mpvVideoSize: CGSize
         if let scaleDownFactor = scaleDownFactor {
@@ -585,15 +585,32 @@ extension MainWindowController {
    ensure it is placed entirely inside `bestScreen.visibleFrame`.
    */
   func resizeVideoContainer(desiredVideoContainerSize: CGSize? = nil, centerOnScreen: Bool = false) {
-    guard !isInInteractiveMode, fsState == .windowed else { return }
+    guard !isInInteractiveMode, currentLayout.spec.mode == .windowed else { return }
 
     let newGeoUnconstrained = getCurrentWindowGeometry().scale(desiredVideoContainerSize: desiredVideoContainerSize)
     // User has actively resized the video. Assume this is the new preferred resolution
     player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
 
     let newGeometry = newGeoUnconstrained.constrainWithin(bestScreen.visibleFrame, centerInContainer: centerOnScreen)
-    log.verbose("\(fsState.isFullscreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
+    log.verbose("\(isFullScreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
     setCurrentWindowGeometry(to: newGeometry, enqueueAnimation: true)
+  }
+
+  func updateCachedGeometry() {
+    if currentLayout.spec.mode == .windowed {
+      windowGeometry = generateWindowGeometry(using: currentLayout)
+    }
+  }
+
+  func generateWindowGeometry(using layout: LayoutState) -> MainWindowGeometry {
+    let windowFrame = window!.frame
+    let videoContainerFrame = videoContainerView.frame
+    let videoAspectRatio = videoView.aspectRatio
+
+    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
+                              insideLeadingBarWidth: layout.leadingBarInsideWidth,
+                              insideTrailingBarWidth: layout.trailingBarInsideWidth,
+                              videoAspectRatio: videoAspectRatio)
   }
 
   /// If in fullscreen, returns `fsState.priorWindowedGeometry`. Else builds from `currentLayout` and other variables.

@@ -629,14 +629,7 @@ extension MainWindowController {
 
     if initialGeometry == nil {
       log.verbose("Building initial geometry from current window")
-      let windowFrame = window!.frame
-      let videoContainerFrame = videoContainerView.frame
-      let videoAspectRatio = videoView.aspectRatio
-
-      initialGeometry = MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
-                                           insideLeadingBarWidth: initialLayout.leadingBarInsideWidth,
-                                           insideTrailingBarWidth: initialLayout.trailingBarInsideWidth,
-                                           videoAspectRatio: videoAspectRatio)
+      initialGeometry = generateWindowGeometry(using: initialLayout)
     }
 
     let transition = LayoutTransition(from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
@@ -809,6 +802,9 @@ extension MainWindowController {
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
     currentLayout = transition.toLayout
+    if transition.toLayout.spec.mode == .windowed {
+      windowGeometry = transition.toWindowGeometry
+    }
 
     guard let window = window else { return }
 
@@ -1547,7 +1543,7 @@ extension MainWindowController {
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
 
-    log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), FSState:\(fsState.isFullscreen.yn) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
+    log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
     player.saveState()
   }
 

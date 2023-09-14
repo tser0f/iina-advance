@@ -1442,7 +1442,7 @@ not applying FFmpeg 9599 workaround
       let fs = getFlag(MPVOption.Window.fullscreen)
       Logger.log("Got mpv prop: \(MPVOption.Window.fullscreen.quoted) = \(fs.yesno)", level: .verbose, subsystem: player.subsystem)
       guard player.mainWindow.loaded else { break }
-      if fs != player.mainWindow.fsState.isFullscreen {
+      if fs != player.mainWindow.isFullScreen {
         DispatchQueue.main.async(execute: self.player.mainWindow.toggleWindowFullScreen)
       }
 

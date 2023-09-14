@@ -510,7 +510,7 @@ extension MainWindowController {
     // Work off of previously stored size (see notes above)
     let newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
 
-    if !fsState.isFullscreen {
+    if !isFullScreen {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
     }
     setCurrentWindowGeometry(to: newGeometry, enqueueAnimation: false)
@@ -680,7 +680,7 @@ extension MainWindowController {
       if visible {
         return (1, 0, 1)
       } else {
-        if currentLayout.isFullScreen {
+        if isFullScreen {
           return (1, 0, 0)
         } else {
           return (0, -1, 0)
@@ -717,7 +717,7 @@ extension MainWindowController {
       if visible {
         return (0, -1, -1)
       } else {
-        if currentLayout.isFullScreen {
+        if isFullScreen {
           return (0, -1, 0)
         } else {
           return (1, 0, 0)

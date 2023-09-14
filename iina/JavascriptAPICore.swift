@@ -228,7 +228,7 @@ fileprivate class WindowAPI: JavascriptAPI, CoreSubAPIExportable {
     case "frame":
       return JSValue(rect: window.window!.frame, in: context)
     case "fullscreen":
-      return window.fsState.isFullscreen
+      return window.isFullScreen
     case "pip":
       return window.pipStatus == .inPIP
     case "ontop":
@@ -269,7 +269,7 @@ fileprivate class WindowAPI: JavascriptAPI, CoreSubAPIExportable {
       }
       window.window?.setFrame(NSRect(x: x, y: y, width: w, height: h), display: true)
     case "fullscreen":
-      guard let val = value as? Bool, val != window.fsState.isFullscreen else { return }
+      guard let val = value as? Bool, val != window.isFullScreen else { return }
       window.toggleWindowFullScreen()
     case "pip":
       if #available(macOS 10.12, *) {

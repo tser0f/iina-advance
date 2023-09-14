@@ -209,6 +209,14 @@ class MainWindowController: PlayerWindowController {
                               videoAspectRatio: videoView.aspectRatio)
   }()
 
+  lazy var musicModeGeometry: MainWindowGeometry = {
+    let layout = currentLayout
+    return MainWindowGeometry(windowFrame: window!.frame, videoContainerFrame: videoContainerView.frame,
+                              insideLeadingBarWidth: 0,
+                              insideTrailingBarWidth: 0,
+                              videoAspectRatio: videoView.aspectRatio)
+  }()
+
   // MARK: - Enums
 
   // Window state
@@ -412,7 +420,7 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
-        if fsState.isFullscreen {
+        if isFullScreen {
           newValue ? blackOutOtherMonitors() : removeBlackWindows()
         }
       }
@@ -598,6 +606,10 @@ class MainWindowController: PlayerWindowController {
 
   @IBOutlet weak var pipOverlayView: NSVisualEffectView!
   @IBOutlet weak var videoContainerView: NSView!
+
+  var isFullScreen: Bool {
+    return currentLayout.isFullScreen
+  }
 
   var standardWindowButtons: [NSButton] {
     get {
@@ -808,7 +820,7 @@ class MainWindowController: PlayerWindowController {
         screenIDs.insert(screen.displayId)
       }
       log.verbose("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)")
-      if self.fsState.isFullscreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
+      if isFullScreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
         self.removeBlackWindows()
         self.blackOutOtherMonitors()
       }
@@ -820,7 +832,7 @@ class MainWindowController: PlayerWindowController {
       // is moved to a new screen such as when the window is on an external display and that display
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
-      guard self.fsState.isFullscreen, Preference.bool(for: .useLegacyFullScreen) else { return }
+      guard isFullScreen, Preference.bool(for: .useLegacyFullScreen) else { return }
       setWindowFrameForLegacyFullScreen()
     }
 
@@ -977,7 +989,7 @@ class MainWindowController: PlayerWindowController {
       return
     }
 
-    if !fsState.isFullscreen && !controlBarFloating.isDragging {
+    if !isFullScreen && !controlBarFloating.isDragging {
       if let mousePosRelatedToWindow = mousePosRelatedToWindow {
         if !isDragging {
           /// Require that the user must drag the cursor at least a small distance for it to start a "drag" (`isDragging==true`)
@@ -1008,6 +1020,7 @@ class MainWindowController: PlayerWindowController {
       // if it's a mouseup after dragging window
       isDragging = false
     } else if finishResizingSidebar(with: event) {
+      updateCachedGeometry()
       player.saveState()
       return
     } else {
@@ -1453,8 +1466,6 @@ class MainWindowController: PlayerWindowController {
       }
       return
     }
-    player.saveState()
-
   }
 
   func windowWillMove(_ notification: Notification) {
@@ -1465,6 +1476,7 @@ class MainWindowController: PlayerWindowController {
   func windowDidMove(_ notification: Notification) {
     guard let window = window else { return }
     log.verbose("WindowDidMove, frame=\(window.frame)")
+    updateCachedGeometry()
     player.saveState()
     player.events.emit(.windowMoved, data: window.frame)
   }
@@ -1493,7 +1505,7 @@ class MainWindowController: PlayerWindowController {
   override func windowDidBecomeMain(_ notification: Notification) {
     super.windowDidBecomeMain(notification)
 
-    if fsState.isFullscreen && Preference.bool(for: .blackOutMonitor) {
+    if isFullScreen && Preference.bool(for: .blackOutMonitor) {
       blackOutOtherMonitors()
     }
     player.events.emit(.windowMainStatusChanged, data: true)
@@ -1520,6 +1532,7 @@ class MainWindowController: PlayerWindowController {
         enterPIP()
       }
     }
+    updateCachedGeometry()
     player.saveState()
     player.events.emit(.windowMiniaturized)
   }
@@ -1535,6 +1548,7 @@ class MainWindowController: PlayerWindowController {
         exitPIP()
       }
     }
+    updateCachedGeometry()
     player.saveState()
     player.events.emit(.windowDeminiaturized)
   }
@@ -1916,7 +1930,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func updateAdditionalInfo() {
-    guard fsState.isFullscreen && displayTimeAndBatteryInFullScreen && !additionalInfoView.isHidden else {
+    guard isFullScreen && displayTimeAndBatteryInFullScreen && !additionalInfoView.isHidden else {
       return
     }
 
@@ -2168,6 +2182,7 @@ class MainWindowController: PlayerWindowController {
 
     log.verbose("Updating mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
     // this is also a good place to save state, if applicable
+    updateCachedGeometry()
     player.saveState()
 
     let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
@@ -2241,7 +2256,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
-    guard !fsState.isFullscreen else { return }
+    guard !isFullScreen else { return }
     super.setWindowFloatingOnTop(onTop, updateOnTopStatus: updateOnTopStatus)
 
     resetCollectionBehavior()
@@ -2503,7 +2518,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func resetCollectionBehavior() {
-    guard !fsState.isFullscreen else { return }
+    guard !isFullScreen else { return }
     if Preference.bool(for: .useLegacyFullScreen) {
       window?.collectionBehavior = [.managed, .fullScreenAuxiliary]
     } else {
@@ -2602,7 +2617,7 @@ extension MainWindowController: PIPViewControllerDelegate {
     pipOverlayView.isHidden = true
 
     // Set frame to animate back to
-    if fsState.isFullscreen {
+    if isFullScreen {
       let newVideoSize = videoView.frame.size.shrink(toSize: window.frame.size)
       pip.replacementRect = newVideoSize.centeredRect(in: .init(origin: .zero, size: window.frame.size))
     } else {

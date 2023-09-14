@@ -32,13 +32,13 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       // enter/exit fullscreen
       if recognizer.state == .began {
         let isEnlarge = recognizer.magnification > 0
-        if isEnlarge != mainWindow.fsState.isFullscreen {
+        if isEnlarge != mainWindow.isFullScreen {
           recognizer.state = .recognized
           mainWindow.toggleWindowFullScreen()
         }
       }
     case .windowSize:
-      if mainWindow.fsState.isFullscreen { return }
+      if mainWindow.isFullScreen { return }
 
       // adjust window size
       switch recognizer.state {
