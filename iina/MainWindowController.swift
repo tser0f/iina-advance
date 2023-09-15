@@ -202,20 +202,27 @@ class MainWindowController: PlayerWindowController {
   }()
 
   lazy var windowGeometry: MainWindowGeometry = {
-    let layout = currentLayout
-    return MainWindowGeometry(windowFrame: window!.frame, videoContainerFrame: videoContainerView.frame,
-                              insideLeadingBarWidth: layout.leadingBarInsideWidth,
-                              insideTrailingBarWidth: layout.trailingBarInsideWidth,
-                              videoAspectRatio: videoView.aspectRatio)
-  }()
+    return generateWindowGeometry(using: currentLayout)
+  }() {
+    didSet {
+      log.verbose("WindowGeometry updated: \(windowGeometry.windowFrame)")
+    }
+  }
 
-  lazy var musicModeGeometry: MainWindowGeometry = {
+  lazy var musicModeGeometry: MusicModeGeometry = {
     let layout = currentLayout
-    return MainWindowGeometry(windowFrame: window!.frame, videoContainerFrame: videoContainerView.frame,
-                              insideLeadingBarWidth: 0,
-                              insideTrailingBarWidth: 0,
-                              videoAspectRatio: videoView.aspectRatio)
-  }()
+    let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
+    let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
+    let playlistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
+    let screenFrame = bestScreen.visibleFrame
+    let windowFrame = NSRect(origin: screenFrame.origin, size: CGSize(width: MiniPlayerWindowController.defaultWindowWidth, height: screenFrame.height))
+    return MusicModeGeometry(windowFrame: windowFrame, playlistHeight: playlistHeight,
+                             isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible)
+  }(){
+    didSet {
+      log.verbose("MusicModeGeometry updated: \(musicModeGeometry.windowFrame)")
+    }
+  }
 
   // MARK: - Enums
 
@@ -805,7 +812,6 @@ class MainWindowController: PlayerWindowController {
         _ = miniPlayer.view  // load if not loaded to prevent nil dereference due to race conditions
 
         /// Video aspect ratio may have changed if a different video is being shown than last time.
-        /// Use `constrainWindowSize()` and `setFrame()` to gracefully adapt layout as needed
         miniPlayer.adjustLayoutForVideoChange()
       }
     }
@@ -1292,10 +1298,10 @@ class MainWindowController: PlayerWindowController {
         exitPIP()
       }
     }
-    // stop playing
-    if case .fullscreen(legacy: true, priorWindowedGeometry: _) = fsState {
+    if currentLayout.isLegacyFullScreen {
       restoreDockSettings()
     }
+    // stop playing
     // This will save state if configured to do so
     player.stop()
     // stop tracking mouse event
@@ -1386,11 +1392,13 @@ class MainWindowController: PlayerWindowController {
   }
 
   func toggleWindowFullScreen() {
-    switch fsState {
+    let layout = currentLayout
+
+    switch layout.spec.mode {
     case .windowed:
       enterFullScreen()
-    case let .fullscreen(legacy, _):
-      exitFullScreen(legacy: legacy)
+    case .fullScreen:
+      exitFullScreen(legacy: layout.spec.isLegacyStyle)
     default:
       return
     }
@@ -2185,7 +2193,7 @@ class MainWindowController: PlayerWindowController {
     updateCachedGeometry()
     player.saveState()
 
-    let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
+    let videoScale = Double((videoSize ?? windowGeometry.videoSize).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
     if videoScale != prevVideoScale {
       log.verbose("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")

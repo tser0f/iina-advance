@@ -17,8 +17,9 @@ struct PlayerSaveState {
 
     case userPreferredVideoContainerSizeWide = "userVidConSize_Wide"
     case userPreferredVideoContainerSizeTall = "userVidConSize_Tall"
-    case windowGeometry = "windowGeometry"
     case layoutSpec = "layoutSpec"
+    case windowGeometry = "windowGeometry"
+    case musicModeGeometry = "musicModeGeometry"
     case isMinimized = "minimized"
     case overrideAutoMusicMode = "overrideAutoMusicMode"
     case isOnTop = "onTop"
@@ -64,9 +65,10 @@ struct PlayerSaveState {
   }
 
   static private let specPrefStringVersion = "1"
+  static private let windowGeometryPrefStringVersion = "1"
+  static private let musicModeGeometryPrefStringVersion = "1"
   static private let specErrPre = "Failed to parse LayoutSpec from string:"
   static private let geoErrPre = "Failed to parse WindowGeometry from string:"
-  static private let geoPrefStringVersion = "1"
 
   let properties: [String: Any]
 
@@ -88,7 +90,7 @@ struct PlayerSaveState {
 
   /// `MainWindowGeometry` -> String
   private static func toCSV(_ geo: MainWindowGeometry) -> String {
-    return [geoPrefStringVersion,
+    return [windowGeometryPrefStringVersion,
             geo.videoAspectRatio.string6f,
             geo.outsideTopBarHeight.string2f,
             geo.outsideTrailingBarWidth.string2f,
@@ -100,6 +102,18 @@ struct PlayerSaveState {
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
             geo.windowFrame.height.string2f].joined(separator: ",")
+  }
+
+  /// `MusicModeGeometry` -> String
+  private static func toCSV(_ geo: MusicModeGeometry) -> String {
+    return [musicModeGeometryPrefStringVersion,
+            geo.windowFrame.origin.x.string2f,
+            geo.windowFrame.origin.y.string2f,
+            geo.windowFrame.width.string2f,
+            geo.windowFrame.height.string2f,
+            geo.playlistHeight.string2f,
+            geo.isVideoVisible.yn,
+            geo.isPlaylistVisible.yn].joined(separator: ",")
   }
 
   /// `LayoutSpec` -> String
@@ -134,8 +148,11 @@ struct PlayerSaveState {
     props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
     /// `windowGeometry`
-    let geometry = player.mainWindow.getCurrentWindowGeometry()
-    props[PropName.windowGeometry.rawValue] = toCSV(geometry)
+    let windowGeometry = player.mainWindow.getCurrentWindowGeometry()
+    props[PropName.windowGeometry.rawValue] = toCSV(windowGeometry)
+
+    /// `musicModeGeometry`
+    props[PropName.musicModeGeometry.rawValue] = toCSV(player.mainWindow.musicModeGeometry)
 
     if let size = info.userPreferredVideoContainerSizeWide {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
@@ -314,7 +331,7 @@ struct PlayerSaveState {
   }
 
   // Utility function for parsing complex object from CSV
-  static private func deserializeCSV<T>(_ propName: PropName, fromProperties properties: [String: Any], expectedTokenCount: Int, version: String,
+  static private func deserializeCSV<T>(_ propName: PropName, fromProperties properties: [String: Any], expectedTokenCount: Int, expectedVersion: String,
                                         errPreamble: String, _ parseFunc: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
     guard let csvString = string(for: propName, properties) else {
       return nil
@@ -328,8 +345,8 @@ struct PlayerSaveState {
     var iter = tokens.makeIterator()
 
     let version = iter.next()
-    guard version == PlayerSaveState.geoPrefStringVersion else {
-      Logger.log("\(errPreamble) bad version (expected \(PlayerSaveState.geoPrefStringVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
+    guard version == expectedVersion else {
+      Logger.log("\(errPreamble) bad version (expected \(expectedVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
       return nil
     }
 
@@ -340,7 +357,7 @@ struct PlayerSaveState {
   static private func deserializeLayoutSpec(from properties: [String: Any]) -> MainWindowController.LayoutSpec? {
     return deserializeCSV(.layoutSpec, fromProperties: properties,
                           expectedTokenCount: 11,
-                          version: PlayerSaveState.specPrefStringVersion,
+                          expectedVersion: PlayerSaveState.specPrefStringVersion,
                           errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
 
       let leadingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
@@ -394,7 +411,7 @@ struct PlayerSaveState {
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
     return deserializeCSV(.windowGeometry, fromProperties: properties,
                           expectedTokenCount: 12,
-                          version: PlayerSaveState.geoPrefStringVersion,
+                          expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
       guard let videoAspectRatio = Double(iter.next()!),
@@ -421,6 +438,31 @@ struct PlayerSaveState {
     })
   }
 
+  /// String -> `MusicModeGeometry`
+  static private func deserializeMusicModeGeometry(from properties: [String: Any]) -> MusicModeGeometry? {
+    return deserializeCSV(.musicModeGeometry, fromProperties: properties,
+                          expectedTokenCount: 8,
+                          expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
+                          errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
+
+      guard let winOriginX = Double(iter.next()!),
+            let winOriginY = Double(iter.next()!),
+            let winWidth = Double(iter.next()!),
+            let winHeight = Double(iter.next()!),
+            let playlistHeight = Double(iter.next()!),
+            let isVideoVisible = Bool.yn(iter.next()!),
+            let isPlaylistVisible = Bool.yn(iter.next()!) else {
+        Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
+        return nil
+      }
+
+      let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+      return MusicModeGeometry(windowFrame: windowFrame,
+                               playlistHeight: playlistHeight,
+                               isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible)
+    })
+  }
+
   /// Restore player state from prior launch
   func restoreTo(_ player: PlayerCore) {
     let log = player.log
@@ -439,12 +481,19 @@ struct PlayerSaveState {
       info.userPreferredVideoContainerSizeTall = size
     }
 
-    if let geometry = windowGeometry {
+    if let windowGeometry = windowGeometry {
       log.verbose("Successfully parsed prior geometry from prefs")
 
-      log.debug("Restoring windowFrame to \(geometry.windowFrame), videoAspectRatio: \(geometry.videoAspectRatio)")
-      player.videoView.updateAspectRatio(to: geometry.videoAspectRatio)
-      mainWindow.setCurrentWindowGeometry(to: geometry, enqueueAnimation: false)
+      log.debug("Restoring windowFrame to \(windowGeometry.windowFrame), videoAspectRatio: \(windowGeometry.videoAspectRatio)")
+      player.videoView.updateAspectRatio(to: windowGeometry.videoAspectRatio)
+      mainWindow.setCurrentWindowGeometry(to: windowGeometry, enqueueAnimation: false)
+    } else {
+      log.error("Failed to get player window layout and/or geometry from prefs")
+    }
+
+    if let musicModeGeometry = PlayerSaveState.deserializeMusicModeGeometry(from: properties) {
+      log.debug("Restoring musicMode frame to \(musicModeGeometry.windowFrame), video=\(musicModeGeometry.isVideoVisible.yn) playlist=\(musicModeGeometry.isPlaylistVisible.yn)")
+      mainWindow.musicModeGeometry = musicModeGeometry
     } else {
       log.error("Failed to get player window layout and/or geometry from prefs")
     }

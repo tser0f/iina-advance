@@ -58,8 +58,10 @@ class PlaybackInfo {
   // -- PERSISTENT PROPERTIES BEGIN --
 
   var isPaused: Bool = false {
-    didSet {
-      Logger.log("Player mode changed to \(isPaused ? "PAUSED" : "PLAYING")", level: .verbose)
+    willSet {
+      if isPaused != newValue {
+        Logger.log("Player mode changning to \(newValue ? "PAUSED" : "PLAYING")", level: .verbose)
+      }
     }
   }
   var isPlaying: Bool {

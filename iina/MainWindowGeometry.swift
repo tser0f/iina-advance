@@ -9,6 +9,16 @@
 import Foundation
 
 /**
+ `MusicModeGeometry`
+ */
+struct MusicModeGeometry: Equatable {
+  let windowFrame: NSRect
+  let playlistHeight: CGFloat  /// indicates playlist height whether or not `isPlaylistVisible`
+  let isVideoVisible: Bool
+  let isPlaylistVisible: Bool
+}
+
+/**
 `MainWindowGeometry`
  Data structure which describes:
  1. The size & position (`windowFrame`) of an IINA player window which is in normal windowed mode
@@ -556,7 +566,7 @@ extension MainWindowController {
   }
 
   func setWindowScale(_ scale: CGFloat) {
-    guard fsState == .windowed else { return }
+    guard !isFullScreen else { return }
     guard let window = window else { return }
 
     guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
@@ -597,44 +607,37 @@ extension MainWindowController {
   }
 
   func updateCachedGeometry() {
-    if currentLayout.spec.mode == .windowed {
+    switch currentLayout.spec.mode {
+    case .windowed:
       windowGeometry = generateWindowGeometry(using: currentLayout)
+    case .musicMode:
+      break
+    default:
+      break
     }
   }
 
   func generateWindowGeometry(using layout: LayoutState) -> MainWindowGeometry {
-    let windowFrame = window!.frame
-    let videoContainerFrame = videoContainerView.frame
-    let videoAspectRatio = videoView.aspectRatio
-
-    return MainWindowGeometry(windowFrame: windowFrame, videoContainerFrame: videoContainerFrame,
+    return MainWindowGeometry(windowFrame: window!.frame,
+                              videoContainerFrame: videoContainerView.frame,
                               insideLeadingBarWidth: layout.leadingBarInsideWidth,
                               insideTrailingBarWidth: layout.trailingBarInsideWidth,
-                              videoAspectRatio: videoAspectRatio)
+                              videoAspectRatio: videoView.aspectRatio)
   }
 
-  /// If in fullscreen, returns `fsState.priorWindowedGeometry`. Else builds from `currentLayout` and other variables.
-  /// Must be called from the main thread.
   func getCurrentWindowGeometry() -> MainWindowGeometry {
-    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-
-    if let priorGeo = fsState.priorWindowedGeometry {
-      log.debug("GetCurrentWindowGeometry(): looks like we are in full screen. Returning priorWindowedGeometry")
-      return priorGeo
-    }
-
     return windowGeometry
   }
 
-  func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry, enqueueAnimation: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
+  func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry,
+                                enqueueAnimation: Bool = true, animate: Bool = true,setFrameImmediately: Bool = true) {
+    windowGeometry = newGeometry
+
     let newWindowFrame = newGeometry.windowFrame
-    if fsState.isFullscreen {
+    if isFullScreen {
       log.verbose("Updating priorWindowedGeometry because window is in full screen, with windowFrame \(newWindowFrame)")
-      fsState.priorWindowedGeometry = newGeometry
       return
     }
-
-    windowGeometry = newGeometry
 
     guard let window = window else { return }
 
@@ -823,13 +826,8 @@ extension MainWindowController {
 
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return }
-
-    if player.isInMiniPlayer {
-      _ = miniPlayer.view
-      miniPlayer.saveCurrentPlaylistHeight()
-      return
-    }
-
+    guard currentLayout.spec.mode == .windowed else { return }
+    
     updateWindowParametersForMPV()
   }
 

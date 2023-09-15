@@ -497,15 +497,15 @@ extension MainWindowController {
     }
 
     var isEnteringMusicMode: Bool {
-      return (fromLayout.spec.mode != .musicMode) && (toLayout.spec.mode == .musicMode)
+      return !fromLayout.isMusicMode && toLayout.isMusicMode
     }
 
     var isExitingMusicMode: Bool {
-      return (fromLayout.spec.mode == .musicMode) && (toLayout.spec.mode != .musicMode)
+      return fromLayout.isMusicMode && !toLayout.isMusicMode
     }
 
     var isTogglingMusicMode: Bool {
-      return (fromLayout.spec.mode == .musicMode) != (toLayout.spec.mode == .musicMode)
+      return fromLayout.isMusicMode != toLayout.isMusicMode
     }
 
     var isTopBarPlacementChanging: Bool {
@@ -687,21 +687,49 @@ extension MainWindowController {
 
     let toLayout = buildFutureLayoutState(from: requestedSpec)
 
-    let fromGeometry = getCurrentWindowGeometry()
+    let fromGeometry: MainWindowGeometry
+    if fromLayout.isMusicMode {
+      let outsideBottomBarHeight = miniPlayer.controlViewHeight + (musicModeGeometry.isPlaylistVisible ? musicModeGeometry.playlistHeight : 0)
+      fromGeometry = MainWindowGeometry(windowFrame: musicModeGeometry.windowFrame,
+                                      outsideTopBarHeight: 0,
+                                      outsideTrailingBarWidth: 0,
+                                      outsideBottomBarHeight: outsideBottomBarHeight,
+                                      outsideLeadingBarWidth: 0,
+                                      insideLeadingBarWidth: 0,
+                                      insideTrailingBarWidth: 0,
+                                      videoAspectRatio: windowGeometry.videoAspectRatio)
+    } else {
+      fromGeometry = getCurrentWindowGeometry()
+    }
 
     // Geometry
-    let bottomBarHeight: CGFloat
-    if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
-      bottomBarHeight = OSCToolbarButton.oscBarHeight
-    } else if requestedSpec.mode == .musicMode {
-      _ = miniPlayer.view
-      // TODO: add fields for `playlistHeight`, `isPlaylistVisible`, `isVideoVisible`
-      let playlistHeight: CGFloat = miniPlayer.isPlaylistVisible ? CGFloat(Preference.float(for: .musicModePlaylistHeight)) : 0
-      bottomBarHeight = miniPlayer.backgroundView.frame.height + playlistHeight
+    let toGeometry: MainWindowGeometry
+    let outsideBottomBarHeight: CGFloat
+    if requestedSpec.mode == .musicMode {
+      outsideBottomBarHeight = miniPlayer.controlViewHeight + (musicModeGeometry.isPlaylistVisible ? musicModeGeometry.playlistHeight : 0)
+      toGeometry = MainWindowGeometry(windowFrame: musicModeGeometry.windowFrame,
+                                      outsideTopBarHeight: 0,
+                                      outsideTrailingBarWidth: 0,
+                                      outsideBottomBarHeight: outsideBottomBarHeight,
+                                      outsideLeadingBarWidth: 0,
+                                      insideLeadingBarWidth: 0,
+                                      insideTrailingBarWidth: 0,
+                                      videoAspectRatio: fromGeometry.videoAspectRatio)
     } else {
-      bottomBarHeight = 0
+      if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
+        outsideBottomBarHeight = OSCToolbarButton.oscBarHeight
+      } else {
+        outsideBottomBarHeight = 0
+      }
+      toGeometry = MainWindowGeometry(windowFrame: fromGeometry.windowFrame,
+                                      outsideTopBarHeight: toLayout.topBarOutsideHeight,
+                                      outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth,
+                                      outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? outsideBottomBarHeight : 0,
+                                      outsideLeadingBarWidth: toLayout.leadingBarOutsideWidth,
+                                      insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
+                                      insideTrailingBarWidth: toLayout.trailingBarInsideWidth,
+                                      videoAspectRatio: fromGeometry.videoAspectRatio)
     }
-    let toGeometry = MainWindowGeometry(windowFrame: fromGeometry.windowFrame, outsideTopBarHeight: toLayout.topBarOutsideHeight, outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth, outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0, outsideLeadingBarWidth: toLayout.leadingBarOutsideWidth, insideLeadingBarWidth: toLayout.leadingBarInsideWidth, insideTrailingBarWidth: toLayout.trailingBarInsideWidth, videoAspectRatio: fromGeometry.videoAspectRatio)
 
     let transition = LayoutTransition(from: fromLayout, from: fromGeometry, to: toLayout, to: toGeometry, isInitialLayout: false)
 
@@ -1768,7 +1796,7 @@ extension MainWindowController {
     /// Sidebar tabHeight and downshift.
     /// Downshift: try to match height of title bar
     /// Tab height: if top OSC is `insideVideo`, try to match its height
-    if futureLayout.spec.mode == .musicMode {
+    if futureLayout.isMusicMode {
       /// Special case for music mode. Only really applies to `playlistView`,
       /// because `quickSettingView` is never shown in this mode.
       futureLayout.sidebarTabHeight = Constants.Sidebar.musicModeTabHeight

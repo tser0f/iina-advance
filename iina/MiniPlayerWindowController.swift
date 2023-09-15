@@ -11,6 +11,7 @@ import Cocoa
 // Hide playlist if its height is too small to display at least 3 items:
 
 class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
+  static let defaultWindowWidth: CGFloat = 240
   static let minWindowWidth: CGFloat = 240
   static let PlaylistMinHeight: CGFloat = 138
   static private let animationDurationShowControl: TimeInterval = 0.2
@@ -67,19 +68,13 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
   var isPlaylistVisible: Bool {
     get {
-      Preference.bool(for: .musicModeShowPlaylist)
-    }
-    set {
-      Preference.set(newValue, for: .musicModeShowPlaylist)
+      mainWindow.musicModeGeometry.isPlaylistVisible
     }
   }
 
   var isVideoVisible: Bool {
     get {
-      Preference.bool(for: .musicModeShowAlbumArt)
-    }
-    set {
-      Preference.set(newValue, for: .musicModeShowAlbumArt)
+      return mainWindow.musicModeGeometry.isVideoVisible
     }
   }
 
@@ -93,6 +88,16 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       self.volumePopover.performClose(self)
     }
   }()
+
+  lazy var controlViewHeight: CGFloat = {
+    _ = view  // Make sure view is initialized first
+    return backgroundView.frame.height
+  }()
+
+  var currentDisplayedPlaylistHeight: CGFloat {
+    let bottomBarHeight = mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.constant
+    return bottomBarHeight - controlViewHeight
+  }
 
   // MARK: - Initialization
 
@@ -143,6 +148,13 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
   override func mouseExited(with event: NSEvent) {
     guard !volumePopover.isShown else { return }
+    /// The goal is to always show the control when the cursor is hovering over either of the 2 tracking areas.
+    /// Although they are adjacent to each other, `mouseExited` can still be called when moving from one to the other.
+    /// Detect and ignore this case.
+    guard !mainWindow.isMouseEvent(event, inAnyOf: [backgroundView, mainWindow.videoContainerView]) else {
+      return
+    }
+
     hideControl()
   }
 
@@ -176,8 +188,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     artistAlbumLabel.reset()
   }
 
-  func saveCurrentPlaylistHeight() {
-    let playlistHeight = round(currentPlaylistHeight)
+  private func saveCurrentPlaylistHeight() {
+    let playlistHeight = round(currentDisplayedPlaylistHeight)
+    // don't save if invalid height or hidden
     guard playlistHeight >= MiniPlayerWindowController.PlaylistMinHeight else { return }
 
     // save playlist height
@@ -294,30 +307,27 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     guard let screen = window.screen else { return }
     let showPlaylist = !isPlaylistVisible
     Logger.log("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)", level: .verbose)
-    self.isPlaylistVisible = showPlaylist
-    let currentPlaylistHeight = currentPlaylistHeight
+    let currentDisplayedPlaylistHeight = currentDisplayedPlaylistHeight
     var newWindowFrame = window.frame
 
     if showPlaylist {
       mainWindow.playlistView.reloadData(playlist: true, chapters: true)
 
       // Try to show playlist using previous height
-      let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
+      let desiredPlaylistHeight = mainWindow.musicModeGeometry.playlistHeight
       // The window may be in the middle of a previous toggle, so we can't just assume window's current frame
       // represents a state where the playlist is fully shown or fully hidden. Instead, start by computing the height
       // we want to set, and then figure out the changes needed to the window's existing frame.
-      let targetHeightToAdd = desiredPlaylistHeight - currentPlaylistHeight
+      let targetHeightToAdd = desiredPlaylistHeight - currentDisplayedPlaylistHeight
       // Fill up screen if needed
       newWindowFrame.size.height += targetHeightToAdd
     } else { // hide playlist
       // Save playlist height first
-      if currentPlaylistHeight > MiniPlayerWindowController.PlaylistMinHeight {
-        Preference.set(currentPlaylistHeight, for: .musicModePlaylistHeight)
-      }
+      saveCurrentPlaylistHeight()
     }
 
     // May need to reduce size of video/art to fit playlist on screen, or other adjustments:
-    newWindowFrame.size = constrainWindowSize(newWindowFrame.size)
+    newWindowFrame.size = constrainWindowSize(newWindowFrame.size, isPlaylistVisible: showPlaylist)
     let heightDifference = newWindowFrame.height - window.frame.height
     // adjust window origin to expand downwards, but do not allow bottom of window to fall offscreen
     newWindowFrame.origin.y = max(newWindowFrame.origin.y - heightDifference, screen.visibleFrame.origin.y)
@@ -327,37 +337,42 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     let bottomBarHeight = newWindowFrame.height - videoHeight
 
     mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      Preference.set(showPlaylist, for: .musicModeShowPlaylist)
+
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       updateVideoHeightConstraint(height: videoHeight, animate: true)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
-      // TODO: save geometry
+      updateMusicModeGeometry(toWindowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
       player.saveState()
     }))
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
     guard let window = mainWindow.window else { return }
-    isVideoVisible = !isVideoVisible
-    Logger.log("Toggling videoView visibility from \((!isVideoVisible).yn) to \(isVideoVisible.yn)", level: .verbose)
+    let showVideo = !isVideoVisible
+    Logger.log("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)", level: .verbose)
     mainWindow.updateMusicModeButtonsVisibility()
     var newWindowFrame = window.frame
     let videoHeightIfVisible = newWindowFrame.width / mainWindow.videoView.aspectRatio
-    if isVideoVisible {
+    if showVideo {
       newWindowFrame.size.height += videoHeightIfVisible
     } else {
       newWindowFrame.size.height -= round(mainWindow.videoView.frame.height)
     }
-    newWindowFrame.size = constrainWindowSize(newWindowFrame.size)
+    newWindowFrame.size = constrainWindowSize(newWindowFrame.size, isVideoVisible: showVideo)
 
 
-    let videoHeight = isVideoVisible ? videoHeightIfVisible : 0
+    let videoHeight = showVideo ? videoHeightIfVisible : 0
     let bottomBarHeight = newWindowFrame.height - videoHeight
 
     mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      Preference.set(showVideo, for: .musicModeShowAlbumArt)
+
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: true)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
-      // TODO: save geometry
+
+      updateMusicModeGeometry(toWindowFrame: newWindowFrame, isVideoVisible: showVideo)
       player.saveState()
     }))
   }
@@ -366,6 +381,8 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
   func windowDidResize() {
     resetScrollingLabels()
+    saveCurrentPlaylistHeight()
+    updateMusicModeGeometry(toWindowFrame: window!.frame)
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
@@ -386,7 +403,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       let bottomBarHeight = newWindowSize.height - videoHeight
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: false)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
-      // TODO: save geometry
+
       player.saveState()
     }
 
@@ -400,20 +417,20 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   /// 3. `playlistWrapperView`: Visible if `isPlaylistVisible` is true. Height is user resizable, and must be >= `PlaylistMinHeight`
   /// Must also ensure that window stays within the bounds of the screen it is in. Almost all of the time the window  will be
   /// height-bounded instead of width-bounded.
-  func constrainWindowSize(_ requestedSize: NSSize) -> NSSize {
+  private func constrainWindowSize(_ requestedSize: NSSize, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil) -> NSSize {
     guard let screen = window?.screen else { return requestedSize }
     /// When the window's width changes, the video scales to match while keeping its aspect ratio,
     /// and the control bar (`backgroundView`) and playlist are pushed down.
     /// Calculate the maximum width/height the art can grow to so that `backgroundView` is not pushed off the screen.
     let videoAspectRatio = mainWindow.videoView.aspectRatio
-    let isVideoVisible = isVideoVisible
-    let isPlaylistVisible = isPlaylistVisible
+    let isVideoVisible = isVideoVisible ?? self.isVideoVisible
+    let isPlaylistVisible = isPlaylistVisible ?? self.isPlaylistVisible
     let visibleScreenSize = screen.visibleFrame.size
     let minPlaylistHeight = isPlaylistVisible ? MiniPlayerWindowController.PlaylistMinHeight : 0
 
     let maxWindowWidth: CGFloat
     if isVideoVisible {
-      var maxVideoHeight = visibleScreenSize.height - backgroundView.frame.height - minPlaylistHeight
+      var maxVideoHeight = visibleScreenSize.height - controlViewHeight - minPlaylistHeight
       /// `maxVideoHeight` can be negative if very short screen! Fall back to height based on `MiniPlayerMinWidth` if needed
       maxVideoHeight = max(maxVideoHeight, MiniPlayerWindowController.minWindowWidth / videoAspectRatio)
       maxWindowWidth = maxVideoHeight * videoAspectRatio
@@ -433,7 +450,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       newWidth = requestedSize.width
     }
     let videoHeight = isVideoVisible ? newWidth / videoAspectRatio : 0
-    let minWindowHeight = videoHeight + backgroundView.frame.height + minPlaylistHeight
+    let minWindowHeight = videoHeight + controlViewHeight + minPlaylistHeight
     // Make sure height is within acceptable values
     var newHeight = max(requestedSize.height, minWindowHeight)
     let maxHeight = isPlaylistVisible ? visibleScreenSize.height : minWindowHeight
@@ -463,18 +480,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       videoHeightConstraint.isActive = true
     }
     mainWindow.videoView.superview!.layout()
-  }
-
-  // Returns the current height of the window,
-  // including the album art, but not including the playlist.
-  private var windowHeightWithoutPlaylist: CGFloat {
-    guard let window = mainWindow.window else { return backgroundView.frame.height }
-    return backgroundView.frame.height + (isVideoVisible ? window.frame.width / mainWindow.videoView.aspectRatio : 0)
-  }
-
-  private var currentPlaylistHeight: CGFloat {
-    guard let window = mainWindow.window else { return 0 }
-    return window.frame.height - windowHeightWithoutPlaylist
   }
 
   func cleanUpForMusicModeExit() {
@@ -507,8 +512,27 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       // TODO: save geometry
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
+
+      updateMusicModeGeometry(toWindowFrame: newWindowFrame)
       player.saveState()
     })
   }
 
+  func updateMusicModeGeometry(toWindowFrame windowFrame: NSRect, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil) {
+    let oldMusicModeGeo = mainWindow.musicModeGeometry
+
+
+    let playlistHeight: CGFloat
+    if oldMusicModeGeo.isPlaylistVisible {
+      playlistHeight = currentDisplayedPlaylistHeight
+    } else {
+      // If not visible, keep previously saved height
+      playlistHeight = oldMusicModeGeo.playlistHeight
+    }
+    mainWindow.musicModeGeometry = MusicModeGeometry(windowFrame: windowFrame,
+                                                     playlistHeight: playlistHeight,
+                                                     isVideoVisible: isVideoVisible ?? oldMusicModeGeo.isVideoVisible,
+                                                     isPlaylistVisible: isPlaylistVisible ?? oldMusicModeGeo.isPlaylistVisible)
+
+  }
 }

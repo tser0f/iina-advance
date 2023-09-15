@@ -516,7 +516,6 @@ class PlayerCore: NSObject {
                  level: .verbose, subsystem: subsystem)
     }
     mainWindow.exitMusicMode()
-//    mainWindow.updateSidebarVerticalConstraints()
     mainWindow.updateTitle()
 
     events.emit(.musicModeChanged, data: false)

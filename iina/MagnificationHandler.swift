@@ -84,7 +84,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       var newVideoHeight = newVideoWidth / windowGeometryAtMagnificationStart.videoAspectRatio
 
       let minPlaylistHeight: CGFloat = mainWindow.miniPlayer.isPlaylistVisible ? MiniPlayerWindowController.PlaylistMinHeight : 0
-      let minBottomBarHeight: CGFloat = mainWindow.miniPlayer.backgroundView.frame.height + minPlaylistHeight
+      let minBottomBarHeight: CGFloat = mainWindow.miniPlayer.controlViewHeight + minPlaylistHeight
       let maxVideoHeight = windowHeight - minBottomBarHeight
       if newVideoWidth < MiniPlayerWindowController.minWindowWidth {
         newVideoWidth = MiniPlayerWindowController.minWindowWidth
