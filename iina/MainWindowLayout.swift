@@ -647,7 +647,7 @@ extension MainWindowController {
         (window as! MainWindow).setFrameImmediately(windowGeometry.windowFrame)
       case .musicMode:
         /// `musicModeGeometry` should have already been deserialized and set
-        initialGeometry = musicModeGeometry.toMainWindowGeometry(videoAspectRatio: windowGeometry.videoAspectRatio)
+        initialGeometry = musicModeGeometry.toMainWindowGeometry()
         (window as! MainWindow).setFrameImmediately(initialGeometry!.windowFrame)
       }
 
@@ -723,7 +723,7 @@ extension MainWindowController {
 
     let fromGeometry: MainWindowGeometry
     if fromLayout.isMusicMode {
-      fromGeometry = musicModeGeometry.toMainWindowGeometry(videoAspectRatio: windowGeometry.videoAspectRatio)
+      fromGeometry = musicModeGeometry.toMainWindowGeometry()
     } else {
       fromGeometry = getCurrentWindowGeometry()
     }
@@ -732,7 +732,9 @@ extension MainWindowController {
     let toGeometry: MainWindowGeometry
     if fromLayout.isMusicMode != toLayout.isMusicMode {
       if requestedSpec.mode == .musicMode {
-        toGeometry = musicModeGeometry.toMainWindowGeometry(videoAspectRatio: fromGeometry.videoAspectRatio)
+        /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
+        let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
+        toGeometry = musicModeGeometryAspectCorrected.toMainWindowGeometry()
       } else {  // from music mode to windowed
         // Restore prev window geometry
         toGeometry = windowGeometry

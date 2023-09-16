@@ -46,7 +46,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       case .began:
         // FIXME: confirm reset on video size change due to track change
         if mainWindow.currentLayout.isMusicMode {
-          windowGeometryAtMagnificationStart = mainWindow.musicModeGeometry.toMainWindowGeometry(videoAspectRatio: mainWindow.videoView.aspectRatio)
+          windowGeometryAtMagnificationStart = mainWindow.musicModeGeometry.toMainWindowGeometry()
         } else {
           windowGeometryAtMagnificationStart = mainWindow.getCurrentWindowGeometry()
         }
@@ -112,7 +112,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         mainWindow.miniPlayer.updateVideoHeightConstraint(height: newVideoHeight, animate: true)
         mainWindow.updateBottomBarHeight(to: newBottomBarHeight, bottomBarPlacement: .outsideVideo)
         (mainWindow.window as! MainWindow).setFrameImmediately(newWindowFrame, animate: false)
-        mainWindow.miniPlayer.updateMusicModeGeometry(toWindowFrame: newWindowFrame)
+        mainWindow.miniPlayer.updateMusicModeGeometry(newWindowFrame: newWindowFrame)
         mainWindow.player.saveState()
       }
       return

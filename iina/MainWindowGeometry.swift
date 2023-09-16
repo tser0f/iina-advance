@@ -16,8 +16,9 @@ struct MusicModeGeometry: Equatable {
   let playlistHeight: CGFloat  /// indicates playlist height whether or not `isPlaylistVisible`
   let isVideoVisible: Bool
   let isPlaylistVisible: Bool
+  let videoAspectRatio: CGFloat
 
-  func toMainWindowGeometry(videoAspectRatio: CGFloat) -> MainWindowGeometry {
+  func toMainWindowGeometry() -> MainWindowGeometry {
     let outsideBottomBarHeight = MiniPlayerWindowController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
     return MainWindowGeometry(windowFrame: windowFrame,
                               outsideTopBarHeight: 0,
@@ -29,6 +30,32 @@ struct MusicModeGeometry: Equatable {
                               insideBottomBarHeight: 0,
                               insideLeadingBarWidth: 0,
                               videoAspectRatio: videoAspectRatio)
+  }
+
+  init(windowFrame: NSRect, playlistHeight: CGFloat, isVideoVisible: Bool, isPlaylistVisible: Bool, videoAspectRatio: CGFloat) {
+    self.windowFrame = windowFrame
+    if isPlaylistVisible {
+      /// Ignore given `playlistHeight` and calculate it from the other params
+      let videoHeight = isVideoVisible ? windowFrame.width / videoAspectRatio : 0
+      let controlViewHeight = MiniPlayerWindowController.controlViewHeight
+      self.playlistHeight = windowFrame.height - controlViewHeight - videoHeight
+    } else {
+      self.playlistHeight = playlistHeight
+    }
+    self.isVideoVisible = isVideoVisible
+    self.isPlaylistVisible = isPlaylistVisible
+    self.videoAspectRatio = videoAspectRatio
+  }
+
+  func clone(windowFrame: NSRect? = nil, playlistHeight: CGFloat? = nil, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil,
+             videoAspectRatio: CGFloat? = nil) -> MusicModeGeometry {
+    return MusicModeGeometry(windowFrame: windowFrame ?? self.windowFrame,
+                             // if playlist is visible, this will be ignored and recalculated in the constructor
+                             playlistHeight: playlistHeight ?? self.playlistHeight,
+                             isVideoVisible: isVideoVisible ?? self.isVideoVisible,
+                             isPlaylistVisible: isPlaylistVisible ?? self.isPlaylistVisible,
+                             videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
+
   }
 }
 
@@ -464,7 +491,8 @@ extension MainWindowController {
     var scaleDownFactor: CGFloat? = nil
 
     if player.isInMiniPlayer {
-      log.debug("[AdjustFrameAfterVideoReconfig] Player is in music mode; ignoring mpv video-reconfig")
+      log.debug("[AdjustFrameAfterVideoReconfig] Player is in music mode, will update its contraints")
+      miniPlayer.adjustLayoutForVideoChange()
 
     } else if player.info.isRestoring {
       // To account for imprecision(s) due to floats coming from multiple sources,
@@ -643,7 +671,7 @@ extension MainWindowController {
     case .windowed:
       windowGeometry = generateWindowGeometry(using: currentLayout)
     case .musicMode:
-      miniPlayer.updateMusicModeGeometry(toWindowFrame: window!.frame)
+      miniPlayer.updateMusicModeGeometry(newWindowFrame: window!.frame)
       break
     default:
       break
@@ -651,14 +679,21 @@ extension MainWindowController {
   }
 
   func generateWindowGeometry(using layout: LayoutState) -> MainWindowGeometry {
-    return MainWindowGeometry(windowFrame: window!.frame,
-                              videoContainerFrame: videoContainerView.frame,
-                              insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
-                              insideTrailingBarWidth: layout.trailingBarInsideWidth,
-                              // TODO: find a better solution than just replicating this logic here
-                              insideBottomBarHeight: (layout.bottomBarPlacement == .insideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0,
-                              insideLeadingBarWidth: layout.leadingBarInsideWidth,
-                              videoAspectRatio: videoView.aspectRatio)
+    // TODO: find a better solution than just replicating this logic here
+    let insideBottomBarHeight = (layout.bottomBarPlacement == .insideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
+    let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
+
+    let geo = MainWindowGeometry(windowFrame: window!.frame,
+                                 outsideTopBarHeight: layout.topBarOutsideHeight,
+                                 outsideTrailingBarWidth: layout.trailingBarOutsideWidth,
+                                 outsideBottomBarHeight: outsideBottomBarHeight,
+                                 outsideLeadingBarWidth: layout.leadingBarOutsideWidth,
+                                 insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
+                                 insideTrailingBarWidth: layout.trailingBarInsideWidth,
+                                 insideBottomBarHeight: insideBottomBarHeight,
+                                 insideLeadingBarWidth: layout.leadingBarInsideWidth,
+                                 videoAspectRatio: videoView.aspectRatio)
+    return geo.scale(desiredVideoContainerSize: videoContainerView.frame.size, constrainedWithin: bestScreen.frame)
   }
 
   func getCurrentWindowGeometry() -> MainWindowGeometry {

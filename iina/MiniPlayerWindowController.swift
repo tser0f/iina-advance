@@ -340,7 +340,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
       updateVideoHeightConstraint(height: videoHeight, animate: true)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
-      updateMusicModeGeometry(toWindowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
+      updateMusicModeGeometry(newWindowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
       player.saveState()
     }))
   }
@@ -375,7 +375,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       updateVideoHeightConstraint(height: videoHeightIfVisible, animate: true)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
 
-      updateMusicModeGeometry(toWindowFrame: newWindowFrame, isVideoVisible: showVideo)
+      updateMusicModeGeometry(newWindowFrame: newWindowFrame, isVideoVisible: showVideo)
       player.saveState()
     }))
   }
@@ -390,7 +390,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   func windowDidEndLiveResize() {
     saveCurrentPlaylistHeight()
     log.verbose("WindowDidEndLiveResize: updating music mode geometry")
-    updateMusicModeGeometry(toWindowFrame: window!.frame)
+    updateMusicModeGeometry(newWindowFrame: window!.frame)
     player.saveState()
   }
 
@@ -523,25 +523,37 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
 
       log.verbose("Updating music mode geometry for video change")
-      updateMusicModeGeometry(toWindowFrame: newWindowFrame)
+      updateMusicModeGeometry(newWindowFrame: newWindowFrame)
       player.saveState()
     })
   }
 
-  func updateMusicModeGeometry(toWindowFrame windowFrame: NSRect, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil) {
-    let oldMusicModeGeo = mainWindow.musicModeGeometry
+  func buildMusicModeGeometryFromPrefs() -> MusicModeGeometry {
+    // Default to left-top of screen. Try to use last-saved playlist height and visibility settings.
+    let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
+    let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
+    let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
+    let videoAspectRatio = mainWindow.videoView.aspectRatio
+    let screenFrame = mainWindow.bestScreen.visibleFrame
+    let desiredWindowWidth = MiniPlayerWindowController.defaultWindowWidth
+    let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
+    let desiredWindowHeight = desiredVideoHeight + MiniPlayerWindowController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
 
-    let playlistHeight: CGFloat
-    if oldMusicModeGeo.isPlaylistVisible {
-      playlistHeight = currentDisplayedPlaylistHeight
-    } else {
-      // If not visible, keep previously saved height
-      playlistHeight = oldMusicModeGeo.playlistHeight
-    }
-    mainWindow.musicModeGeometry = MusicModeGeometry(windowFrame: windowFrame,
-                                                     playlistHeight: playlistHeight,
-                                                     isVideoVisible: isVideoVisible ?? oldMusicModeGeo.isVideoVisible,
-                                                     isPlaylistVisible: isPlaylistVisible ?? oldMusicModeGeo.isPlaylistVisible)
+    // Resize as needed to fit on screen:
+    let windowSize = constrainWindowSize(NSSize(width: desiredWindowWidth, height: desiredWindowHeight), isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible)
+    let windowOrigin = NSPoint(x: screenFrame.origin.x, y: screenFrame.maxY - windowSize.height)
+    let windowFrame = NSRect(origin: windowOrigin, size: windowSize)
+    return MusicModeGeometry(windowFrame: windowFrame, playlistHeight: desiredPlaylistHeight,
+                             isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
+                             videoAspectRatio: videoAspectRatio)
+  }
+
+  /// Updates `mainWindow.musicModeGeometry` with the given params, falling back to prev values. Also takes care of updating `videoAspectRatio`.
+  func updateMusicModeGeometry(newWindowFrame windowFrame: NSRect? = nil, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil) {
+    mainWindow.musicModeGeometry = mainWindow.musicModeGeometry.clone(windowFrame: windowFrame,
+                                                                      isVideoVisible: isVideoVisible,
+                                                                      isPlaylistVisible: isPlaylistVisible,
+                                                                      videoAspectRatio: mainWindow.videoView.aspectRatio)
 
   }
 }

@@ -214,15 +214,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   lazy var musicModeGeometry: MusicModeGeometry = {
-    // Default to left side of screen, full height
-    let layout = currentLayout
-    let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
-    let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
-    let playlistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
-    let screenFrame = bestScreen.visibleFrame
-    let windowFrame = NSRect(origin: screenFrame.origin, size: CGSize(width: MiniPlayerWindowController.defaultWindowWidth, height: screenFrame.height))
-    return MusicModeGeometry(windowFrame: windowFrame, playlistHeight: playlistHeight,
-                             isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible)
+    return miniPlayer.buildMusicModeGeometryFromPrefs()
   }(){
     didSet {
       log.verbose("MusicModeGeometry updated: \(musicModeGeometry.windowFrame)")
@@ -750,7 +742,7 @@ class MainWindowController: PlayerWindowController {
         _ = miniPlayer.view  // load if not loaded to prevent nil dereference due to race conditions
 
         /// Video aspect ratio may have changed if a different video is being shown than last time.
-        miniPlayer.adjustLayoutForVideoChange()
+//        miniPlayer.adjustLayoutForVideoChange()
       }
     }
 
@@ -2159,8 +2151,6 @@ class MainWindowController: PlayerWindowController {
       let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
       buildLayoutTransition(named: "EnterMusicMode", from: oldLayout, to: miniPlayerLayout, thenRun: true)
     }
-    // TODO: save windowed frame
-    // TODO: switch layout
   }
 
   func exitMusicMode() {
@@ -2168,7 +2158,6 @@ class MainWindowController: PlayerWindowController {
       /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
       let miniPlayerLayout = currentLayout
-      // TODO: restore old layout
       
       let newSpec = miniPlayerLayout.spec.clone(mode: .windowed)
       let prevLayout = LayoutSpec.fromPreferences(andSpec: newSpec)

@@ -74,7 +74,8 @@ struct PlayerSaveState {
 
   /// Cached values parsed from `properties`
 
-  /// Describes the current layout configuration of the player window
+  /// Describes the current layout configuration of the player window.
+  /// See `setInitialWindowLayout()` in MainWindowLayout.swift.
   let layoutSpec: MainWindowController.LayoutSpec?
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
   let windowGeometry: MainWindowGeometry?
@@ -105,7 +106,8 @@ struct PlayerSaveState {
             geo.windowFrame.origin.x.string2f,
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
-            geo.windowFrame.height.string2f].joined(separator: ",")
+            geo.windowFrame.height.string2f
+    ].joined(separator: ",")
   }
 
   /// `MusicModeGeometry` -> String
@@ -117,7 +119,9 @@ struct PlayerSaveState {
             geo.windowFrame.height.string2f,
             geo.playlistHeight.string2f,
             geo.isVideoVisible.yn,
-            geo.isPlaylistVisible.yn].joined(separator: ",")
+            geo.isPlaylistVisible.yn,
+            geo.videoAspectRatio.string6f
+    ].joined(separator: ",")
   }
 
   /// `LayoutSpec` -> String
@@ -448,7 +452,7 @@ struct PlayerSaveState {
   /// String -> `MusicModeGeometry`
   static private func deserializeMusicModeGeometry(from properties: [String: Any]) -> MusicModeGeometry? {
     return deserializeCSV(.musicModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 8,
+                          expectedTokenCount: 9,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
@@ -458,7 +462,8 @@ struct PlayerSaveState {
             let winHeight = Double(iter.next()!),
             let playlistHeight = Double(iter.next()!),
             let isVideoVisible = Bool.yn(iter.next()!),
-            let isPlaylistVisible = Bool.yn(iter.next()!) else {
+            let isPlaylistVisible = Bool.yn(iter.next()!),
+            let videoAspectRatio = Double(iter.next()!) else {
         Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
         return nil
       }
@@ -466,7 +471,8 @@ struct PlayerSaveState {
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
       return MusicModeGeometry(windowFrame: windowFrame,
                                playlistHeight: playlistHeight,
-                               isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible)
+                               isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
+                               videoAspectRatio: videoAspectRatio)
     })
   }
 
