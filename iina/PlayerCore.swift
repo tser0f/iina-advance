@@ -715,7 +715,7 @@ class PlayerCore: NSObject {
         // The B loop point is set without the A loop point having been set. This is allowed by mpv
         // but IINA is not supposed to allow mpv to get into this state, so something has gone
         // wrong. This is an internal error. Log it and pretend that just the A loop point is set.
-        Logger.log("Unexpected A-B loop state, ab-loop-a is \(a) ab-loop-b is \(b)", level: .error, subsystem: subsystem)
+        log.error("Unexpected A-B loop state, ab-loop-a is \(a) ab-loop-b is \(b)")
         info.abLoopStatus = .aSet
       }
     } else {
@@ -724,7 +724,7 @@ class PlayerCore: NSObject {
     }
     // The play slider has knobs representing the loop points, make insure the slider is in sync.
     mainWindow?.syncPlaySliderABLoop()
-    Logger.log("Synchronized info.abLoopStatus \(info.abLoopStatus)")
+    log.debug("Synchronized info.abLoopStatus \(info.abLoopStatus)")
     saveState()
   }
 

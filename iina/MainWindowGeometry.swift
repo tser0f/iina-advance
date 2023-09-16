@@ -462,7 +462,7 @@ extension MainWindowController {
       }
 
     } else {
-      let currentWindowGeo = getCurrentWindowGeometry()
+      let currentWindowGeo = getCurrentWindowGeometry().clone(videoAspectRatio: videoBaseDisplaySize.aspect)
       let newWindowGeo: MainWindowGeometry
 
       if shouldResizeWindowAfterVideoReconfig() {
@@ -691,11 +691,10 @@ extension MainWindowController {
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     // This method can be called as a side effect of the animation. If so, ignore.
-    guard fsState == .windowed else { return requestedSize }
+    guard !isFullScreen else { return requestedSize }
     log.verbose("WindowWillResize: requestedSize \(requestedSize)")
 
     if player.isInMiniPlayer {
-      _ = miniPlayer.view
       return miniPlayer.windowWillResize(window, to: requestedSize)
     }
 
@@ -748,7 +747,7 @@ extension MainWindowController {
 
       let requestedGeo = currentGeo.scale(desiredWindowSize: requestedSize)
 
-      if fsState == .windowed && window.inLiveResize {
+      if !isFullScreen && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
         player.info.setUserPreferredVideoContainerSize(requestedGeo.videoContainerSize)
       }
@@ -790,7 +789,7 @@ extension MainWindowController {
         chosenGeometry = resizeFromWidthGeo
       }
  
-      if fsState == .windowed {
+      if !isFullScreen {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise.
         player.info.setUserPreferredVideoContainerSize(chosenGeometry.videoContainerSize)
       }
@@ -842,7 +841,6 @@ extension MainWindowController {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
-    guard !isAnimating else { return }
 
     if player.isInMiniPlayer {
       // Re-evaluate space requirements for labels. May need to toggle scroll
@@ -850,10 +848,7 @@ extension MainWindowController {
       return
     }
 
-    // This method can be called as a side effect of the animation. If so, ignore.
-    guard fsState == .windowed else { return }
     guard currentLayout.spec.mode == .windowed else { return }
-    
     updateWindowParametersForMPV()
   }
 

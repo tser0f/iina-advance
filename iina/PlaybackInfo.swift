@@ -101,11 +101,11 @@ class PlaybackInfo {
   func setUserPreferredVideoContainerSize(_ newSize: NSSize) {
     if Preference.bool(for: .allowEmptySpaceAroundVideo) || newSize.aspect >= 1 {
       // Video is wide or square
-      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSizeWide to \(newSize)")
+      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSize-Wide to \(newSize)")
       userPreferredVideoContainerSizeWide = newSize
     } else {
       // Video is vertical: save to separate tall window pref
-      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSizeTall to \(newSize)")
+      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSize-Tall to \(newSize)")
       userPreferredVideoContainerSizeTall = newSize
     }
   }

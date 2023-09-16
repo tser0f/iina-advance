@@ -826,9 +826,13 @@ extension MainWindowController {
     log.verbose("[\(transition.name)] DoPreTransitionWork")
     controlBarFloating.isDragging = false
 
+    // Save windowed geometry (if applicable)
+    updateCachedGeometry()
+
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
     currentLayout = transition.toLayout
+
     if transition.toLayout.spec.mode == .windowed {
       windowGeometry = transition.toWindowGeometry
     }
@@ -838,10 +842,7 @@ extension MainWindowController {
     if transition.isEnteringFullScreen {
       // Entering FullScreen
       let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
-
-      let priorWindowedGeometry = getCurrentWindowGeometry()
-      fsState.startAnimatingToFullScreen(legacy: transition.toLayout.isLegacyFullScreen, priorWindowedGeometry: priorWindowedGeometry)
-      log.verbose("Entering fullscreen, priorWindowedGeometry := \(priorWindowedGeometry)")
+      log.verbose("Entering fullscreen, priorWindowedGeometry := \(windowGeometry)")
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
@@ -882,8 +883,6 @@ extension MainWindowController {
       resetViewsForFullScreenTransition()
 
       apply(visibility: .hidden, to: additionalInfoView)
-
-      fsState.startAnimatingToWindow()
 
       if transition.isTogglingLegacyWindowStyle {
         videoView.videoLayer.suspend()
@@ -1280,7 +1279,7 @@ extension MainWindowController {
       let leadingWidth = transition.toLayout.leadingBarOutsideWidth
       let trailingWidth = transition.toLayout.trailingBarOutsideWidth
 
-      guard let priorGeometry = fsState.priorWindowedGeometry else { return }
+      let priorGeometry = windowGeometry
       let priorWindowFrame = priorGeometry.resizeOutsideBars(newOutsideTopHeight: topHeight,
                                                              newOutsideTrailingWidth: trailingWidth,
                                                              newOutsideBottomBarHeight: bottomHeight,
@@ -1485,7 +1484,6 @@ extension MainWindowController {
         exitPIP()
       }
 
-      fsState.finishAnimating()
       player.events.emit(.windowFullscreenChanged, data: true)
 
     } else if transition.isExitingFullScreen {
@@ -1516,8 +1514,6 @@ extension MainWindowController {
       if Preference.bool(for: .blackOutMonitor) {
         removeBlackWindows()
       }
-
-      fsState.finishAnimating()
 
       if player.info.isPaused {
         // When playback is paused the display link is stopped in order to avoid wasting energy on
