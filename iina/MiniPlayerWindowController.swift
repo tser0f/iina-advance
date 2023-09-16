@@ -11,6 +11,7 @@ import Cocoa
 // Hide playlist if its height is too small to display at least 3 items:
 
 class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
+  static let controlViewHeight: CGFloat = 72
   static let defaultWindowWidth: CGFloat = 240
   static let minWindowWidth: CGFloat = 240
   static let PlaylistMinHeight: CGFloat = 138
@@ -89,14 +90,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     }
   }()
 
-  lazy var controlViewHeight: CGFloat = {
-    _ = view  // Make sure view is initialized first
-    return backgroundView.frame.height
-  }()
-
   var currentDisplayedPlaylistHeight: CGFloat {
     let bottomBarHeight = mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.constant
-    return bottomBarHeight - controlViewHeight
+    return bottomBarHeight - MiniPlayerWindowController.controlViewHeight
   }
 
   // MARK: - Initialization
@@ -105,6 +101,8 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     super.viewDidLoad()
 
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerWindowController.PlaylistMinHeight).isActive = true
+
+    backgroundView.heightAnchor.constraint(equalToConstant: MiniPlayerWindowController.controlViewHeight).isActive = true
 
     /// Set up tracking area to show controller when hovering over it
     mainWindow.videoContainerView.addTrackingArea(NSTrackingArea(rect: mainWindow.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
@@ -380,9 +378,15 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   // MARK: - Window size & layout
 
   func windowDidResize() {
+    _ = view
     resetScrollingLabels()
+  }
+
+  func windowDidEndLiveResize() {
     saveCurrentPlaylistHeight()
+    log.verbose("WindowDidEndLiveResize: updating music mode geometry")
     updateMusicModeGeometry(toWindowFrame: window!.frame)
+    player.saveState()
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
@@ -430,7 +434,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
     let maxWindowWidth: CGFloat
     if isVideoVisible {
-      var maxVideoHeight = visibleScreenSize.height - controlViewHeight - minPlaylistHeight
+      var maxVideoHeight = visibleScreenSize.height - MiniPlayerWindowController.controlViewHeight - minPlaylistHeight
       /// `maxVideoHeight` can be negative if very short screen! Fall back to height based on `MiniPlayerMinWidth` if needed
       maxVideoHeight = max(maxVideoHeight, MiniPlayerWindowController.minWindowWidth / videoAspectRatio)
       maxWindowWidth = maxVideoHeight * videoAspectRatio
@@ -450,7 +454,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       newWidth = requestedSize.width
     }
     let videoHeight = isVideoVisible ? newWidth / videoAspectRatio : 0
-    let minWindowHeight = videoHeight + controlViewHeight + minPlaylistHeight
+    let minWindowHeight = videoHeight + MiniPlayerWindowController.controlViewHeight + minPlaylistHeight
     // Make sure height is within acceptable values
     var newHeight = max(requestedSize.height, minWindowHeight)
     let maxHeight = isPlaylistVisible ? visibleScreenSize.height : minWindowHeight
@@ -513,6 +517,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       // TODO: save geometry
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
 
+      log.verbose("Updating music mode geometry for video change")
       updateMusicModeGeometry(toWindowFrame: newWindowFrame)
       player.saveState()
     })
@@ -520,7 +525,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
   func updateMusicModeGeometry(toWindowFrame windowFrame: NSRect, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil) {
     let oldMusicModeGeo = mainWindow.musicModeGeometry
-
 
     let playlistHeight: CGFloat
     if oldMusicModeGeo.isPlaylistVisible {

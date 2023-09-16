@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21701"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -212,7 +213,6 @@
                         <constraint firstItem="HsE-Wq-L5N" firstAttribute="centerY" secondItem="gnl-l6-h4q" secondAttribute="centerY" id="X7a-AJ-Gdx"/>
                         <constraint firstItem="HsE-Wq-L5N" firstAttribute="width" secondItem="QnB-gd-QmI" secondAttribute="width" id="ZLE-vT-77g"/>
                         <constraint firstItem="QnB-gd-QmI" firstAttribute="centerY" secondItem="gnl-l6-h4q" secondAttribute="centerY" id="b2g-gw-xJI"/>
-                        <constraint firstAttribute="height" constant="72" id="kzp-CT-fth"/>
                         <constraint firstItem="gnl-l6-h4q" firstAttribute="leading" secondItem="HsE-Wq-L5N" secondAttribute="trailing" constant="6" id="mcw-uG-wQZ"/>
                         <constraint firstItem="HsE-Wq-L5N" firstAttribute="leading" secondItem="Q6R-eL-qkW" secondAttribute="leading" constant="6" id="o05-HJ-TcB"/>
                         <constraint firstItem="Wxl-Ex-FWV" firstAttribute="leading" secondItem="Q6R-eL-qkW" secondAttribute="leading" id="tNt-Id-EnH"/>

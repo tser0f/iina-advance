@@ -100,6 +100,10 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Status
 
+  var isAnimating: Bool {
+    return animationQueue.isRunning
+  }
+
   override var isOntop: Bool {
     didSet {
       updatePinToTopButton()
@@ -931,7 +935,7 @@ class MainWindowController: PlayerWindowController {
       }
       let oldLayout = currentLayout
       let futureLayoutSpec = LayoutSpec.fromPreferences(andSpec: oldLayout.spec)
-      let transition = buildLayoutTransition(from: oldLayout, to: futureLayoutSpec)
+      let transition = buildLayoutTransition(named: "UpdateTitleBar&OSC", from: oldLayout, to: futureLayoutSpec)
       animationQueue.run(transition.animationTasks)
     }
   }
@@ -1345,7 +1349,7 @@ class MainWindowController: PlayerWindowController {
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = oldLayout.spec.clone(mode: .fullScreen, isLegacyStyle: isLegacy)
-    let transition = buildLayoutTransition(from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
+    let transition = buildLayoutTransition(named: "Enter\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
     animationQueue.run(transition.animationTasks)
   }
 
@@ -1386,7 +1390,7 @@ class MainWindowController: PlayerWindowController {
     let windowedLayout = oldLayout.spec.clone(mode: .windowed, isLegacyStyle: Preference.bool(for: .useLegacyWindowedMode))
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
-    let transition = buildLayoutTransition(from: oldLayout, to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
+    let transition = buildLayoutTransition(named: "Exit\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
 
     animationQueue.run(transition.animationTasks)
   }
@@ -1977,7 +1981,7 @@ class MainWindowController: PlayerWindowController {
                                                      mode: oldLayout.spec.mode,
                                                      topBarPlacement: .insideVideo,
                                                      enableOSC: false)
-    let transition = buildLayoutTransition(from: oldLayout, to: interactiveModeLayout, totalEndingDuration: 0)
+    let transition = buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout, totalEndingDuration: 0)
     var animationTasks: [CocoaAnimation.Task] = transition.animationTasks
 
     // Now animate into Interactive Mode:
@@ -2072,7 +2076,7 @@ class MainWindowController: PlayerWindowController {
       self.cropSettingsView = nil
     })
 
-    let transition = buildLayoutTransition(from: oldLayout, to: LayoutSpec.fromPreferences(andSpec: oldLayout.spec),
+    let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: LayoutSpec.fromPreferences(andSpec: oldLayout.spec),
                                            totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
 
     animationTasks.append(contentsOf: transition.animationTasks)
@@ -2218,7 +2222,7 @@ class MainWindowController: PlayerWindowController {
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
       let oldLayout = currentLayout
       let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
-      buildLayoutTransition(from: oldLayout, to: miniPlayerLayout, thenRun: true)
+      buildLayoutTransition(named: "EnterMusicMode", from: oldLayout, to: miniPlayerLayout, thenRun: true)
     }
     // TODO: save windowed frame
     // TODO: switch layout
@@ -2233,7 +2237,7 @@ class MainWindowController: PlayerWindowController {
       
       let newSpec = miniPlayerLayout.spec.clone(mode: .windowed)
       let prevLayout = LayoutSpec.fromPreferences(andSpec: newSpec)
-      buildLayoutTransition(from: miniPlayerLayout, to: prevLayout, thenRun: true)
+      buildLayoutTransition(named: "ExitMusicMode", from: miniPlayerLayout, to: prevLayout, thenRun: true)
     }
   }
 

@@ -68,7 +68,7 @@ class CocoaAnimation {
 
   class SerialQueue {
 
-    private var isRunning = false
+    private(set) var isRunning = false
     private var taskQueue = LinkedList<Task>()
 
     /// Convenience function. Same as `run([Task])`, but for a single animation.

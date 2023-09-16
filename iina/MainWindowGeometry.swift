@@ -16,6 +16,18 @@ struct MusicModeGeometry: Equatable {
   let playlistHeight: CGFloat  /// indicates playlist height whether or not `isPlaylistVisible`
   let isVideoVisible: Bool
   let isPlaylistVisible: Bool
+
+  func toMainWindowGeometry(videoAspectRatio: CGFloat) -> MainWindowGeometry {
+    let outsideBottomBarHeight = MiniPlayerWindowController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
+    return MainWindowGeometry(windowFrame: windowFrame,
+                              outsideTopBarHeight: 0,
+                              outsideTrailingBarWidth: 0,
+                              outsideBottomBarHeight: outsideBottomBarHeight,
+                              outsideLeadingBarWidth: 0,
+                              insideLeadingBarWidth: 0,
+                              insideTrailingBarWidth: 0,
+                              videoAspectRatio: videoAspectRatio)
+  }
 }
 
 /**
@@ -143,8 +155,9 @@ struct MainWindowGeometry: Equatable {
                   height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight)
   }
 
-  var videoFrameInScreenCoords: NSRect {
-    return NSRect(origin: CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth, y: windowFrame.origin.y + outsideBottomBarHeight), size: videoSize)
+  var videoContainerFrameInScreenCoords: NSRect {
+    let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth, y: windowFrame.origin.y + outsideBottomBarHeight)
+    return NSRect(origin: origin, size: videoContainerSize)
   }
 
   var outsideBarsTotalSize: NSSize {
@@ -607,10 +620,13 @@ extension MainWindowController {
   }
 
   func updateCachedGeometry() {
+    guard !isAnimating else { return }
+
     switch currentLayout.spec.mode {
     case .windowed:
       windowGeometry = generateWindowGeometry(using: currentLayout)
     case .musicMode:
+      miniPlayer.updateMusicModeGeometry(toWindowFrame: window!.frame)
       break
     default:
       break
@@ -631,7 +647,9 @@ extension MainWindowController {
 
   func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry,
                                 enqueueAnimation: Bool = true, animate: Bool = true,setFrameImmediately: Bool = true) {
-    windowGeometry = newGeometry
+    if !currentLayout.isMusicMode {
+      windowGeometry = newGeometry
+    }
 
     let newWindowFrame = newGeometry.windowFrame
     if isFullScreen {
@@ -664,6 +682,7 @@ extension MainWindowController {
 
   func windowWillStartLiveResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
+    guard !isAnimating else { return }
     log.verbose("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)")
     isLiveResizingWidth = false
   }
@@ -792,10 +811,10 @@ extension MainWindowController {
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
+    guard !isAnimating else { return }
     log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
 
     if player.isInMiniPlayer {
-      _ = miniPlayer.view
       // Re-evaluate space requirements for labels. May need to toggle scroll
       miniPlayer.windowDidResize()
       return
@@ -823,6 +842,13 @@ extension MainWindowController {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
+    guard !isAnimating else { return }
+
+    if player.isInMiniPlayer {
+      // Re-evaluate space requirements for labels. May need to toggle scroll
+      miniPlayer.windowDidEndLiveResize()
+      return
+    }
 
     // This method can be called as a side effect of the animation. If so, ignore.
     guard fsState == .windowed else { return }

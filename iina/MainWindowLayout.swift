@@ -423,6 +423,7 @@ extension MainWindowController {
   // MARK: - Layout Transitions
 
   class LayoutTransition {
+    let name: String  // just used for debugging
     let fromLayout: LayoutState
     let toLayout: LayoutState
     let fromWindowGeometry: MainWindowGeometry
@@ -432,9 +433,10 @@ extension MainWindowController {
 
     var animationTasks: [CocoaAnimation.Task] = []
 
-    init(from fromLayout: LayoutState, from fromGeometry: MainWindowGeometry,
+    init(name: String, from fromLayout: LayoutState, from fromGeometry: MainWindowGeometry,
          to toLayout: LayoutState, to toGeometry: MainWindowGeometry,
          isInitialLayout: Bool = false) {
+      self.name = name
       self.fromLayout = fromLayout
       self.fromWindowGeometry = fromGeometry
       self.toLayout = toLayout
@@ -632,7 +634,7 @@ extension MainWindowController {
       initialGeometry = generateWindowGeometry(using: initialLayout)
     }
 
-    let transition = LayoutTransition(from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
+    let transition = LayoutTransition(name: "Initial Layout", from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
@@ -664,7 +666,7 @@ extension MainWindowController {
     } else {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
       log.debug("Player's saved layout does not match IINA global prefs. Will build and apply a corrected layout")
-      let fixerTransition = buildLayoutTransition(from: initialLayout, to: prefsSpec)
+      let fixerTransition = buildLayoutTransition(named: "Initial Layout Correction", from: initialLayout, to: prefsSpec)
       var tasks = fixerTransition.animationTasks
       if needsNativeFullScreen {
         tasks.append(CocoaAnimation.zeroDurationTask { [self] in
@@ -679,7 +681,8 @@ extension MainWindowController {
   /// First builds a new `LayoutState` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutState` to the new one.
   @discardableResult
-  func buildLayoutTransition(from fromLayout: LayoutState,
+  func buildLayoutTransition(named transitionName: String,
+                             from fromLayout: LayoutState,
                              to requestedSpec: LayoutSpec,
                              totalStartingDuration: CGFloat? = nil,
                              totalEndingDuration: CGFloat? = nil,
@@ -689,39 +692,28 @@ extension MainWindowController {
 
     let fromGeometry: MainWindowGeometry
     if fromLayout.isMusicMode {
-      let outsideBottomBarHeight = miniPlayer.controlViewHeight + (musicModeGeometry.isPlaylistVisible ? musicModeGeometry.playlistHeight : 0)
-      fromGeometry = MainWindowGeometry(windowFrame: musicModeGeometry.windowFrame,
-                                      outsideTopBarHeight: 0,
-                                      outsideTrailingBarWidth: 0,
-                                      outsideBottomBarHeight: outsideBottomBarHeight,
-                                      outsideLeadingBarWidth: 0,
-                                      insideLeadingBarWidth: 0,
-                                      insideTrailingBarWidth: 0,
-                                      videoAspectRatio: windowGeometry.videoAspectRatio)
+      fromGeometry = musicModeGeometry.toMainWindowGeometry(videoAspectRatio: windowGeometry.videoAspectRatio)
     } else {
       fromGeometry = getCurrentWindowGeometry()
     }
 
     // Geometry
     let toGeometry: MainWindowGeometry
-    let outsideBottomBarHeight: CGFloat
-    if requestedSpec.mode == .musicMode {
-      outsideBottomBarHeight = miniPlayer.controlViewHeight + (musicModeGeometry.isPlaylistVisible ? musicModeGeometry.playlistHeight : 0)
-      toGeometry = MainWindowGeometry(windowFrame: musicModeGeometry.windowFrame,
-                                      outsideTopBarHeight: 0,
-                                      outsideTrailingBarWidth: 0,
-                                      outsideBottomBarHeight: outsideBottomBarHeight,
-                                      outsideLeadingBarWidth: 0,
-                                      insideLeadingBarWidth: 0,
-                                      insideTrailingBarWidth: 0,
-                                      videoAspectRatio: fromGeometry.videoAspectRatio)
+    if fromLayout.isMusicMode != toLayout.isMusicMode {
+      if requestedSpec.mode == .musicMode {
+        toGeometry = musicModeGeometry.toMainWindowGeometry(videoAspectRatio: fromGeometry.videoAspectRatio)
+      } else {  // from music mode to windowed
+        // Restore prev window geometry
+        toGeometry = windowGeometry
+      }
     } else {
+      let outsideBottomBarHeight: CGFloat
       if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
         outsideBottomBarHeight = OSCToolbarButton.oscBarHeight
       } else {
         outsideBottomBarHeight = 0
       }
-      toGeometry = MainWindowGeometry(windowFrame: fromGeometry.windowFrame,
+      toGeometry = MainWindowGeometry(windowFrame: windowGeometry.windowFrame,
                                       outsideTopBarHeight: toLayout.topBarOutsideHeight,
                                       outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth,
                                       outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? outsideBottomBarHeight : 0,
@@ -731,7 +723,7 @@ extension MainWindowController {
                                       videoAspectRatio: fromGeometry.videoAspectRatio)
     }
 
-    let transition = LayoutTransition(from: fromLayout, from: fromGeometry, to: toLayout, to: toGeometry, isInitialLayout: false)
+    let transition = LayoutTransition(name: transitionName, from: fromLayout, from: fromGeometry, to: toLayout, to: toGeometry, isInitialLayout: false)
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {
@@ -756,7 +748,7 @@ extension MainWindowController {
     let needsFadeOutOldViews = transition.needsFadeOutOldViews
     let needsFadeInNewViews = transition.needsFadeInNewViews
 
-    log.verbose("Building layout transition. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
+    log.verbose("Building layout transition \(transition.name.quoted). EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
 
     // Starting animations:
 
@@ -791,6 +783,13 @@ extension MainWindowController {
       updateHiddenViewsAndConstraints(transition)
     })
 
+    // Extra task when toggling music mode: move & resize window
+    if transition.isTogglingMusicMode {
+      transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, timing: .easeInEaseOut, { [self] in
+        (window as! MainWindow).setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
+      }))
+    }
+
     // Ending animations:
 
     // EndingAnimation: Open new panels and fade in new views
@@ -824,7 +823,7 @@ extension MainWindowController {
   // MARK: Transition Tasks
 
   private func doPreTransitionWork(_ transition: LayoutTransition) {
-    log.verbose("DoPreTransitionWork")
+    log.verbose("[\(transition.name)] DoPreTransitionWork")
     controlBarFloating.isDragging = false
 
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
@@ -898,7 +897,7 @@ extension MainWindowController {
 
   private func fadeOutOldViews(_ transition: LayoutTransition) {
     let futureLayout = transition.toLayout
-    log.verbose("FadeOutOldViews")
+    log.verbose("[\(transition.name)] FadeOutOldViews")
 
     // Title bar & title bar accessories:
 
@@ -964,7 +963,7 @@ extension MainWindowController {
   private func closeOldPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    log.verbose("CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)")
+    log.verbose("[\(transition.name)] CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)")
 
     if transition.fromLayout.titleBarHeight > 0 && futureLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
@@ -1070,7 +1069,7 @@ extension MainWindowController {
   private func updateHiddenViewsAndConstraints(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    log.verbose("UpdateHiddenViewsAndConstraints")
+    log.verbose("[\(transition.name)] UpdateHiddenViewsAndConstraints")
 
     if transition.isTogglingLegacyWindowStyle {
       if transition.toLayout.spec.isLegacyStyle && !transition.isExitingFullScreen {
@@ -1236,7 +1235,7 @@ extension MainWindowController {
   private func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    log.verbose("OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
+    log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
 
     // Update heights to their final values:
     topOSCHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
@@ -1348,7 +1347,7 @@ extension MainWindowController {
   private func fadeInNewViews(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let futureLayout = transition.toLayout
-    log.verbose("FadeInNewViews")
+    log.verbose("[\(transition.name)] FadeInNewViews")
 
     if futureLayout.titleIconAndText.isShowable {
       window.titleVisibility = .visible
@@ -1420,7 +1419,7 @@ extension MainWindowController {
   }
 
   private func doPostTransitionWork(_ transition: LayoutTransition) {
-    log.verbose("DoPostTransitionWork")
+    log.verbose("[\(transition.name)] DoPostTransitionWork")
     // Update blending mode:
     updatePanelBlendingModes(to: transition.toLayout)
     /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out
@@ -1571,7 +1570,7 @@ extension MainWindowController {
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
 
-    log.verbose("Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
+    log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
     player.saveState()
   }
 

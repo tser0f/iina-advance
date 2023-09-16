@@ -44,7 +44,11 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       switch recognizer.state {
       case .began:
         // FIXME: confirm reset on video size change due to track change
-        windowGeometryAtMagnificationStart = mainWindow.getCurrentWindowGeometry()
+        if mainWindow.currentLayout.isMusicMode {
+          windowGeometryAtMagnificationStart = mainWindow.musicModeGeometry.toMainWindowGeometry(videoAspectRatio: mainWindow.videoView.aspectRatio)
+        } else {
+          windowGeometryAtMagnificationStart = mainWindow.getCurrentWindowGeometry()
+        }
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
@@ -84,7 +88,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       var newVideoHeight = newVideoWidth / windowGeometryAtMagnificationStart.videoAspectRatio
 
       let minPlaylistHeight: CGFloat = mainWindow.miniPlayer.isPlaylistVisible ? MiniPlayerWindowController.PlaylistMinHeight : 0
-      let minBottomBarHeight: CGFloat = mainWindow.miniPlayer.controlViewHeight + minPlaylistHeight
+      let minBottomBarHeight: CGFloat = MiniPlayerWindowController.controlViewHeight + minPlaylistHeight
       let maxVideoHeight = windowHeight - minBottomBarHeight
       if newVideoWidth < MiniPlayerWindowController.minWindowWidth {
         newVideoWidth = MiniPlayerWindowController.minWindowWidth
@@ -106,7 +110,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         mainWindow.miniPlayer.updateVideoHeightConstraint(height: newVideoHeight, animate: true)
         mainWindow.updateBottomBarHeight(to: newBottomBarHeight, bottomBarPlacement: .outsideVideo)
         (mainWindow.window as! MainWindow).setFrameImmediately(newWindowFrame, animate: false)
-        // TODO: save geometry
+        mainWindow.miniPlayer.updateMusicModeGeometry(toWindowFrame: newWindowFrame)
         mainWindow.player.saveState()
       }
       return

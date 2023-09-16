@@ -319,7 +319,7 @@ extension MainWindowController {
       }
 
       let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-      buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
+      buildLayoutTransition(named: "UpdateSidebarPlacements", from: oldLayout, to: newLayoutSpec, thenRun: true)
     }
   }
 
@@ -331,7 +331,7 @@ extension MainWindowController {
       let oldLayout = currentLayout
       let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
                                                trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide))
-      let transition = buildLayoutTransition(from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0)
+      let transition = buildLayoutTransition(named: "HideAllSidebars", from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0)
 
       if animate {
         animationQueue.run(transition.animationTasks)
@@ -398,7 +398,7 @@ extension MainWindowController {
 
     log.verbose("Transitioning to layout with \(leadingSidebar.locationID)=\(leadingSidebar.visibility) \(trailingSidebar.locationID)=\(trailingSidebar.visibility)")
     let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-    buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
+    buildLayoutTransition(named: "ChangeSidebarVisibility", from: oldLayout, to: newLayoutSpec, thenRun: true)
   }
 
   /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
@@ -828,7 +828,7 @@ extension MainWindowController {
       let newLayoutSpec = oldLayout.spec.clone(
         leadingSidebar: leadingSidebar.clone(tabGroups: newLeadingTabGroups, visibility: newLeadingSidebarVisibility),
         trailingSidebar: trailingSidebar.clone(tabGroups: newTrailingTabGroups, visibility: newTraillingSidebarVisibility))
-      buildLayoutTransition(from: oldLayout, to: newLayoutSpec, thenRun: true)
+      buildLayoutTransition(named: "MoveTabGroupToSidebar", from: oldLayout, to: newLayoutSpec, thenRun: true)
     }
   }
 
@@ -1022,7 +1022,7 @@ extension MainWindowController {
       animationQueue.runZeroDuration { [self] in
         let newLayoutSpec = oldLayout.spec.clone(leadingSidebar: hideLeading ? oldLayout.leadingSidebar.clone(visibility: .hide) : nil,
                                                  trailingSidebar: hideTrailing ? oldLayout.trailingSidebar.clone(visibility: .hide) : nil)
-        buildLayoutTransition(from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0, thenRun: true)
+        buildLayoutTransition(named: "HideSidebarsOnClick", from: oldLayout, to: newLayoutSpec, totalEndingDuration: 0, thenRun: true)
       }
       return true
     }
