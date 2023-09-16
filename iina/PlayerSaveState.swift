@@ -98,8 +98,10 @@ struct PlayerSaveState {
             geo.outsideTrailingBarWidth.string2f,
             geo.outsideBottomBarHeight.string2f,
             geo.outsideLeadingBarWidth.string2f,
-            geo.insideLeadingBarWidth.string2f,
+            geo.insideTopBarHeight.string2f,
             geo.insideTrailingBarWidth.string2f,
+            geo.insideBottomBarHeight.string2f,
+            geo.insideLeadingBarWidth.string2f,
             geo.windowFrame.origin.x.string2f,
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
@@ -412,7 +414,7 @@ struct PlayerSaveState {
   /// String -> `MainWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
     return deserializeCSV(.windowGeometry, fromProperties: properties,
-                          expectedTokenCount: 12,
+                          expectedTokenCount: 14,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
@@ -421,8 +423,10 @@ struct PlayerSaveState {
             let outsideTrailingBarWidth = Double(iter.next()!),
             let outsideBottomBarHeight = Double(iter.next()!),
             let outsideLeadingBarWidth = Double(iter.next()!),
-            let insideLeadingWidth = Double(iter.next()!),
-            let insideTrailingWidth = Double(iter.next()!),
+            let insideTopBarHeight = Double(iter.next()!),
+            let insideTrailingBarWidth = Double(iter.next()!),
+            let insideBottomBarHeight = Double(iter.next()!),
+            let insideLeadingBarWidth = Double(iter.next()!),
             let winOriginX = Double(iter.next()!),
             let winOriginY = Double(iter.next()!),
             let winWidth = Double(iter.next()!),
@@ -435,7 +439,8 @@ struct PlayerSaveState {
       return MainWindowGeometry(windowFrame: windowFrame,
                                 outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                                 outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                insideLeadingBarWidth: insideLeadingWidth, insideTrailingBarWidth: insideTrailingWidth,
+                                insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
+                                insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
                                 videoAspectRatio: videoAspectRatio)
     })
   }

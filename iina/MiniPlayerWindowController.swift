@@ -12,8 +12,8 @@ import Cocoa
 
 class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   static let controlViewHeight: CGFloat = 72
-  static let defaultWindowWidth: CGFloat = 240
-  static let minWindowWidth: CGFloat = 240
+  static let defaultWindowWidth: CGFloat = 280
+  static let minWindowWidth: CGFloat = 260
   static let PlaylistMinHeight: CGFloat = 138
   static private let animationDurationShowControl: TimeInterval = 0.2
 
@@ -348,26 +348,31 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   @IBAction func toggleVideoView(_ sender: Any) {
     guard let window = mainWindow.window else { return }
     let showVideo = !isVideoVisible
-    Logger.log("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)", level: .verbose)
+    log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
     mainWindow.updateMusicModeButtonsVisibility()
     var newWindowFrame = window.frame
+    let bottomBarHeight = mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.constant
     let videoHeightIfVisible = newWindowFrame.width / mainWindow.videoView.aspectRatio
-    if showVideo {
-      newWindowFrame.size.height += videoHeightIfVisible
-    } else {
-      newWindowFrame.size.height -= round(mainWindow.videoView.frame.height)
-    }
+    let newWindowHeight = bottomBarHeight + (showVideo ? videoHeightIfVisible : 0)
+    newWindowFrame.size.height = newWindowHeight
     newWindowFrame.size = constrainWindowSize(newWindowFrame.size, isVideoVisible: showVideo)
-
-
-    let videoHeight = showVideo ? videoHeightIfVisible : 0
-    let bottomBarHeight = newWindowFrame.height - videoHeight
 
     mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
-      updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: true)
-      mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
+      log.verbose("VideoView setting visible=\(isVideoVisible), videoHeight=\(videoHeightIfVisible), bottomBarHeight=\(bottomBarHeight), windowHeight=\(newWindowFrame.size.height)")
+      mainWindow.videoView.isHidden = !showVideo
+      if isVideoVisible {
+//        mainWindow.videoView.constrainForNormalLayout()
+        mainWindow.videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
+        mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
+        updateVideoHeightConstraint(height: videoHeightIfVisible, animate: true)
+      } else {
+//        mainWindow.videoView.constrainLayoutToEqualsOffsetOnly(top: 0, bottom: 0)
+        mainWindow.videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
+        mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
+      }
+      updateVideoHeightConstraint(height: videoHeightIfVisible, animate: true)
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
 
       updateMusicModeGeometry(toWindowFrame: newWindowFrame, isVideoVisible: showVideo)

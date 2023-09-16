@@ -604,9 +604,10 @@ extension MainWindowController {
     let initialLayoutSpec: LayoutSpec
     var initialGeometry: MainWindowGeometry? = nil
     let isRestoringFromPrevLaunch: Bool
+
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
-      log.verbose("Transitioning to initial layout from prior window state")
       isRestoringFromPrevLaunch = true
+      log.verbose("Transitioning to initial layout from prior window state")
 
       // Restore saved geometries
       if let priorWindowGeometry = priorState.windowGeometry {
@@ -649,9 +650,10 @@ extension MainWindowController {
         initialGeometry = musicModeGeometry.toMainWindowGeometry(videoAspectRatio: windowGeometry.videoAspectRatio)
         (window as! MainWindow).setFrameImmediately(initialGeometry!.windowFrame)
       }
+
     } else {
-      log.verbose("Transitioning to initial layout from global prefs")
       isRestoringFromPrevLaunch = false
+      log.verbose("Transitioning to initial layout from app prefs")
       initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     }
 
@@ -694,7 +696,7 @@ extension MainWindowController {
       }
     } else {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
-      log.debug("Player's saved layout does not match IINA global prefs. Will build and apply a corrected layout")
+      log.debug("Player's saved layout does not match IINA app prefs. Will build and apply a corrected layout")
       let fixerTransition = buildLayoutTransition(named: "FixInvalidInitialLayout", from: initialLayout, to: prefsSpec)
       var tasks = fixerTransition.animationTasks
       if needsNativeFullScreen {
@@ -736,19 +738,21 @@ extension MainWindowController {
         toGeometry = windowGeometry
       }
     } else {
-      let outsideBottomBarHeight: CGFloat
+      let bottomBarHeight: CGFloat
       if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
-        outsideBottomBarHeight = OSCToolbarButton.oscBarHeight
+        bottomBarHeight = OSCToolbarButton.oscBarHeight
       } else {
-        outsideBottomBarHeight = 0
+        bottomBarHeight = 0
       }
       toGeometry = MainWindowGeometry(windowFrame: windowGeometry.windowFrame,
                                       outsideTopBarHeight: toLayout.topBarOutsideHeight,
                                       outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth,
-                                      outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? outsideBottomBarHeight : 0,
+                                      outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0,
                                       outsideLeadingBarWidth: toLayout.leadingBarOutsideWidth,
-                                      insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
+                                      insideTopBarHeight: toLayout.topBarPlacement == .insideVideo ? toLayout.topBarHeight : 0,
                                       insideTrailingBarWidth: toLayout.trailingBarInsideWidth,
+                                      insideBottomBarHeight: toLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0,
+                                      insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
                                       videoAspectRatio: fromGeometry.videoAspectRatio)
     }
 
@@ -1288,7 +1292,8 @@ extension MainWindowController {
       windowHeightDelta += transition.toWindowGeometry.outsideBottomBarHeight
       windowYDelta += transition.toWindowGeometry.outsideBottomBarHeight
     }
-    updateBottomBarHeight(to: transition.toWindowGeometry.outsideBottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
+    let bottomBarHeight = transition.toLayout.bottomBarPlacement == .insideVideo ? transition.toWindowGeometry.insideBottomBarHeight : transition.toWindowGeometry.outsideBottomBarHeight
+    updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
 
     if transition.isEnteringFullScreen {
       // Entering FullScreen

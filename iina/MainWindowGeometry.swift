@@ -24,8 +24,10 @@ struct MusicModeGeometry: Equatable {
                               outsideTrailingBarWidth: 0,
                               outsideBottomBarHeight: outsideBottomBarHeight,
                               outsideLeadingBarWidth: 0,
-                              insideLeadingBarWidth: 0,
+                              insideTopBarHeight: 0,
                               insideTrailingBarWidth: 0,
+                              insideBottomBarHeight: 0,
+                              insideLeadingBarWidth: 0,
                               videoAspectRatio: videoAspectRatio)
   }
 }
@@ -78,8 +80,10 @@ struct MainWindowGeometry: Equatable {
   let outsideLeadingBarWidth: CGFloat
 
   // Inside panels
-  let insideLeadingBarWidth: CGFloat
+  let insideTopBarHeight: CGFloat
   let insideTrailingBarWidth: CGFloat
+  let insideBottomBarHeight: CGFloat
+  let insideLeadingBarWidth: CGFloat
 
   let videoAspectRatio: CGFloat
   let videoSize: NSSize
@@ -92,29 +96,36 @@ struct MainWindowGeometry: Equatable {
 
   init(windowFrame: NSRect,
        outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
-       insideLeadingBarWidth: CGFloat, insideTrailingBarWidth: CGFloat,
+       insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
        videoAspectRatio: CGFloat) {
     assert(outsideTopBarHeight >= 0, "Expected outsideTopBarHeight >= 0, found \(outsideTopBarHeight)")
     assert(outsideTrailingBarWidth >= 0, "Expected outsideTrailingBarWidth >= 0, found \(outsideTrailingBarWidth)")
     assert(outsideBottomBarHeight >= 0, "Expected outsideBottomBarHeight >= 0, found \(outsideBottomBarHeight)")
     assert(outsideLeadingBarWidth >= 0, "Expected outsideLeadingBarWidth >= 0, found \(outsideLeadingBarWidth)")
-    assert(insideLeadingBarWidth >= 0, "Expected insideLeadingBarWidth >= 0, found \(insideLeadingBarWidth)")
-    assert(insideTrailingBarWidth >= 0, "Expected insideTrailingBarWidth >= 0, found \(insideTrailingBarWidth)")
     self.windowFrame = windowFrame
     self.outsideTopBarHeight = outsideTopBarHeight
     self.outsideTrailingBarWidth = outsideTrailingBarWidth
     self.outsideBottomBarHeight = outsideBottomBarHeight
     self.outsideLeadingBarWidth = outsideLeadingBarWidth
-    self.insideLeadingBarWidth = insideLeadingBarWidth
+
+    assert(insideTopBarHeight >= 0, "Expected insideTopBarHeight >= 0, found \(insideTopBarHeight)")
+    assert(insideTrailingBarWidth >= 0, "Expected insideTrailingBarWidth >= 0, found \(insideTrailingBarWidth)")
+    assert(insideBottomBarHeight >= 0, "Expected insideBottomBarHeight >= 0, found \(insideBottomBarHeight)")
+    assert(insideLeadingBarWidth >= 0, "Expected insideLeadingBarWidth >= 0, found \(insideLeadingBarWidth)")
+    self.insideTopBarHeight = insideTopBarHeight
     self.insideTrailingBarWidth = insideTrailingBarWidth
+    self.insideBottomBarHeight = insideBottomBarHeight
+    self.insideLeadingBarWidth = insideLeadingBarWidth
+
     self.videoAspectRatio = videoAspectRatio
+
     let videoContainerSize = MainWindowGeometry.computeVideoContainerSize(from: windowFrame, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
     self.videoSize = MainWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
   }
 
   init(windowFrame: NSRect,
        videoContainerFrame: NSRect,
-       insideLeadingBarWidth: CGFloat, insideTrailingBarWidth: CGFloat,
+       insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
        videoAspectRatio: CGFloat) {
     assert(videoContainerFrame.height <= windowFrame.height, "videoContainerFrame.height (\(videoContainerFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
     assert(videoContainerFrame.width <= windowFrame.width, "videoContainerFrame.width (\(videoContainerFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
@@ -126,14 +137,18 @@ struct MainWindowGeometry: Equatable {
               outsideTrailingBarWidth: windowFrame.width - videoContainerFrame.width - outsideLeadingBarWidth,
               outsideBottomBarHeight: videoContainerFrame.origin.y,
               outsideLeadingBarWidth: videoContainerFrame.origin.x,
-              insideLeadingBarWidth: insideLeadingBarWidth, insideTrailingBarWidth: insideTrailingBarWidth,
+              insideTopBarHeight: insideTopBarHeight,
+              insideTrailingBarWidth: insideTrailingBarWidth,
+              insideBottomBarHeight: insideBottomBarHeight,
+              insideLeadingBarWidth: insideLeadingBarWidth,
               videoAspectRatio: videoAspectRatio)
   }
 
   func clone(windowFrame: NSRect? = nil,
              outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
              outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
-             insideLeadingBarWidth: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
+             insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
+             insideBottomBarHeight: CGFloat? = nil, insideLeadingBarWidth: CGFloat? = nil,
              videoAspectRatio: CGFloat? = nil) -> MainWindowGeometry {
 
     return MainWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
@@ -141,8 +156,10 @@ struct MainWindowGeometry: Equatable {
                               outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
                               outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
                               outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
-                              insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
+                              insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
                               insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
+                              insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
+                              insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
                               videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
@@ -636,8 +653,11 @@ extension MainWindowController {
   func generateWindowGeometry(using layout: LayoutState) -> MainWindowGeometry {
     return MainWindowGeometry(windowFrame: window!.frame,
                               videoContainerFrame: videoContainerView.frame,
-                              insideLeadingBarWidth: layout.leadingBarInsideWidth,
+                              insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
                               insideTrailingBarWidth: layout.trailingBarInsideWidth,
+                              // TODO: find a better solution than just replicating this logic here
+                              insideBottomBarHeight: (layout.bottomBarPlacement == .insideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0,
+                              insideLeadingBarWidth: layout.leadingBarInsideWidth,
                               videoAspectRatio: videoView.aspectRatio)
   }
 
