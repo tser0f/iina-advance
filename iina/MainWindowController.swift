@@ -214,6 +214,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   lazy var musicModeGeometry: MusicModeGeometry = {
+    // Default to left side of screen, full height
     let layout = currentLayout
     let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
@@ -1329,6 +1330,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   func toggleWindowFullScreen() {
+    log.verbose("ToggleWindowFullScreen() entered")
     let layout = currentLayout
 
     switch layout.spec.mode {

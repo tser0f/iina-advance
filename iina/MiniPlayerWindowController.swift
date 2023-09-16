@@ -514,7 +514,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       let bottomBarHeight = newWindowFrame.height - videoHeight
       updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: true)
       mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
-      // TODO: save geometry
+      // TODO: consolidate duplicated code
       (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
 
       log.verbose("Updating music mode geometry for video change")

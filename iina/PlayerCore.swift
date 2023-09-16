@@ -1693,6 +1693,7 @@ class PlayerCore: NSObject {
 
     let fs = mpv.getFlag(MPVOption.Window.fullscreen)
     if fs != mainWindow.isFullScreen {
+      log.verbose("IINA FullScreen state (\(mainWindow.isFullScreen.yn)) does not match mpv (\(fs.yn)). Will change to match mpv state")
       DispatchQueue.main.async {
         self.mainWindow.toggleWindowFullScreen()
       }
@@ -1700,6 +1701,7 @@ class PlayerCore: NSObject {
 
     let ontop = mpv.getFlag(MPVOption.Window.ontop)
     if ontop != mainWindow.isOntop {
+      log.verbose("IINA OnTop state (\(mainWindow.isOntop.yn)) does not match mpv (\(ontop.yn)). Will change to match mpv state")
       DispatchQueue.main.async {
         self.mainWindow.setWindowFloatingOnTop(ontop, updateOnTopStatus: false)
       }

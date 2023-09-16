@@ -77,8 +77,9 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         mainWindow.log.verbose("Window is in music mode but video is not visible; ignoring pinch gesture")
         return
       }
+      let screenFrame = mainWindow.bestScreen.visibleFrame
       // Window height should not change. Only video size should be scaled
-      let windowHeight = windowGeometryAtMagnificationStart.windowFrame.height  // should stay fixed
+      let windowHeight = min(screenFrame.height, windowGeometryAtMagnificationStart.windowFrame.height)  // should stay fixed
       // Constrain desired width within min and max allowed, then recalculate height from new value
       var newVideoWidth = min(
         // TODO: figure out how to remove need for 8px extra pixels on each side
@@ -99,7 +100,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         newVideoWidth = maxVideoHeight * windowGeometryAtMagnificationStart.videoAspectRatio
       }
 
-      let newWindowFrame = NSRect(origin: windowGeometryAtMagnificationStart.windowFrame.origin, size: NSSize(width: newVideoWidth, height: windowHeight)).constrain(in: mainWindow.bestScreen.visibleFrame)
+      let newWindowFrame = NSRect(origin: windowGeometryAtMagnificationStart.windowFrame.origin, size: NSSize(width: newVideoWidth, height: windowHeight)).constrain(in: screenFrame)
 
       // Need to find video height to update the height of sections below it. Can easily calculate from the final window width
       var newBottomBarHeight = newWindowFrame.height - newVideoHeight

@@ -78,12 +78,14 @@ struct PlayerSaveState {
   let layoutSpec: MainWindowController.LayoutSpec?
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
   let windowGeometry: MainWindowGeometry?
+  let musicModeGeometry: MusicModeGeometry?
 
   init(_ props: [String: Any]) {
     self.properties = props
 
     self.layoutSpec = PlayerSaveState.deserializeLayoutSpec(from: props)
     self.windowGeometry = PlayerSaveState.deserializeWindowGeometry(from: props)
+    self.musicModeGeometry = PlayerSaveState.deserializeMusicModeGeometry(from: props)
   }
 
   // MARK: - Save State / Serialize to prefs strings
@@ -481,28 +483,12 @@ struct PlayerSaveState {
       info.userPreferredVideoContainerSizeTall = size
     }
 
-    if let windowGeometry = windowGeometry {
-      log.verbose("Successfully parsed prior geometry from prefs")
-
-      log.debug("Restoring windowFrame to \(windowGeometry.windowFrame), videoAspectRatio: \(windowGeometry.videoAspectRatio)")
-      player.videoView.updateAspectRatio(to: windowGeometry.videoAspectRatio)
-      mainWindow.setCurrentWindowGeometry(to: windowGeometry, enqueueAnimation: false)
-    } else {
-      log.error("Failed to get player window layout and/or geometry from prefs")
-    }
-
-    if let musicModeGeometry = PlayerSaveState.deserializeMusicModeGeometry(from: properties) {
-      log.debug("Restoring musicMode frame to \(musicModeGeometry.windowFrame), video=\(musicModeGeometry.isVideoVisible.yn) playlist=\(musicModeGeometry.isPlaylistVisible.yn)")
-      mainWindow.musicModeGeometry = musicModeGeometry
-    } else {
-      log.error("Failed to get player window layout and/or geometry from prefs")
-    }
-
     guard let urlString = string(for: .url), let url = URL(string: urlString) else {
       log.error("Could not restore player window: no value for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
       return
     }
 
+    // Open the window!
     player.openURLs([url], shouldAutoLoad: false)
 
     let isOnTop = bool(for: .isOnTop) ?? false
@@ -525,6 +511,10 @@ struct PlayerSaveState {
     if let startTime = string(for: .progress) {
       // This is actaully a decimal number but mpv expects a string
       mpv.setString(MPVOption.PlaybackControl.start, startTime)
+    }
+
+    if let layoutSpec = layoutSpec, layoutSpec.isFullScreen {
+      player.mpv.setFlag(MPVOption.Window.fullscreen, true)
     }
 
     if let wasPaused = bool(for: .paused) {

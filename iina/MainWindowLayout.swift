@@ -138,6 +138,10 @@ extension MainWindowController {
                         oscPosition: self.oscPosition)
     }
 
+    var isFullScreen: Bool {
+      return mode == .fullScreen
+    }
+
     var isNativeFullScreen: Bool {
       return mode == .fullScreen && !isLegacyStyle
     }
@@ -604,6 +608,22 @@ extension MainWindowController {
       log.verbose("Transitioning to initial layout from prior window state")
       isRestoringFromPrevLaunch = true
 
+      // Restore saved geometries
+      if let priorWindowGeometry = priorState.windowGeometry {
+        log.debug("Restoring normal windowFrame to \(priorWindowGeometry.windowFrame), videoAspectRatio: \(priorWindowGeometry.videoAspectRatio)")
+        player.videoView.updateAspectRatio(to: priorWindowGeometry.videoAspectRatio)
+        windowGeometry = priorWindowGeometry
+      } else {
+        log.error("Failed to get player window geometry from prefs")
+      }
+
+      if let priorMusicModeGeometry = priorState.musicModeGeometry {
+        log.debug("Restoring music mode windowFrame to \(priorMusicModeGeometry.windowFrame), video=\(priorMusicModeGeometry.isVideoVisible.yn) playlist=\(priorMusicModeGeometry.isPlaylistVisible.yn)")
+        musicModeGeometry = priorMusicModeGeometry
+      } else {
+        log.error("Failed to get player window layout and/or geometry from prefs")
+      }
+
       if priorLayoutSpec.mode == .musicMode {
         player.overrideAutoMusicMode = true
       }
@@ -611,15 +631,23 @@ extension MainWindowController {
       if priorLayoutSpec.isNativeFullScreen && !currentLayout.isFullScreen {
         // Special handling for native fullscreen. Cannot avoid animation.
         // So instead restore windowed layout first, then toggle fullscreen explicitly
-        initialLayoutSpec = priorLayoutSpec.clone(mode: currentLayout.spec.mode)
+        initialLayoutSpec = priorLayoutSpec.clone(mode: .windowed)
         needsNativeFullScreen = true
       } else {
         initialLayoutSpec = priorLayoutSpec
       }
 
-      if let priorGeometry = priorState.windowGeometry {
-        // FIXME: what about full screen?
-        initialGeometry = priorGeometry
+      // Restore window size & position
+      switch initialLayoutSpec.mode {
+      case .fullScreen:
+        initialGeometry = windowGeometry
+      case .windowed:
+        initialGeometry = windowGeometry
+        (window as! MainWindow).setFrameImmediately(windowGeometry.windowFrame)
+      case .musicMode:
+        /// `musicModeGeometry` should have already been deserialized and set
+        initialGeometry = musicModeGeometry.toMainWindowGeometry(videoAspectRatio: windowGeometry.videoAspectRatio)
+        (window as! MainWindow).setFrameImmediately(initialGeometry!.windowFrame)
       }
     } else {
       log.verbose("Transitioning to initial layout from global prefs")
@@ -634,7 +662,8 @@ extension MainWindowController {
       initialGeometry = generateWindowGeometry(using: initialLayout)
     }
 
-    let transition = LayoutTransition(name: "Initial Layout", from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
+    let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
+    let transition = LayoutTransition(name: name, from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
@@ -666,7 +695,7 @@ extension MainWindowController {
     } else {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
       log.debug("Player's saved layout does not match IINA global prefs. Will build and apply a corrected layout")
-      let fixerTransition = buildLayoutTransition(named: "Initial Layout Correction", from: initialLayout, to: prefsSpec)
+      let fixerTransition = buildLayoutTransition(named: "FixInvalidInitialLayout", from: initialLayout, to: prefsSpec)
       var tasks = fixerTransition.animationTasks
       if needsNativeFullScreen {
         tasks.append(CocoaAnimation.zeroDurationTask { [self] in
@@ -826,13 +855,11 @@ extension MainWindowController {
     log.verbose("[\(transition.name)] DoPreTransitionWork")
     controlBarFloating.isDragging = false
 
-    // Save windowed geometry (if applicable)
-    updateCachedGeometry()
-
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
     currentLayout = transition.toLayout
 
+    // TODO: might not be the best place to set this...
     if transition.toLayout.spec.mode == .windowed {
       windowGeometry = transition.toWindowGeometry
     }
@@ -842,6 +869,7 @@ extension MainWindowController {
     if transition.isEnteringFullScreen {
       // Entering FullScreen
       let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
+      /// `windowGeometry` should already be kept up to date. Might be hard to track down bugs...
       log.verbose("Entering fullscreen, priorWindowedGeometry := \(windowGeometry)")
 
       // Hide traffic light buttons & title during the animation.
