@@ -729,16 +729,12 @@ extension MainWindowController {
     }
 
     // Geometry
+    // FIXME: need to finish pulling out all geometry logic from transition code and put here
     let toGeometry: MainWindowGeometry
-    if fromLayout.isMusicMode != toLayout.isMusicMode {
-      if requestedSpec.mode == .musicMode {
-        /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
-        let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
-        toGeometry = musicModeGeometryAspectCorrected.toMainWindowGeometry()
-      } else {  // from music mode to windowed
-        // Restore prev window geometry
-        toGeometry = windowGeometry
-      }
+    if !fromLayout.isMusicMode && toLayout.isMusicMode {
+      /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
+      let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
+      toGeometry = musicModeGeometryAspectCorrected.toMainWindowGeometry()
     } else {
       let bottomBarHeight: CGFloat
       if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
