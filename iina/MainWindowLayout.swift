@@ -731,7 +731,7 @@ extension MainWindowController {
     // Geometry
     // FIXME: need to finish pulling out all geometry logic from transition code and put here
     let toGeometry: MainWindowGeometry
-    if !fromLayout.isMusicMode && toLayout.isMusicMode {
+    if toLayout.isMusicMode {
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
       toGeometry = musicModeGeometryAspectCorrected.toMainWindowGeometry()
@@ -764,6 +764,17 @@ extension MainWindowController {
     } else {
       startingAnimationDuration = CocoaAnimation.DefaultDuration
     }
+    var showFadeableViewsDuration: CGFloat = startingAnimationDuration
+    var fadeOutOldViewsDuration: CGFloat = startingAnimationDuration
+    var closeOldPanelsDuration: CGFloat = startingAnimationDuration
+    if transition.isEnteringMusicMode {
+      showFadeableViewsDuration *= 0.3
+      fadeOutOldViewsDuration *= 0.3
+      closeOldPanelsDuration *= 0.3
+    } else if transition.isExitingMusicMode {
+      showFadeableViewsDuration = 0
+      fadeOutOldViewsDuration = 0
+    }
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
@@ -776,39 +787,35 @@ extension MainWindowController {
       panelTimingName = .linear
     }
 
-    let needsFadeOutOldViews = transition.needsFadeOutOldViews
-    let needsFadeInNewViews = transition.needsFadeInNewViews
-
     log.verbose("Building layout transition \(transition.name.quoted). EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration)")
 
     // Starting animations:
 
-    // Set initial var or other tasks which happen before main animations
+    // 0: Set initial var or other tasks which happen before main animations
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
       doPreTransitionWork(transition)
     })
 
     // StartingAnimation 1: Show fadeable views from current layout
-    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: startingAnimationDuration, forceShowTopBar: true) {
+    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: showFadeableViewsDuration, forceShowTopBar: true) {
       transition.animationTasks.append(fadeAnimation)
     }
 
-    if needsFadeOutOldViews {
-      // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
-      transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, { [self] in
+    // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
+    if transition.needsFadeOutOldViews {
+      transition.animationTasks.append(CocoaAnimation.Task(duration: fadeOutOldViewsDuration, { [self] in
         fadeOutOldViews(transition)
       }))
     }
 
-
+    // StartingAnimation 3: Close/Minimize panels which are no longer needed.
     if transition.needsCloseOldPanels {
-      // StartingAnimation 3: Minimize panels which are no longer needed.
-      transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, timing: panelTimingName, { [self] in
+      transition.animationTasks.append(CocoaAnimation.Task(duration: closeOldPanelsDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
       }))
     }
 
-    // Middle point: update style & constraints. Should have minimal visual changes
+    // 0: Middle point: update style & constraints. Should have minimal visual changes
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
       // This also can change window styleMask
       updateHiddenViewsAndConstraints(transition)
@@ -816,7 +823,7 @@ extension MainWindowController {
 
     // Extra task when toggling music mode: move & resize window
     if transition.isTogglingMusicMode {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: startingAnimationDuration, timing: .easeInEaseOut, { [self] in
+      transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         (window as! MainWindow).setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
       }))
     }
@@ -834,7 +841,7 @@ extension MainWindowController {
       }
     }))
 
-    if !transition.isTogglingFullScreen && needsFadeInNewViews {
+    if !transition.isTogglingFullScreen && transition.needsFadeInNewViews {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
         fadeInNewViews(transition)
       }))

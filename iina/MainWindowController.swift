@@ -859,10 +859,6 @@ class MainWindowController: PlayerWindowController {
         log.verbose("Skipping layout refresh due to interactive mode")
         return
       }
-      guard !currentLayout.isMusicMode else {
-        log.verbose("Skipping layout refresh due to music mode")
-        return
-      }
       let oldLayout = currentLayout
       let futureLayoutSpec = LayoutSpec.fromPreferences(andSpec: oldLayout.spec)
       let transition = buildLayoutTransition(named: "UpdateTitleBar&OSC", from: oldLayout, to: futureLayoutSpec)
