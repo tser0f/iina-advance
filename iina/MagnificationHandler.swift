@@ -83,7 +83,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       let windowHeight = min(screenFrame.height, windowGeometryAtMagnificationStart.windowFrame.height)  // should stay fixed
       // Constrain desired width within min and max allowed, then recalculate height from new value
       var newVideoWidth = min(
-        // TODO: figure out how to remove need for 8px extra pixels on each side
+        // TODO: figure out how to remove need for extra 8px on each side
         max(MiniPlayerWindowController.minWindowWidth + 16, windowGeometryAtMagnificationStart.videoSize.width * scale),
         MiniPlayerWindowController.maxWindowWidth)
       mainWindow.log.verbose("Scaling video from pinch gesture in music mode (aspect: \(windowGeometryAtMagnificationStart.videoAspectRatio)), trying width: \(newVideoWidth)")
@@ -103,17 +103,11 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
       let newWindowFrame = NSRect(origin: windowGeometryAtMagnificationStart.windowFrame.origin, size: NSSize(width: newVideoWidth, height: windowHeight)).constrain(in: screenFrame)
 
-      // Need to find video height to update the height of sections below it. Can easily calculate from the final window width
-      var newBottomBarHeight = newWindowFrame.height - newVideoHeight
-      newBottomBarHeight = newWindowFrame.height - newVideoHeight
-      mainWindow.log.verbose("Scaling video from pinch gesture in music mode, got final videoSize: \(newVideoWidth) x \(newVideoHeight), bottomBarHeight: \(newBottomBarHeight), windowFrame: \(newWindowFrame)")
+      let newMusicModeGeo = mainWindow.musicModeGeometry.clone(windowFrame: newWindowFrame)
+      mainWindow.log.verbose("Scaling video from pinch gesture in music mode, got final videoSize: \(newVideoWidth) x \(newVideoHeight), bottomBarHeight: \(newMusicModeGeo.bottomBarHeight), windowFrame: \(newWindowFrame)")
 
       CocoaAnimation.disableAnimation{
-        mainWindow.miniPlayer.updateVideoHeightConstraint(height: newVideoHeight, animate: true)
-        mainWindow.updateBottomBarHeight(to: newBottomBarHeight, bottomBarPlacement: .outsideVideo)
-        (mainWindow.window as! MainWindow).setFrameImmediately(newWindowFrame, animate: false)
-        mainWindow.miniPlayer.updateMusicModeGeometry(newWindowFrame: newWindowFrame)
-        mainWindow.player.saveState()
+        mainWindow.miniPlayer.apply(newMusicModeGeo)
       }
       return
     }

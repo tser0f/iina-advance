@@ -309,13 +309,14 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     let showPlaylist = !isPlaylistVisible
     Logger.log("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)", level: .verbose)
     let currentDisplayedPlaylistHeight = currentDisplayedPlaylistHeight
+    let oldGeometry = mainWindow.musicModeGeometry
     var newWindowFrame = window.frame
 
     if showPlaylist {
       mainWindow.playlistView.reloadData(playlist: true, chapters: true)
 
       // Try to show playlist using previous height
-      let desiredPlaylistHeight = mainWindow.musicModeGeometry.playlistHeight
+      let desiredPlaylistHeight = oldGeometry.playlistHeight
       // The window may be in the middle of a previous toggle, so we can't just assume window's current frame
       // represents a state where the playlist is fully shown or fully hidden. Instead, start by computing the height
       // we want to set, and then figure out the changes needed to the window's existing frame.
@@ -325,6 +326,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     } else { // hide playlist
       // Save playlist height first
       saveCurrentPlaylistHeight()
+      newWindowFrame.size.height -= currentDisplayedPlaylistHeight
     }
 
     let heightDifference = newWindowFrame.height - window.frame.height
@@ -332,59 +334,35 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     newWindowFrame.origin.y = newWindowFrame.origin.y - heightDifference
 
     // Constrain window so that it doesn't expand below bottom of screen, or fall offscreen
-    let requestedGeometry = mainWindow.musicModeGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
-    let newGeometry = requestedGeometry.constrainWithin(mainWindow.bestScreen.visibleFrame)
-    newWindowFrame = newGeometry.windowFrame
+    let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
 
     mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showPlaylist, for: .musicModeShowPlaylist)
-
-      mainWindow.updateBottomBarHeight(to: newGeometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
-      updateVideoHeightConstraint(height: newGeometry.videoHeight, animate: true)
-      (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
-      mainWindow.musicModeGeometry = newGeometry
-      player.saveState()
+      apply(newGeometry)
     }))
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
-    guard let window = mainWindow.window else { return }
     let showVideo = !isVideoVisible
     log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
     mainWindow.updateMusicModeButtonsVisibility()
 
-    let oldGeo = mainWindow.musicModeGeometry
-    var newWindowFrame = oldGeo.windowFrame
+    let oldGeometry = mainWindow.musicModeGeometry
+    var newWindowFrame = oldGeometry.windowFrame
     if showVideo {
-      newWindowFrame.size.height += oldGeo.videoHeightIfVisible
+      newWindowFrame.size.height += oldGeometry.videoHeightIfVisible
     } else {
-      newWindowFrame.size.height -= oldGeo.videoHeightIfVisible
+      newWindowFrame.size.height -= oldGeometry.videoHeightIfVisible
     }
 
-    let requestedGeometry = oldGeo.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
-    let newGeometry = requestedGeometry.constrainWithin(mainWindow.bestScreen.visibleFrame)
-    newWindowFrame = newGeometry.windowFrame
-    let bottomBarHeight = newGeometry.bottomBarHeight
+    let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
 
     mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
-      log.verbose("VideoView setting visible=\(isVideoVisible), videoHeight=\(newGeometry.videoHeight), bottomBarHeight=\(bottomBarHeight), windowHeight=\(newWindowFrame.size.height)")
+      log.verbose("VideoView setting visible=\(isVideoVisible), videoHeight=\(newGeometry.videoHeight)")
       mainWindow.videoView.isHidden = !showVideo
-      if isVideoVisible {
-//        mainWindow.videoView.constrainForNormalLayout()
-        mainWindow.videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
-        mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
-        updateVideoHeightConstraint(height: newGeometry.videoHeight, animate: true)
-      } else {
-//        mainWindow.videoView.constrainLayoutToEqualsOffsetOnly(top: 0, bottom: 0)
-        mainWindow.videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
-        mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
-      }
-      updateVideoHeightConstraint(height: newGeometry.videoHeight, animate: true)
-      (window as! MainWindow).setFrameImmediately(newWindowFrame, animate: true)
-
-      mainWindow.musicModeGeometry = newGeometry
+      apply(newGeometry)
       player.saveState()
     }))
   }
@@ -414,21 +392,15 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
       return window.frame.size
     }
 
-    let requestedWindowFrame = NSRect(origin: mainWindow.musicModeGeometry.windowFrame.origin, size: requestedSize)
-    let requestedGeometry = mainWindow.musicModeGeometry.clone(windowFrame: requestedWindowFrame)
-    let newGeometry = requestedGeometry.constrainWithin(mainWindow.bestScreen.visibleFrame)
-    let newWindowSize = newGeometry.windowFrame.size
+    let oldGeometry = mainWindow.musicModeGeometry
+    let requestedWindowFrame = NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize)
+    var newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
 
     CocoaAnimation.disableAnimation{
-      let videoHeight = isVideoVisible ? newWindowSize.width / mainWindow.videoView.aspectRatio : 0
-      let bottomBarHeight = newWindowSize.height - videoHeight
-      updateVideoHeightConstraint(height: isVideoVisible ? videoHeight : 0, animate: false)
-      mainWindow.updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: .outsideVideo)
-
-      player.saveState()
+      apply(newGeometry)  /// this will set `mainWindow.musicModeGeometry` after applying any necessary constraints
     }
 
-    return newWindowSize
+    return mainWindow.musicModeGeometry.windowFrame.size
   }
 
   func updateVideoHeightConstraint(height: CGFloat? = nil, animate: Bool = false) {
@@ -478,17 +450,10 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     refreshDefaultAlbumArtVisibility()
 
     CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
-      var newGeo = mainWindow.musicModeGeometry.clone(windowFrame: window.frame, videoAspectRatio: mainWindow.videoView.aspectRatio)
-      newGeo = newGeo.constrainWithin(mainWindow.bestScreen.visibleFrame)
-
-      // TODO: consolidate duplicated code
-      updateVideoHeightConstraint(height: newGeo.videoHeight, animate: true)
-      mainWindow.updateBottomBarHeight(to: newGeo.bottomBarHeight, bottomBarPlacement: .outsideVideo)
-      (window as! MainWindow).setFrameImmediately(newGeo.windowFrame, animate: true)
-
+      let newVideoAspectRatio = mainWindow.videoView.aspectRatio
+      let newGeometry = mainWindow.musicModeGeometry.clone(windowFrame: window.frame, videoAspectRatio: newVideoAspectRatio)
+      apply(newGeometry)
       log.verbose("Updating music mode geometry for video change")
-      mainWindow.musicModeGeometry = newGeo
-      player.saveState()
     })
   }
 
@@ -520,6 +485,16 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
                                                                       isVideoVisible: isVideoVisible,
                                                                       isPlaylistVisible: isPlaylistVisible,
                                                                       videoAspectRatio: mainWindow.videoView.aspectRatio)
+  }
 
+  /// Updates the current window to match the given `geometry`, and caches it.
+  func apply(_ geometry: MusicModeGeometry) {
+    let geometry = geometry.constrainWithin(mainWindow.bestScreen.visibleFrame)
+
+    updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
+    mainWindow.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
+    (window as! MainWindow).setFrameImmediately(geometry.windowFrame, animate: true)
+    mainWindow.musicModeGeometry = geometry
+    player.saveState()
   }
 }
