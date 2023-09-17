@@ -290,6 +290,10 @@ extension MainWindowController {
       return spec.mode == .fullScreen
     }
 
+    var canToggleFullScreen: Bool {
+      return spec.mode == .fullScreen || spec.mode == .windowed
+    }
+
     var isLegacyFullScreen: Bool {
       return isFullScreen && spec.isLegacyStyle
     }
@@ -646,8 +650,9 @@ extension MainWindowController {
         initialGeometry = windowGeometry
         (window as! MainWindow).setFrameImmediately(windowGeometry.windowFrame)
       case .musicMode:
-        /// `musicModeGeometry` should have already been deserialized and set
-        initialGeometry = musicModeGeometry.toMainWindowGeometry()
+        /// `musicModeGeometry` should have already been deserialized and set.
+        /// But make sure we correct any size problems
+        initialGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toMainWindowGeometry()
         (window as! MainWindow).setFrameImmediately(initialGeometry!.windowFrame)
       }
 
@@ -1228,6 +1233,7 @@ extension MainWindowController {
       updateTitle()
       setMaterial(Preference.enum(for: .themeMaterial))
       updateMusicModeButtonsVisibility()
+      miniPlayer.refreshDefaultAlbumArtVisibility()
       
     } else if transition.isExitingMusicMode {
       _ = miniPlayer.view

@@ -737,13 +737,6 @@ class MainWindowController: PlayerWindowController {
     addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
-
-      if player.isInMiniPlayer {
-        _ = miniPlayer.view  // load if not loaded to prevent nil dereference due to race conditions
-
-        /// Video aspect ratio may have changed if a different video is being shown than last time.
-//        miniPlayer.adjustLayoutForVideoChange()
-      }
     }
 
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
