@@ -109,12 +109,13 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
 
     // default album art
-//    mainWindow.videoContainerView.addSubview(defaultAlbumArtView)
-//    defaultAlbumArtView.addConstraintsToFillSuperview()
-//    defaultAlbumArtView.widthAnchor.constraint(equalTo: defaultAlbumArtView.heightAnchor).isActive = true
-//    defaultAlbumArtView.wantsLayer = true
-//    defaultAlbumArtView.layer?.contents = #imageLiteral(resourceName: "default-album-art")
-//    defaultAlbumArtView.isHidden = true
+    defaultAlbumArtView.translatesAutoresizingMaskIntoConstraints = false
+    defaultAlbumArtView.wantsLayer = true
+    defaultAlbumArtView.alphaValue = 1
+    defaultAlbumArtView.layer?.contents = #imageLiteral(resourceName: "default-album-art")
+    defaultAlbumArtView.isHidden = true
+    mainWindow.videoContainerView.addSubview(defaultAlbumArtView, positioned: .above, relativeTo: mainWindow.videoView)
+    defaultAlbumArtView.addConstraintsToFillSuperview()
 
     // close button
     mainWindow.closeButtonVE.action = #selector(mainWindow.close)
@@ -431,7 +432,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     for view in playlistWrapperView.subviews {
       view.removeFromSuperview()
     }
-//    defaultAlbumArtView.isHidden = true
 
     if let videoHeightConstraint = videoHeightConstraint {
       videoHeightConstraint.isActive = false
@@ -439,8 +439,20 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     }
   }
 
+  // default album art
   func refreshDefaultAlbumArtVisibility() {
-//    defaultAlbumArtView.isHidden = player.info.vid != 0
+    guard mainWindow.loaded else { return }
+
+    // if received video size before switching to music mode, hide default album art
+    if player.info.vid == 0 {
+      defaultAlbumArtView.isHidden = false
+      // make sure this covers videoView
+      mainWindow.videoContainerView.addSubview(defaultAlbumArtView, positioned: .above, relativeTo: mainWindow.videoView)
+      mainWindow.musicModeGeometry = mainWindow.musicModeGeometry.clone(videoAspectRatio: 1)
+      mainWindow.videoView.updateAspectRatio(to: 1)
+    } else {
+      defaultAlbumArtView.isHidden = true
+    }
   }
 
   func adjustLayoutForVideoChange() {
@@ -448,6 +460,8 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     resetScrollingLabels()
 
     refreshDefaultAlbumArtVisibility()
+
+    // FIXME: find fix for horizontal text flicker when moving in playlist
 
     CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
       let newVideoAspectRatio = mainWindow.videoView.aspectRatio

@@ -734,9 +734,16 @@ class MainWindowController: PlayerWindowController {
       self.quickSettingView.reload()
     }
 
-    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
+    addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] _ in
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
+
+      if player.isInMiniPlayer {
+        miniPlayer.adjustLayoutForVideoChange()
+      } else {
+        // TODO: move album art into this class
+        miniPlayer.refreshDefaultAlbumArtVisibility()
+      }
     }
 
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
@@ -1688,6 +1695,7 @@ class MainWindowController: PlayerWindowController {
     if player.isInMiniPlayer {
       let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
       window?.title = mediaTitle
+      _ = miniPlayer.view
       miniPlayer.updateTitle(mediaTitle: mediaTitle, mediaAlbum: mediaAlbum, mediaArtist: mediaArtist)
     } else if player.info.isNetworkResource {
       window?.title = player.getMediaTitle()
