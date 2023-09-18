@@ -9,11 +9,6 @@
 import Foundation
 
 class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
-  // Just init with dummy data for now so that this doesn't need to be optional
-  private var windowGeometryAtMagnificationStart = MainWindowGeometry(windowFrame: NSRect(), videoContainerFrame: NSRect(),
-                                                                      insideTopBarHeight: 0, insideTrailingBarWidth: 0,
-                                                                      insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
-                                                                      videoAspectRatio: 1.0)
 
   lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
@@ -41,34 +36,46 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     case .windowSize:
       if mainWindow.isFullScreen { return }
 
+      var newWindowGeometry: MainWindowGeometry? = nil
       // adjust window size
       switch recognizer.state {
       case .began:
-        // FIXME: confirm reset on video size change due to track change
-        if mainWindow.currentLayout.isMusicMode {
-          windowGeometryAtMagnificationStart = mainWindow.musicModeGeometry.toMainWindowGeometry()
-        } else {
-          windowGeometryAtMagnificationStart = mainWindow.getCurrentWindowGeometry()
-        }
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .ended:
-        scaleVideoFromPinchGesture(to: recognizer.magnification)
-        mainWindow.updateWindowParametersForMPV()
+        newWindowGeometry = scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .cancelled, .failed:
-        scaleVideoFromPinchGesture(to: 1.0)
+        newWindowGeometry = scaleVideoFromPinchGesture(to: 1.0)
         break
       default:
         return
       }
+
+      if let newWindowGeometry = newWindowGeometry {
+        if mainWindow.currentLayout.isMusicMode {
+          mainWindow.musicModeGeometry = mainWindow.musicModeGeometry.clone(windowFrame: newWindowGeometry.windowFrame)
+          mainWindow.player.saveState()
+        } else {
+          mainWindow.windowGeometry = newWindowGeometry
+          mainWindow.updateWindowParametersForMPV()  // also saves state
+        }
+      }
     }
   }
 
-  private func scaleVideoFromPinchGesture(to magnification: CGFloat) {
+  @discardableResult
+  private func scaleVideoFromPinchGesture(to magnification: CGFloat) -> MainWindowGeometry? {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
     mainWindow.log.verbose("Scaling pinched video, target scale: \(scale)")
+
+    let originalGeometry: MainWindowGeometry
+    if mainWindow.currentLayout.isMusicMode {
+      originalGeometry = mainWindow.musicModeGeometry.toMainWindowGeometry()
+    } else {
+      originalGeometry = mainWindow.getCurrentWindowGeometry()
+    }
 
     // If in music mode but playlist is not visible, allow scaling up to screen size like regular windowed mode.
     // If playlist is visible, do not resize window beyond current window height
@@ -76,52 +83,57 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       _ = mainWindow.miniPlayer.view
       guard mainWindow.miniPlayer.isVideoVisible else {
         mainWindow.log.verbose("Window is in music mode but video is not visible; ignoring pinch gesture")
-        return
+        return nil
       }
       let screenFrame = mainWindow.bestScreen.visibleFrame
+      // TODO: figure out why extra 8px on each side is needed for min width
+      let minWindowWidth = MiniPlayerWindowController.minWindowWidth + 16
       // Window height should not change. Only video size should be scaled
-      let windowHeight = min(screenFrame.height, windowGeometryAtMagnificationStart.windowFrame.height)  // should stay fixed
+      let windowHeight = min(screenFrame.height, originalGeometry.windowFrame.height)  // should stay fixed
+
       // Constrain desired width within min and max allowed, then recalculate height from new value
-      var newVideoWidth = min(
-        // TODO: figure out how to remove need for extra 8px on each side
-        max(MiniPlayerWindowController.minWindowWidth + 16, windowGeometryAtMagnificationStart.videoSize.width * scale),
-        MiniPlayerWindowController.maxWindowWidth)
-      mainWindow.log.verbose("Scaling video from pinch gesture in music mode (aspect: \(windowGeometryAtMagnificationStart.videoAspectRatio)), trying width: \(newVideoWidth)")
-      var newVideoHeight = newVideoWidth / windowGeometryAtMagnificationStart.videoAspectRatio
+      var newVideoWidth = originalGeometry.windowFrame.width * scale
+      newVideoWidth = max(newVideoWidth, minWindowWidth)
+      newVideoWidth = min(newVideoWidth, MiniPlayerWindowController.maxWindowWidth)
+      mainWindow.log.verbose("Scaling video from pinch gesture in music mode. Aspect: \(originalGeometry.videoAspectRatio), trying width: \(newVideoWidth)")
+
+      var newVideoHeight = newVideoWidth / originalGeometry.videoAspectRatio
 
       let minPlaylistHeight: CGFloat = mainWindow.miniPlayer.isPlaylistVisible ? MiniPlayerWindowController.PlaylistMinHeight : 0
       let minBottomBarHeight: CGFloat = MiniPlayerWindowController.controlViewHeight + minPlaylistHeight
       let maxVideoHeight = windowHeight - minBottomBarHeight
-      if newVideoWidth < MiniPlayerWindowController.minWindowWidth {
-        newVideoWidth = MiniPlayerWindowController.minWindowWidth
-        newVideoHeight = MiniPlayerWindowController.minWindowWidth / windowGeometryAtMagnificationStart.videoAspectRatio
+      if newVideoWidth < minWindowWidth {
+        newVideoWidth = minWindowWidth
+        newVideoHeight = minWindowWidth / originalGeometry.videoAspectRatio
       }
       if newVideoHeight > maxVideoHeight {
         newVideoHeight = maxVideoHeight
-        newVideoWidth = maxVideoHeight * windowGeometryAtMagnificationStart.videoAspectRatio
+        newVideoWidth = maxVideoHeight * originalGeometry.videoAspectRatio
       }
 
-      let newWindowFrame = NSRect(origin: windowGeometryAtMagnificationStart.windowFrame.origin, size: NSSize(width: newVideoWidth, height: windowHeight)).constrain(in: screenFrame)
+      let newWindowFrame = NSRect(origin: originalGeometry.windowFrame.origin, size: NSSize(width: newVideoWidth, height: windowHeight)).constrain(in: screenFrame)
 
-      let newMusicModeGeo = mainWindow.musicModeGeometry.clone(windowFrame: newWindowFrame)
-      mainWindow.log.verbose("Scaling video from pinch gesture in music mode, got final videoSize: \(newVideoWidth) x \(newVideoHeight), bottomBarHeight: \(newMusicModeGeo.bottomBarHeight), windowFrame: \(newWindowFrame)")
+      let newMusicModeGeometry = mainWindow.musicModeGeometry.clone(windowFrame: newWindowFrame)
+      mainWindow.log.verbose("Scaling video from pinch gesture in music mode. Final width: \(originalGeometry.windowFrame.width) → \(newVideoWidth), bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newWindowFrame)")
 
       CocoaAnimation.disableAnimation{
-        mainWindow.miniPlayer.apply(newMusicModeGeo)
+        mainWindow.miniPlayer.apply(newMusicModeGeometry, updateCache: false)
       }
-      return
+      // Kind of clunky to convert to MainWindowGeometry, just to fit the function signature, then convert it back. But...could be worse.
+      return newMusicModeGeometry.toMainWindowGeometry()
     }
-    // Not music mode:
+    // Not music mode, OR scaling music mode without playlist (only fixed-height controller)
 
-    let origVideoContainerSize = windowGeometryAtMagnificationStart.videoContainerSize
+    let origVideoContainerSize = originalGeometry.videoContainerSize
     let newVideoContainerSize = origVideoContainerSize.multiply(scale)
 
 
-    let newGeoUnconstrained = windowGeometryAtMagnificationStart.scale(desiredVideoContainerSize: newVideoContainerSize)
+    let newGeoUnconstrained = originalGeometry.scale(desiredVideoContainerSize: newVideoContainerSize)
     // User has actively resized the video. Assume this is the new preferred resolution
     mainWindow.player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
 
     let newGeometry = newGeoUnconstrained.constrainWithin(mainWindow.bestScreen.visibleFrame)
-    mainWindow.setCurrentWindowGeometry(to: newGeometry, enqueueAnimation: false, animate: false)
+    mainWindow.applyWindowGeometry(newGeometry, updateCache: false, enqueueAnimation: false, animate: false)
+    return newGeometry
   }
 }

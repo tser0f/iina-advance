@@ -170,7 +170,6 @@ class MainWindowController: PlayerWindowController {
   /// For resize of `playlist` tab group
   var leadingSidebarIsResizing = false
   var trailingSidebarIsResizing = false
-  var windowGeometryAtResizeStart: MainWindowGeometry? = nil
 
   // Is non-nil if within the activation rect of one of the sidebars
   var sidebarResizeCursor: NSCursor? = nil
@@ -206,7 +205,7 @@ class MainWindowController: PlayerWindowController {
   }()
 
   lazy var windowGeometry: MainWindowGeometry = {
-    return generateWindowGeometry(using: currentLayout)
+    return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
     didSet {
       log.verbose("WindowGeometry updated: \(windowGeometry.windowFrame)")
@@ -218,7 +217,7 @@ class MainWindowController: PlayerWindowController {
   }(){
     didSet {
       let g = musicModeGeometry
-      log.verbose("MusicModeGeometry updated: \(g.windowFrame) V=\(g.isVideoVisible.yn) Pl=\(g.isPlaylistVisible.yn) PlHeight=\(g.playlistHeight)")
+      log.verbose("MusicModeGeometry updated: \(g.windowFrame) Video=\(g.isVideoVisible.yn) PList=\(g.isPlaylistVisible.yn) PListHeight=\(g.playlistHeight)")
     }
   }
 
@@ -950,7 +949,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseDragged(with event: NSEvent) {
-    let didResizeSidebar = resizeSidebar(with: event)
+    let didResizeSidebar = resizeSidebar(with: event) != nil
     guard !didResizeSidebar else {
       return
     }
@@ -1247,8 +1246,10 @@ class MainWindowController: PlayerWindowController {
     player.initVideo()
     videoView.videoLayer.draw(forced: true)
 
-    // Restore layout from last launch or configure from prefs. Do not animate:
-    setInitialWindowLayout()
+    // Restore layout from last launch or configure from prefs. Do not animate, but run inside animationQueue
+    animationQueue.runZeroDuration({ [self] in
+      setInitialWindowLayout()
+    })
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -2155,8 +2156,6 @@ class MainWindowController: PlayerWindowController {
 
     log.verbose("Updating mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
     // this is also a good place to save state, if applicable
-    updateCachedGeometry()
-    player.saveState()
 
     let videoScale = Double((videoSize ?? windowGeometry.videoSize).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
@@ -2194,8 +2193,8 @@ class MainWindowController: PlayerWindowController {
       let miniPlayerLayout = currentLayout
       
       let newSpec = miniPlayerLayout.spec.clone(mode: .windowed)
-      let prevLayout = LayoutSpec.fromPreferences(andSpec: newSpec)
-      buildLayoutTransition(named: "ExitMusicMode", from: miniPlayerLayout, to: prevLayout, thenRun: true)
+      let windowedLayout = LayoutSpec.fromPreferences(andSpec: newSpec)
+      buildLayoutTransition(named: "ExitMusicMode", from: miniPlayerLayout, to: windowedLayout, thenRun: true)
     }
   }
 

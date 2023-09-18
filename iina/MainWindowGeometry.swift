@@ -541,13 +541,14 @@ extension MainWindowController {
     let oldVideoSize = videoView.frame.size
 
     // Get "correct" video size from mpv
-    let videoBaseDisplaySize = player.videoBaseDisplaySize ?? AppData.sizeWhenNoVideo
+    guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
+      Logger.fatal("Could not find videoBaseDisplaySize from mpv! Exiting")
+    }
     // Update aspect ratio & constraint
     videoView.updateAspectRatio(to: videoBaseDisplaySize.aspect)
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoBaseDisplaySize
     }
-
 
     var scaleDownFactor: CGFloat? = nil
 
@@ -632,7 +633,7 @@ extension MainWindowController {
 
       /// Finally call `setFrame()`
       log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), oldVideoSize: \(oldVideoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-      setCurrentWindowGeometry(to: newWindowGeo, enqueueAnimation: false, setFrameImmediately: false)
+      applyWindowGeometry(newWindowGeo, enqueueAnimation: false, setFrameImmediately: false)
 
       if !isFullScreen {
         // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
@@ -722,24 +723,25 @@ extension MainWindowController {
 
     let newGeometry = newGeoUnconstrained.constrainWithin(bestScreen.visibleFrame, centerInContainer: centerOnScreen)
     log.verbose("\(isFullScreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
-    setCurrentWindowGeometry(to: newGeometry, enqueueAnimation: true)
+    applyWindowGeometry(newGeometry, enqueueAnimation: true)
   }
 
   func updateCachedGeometry() {
     guard !isAnimating else { return }
+    log.verbose("Updating cached geometry from current window dimensions, mode=\(currentLayout.spec.mode)")
 
     switch currentLayout.spec.mode {
     case .windowed:
-      windowGeometry = generateWindowGeometry(using: currentLayout)
+      windowGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
     case .musicMode:
-      miniPlayer.updateMusicModeGeometry(newWindowFrame: window!.frame)
+      musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame, videoAspectRatio: videoView.aspectRatio)
       break
     default:
       break
     }
   }
 
-  func generateWindowGeometry(using layout: LayoutState) -> MainWindowGeometry {
+  func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> MainWindowGeometry {
     // TODO: find a better solution than just replicating this logic here
     let insideBottomBarHeight = (layout.bottomBarPlacement == .insideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
@@ -761,9 +763,10 @@ extension MainWindowController {
     return windowGeometry
   }
 
-  func setCurrentWindowGeometry(to newGeometry: MainWindowGeometry,
-                                enqueueAnimation: Bool = true, animate: Bool = true,setFrameImmediately: Bool = true) {
-    if !currentLayout.isMusicMode {
+  func applyWindowGeometry(_ newGeometry: MainWindowGeometry, updateCache: Bool = true,
+                           enqueueAnimation: Bool = true, animate: Bool = true,setFrameImmediately: Bool = true) {
+    let needsSave = updateCache && !currentLayout.isMusicMode
+    if needsSave {
       windowGeometry = newGeometry
     }
 
@@ -784,7 +787,9 @@ extension MainWindowController {
         } else {
           window.setFrame(newWindowFrame, display: true, animate: animate)
         }
-        player.saveState()
+        if needsSave {
+          player.saveState()
+        }
       }))
     } else {
       if setFrameImmediately {
@@ -792,7 +797,9 @@ extension MainWindowController {
       } else {
         window.setFrame(newWindowFrame, display: true, animate: animate)
       }
-      player.saveState()
+      if needsSave {
+        player.saveState()
+      }
     }
   }
 
@@ -958,14 +965,15 @@ extension MainWindowController {
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing else { return }
 
-    if player.isInMiniPlayer {
-      // Re-evaluate space requirements for labels. May need to toggle scroll
+    log.verbose("WindowDidEndLiveResize, mode: \(currentLayout.spec.mode)")
+    switch currentLayout.spec.mode {
+    case .windowed:
+      updateWindowParametersForMPV()
+    case .musicMode:
       miniPlayer.windowDidEndLiveResize()
-      return
+    default:
+      break
     }
-
-    guard currentLayout.spec.mode == .windowed else { return }
-    updateWindowParametersForMPV()
   }
 
   private func updateFloatingOSCAfterWindowDidResize() {

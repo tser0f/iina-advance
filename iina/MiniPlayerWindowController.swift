@@ -184,7 +184,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
   private func saveCurrentPlaylistHeight() {
     let playlistHeight = round(currentDisplayedPlaylistHeight)
-    // don't save if invalid height or hidden
     guard playlistHeight >= MiniPlayerWindowController.PlaylistMinHeight else { return }
 
     // save playlist height
@@ -367,10 +366,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   }
 
   func windowDidEndLiveResize() {
-    saveCurrentPlaylistHeight()
-    log.verbose("WindowDidEndLiveResize: updating music mode geometry")
-    updateMusicModeGeometry(newWindowFrame: window!.frame)
-    player.saveState()
+    if isPlaylistVisible {
+      saveCurrentPlaylistHeight()
+    }
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
@@ -466,23 +464,17 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     return desiredGeo.constrainWithin(screenFrame)
   }
 
-  /// Updates `mainWindow.musicModeGeometry` with the given params, falling back to prev values. Also takes care of updating `videoAspectRatio`.
-  func updateMusicModeGeometry(newWindowFrame windowFrame: NSRect? = nil, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil) {
-    mainWindow.musicModeGeometry = mainWindow.musicModeGeometry.clone(windowFrame: windowFrame,
-                                                                      isVideoVisible: isVideoVisible,
-                                                                      isPlaylistVisible: isPlaylistVisible,
-                                                                      videoAspectRatio: mainWindow.videoView.aspectRatio)
-  }
-
   /// Updates the current window to match the given `geometry`, and caches it.
-  func apply(_ geometry: MusicModeGeometry) {
+  func apply(_ geometry: MusicModeGeometry, updateCache: Bool = true) {
     let geometry = geometry.constrainWithin(mainWindow.bestScreen.visibleFrame)
 
     updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
     mainWindow.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     log.verbose("Applying MusicModeGeometry windowFrame: \(geometry.windowFrame)")
     (window as! MainWindow).setFrameImmediately(geometry.windowFrame, animate: true)
-    mainWindow.musicModeGeometry = geometry
-    player.saveState()
+    if updateCache {
+      mainWindow.musicModeGeometry = geometry
+      player.saveState()
+    }
   }
 }

@@ -666,7 +666,7 @@ extension MainWindowController {
 
     if initialGeometry == nil {
       log.verbose("Building initial geometry from current window")
-      initialGeometry = generateWindowGeometry(using: initialLayout)
+      initialGeometry = buildWindowGeometryFromCurrentFrame(using: initialLayout)
     }
 
     let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
