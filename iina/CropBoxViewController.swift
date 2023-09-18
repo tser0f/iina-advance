@@ -11,7 +11,7 @@ import Cocoa
 /** The generic view controller of `CropBoxView`. */
 class CropBoxViewController: NSViewController {
 
-  weak var mainWindow: PlayerWindowController!
+  weak var windowController: PlayerWindowController!
 
   var cropx: Int = 0
   var cropy: Int = 0  // in flipped coord
@@ -30,14 +30,14 @@ class CropBoxViewController: NSViewController {
   }()
 
   func selectedRectUpdated() {
-    guard mainWindow.isInInteractiveMode else { return }
+    guard windowController.isInInteractiveMode else { return }
     let rect = cropBoxView.selectedRect
     updateCropValues(from: rect)
   }
 
   private func updateCropValues(from rect: NSRect) {
     cropx = Int(rect.minX)
-    cropy = Int(CGFloat(mainWindow.player.info.videoRawHeight!) - rect.height - rect.minY)
+    cropy = Int(CGFloat(windowController.player.info.videoRawHeight!) - rect.height - rect.minY)
     cropw = Int(rect.width)
     croph = Int(rect.height)
   }

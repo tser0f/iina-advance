@@ -236,7 +236,7 @@ class VideoView: NSView {
   ///
   /// See `PlayerWindowController.workaroundCursorDefect` and the issue for details on this workaround.
   override func rightMouseDown(with event: NSEvent) {
-    player.mainWindow.rightMouseDown(with: event)
+    player.windowController.rightMouseDown(with: event)
     super.rightMouseDown(with: event)
   }
 
@@ -255,7 +255,7 @@ class VideoView: NSView {
     // needed as it would be fine to always call the controller. The check merely makes it clear
     // that this is only needed due to macOS changes starting with Big Sur.
     if #available(macOS 11, *) {
-      player.mainWindow.mouseUp(with: event)
+      player.windowController.mouseUp(with: event)
     } else {
       super.mouseUp(with: event)
     }
@@ -488,7 +488,7 @@ class VideoView: NSView {
 @available(macOS 10.15, *)
 extension VideoView {
   func refreshEdrMode() {
-    guard player.mainWindow.loaded else { return }
+    guard player.windowController.loaded else { return }
     guard player.info.fileLoaded else { return }
     guard let displayId = currentDisplay else { return }
     if let screen = self.window?.screen {
@@ -499,7 +499,7 @@ extension VideoView {
     let edrEnabled = requestEdrMode()
     let edrAvailable = edrEnabled != false
     if player.info.hdrAvailable != edrAvailable {
-      player.mainWindow.quickSettingView.setHdrAvailability(to: edrAvailable)
+      player.windowController.quickSettingView.setHdrAvailability(to: edrAvailable)
     }
     if edrEnabled != true { setICCProfile(displayId) }
   }

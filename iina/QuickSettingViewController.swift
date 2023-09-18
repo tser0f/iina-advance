@@ -75,9 +75,9 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   weak var player: PlayerCore!
 
-  weak var mainWindow: PlayerWindowController! {
+  weak var windowController: PlayerWindowController! {
     didSet {
-      self.player = mainWindow.player
+      self.player = windowController.player
     }
   }
 
@@ -412,7 +412,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   private func switchToTab(_ tab: TabViewType) {
     guard isViewLoaded else { return }
     currentTab = tab
-    mainWindow.didChangeTab(to: tab.name)
+    windowController.didChangeTab(to: tab.name)
     tabView.selectTabViewItem(at: tab.buttonTag)
     if case .plugin(let id) = tab,
        let plugin = player.plugins.first(where: { $0.plugin.identifier == id }) {
@@ -576,7 +576,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func cropChangedAction(_ sender: NSSegmentedControl) {
     if sender.selectedSegment == sender.segmentCount - 1 {
       // User clicked on "Custom...": show custom crop UI
-      mainWindow.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
+      windowController.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
     } else {
       let cropStr = AppData.cropsInPanel[sender.selectedSegment]
       player.setCrop(fromString: cropStr)
@@ -693,7 +693,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func loadExternalAudioAction(_ sender: NSButton) {
     let currentDir = player.info.currentURL?.deletingLastPathComponent()
     Utility.quickOpenPanel(title: "Load external audio file", chooseDir: false, dir: currentDir,
-                           sheetWindow: player.currentWindow, allowedFileTypes: Utility.supportedFileExt[.audio]) { url in
+                           sheetWindow: player.window, allowedFileTypes: Utility.supportedFileExt[.audio]) { url in
       self.player.loadExternalAudioFile(url)
       self.audioTableView.reloadData()
     }
@@ -754,7 +754,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     if sender.selectedSegment == 0 {
       let currentDir = player.info.currentURL?.deletingLastPathComponent()
       Utility.quickOpenPanel(title: "Load external subtitle", chooseDir: false, dir: currentDir,
-                             sheetWindow: player.currentWindow, allowedFileTypes: Utility.supportedFileExt[.sub]) { url in
+                             sheetWindow: player.window, allowedFileTypes: Utility.supportedFileExt[.sub]) { url in
         // set a delay
         self.player.loadExternalSubFile(url, delay: true)
         self.subTableView.reloadData()
@@ -825,7 +825,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   }
 
   @IBAction func searchOnlineAction(_ sender: AnyObject) {
-    mainWindow.menuFindOnlineSub(.dummy)
+    windowController.menuFindOnlineSub(.dummy)
   }
 
   @IBAction func subDelayChangedAction(_ sender: NSSlider) {

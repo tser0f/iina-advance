@@ -680,7 +680,7 @@ extension PlayerWindowController {
       fadeInNewViews(transition)
       doPostTransitionWork(transition)
       log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
-      (window as! PlayerWindow).setFrameImmediately(initialGeometry!.windowFrame)
+      player.window.setFrameImmediately(initialGeometry!.windowFrame)
       log.verbose("Done with transition to initial layout")
     }
 
@@ -832,7 +832,7 @@ extension PlayerWindowController {
     // Extra task when toggling music mode: move & resize window
     if transition.isTogglingMusicMode {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-        (window as! PlayerWindow).setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
+        player.window.setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
       }))
     }
 
@@ -1092,11 +1092,11 @@ extension PlayerWindowController {
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)")
-      (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
+      player.window.setFrameImmediately(newWindowFrame)
     } else if transition.isTogglingFullScreen && transition.fromLayout.isLegacyFullScreen && transition.fromLayout.cameraHousingOffset > 0 {
       // Exiting legacy FS: get rid of camera housing immediately for nicer animation
       if let newWindowFrame = window.screen?.frameWithoutCameraHousing {
-        (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
+        player.window.setFrameImmediately(newWindowFrame)
       }
     }
 
@@ -1316,7 +1316,7 @@ extension PlayerWindowController {
       } else {
         let screen = bestScreen
         Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
-        (window as! PlayerWindow).setFrameImmediately(screen.frameWithoutCameraHousing)
+        player.window.setFrameImmediately(screen.frameWithoutCameraHousing)
       }
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
@@ -1332,14 +1332,14 @@ extension PlayerWindowController {
                                                              newOutsideLeadingWidth: leadingWidth).windowFrame
 
       log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
-      (window as! PlayerWindow).setFrameImmediately(priorWindowFrame)
+      player.window.setFrameImmediately(priorWindowFrame)
     } else if !transition.isInitialLayout && !futureLayout.isFullScreen {
       let windowFrame = window.frame
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
-      (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
+      player.window.setFrameImmediately(newWindowFrame)
     }
 
     // Sidebars (if opening)

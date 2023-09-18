@@ -852,7 +852,7 @@ extension PlayerWindowController {
     }
   }
 
-  /// Make sure this is called AFTER `mainWindow.setupTitleBarAndOSC()` has updated its variables
+  /// Make sure this is called AFTER `windowController.setupTitleBarAndOSC()` has updated its variables
   func updateSidebarVerticalConstraints(layout futureLayout: LayoutState? = nil) {
     let layout = futureLayout ?? currentLayout
     log.verbose("Sidebars downshift: \(layout.sidebarDownshift), tabHeight: \(layout.sidebarTabHeight)")
@@ -1032,7 +1032,7 @@ extension PlayerWindowController {
 // MARK: - SidebarTabGroupViewController
 
 protocol SidebarTabGroupViewController {
-  var mainWindow: PlayerWindowController! { get }
+  var windowController: PlayerWindowController! { get }
   var customTabHeight: CGFloat? { get }
 
   // Implementing classes need to define this

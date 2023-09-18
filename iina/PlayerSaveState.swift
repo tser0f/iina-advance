@@ -146,7 +146,7 @@ struct PlayerSaveState {
   static private func generatePropDict(from player: PlayerCore) -> [String: Any] {
     var props: [String: Any] = [:]
     let info = player.info
-    let layout = player.mainWindow.currentLayout
+    let layout = player.windowController.currentLayout
 
     props[PropName.launchID.rawValue] = AppDelegate.launchID
 
@@ -156,11 +156,11 @@ struct PlayerSaveState {
     props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
     /// `windowGeometry`
-    let windowGeometry = player.mainWindow.getCurrentWindowGeometry()
+    let windowGeometry = player.windowController.getCurrentWindowGeometry()
     props[PropName.windowGeometry.rawValue] = toCSV(windowGeometry)
 
     /// `musicModeGeometry`
-    props[PropName.musicModeGeometry.rawValue] = toCSV(player.mainWindow.musicModeGeometry)
+    props[PropName.musicModeGeometry.rawValue] = toCSV(player.windowController.musicModeGeometry)
 
     if let size = info.userPreferredVideoContainerSizeWide {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
@@ -172,7 +172,7 @@ struct PlayerSaveState {
       props[PropName.userPreferredVideoContainerSizeTall.rawValue] = sizeString
     }
 
-    if player.mainWindow.isOntop {
+    if player.windowController.isOntop {
       props[PropName.isOnTop.rawValue] = true.yn
     }
     if Preference.bool(for: .autoSwitchToMusicMode) {
@@ -264,7 +264,7 @@ struct PlayerSaveState {
 
   static func save(_ player: PlayerCore) {
     guard Preference.UIState.isSaveEnabled else { return }
-    guard player.mainWindow.loaded else {
+    guard player.windowController.loaded else {
       player.log.debug("Skipping player state save: player window is not loaded")
       return
     }
@@ -481,7 +481,7 @@ struct PlayerSaveState {
     let log = player.log
     log.verbose("Restoring player state from prior launch")
     let info = player.info
-    let mainWindow = player.mainWindow!
+    let windowController = player.windowController!
 
     if let hdrEnabled = bool(for: .hdrEnabled) {
       info.hdrEnabled = hdrEnabled
@@ -503,7 +503,7 @@ struct PlayerSaveState {
     player.openURLs([url], shouldAutoLoad: false)
 
     let isOnTop = bool(for: .isOnTop) ?? false
-    mainWindow.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
+    windowController.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
 
     if let playlistPathList = properties[PlayerSaveState.PropName.playlistPaths.rawValue] as? [String] {
       if playlistPathList.count > 1 {

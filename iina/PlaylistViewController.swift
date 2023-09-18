@@ -29,9 +29,9 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     return self.tabHeightConstraint
   }
 
-  weak var mainWindow: PlayerWindowController! {
+  weak var windowController: PlayerWindowController! {
     didSet {
-      self.player = mainWindow.player
+      self.player = windowController.player
     }
   }
 
@@ -178,7 +178,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       popoverView.trackingAreas.isEmpty {
       popoverView.addTrackingArea(NSTrackingArea(rect: popoverView.bounds,
                                                  options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
-                                                 owner: mainWindow, userInfo: ["obj": 0]))
+                                                 owner: windowController, userInfo: ["obj": 0]))
     }
     view.layoutSubtreeIfNeeded()
   }
@@ -289,7 +289,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
 
     currentTab = tab
-    mainWindow.didChangeTab(to: tab.rawValue)
+    windowController.didChangeTab(to: tab.rawValue)
   }
 
   // Updates display of all tabs buttons to indicate that the given tab is active and the rest are not
@@ -454,7 +454,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       let playableFiles = self.player.getPlayableFiles(in: urls)
       if playableFiles.count != 0 {
         self.player.addToPlaylist(paths: playableFiles.map { $0.path }, at: self.player.info.playlist.count)
-        self.player.mainWindow.playlistView.reloadData(playlist: true, chapters: false)
+        self.player.windowController.playlistView.reloadData(playlist: true, chapters: false)
         self.player.sendOSD(.addToPlaylist(playableFiles.count))
       }
     }
@@ -464,7 +464,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     Utility.quickPromptPanel("add_url") { url in
       if Regex.url.matches(url) {
         self.player.addToPlaylist(url)
-        self.player.mainWindow.playlistView.reloadData(playlist: true, chapters: false)
+        self.player.windowController.playlistView.reloadData(playlist: true, chapters: false)
         self.player.sendOSD(.addToPlaylist(1))
       } else {
         Utility.showAlert("wrong_url_format")

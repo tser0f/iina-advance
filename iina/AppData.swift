@@ -176,7 +176,7 @@ struct Constants {
     // TODO: change to % of screen width
     static let floatingControllerSnapToCenterThreshold = 20.0
     // The minimum distance that the user must drag before their click or tap gesture is interpreted as a drag gesture:
-    static let mainWindowMinInitialDragThreshold: CGFloat = 4.0
+    static let windowControllerMinInitialDragThreshold: CGFloat = 4.0
   }
 }
 

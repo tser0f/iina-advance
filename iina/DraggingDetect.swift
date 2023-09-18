@@ -120,8 +120,8 @@ extension PlayerCore {
    */
   func acceptFromPasteboard(_ sender: NSDraggingInfo, isPlaylist: Bool = false) -> NSDragOperation {
     // ignore events from this window
-    // must check `mainWindow.loaded` otherwise window will be lazy-loaded unexpectedly
-    if mainWindow.loaded && (sender.draggingSource as? NSView)?.window === mainWindow.window {
+    // must check `windowController.loaded` otherwise window will be lazy-loaded unexpectedly
+    if windowController.loaded && (sender.draggingSource as? NSView)?.window === windowController.window {
       return []
     }
 

@@ -228,7 +228,7 @@ class PlaySliderCell: NSSliderCell {
     let result = super.startTracking(at: startPoint, in: controlView)
     if result {
       playerCore.pause()
-      playerCore.mainWindow.thumbnailPeekView.isHidden = true
+      playerCore.windowController.thumbnailPeekView.isHidden = true
     }
     return result
   }

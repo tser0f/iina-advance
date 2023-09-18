@@ -47,17 +47,17 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
 
-  unowned var mainWindow: PlayerWindowController!
+  unowned var windowController: PlayerWindowController!
   var player: PlayerCore {
-    return mainWindow.player
+    return windowController.player
   }
 
   var window: NSWindow? {
-    return mainWindow.window
+    return windowController.window
   }
 
   var log: Logger.Subsystem {
-    return mainWindow.log
+    return windowController.log
   }
 
   /// When resizing the window, need to control the aspect ratio of `videoView`. But cannot use an `aspectRatio` constraint,
@@ -68,13 +68,13 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   var isPlaylistVisible: Bool {
     get {
-      mainWindow.musicModeGeometry.isPlaylistVisible
+      windowController.musicModeGeometry.isPlaylistVisible
     }
   }
 
   var isVideoVisible: Bool {
     get {
-      return mainWindow.musicModeGeometry.isVideoVisible
+      return windowController.musicModeGeometry.isVideoVisible
     }
   }
 
@@ -90,7 +90,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }()
 
   var currentDisplayedPlaylistHeight: CGFloat {
-    let bottomBarHeight = mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.constant
+    let bottomBarHeight = windowController.videoContainerBottomOffsetFromContentViewBottomConstraint.constant
     return bottomBarHeight - MiniPlayerController.controlViewHeight
   }
 
@@ -104,26 +104,26 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     backgroundView.heightAnchor.constraint(equalToConstant: MiniPlayerController.controlViewHeight).isActive = true
 
     /// Set up tracking area to show controller when hovering over it
-    mainWindow.videoContainerView.addTrackingArea(NSTrackingArea(rect: mainWindow.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
+    windowController.videoContainerView.addTrackingArea(NSTrackingArea(rect: windowController.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
     backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
 
     // close button
-    mainWindow.closeButtonVE.action = #selector(mainWindow.close)
-    mainWindow.closeButtonBox.action = #selector(mainWindow.close)
-    mainWindow.closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
+    windowController.closeButtonVE.action = #selector(windowController.close)
+    windowController.closeButtonBox.action = #selector(windowController.close)
+    windowController.closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
 
     // hide controls initially
-    mainWindow.closeButtonBackgroundViewBox.isHidden = true
-    mainWindow.closeButtonBackgroundViewVE.isHidden = true
-    mainWindow.closeButtonView.alphaValue = 0
+    windowController.closeButtonBackgroundViewBox.isHidden = true
+    windowController.closeButtonBackgroundViewVE.isHidden = true
+    windowController.closeButtonView.alphaValue = 0
     controlView.alphaValue = 0
     
     // tool tips
     togglePlaylistButton.toolTip = Preference.ToolBarButton.playlist.description()
     toggleAlbumArtButton.toolTip = NSLocalizedString("mini_player.album_art", comment: "album_art")
     volumeButton.toolTip = NSLocalizedString("mini_player.volume", comment: "volume")
-    mainWindow.closeButtonVE.toolTip = NSLocalizedString("mini_player.close", comment: "close")
-    mainWindow.backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
+    windowController.closeButtonVE.toolTip = NSLocalizedString("mini_player.close", comment: "close")
+    windowController.backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
 
     volumePopover.delegate = self
 
@@ -144,7 +144,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     /// The goal is to always show the control when the cursor is hovering over either of the 2 tracking areas.
     /// Although they are adjacent to each other, `mouseExited` can still be called when moving from one to the other.
     /// Detect and ignore this case.
-    guard !mainWindow.isMouseEvent(event, inAnyOf: [backgroundView, mainWindow.videoContainerView]) else {
+    guard !windowController.isMouseEvent(event, inAnyOf: [backgroundView, windowController.videoContainerView]) else {
       return
     }
 
@@ -154,16 +154,16 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   // MARK: - UI: Show / Hide
 
   private func showControl() {
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
-      mainWindow.closeButtonView.animator().alphaValue = 1
+    windowController.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+      windowController.closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
     }))
   }
 
   private func hideControl() {
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
-      mainWindow.closeButtonView.animator().alphaValue = 0
+    windowController.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+      windowController.closeButtonView.animator().alphaValue = 0
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1
     }))
@@ -263,11 +263,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   // MARK: - IBActions
 
   @IBAction func playSliderChanges(_ sender: NSSlider) {
-    mainWindow.playSliderChanges(sender)
+    windowController.playSliderChanges(sender)
   }
 
   @IBAction func volumeSliderChanges(_ sender: NSSlider) {
-    mainWindow.volumeSliderChanges(sender)
+    windowController.volumeSliderChanges(sender)
   }
 
   @IBAction func muteButtonAction(_ sender: NSButton) {
@@ -275,7 +275,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   @IBAction func playButtonAction(_ sender: NSButton) {
-    mainWindow.playButtonAction(sender)
+    windowController.playButtonAction(sender)
   }
 
   @IBAction func nextBtnAction(_ sender: NSButton) {
@@ -296,15 +296,15 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   @IBAction func togglePlaylist(_ sender: Any) {
-    guard let window = mainWindow.window else { return }
+    guard let window = windowController.window else { return }
     let showPlaylist = !isPlaylistVisible
     Logger.log("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)", level: .verbose)
     let currentDisplayedPlaylistHeight = currentDisplayedPlaylistHeight
-    let oldGeometry = mainWindow.musicModeGeometry
+    let oldGeometry = windowController.musicModeGeometry
     var newWindowFrame = window.frame
 
     if showPlaylist {
-      mainWindow.playlistView.reloadData(playlist: true, chapters: true)
+      windowController.playlistView.reloadData(playlist: true, chapters: true)
 
       // Try to show playlist using previous height
       let desiredPlaylistHeight = oldGeometry.playlistHeight
@@ -327,7 +327,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // Constrain window so that it doesn't expand below bottom of screen, or fall offscreen
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
 
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showPlaylist, for: .musicModeShowPlaylist)
       apply(newGeometry)
     }))
@@ -336,9 +336,9 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBAction func toggleVideoView(_ sender: Any) {
     let showVideo = !isVideoVisible
     log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
-    mainWindow.updateMusicModeButtonsVisibility()
+    windowController.updateMusicModeButtonsVisibility()
 
-    let oldGeometry = mainWindow.musicModeGeometry
+    let oldGeometry = windowController.musicModeGeometry
     var newWindowFrame = oldGeometry.windowFrame
     if showVideo {
       newWindowFrame.size.height += oldGeometry.videoHeightIfVisible
@@ -348,11 +348,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
 
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
       log.verbose("VideoView setting visible=\(isVideoVisible), videoHeight=\(newGeometry.videoHeight)")
-      mainWindow.videoView.isHidden = !showVideo
+      windowController.videoView.isHidden = !showVideo
       apply(newGeometry)
       player.saveState()
     }))
@@ -382,15 +382,15 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       return window.frame.size
     }
 
-    let oldGeometry = mainWindow.musicModeGeometry
+    let oldGeometry = windowController.musicModeGeometry
     let requestedWindowFrame = NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize)
     let newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
 
     CocoaAnimation.disableAnimation{
-      apply(newGeometry)  /// this will set `mainWindow.musicModeGeometry` after applying any necessary constraints
+      apply(newGeometry)  /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
     }
 
-    return mainWindow.musicModeGeometry.windowFrame.size
+    return windowController.musicModeGeometry.windowFrame.size
   }
 
   func updateVideoHeightConstraint(height: CGFloat? = nil, animate: Bool = false) {
@@ -398,7 +398,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     guard isVideoVisible else { return }
     guard let window = window else { return }
 
-    newHeight = height ?? window.frame.width / mainWindow.videoView.aspectRatio
+    newHeight = height ?? window.frame.width / windowController.videoView.aspectRatio
 
     if let videoHeightConstraint = videoHeightConstraint {
       if animate {
@@ -407,11 +407,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
         videoHeightConstraint.constant = newHeight
       }
     } else {
-      videoHeightConstraint = mainWindow.videoView.heightAnchor.constraint(equalToConstant: newHeight)
+      videoHeightConstraint = windowController.videoView.heightAnchor.constraint(equalToConstant: newHeight)
       videoHeightConstraint.priority = .defaultLow
       videoHeightConstraint.isActive = true
     }
-    mainWindow.videoView.superview!.layout()
+    windowController.videoView.superview!.layout()
   }
 
   func cleanUpForMusicModeExit() {
@@ -435,8 +435,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // FIXME: find fix for horizontal text flicker when moving in playlist
 
     CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
-      let newVideoAspectRatio = mainWindow.videoView.aspectRatio
-      let newGeometry = mainWindow.musicModeGeometry.clone(windowFrame: window.frame, videoAspectRatio: newVideoAspectRatio)
+      let newVideoAspectRatio = windowController.videoView.aspectRatio
+      let newGeometry = windowController.musicModeGeometry.clone(windowFrame: window.frame, videoAspectRatio: newVideoAspectRatio)
       apply(newGeometry)
       log.verbose("Updating music mode geometry for video change")
     })
@@ -448,12 +448,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
     let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
-    let videoAspectRatio = mainWindow.videoView.aspectRatio
+    let videoAspectRatio = windowController.videoView.aspectRatio
     let desiredWindowWidth = MiniPlayerController.defaultWindowWidth
     let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
     let desiredWindowHeight = desiredVideoHeight + MiniPlayerController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
 
-    let screenFrame = mainWindow.bestScreen.visibleFrame
+    let screenFrame = windowController.bestScreen.visibleFrame
     let windowSize = NSSize(width: desiredWindowWidth, height: desiredWindowHeight)
     let windowOrigin = NSPoint(x: screenFrame.origin.x, y: screenFrame.maxY - windowSize.height)
     let windowFrame = NSRect(origin: windowOrigin, size: windowSize)
@@ -466,14 +466,14 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   /// Updates the current window to match the given `geometry`, and caches it.
   func apply(_ geometry: MusicModeGeometry, updateCache: Bool = true) {
-    let geometry = geometry.constrainWithin(mainWindow.bestScreen.visibleFrame)
+    let geometry = geometry.constrainWithin(windowController.bestScreen.visibleFrame)
 
     updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
-    mainWindow.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
+    windowController.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     log.verbose("Applying MusicModeGeometry windowFrame: \(geometry.windowFrame)")
-    (window as! PlayerWindow).setFrameImmediately(geometry.windowFrame, animate: true)
+    player.window.setFrameImmediately(geometry.windowFrame, animate: true)
     if updateCache {
-      mainWindow.musicModeGeometry = geometry
+      windowController.musicModeGeometry = geometry
       player.saveState()
     }
   }

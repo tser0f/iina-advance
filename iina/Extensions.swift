@@ -927,7 +927,7 @@ extension NSWindow {
   }
 
   func isOpen() -> Bool {
-    if let mainWindow = self.windowController as? PlayerWindowController, mainWindow.isOpen {
+    if let windowController = self.windowController as? PlayerWindowController, windowController.isOpen {
       return true
     } else if self.isVisible {
       return true

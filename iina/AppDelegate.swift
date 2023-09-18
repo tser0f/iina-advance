@@ -400,7 +400,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         pc.enterMusicMode()
       } else if #available(macOS 10.12, *), commandLineStatus.enterPIP {
         Logger.log("Entering PIP as specified via command line", level: .verbose)
-        pc.mainWindow.enterPIP()
+        pc.windowController.enterPIP()
       }
     }
   }
@@ -617,7 +617,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     Logger.log("applicationShouldTerminateAfterLastWindowClosed() entered", level: .verbose)
     // Certain events (like when PIP is enabled) can result in this being called when it shouldn't.
-    guard !PlayerCore.active.mainWindow.isOpen else { return false }
+    guard !PlayerCore.active.windowController.isOpen else { return false }
 
     if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .quit {
       Preference.UIState.clearOpenWindowList()
@@ -1035,7 +1035,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       } else if let pipValue = queryDict["pip"], pipValue == "1" {
         // pip
         if #available(macOS 10.12, *) {
-          player.mainWindow.enterPIP()
+          player.windowController.enterPIP()
         }
       }
 

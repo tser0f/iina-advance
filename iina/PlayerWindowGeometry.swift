@@ -457,7 +457,7 @@ extension PlayerWindowController {
       }
 
     } else {
-      let currentWindowGeo = getCurrentWindowGeometry().clone(videoAspectRatio: videoBaseDisplaySize.aspect)
+      let windowGeo = getCurrentWindowGeometry().clone(videoAspectRatio: videoBaseDisplaySize.aspect)
       let newWindowGeo: PlayerWindowGeometry
 
       if shouldResizeWindowAfterVideoReconfig() {
@@ -485,14 +485,14 @@ extension PlayerWindowController {
         // check if have geometry set (initial window position/size)
         if shouldApplyInitialWindowSize, let mpvGeometry = player.getGeometry() {
           log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionA] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
-          newWindowGeo = currentWindowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize, inScreenFrame: screenVisibleFrame)
+          newWindowGeo = windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize, inScreenFrame: screenVisibleFrame)
         } else {
           if let strategy = resizeWindowStrategy, strategy == .fitScreen {
             log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionB] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
-            newWindowGeo = currentWindowGeo.scale(desiredVideoContainerSize: screenVisibleFrame.size, constrainedWithin: screenVisibleFrame, centerInContainer: true)
+            newWindowGeo = windowGeo.scale(desiredVideoContainerSize: screenVisibleFrame.size, constrainedWithin: screenVisibleFrame, centerInContainer: true)
           } else {
-            log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing windowFrame \(currentWindowGeo.windowFrame) to videoSize + outside panels → windowFrame")
-            newWindowGeo = currentWindowGeo.scale(desiredVideoSize: newVideoSize, constrainedWithin: screenVisibleFrame, centerInContainer: true)
+            log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → windowFrame")
+            newWindowGeo = windowGeo.scale(desiredVideoSize: newVideoSize, constrainedWithin: screenVisibleFrame, centerInContainer: true)
           }
         }
 
@@ -500,7 +500,7 @@ extension PlayerWindowController {
         // user is navigating in playlist. retain same window width.
         // This often isn't possible for vertical videos, which will end up shrinking the width.
         // So try to remember the preferred width so it can be restored when possible
-        var desiredVidConSize = currentWindowGeo.videoContainerSize
+        var desiredVidConSize = windowGeo.videoContainerSize
 
         if !Preference.bool(for: .allowEmptySpaceAroundVideo) {
           if let prefVidConSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: videoBaseDisplaySize.aspect)  {
@@ -515,7 +515,7 @@ extension PlayerWindowController {
           }
         }
 
-        newWindowGeo = currentWindowGeo.scale(desiredVideoContainerSize: desiredVidConSize, constrainedWithin: bestScreen.visibleFrame)
+        newWindowGeo = windowGeo.scale(desiredVideoContainerSize: desiredVidConSize, constrainedWithin: bestScreen.visibleFrame)
         log.verbose("[AdjustFrameAfterVideoReconfig D] Assuming user is navigating in playlist. Applying desiredVidConSize \(desiredVidConSize)")
       }
 
@@ -671,7 +671,7 @@ extension PlayerWindowController {
     if enqueueAnimation {
       animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         if setFrameImmediately {
-          (window as! PlayerWindow).setFrameImmediately(newWindowFrame, animate: animate)
+          player.window.setFrameImmediately(newWindowFrame, animate: animate)
         } else {
           window.setFrame(newWindowFrame, display: true, animate: animate)
         }
@@ -681,7 +681,7 @@ extension PlayerWindowController {
       }))
     } else {
       if setFrameImmediately {
-        (window as! PlayerWindow).setFrameImmediately(newWindowFrame, animate: animate)
+        player.window.setFrameImmediately(newWindowFrame, animate: animate)
       } else {
         window.setFrame(newWindowFrame, display: true, animate: animate)
       }

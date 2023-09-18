@@ -27,9 +27,9 @@ class CropSettingsViewController: CropBoxViewController {
   }
 
   @IBAction func doneBtnAction(_ sender: AnyObject) {
-    let player = mainWindow.player
+    let player = windowController.player
 
-    mainWindow.exitInteractiveMode {
+    windowController.exitInteractiveMode {
       if self.cropx == 0 && self.cropy == 0 &&
         self.cropw == player.info.videoRawWidth &&
         self.croph == player.info.videoRawHeight {
@@ -50,7 +50,7 @@ class CropSettingsViewController: CropBoxViewController {
   }
 
   @IBAction func cancelBtnAction(_ sender: AnyObject) {
-    mainWindow.exitInteractiveMode()
+    windowController.exitInteractiveMode()
   }
 
   @IBAction func predefinedAspectValueAction(_ sender: NSSegmentedControl) {

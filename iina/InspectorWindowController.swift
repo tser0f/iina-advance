@@ -320,8 +320,8 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
       self.setLabelColor(self.vprimariesField, by: sigPeak > 0)
 
       let player = PlayerCore.lastActive
-      if player.mainWindow.loaded && player.info.fileLoaded {
-        if #available(macOS 10.15, *), let colorspace = PlayerCore.lastActive.mainWindow.videoView.videoLayer.colorspace {
+      if player.windowController.loaded && player.info.fileLoaded {
+        if #available(macOS 10.15, *), let colorspace = PlayerCore.lastActive.windowController.videoView.videoLayer.colorspace {
           let isHdr = colorspace != VideoView.SRGB
           self.vcolorspaceField.stringValue = "\(colorspace.name!) (\(isHdr ? "H" : "S")DR)"
         } else {
@@ -332,7 +332,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
       }
       self.setLabelColor(self.vcolorspaceField, by: player.info.fileLoaded)
 
-      if player.mainWindow.loaded && player.info.fileLoaded {
+      if player.windowController.loaded && player.info.fileLoaded {
         if let hwPf = controller.getString(MPVProperty.videoParamsHwPixelformat) {
           self.vPixelFormat.stringValue = "\(hwPf) (HW)"
         } else if let swPf = controller.getString(MPVProperty.videoParamsPixelformat) {

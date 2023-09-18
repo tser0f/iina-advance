@@ -62,7 +62,7 @@ class CropBoxView: NSView {
 
   // MARK: - Rect size settings
 
-  // call by mainWindowController. when view resized
+  // call by windowControllerController. when view resized
   func resized(with videoRect: NSRect) {
     self.videoRect = videoRect
     updateBoxRect()

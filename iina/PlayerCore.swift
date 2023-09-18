@@ -27,7 +27,7 @@ class PlayerCore: NSObject {
   }
 
   /// - Important: Code referencing this property **must** be run on the main thread because it references
-  ///              [NSApplication.mainWindow`](https://developer.apple.com/documentation/appkit/nsapplication/1428723-mainwindow)
+  ///              [NSApplication.windowController`](https://developer.apple.com/documentation/appkit/nsapplication/1428723-mainwindow)
   static var active: PlayerCore {
     return manager.getActive()
   }
@@ -98,10 +98,10 @@ class PlayerCore: NSObject {
 
   // Windows
 
-  var mainWindow: PlayerWindowController!
+  var windowController: PlayerWindowController!
 
-  var currentWindow: NSWindow? {
-    return mainWindow.window
+  var window: PlayerWindow {
+    return (windowController.window as! PlayerWindow)
   }
 
   var mpv: MPVController!
@@ -140,7 +140,7 @@ class PlayerCore: NSObject {
   var isStopped = true
 
   var isInMiniPlayer: Bool {
-    return mainWindow.currentLayout.isMusicMode
+    return windowController.currentLayout.isMusicMode
   }
 
   /// Set this to `true` if user changes "music mode" status manually. This disables `autoSwitchToMusicMode`
@@ -155,12 +155,12 @@ class PlayerCore: NSObject {
   var useExactSeekForCurrentFile: Bool = true
 
   var isPlaylistVisible: Bool {
-    isInMiniPlayer ? mainWindow.miniPlayer.isPlaylistVisible : mainWindow.isShowing(sidebarTab: .playlist)
+    isInMiniPlayer ? windowController.miniPlayer.isPlaylistVisible : windowController.isShowing(sidebarTab: .playlist)
   }
 
   var isOnlyOpenPlayer: Bool {
     for player in PlayerCore.manager.getPlayerCores() {
-      if player != self && player.mainWindow.isOpen {
+      if player != self && player.windowController.isOpen {
         return false
       }
     }
@@ -218,7 +218,7 @@ class PlayerCore: NSObject {
     super.init()
     self.mpv = MPVController(playerCore: self)
     self.bindingController = PlayerBindingController(playerCore: self)
-    self.mainWindow = PlayerWindowController(playerCore: self)
+    self.windowController = PlayerWindowController(playerCore: self)
     if #available(macOS 10.12.2, *) {
       self._touchBarSupport = TouchBarSupport(playerCore: self)
     }
@@ -257,7 +257,7 @@ class PlayerCore: NSObject {
     }
 
     plugins = JavascriptPlugin.plugins.compactMap { pluginMap[$0.identifier] }
-    mainWindow.quickSettingView.updatePluginTabs()
+    windowController.quickSettingView.updatePluginTabs()
   }
 
   // MARK: - Control
@@ -366,10 +366,10 @@ class PlayerCore: NSObject {
     // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
     info.currentFolder = nil
 
-    let _ = mainWindow.window  /// Kicks off `windowDidLoad()`
+    let _ = windowController.window  /// Kicks off `windowDidLoad()`
     (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
 
-    mainWindow.openWindow()
+    windowController.openWindow()
 
     // Send load file command
     info.fileLoading = true
@@ -500,7 +500,7 @@ class PlayerCore: NSObject {
       overrideAutoMusicMode = !overrideAutoMusicMode
       log.verbose("Changed overrideAutoMusicMode to \(overrideAutoMusicMode)")
     }
-    mainWindow.enterMusicMode()
+    windowController.enterMusicMode()
     events.emit(.musicModeChanged, data: true)
   }
 
@@ -511,8 +511,8 @@ class PlayerCore: NSObject {
       Logger.log("Changed overrideAutoMusicMode to \(overrideAutoMusicMode)",
                  level: .verbose, subsystem: subsystem)
     }
-    mainWindow.exitMusicMode()
-    mainWindow.updateTitle()
+    windowController.exitMusicMode()
+    windowController.updateTitle()
 
     events.emit(.musicModeChanged, data: false)
   }
@@ -667,7 +667,7 @@ class PlayerCore: NSObject {
     DispatchQueue.main.async { [self] in
       let osdView = ScreenshootOSDView()
       // Shrink to some fraction of the currently displayed video
-      let relativeSize = mainWindow.videoView.frame.size.multiply(0.3)
+      let relativeSize = windowController.videoView.frame.size.multiply(0.3)
       osdView.setImage(image,
                        size: image.size.shrink(toSize: relativeSize),
                        fileURL: saveToFile ? lastScreenshotURL : nil)
@@ -719,7 +719,7 @@ class PlayerCore: NSObject {
       info.abLoopStatus = b == 0 ? .aSet : .bSet
     }
     // The play slider has knobs representing the loop points, make insure the slider is in sync.
-    mainWindow?.syncPlaySliderABLoop()
+    windowController?.syncPlaySliderABLoop()
     log.debug("Synchronized info.abLoopStatus \(info.abLoopStatus)")
     saveState()
   }
@@ -932,7 +932,7 @@ class PlayerCore: NSObject {
     if let currentSub = info.subTracks.first(where: {$0.externalFilename == currentSubName}) {
       setTrack(currentSub.id, forType: .sub)
     }
-    mainWindow?.quickSettingView.reload()
+    windowController?.quickSettingView.reload()
   }
 
   func setAudioDelay(_ delay: Double) {
@@ -1475,9 +1475,9 @@ class PlayerCore: NSObject {
         touchBarSupport.setupTouchBarUI()
       }
     }
-    if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.isFullScreen && !isInMiniPlayer {
+    if Preference.bool(for: .fullScreenWhenOpen) && !windowController.isFullScreen && !isInMiniPlayer {
       Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
-      DispatchQueue.main.async(execute: self.mainWindow.enterFullScreen)
+      DispatchQueue.main.async(execute: self.windowController.enterFullScreen)
     }
     // add to history
     if let url = info.currentURL {
@@ -1504,14 +1504,14 @@ class PlayerCore: NSObject {
     let aid = Int(mpv.getInt(MPVOption.TrackSelection.aid))
     info.aid = aid
     log.verbose("Audio track changed to: \(aid)")
-    guard mainWindow.loaded else { return }
+    guard windowController.loaded else { return }
     DispatchQueue.main.sync {
       if isInMiniPlayer {
-        mainWindow?.miniPlayer.muteButton.isEnabled = (info.aid != 0)
-        mainWindow?.miniPlayer.volumeSlider.isEnabled = (info.aid != 0)
+        windowController?.miniPlayer.muteButton.isEnabled = (info.aid != 0)
+        windowController?.miniPlayer.volumeSlider.isEnabled = (info.aid != 0)
       } else {
-        mainWindow?.muteButton.isEnabled = (info.aid != 0)
-        mainWindow?.volumeSlider.isEnabled = (info.aid != 0)
+        windowController?.muteButton.isEnabled = (info.aid != 0)
+        windowController?.volumeSlider.isEnabled = (info.aid != 0)
       }
     }
     postNotification(.iinaAIDChanged)
@@ -1527,7 +1527,7 @@ class PlayerCore: NSObject {
     guard !isShuttingDown, !isShutdown else { return }
     saveState()
     DispatchQueue.main.async {
-      self.mainWindow.quickSettingView.reload()
+      self.windowController.quickSettingView.reload()
     }
   }
 
@@ -1562,7 +1562,7 @@ class PlayerCore: NSObject {
 
   @available(macOS 10.15, *)
   func refreshEdrMode() {
-    guard mainWindow.loaded else { return }
+    guard windowController.loaded else { return }
     DispatchQueue.main.async { [self] in
       // No need to refresh if playback is being stopped. Must not attempt to refresh if mpv is
       // terminating as accessing mpv once shutdown has been initiated can trigger a crash.
@@ -1600,7 +1600,7 @@ class PlayerCore: NSObject {
       if overrideAutoMusicMode {
         Logger.log("Skipping music mode auto-switch because overrideAutoMusicMode is true",
                    level: .verbose, subsystem: subsystem)
-      } else if audioStatus == .isAudio && !isInMiniPlayer && !mainWindow.isFullScreen {
+      } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
         Logger.log("Current media is audio: auto-switching to mini player", subsystem: subsystem)
         DispatchQueue.main.sync {
           enterMusicMode(automatically: true)
@@ -1639,7 +1639,7 @@ class PlayerCore: NSObject {
       info.videoDisplayWidth = drW
       info.videoDisplayHeight = drH
       DispatchQueue.main.sync {
-        self.mainWindow.adjustFrameAfterVideoReconfig()
+        self.windowController.adjustFrameAfterVideoReconfig()
       }
     } else {
       log.verbose("No real change from video-reconfig; ignoring")
@@ -1670,7 +1670,7 @@ class PlayerCore: NSObject {
       !info.isNetworkResource && info.subTracks.isEmpty &&
       (info.videoDuration?.second ?? 0.0) >= Preference.double(for: .autoSearchThreshold) * 60 {
       DispatchQueue.main.async {
-        self.mainWindow.menuFindOnlineSub(.dummy)
+        self.windowController.menuFindOnlineSub(.dummy)
       }
     }
   }
@@ -1697,21 +1697,21 @@ class PlayerCore: NSObject {
    These options currently include fullscreen and ontop.
    */
   private func checkUnsyncedWindowOptions() {
-    guard mainWindow.loaded else { return }
+    guard windowController.loaded else { return }
 
     let fs = mpv.getFlag(MPVOption.Window.fullscreen)
-    if fs != mainWindow.isFullScreen {
-      log.verbose("IINA FullScreen state (\(mainWindow.isFullScreen.yn)) does not match mpv (\(fs.yn)). Will change to match mpv state")
+    if fs != windowController.isFullScreen {
+      log.verbose("IINA FullScreen state (\(windowController.isFullScreen.yn)) does not match mpv (\(fs.yn)). Will change to match mpv state")
       DispatchQueue.main.async {
-        self.mainWindow.toggleWindowFullScreen()
+        self.windowController.toggleWindowFullScreen()
       }
     }
 
     let ontop = mpv.getFlag(MPVOption.Window.ontop)
-    if ontop != mainWindow.isOntop {
-      log.verbose("IINA OnTop state (\(mainWindow.isOntop.yn)) does not match mpv (\(ontop.yn)). Will change to match mpv state")
+    if ontop != windowController.isOntop {
+      log.verbose("IINA OnTop state (\(windowController.isOntop.yn)) does not match mpv (\(ontop.yn)). Will change to match mpv state")
       DispatchQueue.main.async {
-        self.mainWindow.setWindowFloatingOnTop(ontop, updateOnTopStatus: false)
+        self.windowController.setWindowFloatingOnTop(ontop, updateOnTopStatus: false)
       }
     }
   }
@@ -1719,7 +1719,7 @@ class PlayerCore: NSObject {
   // MARK: - Sync with UI in PlayerWindow
 
   /// Call this when `syncUITimer` may need to be started, stopped, or needs its interval changed. It will figure out the correct action.
-  /// Just need to make sure that any state variables (e.g., `info.isPaused`, `isInMiniPlayer`, the vars checked by `mainWindow.isUITimerNeeded()`,
+  /// Just need to make sure that any state variables (e.g., `info.isPaused`, `isInMiniPlayer`, the vars checked by `windowController.isUITimerNeeded()`,
   /// etc.) are set *before* calling this method, not after, so that it makes the correct decisions.
   func refreshSyncUITimer() {
     // Check if timer should start/restart
@@ -1749,7 +1749,7 @@ class PlayerCore: NSObject {
       // May need to show, hide, or update buffering indicator at any time
       useTimer = true
     } else {
-      useTimer = mainWindow.isUITimerNeeded()
+      useTimer = windowController.isUITimerNeeded()
     }
 
     let timerConfig = DurationDisplayTextField.precision >= 2 ? AppData.syncTimerConfig : AppData.syncTimerPreciseConfig
@@ -1827,16 +1827,16 @@ class PlayerCore: NSObject {
     }
     DispatchQueue.main.async { [self] in
       // don't let play/pause icon fall out of sync
-      mainWindow.playButton.state = info.isPaused ? .off : .on
-      mainWindow.updatePlayTime(withDuration: isNetworkStream)
-      mainWindow.updateAdditionalInfo()
+      windowController.playButton.state = info.isPaused ? .off : .on
+      windowController.updatePlayTime(withDuration: isNetworkStream)
+      windowController.updateAdditionalInfo()
       if isInMiniPlayer {
-        _ = mainWindow.miniPlayer.view // make sure it is loaded
-        mainWindow.miniPlayer.updateScrollingLabels()
-        mainWindow.miniPlayer.playButton.state = info.isPaused ? .off : .on
+        _ = windowController.miniPlayer.view // make sure it is loaded
+        windowController.miniPlayer.updateScrollingLabels()
+        windowController.miniPlayer.playButton.state = info.isPaused ? .off : .on
       }
       if isNetworkStream {
-        self.mainWindow.updateNetworkState()
+        self.windowController.updateNetworkState()
       }
     }
   }
@@ -1854,14 +1854,14 @@ class PlayerCore: NSObject {
 
   func syncUI(_ option: SyncUIOption) {
     // if window not loaded, ignore
-    guard mainWindow.loaded else { return }
+    guard windowController.loaded else { return }
     Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
 
     switch option {
 
     case .playButton:
       DispatchQueue.main.async {
-        self.mainWindow.updatePlayButtonState(self.info.isPaused ? .off : .on)
+        self.windowController.updatePlayButtonState(self.info.isPaused ? .off : .on)
         if #available(macOS 10.12.2, *) {
           self.touchBarSupport.updateTouchBarPlayBtn()
         }
@@ -1869,32 +1869,32 @@ class PlayerCore: NSObject {
 
     case .volume, .muteButton:
       DispatchQueue.main.async {
-        self.mainWindow.updateVolumeUI()
+        self.windowController.updateVolumeUI()
       }
 
     case .chapterList:
       DispatchQueue.main.async { [self] in
         // this should avoid sending reload when table view is not ready
-        if isInMiniPlayer ? mainWindow.miniPlayer.isPlaylistVisible : mainWindow.isShowing(sidebarTab: .chapters) {
-          mainWindow.playlistView.chapterTableView.reloadData()
+        if isInMiniPlayer ? windowController.miniPlayer.isPlaylistVisible : windowController.isShowing(sidebarTab: .chapters) {
+          windowController.playlistView.chapterTableView.reloadData()
         }
       }
 
     case .playlist:
       DispatchQueue.main.async {
         if self.isPlaylistVisible {
-          self.mainWindow.playlistView.playlistTableView.reloadData()
+          self.windowController.playlistView.playlistTableView.reloadData()
         }
       }
 
     case .playlistLoop:
       DispatchQueue.main.async {
-        self.mainWindow.playlistView.updateLoopPlaylistBtnStatus()
+        self.windowController.playlistView.updateLoopPlaylistBtnStatus()
       }
 
     case .fileLoop:
       DispatchQueue.main.async {
-        self.mainWindow.playlistView.updateLoopFileBtnStatus()
+        self.windowController.playlistView.updateLoopFileBtnStatus()
       }
     }
 
@@ -1903,15 +1903,15 @@ class PlayerCore: NSObject {
   }
 
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
-    /// Note: use `mainWindow.loaded` (querying `mainWindow.isWindowLoaded` will initialize mainWindow unexpectedly)
-    guard mainWindow.loaded && Preference.bool(for: .enableOSD) else { return }
+    /// Note: use `windowController.loaded` (querying `windowController.isWindowLoaded` will initialize windowController unexpectedly)
+    guard windowController.loaded && Preference.bool(for: .enableOSD) else { return }
     if info.disableOSDForFileLoading && !external {
       guard case .fileStart = osd else {
         return
       }
     }
     DispatchQueue.main.async {
-      self.mainWindow.displayOSD(osd,
+      self.windowController.displayOSD(osd,
                                  autoHide: autoHide,
                                  forcedTimeout: forcedTimeout,
                                  accessoryView: accessoryView,
@@ -1921,7 +1921,7 @@ class PlayerCore: NSObject {
 
   func hideOSD() {
     DispatchQueue.main.async {
-      self.mainWindow.hideOSD()
+      self.windowController.hideOSD()
     }
   }
 
@@ -1929,14 +1929,14 @@ class PlayerCore: NSObject {
     DispatchQueue.main.async {
       Utility.showAlert("error_open")
       self.isStopped = true
-      self.mainWindow.close()
+      self.windowController.close()
     }
   }
 
   func closeWindow() {
     DispatchQueue.main.async { [self] in
       isStopped = true
-      mainWindow.close()
+      windowController.close()
     }
   }
 

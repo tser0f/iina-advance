@@ -1255,14 +1255,14 @@ not applying FFmpeg 9599 workaround
           } else {  // resume
             player.videoView.displayActive()
           }
-          if #available(macOS 10.12, *), player.mainWindow.pipStatus == .inPIP {
-            player.mainWindow.pip.playing = !paused
+          if #available(macOS 10.12, *), player.windowController.pipStatus == .inPIP {
+            player.windowController.pip.playing = !paused
           }
         }
       }
-      if player.mainWindow.loaded && Preference.bool(for: .alwaysFloatOnTop) {
+      if player.windowController.loaded && Preference.bool(for: .alwaysFloatOnTop) {
         DispatchQueue.main.async {
-          self.player.mainWindow.setWindowFloatingOnTop(!paused)
+          self.player.windowController.setWindowFloatingOnTop(!paused)
         }
       }
       player.syncUI(.playButton)
@@ -1311,13 +1311,13 @@ not applying FFmpeg 9599 workaround
       let userRotation = Int(data)
       Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)", level: .verbose, subsystem: player.subsystem)
       player.info.userRotation = userRotation
-      if self.player.mainWindow.loaded {
+      if self.player.windowController.loaded {
         player.saveState()
         DispatchQueue.main.async {
           // FIXME: this isn't perfect - a bad frame briefly appears during transition
           Logger.log("Resetting videoView")
           CocoaAnimation.disableAnimation {
-            self.player.mainWindow.rotationHandler.rotateVideoView(toDegrees: 0)
+            self.player.windowController.rotationHandler.rotateVideoView(toDegrees: 0)
           }
         }
       }
@@ -1441,30 +1441,30 @@ not applying FFmpeg 9599 workaround
     case MPVOption.Window.fullscreen:
       let fs = getFlag(MPVOption.Window.fullscreen)
       Logger.log("Got mpv prop: \(MPVOption.Window.fullscreen.quoted) = \(fs.yesno)", level: .verbose, subsystem: player.subsystem)
-      guard player.mainWindow.loaded else { break }
-      if fs != player.mainWindow.isFullScreen {
-        DispatchQueue.main.async(execute: self.player.mainWindow.toggleWindowFullScreen)
+      guard player.windowController.loaded else { break }
+      if fs != player.windowController.isFullScreen {
+        DispatchQueue.main.async(execute: self.player.windowController.toggleWindowFullScreen)
       }
 
     case MPVOption.Window.ontop:
       let ontop = getFlag(MPVOption.Window.ontop)
       Logger.log("Got mpv prop: \(MPVOption.Window.ontop.quoted) = \(ontop)", level: .verbose, subsystem: player.subsystem)
-      guard player.mainWindow.loaded else { break }
-      if ontop != player.mainWindow.isOntop {
+      guard player.windowController.loaded else { break }
+      if ontop != player.windowController.isOntop {
         DispatchQueue.main.async {
-          self.player.mainWindow.setWindowFloatingOnTop(ontop)
+          self.player.windowController.setWindowFloatingOnTop(ontop)
         }
       }
 
     case MPVOption.Window.windowScale:
       let windowScale = getDouble(MPVOption.Window.windowScale)
       player.log.verbose("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale)")
-      guard player.mainWindow.loaded else { break }
+      guard player.windowController.loaded else { break }
       let needsUpdate = fabs(windowScale - player.info.cachedWindowScale) > 10e-10
       player.log.verbose("Scale(IINA): \(player.info.cachedWindowScale), Scale(mpv): \(windowScale) → changed=\(needsUpdate.yn)")
       if needsUpdate {
         DispatchQueue.main.async {
-          self.player.mainWindow.setWindowScale(CGFloat(windowScale))
+          self.player.windowController.setWindowScale(CGFloat(windowScale))
           self.player.info.cachedWindowScale = windowScale
         }
       }

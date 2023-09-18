@@ -182,7 +182,7 @@ class TouchBarSupport: NSObject, NSTouchBarDelegate {
   }
 
   @objc func touchBarRewindAction(_ sender: NSButton) {
-    player.mainWindow.arrowButtonAction(left: sender.tag == 0)
+    player.windowController.arrowButtonAction(left: sender.tag == 0)
   }
 
   @objc func touchBarSeekAction(_ sender: NSButton) {
@@ -200,11 +200,11 @@ class TouchBarSupport: NSObject, NSTouchBarDelegate {
   }
 
   @objc func touchBarExitFullScrAction(_ sender: NSButton) {
-    player.mainWindow.toggleWindowFullScreen()
+    player.windowController.toggleWindowFullScreen()
   }
 
   @objc func touchBarTogglePIP(_ sender: NSButton) {
-    player.mainWindow.menuTogglePIP(.dummy)
+    player.windowController.menuTogglePIP(.dummy)
   }
 
   private func buttonTouchBarItem(withIdentifier identifier: NSTouchBarItem.Identifier, imageName: NSImage.Name, tag: Int, customLabel: String, action: Selector) -> NSCustomTouchBarItem {

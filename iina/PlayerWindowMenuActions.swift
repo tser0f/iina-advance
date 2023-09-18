@@ -15,7 +15,7 @@ extension PlayerWindowController {
   }
 
   @objc func menuSavePlaylist(_ sender: NSMenuItem) {
-    Utility.quickSavePanel(title: "Save to playlist", types: ["m3u8"], sheetWindow: player.currentWindow) { (url) in
+    Utility.quickSavePanel(title: "Save to playlist", types: ["m3u8"], sheetWindow: player.window) { (url) in
       if url.isFileURL {
         var playlist = ""
         for item in self.player.info.playlist {
@@ -60,9 +60,9 @@ extension PlayerWindowController {
   @objc func menuTogglePause(_ sender: NSMenuItem) {
     player.togglePause()
     // set speed to 0 if is fastforwarding
-    if player.mainWindow.isFastforwarding {
+    if player.windowController.isFastforwarding {
       player.setSpeed(1)
-      player.mainWindow.isFastforwarding = false
+      player.windowController.isFastforwarding = false
     }
   }
 
@@ -118,7 +118,7 @@ extension PlayerWindowController {
   }
 
   @objc func menuABLoop(_ sender: NSMenuItem) {
-    player.mainWindow.abLoop()
+    player.windowController.abLoop()
   }
 
   @objc func menuFileLoop(_ sender: NSMenuItem) {
@@ -179,7 +179,7 @@ extension PlayerWindowController {
   @objc func menuChangeCrop(_ sender: NSMenuItem) {
     if let cropStr = sender.representedObject as? String {
       if cropStr == "Custom" {
-        player.mainWindow.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
+        player.windowController.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
         return
       }
       player.setCrop(fromString: cropStr)
@@ -292,7 +292,7 @@ extension PlayerWindowController {
   @objc func menuLoadExternalSub(_ sender: NSMenuItem) {
     let currentDir = player.info.currentURL?.deletingLastPathComponent()
     Utility.quickOpenPanel(title: "Load external subtitle file", chooseDir: false, dir: currentDir,
-                           sheetWindow: player.currentWindow) { url in
+                           sheetWindow: player.window) { url in
       self.player.loadExternalSubFile(url, delay: true)
     }
   }

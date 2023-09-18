@@ -73,20 +73,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /** The quick setting sidebar (video, audio, subtitles). */
   lazy var quickSettingView: QuickSettingViewController = {
     let quickSettingView = QuickSettingViewController()
-    quickSettingView.mainWindow = self
+    quickSettingView.windowController = self
     return quickSettingView
   }()
 
   /** The playlist and chapter sidebar. */
   lazy var playlistView: PlaylistViewController = {
     let playlistView = PlaylistViewController()
-    playlistView.mainWindow = self
+    playlistView.windowController = self
     return playlistView
   }()
 
   lazy var miniPlayer: MiniPlayerController = {
     let controller = MiniPlayerController()
-    controller.mainWindow = self
+    controller.windowController = self
     return controller
   }()
 
@@ -343,7 +343,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if let newValue = change[.newKey] as? Bool {
         rightLabel.mode = newValue ? .remaining : .duration
         if player.isInMiniPlayer {
-          player.mainWindow.miniPlayer.rightLabel.mode = newValue ? .remaining : .duration
+          player.windowController.miniPlayer.rightLabel.mode = newValue ? .remaining : .duration
         }
       }
     case PK.alwaysFloatOnTop.rawValue:
@@ -381,7 +381,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case PK.playlistShowMetadata.rawValue, PK.playlistShowMetadataInMusicMode.rawValue:
       if player.isPlaylistVisible {
-        player.mainWindow.playlistView.playlistTableView.reloadData()
+        player.windowController.playlistView.playlistTableView.reloadData()
       }
     case PK.autoSwitchToMusicMode.rawValue:
       player.overrideAutoMusicMode = false
@@ -834,8 +834,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let cv = window.contentView else { return }
 
     // gesture recognizers
-    rotationHandler.mainWindowController = self
-    magnificationHandler.mainWindow = self
+    rotationHandler.windowControllerController = self
+    magnificationHandler.windowController = self
     cv.addGestureRecognizer(magnificationHandler.magnificationGestureRecognizer)
     cv.addGestureRecognizer(rotationHandler.rotationGestureRecognizer)
 
@@ -1261,7 +1261,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           /// The user's action will only be counted as a click if `isDragging==false` when `mouseUp` is called.
           /// (Apple's trackpad in particular is very sensitive and tends to call `mouseDragged()` if there is even the slightest
           /// roll of the finger during a click, and the distance of the "drag" may be less than `minimumInitialDragDistance`)
-          if mousePosRelatedToWindow.distance(to: event.locationInWindow) <= Constants.Distance.mainWindowMinInitialDragThreshold {
+          if mousePosRelatedToWindow.distance(to: event.locationInWindow) <= Constants.Distance.windowControllerMinInitialDragThreshold {
             return
           }
           if Logger.enabled && Logger.Level.preferred >= .verbose {
@@ -1438,7 +1438,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       scrollAction = scrollDirection == .horizontal ? horizontalScrollAction : verticalScrollAction
       // show volume popover when volume seek begins and hide on end
       if scrollAction == .volume && player.isInMiniPlayer {
-        player.mainWindow.miniPlayer.handleVolumePopover(isTrackpadBegan, isTrackpadEnd, isMouse)
+        player.windowController.miniPlayer.handleVolumePopover(isTrackpadBegan, isTrackpadEnd, isMouse)
       }
     }
 
@@ -1487,7 +1487,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newVolume = player.info.volume + (isMouse ? delta : AppData.volumeMap[volumeScrollAmount] * delta)
       player.setVolume(newVolume)
       if player.isInMiniPlayer {
-        player.mainWindow.miniPlayer.volumeSlider.doubleValue = newVolume
+        player.windowController.miniPlayer.volumeSlider.doubleValue = newVolume
       } else {
         volumeSlider.doubleValue = newVolume
       }
@@ -1827,7 +1827,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let newWindowFrame = bestScreen.frame
 
     log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
-    (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
+    player.window.setFrameImmediately(newWindowFrame)
   }
 
   // MARK: - Window Delegate: window move, screen changes
@@ -2175,9 +2175,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let percentage = (pos.second / duration.second) * 100
     if player.isInMiniPlayer {
       // Music mode
-      _ = player.mainWindow.miniPlayer.view // make sure it is loaded
-      player.mainWindow.miniPlayer.playSlider.doubleValue = percentage
-      [player.mainWindow.miniPlayer.leftLabel, player.mainWindow.miniPlayer.rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+      _ = player.windowController.miniPlayer.view // make sure it is loaded
+      player.windowController.miniPlayer.playSlider.doubleValue = percentage
+      [player.windowController.miniPlayer.leftLabel, player.windowController.miniPlayer.rightLabel].forEach { $0.updateText(with: duration, given: pos) }
     } else {
       // Normal player
       [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
@@ -2425,7 +2425,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       player.pause()
 
       let cropController = mode.viewController()
-      cropController.mainWindow = self
+      cropController.windowController = self
       bottomView.isHidden = false
       bottomView.addSubview(cropController.view)
       Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.view])
@@ -2648,7 +2648,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func syncPlaySliderABLoop() {
     let a = player.abLoopA
     let b = player.abLoopB
-    if let slider = player.isInMiniPlayer ? player.mainWindow.playSlider : playSlider {
+    if let slider = player.isInMiniPlayer ? player.windowController.playSlider : playSlider {
       slider.abLoopA.isHidden = a == 0
       slider.abLoopA.doubleValue = secondsToPercent(a)
       slider.abLoopB.isHidden = b == 0
@@ -2677,11 +2677,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updateVolumeUI() {
     guard loaded else { return }
-    if let volumeSlider = player.isInMiniPlayer ? player.mainWindow.miniPlayer.volumeSlider : volumeSlider {
+    if let volumeSlider = player.isInMiniPlayer ? player.windowController.miniPlayer.volumeSlider : volumeSlider {
       volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
       volumeSlider.doubleValue = player.info.volume
     }
-    if let muteButton = player.isInMiniPlayer ? player.mainWindow.miniPlayer.muteButton : muteButton {
+    if let muteButton = player.isInMiniPlayer ? player.windowController.miniPlayer.muteButton : muteButton {
       muteButton.state = player.info.isMuted ? .on : .off
     }
     if player.isInMiniPlayer {
@@ -2751,7 +2751,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
     guard loaded else { return }
-    if let playButton = player.isInMiniPlayer ? player.mainWindow.miniPlayer.playButton : playButton {
+    if let playButton = player.isInMiniPlayer ? player.windowController.miniPlayer.playButton : playButton {
       playButton.state = state
     }
 
