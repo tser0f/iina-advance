@@ -461,6 +461,7 @@ extension PlayerWindowController {
     }
 
     if !transition.isInitialLayout {
+      // FIXME: this is all screwed up. Need to integrate it with LayoutTransition build process.
       log.verbose("Calling updateWindowFrame() after show/hide sidebars. ΔOutsideLeft: \(ΔOutsideLeft), ΔOutsideRight: \(ΔOutsideRight)")
       updateWindowFrame(fromGeometry: transition.fromWindowGeometry, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
     }
@@ -471,7 +472,7 @@ extension PlayerWindowController {
   // Resizes window to accomodate show or hide of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
   private func updateWindowFrame(fromGeometry oldGeometry: PlayerWindowGeometry,
-                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) -> PlayerWindowGeometry {
+                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) {
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
       // Is expanding the window to open a sidebar. First save the current size as the preferred size.
@@ -514,7 +515,6 @@ extension PlayerWindowController {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
     }
     applyWindowGeometry(newGeometry, enqueueAnimation: false)
-    return newGeometry
   }
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
@@ -911,6 +911,7 @@ extension PlayerWindowController {
 
   /// Returns new or existing `PlayerWindowGeometry` if handled; `nil` if not
   func resizeSidebar(with dragEvent: NSEvent) -> PlayerWindowGeometry? {
+    guard leadingSidebarIsResizing || trailingSidebarIsResizing else { return nil }
     assert(currentLayout.spec.mode == .windowed || currentLayout.spec.mode == .fullScreen, "ResizeSidebar: current mode unexpected: \(currentLayout.spec.mode)")
     let oldGeo = windowedModeGeometry
 

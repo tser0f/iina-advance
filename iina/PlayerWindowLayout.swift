@@ -662,7 +662,12 @@ extension PlayerWindowController {
 
     if initialGeometry == nil {
       log.verbose("Building initial geometry from current window")
-      initialGeometry = buildWindowGeometryFromCurrentFrame(using: initialLayout)
+      switch initialLayoutSpec.mode {
+      case .fullScreen, .windowed:
+        initialGeometry = buildWindowGeometryFromCurrentFrame(using: initialLayout)
+      case .musicMode:
+        initialGeometry = musicModeGeometry.clone(windowFrame: window!.frame).toPlayerWindowGeometry()
+      }
     }
 
     let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
@@ -739,39 +744,35 @@ extension PlayerWindowController {
     // Geometry
     // FIXME: need to finish pulling out all geometry logic from transition code and put here
     let toGeometry: PlayerWindowGeometry
+
     if toLayout.isMusicMode {
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
       toGeometry = musicModeGeometryAspectCorrected.toPlayerWindowGeometry()
-    } else { // Not MusicMode
 
+    } else if toLayout.isFullScreen {
+      // This will be ignored anyway, so just save the processing cycles
+      toGeometry = windowedModeGeometry
+    } else {
       let bottomBarHeight: CGFloat
       if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
         bottomBarHeight = OSCToolbarButton.oscBarHeight
       } else {
         bottomBarHeight = 0
       }
+      let outsideBottomBarHeight = toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
 
-      if fromLayout.isFullScreen && !toLayout.isFullScreen {  // Exiting FullScreen
-        let priorGeometry = windowedModeGeometry
-        /// `windowedModeGeometry` may have gone stale or needs to be overridden. Update to match `toLayout`:
-        let outsideBottomBarHeight = toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
-        toGeometry = priorGeometry.resizeOutsideBars(newOutsideTopHeight: toLayout.topBarOutsideHeight,
-                                                     newOutsideTrailingWidth: toLayout.trailingBarOutsideWidth,
-                                                     newOutsideBottomBarHeight: outsideBottomBarHeight,
-                                                     newOutsideLeadingWidth: toLayout.leadingBarOutsideWidth)
-      } else {
-        toGeometry = PlayerWindowGeometry(windowFrame: windowedModeGeometry.windowFrame,
-                                          outsideTopBarHeight: toLayout.topBarOutsideHeight,
-                                          outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth,
-                                          outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0,
-                                          outsideLeadingBarWidth: toLayout.leadingBarOutsideWidth,
-                                          insideTopBarHeight: toLayout.topBarPlacement == .insideVideo ? toLayout.topBarHeight : 0,
-                                          insideTrailingBarWidth: toLayout.trailingBarInsideWidth,
-                                          insideBottomBarHeight: toLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0,
-                                          insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
-                                          videoAspectRatio: fromGeometry.videoAspectRatio)
-      }
+      /// `windowedModeGeometry` may have gone stale or needs to be overridden. Update to match `toLayout`:
+      let geo = windowedModeGeometry.clone(insideTopBarHeight: toLayout.topBarPlacement == .insideVideo ? toLayout.topBarHeight : 0,
+                                           insideTrailingBarWidth: toLayout.trailingBarInsideWidth,
+                                           insideBottomBarHeight: toLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0,
+                                           insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
+                                           videoAspectRatio: fromGeometry.videoAspectRatio)
+      // Need to recalculate windowFrame for outside bars:
+      toGeometry = geo.resizeOutsideBars(newOutsideTopHeight: toLayout.topBarOutsideHeight,
+                                         newOutsideTrailingWidth: toLayout.trailingBarOutsideWidth,
+                                         newOutsideBottomBarHeight: outsideBottomBarHeight,
+                                         newOutsideLeadingWidth: toLayout.leadingBarOutsideWidth)
     }
 
     let transition = LayoutTransition(name: transitionName, from: fromLayout, from: fromGeometry, to: toLayout, to: toGeometry, isInitialLayout: false)
@@ -888,7 +889,7 @@ extension PlayerWindowController {
     /// To avoid possible bugs as a result, let's update this at the very beginning.
     currentLayout = transition.toLayout
 
-    // TODO: might not be the best place to set this...
+    /// Set this here because we are setting `currentLayout`
     if transition.toLayout.spec.mode == .windowed {
       windowedModeGeometry = transition.toWindowGeometry
     }
@@ -1113,10 +1114,9 @@ extension PlayerWindowController {
     }
 
     // Sidebars (if closing)
-    animateShowOrHideSidebars(transition: transition,
-                                                      layout: transition.fromLayout,
-                                                      setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
-                                                      setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
+    animateShowOrHideSidebars(transition: transition, layout: transition.fromLayout,
+                              setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
+                              setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
     updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
 
     window.contentView?.layoutSubtreeIfNeeded()
@@ -1300,6 +1300,7 @@ extension PlayerWindowController {
 
     // Update heights of top & bottom bars:
 
+    // TODO: move these calculations into the `toGeometry` calculation when transition is built
     var windowYDelta: CGFloat = 0
     var windowHeightDelta: CGFloat = 0
 

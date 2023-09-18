@@ -325,13 +325,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .allowEmptySpaceAroundVideo,
   ]
 
-  var observedPrefKeys: [Preference.Key] {
-    PlayerWindowController.playerWindowPrefKeys
-  }
-
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath, let change = change else { return }
-    super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 
     switch keyPath {
     case PK.themeMaterial.rawValue:
@@ -782,7 +777,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     updateVolumeUI()
 
-    observedPrefKeys.forEach { key in
+    PlayerWindowController.playerWindowPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
 
@@ -957,7 +952,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   deinit {
     ObjcUtils.silenced {
-      for key in self.observedPrefKeys {
+      for key in PlayerWindowController.playerWindowPrefKeys {
         UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
       }
     }
