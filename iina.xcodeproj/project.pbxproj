@@ -178,6 +178,7 @@
 		D188CB2228D6DE1900F166FD /* InputBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = D188CB2128D6DE1900F166FD /* InputBinding.swift */; };
 		D188CB2628D9E95500F166FD /* BindingTableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D188CB2528D9E95500F166FD /* BindingTableState.swift */; };
 		D19AF88428A3CBCE009B598C /* InputConfFileCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19AF88328A3CBCE009B598C /* InputConfFileCache.swift */; };
+		D19CF7162AB846D300511F80 /* MusicModeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */; };
 		D19F9DAA28645C860054CC45 /* EditableTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19F9DA928645C860054CC45 /* EditableTableView.swift */; };
 		D1A44D8A2A5E18D00089B283 /* PlayerWindowGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A44D892A5E18D00089B283 /* PlayerWindowGeometry.swift */; };
 		D1A8878C29D16452000D1AE4 /* RotationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A8878B29D16452000D1AE4 /* RotationHandler.swift */; };
@@ -1554,6 +1555,7 @@
 		D188CB2128D6DE1900F166FD /* InputBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputBinding.swift; sourceTree = "<group>"; };
 		D188CB2528D9E95500F166FD /* BindingTableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingTableState.swift; sourceTree = "<group>"; };
 		D19AF88328A3CBCE009B598C /* InputConfFileCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputConfFileCache.swift; sourceTree = "<group>"; };
+		D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicModeGeometry.swift; sourceTree = "<group>"; };
 		D19F9DA928645C860054CC45 /* EditableTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableTableView.swift; sourceTree = "<group>"; };
 		D1A44D892A5E18D00089B283 /* PlayerWindowGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerWindowGeometry.swift; sourceTree = "<group>"; };
 		D1A8878B29D16452000D1AE4 /* RotationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationHandler.swift; sourceTree = "<group>"; };
@@ -2209,21 +2211,10 @@
 		84A0BAA31D2FAEA000BC8DA1 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				D1A44D882A5E18B10089B283 /* MainWindow */,
+				D1A44D882A5E18B10089B283 /* PlayerWindow */,
 				84A0BA931D2F9E9600BC8DA1 /* MainMenu.xib */,
-				E38BD4AE20054BD9007635FC /* PlayerWindow.swift */,
-				84A0BA9C1D2FAD4000BC8DA1 /* PlayerWindowController.swift */,
-				D1AE04CD2A9317CD00F58860 /* PlayerWindowLayout.swift */,
 				51CACB9429D500290034CEE5 /* VideoPIPViewController.swift */,
 				84D123B31ECAA405004E0D53 /* TouchBarSupport.swift */,
-				D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */,
-				D1A8878B29D16452000D1AE4 /* RotationHandler.swift */,
-				8400D5C81E1AB2F1006785F5 /* PlayerWindowController.xib */,
-				8466BE161D5CDD0300039D03 /* QuickSettingViewController.swift */,
-				8400D5CB1E1AB2F9006785F5 /* QuickSettingViewController.xib */,
-				8460FBA71D6497490081841B /* PlaylistViewController.swift */,
-				8400D5CE1E1AB2FF006785F5 /* PlaylistViewController.xib */,
-				845FB0C61D39462E00C011E0 /* ControlBarView.swift */,
 				8450403B1E0A9EE20079C194 /* InspectorWindowController.swift */,
 				8400D5D41E1AB312006785F5 /* InspectorWindowController.xib */,
 				84E48D4C1E0F1090002C7A3F /* FilterWindowController.swift */,
@@ -2234,11 +2225,8 @@
 				8418A2F7213F5791003166AC /* OpenURLWindowController.xib */,
 				84C6D3651EB2A427009BF721 /* HistoryWindowController.swift */,
 				84996F921EC11CE6009A8A39 /* HistoryWindowController.xib */,
-				846352571EEEE11A0043F0CC /* ThumbnailPeekView.swift */,
 				849581EF1F02728700D3B359 /* InitialWindowController.swift */,
 				849581F51F03D55A00D3B359 /* InitialWindowController.xib */,
-				84A09A0C1F2DF596000FF343 /* MiniPlayerController.swift */,
-				8F49C370213EFB7E0076C4F9 /* MiniPlayerController.xib */,
 				E36E8D7A24F6052F00B8C097 /* GuideWindowController.swift */,
 				E34E909C24F821280073BF04 /* GuideWindowController.xib */,
 				34FD798D291C76A600963EDE /* LogWindowController.swift */,
@@ -2557,13 +2545,28 @@
 			path = mpv;
 			sourceTree = "<group>";
 		};
-		D1A44D882A5E18B10089B283 /* MainWindow */ = {
+		D1A44D882A5E18B10089B283 /* PlayerWindow */ = {
 			isa = PBXGroup;
 			children = (
-				D1A8878D29D1696C000D1AE4 /* Sidebars.swift */,
+				E38BD4AE20054BD9007635FC /* PlayerWindow.swift */,
+				84A0BA9C1D2FAD4000BC8DA1 /* PlayerWindowController.swift */,
+				8400D5C81E1AB2F1006785F5 /* PlayerWindowController.xib */,
+				D1AE04CD2A9317CD00F58860 /* PlayerWindowLayout.swift */,
 				D1A44D892A5E18D00089B283 /* PlayerWindowGeometry.swift */,
+				D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */,
+				D1A8878B29D16452000D1AE4 /* RotationHandler.swift */,
+				D1A8878D29D1696C000D1AE4 /* Sidebars.swift */,
+				84A09A0C1F2DF596000FF343 /* MiniPlayerController.swift */,
+				8F49C370213EFB7E0076C4F9 /* MiniPlayerController.xib */,
+				D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */,
+				8466BE161D5CDD0300039D03 /* QuickSettingViewController.swift */,
+				8400D5CB1E1AB2F9006785F5 /* QuickSettingViewController.xib */,
+				8460FBA71D6497490081841B /* PlaylistViewController.swift */,
+				8400D5CE1E1AB2FF006785F5 /* PlaylistViewController.xib */,
+				845FB0C61D39462E00C011E0 /* ControlBarView.swift */,
+				846352571EEEE11A0043F0CC /* ThumbnailPeekView.swift */,
 			);
-			name = MainWindow;
+			name = PlayerWindow;
 			sourceTree = "<group>";
 		};
 		D1D736172989693A000EB5F4 /* Player */ = {
@@ -3054,6 +3057,7 @@
 				84EB1EDA1D2F51D3004FA5A1 /* AppDelegate.swift in Sources */,
 				E353070521496CE4008FE492 /* PrefPluginViewController.swift in Sources */,
 				D1DC673128ED682100C419CB /* RemainingRemovalTracker.swift in Sources */,
+				D19CF7162AB846D300511F80 /* MusicModeGeometry.swift in Sources */,
 				840820111ECF6C1800361416 /* FileGroup.swift in Sources */,
 				E374160C20F138A900B4F7F9 /* CollapseView.swift in Sources */,
 				84A0BA901D2F8D4100BC8DA1 /* IINAError.swift in Sources */,
