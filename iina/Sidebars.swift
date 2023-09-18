@@ -911,7 +911,8 @@ extension PlayerWindowController {
 
   /// Returns new or existing `PlayerWindowGeometry` if handled; `nil` if not
   func resizeSidebar(with dragEvent: NSEvent) -> PlayerWindowGeometry? {
-    let oldGeo = windowGeometry
+    assert(currentLayout.spec.mode == .windowed || currentLayout.spec.mode == .fullScreen, "ResizeSidebar: current mode unexpected: \(currentLayout.spec.mode)")
+    let oldGeo = windowedModeGeometry
 
     return CocoaAnimation.disableAnimation {
       let currentLocation = dragEvent.locationInWindow
@@ -924,7 +925,7 @@ extension PlayerWindowController {
         let desiredPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
         if layout.leadingSidebar.placement == .insideVideo {
           // Stop sidebar from resizing when the videoContainerView is not wide enough to fit it.
-          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
+          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.videoContainerSize.width))
           newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
           if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
             // should not happen in theory, because playlist shouldn't have been shown when resize started
@@ -956,7 +957,7 @@ extension PlayerWindowController {
       } else if trailingSidebarIsResizing {
         let desiredPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
         if layout.trailingSidebar.placement == .insideVideo {
-          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: getCurrentWindowGeometry().videoContainerSize.width))
+          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.videoContainerSize.width))
 
           newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
           if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
@@ -996,13 +997,13 @@ extension PlayerWindowController {
     if leadingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       leadingSidebarIsResizing = false
-      windowGeometry = newGeometry
+      windowedModeGeometry = newGeometry
       log.verbose("New width of left sidebar playlist is \(currentLayout.leadingSidebar.currentWidth)")
       return true
     } else if trailingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       trailingSidebarIsResizing = false
-      windowGeometry = newGeometry
+      windowedModeGeometry = newGeometry
       log.verbose("New width of right sidebar playlist is \(currentLayout.trailingSidebar.currentWidth)")
       return true
     }

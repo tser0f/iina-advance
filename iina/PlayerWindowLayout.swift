@@ -614,10 +614,10 @@ extension PlayerWindowController {
       log.verbose("Transitioning to initial layout from prior window state")
 
       // Restore saved geometries
-      if let priorWindowGeometry = priorState.windowGeometry {
-        log.debug("Restoring normal windowFrame to \(priorWindowGeometry.windowFrame), videoAspectRatio: \(priorWindowGeometry.videoAspectRatio)")
-        player.videoView.updateAspectRatio(to: priorWindowGeometry.videoAspectRatio)
-        windowGeometry = priorWindowGeometry
+      if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
+        log.debug("Restoring windowedMode windowFrame to \(priorWindowedModeGeometry.windowFrame), videoAspectRatio: \(priorWindowedModeGeometry.videoAspectRatio)")
+        player.videoView.updateAspectRatio(to: priorWindowedModeGeometry.videoAspectRatio)
+        windowedModeGeometry = priorWindowedModeGeometry
       } else {
         log.error("Failed to get player window geometry from prefs")
       }
@@ -645,7 +645,7 @@ extension PlayerWindowController {
       // Restore window size & position
       switch initialLayoutSpec.mode {
       case .fullScreen, .windowed:
-        initialGeometry = windowGeometry
+        initialGeometry = windowedModeGeometry
       case .musicMode:
         /// `musicModeGeometry` should have already been deserialized and set.
         /// But make sure we correct any size problems
@@ -733,7 +733,7 @@ extension PlayerWindowController {
     if fromLayout.isMusicMode {
       fromGeometry = musicModeGeometry.toPlayerWindowGeometry()
     } else {
-      fromGeometry = getCurrentWindowGeometry()
+      fromGeometry = windowedModeGeometry
     }
 
     // Geometry
@@ -743,23 +743,35 @@ extension PlayerWindowController {
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
       toGeometry = musicModeGeometryAspectCorrected.toPlayerWindowGeometry()
-    } else {
+    } else { // Not MusicMode
+
       let bottomBarHeight: CGFloat
       if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
         bottomBarHeight = OSCToolbarButton.oscBarHeight
       } else {
         bottomBarHeight = 0
       }
-      toGeometry = PlayerWindowGeometry(windowFrame: windowGeometry.windowFrame,
-                                      outsideTopBarHeight: toLayout.topBarOutsideHeight,
-                                      outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth,
-                                      outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0,
-                                      outsideLeadingBarWidth: toLayout.leadingBarOutsideWidth,
-                                      insideTopBarHeight: toLayout.topBarPlacement == .insideVideo ? toLayout.topBarHeight : 0,
-                                      insideTrailingBarWidth: toLayout.trailingBarInsideWidth,
-                                      insideBottomBarHeight: toLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0,
-                                      insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
-                                      videoAspectRatio: fromGeometry.videoAspectRatio)
+
+      if fromLayout.isFullScreen && !toLayout.isFullScreen {  // Exiting FullScreen
+        let priorGeometry = windowedModeGeometry
+        /// `windowedModeGeometry` may have gone stale or needs to be overridden. Update to match `toLayout`:
+        let outsideBottomBarHeight = toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
+        toGeometry = priorGeometry.resizeOutsideBars(newOutsideTopHeight: toLayout.topBarOutsideHeight,
+                                                     newOutsideTrailingWidth: toLayout.trailingBarOutsideWidth,
+                                                     newOutsideBottomBarHeight: outsideBottomBarHeight,
+                                                     newOutsideLeadingWidth: toLayout.leadingBarOutsideWidth)
+      } else {
+        toGeometry = PlayerWindowGeometry(windowFrame: windowedModeGeometry.windowFrame,
+                                          outsideTopBarHeight: toLayout.topBarOutsideHeight,
+                                          outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth,
+                                          outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0,
+                                          outsideLeadingBarWidth: toLayout.leadingBarOutsideWidth,
+                                          insideTopBarHeight: toLayout.topBarPlacement == .insideVideo ? toLayout.topBarHeight : 0,
+                                          insideTrailingBarWidth: toLayout.trailingBarInsideWidth,
+                                          insideBottomBarHeight: toLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0,
+                                          insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
+                                          videoAspectRatio: fromGeometry.videoAspectRatio)
+      }
     }
 
     let transition = LayoutTransition(name: transitionName, from: fromLayout, from: fromGeometry, to: toLayout, to: toGeometry, isInitialLayout: false)
@@ -878,7 +890,7 @@ extension PlayerWindowController {
 
     // TODO: might not be the best place to set this...
     if transition.toLayout.spec.mode == .windowed {
-      windowGeometry = transition.toWindowGeometry
+      windowedModeGeometry = transition.toWindowGeometry
     }
 
     guard let window = window else { return }
@@ -886,8 +898,8 @@ extension PlayerWindowController {
     if transition.isEnteringFullScreen {
       // Entering FullScreen
       let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
-      /// `windowGeometry` should already be kept up to date. Might be hard to track down bugs...
-      log.verbose("Entering fullscreen, priorWindowedGeometry := \(windowGeometry)")
+      /// `windowedModeGeometry` should already be kept up to date. Might be hard to track down bugs...
+      log.verbose("Entering fullscreen, priorWindowedGeometry := \(windowedModeGeometry)")
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
@@ -1311,26 +1323,17 @@ extension PlayerWindowController {
     if transition.isEnteringFullScreen {
       // Entering FullScreen
       if transition.toLayout.isLegacyFullScreen {
-        // Set window frame including camera housing (if any)
+        // Set window frame including camera housing (if any) so that it is filled with black pixels
         setWindowFrameForLegacyFullScreen()
       } else {
+        // Native FullScreen: set frame not including camera housing because it looks better with the native animation
         let screen = bestScreen
         Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
         player.window.setFrameImmediately(screen.frameWithoutCameraHousing)
       }
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
-      let topHeight = transition.toLayout.topBarOutsideHeight
-      let bottomHeight = transition.toWindowGeometry.outsideBottomBarHeight
-      let leadingWidth = transition.toLayout.leadingBarOutsideWidth
-      let trailingWidth = transition.toLayout.trailingBarOutsideWidth
-
-      let priorGeometry = windowGeometry
-      let priorWindowFrame = priorGeometry.resizeOutsideBars(newOutsideTopHeight: topHeight,
-                                                             newOutsideTrailingWidth: trailingWidth,
-                                                             newOutsideBottomBarHeight: bottomHeight,
-                                                             newOutsideLeadingWidth: leadingWidth).windowFrame
-
+      let priorWindowFrame = transition.toWindowGeometry.windowFrame
       log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
       player.window.setFrameImmediately(priorWindowFrame)
     } else if !transition.isInitialLayout && !futureLayout.isFullScreen {

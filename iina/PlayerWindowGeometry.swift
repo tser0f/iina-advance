@@ -457,7 +457,7 @@ extension PlayerWindowController {
       }
 
     } else {
-      let windowGeo = getCurrentWindowGeometry().clone(videoAspectRatio: videoBaseDisplaySize.aspect)
+      let windowGeo = windowedModeGeometry.clone(videoAspectRatio: videoBaseDisplaySize.aspect)
       let newWindowGeo: PlayerWindowGeometry
 
       if shouldResizeWindowAfterVideoReconfig() {
@@ -605,7 +605,7 @@ extension PlayerWindowController {
   func resizeVideoContainer(desiredVideoContainerSize: CGSize? = nil, centerOnScreen: Bool = false) {
     guard !isInInteractiveMode, currentLayout.spec.mode == .windowed else { return }
 
-    let newGeoUnconstrained = getCurrentWindowGeometry().scale(desiredVideoContainerSize: desiredVideoContainerSize)
+    let newGeoUnconstrained = windowedModeGeometry.scale(desiredVideoContainerSize: desiredVideoContainerSize)
     // User has actively resized the video. Assume this is the new preferred resolution
     player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
 
@@ -620,7 +620,7 @@ extension PlayerWindowController {
 
     switch currentLayout.spec.mode {
     case .windowed:
-      windowGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
+      windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame, videoAspectRatio: videoView.aspectRatio)
       break
@@ -647,15 +647,12 @@ extension PlayerWindowController {
     return geo.scale(desiredVideoContainerSize: videoContainerView.frame.size, constrainedWithin: bestScreen.frame)
   }
 
-  func getCurrentWindowGeometry() -> PlayerWindowGeometry {
-    return windowGeometry
-  }
-
   func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry, updateCache: Bool = true,
                            enqueueAnimation: Bool = true, animate: Bool = true,setFrameImmediately: Bool = true) {
+
     let needsSave = updateCache && !currentLayout.isMusicMode
     if needsSave {
-      windowGeometry = newGeometry
+      windowedModeGeometry = newGeometry
     }
 
     let newWindowFrame = newGeometry.windowFrame
@@ -716,6 +713,8 @@ extension PlayerWindowController {
   }
 
   private func tryToResizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
+    assert(currentLayout.spec.mode == .windowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.spec.mode)")
+
     if denyNextWindowResize {
       let currentSize = window.frame.size
       log.verbose("WindowWillResize: denying this resize; will stay at \(currentSize)")
@@ -726,18 +725,24 @@ extension PlayerWindowController {
     if player.info.isRestoring {
       guard let savedState = player.info.priorState else { return window.frame.size }
 
-      if let savedGeo = savedState.windowGeometry {
+      if let savedLayoutSpec = savedState.layoutSpec {
         // If getting here, restore is in progress. Don't allow size changes, but don't worry
         // about whether the saved size is valid. It will be handled elsewhere.
-        let priorSize = savedGeo.windowFrame.size
-        log.verbose("WindowWillResize: denying request due to restore; returning \(priorSize)")
-        return savedGeo.windowFrame.size
+        if savedLayoutSpec.mode == .musicMode, let savedMusicModeGeo = savedState.musicModeGeometry {
+          let priorSize = savedMusicModeGeo.windowFrame.size
+          log.verbose("WindowWillResize: denying request due to restore; returning saved musicMode size \(priorSize)")
+          return priorSize
+        } else if savedLayoutSpec.mode == .windowed, let savedWindowedModeGeo = savedState.windowedModeGeometry {
+          let priorSize = savedWindowedModeGeo.windowFrame.size
+          log.verbose("WindowWillResize: denying request due to restore; returning saved windowedMode size \(priorSize)")
+          return priorSize
+        }
       }
       log.error("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
       return window.frame.size
     }
 
-    let currentGeo = getCurrentWindowGeometry()
+    let currentGeo = windowedModeGeometry
     let outsideBarsSize = currentGeo.outsideBarsTotalSize
 
     if !window.inLiveResize && ((requestedSize.height < currentGeo.minVideoHeight + outsideBarsSize.height)

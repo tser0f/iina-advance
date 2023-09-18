@@ -212,11 +212,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return LayoutState(spec: LayoutSpec.defaultLayout())
   }()
 
-  lazy var windowGeometry: PlayerWindowGeometry = {
+  lazy var windowedModeGeometry: PlayerWindowGeometry = {
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
     didSet {
-      log.verbose("WindowGeometry updated: \(windowGeometry.windowFrame)")
+      log.verbose("Updated windowedModeGeometry: \(windowedModeGeometry.windowFrame)")
     }
   }
 
@@ -1825,7 +1825,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   ///
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
   func setWindowFrameForLegacyFullScreen(animate: Bool = true) {
-    guard let window = self.window else { return }
     let newWindowFrame = bestScreen.frame
 
     log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
@@ -2627,7 +2626,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("Updating mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
     // this is also a good place to save state, if applicable
 
-    let videoScale = Double((videoSize ?? windowGeometry.videoSize).width) / Double(videoWidth)
+    let videoScale = Double((videoSize ?? windowedModeGeometry.videoSize).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
     if videoScale != prevVideoScale {
       log.verbose("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")

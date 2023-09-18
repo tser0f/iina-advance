@@ -18,7 +18,7 @@ struct PlayerSaveState {
     case userPreferredVideoContainerSizeWide = "userVidConSize_Wide"
     case userPreferredVideoContainerSizeTall = "userVidConSize_Tall"
     case layoutSpec = "layoutSpec"
-    case windowGeometry = "windowGeometry"
+    case windowedModeGeometry = "windowedModeGeometry"
     case musicModeGeometry = "musicModeGeometry"
     case isMinimized = "minimized"
     case overrideAutoMusicMode = "overrideAutoMusicMode"
@@ -78,14 +78,14 @@ struct PlayerSaveState {
   /// See `setInitialWindowLayout()` in PlayerWindowLayout.swift.
   let layoutSpec: PlayerWindowController.LayoutSpec?
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
-  let windowGeometry: PlayerWindowGeometry?
+  let windowedModeGeometry: PlayerWindowGeometry?
   let musicModeGeometry: MusicModeGeometry?
 
   init(_ props: [String: Any]) {
     self.properties = props
 
     self.layoutSpec = PlayerSaveState.deserializeLayoutSpec(from: props)
-    self.windowGeometry = PlayerSaveState.deserializeWindowGeometry(from: props)
+    self.windowedModeGeometry = PlayerSaveState.deserializeWindowGeometry(from: props)
     self.musicModeGeometry = PlayerSaveState.deserializeMusicModeGeometry(from: props)
   }
 
@@ -155,9 +155,9 @@ struct PlayerSaveState {
     /// `layoutSpec`
     props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
-    /// `windowGeometry`
-    let windowGeometry = player.windowController.getCurrentWindowGeometry()
-    props[PropName.windowGeometry.rawValue] = toCSV(windowGeometry)
+    /// `windowedModeGeometry`
+    let windowedModeGeometry = player.windowController.windowedModeGeometry
+    props[PropName.windowedModeGeometry.rawValue] = toCSV(windowedModeGeometry)
 
     /// `musicModeGeometry`
     props[PropName.musicModeGeometry.rawValue] = toCSV(player.windowController.musicModeGeometry)
@@ -417,7 +417,7 @@ struct PlayerSaveState {
 
   /// String -> `PlayerWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> PlayerWindowGeometry? {
-    return deserializeCSV(.windowGeometry, fromProperties: properties,
+    return deserializeCSV(.windowedModeGeometry, fromProperties: properties,
                           expectedTokenCount: 14,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in

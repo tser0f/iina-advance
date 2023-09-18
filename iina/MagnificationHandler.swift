@@ -57,7 +57,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
           windowController.musicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowGeometry.windowFrame)
           windowController.player.saveState()
         } else {
-          windowController.windowGeometry = newWindowGeometry
+          windowController.windowedModeGeometry = newWindowGeometry
           windowController.updateWindowParametersForMPV()  // also saves state
         }
       }
@@ -74,7 +74,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     if windowController.currentLayout.isMusicMode {
       originalGeometry = windowController.musicModeGeometry.toPlayerWindowGeometry()
     } else {
-      originalGeometry = windowController.getCurrentWindowGeometry()
+      originalGeometry = windowController.windowedModeGeometry
     }
 
     // If in music mode but playlist is not visible, allow scaling up to screen size like regular windowed mode.
