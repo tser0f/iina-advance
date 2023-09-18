@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Ошибка";
 
-// MainWindowController.swift
+// PlayerWindowController.swift
 "main.buffering_indicator" = "Буферизация… %d%%";
 "main.opening_stream" = "Открытие потока…";
 "osc.precision" = "Точность";

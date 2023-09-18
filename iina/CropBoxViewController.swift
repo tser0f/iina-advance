@@ -11,7 +11,7 @@ import Cocoa
 /** The generic view controller of `CropBoxView`. */
 class CropBoxViewController: NSViewController {
 
-  weak var mainWindow: MainWindowController!
+  weak var mainWindow: PlayerWindowController!
 
   var cropx: Int = 0
   var cropy: Int = 0  // in flipped coord

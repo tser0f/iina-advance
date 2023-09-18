@@ -1,5 +1,5 @@
 //
-//  MainWindowLayout.swift
+//  PlayerWindowLayout.swift
 //  iina
 //
 //  Created by Matt Svoboda on 8/20/23.
@@ -33,7 +33,7 @@ fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 900)
 }
 
-extension MainWindowController {
+extension PlayerWindowController {
 
   enum WindowMode: Int {
     case windowed = 1
@@ -197,14 +197,14 @@ extension MainWindowController {
     }
   }
 
-  /// `LayoutState`: data structure which contains all the variables which describe a single layout configuration of the `MainWindow`.
+  /// `LayoutState`: data structure which contains all the variables which describe a single layout configuration of the `PlayerWindow`.
   /// ("Layout" might have been a better name for this class, but it's already used by AppKit). Notes:
   /// • With all the different window layout configurations which are now possible, it's crucial to use this class in order for animations
   ///   to work reliably.
   /// • It should be treated like a read-only object after it's built. Its member variables are only mutable to make it easier to build.
   /// • When any member variable inside it needs to be changed, a new `LayoutState` object should be constructed to describe the new state,
   ///   and a `LayoutTransition` should be built to describe the animations needs to go from old to new.
-  /// • The new `LayoutState`, once active, should be stored in the `currentLayout` of `MainWindowController` for future reference.
+  /// • The new `LayoutState`, once active, should be stored in the `currentLayout` of `PlayerWindowController` for future reference.
   class LayoutState {
     init(spec: LayoutSpec) {
       self.spec = spec
@@ -434,15 +434,15 @@ extension MainWindowController {
     let name: String  // just used for debugging
     let fromLayout: LayoutState
     let toLayout: LayoutState
-    let fromWindowGeometry: MainWindowGeometry
-    let toWindowGeometry: MainWindowGeometry
+    let fromWindowGeometry: PlayerWindowGeometry
+    let toWindowGeometry: PlayerWindowGeometry
 
     let isInitialLayout: Bool
 
     var animationTasks: [CocoaAnimation.Task] = []
 
-    init(name: String, from fromLayout: LayoutState, from fromGeometry: MainWindowGeometry,
-         to toLayout: LayoutState, to toGeometry: MainWindowGeometry,
+    init(name: String, from fromLayout: LayoutState, from fromGeometry: PlayerWindowGeometry,
+         to toLayout: LayoutState, to toGeometry: PlayerWindowGeometry,
          isInitialLayout: Bool = false) {
       self.name = name
       self.fromLayout = fromLayout
@@ -606,7 +606,7 @@ extension MainWindowController {
   func setInitialWindowLayout() {
     var needsNativeFullScreen: Bool = false
     let initialLayoutSpec: LayoutSpec
-    var initialGeometry: MainWindowGeometry? = nil
+    var initialGeometry: PlayerWindowGeometry? = nil
     let isRestoringFromPrevLaunch: Bool
 
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
@@ -649,7 +649,7 @@ extension MainWindowController {
       case .musicMode:
         /// `musicModeGeometry` should have already been deserialized and set.
         /// But make sure we correct any size problems
-        initialGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toMainWindowGeometry()
+        initialGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toPlayerWindowGeometry()
       }
 
     } else {
@@ -680,7 +680,7 @@ extension MainWindowController {
       fadeInNewViews(transition)
       doPostTransitionWork(transition)
       log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
-      (window as! MainWindow).setFrameImmediately(initialGeometry!.windowFrame)
+      (window as! PlayerWindow).setFrameImmediately(initialGeometry!.windowFrame)
       log.verbose("Done with transition to initial layout")
     }
 
@@ -729,20 +729,20 @@ extension MainWindowController {
 
     let toLayout = buildFutureLayoutState(from: requestedSpec)
 
-    let fromGeometry: MainWindowGeometry
+    let fromGeometry: PlayerWindowGeometry
     if fromLayout.isMusicMode {
-      fromGeometry = musicModeGeometry.toMainWindowGeometry()
+      fromGeometry = musicModeGeometry.toPlayerWindowGeometry()
     } else {
       fromGeometry = getCurrentWindowGeometry()
     }
 
     // Geometry
     // FIXME: need to finish pulling out all geometry logic from transition code and put here
-    let toGeometry: MainWindowGeometry
+    let toGeometry: PlayerWindowGeometry
     if toLayout.isMusicMode {
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
-      toGeometry = musicModeGeometryAspectCorrected.toMainWindowGeometry()
+      toGeometry = musicModeGeometryAspectCorrected.toPlayerWindowGeometry()
     } else {
       let bottomBarHeight: CGFloat
       if requestedSpec.enableOSC && requestedSpec.oscPosition == .bottom {
@@ -750,7 +750,7 @@ extension MainWindowController {
       } else {
         bottomBarHeight = 0
       }
-      toGeometry = MainWindowGeometry(windowFrame: windowGeometry.windowFrame,
+      toGeometry = PlayerWindowGeometry(windowFrame: windowGeometry.windowFrame,
                                       outsideTopBarHeight: toLayout.topBarOutsideHeight,
                                       outsideTrailingBarWidth: toLayout.trailingBarOutsideWidth,
                                       outsideBottomBarHeight: toLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0,
@@ -832,7 +832,7 @@ extension MainWindowController {
     // Extra task when toggling music mode: move & resize window
     if transition.isTogglingMusicMode {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-        (window as! MainWindow).setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
+        (window as! PlayerWindow).setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
       }))
     }
 
@@ -1092,11 +1092,11 @@ extension MainWindowController {
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(newWindowFrame)")
-      (window as! MainWindow).setFrameImmediately(newWindowFrame)
+      (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
     } else if transition.isTogglingFullScreen && transition.fromLayout.isLegacyFullScreen && transition.fromLayout.cameraHousingOffset > 0 {
       // Exiting legacy FS: get rid of camera housing immediately for nicer animation
       if let newWindowFrame = window.screen?.frameWithoutCameraHousing {
-        (window as! MainWindow).setFrameImmediately(newWindowFrame)
+        (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
       }
     }
 
@@ -1316,7 +1316,7 @@ extension MainWindowController {
       } else {
         let screen = bestScreen
         Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
-        (window as! MainWindow).setFrameImmediately(screen.frameWithoutCameraHousing)
+        (window as! PlayerWindow).setFrameImmediately(screen.frameWithoutCameraHousing)
       }
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
@@ -1332,14 +1332,14 @@ extension MainWindowController {
                                                              newOutsideLeadingWidth: leadingWidth).windowFrame
 
       log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
-      (window as! MainWindow).setFrameImmediately(priorWindowFrame)
+      (window as! PlayerWindow).setFrameImmediately(priorWindowFrame)
     } else if !transition.isInitialLayout && !futureLayout.isFullScreen {
       let windowFrame = window.frame
       let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
       let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
       let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
       log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
-      (window as! MainWindow).setFrameImmediately(newWindowFrame)
+      (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
     }
 
     // Sidebars (if opening)
@@ -1427,7 +1427,7 @@ extension MainWindowController {
           leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
           leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
           leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
-          leadingStackView.heightAnchor.constraint(equalToConstant: MainWindowController.standardTitleBarHeight).isActive = true
+          leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
           leadingStackView.detachesHiddenViews = false
           leadingStackView.spacing = 6
           /// Because of possible top OSC, `titleBarView` may have reduced height.
@@ -1780,7 +1780,7 @@ extension MainWindowController {
         futureLayout.trafficLightButtons = visibleState
         futureLayout.titleIconAndText = visibleState
         // May be overridden depending on OSC layout anyway
-        futureLayout.titleBarHeight = MainWindowController.standardTitleBarHeight
+        futureLayout.titleBarHeight = PlayerWindowController.standardTitleBarHeight
 
         futureLayout.titlebarAccessoryViewControllers = visibleState
 
@@ -1816,7 +1816,7 @@ extension MainWindowController {
         if futureLayout.titleBar.isShowable {
           // If legacy window mode, do not show title bar.
           // Otherwise reduce its height a bit because it will share space with OSC
-          futureLayout.titleBarHeight = MainWindowController.reducedTitleBarHeight
+          futureLayout.titleBarHeight = PlayerWindowController.reducedTitleBarHeight
         }
 
         let visibility: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
@@ -1865,7 +1865,7 @@ extension MainWindowController {
       controller.view = leadingTitleBarAccessoryView
       controller.layoutAttribute = .leading
 
-      leadingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: MainWindowController.standardTitleBarHeight).isActive = true
+      leadingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
     }
     if trailingTitlebarAccesoryViewController == nil {
       let controller = NSTitlebarAccessoryViewController()
@@ -1873,7 +1873,7 @@ extension MainWindowController {
       controller.view = trailingTitleBarAccessoryView
       controller.layoutAttribute = .trailing
 
-      trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: MainWindowController.standardTitleBarHeight).isActive = true
+      trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
     }
     if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
       window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController!)

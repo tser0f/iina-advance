@@ -11,10 +11,10 @@ import Foundation
 class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
   lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
-    return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
+    return NSMagnificationGestureRecognizer(target: self, action: #selector(PlayerWindowController.handleMagnifyGesture(recognizer:)))
   }()
 
-  unowned var mainWindow: MainWindowController! = nil
+  unowned var mainWindow: PlayerWindowController! = nil
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
     let pinchAction: Preference.PinchAction = Preference.enum(for: .pinchAction)
@@ -36,7 +36,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     case .windowSize:
       if mainWindow.isFullScreen { return }
 
-      var newWindowGeometry: MainWindowGeometry? = nil
+      var newWindowGeometry: PlayerWindowGeometry? = nil
       // adjust window size
       switch recognizer.state {
       case .began:
@@ -65,14 +65,14 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
   }
 
   @discardableResult
-  private func scaleVideoFromPinchGesture(to magnification: CGFloat) -> MainWindowGeometry? {
+  private func scaleVideoFromPinchGesture(to magnification: CGFloat) -> PlayerWindowGeometry? {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
     mainWindow.log.verbose("Scaling pinched video, target scale: \(scale)")
 
-    let originalGeometry: MainWindowGeometry
+    let originalGeometry: PlayerWindowGeometry
     if mainWindow.currentLayout.isMusicMode {
-      originalGeometry = mainWindow.musicModeGeometry.toMainWindowGeometry()
+      originalGeometry = mainWindow.musicModeGeometry.toPlayerWindowGeometry()
     } else {
       originalGeometry = mainWindow.getCurrentWindowGeometry()
     }
@@ -119,8 +119,8 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       CocoaAnimation.disableAnimation{
         mainWindow.miniPlayer.apply(newMusicModeGeometry, updateCache: false)
       }
-      // Kind of clunky to convert to MainWindowGeometry, just to fit the function signature, then convert it back. But...could be worse.
-      return newMusicModeGeometry.toMainWindowGeometry()
+      // Kind of clunky to convert to PlayerWindowGeometry, just to fit the function signature, then convert it back. But...could be worse.
+      return newMusicModeGeometry.toPlayerWindowGeometry()
     }
     // Not music mode, OR scaling music mode without playlist (only fixed-height controller)
 

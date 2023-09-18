@@ -1,5 +1,5 @@
 //
-//  MainWindow.swift
+//  PlayerWindow.swift
 //  iina
 //
 //  Created by Collider LI on 10/1/2018.
@@ -8,7 +8,7 @@
 
 import Cocoa
 
-class MainWindow: NSWindow {
+class PlayerWindow: NSWindow {
   private var useZeroDurationForNextResize = false
 
   /**
@@ -35,7 +35,7 @@ class MainWindow: NSWindow {
     /// Forward all key events which the window receives to its controller.
     /// This allows `ESC` & `TAB` key bindings to work, instead of getting swallowed by
     /// MacOS keyboard focus navigation (which we don't use).
-    if let controller = windowController as? MainWindowController {
+    if let controller = windowController as? PlayerWindowController {
       controller.keyDown(with: event)
     } else {
       super.keyDown(with: event)

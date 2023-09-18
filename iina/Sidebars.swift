@@ -12,8 +12,8 @@ private func clampPlaylistWidth(_ width: CGFloat) -> CGFloat {
   return width.clamped(to: Constants.Sidebar.minPlaylistWidth...Constants.Sidebar.maxPlaylistWidth).rounded()
 }
 
-/// Enapsulates code relating to leading & trailing sidebars in MainWindow.
-extension MainWindowController {
+/// Enapsulates code relating to leading & trailing sidebars in PlayerWindow.
+extension PlayerWindowController {
 
   // MARK: - Structs & Enums
 
@@ -470,8 +470,8 @@ extension MainWindowController {
 
   // Resizes window to accomodate show or hide of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
-  private func updateWindowFrame(fromGeometry oldGeometry: MainWindowGeometry,
-                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) -> MainWindowGeometry {
+  private func updateWindowFrame(fromGeometry oldGeometry: PlayerWindowGeometry,
+                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) -> PlayerWindowGeometry {
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
       // Is expanding the window to open a sidebar. First save the current size as the preferred size.
@@ -909,15 +909,15 @@ extension MainWindowController {
     return false
   }
 
-  /// Returns new or existing `MainWindowGeometry` if handled; `nil` if not
-  func resizeSidebar(with dragEvent: NSEvent) -> MainWindowGeometry? {
+  /// Returns new or existing `PlayerWindowGeometry` if handled; `nil` if not
+  func resizeSidebar(with dragEvent: NSEvent) -> PlayerWindowGeometry? {
     let oldGeo = windowGeometry
 
     return CocoaAnimation.disableAnimation {
       let currentLocation = dragEvent.locationInWindow
       let layout = currentLayout
 
-      let newGeo: MainWindowGeometry
+      let newGeo: PlayerWindowGeometry
       let newPlaylistWidth: CGFloat
 
       if leadingSidebarIsResizing {
@@ -1032,7 +1032,7 @@ extension MainWindowController {
 // MARK: - SidebarTabGroupViewController
 
 protocol SidebarTabGroupViewController {
-  var mainWindow: MainWindowController! { get }
+  var mainWindow: PlayerWindowController! { get }
   var customTabHeight: CGFloat? { get }
 
   // Implementing classes need to define this

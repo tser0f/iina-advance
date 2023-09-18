@@ -42,7 +42,7 @@ class PluginSidebarView: WKWebView, WKNavigationDelegate {
   }
 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!){
-    if let wc = window?.windowController as? MainWindowController {
+    if let wc = window?.windowController as? PlayerWindowController {
       wc.player.events.emit(.pluginOverlayLoaded)
     }
   }

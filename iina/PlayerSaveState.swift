@@ -75,10 +75,10 @@ struct PlayerSaveState {
   /// Cached values parsed from `properties`
 
   /// Describes the current layout configuration of the player window.
-  /// See `setInitialWindowLayout()` in MainWindowLayout.swift.
-  let layoutSpec: MainWindowController.LayoutSpec?
+  /// See `setInitialWindowLayout()` in PlayerWindowLayout.swift.
+  let layoutSpec: PlayerWindowController.LayoutSpec?
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
-  let windowGeometry: MainWindowGeometry?
+  let windowGeometry: PlayerWindowGeometry?
   let musicModeGeometry: MusicModeGeometry?
 
   init(_ props: [String: Any]) {
@@ -91,8 +91,8 @@ struct PlayerSaveState {
 
   // MARK: - Save State / Serialize to prefs strings
 
-  /// `MainWindowGeometry` -> String
-  private static func toCSV(_ geo: MainWindowGeometry) -> String {
+  /// `PlayerWindowGeometry` -> String
+  private static func toCSV(_ geo: PlayerWindowGeometry) -> String {
     return [windowGeometryPrefStringVersion,
             geo.videoAspectRatio.string6f,
             geo.outsideTopBarHeight.string2f,
@@ -125,7 +125,7 @@ struct PlayerSaveState {
   }
 
   /// `LayoutSpec` -> String
-  private static func toCSV(_ spec: MainWindowController.LayoutSpec) -> String {
+  private static func toCSV(_ spec: PlayerWindowController.LayoutSpec) -> String {
     let leadingSidebarTab: String = spec.leadingSidebar.visibleTab?.name ?? "nil"
     let trailingSidebarTab: String = spec.trailingSidebar.visibleTab?.name ?? "nil"
     return [specPrefStringVersion,
@@ -362,16 +362,16 @@ struct PlayerSaveState {
   }
 
   /// String -> `LayoutSpec`
-  static private func deserializeLayoutSpec(from properties: [String: Any]) -> MainWindowController.LayoutSpec? {
+  static private func deserializeLayoutSpec(from properties: [String: Any]) -> PlayerWindowController.LayoutSpec? {
     return deserializeCSV(.layoutSpec, fromProperties: properties,
                           expectedTokenCount: 11,
                           expectedVersion: PlayerSaveState.specPrefStringVersion,
                           errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
 
-      let leadingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
-      let traillingSidebarTab = MainWindowController.Sidebar.Tab(name: iter.next())
+      let leadingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
+      let traillingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
 
-      guard let modeInt = Int(iter.next()!), let mode = MainWindowController.WindowMode(rawValue: modeInt),
+      guard let modeInt = Int(iter.next()!), let mode = PlayerWindowController.WindowMode(rawValue: modeInt),
             let isLegacyStyle = Bool.yn(iter.next()) else {
         Logger.log("\(errPreamble) could not parse mode or isLegacyStyle", level: .error)
         return nil
@@ -392,31 +392,31 @@ struct PlayerSaveState {
         return nil
       }
 
-      var leadingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
-      let leadVis: MainWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
+      var leadingTabGroups = PlayerWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
+      let leadVis: PlayerWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
       // If the tab groups prefs changed somehow since the last run, just add it for now so that the geometry can be restored.
       // Will correct this at the end of restore.
       if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
         Logger.log("Restore state is invalid: leadingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
         leadingTabGroups.insert(visibleTab.group)
       }
-      let leadingSidebar = MainWindowController.Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
+      let leadingSidebar = PlayerWindowController.Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
 
-      var trailingTabGroups = MainWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
-      let trailVis: MainWindowController.Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
+      var trailingTabGroups = PlayerWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
+      let trailVis: PlayerWindowController.Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
       // Account for invalid visible tab (see note above)
       if let visibleTab = trailVis.visibleTab, !trailingTabGroups.contains(visibleTab.group) {
         Logger.log("Restore state is invalid: trailingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
         trailingTabGroups.insert(visibleTab.group)
       }
-      let trailingSidebar = MainWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
+      let trailingSidebar = PlayerWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
 
-      return MainWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
+      return PlayerWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
     })
   }
 
-  /// String -> `MainWindowGeometry`
-  static private func deserializeWindowGeometry(from properties: [String: Any]) -> MainWindowGeometry? {
+  /// String -> `PlayerWindowGeometry`
+  static private func deserializeWindowGeometry(from properties: [String: Any]) -> PlayerWindowGeometry? {
     return deserializeCSV(.windowGeometry, fromProperties: properties,
                           expectedTokenCount: 14,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
@@ -440,7 +440,7 @@ struct PlayerSaveState {
       }
 
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return MainWindowGeometry(windowFrame: windowFrame,
+      return PlayerWindowGeometry(windowFrame: windowFrame,
                                 outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                                 outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
                                 insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,

@@ -104,7 +104,7 @@ class PlayerCoreManager {
   }
 
   func getActive() -> PlayerCore {
-    if let wc = NSApp.mainWindow?.windowController as? MainWindowController {
+    if let wc = NSApp.mainWindow?.windowController as? PlayerWindowController {
       return wc.player
     } else {
       return getOrCreateFirst()

@@ -47,7 +47,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
 
-  unowned var mainWindow: MainWindowController!
+  unowned var mainWindow: PlayerWindowController!
   var player: PlayerCore {
     return mainWindow.player
   }
@@ -471,7 +471,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
     mainWindow.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     log.verbose("Applying MusicModeGeometry windowFrame: \(geometry.windowFrame)")
-    (window as! MainWindow).setFrameImmediately(geometry.windowFrame, animate: true)
+    (window as! PlayerWindow).setFrameImmediately(geometry.windowFrame, animate: true)
     if updateCache {
       mainWindow.musicModeGeometry = geometry
       player.saveState()

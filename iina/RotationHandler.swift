@@ -13,12 +13,12 @@ class VideoRotationHandler {
   // Current rotation of videoView
   private var cgCurrentRotationDegrees: CGFloat = 0
 
-  unowned var mainWindowController: MainWindowController! = nil
+  unowned var mainWindowController: PlayerWindowController! = nil
   private var player: PlayerCore { mainWindowController.player }
   private var videoView: VideoView { mainWindowController.videoView }
 
   lazy var rotationGestureRecognizer: NSRotationGestureRecognizer = {
-    return NSRotationGestureRecognizer(target: self, action: #selector(MainWindowController.handleRotationGesture(recognizer:)))
+    return NSRotationGestureRecognizer(target: self, action: #selector(PlayerWindowController.handleRotationGesture(recognizer:)))
   }()
 
   @objc func handleRotationGesture(recognizer: NSRotationGestureRecognizer) {

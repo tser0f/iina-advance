@@ -29,7 +29,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     return self.tabHeightConstraint
   }
 
-  weak var mainWindow: MainWindowController! {
+  weak var mainWindow: PlayerWindowController! {
     didSet {
       self.player = mainWindow.player
     }

@@ -1,5 +1,5 @@
 //
-//  MainWindowController.swift
+//  PlayerWindowController.swift
 //  iina
 //
 //  Created by lhc on 8/7/16.
@@ -16,14 +16,14 @@ fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
 
 // MARK: - Constants
 
-class MainWindowController: NSWindowController, NSWindowDelegate {
+class PlayerWindowController: NSWindowController, NSWindowDelegate {
   unowned var player: PlayerCore
   unowned var log: Logger.Subsystem {
     return player.log
   }
 
   override var windowNibName: NSNib.Name {
-    return NSNib.Name("MainWindowController")
+    return NSNib.Name("PlayerWindowController")
   }
 
   var videoView: VideoView {
@@ -212,7 +212,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
     return LayoutState(spec: LayoutSpec.defaultLayout())
   }()
 
-  lazy var windowGeometry: MainWindowGeometry = {
+  lazy var windowGeometry: PlayerWindowGeometry = {
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
     didSet {
@@ -327,7 +327,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
   ]
 
   var observedPrefKeys: [Preference.Key] {
-    MainWindowController.playerWindowPrefKeys
+    PlayerWindowController.playerWindowPrefKeys
   }
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -755,7 +755,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
     self.player = playerCore
     super.init(window: nil)
     self.windowFrameAutosaveName = WindowAutosaveName.mainPlayer(id: playerCore.label).string
-    log.verbose("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)")
+    log.verbose("PlayerWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)")
   }
 
   required init?(coder: NSCoder) {
@@ -818,7 +818,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
     // Titlebar accessories
 
     // Update this here to reduce animation jitter on older versions of MacOS:
-    videoContainerTopOffsetFromTopBarTopConstraint.constant = MainWindowController.standardTitleBarHeight
+    videoContainerTopOffsetFromTopBarTopConstraint.constant = PlayerWindowController.standardTitleBarHeight
 
     addTitleBarAccessoryViews()
 
@@ -950,7 +950,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       self.player.sendOSD(.abLoopUpdate(.bSet, VideoTime(seconds).stringRepresentation))
     }
 
-    log.verbose("MainWindow windowDidLoad done")
+    log.verbose("PlayerWindow windowDidLoad done")
     player.events.emit(.windowLoaded)
   }
 
@@ -1244,7 +1244,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
         player: player, arguments: mouseEventArgs(event)
       )
       // we don't call super here because before adding the plugin system,
-      // MainWindowController didn't call super at all
+      // PlayerWindowController didn't call super at all
     }
   }
 
@@ -1265,7 +1265,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
             return
           }
           if Logger.enabled && Logger.Level.preferred >= .verbose {
-            log.verbose("MainWindow mouseDrag: minimum dragging distance was met")
+            log.verbose("PlayerWindow mouseDrag: minimum dragging distance was met")
           }
           isDragging = true
         }
@@ -1827,7 +1827,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
     let newWindowFrame = bestScreen.frame
 
     log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
-    (window as! MainWindow).setFrameImmediately(newWindowFrame)
+    (window as! PlayerWindow).setFrameImmediately(newWindowFrame)
   }
 
   // MARK: - Window Delegate: window move, screen changes
@@ -1895,8 +1895,8 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
 
   func windowDidResignKey(_ notification: Notification) {
     // keyWindow is nil: The whole app is inactive
-    // keyWindow is another MainWindow: Switched to another video window
-    if NSApp.keyWindow == nil || (NSApp.keyWindow?.windowController is MainWindowController) {
+    // keyWindow is another PlayerWindow: Switched to another video window
+    if NSApp.keyWindow == nil || (NSApp.keyWindow?.windowController is PlayerWindowController) {
       if Preference.bool(for: .pauseWhenInactive), player.info.isPlaying {
         player.pause()
         isPausedDueToInactive = true
@@ -1917,7 +1917,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       blackOutOtherMonitors()
     }
     player.events.emit(.windowMainStatusChanged, data: true)
-    NotificationCenter.default.post(name: .iinaMainWindowChanged, object: true)
+    NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: true)
   }
 
   func windowDidResignMain(_ notification: Notification) {
@@ -1927,7 +1927,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       removeBlackWindows()
     }
     player.events.emit(.windowMainStatusChanged, data: false)
-    NotificationCenter.default.post(name: .iinaMainWindowChanged, object: false)
+    NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: false)
   }
 
   func windowWillMiniaturize(_ notification: Notification) {
@@ -2207,7 +2207,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       // NSInvalidArgumentException [NSNextStepFrame _displayName]: unrecognized selector
       // When running on an M1 under Big Sur and using legacy full screen.
       //
-      // Changes in Big Sur broke the legacy full screen feature. The MainWindowController method
+      // Changes in Big Sur broke the legacy full screen feature. The PlayerWindowController method
       // legacyAnimateToFullscreen had to be changed to get this feature working again. Under Big
       // Sur that method now calls "window.styleMask.remove(.titled)". Removing titled from the
       // style mask causes the AppKit method NSWindow.setTitleWithRepresentedFilename to trigger the
@@ -2431,7 +2431,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.view])
 
       isInInteractiveMode = true
-      let titleBarHeight = MainWindowController.standardTitleBarHeight
+      let titleBarHeight = PlayerWindowController.standardTitleBarHeight
       // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
       // the max region that the video view can occupy
       let newVideoViewBounds = NSRect(x: titleBarHeight,
@@ -3036,8 +3036,6 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       let item = NSMenuItem()
       item.tag = 3
       menuChangeWindowSize(item)
-    default:
-      break
     }
   }
 
@@ -3055,7 +3053,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
 // MARK: - Picture in Picture
 
 @available(macOS 10.12, *)
-extension MainWindowController: PIPViewControllerDelegate {
+extension PlayerWindowController: PIPViewControllerDelegate {
 
   func enterPIP() {
     guard pipStatus != .inPIP else { return }

@@ -234,7 +234,7 @@ class VideoView: NSView {
 
   /// Workaround for issue #4183, Cursor remains visible after resuming playback with the touchpad using secondary click
   ///
-  /// See `MainWindowController.workaroundCursorDefect` and the issue for details on this workaround.
+  /// See `PlayerWindowController.workaroundCursorDefect` and the issue for details on this workaround.
   override func rightMouseDown(with event: NSEvent) {
     player.mainWindow.rightMouseDown(with: event)
     super.rightMouseDown(with: event)
@@ -242,10 +242,10 @@ class VideoView: NSView {
 
   /// Workaround for issue #3211, Legacy fullscreen is broken (11.0.1)
   ///
-  /// Changes in Big Sur broke the legacy full screen feature. The `MainWindowController` method `legacyAnimateToWindowed`
+  /// Changes in Big Sur broke the legacy full screen feature. The `PlayerWindowController` method `legacyAnimateToWindowed`
   /// had to be changed to get this feature working again. Under Big Sur that method now calls the AppKit method
   /// `window.styleMask.insert(.titled)`. This is a part of restoring the window's style mask to the way it was before entering
-  /// full screen mode. A side effect of restoring the window's title is that AppKit stops calling `MainWindowController.mouseUp`.
+  /// full screen mode. A side effect of restoring the window's title is that AppKit stops calling `PlayerWindowController.mouseUp`.
   /// This appears to be a defect in the Cocoa framework. See the issue for details. As a workaround the mouse up event is caught in
   /// the view which then calls the window controller's method.
   override func mouseUp(with event: NSEvent) {

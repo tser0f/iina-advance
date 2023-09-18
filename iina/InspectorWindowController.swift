@@ -150,7 +150,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     updateTimer = Timer.scheduledTimer(timeInterval: TimeInterval(1), target: self, selector: #selector(dynamicUpdate), userInfo: nil, repeats: true)
 
     observers.append(NotificationCenter.default.addObserver(forName: .iinaFileLoaded, object: nil, queue: .main, using: self.fileLoaded))
-    observers.append(NotificationCenter.default.addObserver(forName: .iinaMainWindowChanged, object: nil, queue: .main, using: self.fileLoaded))
+    observers.append(NotificationCenter.default.addObserver(forName: .iinaPlayerWindowChanged, object: nil, queue: .main, using: self.fileLoaded))
 
     super.showWindow(sender)
   }
