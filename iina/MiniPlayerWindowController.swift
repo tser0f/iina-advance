@@ -46,7 +46,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var volumeLabel: NSTextField!
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
-  let defaultAlbumArtView = NSView()
 
   unowned var mainWindow: MainWindowController!
   var player: PlayerCore {
@@ -107,15 +106,6 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     /// Set up tracking area to show controller when hovering over it
     mainWindow.videoContainerView.addTrackingArea(NSTrackingArea(rect: mainWindow.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
     backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
-
-    // default album art
-    defaultAlbumArtView.translatesAutoresizingMaskIntoConstraints = false
-    defaultAlbumArtView.wantsLayer = true
-    defaultAlbumArtView.alphaValue = 1
-    defaultAlbumArtView.layer?.contents = #imageLiteral(resourceName: "default-album-art")
-    defaultAlbumArtView.isHidden = true
-    mainWindow.videoContainerView.addSubview(defaultAlbumArtView, positioned: .above, relativeTo: mainWindow.videoView)
-    defaultAlbumArtView.addConstraintsToFillSuperview()
 
     // close button
     mainWindow.closeButtonVE.action = #selector(mainWindow.close)
@@ -187,6 +177,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   }
 
   private func resetScrollingLabels() {
+    _ = view  // make sure views load to avoid crashes from unwrapping nil Optionals
     titleLabel.reset()
     artistAlbumLabel.reset()
   }
@@ -395,7 +386,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
     let oldGeometry = mainWindow.musicModeGeometry
     let requestedWindowFrame = NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize)
-    var newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
+    let newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
 
     CocoaAnimation.disableAnimation{
       apply(newGeometry)  /// this will set `mainWindow.musicModeGeometry` after applying any necessary constraints
@@ -439,27 +430,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     }
   }
 
-  // default album art
-  func refreshDefaultAlbumArtVisibility() {
-    guard mainWindow.loaded else { return }
-
-    // if received video size before switching to music mode, hide default album art
-    if player.info.vid == 0 {
-      defaultAlbumArtView.isHidden = false
-      // make sure this covers videoView
-      mainWindow.videoContainerView.addSubview(defaultAlbumArtView, positioned: .above, relativeTo: mainWindow.videoView)
-      mainWindow.musicModeGeometry = mainWindow.musicModeGeometry.clone(videoAspectRatio: 1)
-      mainWindow.videoView.updateAspectRatio(to: 1)
-    } else {
-      defaultAlbumArtView.isHidden = true
-    }
-  }
-
   func adjustLayoutForVideoChange() {
     guard let window = window else { return }
     resetScrollingLabels()
-
-    refreshDefaultAlbumArtVisibility()
 
     // FIXME: find fix for horizontal text flicker when moving in playlist
 
@@ -507,6 +480,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
     updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
     mainWindow.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
+    log.verbose("Applying MusicModeGeometry windowFrame: \(geometry.windowFrame)")
     (window as! MainWindow).setFrameImmediately(geometry.windowFrame, animate: true)
     mainWindow.musicModeGeometry = geometry
     player.saveState()

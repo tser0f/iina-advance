@@ -217,7 +217,8 @@ class MainWindowController: PlayerWindowController {
     return miniPlayer.buildMusicModeGeometryFromPrefs()
   }(){
     didSet {
-      log.verbose("MusicModeGeometry updated: \(musicModeGeometry.windowFrame)")
+      let g = musicModeGeometry
+      log.verbose("MusicModeGeometry updated: \(g.windowFrame) V=\(g.isVideoVisible.yn) Pl=\(g.isPlaylistVisible.yn) PlHeight=\(g.playlistHeight)")
     }
   }
 
@@ -543,6 +544,7 @@ class MainWindowController: PlayerWindowController {
 
   @IBOutlet weak var pipOverlayView: NSVisualEffectView!
   @IBOutlet weak var videoContainerView: NSView!
+  let defaultAlbumArtView = NSView()
 
   var isFullScreen: Bool {
     return currentLayout.isFullScreen
@@ -699,7 +701,14 @@ class MainWindowController: PlayerWindowController {
       cv.addSubview(view)
     }
 
-    let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius))
+    // default album art
+    defaultAlbumArtView.translatesAutoresizingMaskIntoConstraints = false
+    defaultAlbumArtView.wantsLayer = true
+    defaultAlbumArtView.alphaValue = 1
+    defaultAlbumArtView.isHidden = true
+    defaultAlbumArtView.layer?.contents = #imageLiteral(resourceName: "default-album-art")
+    videoContainerView.addSubview(defaultAlbumArtView)
+    defaultAlbumArtView.addConstraintsToFillSuperview()
 
     // init quick setting view now
     let _ = quickSettingView
@@ -719,6 +728,8 @@ class MainWindowController: PlayerWindowController {
       view?.state = .active
     }
 
+    let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius))
+
     // buffer indicator view
     if roundedCornerRadius > 0.0 {
       bufferIndicatorView.roundCorners(withRadius: roundedCornerRadius)
@@ -734,15 +745,17 @@ class MainWindowController: PlayerWindowController {
       self.quickSettingView.reload()
     }
 
-    addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] _ in
+    /// The `iinaTracklistChanged` event is useful here because it is posted after `fileLoaded`.
+    /// This ensures that `info.vid` will have been updated with the current audio track selection, or `0` if none selected.
+    /// Before `fileLoaded` it may be `0` (indicating no selection) as the track info is still being processed, which is misleading.
+    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
 
+      refreshDefaultAlbumArtVisibility()
+
       if player.isInMiniPlayer {
         miniPlayer.adjustLayoutForVideoChange()
-      } else {
-        // TODO: move album art into this class
-        miniPlayer.refreshDefaultAlbumArtVisibility()
       }
     }
 
@@ -790,6 +803,22 @@ class MainWindowController: PlayerWindowController {
     player.events.emit(.windowLoaded)
   }
 
+  // default album art
+  func refreshDefaultAlbumArtVisibility() {
+    guard loaded else { return }
+
+    let vid = player.info.vid
+    // if received video size before switching to music mode, hide default album art
+    if vid == 0 {
+      log.verbose("Showing defaultAlbumArt")
+      defaultAlbumArtView.isHidden = false
+      videoView.updateAspectRatio(to: 1)
+    } else {
+      log.verbose("Hiding defaultAlbumArt")
+      defaultAlbumArtView.isHidden = true
+    }
+  }
+
   /// Returns the position in seconds for the given percent of the total duration of the video the percentage represents.
   ///
   /// The number of seconds returned must be considered an estimate that could change. The duration of the video is obtained from
@@ -812,7 +841,8 @@ class MainWindowController: PlayerWindowController {
   /// to this window. Will do nothing if it's already there.
   func addVideoViewToWindow() {
     guard !videoContainerView.subviews.contains(videoView) else { return }
-    videoContainerView.addSubview(videoView)
+    /// Make sure `defaultAlbumArtView` stays above `videoView`
+    videoContainerView.addSubview(videoView, positioned: .below, relativeTo: defaultAlbumArtView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
     // add constraints
     videoView.constrainForNormalLayout()
@@ -1210,6 +1240,9 @@ class MainWindowController: PlayerWindowController {
     updateOSDPosition()
 
     addVideoViewToWindow()
+    log.verbose("Hiding defaultAlbumArt for window open")
+    defaultAlbumArtView.isHidden = true
+
     window.setIsVisible(true)
     player.initVideo()
     videoView.videoLayer.draw(forced: true)

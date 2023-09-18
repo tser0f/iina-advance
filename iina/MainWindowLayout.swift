@@ -1233,7 +1233,6 @@ extension MainWindowController {
       updateTitle()
       setMaterial(Preference.enum(for: .themeMaterial))
       updateMusicModeButtonsVisibility()
-      miniPlayer.refreshDefaultAlbumArtVisibility()
       
     } else if transition.isExitingMusicMode {
       _ = miniPlayer.view

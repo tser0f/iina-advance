@@ -1505,7 +1505,9 @@ class PlayerCore: NSObject {
 
   func aidChanged() {
     guard !isShuttingDown, !isShutdown else { return }
-    info.aid = Int(mpv.getInt(MPVOption.TrackSelection.aid))
+    let aid = Int(mpv.getInt(MPVOption.TrackSelection.aid))
+    info.aid = aid
+    log.verbose("Audio track changed to: \(aid)")
     guard mainWindow.loaded else { return }
     DispatchQueue.main.sync {
       if isInMiniPlayer {
@@ -1614,7 +1616,15 @@ class PlayerCore: NSObject {
         }
       }
     }
+    log.verbose("Posting iinaTracklistChanged, vid=\(optString(info.vid)), aid=\(optString(info.aid)), sid=\(optString(info.sid))")
     postNotification(.iinaTracklistChanged)
+  }
+
+  private func optString(_ num: Int?) -> String {
+    if let num = num {
+      return String(num)
+    }
+    return "nil"
   }
 
   func onVideoReconfig() {
@@ -1647,7 +1657,9 @@ class PlayerCore: NSObject {
 
   func vidChanged() {
     guard !isShuttingDown, !isShutdown else { return }
-    info.vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
+    let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
+    info.vid = vid
+    log.verbose("Video track changed to: \(vid)")
     postNotification(.iinaVIDChanged)
     sendOSD(.track(info.currentTrack(.video) ?? .noneVideoTrack))
   }
