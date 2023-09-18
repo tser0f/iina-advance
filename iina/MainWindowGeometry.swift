@@ -963,9 +963,11 @@ extension MainWindowController {
   func windowDidEndLiveResize(_ notification: Notification) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
-    guard !isClosing else { return }
+    guard !isClosing, !isAnimating else { return }
 
     log.verbose("WindowDidEndLiveResize, mode: \(currentLayout.spec.mode)")
+    updateCachedGeometry()
+
     switch currentLayout.spec.mode {
     case .windowed:
       updateWindowParametersForMPV()

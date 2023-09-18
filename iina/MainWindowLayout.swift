@@ -644,16 +644,12 @@ extension MainWindowController {
 
       // Restore window size & position
       switch initialLayoutSpec.mode {
-      case .fullScreen:
+      case .fullScreen, .windowed:
         initialGeometry = windowGeometry
-      case .windowed:
-        initialGeometry = windowGeometry
-        (window as! MainWindow).setFrameImmediately(windowGeometry.windowFrame)
       case .musicMode:
         /// `musicModeGeometry` should have already been deserialized and set.
         /// But make sure we correct any size problems
         initialGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toMainWindowGeometry()
-        (window as! MainWindow).setFrameImmediately(initialGeometry!.windowFrame)
       }
 
     } else {
@@ -683,6 +679,8 @@ extension MainWindowController {
       openNewPanelsAndFinalizeOffsets(transition)
       fadeInNewViews(transition)
       doPostTransitionWork(transition)
+      log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
+      (window as! MainWindow).setFrameImmediately(initialGeometry!.windowFrame)
       log.verbose("Done with transition to initial layout")
     }
 
