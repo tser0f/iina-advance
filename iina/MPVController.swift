@@ -1071,7 +1071,7 @@ not applying FFmpeg 9599 workaround
       player.onVideoReconfig()
 
     case MPV_EVENT_START_FILE:
-      Logger.log("Got mpv '\(eventId)'", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Got mpv fileStarted event", level: .verbose, subsystem: player.subsystem)
       player.info.isIdle = false
       guard let path = getString(MPVProperty.path) else {
         Logger.log("File started, but no path!", level: .warning, subsystem: player.subsystem)
@@ -1080,7 +1080,7 @@ not applying FFmpeg 9599 workaround
       player.fileStarted(path: path)
 
     case MPV_EVENT_FILE_LOADED:
-      Logger.log("Got mpv '\(eventId)'", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Got mpv fileLoaded event", level: .verbose, subsystem: player.subsystem)
       onFileLoaded()
 
     case MPV_EVENT_SEEK:

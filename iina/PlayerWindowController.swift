@@ -224,8 +224,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return miniPlayer.buildMusicModeGeometryFromPrefs()
   }(){
     didSet {
-      let g = musicModeGeometry
-      log.verbose("MusicModeGeometry updated: \(g.windowFrame) Video=\(g.isVideoVisible.yn) PList=\(g.isPlaylistVisible.yn) PListHeight=\(g.playlistHeight)")
+      log.verbose("Updated \(musicModeGeometry)")
     }
   }
 
@@ -896,10 +895,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       self.quickSettingView.reload()
     }
 
-    /// The `iinaTracklistChanged` event is useful here because it is posted after `fileLoaded`.
+    /// The `iinaFileLoaded` event is useful here because it is posted after `fileLoaded`.
     /// This ensures that `info.vid` will have been updated with the current audio track selection, or `0` if none selected.
     /// Before `fileLoaded` it may be `0` (indicating no selection) as the track info is still being processed, which is misleading.
-    addObserver(to: .default, forName: .iinaTracklistChanged, object: player) { [self] _ in
+    addObserver(to: .default, forName: .iinaFileLoaded, object: player) { [self] note in
+      guard let player = note.object as? PlayerCore else { return }
+      log.verbose("Got iinaFileLoaded notification for player\(player.label)")
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
 
@@ -973,11 +974,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let vid = player.info.vid
     // if received video size before switching to music mode, hide default album art
     if vid == 0 {
-      log.verbose("Showing defaultAlbumArt")
+      log.verbose("Showing defaultAlbumArt because vid = 0")
       defaultAlbumArtView.isHidden = false
       videoView.updateAspectRatio(to: 1)
     } else {
-      log.verbose("Hiding defaultAlbumArt")
+      log.verbose("Hiding defaultAlbumArt because vid != 0")
       defaultAlbumArtView.isHidden = true
     }
   }
@@ -1608,6 +1609,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func openWindow() {
     isClosing = false
     guard let window = self.window, let cv = window.contentView else { return }
+
     // Must workaround an AppKit defect in some versions of macOS. This defect is known to exist in
     // Catalina and Big Sur. The problem was not reproducible in early versions of Monterey. It
     // reappeared in Ventura. The status of other versions of macOS is unknown, however the

@@ -470,7 +470,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
     updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
     windowController.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
-    log.verbose("Applying MusicModeGeometry windowFrame: \(geometry.windowFrame)")
+    log.verbose("Applying \(geometry)")
     player.window.setFrameImmediately(geometry.windowFrame, animate: true)
     if updateCache {
       windowController.musicModeGeometry = geometry

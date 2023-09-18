@@ -753,6 +753,7 @@ class PlayerCore: NSObject {
   }
 
   func setTrack(_ index: Int, forType: MPVTrack.TrackType) {
+    log.verbose("Setting track \(index) for type \(forType)")
     let name: String
     switch forType {
     case .audio:
@@ -2087,10 +2088,15 @@ class PlayerCore: NSObject {
   }
 
   private func reloadSelectedTracks() {
-    info.aid = mpv.getInt(MPVOption.TrackSelection.aid)
-    info.vid = mpv.getInt(MPVOption.TrackSelection.vid)
-    info.sid = mpv.getInt(MPVOption.TrackSelection.sid)
-    info.secondSid = mpv.getInt(MPVOption.Subtitles.secondarySid)
+    let aid = mpv.getInt(MPVOption.TrackSelection.aid)
+    let vid = mpv.getInt(MPVOption.TrackSelection.vid)
+    let sid = mpv.getInt(MPVOption.TrackSelection.sid)
+    let secondSid = mpv.getInt(MPVOption.Subtitles.secondarySid)
+    info.aid = aid
+    info.vid = vid
+    info.sid = sid
+    info.secondSid = secondSid
+    log.verbose("Reloaded selected tracks. Vid:\(vid) Aid:\(aid) Sid:\(sid) Sid2:\(secondSid)")
   }
 
   func reloadPlaylist() {

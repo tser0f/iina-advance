@@ -11,7 +11,7 @@ import Foundation
 /**
  `MusicModeGeometry`
  */
-struct MusicModeGeometry: Equatable {
+struct MusicModeGeometry: Equatable, CustomStringConvertible {
   let windowFrame: NSRect
   let playlistHeight: CGFloat  /// indicates playlist height whether or not `isPlaylistVisible`
   let isVideoVisible: Bool
@@ -118,4 +118,7 @@ struct MusicModeGeometry: Equatable {
     return self.clone(windowFrame: newWindowFrame)
   }
 
+  var description: String {
+    return "MusicModeGeometry winFrame=\(windowFrame) Video={show=\(isVideoVisible.yn) aspect=\(videoAspectRatio)} Plist={\(isPlaylistVisible.yn) H=\(playlistHeight)}"
+  }
 }
