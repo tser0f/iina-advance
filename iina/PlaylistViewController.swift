@@ -212,6 +212,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       player.reloadChapters()
       chapterTableView.reloadData()
     }
+
+    removeBtn.isEnabled = !playlistTableView.selectedRowIndexes.isEmpty
   }
 
   private func showTotalLength() {
@@ -529,6 +531,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     let tv = notification.object as! NSTableView
     if tv == playlistTableView {
       showTotalLength()
+
+      removeBtn.isEnabled = !playlistTableView.selectedRowIndexes.isEmpty
       return
     }
   }
