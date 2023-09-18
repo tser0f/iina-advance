@@ -23,10 +23,10 @@ struct MusicModeGeometry: Equatable {
     if isPlaylistVisible {
       /// Ignore given `playlistHeight` and calculate it from the other params
       let videoHeight = isVideoVisible ? windowFrame.width / videoAspectRatio : 0
-      let controlViewHeight = MiniPlayerWindowController.controlViewHeight
+      let controlViewHeight = MiniPlayerController.controlViewHeight
       self.playlistHeight = windowFrame.height - controlViewHeight - videoHeight
     } else {
-      assert(playlistHeight >= MiniPlayerWindowController.PlaylistMinHeight, "Expected playlistHeight >= \(MiniPlayerWindowController.PlaylistMinHeight), found \(playlistHeight)")
+      assert(playlistHeight >= MiniPlayerController.PlaylistMinHeight, "Expected playlistHeight >= \(MiniPlayerController.PlaylistMinHeight), found \(playlistHeight)")
       self.playlistHeight = playlistHeight
     }
     self.isVideoVisible = isVideoVisible
@@ -45,7 +45,7 @@ struct MusicModeGeometry: Equatable {
   }
 
   func toPlayerWindowGeometry() -> PlayerWindowGeometry {
-    let outsideBottomBarHeight = MiniPlayerWindowController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
+    let outsideBottomBarHeight = MiniPlayerController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
     return PlayerWindowGeometry(windowFrame: windowFrame,
                               outsideTopBarHeight: 0,
                               outsideTrailingBarWidth: 0,
@@ -81,23 +81,23 @@ struct MusicModeGeometry: Equatable {
     /// When the window's width changes, the video scales to match while keeping its aspect ratio,
     /// and the control bar (`backgroundView`) and playlist are pushed down.
     /// Calculate the maximum width/height the art can grow to so that `backgroundView` is not pushed off the screen.
-    let minPlaylistHeight = isPlaylistVisible ? MiniPlayerWindowController.PlaylistMinHeight : 0
+    let minPlaylistHeight = isPlaylistVisible ? MiniPlayerController.PlaylistMinHeight : 0
 
     let maxWindowWidth: CGFloat
     if isVideoVisible {
-      var maxVideoHeight = containerFrame.height - MiniPlayerWindowController.controlViewHeight - minPlaylistHeight
+      var maxVideoHeight = containerFrame.height - MiniPlayerController.controlViewHeight - minPlaylistHeight
       /// `maxVideoHeight` can be negative if very short screen! Fall back to height based on `MiniPlayerMinWidth` if needed
-      maxVideoHeight = max(maxVideoHeight, MiniPlayerWindowController.minWindowWidth / videoAspectRatio)
+      maxVideoHeight = max(maxVideoHeight, MiniPlayerController.minWindowWidth / videoAspectRatio)
       maxWindowWidth = maxVideoHeight * videoAspectRatio
     } else {
-      maxWindowWidth = MiniPlayerWindowController.maxWindowWidth
+      maxWindowWidth = MiniPlayerController.maxWindowWidth
     }
 
     let newWidth: CGFloat
     let requestedSize = windowFrame.size
-    if requestedSize.width < MiniPlayerWindowController.minWindowWidth {
+    if requestedSize.width < MiniPlayerController.minWindowWidth {
       // Clamp to min width
-      newWidth = MiniPlayerWindowController.minWindowWidth
+      newWidth = MiniPlayerController.minWindowWidth
     } else if requestedSize.width > maxWindowWidth {
       // Clamp to max width
       newWidth = maxWindowWidth
@@ -106,7 +106,7 @@ struct MusicModeGeometry: Equatable {
       newWidth = requestedSize.width
     }
     let videoHeight = isVideoVisible ? newWidth / videoAspectRatio : 0
-    let minWindowHeight = videoHeight + MiniPlayerWindowController.controlViewHeight + minPlaylistHeight
+    let minWindowHeight = videoHeight + MiniPlayerController.controlViewHeight + minPlaylistHeight
     // Make sure height is within acceptable values
     var newHeight = max(requestedSize.height, minWindowHeight)
     let maxHeight = isPlaylistVisible ? containerFrame.height : minWindowHeight

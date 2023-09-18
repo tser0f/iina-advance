@@ -87,20 +87,20 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       }
       let screenFrame = mainWindow.bestScreen.visibleFrame
       // TODO: figure out why extra 8px on each side is needed for min width
-      let minWindowWidth = MiniPlayerWindowController.minWindowWidth + 16
+      let minWindowWidth = MiniPlayerController.minWindowWidth + 16
       // Window height should not change. Only video size should be scaled
       let windowHeight = min(screenFrame.height, originalGeometry.windowFrame.height)  // should stay fixed
 
       // Constrain desired width within min and max allowed, then recalculate height from new value
       var newVideoWidth = originalGeometry.windowFrame.width * scale
       newVideoWidth = max(newVideoWidth, minWindowWidth)
-      newVideoWidth = min(newVideoWidth, MiniPlayerWindowController.maxWindowWidth)
+      newVideoWidth = min(newVideoWidth, MiniPlayerController.maxWindowWidth)
       mainWindow.log.verbose("Scaling video from pinch gesture in music mode. Aspect: \(originalGeometry.videoAspectRatio), trying width: \(newVideoWidth)")
 
       var newVideoHeight = newVideoWidth / originalGeometry.videoAspectRatio
 
-      let minPlaylistHeight: CGFloat = mainWindow.miniPlayer.isPlaylistVisible ? MiniPlayerWindowController.PlaylistMinHeight : 0
-      let minBottomBarHeight: CGFloat = MiniPlayerWindowController.controlViewHeight + minPlaylistHeight
+      let minPlaylistHeight: CGFloat = mainWindow.miniPlayer.isPlaylistVisible ? MiniPlayerController.PlaylistMinHeight : 0
+      let minBottomBarHeight: CGFloat = MiniPlayerController.controlViewHeight + minPlaylistHeight
       let maxVideoHeight = windowHeight - minBottomBarHeight
       if newVideoWidth < minWindowWidth {
         newVideoWidth = minWindowWidth

@@ -1,5 +1,5 @@
 //
-//  MiniPlayerWindowController.swift
+//  MiniPlayerController.swift
 //  iina
 //
 //  Created by lhc on 30/7/2017.
@@ -10,7 +10,7 @@ import Cocoa
 
 // Hide playlist if its height is too small to display at least 3 items:
 
-class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
+class MiniPlayerController: NSViewController, NSPopoverDelegate {
   static let controlViewHeight: CGFloat = 72
   static let defaultWindowWidth: CGFloat = 280
   static let minWindowWidth: CGFloat = 260
@@ -18,7 +18,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   static private let animationDurationShowControl: TimeInterval = 0.2
 
   override var nibName: NSNib.Name {
-    return NSNib.Name("MiniPlayerWindowController")
+    return NSNib.Name("MiniPlayerController")
   }
 
   @objc let monospacedFont: NSFont = {
@@ -91,7 +91,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
   var currentDisplayedPlaylistHeight: CGFloat {
     let bottomBarHeight = mainWindow.videoContainerBottomOffsetFromContentViewBottomConstraint.constant
-    return bottomBarHeight - MiniPlayerWindowController.controlViewHeight
+    return bottomBarHeight - MiniPlayerController.controlViewHeight
   }
 
   // MARK: - Initialization
@@ -99,9 +99,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerWindowController.PlaylistMinHeight).isActive = true
+    playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerController.PlaylistMinHeight).isActive = true
 
-    backgroundView.heightAnchor.constraint(equalToConstant: MiniPlayerWindowController.controlViewHeight).isActive = true
+    backgroundView.heightAnchor.constraint(equalToConstant: MiniPlayerController.controlViewHeight).isActive = true
 
     /// Set up tracking area to show controller when hovering over it
     mainWindow.videoContainerView.addTrackingArea(NSTrackingArea(rect: mainWindow.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
@@ -154,7 +154,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   // MARK: - UI: Show / Hide
 
   private func showControl() {
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerWindowController.animationDurationShowControl, { [self] in
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       mainWindow.closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
@@ -162,7 +162,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   }
 
   private func hideControl() {
-    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerWindowController.animationDurationShowControl, { [self] in
+    mainWindow.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       mainWindow.closeButtonView.animator().alphaValue = 0
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1
@@ -184,7 +184,7 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
 
   private func saveCurrentPlaylistHeight() {
     let playlistHeight = round(currentDisplayedPlaylistHeight)
-    guard playlistHeight >= MiniPlayerWindowController.PlaylistMinHeight else { return }
+    guard playlistHeight >= MiniPlayerController.PlaylistMinHeight else { return }
 
     // save playlist height
     log.verbose("Saving playlist height: \(playlistHeight)")
@@ -374,11 +374,11 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     resetScrollingLabels()
 
-    if !window.inLiveResize && requestedSize.width <= MiniPlayerWindowController.minWindowWidth {
+    if !window.inLiveResize && requestedSize.width <= MiniPlayerController.minWindowWidth {
       // Responding with the current size seems to work much better with certain window management tools
       // (e.g. BetterTouchTool's window snapping) than trying to respond with the min size,
       // which seems to result in the window manager retrying with different sizes, which results in flickering.
-      player.log.verbose("WindowWillResize: requestedSize smaller than min \(MiniPlayerWindowController.minWindowWidth); returning existing size")
+      player.log.verbose("WindowWillResize: requestedSize smaller than min \(MiniPlayerController.minWindowWidth); returning existing size")
       return window.frame.size
     }
 
@@ -449,9 +449,9 @@ class MiniPlayerWindowController: NSViewController, NSPopoverDelegate {
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
     let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
     let videoAspectRatio = mainWindow.videoView.aspectRatio
-    let desiredWindowWidth = MiniPlayerWindowController.defaultWindowWidth
+    let desiredWindowWidth = MiniPlayerController.defaultWindowWidth
     let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
-    let desiredWindowHeight = desiredVideoHeight + MiniPlayerWindowController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
+    let desiredWindowHeight = desiredVideoHeight + MiniPlayerController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
 
     let screenFrame = mainWindow.bestScreen.visibleFrame
     let windowSize = NSSize(width: desiredWindowWidth, height: desiredWindowHeight)

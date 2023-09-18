@@ -84,8 +84,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return playlistView
   }()
 
-  lazy var miniPlayer: MiniPlayerWindowController = {
-    let controller = MiniPlayerWindowController()
+  lazy var miniPlayer: MiniPlayerController = {
+    let controller = MiniPlayerController()
     controller.mainWindow = self
     return controller
   }()
