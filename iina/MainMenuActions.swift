@@ -8,7 +8,7 @@
 
 import Cocoa
 
-extension PlayerWindowController {
+extension MainWindowController {
 
   @objc func menuShowInspector(_ sender: AnyObject) {
     (NSApp.delegate as! AppDelegate).showInspectorWindow()

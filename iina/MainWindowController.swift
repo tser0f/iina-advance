@@ -16,7 +16,8 @@ fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
 
 // MARK: - Constants
 
-class MainWindowController: PlayerWindowController {
+class MainWindowController: NSWindowController, NSWindowDelegate {
+  unowned var player: PlayerCore
   unowned var log: Logger.Subsystem {
     return player.log
   }
@@ -24,6 +25,12 @@ class MainWindowController: PlayerWindowController {
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MainWindowController")
   }
+
+  var videoView: VideoView {
+    return player.videoView
+  }
+
+  var loaded = false
 
   @objc let monospacedFont: NSFont = {
     let fontSize = NSFont.systemFontSize(for: .small)
@@ -104,8 +111,9 @@ class MainWindowController: PlayerWindowController {
     return animationQueue.isRunning
   }
 
-  override var isOntop: Bool {
+  var isOntop: Bool = false {
     didSet {
+      player.mpv.setFlag(MPVOption.Window.ontop, isOntop)
       updatePinToTopButton()
     }
   }
@@ -263,8 +271,31 @@ class MainWindowController: PlayerWindowController {
   // Cached user default values
   private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
+  // Cached user defaults values
+  internal lazy var followGlobalSeekTypeWhenAdjustSlider: Bool = Preference.bool(for: .followGlobalSeekTypeWhenAdjustSlider)
+  internal lazy var useExactSeek: Preference.SeekOption = Preference.enum(for: .useExactSeek)
+  internal lazy var relativeSeekAmount: Int = Preference.integer(for: .relativeSeekAmount)
+  internal lazy var volumeScrollAmount: Int = Preference.integer(for: .volumeScrollAmount)
+  internal lazy var singleClickAction: Preference.MouseClickAction = Preference.enum(for: .singleClickAction)
+  internal lazy var doubleClickAction: Preference.MouseClickAction = Preference.enum(for: .doubleClickAction)
+  internal lazy var horizontalScrollAction: Preference.ScrollAction = Preference.enum(for: .horizontalScrollAction)
+  internal lazy var verticalScrollAction: Preference.ScrollAction = Preference.enum(for: .verticalScrollAction)
 
-  private static let mainWindowPrefKeys: [Preference.Key] = PlayerWindowController.playerWindowPrefKeys + [
+  static let playerWindowPrefKeys: [Preference.Key] = [
+    .themeMaterial,
+    .showRemainingTime,
+    .alwaysFloatOnTop,
+    .maxVolume,
+    .useExactSeek,
+    .relativeSeekAmount,
+    .volumeScrollAmount,
+    .singleClickAction,
+    .doubleClickAction,
+    .horizontalScrollAction,
+    .verticalScrollAction,
+    .playlistShowMetadata,
+    .playlistShowMetadataInMusicMode,
+    .autoSwitchToMusicMode,
     .osdPosition,
     .enableOSC,
     .oscPosition,
@@ -292,11 +323,11 @@ class MainWindowController: PlayerWindowController {
     .showLeadingSidebarToggleButton,
     .showTrailingSidebarToggleButton,
     .useLegacyWindowedMode,
-    .allowEmptySpaceAroundVideo
+    .allowEmptySpaceAroundVideo,
   ]
 
-  override var observedPrefKeys: [Preference.Key] {
-    MainWindowController.mainWindowPrefKeys
+  var observedPrefKeys: [Preference.Key] {
+    MainWindowController.playerWindowPrefKeys
   }
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -304,6 +335,57 @@ class MainWindowController: PlayerWindowController {
     super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 
     switch keyPath {
+    case PK.themeMaterial.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        setMaterial(Preference.Theme(rawValue: newValue))
+      }
+    case PK.showRemainingTime.rawValue:
+      if let newValue = change[.newKey] as? Bool {
+        rightLabel.mode = newValue ? .remaining : .duration
+        if player.isInMiniPlayer {
+          player.mainWindow.miniPlayer.rightLabel.mode = newValue ? .remaining : .duration
+        }
+      }
+    case PK.alwaysFloatOnTop.rawValue:
+      if let newValue = change[.newKey] as? Bool {
+        if player.info.isPlaying {
+          setWindowFloatingOnTop(newValue)
+        }
+      }
+    case PK.maxVolume.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        volumeSlider.maxValue = Double(newValue)
+        if player.mpv.getDouble(MPVOption.Audio.volume) > Double(newValue) {
+          player.mpv.setDouble(MPVOption.Audio.volume, Double(newValue))
+        }
+      }
+    case PK.useExactSeek.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        useExactSeek = Preference.SeekOption(rawValue: newValue)!
+      }
+    case PK.relativeSeekAmount.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        relativeSeekAmount = newValue.clamped(to: 1...5)
+      }
+    case PK.volumeScrollAmount.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        volumeScrollAmount = newValue.clamped(to: 1...4)
+      }
+    case PK.singleClickAction.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        singleClickAction = Preference.MouseClickAction(rawValue: newValue)!
+      }
+    case PK.doubleClickAction.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        doubleClickAction = Preference.MouseClickAction(rawValue: newValue)!
+      }
+    case PK.playlistShowMetadata.rawValue, PK.playlistShowMetadataInMusicMode.rawValue:
+      if player.isPlaylistVisible {
+        player.mainWindow.playlistView.playlistTableView.reloadData()
+      }
+    case PK.autoSwitchToMusicMode.rawValue:
+      player.overrideAutoMusicMode = false
+      
     case PK.enableOSC.rawValue,
       PK.oscPosition.rawValue,
       PK.topBarPlacement.rawValue,
@@ -545,6 +627,41 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var videoContainerView: NSView!
   let defaultAlbumArtView = NSView()
 
+  @IBOutlet weak var volumeSlider: NSSlider!
+  @IBOutlet weak var muteButton: NSButton!
+  @IBOutlet weak var playButton: NSButton!
+  @IBOutlet weak var playSlider: PlaySlider!
+  @IBOutlet weak var rightLabel: DurationDisplayTextField!
+  @IBOutlet weak var leftLabel: DurationDisplayTextField!
+
+  /** Differentiate between single clicks and double clicks. */
+  internal var singleClickTimer: Timer?
+  internal var mouseExitEnterCount = 0
+
+  // Scroll direction
+
+  /** The direction of current scrolling event. */
+  enum ScrollDirection {
+    case horizontal
+    case vertical
+  }
+
+  internal var scrollDirection: ScrollDirection?
+
+  /** We need to pause the video when a user starts seeking by scrolling.
+   This property records whether the video is paused initially so we can
+   recover the status when scrolling finished. */
+  private var wasPlayingBeforeSeeking = false
+
+  /** Subclasses should set these value to true if the mouse is in some
+   special views (e.g. volume slider, play slider) before calling
+   `super.scrollWheel()` and set them back to false after calling
+   `super.scrollWheel()`.*/
+  internal var seekOverride = false
+  internal var volumeOverride = false
+
+  var mouseActionDisabledViews: [NSView?] {[leadingSidebarView, trailingSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
+
   var isFullScreen: Bool {
     return currentLayout.isFullScreen
   }
@@ -615,8 +732,6 @@ class MainWindowController: PlayerWindowController {
 
   private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
-  override var mouseActionDisabledViews: [NSView?] {[leadingSidebarView, trailingSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
-
   // MARK: - PIP
 
   lazy var _pip: PIPViewController = {
@@ -636,8 +751,9 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Initialization
 
-  override init(playerCore: PlayerCore) {
-    super.init(playerCore: playerCore)
+  init(playerCore: PlayerCore) {
+    self.player = playerCore
+    super.init(window: nil)
     self.windowFrameAutosaveName = WindowAutosaveName.mainPlayer(id: playerCore.label).string
     log.verbose("MainWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)")
   }
@@ -648,8 +764,44 @@ class MainWindowController: PlayerWindowController {
 
   override func windowDidLoad() {
     super.windowDidLoad()
+    Logger.log("PlayerWindow loaded", level: .verbose, subsystem: player.subsystem)
+    loaded = true
 
     guard let window = window else { return }
+
+    window.initialFirstResponder = nil
+    window.titlebarAppearsTransparent = true
+
+    setMaterial(Preference.enum(for: .themeMaterial))
+
+    addObserver(to: .default, forName: .iinaMediaTitleChanged, object: player) { [unowned self] _ in
+      self.updateTitle()
+    }
+
+    leftLabel.mode = .current
+    rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
+
+    updateVolumeUI()
+
+    observedPrefKeys.forEach { key in
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
+    }
+
+    addObserver(to: .default, forName: .iinaFileLoaded, object: player) { [unowned self] _ in
+      self.updateTitle()
+    }
+
+    NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: nil) { [unowned self] _ in
+      if Preference.bool(for: .pauseWhenGoesToSleep) {
+        self.player.pause()
+      }
+    }
+
+    if #available(macOS 10.15, *) {
+      addObserver(to: .default, forName: NSScreen.colorSpaceDidChangeNotification, object: nil) { [unowned self] noti in
+        player.refreshEdrMode()
+      }
+    }
 
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
@@ -802,6 +954,18 @@ class MainWindowController: PlayerWindowController {
     player.events.emit(.windowLoaded)
   }
 
+  deinit {
+    ObjcUtils.silenced {
+      for key in self.observedPrefKeys {
+        UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
+      }
+    }
+  }
+
+  internal func addObserver(to notificationCenter: NotificationCenter, forName name: Notification.Name, object: Any? = nil, using block: @escaping (Notification) -> Void) {
+    notificationCenter.addObserver(forName: name, object: object, queue: .main, using: block)
+  }
+
   // default album art
   func refreshDefaultAlbumArtVisibility() {
     guard loaded else { return }
@@ -848,12 +1012,14 @@ class MainWindowController: PlayerWindowController {
   }
 
   /** Set material for OSC and title bar */
-  override internal func setMaterial(_ theme: Preference.Theme?) {
+  func setMaterial(_ theme: Preference.Theme?) {
+    guard let window = window, let theme = theme else { return }
+
     if #available(macOS 10.14, *) {
-      super.setMaterial(theme)
+      window.appearance = NSAppearance(iinaTheme: theme)
+      // See overridden functions for 10.14-
       return
     }
-    guard let window = window, let theme = theme else { return }
 
     let (appearance, material) = Utility.getAppearanceAndMaterial(from: theme)
     let isDarkTheme = appearance?.isDark ?? true
@@ -898,16 +1064,145 @@ class MainWindowController: PlayerWindowController {
   // MARK: - Key events
 
   @discardableResult
-  override func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
-    let success = super.handleKeyBinding(keyBinding)
-    // TODO: replace this with a key binding interceptor
-    if success && keyBinding.action.first == MPVCommand.screenshot.rawValue {
-      player.sendOSD(.screenshot)
+  func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
+    if keyBinding.isIINACommand {
+      if let menuItem = keyBinding.menuItem, let action = menuItem.action {
+        // - Menu item (e.g. custom video filter)
+        // If a menu item's key equivalent doesn't have any modifiers, the player window will get the key event instead of the main menu.
+        Logger.log("Executing action for menuItem \(menuItem.title.quoted)", level: .verbose, subsystem: player.subsystem)
+        NSApp.sendAction(action, to: self, from: menuItem)
+        return true
+      }
+
+      // - IINA command
+      if let iinaCommand = IINACommand(rawValue: keyBinding.rawAction) {
+        handleIINACommand(iinaCommand)
+        return true
+      } else {
+        Logger.log("Unrecognized IINA command: \(keyBinding.rawAction.quoted)", level: .error, subsystem: player.subsystem)
+        return false
+      }
+    } else {
+      // - mpv command
+
+      if let menuItem = keyBinding.menuItem, let action = menuItem.action {
+        // Contains an action selector. Call it instead of sending raw mpv command
+        NSApplication.shared.sendAction(action, to: menuItem.target, from: menuItem)
+        return true
+      }
+
+      let returnValue: Int32
+      // execute the command
+      switch keyBinding.action.first! {
+        // TODO: replace this with a key binding interceptor
+      case MPVCommand.abLoop.rawValue:
+        returnValue = abLoop()
+      case MPVCommand.screenshot.rawValue:
+        returnValue = player.mpv.command(rawString: keyBinding.rawAction)
+        if returnValue == 0 {
+          player.sendOSD(.screenshot)
+        }
+      default:
+        returnValue = player.mpv.command(rawString: keyBinding.rawAction)
+      }
+
+      let success = returnValue == 0
+
+      if success {
+        if keyBinding.action.first == MPVCommand.screenshot.rawValue {
+          player.sendOSD(.screenshot)
+        }
+
+      } else {
+        Logger.log("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)",
+                   level: .error, subsystem: player.subsystem)
+      }
+      return success
     }
-    return success
+  }
+
+  override func keyDown(with event: NSEvent) {
+    let keyCode = KeyCodeHelper.mpvKeyCode(from: event)
+    let normalizedKeyCode = KeyCodeHelper.normalizeMpv(keyCode)
+
+    PluginInputManager.handle(
+      input: normalizedKeyCode, event: .keyDown, player: player,
+      arguments: keyEventArgs(event), handler: { [self] in
+        if let keyBinding = player.bindingController.matchActiveKeyBinding(endingWith: event) {
+
+          guard !keyBinding.isIgnored else {
+            // if "ignore", just swallow the event. Do not forward; do not beep
+            return true
+          }
+
+          // beep if cmd failed
+          return handleKeyBinding(keyBinding)
+        }
+        return false
+      }, defaultHandler: {
+        // invalid key
+        super.keyDown(with: event)
+      })
+  }
+
+  override func keyUp(with event: NSEvent) {
+    let keyCode = KeyCodeHelper.mpvKeyCode(from: event)
+    let normalizedKeyCode = KeyCodeHelper.normalizeMpv(keyCode)
+
+    PluginInputManager.handle(
+      input: normalizedKeyCode, event: .keyUp, player: player,
+      arguments: keyEventArgs(event)
+    )
   }
 
   // MARK: - Mouse / Trackpad events
+
+  /// This method is provided soly for invoking plugin input handlers.
+  func informPluginMouseDragged(with event: NSEvent) {
+    PluginInputManager.handle(
+      input: PluginInputManager.Input.mouse, event: .mouseDrag, player: player,
+      arguments: mouseEventArgs(event)
+    )
+  }
+
+  fileprivate func mouseEventArgs(_ event: NSEvent) -> [[String: Any]] {
+    return [[
+      "x": event.locationInWindow.x,
+      "y": event.locationInWindow.y,
+      "clickCount": event.clickCount,
+      "pressure": event.pressure
+    ] as [String : Any]]
+  }
+
+  fileprivate func keyEventArgs(_ event: NSEvent) -> [[String: Any]] {
+    return [[
+      "x": event.locationInWindow.x,
+      "y": event.locationInWindow.y,
+      "isRepeat": event.isARepeat
+    ] as [String : Any]]
+  }
+
+  func isMouseEvent(_ event: NSEvent, inAnyOf views: [NSView?]) -> Bool {
+    return views.filter { $0 != nil }.reduce(false, { (result, view) in
+      return result || view!.isMousePoint(view!.convert(event.locationInWindow, from: nil), in: view!.bounds)
+    })
+  }
+
+  /**
+   Being called to perform single click action after timeout.
+
+   - SeeAlso:
+   mouseUp(with:)
+   */
+  @objc internal func performMouseActionLater(_ timer: Timer) {
+    guard let action = timer.userInfo as? Preference.MouseClickAction else { return }
+    if mouseExitEnterCount >= 2 && action == .hideOSC {
+      /// the counter being greater than or equal to 2 means that the mouse re-entered the window
+      /// `showFadeableViews()` must be called due to the movement in the window, thus `hideOSC` action should be cancelled
+      return
+    }
+    performMouseAction(action)
+  }
 
   override func pressureChange(with event: NSEvent) {
     if isCurrentPressInSecondStage == false && event.stage == 2 {
@@ -934,7 +1229,7 @@ class MainWindowController: PlayerWindowController {
 
   override func mouseDown(with event: NSEvent) {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
-      log.verbose("MainWindow mouseDown @ \(event.locationInWindow)")
+      log.verbose("PlayerWindow mouseDown @ \(event.locationInWindow)")
     }
     workaroundCursorDefect()
     // do nothing if it's related to floating OSC
@@ -942,9 +1237,14 @@ class MainWindowController: PlayerWindowController {
     // record current mouse pos
     mousePosRelatedToWindow = event.locationInWindow
     // Start resize if applicable
-    let shouldCallSuper = !startResizingSidebar(with: event)
-    if shouldCallSuper {
-      super.mouseDown(with: event)
+    let wasHandled = startResizingSidebar(with: event)
+    if !wasHandled {
+      PluginInputManager.handle(
+        input: PluginInputManager.Input.mouse, event: .mouseDown,
+        player: player, arguments: mouseEventArgs(event)
+      )
+      // we don't call super here because before adding the plugin system,
+      // MainWindowController didn't call super at all
     }
   }
 
@@ -970,14 +1270,14 @@ class MainWindowController: PlayerWindowController {
           isDragging = true
         }
         window?.performDrag(with: event)
-        super.informPluginMouseDragged(with: event)
+        informPluginMouseDragged(with: event)
       }
     }
   }
 
   override func mouseUp(with event: NSEvent) {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
-      log.verbose("MainWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
+      log.verbose("PlayerWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
     }
     workaroundCursorDefect()
     mousePosRelatedToWindow = nil
@@ -1009,7 +1309,29 @@ class MainWindowController: PlayerWindowController {
         return
       }
 
-      super.mouseUp(with: event)
+      guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else {
+        player.log.verbose("Click occurred in a disabled view; ignoring")
+        return
+      }
+      PluginInputManager.handle(
+        input: PluginInputManager.Input.mouse, event: .mouseUp, player: player,
+        arguments: mouseEventArgs(event), defaultHandler: { [self] in
+          // default handler
+          if event.clickCount == 1 {
+            if doubleClickAction == .none {
+              performMouseAction(singleClickAction)
+            } else {
+              singleClickTimer = Timer.scheduledTimer(timeInterval: NSEvent.doubleClickInterval, target: self, selector: #selector(performMouseActionLater), userInfo: singleClickAction, repeats: false)
+              mouseExitEnterCount = 0
+            }
+          } else if event.clickCount == 2 {
+            if let timer = singleClickTimer {
+              timer.invalidate()
+              singleClickTimer = nil
+            }
+            performMouseAction(doubleClickAction)
+          }
+        })
     }
   }
 
@@ -1020,7 +1342,18 @@ class MainWindowController: PlayerWindowController {
 
   override func otherMouseUp(with event: NSEvent) {
     workaroundCursorDefect()
-    super.otherMouseUp(with: event)
+    Logger.log("PlayerWindow otherMouseUp!", level: .verbose, subsystem: player.subsystem)
+    guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
+
+    PluginInputManager.handle(
+      input: PluginInputManager.Input.otherMouse, event: .mouseUp, player: player,
+      arguments: mouseEventArgs(event), defaultHandler: {
+        if event.type == .otherMouseUp {
+          self.performMouseAction(Preference.enum(for: .middleClickAction))
+        } else {
+          super.otherMouseUp(with: event)
+        }
+      })
   }
 
   /// Workaround for issue #4183, Cursor remains visible after resuming playback with the touchpad using secondary click
@@ -1031,18 +1364,29 @@ class MainWindowController: PlayerWindowController {
   /// return to the view.`
   override func rightMouseDown(with event: NSEvent) {
     workaroundCursorDefect()
-    super.rightMouseDown(with: event)
+    PluginInputManager.handle(
+      input: PluginInputManager.Input.rightMouse, event: .mouseDown,
+      player: player, arguments: mouseEventArgs(event)
+    )
   }
 
   override func rightMouseUp(with event: NSEvent) {
+    log.verbose("PlayerWindow rightMouseUp!")
     workaroundCursorDefect()
-    super.rightMouseUp(with: event)
+    guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
+
+    PluginInputManager.handle(
+      input: PluginInputManager.Input.rightMouse, event: .mouseUp, player: player,
+      arguments: mouseEventArgs(event), defaultHandler: {
+        self.performMouseAction(Preference.enum(for: .rightClickAction))
+      })
   }
 
-  override internal func performMouseAction(_ action: Preference.MouseClickAction) {
+  func performMouseAction(_ action: Preference.MouseClickAction) {
     log.verbose("Performing mouseAction: \(action)")
-    super.performMouseAction(action)
     switch action {
+    case .pause:
+      player.togglePause()
     case .fullscreen:
       toggleWindowFullScreen()
     case .hideOSC:
@@ -1069,7 +1413,87 @@ class MainWindowController: PlayerWindowController {
       guard !isMouseEvent(event, inAnyOf: [currentControlBar]) else { return }
     }
 
-    super.scrollWheel(with: event)
+    let isMouse = event.phase.isEmpty
+    let isTrackpadBegan = event.phase.contains(.began)
+    let isTrackpadEnd = event.phase.contains(.ended)
+
+    // determine direction
+
+    if isMouse || isTrackpadBegan {
+      if event.scrollingDeltaX != 0 {
+        scrollDirection = .horizontal
+      } else if event.scrollingDeltaY != 0 {
+        scrollDirection = .vertical
+      }
+    } else if isTrackpadEnd {
+      scrollDirection = nil
+    }
+
+    let scrollAction: Preference.ScrollAction
+    if seekOverride {
+      scrollAction = .seek
+    } else if volumeOverride {
+      scrollAction = .volume
+    } else {
+      scrollAction = scrollDirection == .horizontal ? horizontalScrollAction : verticalScrollAction
+      // show volume popover when volume seek begins and hide on end
+      if scrollAction == .volume && player.isInMiniPlayer {
+        player.mainWindow.miniPlayer.handleVolumePopover(isTrackpadBegan, isTrackpadEnd, isMouse)
+      }
+    }
+
+    // pause video when seek begins
+
+    if scrollAction == .seek && isTrackpadBegan {
+      // record pause status
+      if player.info.isPlaying {
+        player.pause()
+        wasPlayingBeforeSeeking = true
+      }
+    }
+
+    if isTrackpadEnd && wasPlayingBeforeSeeking {
+      // only resume playback when it was playing before seeking
+      if wasPlayingBeforeSeeking {
+        player.resume()
+      }
+      wasPlayingBeforeSeeking = false
+    }
+
+    // handle the delta value
+
+    let isPrecise = event.hasPreciseScrollingDeltas
+    let isNatural = event.isDirectionInvertedFromDevice
+
+    var deltaX = isPrecise ? Double(event.scrollingDeltaX) : event.scrollingDeltaX.unifiedDouble
+    var deltaY = isPrecise ? Double(event.scrollingDeltaY) : event.scrollingDeltaY.unifiedDouble * 2
+
+    if isNatural {
+      deltaY = -deltaY
+    } else {
+      deltaX = -deltaX
+    }
+
+    let delta = scrollDirection == .horizontal ? deltaX : deltaY
+
+    // perform action
+
+    switch scrollAction {
+    case .seek:
+      let seekAmount = (isMouse ? AppData.seekAmountMapMouse : AppData.seekAmountMap)[relativeSeekAmount] * delta
+      player.seek(relativeSecond: seekAmount, option: useExactSeek)
+    case .volume:
+      // don't use precised delta for mouse
+      let newVolume = player.info.volume + (isMouse ? delta : AppData.volumeMap[volumeScrollAmount] * delta)
+      player.setVolume(newVolume)
+      if player.isInMiniPlayer {
+        player.mainWindow.miniPlayer.volumeSlider.doubleValue = newVolume
+      } else {
+        volumeSlider.doubleValue = newVolume
+      }
+    default:
+      break
+    }
 
     seekOverride = false
     volumeOverride = false
@@ -1181,8 +1605,7 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Window delegate: Open / Close
 
-  func windowWillOpen() {
-    log.verbose("WindowWillOpen")
+  func openWindow() {
     isClosing = false
     guard let window = self.window, let cv = window.contentView else { return }
     // Must workaround an AppKit defect in some versions of macOS. This defect is known to exist in
@@ -1250,6 +1673,12 @@ class MainWindowController: PlayerWindowController {
     animationQueue.runZeroDuration({ [self] in
       setInitialWindowLayout()
     })
+
+    log.verbose("Showing Player Window")
+    // FIXME: delay until after fileLoaded. We don't know the video dimensions yet!
+    showWindow(nil)
+
+    videoView.startDisplayLink()
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -1422,10 +1851,10 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  override func windowDidChangeScreen(_ notification: Notification) {
+  func windowDidChangeScreen(_ notification: Notification) {
     guard let window = window else { return }
-    super.windowDidChangeScreen(notification)
     log.verbose("WindowDidChangeScreen, frame=\(window.frame)")
+    videoView.updateDisplayLink()
     player.events.emit(.windowScreenChanged)
 
     if currentLayout.isLegacyFullScreen {
@@ -1475,21 +1904,30 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  override func windowDidBecomeMain(_ notification: Notification) {
-    super.windowDidBecomeMain(notification)
+  func windowDidBecomeMain(_ notification: Notification) {
+    log.verbose("Window became main: \(player.subsystem.rawValue)")
+
+    PlayerCore.lastActive = player
+    if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
+      NowPlayingInfoManager.updateInfo(withTitle: true)
+    }
+    (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
 
     if isFullScreen && Preference.bool(for: .blackOutMonitor) {
       blackOutOtherMonitors()
     }
     player.events.emit(.windowMainStatusChanged, data: true)
+    NotificationCenter.default.post(name: .iinaMainWindowChanged, object: true)
   }
 
-  override func windowDidResignMain(_ notification: Notification) {
-    super.windowDidResignMain(notification)
+  func windowDidResignMain(_ notification: Notification) {
+    log.verbose("Window is no longer main: \(player.subsystem.rawValue)")
+
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()
     }
     player.events.emit(.windowMainStatusChanged, data: false)
+    NotificationCenter.default.post(name: .iinaMainWindowChanged, object: false)
   }
 
   func windowWillMiniaturize(_ notification: Notification) {
@@ -1704,8 +2142,21 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  override func updatePlayTime(withDuration duration: Bool) {
-    super.updatePlayTime(withDuration: duration)
+  func updatePlayTime(withDuration duration: Bool) {
+    // IINA listens for changes to mpv properties such as chapter that can occur during file loading
+    // resulting in this function being called before mpv has set its position and duration
+    // properties. Confirm the window and file have been loaded.
+    guard loaded, player.info.fileLoaded else { return }
+    // The mpv documentation for the duration property indicates mpv is not always able to determine
+    // the video duration in which case the property is not available.
+    guard let duration = player.info.videoDuration else {
+      Logger.log("Video duration not available", subsystem: player.subsystem)
+      return
+    }
+    guard let pos = player.info.videoPosition else {
+      Logger.log("Video position not available", subsystem: player.subsystem)
+      return
+    }
 
     if osdAnimationState == .shown, let osdLastMessage = self.osdLastMessage {
       let message: OSDMessage
@@ -1720,12 +2171,29 @@ class MainWindowController: PlayerWindowController {
 
       setOSDViews(fromMessage: message)
     }
+
+    let percentage = (pos.second / duration.second) * 100
+    if player.isInMiniPlayer {
+      // Music mode
+      _ = player.mainWindow.miniPlayer.view // make sure it is loaded
+      player.mainWindow.miniPlayer.playSlider.doubleValue = percentage
+      [player.mainWindow.miniPlayer.leftLabel, player.mainWindow.miniPlayer.rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+    } else {
+      // Normal player
+      [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+      playSlider.doubleValue = percentage
+    }
+    // Touch bar
+    if #available(macOS 10.12.2, *) {
+      player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
+      player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
+    }
   }
 
   // MARK: - UI: Title
 
   @objc
-  override func updateTitle() {
+  func updateTitle() {
     if player.isInMiniPlayer {
       let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
       window?.title = mediaTitle
@@ -2168,9 +2636,54 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Others
 
-  override func updateVolumeUI() {
+  @discardableResult
+  func abLoop() -> Int32 {
+    let returnValue = player.abLoop()
+    if returnValue == 0 {
+      syncPlaySliderABLoop()
+    }
+    return returnValue
+  }
+
+  func syncPlaySliderABLoop() {
+    let a = player.abLoopA
+    let b = player.abLoopB
+    if let slider = player.isInMiniPlayer ? player.mainWindow.playSlider : playSlider {
+      slider.abLoopA.isHidden = a == 0
+      slider.abLoopA.doubleValue = secondsToPercent(a)
+      slider.abLoopB.isHidden = b == 0
+      slider.abLoopB.doubleValue = secondsToPercent(b)
+      slider.needsDisplay = true
+    }
+  }
+
+  /// Returns the percent of the total duration of the video the given position in seconds represents.
+  ///
+  /// The percentage returned must be considered an estimate that could change. The duration of the video is obtained from the
+  /// [mpv](https://mpv.io/manual/stable/) `duration` property. The documentation for this property cautions that mpv
+  /// is not always able to determine the duration and when it does return a duration it may be an estimate. If the duration is unknown
+  /// this method will fallback to using the current playback position, if that is known. Otherwise this method will return zero.
+  /// - Parameter seconds: Position in the video as seconds from start.
+  /// - Returns: The percent of the video the given position represents.
+  private func secondsToPercent(_ seconds: Double) -> Double {
+    if let duration = player.info.videoDuration?.second {
+      return duration == 0 ? 0 : seconds / duration * 100
+    } else if let position = player.info.videoPosition?.second {
+      return position == 0 ? 0 : seconds / position * 100
+    } else {
+      return 0
+    }
+  }
+
+  func updateVolumeUI() {
     guard loaded else { return }
-    super.updateVolumeUI()
+    if let volumeSlider = player.isInMiniPlayer ? player.mainWindow.miniPlayer.volumeSlider : volumeSlider {
+      volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
+      volumeSlider.doubleValue = player.info.volume
+    }
+    if let muteButton = player.isInMiniPlayer ? player.mainWindow.miniPlayer.muteButton : muteButton {
+      muteButton.state = player.info.isMuted ? .on : .off
+    }
     if player.isInMiniPlayer {
       miniPlayer.updateVolumeUI()
     }
@@ -2224,17 +2737,24 @@ class MainWindowController: PlayerWindowController {
     log.verbose("Removed all black windows")
   }
 
-  override func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
+  func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
     guard !isFullScreen else { return }
-    super.setWindowFloatingOnTop(onTop, updateOnTopStatus: updateOnTopStatus)
-
+    guard let window = window else { return }
+    window.level = onTop ? .iinaFloating : .normal
+    if (updateOnTopStatus) {
+      self.isOntop = onTop
+    }
     resetCollectionBehavior()
   }
 
   // MARK: - Sync UI with playback
 
-  override func updatePlayButtonState(_ state: NSControl.StateValue) {
-    super.updatePlayButtonState(state)
+  func updatePlayButtonState(_ state: NSControl.StateValue) {
+    guard loaded else { return }
+    if let playButton = player.isInMiniPlayer ? player.mainWindow.miniPlayer.playButton : playButton {
+      playButton.state = state
+    }
+
     if state == .off {
       speedValueIndex = AppData.availableSpeedValues.count / 2
       leftArrowLabel.isHidden = true
@@ -2275,12 +2795,28 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - IBActions
 
+  @objc func menuSwitchToMiniPlayer(_ sender: NSMenuItem) {
+    if player.isInMiniPlayer {
+      player.exitMusicMode()
+    } else {
+      player.enterMusicMode()
+    }
+  }
+
+  @IBAction func volumeSliderChanges(_ sender: NSSlider) {
+    let value = sender.doubleValue
+    if Preference.double(for: .maxVolume) > 100, value > 100 && value < 101 {
+      NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
+    }
+    player.setVolume(value)
+  }
+
   @IBAction func backBtnAction(_ sender: NSButton) {
     player.exitMusicMode()
   }
 
-  @IBAction override func playButtonAction(_ sender: NSButton) {
-    super.playButtonAction(sender)
+  @IBAction func playButtonAction(_ sender: NSButton) {
+    player.info.isPaused ? player.resume() : player.pause()
     if (player.info.isPaused) {
       // speed is already reset by playerCore
       speedValueIndex = AppData.availableSpeedValues.count / 2
@@ -2294,8 +2830,8 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  @IBAction override func muteButtonAction(_ sender: NSButton) {
-    super.muteButtonAction(sender)
+  @IBAction func muteButtonAction(_ sender: NSButton) {
+    player.toggleMute()
     player.sendOSD(player.info.isMuted ? .mute : .unMute)
   }
 
@@ -2410,15 +2946,16 @@ class MainWindowController: PlayerWindowController {
   }
 
   /** When slider changes */
-  @IBAction override func playSliderChanges(_ sender: NSSlider) {
+  @IBAction func playSliderChanges(_ sender: NSSlider) {
     guard !player.info.fileLoading else { return }
-    super.playSliderChanges(sender)
+
+    let percentage = 100 * sender.doubleValue / sender.maxValue
+    player.seek(percent: percentage, forceExact: !followGlobalSeekTypeWhenAdjustSlider)
 
     // update position of time label
     timePreviewWhenSeekHorizontalCenterConstraint.constant = sender.knobPointPosition() - playSlider.frame.origin.x
 
     // update text of time label
-    let percentage = 100 * sender.doubleValue / sender.maxValue
     let seekTime = player.info.videoDuration! * percentage * 0.01
     log.debug("PlaySliderChanged: setting seek time label to \(seekTime.stringRepresentation.quoted)")
     timePreviewWhenSeek.stringValue = seekTime.stringRepresentation
@@ -2450,9 +2987,27 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Utility
 
-  internal override func handleIINACommand(_ cmd: IINACommand) {
-    super.handleIINACommand(cmd)
+  func handleIINACommand(_ cmd: IINACommand) {
+    let appDelegate = (NSApp.delegate! as! AppDelegate)
     switch cmd {
+    case .openFile:
+      appDelegate.openFile(self)
+    case .openURL:
+      appDelegate.openURL(self)
+    case .flip:
+      menuToggleFlip(.dummy)
+    case .mirror:
+      menuToggleMirror(.dummy)
+    case .saveCurrentPlaylist:
+      menuSavePlaylist(.dummy)
+    case .deleteCurrentFile:
+      menuDeleteCurrentFile(.dummy)
+    case .findOnlineSubs:
+      menuFindOnlineSub(.dummy)
+    case .saveDownloadedSub:
+      saveDownloadedSub(.dummy)
+    case .toggleMusicMode:
+      menuSwitchToMiniPlayer(.dummy)
     case .togglePIP:
       if #available(macOS 10.12, *) {
         menuTogglePIP(.dummy)

@@ -684,6 +684,11 @@ extension MainWindowController {
       log.verbose("Done with transition to initial layout")
     }
 
+    if Preference.bool(for: .alwaysFloatOnTop) {
+      log.verbose("Setting window to OnTop per app preference")
+      setWindowFloatingOnTop(true)
+    }
+
     guard isRestoringFromPrevLaunch else { return }
 
     /// Stored window state may not be consistent with global IINA prefs.

@@ -369,11 +369,7 @@ class PlayerCore: NSObject {
     let _ = mainWindow.window  /// Kicks off `windowDidLoad()`
     (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningMainWindow()
 
-    // FIXME: delay until after fileLoaded. We don't know the video dimensions yet!
-    mainWindow.windowWillOpen()
-    log.verbose("Showing Player Window")
-    mainWindow.showWindow(nil)
-    mainWindow.windowDidOpen()
+    mainWindow.openWindow()
 
     // Send load file command
     info.fileLoading = true

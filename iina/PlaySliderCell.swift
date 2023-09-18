@@ -27,7 +27,7 @@ class PlaySliderCell: NSSliderCell {
     if let player = _playerCore { return player }
 
     let windowController = self.controlView!.window!.windowController
-    let player = (windowController as! PlayerWindowController).player
+    let player = (windowController as! MainWindowController).player
     _playerCore = player
     return player
   }
