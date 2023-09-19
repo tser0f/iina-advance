@@ -107,7 +107,9 @@ class PlayerCoreManager {
     if let wc = NSApp.mainWindow?.windowController as? PlayerWindowController {
       return wc.player
     } else {
-      return getOrCreateFirst()
+      let player = _getOrCreateFirst()
+      player.start()
+      return player
     }
   }
 

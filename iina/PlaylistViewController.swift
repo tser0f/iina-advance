@@ -158,7 +158,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
 
     // notifications
-    playlistChangeObserver = NotificationCenter.default.addObserver(forName: .iinaPlaylistChanged, object: player, queue: OperationQueue.main) { [unowned self] _ in
+    playlistChangeObserver = NotificationCenter.default.addObserver(forName: .iinaPlaylistChanged, object: player, queue: OperationQueue.main) { [self] _ in
       self.playlistTotalLengthIsReady = false
       self.reloadData(playlist: true, chapters: false)
     }
@@ -185,6 +185,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   override func viewDidAppear() {
     reloadData(playlist: true, chapters: true)
+    scrollPlaylistToCurrentItem()
 
     let loopStatus = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
     loopPlaylistBtn.state = (loopStatus == "inf" || loopStatus == "force") ? .on : .off
@@ -194,19 +195,21 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     NotificationCenter.default.removeObserver(self.playlistChangeObserver!)
   }
 
+  func scrollPlaylistToCurrentItem() {
+    var currentPlayItemIndex = 0
+    for (rowIndex, item) in player.info.playlist.enumerated() {
+      if item.isPlaying {
+        currentPlayItemIndex = rowIndex
+      }
+    }
+    playlistTableView.scrollRowToVisible(currentPlayItemIndex)
+  }
+
   func reloadData(playlist: Bool, chapters: Bool) {
     if playlist {
       player.reloadPlaylist()
       player.log.verbose("Reloading playlist table")
       playlistTableView.reloadData()
-
-      var currentPlayItemIndex = 0
-      for (rowIndex, item) in player.info.playlist.enumerated() {
-        if item.isPlaying {
-          currentPlayItemIndex = rowIndex
-        }
-      }
-      playlistTableView.scrollRowToVisible(currentPlayItemIndex)
     }
     if chapters {
       player.reloadChapters()

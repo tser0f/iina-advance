@@ -387,7 +387,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
 
     CocoaAnimation.disableAnimation{
-      apply(newGeometry)  /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
+      apply(newGeometry, setFrame: false)  /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
     }
 
     return windowController.musicModeGeometry.windowFrame.size
@@ -465,13 +465,15 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   /// Updates the current window to match the given `geometry`, and caches it.
-  func apply(_ geometry: MusicModeGeometry, updateCache: Bool = true) {
+  func apply(_ geometry: MusicModeGeometry, setFrame: Bool = true, updateCache: Bool = true) {
     let geometry = geometry.constrainWithin(windowController.bestScreen.visibleFrame)
 
     updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
     windowController.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
-    log.verbose("Applying \(geometry)")
-    player.window.setFrameImmediately(geometry.windowFrame, animate: true)
+    log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
+    if setFrame {
+      player.window.setFrameImmediately(geometry.windowFrame, animate: true)
+    }
     if updateCache {
       windowController.musicModeGeometry = geometry
       player.saveState()

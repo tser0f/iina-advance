@@ -1446,6 +1446,9 @@ class PlayerCore: NSObject {
     let url = info.currentURL
     let message = (info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
     sendOSD(.fileStart(message))
+    DispatchQueue.main.async { [self] in
+      windowController.playlistView.scrollPlaylistToCurrentItem()
+    }
   }
 
   /** This function is called right after file loaded. Should load all meta info here. */
