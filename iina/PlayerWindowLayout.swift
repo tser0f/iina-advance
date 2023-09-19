@@ -616,7 +616,6 @@ extension PlayerWindowController {
       // Restore saved geometries
       if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
         log.debug("Restoring windowedMode windowFrame to \(priorWindowedModeGeometry.windowFrame), videoAspectRatio: \(priorWindowedModeGeometry.videoAspectRatio)")
-        player.videoView.updateAspectRatio(to: priorWindowedModeGeometry.videoAspectRatio)
         windowedModeGeometry = priorWindowedModeGeometry
       } else {
         log.error("Failed to get player window geometry from prefs")
@@ -750,8 +749,8 @@ extension PlayerWindowController {
 
     if toLayout.isMusicMode {
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
-      let musicModeGeometryAspectCorrected = musicModeGeometry.clone(videoAspectRatio: videoView.aspectRatio)
-      toGeometry = musicModeGeometryAspectCorrected.toPlayerWindowGeometry()
+      let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).constrainWithin(bestScreen.visibleFrame)
+      toGeometry = musicModeGeometryCorrected.toPlayerWindowGeometry()
 
     } else if toLayout.isFullScreen {
       // This will be ignored anyway, so just save the processing cycles
@@ -770,12 +769,13 @@ extension PlayerWindowController {
                                            insideTrailingBarWidth: toLayout.trailingBarInsideWidth,
                                            insideBottomBarHeight: toLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0,
                                            insideLeadingBarWidth: toLayout.leadingBarInsideWidth,
-                                           videoAspectRatio: fromGeometry.videoAspectRatio)
+                                           videoAspectRatio: videoAspectRatio)
       // Need to recalculate windowFrame for outside bars:
       toGeometry = geo.resizeOutsideBars(newOutsideTopHeight: toLayout.topBarOutsideHeight,
                                          newOutsideTrailingWidth: toLayout.trailingBarOutsideWidth,
                                          newOutsideBottomBarHeight: outsideBottomBarHeight,
                                          newOutsideLeadingWidth: toLayout.leadingBarOutsideWidth)
+      .scaleVideoContainer(constrainedWithin: bestScreen.visibleFrame)
     }
 
     let transition = LayoutTransition(name: transitionName, from: fromLayout, from: fromGeometry, to: toLayout, to: toGeometry, isInitialLayout: false)

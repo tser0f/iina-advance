@@ -1643,7 +1643,7 @@ class PlayerCore: NSObject {
       info.videoDisplayWidth = drW
       info.videoDisplayHeight = drH
       DispatchQueue.main.sync {
-        self.windowController.adjustFrameAfterVideoReconfig()
+        self.windowController.mpvVideoDidReconfig()
       }
     } else {
       log.verbose("No real change from video-reconfig; ignoring")

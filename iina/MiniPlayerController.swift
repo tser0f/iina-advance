@@ -60,12 +60,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     return windowController.log
   }
 
-  /// When resizing the window, need to control the aspect ratio of `videoView`. But cannot use an `aspectRatio` constraint,
-  /// because: when playlist is hidden but videoView is shown, that prevents the window from being expanded when the user drags
-  /// from the right window edge. Possibly AppKit treats it like a fixed-width constraint. Workaround: use only a `height` constraint
-  /// and recalculate it from the video's aspect ratio whenever the window's width changes.
-  private var videoHeightConstraint: NSLayoutConstraint!
-
   var isPlaylistVisible: Bool {
     get {
       windowController.musicModeGeometry.isPlaylistVisible
@@ -363,12 +357,14 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func windowDidResize() {
     _ = view
     resetScrollingLabels()
+    applyGeometryAfterResize(newWindowFrame: window!.frame)
   }
 
   func windowDidEndLiveResize() {
     if isPlaylistVisible {
       saveCurrentPlaylistHeight()
     }
+    applyGeometryAfterResize(newWindowFrame: window!.frame)
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
@@ -382,36 +378,17 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       return window.frame.size
     }
 
-    let oldGeometry = windowController.musicModeGeometry
-    let requestedWindowFrame = NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize)
-    let newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
-
-    CocoaAnimation.disableAnimation{
-      apply(newGeometry, setFrame: false)  /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
-    }
+    let requestedWindowFrame = NSRect(origin: windowController.musicModeGeometry.windowFrame.origin, size: requestedSize)
+    applyGeometryAfterResize(newWindowFrame: requestedWindowFrame)
 
     return windowController.musicModeGeometry.windowFrame.size
   }
 
-  func updateVideoHeightConstraint(height: CGFloat? = nil, animate: Bool = false) {
-    let newHeight: CGFloat
-    guard isVideoVisible else { return }
-    guard let window = window else { return }
-
-    newHeight = height ?? window.frame.width / windowController.videoView.aspectRatio
-
-    if let videoHeightConstraint = videoHeightConstraint {
-      if animate {
-        videoHeightConstraint.animateToConstant(newHeight)
-      } else {
-        videoHeightConstraint.constant = newHeight
-      }
-    } else {
-      videoHeightConstraint = windowController.videoView.heightAnchor.constraint(equalToConstant: newHeight)
-      videoHeightConstraint.priority = .defaultLow
-      videoHeightConstraint.isActive = true
+  private func applyGeometryAfterResize(newWindowFrame: NSRect) {
+    let newGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
+    CocoaAnimation.disableAnimation{
+      apply(newGeometry, setFrame: false)  /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
     }
-    windowController.videoView.superview!.layout()
   }
 
   func cleanUpForMusicModeExit() {
@@ -421,21 +398,15 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     for view in playlistWrapperView.subviews {
       view.removeFromSuperview()
     }
-
-    if let videoHeightConstraint = videoHeightConstraint {
-      videoHeightConstraint.isActive = false
-      self.videoHeightConstraint = nil
-    }
   }
 
-  func adjustLayoutForVideoChange() {
+  func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
     guard let window = window else { return }
     resetScrollingLabels()
 
     // FIXME: find fix for horizontal text flicker when moving in playlist
 
     CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
-      let newVideoAspectRatio = windowController.videoView.aspectRatio
       let newGeometry = windowController.musicModeGeometry.clone(windowFrame: window.frame, videoAspectRatio: newVideoAspectRatio)
       apply(newGeometry)
       log.verbose("Updating music mode geometry for video change")
@@ -448,7 +419,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
     let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
-    let videoAspectRatio = windowController.videoView.aspectRatio
+    let videoAspectRatio = windowController.videoAspectRatio
     let desiredWindowWidth = MiniPlayerController.defaultWindowWidth
     let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
     let desiredWindowHeight = desiredVideoHeight + MiniPlayerController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
@@ -458,8 +429,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let windowOrigin = NSPoint(x: screenFrame.origin.x, y: screenFrame.maxY - windowSize.height)
     let windowFrame = NSRect(origin: windowOrigin, size: windowSize)
     let desiredGeo = MusicModeGeometry(windowFrame: windowFrame, playlistHeight: desiredPlaylistHeight,
-                             isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
-                             videoAspectRatio: videoAspectRatio)
+                                       isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
+                                       videoAspectRatio: videoAspectRatio)
     // Resize as needed to fit on screen:
     return desiredGeo.constrainWithin(screenFrame)
   }
@@ -467,10 +438,14 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   /// Updates the current window to match the given `geometry`, and caches it.
   func apply(_ geometry: MusicModeGeometry, setFrame: Bool = true, updateCache: Bool = true) {
     let geometry = geometry.constrainWithin(windowController.bestScreen.visibleFrame)
-
-    updateVideoHeightConstraint(height: geometry.videoHeight, animate: true)
-    windowController.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
+
+    windowController.videoAspectRatio = geometry.videoAspectRatio
+
+    if let videoSize = geometry.videoSize {
+      windowController.videoView.updateSizeConstraints(videoSize)
+    }
+    windowController.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     if setFrame {
       player.window.setFrameImmediately(geometry.windowFrame, animate: true)
     }

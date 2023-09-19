@@ -62,6 +62,11 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     return windowFrame.width / videoAspectRatio
   }
 
+  var videoSize: NSSize? {
+    guard isVideoVisible else { return nil }
+    return NSSize(width: windowFrame.width, height: videoHeightIfVisible)
+  }
+
   var videoHeight: CGFloat {
     return isVideoVisible ? videoHeightIfVisible : 0
   }

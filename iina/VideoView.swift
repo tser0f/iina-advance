@@ -22,16 +22,14 @@ class VideoView: NSView {
 
   @Atomic var isUninited = false
 
-  // The currently enforced aspect ratio of the video (width/height)
-  private(set) var aspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo)
-
   // cached indicator to prevent unnecessary updates of DisplayLink
   var currentDisplay: UInt32?
 
   private var displayIdleTimer: Timer?
 
   var videoViewConstraints: VideoViewConstraints? = nil
-  private var aspectRatioConstraint: NSLayoutConstraint!
+  var widthConstraint: NSLayoutConstraint!
+  var heightConstraint: NSLayoutConstraint!
 
   lazy var hdrSubsystem = Logger.makeSubsystem("hdr")
 
@@ -50,6 +48,13 @@ class VideoView: NSView {
     // FIXME: parameterize this
     videoLayer.contentsScale = NSScreen.main!.backingScaleFactor
     wantsLayer = true
+
+    widthConstraint = widthAnchor.constraint(equalToConstant: CGFloat(AppData.widthWhenNoVideo))
+    widthConstraint.priority = .defaultLow
+    widthConstraint.isActive = true
+    heightConstraint = heightAnchor.constraint(equalToConstant: CGFloat(AppData.heightWhenNoVideo))
+    heightConstraint.priority = .defaultLow
+    heightConstraint.isActive = true
 
     // other settings
     autoresizingMask = [.width, .height]
@@ -142,8 +147,7 @@ class VideoView: NSView {
   private func rebuildConstraints(top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0,
                                    eqIsActive: Bool = true, eqPriority: NSLayoutConstraint.Priority = .required,
                                    gtIsActive: Bool = true, gtPriority: NSLayoutConstraint.Priority = .required,
-                                   centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority = .required,
-                                   aspectIsActive: Bool = true) {
+                                   centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority = .required) {
     var existing = self.videoViewConstraints
     self.videoViewConstraints = nil
     let newConstraints = VideoViewConstraints(
@@ -166,11 +170,6 @@ class VideoView: NSView {
     videoViewConstraints = newConstraints
 
     newConstraints.setActive(eq: eqIsActive, gt: gtIsActive, center: centerIsActive)
-    if aspectIsActive {
-      setAspectRatioConstraint()
-    } else {
-      removeAspectRatioConstraint()
-    }
   }
 
   // TODO: figure out why this 2px adjustment is necessary
@@ -180,8 +179,7 @@ class VideoView: NSView {
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
                        eqIsActive: true, eqPriority: .defaultHigh,
                        gtIsActive: false,
-                       centerIsActive: false,
-                       aspectIsActive: false)
+                       centerIsActive: false)
 
     window?.layoutIfNeeded()
   }
@@ -191,40 +189,14 @@ class VideoView: NSView {
     // GT + center constraints are main priority, but include EQ as hint for ideal placement
     rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,
                        gtIsActive: true, gtPriority: .required,
-                       centerIsActive: true, centerPriority: .required,
-                       aspectIsActive: true)
+                       centerIsActive: true, centerPriority: .required)
 
     window?.layoutIfNeeded()
   }
 
-  func updateAspectRatio(to newAspectRatio: CGFloat) {
-    guard newAspectRatio != 0 else {
-      Logger.fatal("Cannot update videoView aspectRatio to 0!")
-    }
-    player.log.verbose("Updating videoView aspect ratio to \(newAspectRatio)")
-    aspectRatio = newAspectRatio
-
-    if aspectRatioConstraint != nil {
-      setAspectRatioConstraint()
-    }
-  }
-
-  private func setAspectRatioConstraint() {
-    if let aspectRatioConstraint = aspectRatioConstraint {
-      guard aspectRatioConstraint.multiplier != aspectRatio else {
-        return
-      }
-      removeConstraint(aspectRatioConstraint)
-    }
-    Logger.log("Updating videoView aspect ratio constraint to \(aspectRatio)")
-    aspectRatioConstraint = widthAnchor.constraint(equalTo: heightAnchor, multiplier: aspectRatio)
-    aspectRatioConstraint.animator().isActive = true
-  }
-
-  func removeAspectRatioConstraint() {
-    if let aspectRatioConstraint = aspectRatioConstraint {
-      removeConstraint(aspectRatioConstraint)
-    }
+  func updateSizeConstraints(_ size: CGSize) {
+    widthConstraint.constant = size.width
+    heightConstraint.constant = size.height
   }
 
   // MARK: - Mouse events

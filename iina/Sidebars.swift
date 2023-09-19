@@ -509,12 +509,12 @@ extension PlayerWindowController {
 
     let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeometry.videoAspectRatio)
     // Work off of previously stored size (see notes above)
-    let newGeometry = resizedGeometry.scale(desiredVideoContainerSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+    let newGeometry = resizedGeometry.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
 
     if !isFullScreen {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
     }
-    applyWindowGeometry(newGeometry, enqueueAnimation: false)
+    applyWindowGeometryWithoutEnqueuing(newGeometry)
   }
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
@@ -950,7 +950,7 @@ extension PlayerWindowController {
           let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
-          newGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+          newGeo = resizedPlaylistGeo.scaleVideoContainer(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
         } else {
           newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
         }
@@ -977,7 +977,7 @@ extension PlayerWindowController {
           let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
           let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
-          newGeo = resizedPlaylistGeo.scale(desiredVideoContainerSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+          newGeo = resizedPlaylistGeo.scaleVideoContainer(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
         } else {
           newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)
         }
@@ -988,7 +988,7 @@ extension PlayerWindowController {
 
       Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
       updateSpacingForTitleBarAccessories(windowWidth: oldGeo.windowFrame.width)
-      applyWindowGeometry(newGeo, updateCache: false, enqueueAnimation: false)
+      applyWindowGeometryWithoutEnqueuing(newGeo, updateCache: false)
       return newGeo
     }
   }

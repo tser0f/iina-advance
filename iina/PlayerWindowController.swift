@@ -212,6 +212,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return LayoutState(spec: LayoutSpec.defaultLayout())
   }()
 
+  // The most up-to-date aspect ratio of the video (width/height)
+  var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {
+    didSet {
+      log.verbose("Updated videoAspectRatio: \(videoAspectRatio)")
+    }
+  }
+
   lazy var windowedModeGeometry: PlayerWindowGeometry = {
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
@@ -888,10 +895,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       quickSettingView.reload()
 
       refreshDefaultAlbumArtVisibility()
-
-      if player.isInMiniPlayer {
-        miniPlayer.adjustLayoutForVideoChange()
-      }
     }
 
     // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
@@ -969,7 +972,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if vid == 0 {
       log.verbose("Showing defaultAlbumArt because vid = 0")
       defaultAlbumArtView.isHidden = false
-      videoView.updateAspectRatio(to: 1)
+      switch currentLayout.spec.mode {
+      case .musicMode:
+        let newGeo = musicModeGeometry.clone(videoAspectRatio: 1)
+        miniPlayer.apply(newGeo)
+      case .windowed, .fullScreen:
+        let newGeo = windowedModeGeometry.clone(videoAspectRatio: 1)
+        applyWindowGeometry(newGeo)
+      }
     } else {
       log.verbose("Hiding defaultAlbumArt because vid != 0")
       defaultAlbumArtView.isHidden = true
@@ -1841,7 +1851,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // TODO
       if false && shouldResizeWindowAfterVideoReconfig() && Preference.bool(for: .usePhysicalResolution) {
         // FIXME: need to keep relative location of pointer in relation to window
-        adjustFrameAfterVideoReconfig()
+        mpvVideoDidReconfig()
       }
 
       // Do not allow MacOS to change the window size:
