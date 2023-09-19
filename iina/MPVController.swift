@@ -1099,12 +1099,12 @@ not applying FFmpeg 9599 workaround
         if player.info.isPaused {
           player.videoView.displayIdle()
         }
+        if needRecordSeekTime {
+          recordedSeekTimeListener?(CACurrentMediaTime() - recordedSeekStartTime)
+          recordedSeekTimeListener = nil
+        }
+        player.playbackRestarted()
       }
-      if needRecordSeekTime {
-        recordedSeekTimeListener?(CACurrentMediaTime() - recordedSeekStartTime)
-        recordedSeekTimeListener = nil
-      }
-      player.playbackRestarted()
 
     case MPV_EVENT_END_FILE:
       // if receive end-file when loading file, might be error

@@ -1127,6 +1127,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
           guard !keyBinding.isIgnored else {
             // if "ignore", just swallow the event. Do not forward; do not beep
+            log.verbose("Binding is ignored for key: \(keyCode.quoted)")
             return true
           }
 
@@ -2154,17 +2155,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     if osdAnimationState == .shown, let osdLastMessage = self.osdLastMessage {
-      let message: OSDMessage
+      let message: OSDMessage?
       switch osdLastMessage {
       case .pause, .resume:
         message = osdLastMessage
       case .seek(_, _):
         message = .seek(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration)
       default:
-        return
+        message = nil
       }
 
-      setOSDViews(fromMessage: message)
+      if let message = message {
+        setOSDViews(fromMessage: message)
+      }
     }
 
     let percentage = (pos.second / duration.second) * 100
