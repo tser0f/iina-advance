@@ -926,7 +926,7 @@ extension NSWindow {
         return false
       }
     }
-    Logger.log("Window is the only window currently open: \(self.title.quoted)", level: .verbose)
+    Logger.log("Window is the only window currently open: \(uiStateSaveName.quoted)", level: .verbose)
     return true
   }
 

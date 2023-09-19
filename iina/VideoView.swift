@@ -23,7 +23,7 @@ class VideoView: NSView {
   @Atomic var isUninited = false
 
   // The currently enforced aspect ratio of the video (width/height)
-  private(set) var aspectRatio: CGFloat = 1
+  private(set) var aspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo)
 
   // cached indicator to prevent unnecessary updates of DisplayLink
   var currentDisplay: UInt32?
@@ -175,7 +175,7 @@ class VideoView: NSView {
 
   // TODO: figure out why this 2px adjustment is necessary
   func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
-    player.log.verbose("Contraining videoView for windowed mode")
+    player.log.verbose("Contraining videoView for fixed offsets only")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
                        eqIsActive: true, eqPriority: .defaultHigh,
@@ -187,6 +187,7 @@ class VideoView: NSView {
   }
 
   func constrainForNormalLayout() {
+    player.log.verbose("Contraining videoView for normal layout")
     // GT + center constraints are main priority, but include EQ as hint for ideal placement
     rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,
                        gtIsActive: true, gtPriority: .required,

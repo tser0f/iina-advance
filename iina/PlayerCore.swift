@@ -357,19 +357,14 @@ class PlayerCore: NSObject {
     if let url = url, url.absoluteString != "stdin" {
       path = url.isFileURL ? url.path : url.absoluteString
       info.currentURL = url
-      log.debug("Opening in Player window: \(url), path: \(path)")
+      log.debug("Opening Player window for URL: \(url.absoluteString.pii.quoted), path: \(path.pii.quoted)")
     } else {
       path = "-"
       info.currentURL = URL(string: "stdin")!
+      log.debug("Opening Player window for stdin")
     }
-    log.debug("Opening in Player window: \(path.pii.quoted)")
     // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
     info.currentFolder = nil
-
-    let _ = windowController.window  /// Kicks off `windowDidLoad()`
-    (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
-
-    windowController.openWindow()
 
     // Send load file command
     info.fileLoading = true
@@ -377,6 +372,10 @@ class PlayerCore: NSObject {
     // Reset state flags
     isStopping = false
     isStopped = false
+
+    (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
+
+    windowController.openWindow()
 
     mpv.command(.loadfile, args: [path])
 

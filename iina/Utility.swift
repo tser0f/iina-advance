@@ -520,12 +520,12 @@ class Utility {
       startTime = CFAbsoluteTimeGetCurrent()
     }
 
-    var msElapsed: Float {
-      return Float((Int((CFAbsoluteTimeGetCurrent() - startTime) * 1000 * 100))) / 100.0
+    var msElapsed: Double {
+      return (CFAbsoluteTimeGetCurrent() - startTime) * 1000
     }
 
     var description: String {
-      return "\(msElapsed)"
+      return msElapsed.string2f
     }
   }
 

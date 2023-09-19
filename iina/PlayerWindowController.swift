@@ -756,45 +756,25 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func windowDidLoad() {
+    log.verbose("PlayerWindow windowDidLoad starting")
     super.windowDidLoad()
-    Logger.log("PlayerWindow loaded", level: .verbose, subsystem: player.subsystem)
     loaded = true
 
     guard let window = window else { return }
+    guard let cv = window.contentView else { return }
 
     window.initialFirstResponder = nil
     window.titlebarAppearsTransparent = true
 
     setMaterial(Preference.enum(for: .themeMaterial))
 
-    addObserver(to: .default, forName: .iinaMediaTitleChanged, object: player) { [unowned self] _ in
-      self.updateTitle()
-    }
-
     leftLabel.mode = .current
     rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
 
     updateVolumeUI()
 
-    PlayerWindowController.playerWindowPrefKeys.forEach { key in
-      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
-    }
-
-    addObserver(to: .default, forName: .iinaFileLoaded, object: player) { [unowned self] _ in
-      self.updateTitle()
-    }
-
-    NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: nil) { [unowned self] _ in
-      if Preference.bool(for: .pauseWhenGoesToSleep) {
-        self.player.pause()
-      }
-    }
-
-    if #available(macOS 10.15, *) {
-      addObserver(to: .default, forName: NSScreen.colorSpaceDidChangeNotification, object: nil) { [unowned self] noti in
-        player.refreshEdrMode()
-      }
-    }
+    // size
+    window.minSize = AppData.minVideoSize
 
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
@@ -815,16 +795,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     addTitleBarAccessoryViews()
 
-    // size
-    window.minSize = AppData.minVideoSize
-
     // osc views
     oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
 
     updateArrowButtonImages()
 
     // video view
-    guard let cv = window.contentView else { return }
 
     // gesture recognizers
     rotationHandler.windowControllerController = self
@@ -885,8 +861,24 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // add notification observers
 
+    addObserver(to: .default, forName: .iinaMediaTitleChanged, object: player) { [unowned self] _ in
+      self.updateTitle()
+    }
+
     addObserver(to: .default, forName: .iinaFileLoaded, object: player) { [unowned self] _ in
-      self.quickSettingView.reload()
+      self.updateTitle()
+    }
+
+    NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: nil) { [unowned self] _ in
+      if Preference.bool(for: .pauseWhenGoesToSleep) {
+        self.player.pause()
+      }
+    }
+
+    if #available(macOS 10.15, *) {
+      addObserver(to: .default, forName: NSScreen.colorSpaceDidChangeNotification, object: nil) { [unowned self] noti in
+        player.refreshEdrMode()
+      }
     }
 
     /// The `iinaFileLoaded` event is useful here because it is posted after `fileLoaded`.
@@ -895,8 +887,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     addObserver(to: .default, forName: .iinaFileLoaded, object: player) { [self] note in
       guard let player = note.object as? PlayerCore else { return }
       log.verbose("Got iinaFileLoaded notification for player\(player.label)")
+
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
+
+      quickSettingView.reload()
 
       refreshDefaultAlbumArtVisibility()
 
@@ -905,8 +900,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
+    // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
-      // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
 
       // FIXME: this also handles the case where Dock was shown/hidden! Need to update window sizes accordingly
 
@@ -943,6 +938,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let seconds = self.percentToSeconds(self.playSlider.abLoopB.doubleValue)
       self.player.abLoopB = seconds
       self.player.sendOSD(.abLoopUpdate(.bSet, VideoTime(seconds).stringRepresentation))
+    }
+
+    PlayerWindowController.playerWindowPrefKeys.forEach { key in
+      UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
 
     log.verbose("PlayerWindow windowDidLoad done")
@@ -999,6 +998,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// to this window. Will do nothing if it's already there.
   func addVideoViewToWindow() {
     guard !videoContainerView.subviews.contains(videoView) else { return }
+    player.log.verbose("Adding videoView to videoContainerView")
     /// Make sure `defaultAlbumArtView` stays above `videoView`
     videoContainerView.addSubview(videoView, positioned: .below, relativeTo: defaultAlbumArtView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
@@ -1602,8 +1602,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Window delegate: Open / Close
 
   func openWindow() {
-    isClosing = false
     guard let window = self.window, let cv = window.contentView else { return }
+    isClosing = false
+
+    log.verbose("PlayerWindow openWindow starting")
 
     // Must workaround an AppKit defect in some versions of macOS. This defect is known to exist in
     // Catalina and Big Sur. The problem was not reproducible in early versions of Monterey. It
@@ -1676,6 +1678,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     showWindow(nil)
 
     videoView.startDisplayLink()
+    log.verbose("PlayerWindow openWindow done")
   }
 
   func windowWillClose(_ notification: Notification) {

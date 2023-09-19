@@ -585,7 +585,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   func showWelcomeWindow() {
     Logger.log("Showing WelcomeWindow", level: .verbose)
+    let sw = Utility.Stopwatch()
     initialWindow.reloadData()
+    Logger.log("Total WelcomeWindow reload time: \(sw) ms")
     initialWindow.showWindow(nil)
   }
 
