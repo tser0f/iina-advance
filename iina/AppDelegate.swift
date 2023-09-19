@@ -634,7 +634,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       // Check whether this is the last player closed; show welcome or history window if configured.
       // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
       if player.isOnlyOpenPlayer {
-        Logger.log("Window was last player window open", level: .verbose, subsystem: player.subsystem)
+        player.log.verbose("Window was last player window open: \(window.uiStateSaveName.quoted)")
         doActionWhenLastWindowWillClose()
         return
       }

@@ -869,12 +869,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       self.updateTitle()
     }
 
-    NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: nil) { [unowned self] _ in
-      if Preference.bool(for: .pauseWhenGoesToSleep) {
-        self.player.pause()
-      }
-    }
-
     if #available(macOS 10.15, *) {
       addObserver(to: .default, forName: NSScreen.colorSpaceDidChangeNotification, object: nil) { [unowned self] noti in
         player.refreshEdrMode()
@@ -938,6 +932,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let seconds = self.percentToSeconds(self.playSlider.abLoopB.doubleValue)
       self.player.abLoopB = seconds
       self.player.sendOSD(.abLoopUpdate(.bSet, VideoTime(seconds).stringRepresentation))
+    }
+
+    NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: nil) { [unowned self] _ in
+      if Preference.bool(for: .pauseWhenGoesToSleep) {
+        self.player.pause()
+      }
     }
 
     PlayerWindowController.playerWindowPrefKeys.forEach { key in
@@ -1660,24 +1660,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     updateBufferIndicatorView()
     updateOSDPosition()
 
-    addVideoViewToWindow()
-    log.verbose("Hiding defaultAlbumArt for window open")
-    defaultAlbumArtView.isHidden = true
-
-    window.setIsVisible(true)
-    player.initVideo()
-    videoView.videoLayer.draw(forced: true)
-
     // Restore layout from last launch or configure from prefs. Do not animate, but run inside animationQueue
-    animationQueue.runZeroDuration({ [self] in
+    animationQueue.run(CocoaAnimation.Task({ [self] in
+      addVideoViewToWindow()
+      log.verbose("Hiding defaultAlbumArt for window open")
+      defaultAlbumArtView.isHidden = true
+
+      // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
+      log.verbose("Showing Player Window")
+      window.setIsVisible(true)
+
       setInitialWindowLayout()
-    })
 
-    log.verbose("Showing Player Window")
-    // FIXME: delay until after fileLoaded. We don't know the video dimensions yet!
-    showWindow(nil)
+      player.initVideo()
+      videoView.videoLayer.draw(forced: true)
+      videoView.startDisplayLink()
+    }))
 
-    videoView.startDisplayLink()
     log.verbose("PlayerWindow openWindow done")
   }
 

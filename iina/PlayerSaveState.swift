@@ -264,19 +264,19 @@ struct PlayerSaveState {
 
   static func save(_ player: PlayerCore) {
     guard Preference.UIState.isSaveEnabled else { return }
-    guard player.windowController.loaded else {
-      player.log.debug("Skipping player state save: player window is not loaded")
-      return
-    }
-    guard !player.info.isRestoring else {
-//      player.log.verbose("Skipping player state save: still restoring previous state")
-      return
-    }
-    guard !player.isShuttingDown else {
-      player.log.warn("Skipping player state save: is shutting down")
-      return
-    }
     DispatchQueue.main.async {
+      guard player.windowController.loaded else {
+        player.log.debug("Skipping player state save: player window is not loaded")
+        return
+      }
+      guard !player.info.isRestoring else {
+  //      player.log.verbose("Skipping player state save: still restoring previous state")
+        return
+      }
+      guard !player.isShuttingDown else {
+        player.log.warn("Skipping player state save: is shutting down")
+        return
+      }
       let properties = generatePropDict(from: player)
 //      player.log.verbose("Saving player state: \(properties)")
       Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)

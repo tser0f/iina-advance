@@ -374,7 +374,6 @@ class PlayerCore: NSObject {
     isStopped = false
 
     (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
-
     windowController.openWindow()
 
     mpv.command(.loadfile, args: [path])
@@ -1445,9 +1444,6 @@ class PlayerCore: NSObject {
     let url = info.currentURL
     let message = (info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
     sendOSD(.fileStart(message))
-    DispatchQueue.main.async { [self] in
-      windowController.playlistView.scrollPlaylistToCurrentItem()
-    }
   }
 
   /** This function is called right after file loaded. Should load all meta info here. */
@@ -1465,11 +1461,24 @@ class PlayerCore: NSObject {
     // Kick off thumbnails load/gen - it can happen in background
     reloadThumbnails()
 
+    // add to history
+    if let url = info.currentURL {
+      let duration = info.videoDuration ?? .zero
+      HistoryController.shared.queue.async {
+        HistoryController.shared.add(url, duration: duration.second)
+
+        if Preference.bool(for: .recordRecentFiles) && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
+          NSDocumentController.shared.noteNewRecentDocumentURL(url)
+        }
+      }
+    }
+
     checkUnsyncedWindowOptions()
     // call `trackListChanged` to load tracks and check whether need to switch to music mode
     trackListChanged()
+
     // main thread stuff
-    DispatchQueue.main.sync {
+    DispatchQueue.main.async { [self] in
       reloadPlaylist()
       reloadChapters()
       syncAbLoop()
@@ -1477,21 +1486,12 @@ class PlayerCore: NSObject {
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
       }
-    }
-    if Preference.bool(for: .fullScreenWhenOpen) && !windowController.isFullScreen && !isInMiniPlayer {
-      Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
-      DispatchQueue.main.async(execute: self.windowController.enterFullScreen)
-    }
-    // add to history
-    if let url = info.currentURL {
-      let duration = info.videoDuration ?? .zero
-      HistoryController.shared.queue.async {
-        HistoryController.shared.add(url, duration: duration.second)
-      }
-      if Preference.bool(for: .recordRecentFiles) && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
-        NSDocumentController.shared.noteNewRecentDocumentURL(url)
-      }
+      windowController.playlistView.scrollPlaylistToCurrentItem()
 
+      if Preference.bool(for: .fullScreenWhenOpen) && !windowController.isFullScreen && !isInMiniPlayer {
+        Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
+        windowController.enterFullScreen()
+      }
     }
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")

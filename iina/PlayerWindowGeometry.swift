@@ -241,7 +241,7 @@ struct PlayerWindowGeometry: Equatable {
   func scale(desiredVideoContainerSize: NSSize? = nil,
              constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> PlayerWindowGeometry {
     var newVidConSize = desiredVideoContainerSize ?? videoContainerSize
-    Logger.log("Scaling PlayerWindowGeometry newVidConSize: \(newVidConSize)", level: .verbose)
+    Logger.log("Scaling PlayerWindowGeometry newVidConSize: \(newVidConSize), allowEmptySpace=\(allowEmptySpaceAroundVideo.yn)", level: .verbose)
 
     /// Make sure `videoContainerSize` is at least as large as `minVideoSize`:
     newVidConSize = constrainAboveMin(desiredVideoContainerSize: newVidConSize)
@@ -251,11 +251,9 @@ struct PlayerWindowGeometry: Equatable {
       newVidConSize = constrainBelowMax(desiredVideoContainerSize: newVidConSize, maxSize: containerFrame.size)
     }
 
-    /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
-    let newVideoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newVidConSize)
-
     if !allowEmptySpaceAroundVideo {
-      newVidConSize = newVideoSize
+      /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
+      newVidConSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newVidConSize)
     }
 
     let outsideBarsSize = self.outsideBarsTotalSize
@@ -271,19 +269,20 @@ struct PlayerWindowGeometry: Equatable {
     // Move window if needed to make sure the window is not offscreen
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
     if let containerFrame = containerFrame {
+      Logger.log("Constraining PlayerWindowGeometry in containerFrame=\(containerFrame)", level: .verbose)
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
       if centerInContainer {
         newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)
       }
     }
 
-    Logger.log("Scaled PlayerWindowGeometry result: \(newWindowFrame)", level: .verbose)
+    Logger.log("Done scaling PlayerWindowGeometry. Result winFrame: \(newWindowFrame)", level: .verbose)
     return self.clone(windowFrame: newWindowFrame)
   }
 
   func scale(desiredVideoSize: NSSize,
              constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> PlayerWindowGeometry {
-    Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize)", level: .debug)
+    Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio)", level: .debug)
     var newVideoSize = desiredVideoSize
 
     let newWidth = max(minVideoWidth, desiredVideoSize.width)
@@ -521,7 +520,7 @@ extension PlayerWindowController {
 
       /// Finally call `setFrame()`
       log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), oldVideoSize: \(oldVideoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-      applyWindowGeometry(newWindowGeo, enqueueAnimation: false, setFrameImmediately: false)
+      applyWindowGeometry(newWindowGeo)
 
       if !isFullScreen {
         // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
