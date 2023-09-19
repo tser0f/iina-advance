@@ -622,7 +622,7 @@ extension PlayerWindowController {
       }
 
       if let priorMusicModeGeometry = priorState.musicModeGeometry {
-        log.debug("Restoring music mode windowFrame to \(priorMusicModeGeometry.windowFrame), video=\(priorMusicModeGeometry.isVideoVisible.yn) playlist=\(priorMusicModeGeometry.isPlaylistVisible.yn)")
+        log.debug("Restoring \(priorMusicModeGeometry)")
         musicModeGeometry = priorMusicModeGeometry
       } else {
         log.error("Failed to get player window layout and/or geometry from prefs")
@@ -683,11 +683,11 @@ extension PlayerWindowController {
       openNewPanelsAndFinalizeOffsets(transition)
       fadeInNewViews(transition)
       doPostTransitionWork(transition)
-      log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
       log.verbose("Done with transition to initial layout")
     }
 
     animationQueue.run(CocoaAnimation.Task({ [self] in
+      log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
       player.window.setFrameImmediately(initialGeometry!.windowFrame)
     }))
 
@@ -893,8 +893,13 @@ extension PlayerWindowController {
     currentLayout = transition.toLayout
 
     /// Set this here because we are setting `currentLayout`
-    if transition.toLayout.spec.mode == .windowed {
+    switch transition.toLayout.spec.mode {
+    case .windowed:
       windowedModeGeometry = transition.toWindowGeometry
+    case .musicMode:
+      musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.toWindowGeometry.windowFrame, videoAspectRatio: transition.toWindowGeometry.videoAspectRatio)
+    case .fullScreen:
+      break
     }
 
     guard let window = window else { return }

@@ -195,8 +195,8 @@ class VideoView: NSView {
   }
 
   func updateSizeConstraints(_ size: CGSize) {
-    widthConstraint.constant = size.width
-    heightConstraint.constant = size.height
+    widthConstraint.animateToConstant(size.width)
+    heightConstraint.animateToConstant(size.height)
   }
 
   // MARK: - Mouse events

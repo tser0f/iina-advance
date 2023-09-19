@@ -649,18 +649,27 @@ extension PlayerWindowController {
   func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry,
                            updateCache: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
 
-    animationQueue.runZeroDuration{ [self] in
-      // Put this in a separate animation task for a nicer looking transition
-      videoView.updateSizeConstraints(newGeometry.videoSize)
-    }
-
     animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-      applyWindowGeometryWithoutEnqueuing(newGeometry, updateCache: updateCache, animate: animate, setFrameImmediately: setFrameImmediately)
+      // Make sure this is up-to-date
+      videoView.updateSizeConstraints(newGeometry.videoSize)
+      
+      _applyWindowGeometryInternal(newGeometry, updateCache: updateCache, animate: animate, setFrameImmediately: setFrameImmediately)
     }))
   }
 
   func applyWindowGeometryWithoutEnqueuing(_ newGeometry: PlayerWindowGeometry,
                                            updateCache: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
+    CocoaAnimation.disableAnimation{
+      // Make sure this is up-to-date
+      videoView.updateSizeConstraints(newGeometry.videoSize)
+    }
+
+    _applyWindowGeometryInternal(newGeometry, updateCache: updateCache, animate: animate, setFrameImmediately: setFrameImmediately)
+  }
+
+  private func _applyWindowGeometryInternal(_ newGeometry: PlayerWindowGeometry,
+                                           updateCache: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
+
     let needsSave = updateCache && !currentLayout.isMusicMode
     if needsSave {
       windowedModeGeometry = newGeometry
@@ -669,9 +678,6 @@ extension PlayerWindowController {
 
     // Update video aspect ratio
     videoAspectRatio = newGeometry.videoAspectRatio
-
-    // Make sure this is up-to-date
-    videoView.updateSizeConstraints(newGeometry.videoSize)
 
     if isFullScreen {
       log.verbose("Skipping update to windowFrame because window is in full screen")
@@ -705,7 +711,9 @@ extension PlayerWindowController {
     }
 
     let newGeo = tryToResizeWindow(window, to: requestedSize)
-    videoView.updateSizeConstraints(newGeo.videoSize)
+    CocoaAnimation.disableAnimation{
+      videoView.updateSizeConstraints(newGeo.videoSize)
+    }
 
     updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
     return newGeo.windowFrame.size
@@ -868,6 +876,7 @@ extension PlayerWindowController {
       let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: windowedModeGeometry.videoContainerSize)
       videoView.updateSizeConstraints(videoSize)
       updateWindowParametersForMPV()
+      player.saveState()
     case .musicMode:
       miniPlayer.windowDidEndLiveResize()
     default:

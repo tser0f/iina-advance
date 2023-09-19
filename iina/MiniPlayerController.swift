@@ -407,7 +407,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // FIXME: find fix for horizontal text flicker when moving in playlist
 
     CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
-      let newGeometry = windowController.musicModeGeometry.clone(windowFrame: window.frame, videoAspectRatio: newVideoAspectRatio)
+      /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio (unless it doesn't fit in screen; see `apply()`)
+      let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
       apply(newGeometry)
       log.verbose("Updating music mode geometry for video change")
     })
