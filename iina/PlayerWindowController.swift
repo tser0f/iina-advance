@@ -2388,15 +2388,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
 
   func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
-    if #available(macOS 10.14, *) {
-      window?.backgroundColor = .windowBackgroundColor
-    } else {
-      window?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1)
-    }
-
     guard let origVideoSize = player.videoBaseDisplaySize, origVideoSize.width != 0 && origVideoSize.height != 0 else {
       Utility.showAlert("no_video_track")
       return
+    }
+    guard let window = self.window else { return }
+
+    if #available(macOS 10.14, *) {
+      videoContainerView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+    } else {
+      videoContainerView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
     }
 
     // TODO: use key interceptor to support ESC and ENTER keys for interactive mode
@@ -2414,7 +2415,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Now animate into Interactive Mode:
     animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.CropAnimationDuration, timing: .easeIn, { [self] in
-      guard let window = self.window else { return }
 
       hideFadeableViews()
       hideOSD()
@@ -2495,7 +2495,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       self.showFadeableViews(duration: 0)
-      window?.backgroundColor = .black
+      videoContainerView.layer?.backgroundColor = .black
 
       if !isPausedPriorToInteractiveMode {
         player.resume()

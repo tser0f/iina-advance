@@ -274,6 +274,7 @@ class VideoView: NSView {
   // MARK: Display link
 
   func startDisplayLink() {
+    player.log.verbose("Starting DisplayLink")
     if link == nil {
       checkResult(CVDisplayLinkCreateWithActiveCGDisplays(&link),
                   "CVDisplayLinkCreateWithActiveCGDisplays")
@@ -290,6 +291,7 @@ class VideoView: NSView {
 
   @objc func stopDisplayLink() {
     guard let link = link, CVDisplayLinkIsRunning(link) else { return }
+    player.log.verbose("Stopping DisplayLink")
     checkResult(CVDisplayLinkStop(link), "CVDisplayLinkStop")
   }
 
