@@ -451,7 +451,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Query for the list of open windows and save it.
     // Don't do this too soon, or their orderIndexes may not yet be up to date.
     DispatchQueue.main.async {
-      Preference.UIState.saveOpenWindowList(windowNamesBackToFront: self.getCurrentOpenWindowNames())
+      Preference.UIState.saveCurrentOpenWindowList()
     }
   }
 
@@ -583,20 +583,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     return true
   }
 
-  private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {
-    var orderNamePairs: [(Int, String)] = []
-    for window in NSApp.windows {
-      let name = window.frameAutosaveName
-      if !name.isEmpty && window.isVisible {
-        if let nameToExclude = nameToExclude, nameToExclude == name {
-          continue
-        }
-        orderNamePairs.append((window.orderedIndex, name))
-      }
-    }
-    return orderNamePairs.sorted(by: { (left, right) in left.0 > right.0}).map{ $0.1 }
-  }
-
   func showWelcomeWindow() {
     Logger.log("Showing WelcomeWindow", level: .verbose)
     initialWindow.reloadData()
@@ -637,8 +623,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     /// Query for the list of open windows and save it (excluding the window which is about to close).
     /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
     /// the user closes a window which is not in the foreground.
-    let openWindowNamesNew = self.getCurrentOpenWindowNames(excludingWindowName: window.frameAutosaveName)
-    Preference.UIState.saveOpenWindowList(windowNamesBackToFront: openWindowNamesNew)
+    Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.uiStateSaveName)
 
     // Player window was closed? Need to remove some additional state
     if let player = (window.windowController as? PlayerWindowController)?.player {
@@ -655,7 +640,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     if window.isOnlyOpenWindow() {
       let quitForAction: Preference.ActionWhenNoOpenedWindow?
-      switch window.frameAutosaveName {
+      switch window.uiStateSaveName {
       case WindowAutosaveName.playbackHistory.string:
         quitForAction = .historyWindow
       case WindowAutosaveName.welcome.string:

@@ -67,7 +67,26 @@ extension Preference {
       return csv.components(separatedBy: ",").map{ $0.trimmingCharacters(in: .whitespaces)}
     }
 
-    static func saveOpenWindowList(windowNamesBackToFront: [String]) {
+    static private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {
+      var orderNamePairs: [(Int, String)] = []
+      for window in NSApp.windows {
+        let name = window.uiStateSaveName
+        if !name.isEmpty && window.isVisible {
+          if let nameToExclude = nameToExclude, nameToExclude == name {
+            continue
+          }
+          orderNamePairs.append((window.orderedIndex, name))
+        }
+      }
+      return orderNamePairs.sorted(by: { (left, right) in left.0 > right.0}).map{ $0.1 }
+    }
+
+    static func saveCurrentOpenWindowList(excludingWindowName nameToExclude: String? = nil) {
+      let openWindowNames = self.getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
+      saveOpenWindowList(windowNamesBackToFront: openWindowNames)
+    }
+
+    static private func saveOpenWindowList(windowNamesBackToFront: [String]) {
       guard isSaveEnabled else { return }
 //      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
       let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")

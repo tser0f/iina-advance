@@ -748,8 +748,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   init(playerCore: PlayerCore) {
     self.player = playerCore
     super.init(window: nil)
-    self.windowFrameAutosaveName = WindowAutosaveName.mainPlayer(id: playerCore.label).string
-    log.verbose("PlayerWindowController init, autosaveName: \(self.windowFrameAutosaveName.quoted)")
+    log.verbose("PlayerWindowController init")
   }
 
   required init?(coder: NSCoder) {

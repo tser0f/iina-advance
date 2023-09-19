@@ -883,6 +883,15 @@ extension NSScreen {
 }
 
 extension NSWindow {
+  /// Provides a unique window ID for reference by `UIState`.
+  var uiStateSaveName: String {
+    if let playerController = windowController as? PlayerWindowController {
+      // Not using AppKit autosave for player windows. Instead build ID based on player label
+      return WindowAutosaveName.mainPlayer(id: playerController.player.label).string
+    }
+    // Default to the AppKit autosave ID.
+    return frameAutosaveName
+  }
 
   /// Return the screen to use by default for this window.
   ///
@@ -913,7 +922,7 @@ extension NSWindow {
   /// Excludes the Inspector window
   func isOnlyOpenWindow() -> Bool {
     for window in NSApp.windows {
-      if window != self && window.isVisible && window.frameAutosaveName != WindowAutosaveName.inspector.string {
+      if window != self && window.isVisible && window.uiStateSaveName != WindowAutosaveName.inspector.string {
         return false
       }
     }
@@ -923,7 +932,7 @@ extension NSWindow {
 
   func isImportant() -> Bool {
     // All the windows we care about have autosave names
-    return !self.frameAutosaveName.isEmpty
+    return !uiStateSaveName.isEmpty
   }
 
   func isOpen() -> Bool {

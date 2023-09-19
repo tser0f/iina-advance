@@ -685,9 +685,12 @@ extension PlayerWindowController {
       fadeInNewViews(transition)
       doPostTransitionWork(transition)
       log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
-      player.window.setFrameImmediately(initialGeometry!.windowFrame)
       log.verbose("Done with transition to initial layout")
     }
+
+    animationQueue.run(CocoaAnimation.Task({ [self] in
+      player.window.setFrameImmediately(initialGeometry!.windowFrame)
+    }))
 
     if Preference.bool(for: .alwaysFloatOnTop) {
       log.verbose("Setting window to OnTop per app preference")
