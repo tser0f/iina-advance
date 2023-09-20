@@ -432,8 +432,8 @@ extension PlayerWindowController {
 
   class LayoutTransition {
     let name: String  // just used for debugging
-    let fromLayout: LayoutState
-    let toLayout: LayoutState
+    let inputLayout: LayoutState
+    let outputLayout: LayoutState
     let fromWindowGeometry: PlayerWindowGeometry
     var middleGeometry: PlayerWindowGeometry?
     let toWindowGeometry: PlayerWindowGeometry
@@ -442,43 +442,43 @@ extension PlayerWindowController {
 
     var animationTasks: [CocoaAnimation.Task] = []
 
-    init(name: String, from fromLayout: LayoutState, from startGeometry: PlayerWindowGeometry,
-         to toLayout: LayoutState, to endGeometry: PlayerWindowGeometry,
+    init(name: String, from inputLayout: LayoutState, from inputGeometry: PlayerWindowGeometry,
+         to outputLayout: LayoutState, to outputGeometry: PlayerWindowGeometry,
          middleGeometry: PlayerWindowGeometry? = nil,
          isInitialLayout: Bool = false) {
       self.name = name
-      self.fromLayout = fromLayout
-      self.fromWindowGeometry = startGeometry
+      self.inputLayout = inputLayout
+      self.fromWindowGeometry = inputGeometry
       self.middleGeometry = middleGeometry
-      self.toLayout = toLayout
-      self.toWindowGeometry = endGeometry
+      self.outputLayout = outputLayout
+      self.toWindowGeometry = outputGeometry
       self.isInitialLayout = isInitialLayout
     }
 
     var isOSCChanging: Bool {
-      return (fromLayout.enableOSC != toLayout.enableOSC) || (fromLayout.oscPosition != toLayout.oscPosition)
+      return (inputLayout.enableOSC != outputLayout.enableOSC) || (inputLayout.oscPosition != outputLayout.oscPosition)
     }
 
     var needsFadeOutOldViews: Bool {
       return isTogglingLegacyWindowStyle || isTopBarPlacementChanging
-      || (fromLayout.spec.mode != toLayout.spec.mode)
-      || (fromLayout.bottomBarPlacement == .insideVideo && toLayout.bottomBarPlacement == .outsideVideo)
-      || (fromLayout.enableOSC != toLayout.enableOSC)
-      || (fromLayout.enableOSC && (fromLayout.oscPosition != toLayout.oscPosition))
-      || (fromLayout.leadingSidebarToggleButton.isShowable && !toLayout.leadingSidebarToggleButton.isShowable)
-      || (fromLayout.trailingSidebarToggleButton.isShowable && !toLayout.trailingSidebarToggleButton.isShowable)
-      || (fromLayout.pinToTopButton.isShowable && !toLayout.pinToTopButton.isShowable)
+      || (inputLayout.spec.mode != outputLayout.spec.mode)
+      || (inputLayout.bottomBarPlacement == .insideVideo && outputLayout.bottomBarPlacement == .outsideVideo)
+      || (inputLayout.enableOSC != outputLayout.enableOSC)
+      || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
+      || (inputLayout.leadingSidebarToggleButton.isShowable && !outputLayout.leadingSidebarToggleButton.isShowable)
+      || (inputLayout.trailingSidebarToggleButton.isShowable && !outputLayout.trailingSidebarToggleButton.isShowable)
+      || (inputLayout.pinToTopButton.isShowable && !outputLayout.pinToTopButton.isShowable)
     }
 
     var needsFadeInNewViews: Bool {
       return isTogglingLegacyWindowStyle || isTopBarPlacementChanging
-      || (fromLayout.spec.mode != toLayout.spec.mode)
-      || (fromLayout.bottomBarPlacement == .outsideVideo && toLayout.bottomBarPlacement == .insideVideo)
-      || (fromLayout.enableOSC != toLayout.enableOSC)
-      || (toLayout.enableOSC && (fromLayout.oscPosition != toLayout.oscPosition))
-      || (!fromLayout.leadingSidebarToggleButton.isShowable && toLayout.leadingSidebarToggleButton.isShowable)
-      || (!fromLayout.trailingSidebarToggleButton.isShowable && toLayout.trailingSidebarToggleButton.isShowable)
-      || (!fromLayout.pinToTopButton.isShowable && toLayout.pinToTopButton.isShowable)
+      || (inputLayout.spec.mode != outputLayout.spec.mode)
+      || (inputLayout.bottomBarPlacement == .outsideVideo && outputLayout.bottomBarPlacement == .insideVideo)
+      || (inputLayout.enableOSC != outputLayout.enableOSC)
+      || (outputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
+      || (!inputLayout.leadingSidebarToggleButton.isShowable && outputLayout.leadingSidebarToggleButton.isShowable)
+      || (!inputLayout.trailingSidebarToggleButton.isShowable && outputLayout.trailingSidebarToggleButton.isShowable)
+      || (!inputLayout.pinToTopButton.isShowable && outputLayout.pinToTopButton.isShowable)
     }
 
     var needsCloseOldPanels: Bool {
@@ -487,58 +487,58 @@ extension PlayerWindowController {
         return false
       }
       return isHidingLeadingSidebar || isHidingTrailingSidebar || isTopBarPlacementChanging || isBottomBarPlacementChanging
-      || (fromLayout.spec.isLegacyStyle != toLayout.spec.isLegacyStyle)
-      || (fromLayout.spec.mode != toLayout.spec.mode)
-      || (fromLayout.enableOSC != toLayout.enableOSC)
-      || (fromLayout.enableOSC && (fromLayout.oscPosition != toLayout.oscPosition))
+      || (inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle)
+      || (inputLayout.spec.mode != outputLayout.spec.mode)
+      || (inputLayout.enableOSC != outputLayout.enableOSC)
+      || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
     }
 
     var isTogglingLegacyWindowStyle: Bool {
-      return fromLayout.spec.isLegacyStyle != toLayout.spec.isLegacyStyle
+      return inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle
     }
 
     var isTogglingFullScreen: Bool {
-      return fromLayout.isFullScreen != toLayout.isFullScreen
+      return inputLayout.isFullScreen != outputLayout.isFullScreen
     }
 
     var isEnteringFullScreen: Bool {
-      return !fromLayout.isFullScreen && toLayout.isFullScreen
+      return !inputLayout.isFullScreen && outputLayout.isFullScreen
     }
 
     var isExitingFullScreen: Bool {
-      return fromLayout.isFullScreen && !toLayout.isFullScreen
+      return inputLayout.isFullScreen && !outputLayout.isFullScreen
     }
 
     var isExitingLegacyFullScreen: Bool {
-      return isExitingFullScreen && fromLayout.isLegacyFullScreen
+      return isExitingFullScreen && inputLayout.isLegacyFullScreen
     }
 
     var isEnteringMusicMode: Bool {
-      return !fromLayout.isMusicMode && toLayout.isMusicMode
+      return !inputLayout.isMusicMode && outputLayout.isMusicMode
     }
 
     var isExitingMusicMode: Bool {
-      return fromLayout.isMusicMode && !toLayout.isMusicMode
+      return inputLayout.isMusicMode && !outputLayout.isMusicMode
     }
 
     var isTogglingMusicMode: Bool {
-      return fromLayout.isMusicMode != toLayout.isMusicMode
+      return inputLayout.isMusicMode != outputLayout.isMusicMode
     }
 
     var isTopBarPlacementChanging: Bool {
-      return fromLayout.topBarPlacement != toLayout.topBarPlacement
+      return inputLayout.topBarPlacement != outputLayout.topBarPlacement
     }
 
     var isBottomBarPlacementChanging: Bool {
-      return fromLayout.bottomBarPlacement != toLayout.bottomBarPlacement
+      return inputLayout.bottomBarPlacement != outputLayout.bottomBarPlacement
     }
 
     var isLeadingSidebarPlacementChanging: Bool {
-      return fromLayout.leadingSidebarPlacement != toLayout.leadingSidebarPlacement
+      return inputLayout.leadingSidebarPlacement != outputLayout.leadingSidebarPlacement
     }
 
     var isTrailingSidebarPlacementChanging: Bool {
-      return fromLayout.trailingSidebarPlacement != toLayout.trailingSidebarPlacement
+      return inputLayout.trailingSidebarPlacement != outputLayout.trailingSidebarPlacement
     }
 
     lazy var isShowingLeadingSidebar: Bool = {
@@ -563,8 +563,8 @@ extension PlayerWindowController {
 
     /// Is opening given sidebar?
     func isShowing(_ sidebarID: Preference.SidebarLocation) -> Bool {
-      let oldState = fromLayout.sidebar(withID: sidebarID)
-      let newState = toLayout.sidebar(withID: sidebarID)
+      let oldState = inputLayout.sidebar(withID: sidebarID)
+      let newState = outputLayout.sidebar(withID: sidebarID)
       if !oldState.isVisible && newState.isVisible {
         return true
       }
@@ -573,8 +573,8 @@ extension PlayerWindowController {
 
     /// Is closing given sidebar?
     func isHiding(_ sidebarID: Preference.SidebarLocation) -> Bool {
-      let oldState = fromLayout.sidebar(withID: sidebarID)
-      let newState = toLayout.sidebar(withID: sidebarID)
+      let oldState = inputLayout.sidebar(withID: sidebarID)
+      let newState = outputLayout.sidebar(withID: sidebarID)
       if oldState.isVisible {
         if !newState.isVisible {
           return true
@@ -592,8 +592,8 @@ extension PlayerWindowController {
     }
 
     func isHidingAndThenShowing(_ sidebarID: Preference.SidebarLocation) -> Bool {
-      let oldState = fromLayout.sidebar(withID: sidebarID)
-      let newState = toLayout.sidebar(withID: sidebarID)
+      let oldState = inputLayout.sidebar(withID: sidebarID)
+      let newState = outputLayout.sidebar(withID: sidebarID)
       if oldState.isVisible && newState.isVisible {
         if oldState.placement != newState.placement {
           return true
@@ -666,7 +666,7 @@ extension PlayerWindowController {
       initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     }
 
-    let initialLayout = buildFutureLayoutState(from: initialLayoutSpec)
+    let initialLayout = buildOutputLayoutState(from: initialLayoutSpec)
 
     if initialGeometry == nil {
       log.verbose("Building initial geometry from current window")
@@ -742,28 +742,28 @@ extension PlayerWindowController {
   /// which contains all the information needed to animate the UI changes from the current `LayoutState` to the new one.
   @discardableResult
   func buildLayoutTransition(named transitionName: String,
-                             from fromLayout: LayoutState,
-                             to requestedSpec: LayoutSpec,
+                             from inputLayout: LayoutState,
+                             to outputSpec: LayoutSpec,
                              totalStartingDuration: CGFloat? = nil,
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
-    let toLayout = buildFutureLayoutState(from: requestedSpec)
+    let outputLayout = buildOutputLayoutState(from: outputSpec)
 
     // FromGeometry
-    let startGeometry: PlayerWindowGeometry
-    if fromLayout.isMusicMode {
-      startGeometry = musicModeGeometry.toPlayerWindowGeometry()
+    let inputGeometry: PlayerWindowGeometry
+    if inputLayout.isMusicMode {
+      inputGeometry = musicModeGeometry.toPlayerWindowGeometry()
     } else {
-      startGeometry = windowedModeGeometry
+      inputGeometry = windowedModeGeometry
     }
 
     // ToGeometry
-    let endGeometry: PlayerWindowGeometry = buildEndGeometry(oldGeometry: startGeometry, futureLayout: toLayout)
+    let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(oldGeometry: inputGeometry, outputLayout: outputLayout)
 
     let transition = LayoutTransition(name: transitionName,
-                                      from: fromLayout, from: startGeometry,
-                                      to: toLayout, to: endGeometry,
+                                      from: inputLayout, from: inputGeometry,
+                                      to: outputLayout, to: outputGeometry,
                                       isInitialLayout: false)
 
     // MiddleGeometry (after closed panels step)
@@ -872,8 +872,8 @@ extension PlayerWindowController {
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildEndGeometry(oldGeometry oldGeo: PlayerWindowGeometry, futureLayout: LayoutState) -> PlayerWindowGeometry {
-    switch futureLayout.spec.mode {
+  private func buildOutputGeometry(oldGeometry oldGeo: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
+    switch outputLayout.spec.mode {
 
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
@@ -889,24 +889,24 @@ extension PlayerWindowController {
     }
 
     let bottomBarHeight: CGFloat
-    if futureLayout.enableOSC && futureLayout.oscPosition == .bottom {
+    if outputLayout.enableOSC && outputLayout.oscPosition == .bottom {
       bottomBarHeight = OSCToolbarButton.oscBarHeight
     } else {
       bottomBarHeight = 0
     }
 
-    let insideTopBarHeight = futureLayout.topBarPlacement == .insideVideo ? futureLayout.topBarHeight : 0
-    let insideBottomBarHeight = futureLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
-    let outsideBottomBarHeight = futureLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
+    let insideTopBarHeight = outputLayout.topBarPlacement == .insideVideo ? outputLayout.topBarHeight : 0
+    let insideBottomBarHeight = outputLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
+    let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
 
-    let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: futureLayout.topBarOutsideHeight,
-                                                      outsideTrailingBarWidth: futureLayout.trailingBarOutsideWidth,
+    let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.topBarOutsideHeight,
+                                                      outsideTrailingBarWidth: outputLayout.trailingBarOutsideWidth,
                                                       outsideBottomBarHeight: outsideBottomBarHeight,
-                                                      outsideLeadingBarWidth: futureLayout.leadingBarOutsideWidth,
+                                                      outsideLeadingBarWidth: outputLayout.leadingBarOutsideWidth,
                                                       insideTopBarHeight: insideTopBarHeight,
-                                                      insideTrailingBarWidth: futureLayout.trailingBarInsideWidth,
+                                                      insideTrailingBarWidth: outputLayout.trailingBarInsideWidth,
                                                       insideBottomBarHeight: insideBottomBarHeight,
-                                                      insideLeadingBarWidth: futureLayout.leadingBarInsideWidth,
+                                                      insideLeadingBarWidth: outputLayout.leadingBarInsideWidth,
                                                       videoAspectRatio: videoAspectRatio,
                                                       constrainedWithin: bestScreen.visibleFrame)
 
@@ -946,13 +946,13 @@ extension PlayerWindowController {
     let topBarHeight: CGFloat
     if !transition.isInitialLayout && transition.isTopBarPlacementChanging {
       topBarHeight = 0  // close completely. will animate reopening if needed later
-    } else if transition.toLayout.topBarHeight < transition.fromLayout.topBarHeight {
-      topBarHeight = transition.toLayout.topBarHeight
+    } else if transition.outputLayout.topBarHeight < transition.inputLayout.topBarHeight {
+      topBarHeight = transition.outputLayout.topBarHeight
     } else {
-      topBarHeight = transition.toLayout.topBarHeight  // leave the same
+      topBarHeight = transition.outputLayout.topBarHeight  // leave the same
     }
-    let insideTopBarHeight = transition.toLayout.topBarPlacement == .insideVideo ? topBarHeight : 0
-    let outsideTopBarHeight = transition.toLayout.topBarPlacement == .outsideVideo ? topBarHeight : 0
+    let insideTopBarHeight = transition.outputLayout.topBarPlacement == .insideVideo ? topBarHeight : 0
+    let outsideTopBarHeight = transition.outputLayout.topBarPlacement == .outsideVideo ? topBarHeight : 0
 
     // BOTTOM
     let insideBottomBarHeight: CGFloat
@@ -1013,10 +1013,10 @@ extension PlayerWindowController {
 
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
-    currentLayout = transition.toLayout
+    currentLayout = transition.outputLayout
 
     /// Set this here because we are setting `currentLayout`
-    switch transition.toLayout.spec.mode {
+    switch transition.outputLayout.spec.mode {
     case .windowed:
       windowedModeGeometry = transition.toWindowGeometry
     case .musicMode:
@@ -1084,7 +1084,7 @@ extension PlayerWindowController {
   }
 
   private func fadeOutOldViews(_ transition: LayoutTransition) {
-    let futureLayout = transition.toLayout
+    let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] FadeOutOldViews")
 
     // Title bar & title bar accessories:
@@ -1092,11 +1092,11 @@ extension PlayerWindowController {
     let needToHideTopBar = transition.isTopBarPlacementChanging || transition.isTogglingLegacyWindowStyle
 
     // Hide all title bar items if top bar placement is changing
-    if needToHideTopBar || futureLayout.titleIconAndText == .hidden {
+    if needToHideTopBar || outputLayout.titleIconAndText == .hidden {
       apply(visibility: .hidden, documentIconButton, titleTextField)
     }
 
-    if needToHideTopBar || futureLayout.trafficLightButtons == .hidden {
+    if needToHideTopBar || outputLayout.trafficLightButtons == .hidden {
       /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
       /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
       for button in trafficLightButtons {
@@ -1104,7 +1104,7 @@ extension PlayerWindowController {
       }
     }
 
-    if needToHideTopBar || futureLayout.titlebarAccessoryViewControllers == .hidden {
+    if needToHideTopBar || outputLayout.titlebarAccessoryViewControllers == .hidden {
       // Hide all title bar accessories (if needed):
       leadingTitleBarAccessoryView.alphaValue = 0
       fadeableViewsTopBar.remove(leadingTitleBarAccessoryView)
@@ -1115,23 +1115,23 @@ extension PlayerWindowController {
       /// so we need to allow for showing/hiding these individually.
       /// Setting `.isHidden = true` for these icons visibly messes up their layout.
       /// So just set alpha value for now, and hide later in `updateHiddenViewsAndConstraints()`
-      if futureLayout.leadingSidebarToggleButton == .hidden {
+      if outputLayout.leadingSidebarToggleButton == .hidden {
         leadingSidebarToggleButton.alphaValue = 0
         fadeableViewsTopBar.remove(leadingSidebarToggleButton)
       }
-      if futureLayout.trailingSidebarToggleButton == .hidden {
+      if outputLayout.trailingSidebarToggleButton == .hidden {
         trailingSidebarToggleButton.alphaValue = 0
         fadeableViewsTopBar.remove(trailingSidebarToggleButton)
       }
-      if futureLayout.pinToTopButton == .hidden {
+      if outputLayout.pinToTopButton == .hidden {
         pinToTopButton.alphaValue = 0
         fadeableViewsTopBar.remove(pinToTopButton)
       }
     }
 
-    if transition.fromLayout.hasFloatingOSC && !futureLayout.hasFloatingOSC {
+    if transition.inputLayout.hasFloatingOSC && !outputLayout.hasFloatingOSC {
       // Hide floating OSC
-      apply(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
+      apply(visibility: outputLayout.controlBarFloating, to: controlBarFloating)
     }
 
     // Change blending modes
@@ -1150,46 +1150,46 @@ extension PlayerWindowController {
 
   private func closeOldPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
-    let futureLayout = transition.toLayout
-    log.verbose("[\(transition.name)] CloseOldPanels: title_H=\(futureLayout.titleBarHeight), topOSC_H=\(futureLayout.topOSCHeight)")
+    let outputLayout = transition.outputLayout
+    log.verbose("[\(transition.name)] CloseOldPanels: title_H=\(outputLayout.titleBarHeight), topOSC_H=\(outputLayout.topOSCHeight)")
 
-    if transition.fromLayout.titleBarHeight > 0 && futureLayout.titleBarHeight == 0 {
+    if transition.inputLayout.titleBarHeight > 0 && outputLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
     }
-    if transition.fromLayout.topOSCHeight > 0 && futureLayout.topOSCHeight == 0 {
+    if transition.inputLayout.topOSCHeight > 0 && outputLayout.topOSCHeight == 0 {
       topOSCHeightConstraint.animateToConstant(0)
     }
-    if transition.fromLayout.osdMinOffsetFromTop > 0 && futureLayout.osdMinOffsetFromTop == 0 {
+    if transition.inputLayout.osdMinOffsetFromTop > 0 && outputLayout.osdMinOffsetFromTop == 0 {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
 
     // Update heights of top & bottom bars
     if let geo = transition.middleGeometry {
-      let topBarHeight = transition.fromLayout.topBarPlacement == .insideVideo ? geo.insideTopBarHeight : geo.outsideTopBarHeight
-      updateTopBarHeight(to: topBarHeight, topBarPlacement: transition.fromLayout.topBarPlacement, cameraHousingOffset: transition.toLayout.cameraHousingOffset)
+      let topBarHeight = transition.inputLayout.topBarPlacement == .insideVideo ? geo.insideTopBarHeight : geo.outsideTopBarHeight
+      updateTopBarHeight(to: topBarHeight, topBarPlacement: transition.inputLayout.topBarPlacement, cameraHousingOffset: transition.outputLayout.cameraHousingOffset)
 
       // Update sidebar vertical alignments to match top bar:
-      updateSidebarVerticalConstraints(layout: futureLayout)
+      updateSidebarVerticalConstraints(layout: outputLayout)
 
-      let bottomBarHeight = transition.fromLayout.bottomBarPlacement == .insideVideo ? geo.insideBottomBarHeight : geo.outsideBottomBarHeight
-      updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.fromLayout.bottomBarPlacement)
+      let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideVideo ? geo.insideBottomBarHeight : geo.outsideBottomBarHeight
+      updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.inputLayout.bottomBarPlacement)
 
       // Update title bar item spacing to align with sidebars
-      updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
+      updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
 
       // Sidebars (if closing)
-      animateShowOrHideSidebars(transition: transition, layout: transition.fromLayout,
+      animateShowOrHideSidebars(transition: transition, layout: transition.inputLayout,
                                 setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
                                 setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
 
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
-      if !transition.isExitingFullScreen && !futureLayout.isFullScreen {
+      if !transition.isExitingFullScreen && !outputLayout.isFullScreen {
         log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
         player.window.setFrameImmediately(geo.windowFrame)
         videoView.updateSizeConstraints(geo.videoSize)
         videoView.layoutSubtreeIfNeeded()
-      } else if transition.isExitingLegacyFullScreen && transition.fromLayout.cameraHousingOffset > 0 {
+      } else if transition.isExitingLegacyFullScreen && transition.inputLayout.cameraHousingOffset > 0 {
         // Exiting legacy FS: get rid of camera housing immediately for nicer animation
         if let newWindowFrame = window.screen?.frameWithoutCameraHousing {
           player.window.setFrameImmediately(newWindowFrame)
@@ -1202,11 +1202,11 @@ extension PlayerWindowController {
 
   private func updateHiddenViewsAndConstraints(_ transition: LayoutTransition) {
     guard let window = window else { return }
-    let futureLayout = transition.toLayout
+    let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] UpdateHiddenViewsAndConstraints")
 
     if transition.isTogglingLegacyWindowStyle {
-      if transition.toLayout.spec.isLegacyStyle && !transition.isExitingFullScreen {
+      if transition.outputLayout.spec.isLegacyStyle && !transition.isExitingFullScreen {
         log.verbose("Removing window styleMask.titled")
         window.styleMask.remove(.titled)
         window.styleMask.insert(.resizable)
@@ -1238,21 +1238,21 @@ extension PlayerWindowController {
       videoView.videoLayer.draw(forced: true)
     }
 
-    applyHiddenOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
-    applyHiddenOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-    applyHiddenOnly(visibility: futureLayout.pinToTopButton, to: pinToTopButton)
+    applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
+    applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
+    applyHiddenOnly(visibility: outputLayout.pinToTopButton, to: pinToTopButton)
 
-    if futureLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
+    if outputLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
       /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
       /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
       window.titleVisibility = .hidden
     }
 
-    /// These should all be either 0 height or unchanged from `transition.fromLayout`
-    apply(visibility: futureLayout.bottomBarView, to: bottomBarView)
+    /// These should all be either 0 height or unchanged from `transition.inputLayout`
+    apply(visibility: outputLayout.bottomBarView, to: bottomBarView)
     if !transition.isEnteringFullScreen {
-      apply(visibility: futureLayout.topBarView, to: topBarView)
+      apply(visibility: outputLayout.topBarView, to: topBarView)
     }
 
     if transition.isOSCChanging {
@@ -1263,23 +1263,23 @@ extension PlayerWindowController {
     }
 
     if transition.isTopBarPlacementChanging {
-      updateTopBarPlacement(placement: futureLayout.topBarPlacement)
+      updateTopBarPlacement(placement: outputLayout.topBarPlacement)
     }
 
     if transition.isBottomBarPlacementChanging {
-      updateBottomBarPlacement(placement: futureLayout.bottomBarPlacement)
+      updateBottomBarPlacement(placement: outputLayout.bottomBarPlacement)
     }
 
-    if transition.isOSCChanging && futureLayout.enableOSC {
-      switch futureLayout.oscPosition {
+    if transition.isOSCChanging && outputLayout.enableOSC {
+      switch outputLayout.oscPosition {
       case .top:
-        log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
+        log.verbose("Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = controlBarTop
         addControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
       case .bottom:
-        log.verbose("Setting up control bar: \(futureLayout.oscPosition)")
+        log.verbose("Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = bottomBarView
         if !bottomBarView.subviews.contains(oscBottomMainView) {
           bottomBarView.addSubview(oscBottomMainView)
@@ -1295,12 +1295,12 @@ extension PlayerWindowController {
     }
 
     // Sidebars: finish closing (if closing)
-    if transition.isHidingLeadingSidebar, let visibleTab = transition.fromLayout.leadingSidebar.visibleTab {
+    if transition.isHidingLeadingSidebar, let visibleTab = transition.inputLayout.leadingSidebar.visibleTab {
       /// Remove `tabGroupView` from its parent (also removes constraints):
       let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
       viewController.view.removeFromSuperview()
     }
-    if transition.isHidingTrailingSidebar, let visibleTab = transition.fromLayout.trailingSidebar.visibleTab {
+    if transition.isHidingTrailingSidebar, let visibleTab = transition.inputLayout.trailingSidebar.visibleTab {
       /// Remove `tabGroupView` from its parent (also removes constraints):
       let viewController = (visibleTab.group == .playlist) ? playlistView : quickSettingView
       viewController.view.removeFromSuperview()
@@ -1334,29 +1334,29 @@ extension PlayerWindowController {
     }
 
     // Sidebars: if (re)opening
-    if let tabToShow = transition.toLayout.leadingSidebar.visibleTab {
+    if let tabToShow = transition.outputLayout.leadingSidebar.visibleTab {
       if transition.isShowingLeadingSidebar {
-        prepareLayoutForOpening(leadingSidebar: transition.toLayout.leadingSidebar)
-      } else if transition.fromLayout.leadingSidebar.visibleTabGroup == transition.toLayout.leadingSidebar.visibleTabGroup {
+        prepareLayoutForOpening(leadingSidebar: transition.outputLayout.leadingSidebar)
+      } else if transition.inputLayout.leadingSidebar.visibleTabGroup == transition.outputLayout.leadingSidebar.visibleTabGroup {
         // Tab group is already showing, but just need to switch tab
         switchToTabInTabGroup(tab: tabToShow)
       }
     }
-    if let tabToShow = transition.toLayout.trailingSidebar.visibleTab {
+    if let tabToShow = transition.outputLayout.trailingSidebar.visibleTab {
       if transition.isShowingTrailingSidebar {
-        prepareLayoutForOpening(trailingSidebar: transition.toLayout.trailingSidebar)
-      } else if transition.fromLayout.trailingSidebar.visibleTabGroup == transition.toLayout.trailingSidebar.visibleTabGroup {
+        prepareLayoutForOpening(trailingSidebar: transition.outputLayout.trailingSidebar)
+      } else if transition.inputLayout.trailingSidebar.visibleTabGroup == transition.outputLayout.trailingSidebar.visibleTabGroup {
         // Tab group is already showing, but just need to switch tab
         switchToTabInTabGroup(tab: tabToShow)
       }
     }
 
-    updateDepthOrderOfBars(topBar: futureLayout.topBarPlacement, bottomBar: futureLayout.bottomBarPlacement,
-                           leadingSidebar: futureLayout.leadingSidebarPlacement, trailingSidebar: futureLayout.trailingSidebarPlacement)
+    updateDepthOrderOfBars(topBar: outputLayout.topBarPlacement, bottomBar: outputLayout.bottomBarPlacement,
+                           leadingSidebar: outputLayout.leadingSidebarPlacement, trailingSidebar: outputLayout.trailingSidebarPlacement)
 
     // So that panels toggling between "inside" and "outside" don't change until they need to (different strategy than fullscreen)
     if !transition.isTogglingFullScreen {
-      updatePanelBlendingModes(to: futureLayout)
+      updatePanelBlendingModes(to: outputLayout)
     }
 
     // Refresh volume & play time in UI
@@ -1368,33 +1368,33 @@ extension PlayerWindowController {
 
   private func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
     guard let window = window else { return }
-    let futureLayout = transition.toLayout
-    log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(futureLayout.titleBarHeight), TopOSC: \(futureLayout.topOSCHeight)")
+    let outputLayout = transition.outputLayout
+    log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(outputLayout.titleBarHeight), TopOSC: \(outputLayout.topOSCHeight)")
 
     // Update heights to their final values:
-    topOSCHeightConstraint.animateToConstant(futureLayout.topOSCHeight)
-    titleBarHeightConstraint.animateToConstant(futureLayout.titleBarHeight)
-    osdMinOffsetFromTopConstraint.animateToConstant(futureLayout.osdMinOffsetFromTop)
+    topOSCHeightConstraint.animateToConstant(outputLayout.topOSCHeight)
+    titleBarHeightConstraint.animateToConstant(outputLayout.titleBarHeight)
+    osdMinOffsetFromTopConstraint.animateToConstant(outputLayout.osdMinOffsetFromTop)
 
     // Update heights of top & bottom bars:
-    updateTopBarHeight(to: futureLayout.topBarHeight, topBarPlacement: transition.toLayout.topBarPlacement, cameraHousingOffset: transition.toLayout.cameraHousingOffset)
+    updateTopBarHeight(to: outputLayout.topBarHeight, topBarPlacement: transition.outputLayout.topBarPlacement, cameraHousingOffset: transition.outputLayout.cameraHousingOffset)
 
-    let bottomBarHeight = transition.toLayout.bottomBarPlacement == .insideVideo ? transition.toWindowGeometry.insideBottomBarHeight : transition.toWindowGeometry.outsideBottomBarHeight
-    updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
+    let bottomBarHeight = transition.outputLayout.bottomBarPlacement == .insideVideo ? transition.toWindowGeometry.insideBottomBarHeight : transition.toWindowGeometry.outsideBottomBarHeight
+    updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.outputLayout.bottomBarPlacement)
 
     // Sidebars (if opening)
-    let leadingSidebar = transition.toLayout.leadingSidebar
-    let trailingSidebar = transition.toLayout.trailingSidebar
+    let leadingSidebar = transition.outputLayout.leadingSidebar
+    let trailingSidebar = transition.outputLayout.trailingSidebar
     animateShowOrHideSidebars(transition: transition,
-                              layout: transition.toLayout,
+                              layout: transition.outputLayout,
                               setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
                               setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
-    updateSpacingForTitleBarAccessories(transition.toLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
+    updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
     // Update sidebar vertical alignments
-    updateSidebarVerticalConstraints(layout: futureLayout)
+    updateSidebarVerticalConstraints(layout: outputLayout)
 
     // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
-    if transition.isOSCChanging && futureLayout.enableOSC && futureLayout.hasFloatingOSC {
+    if transition.isOSCChanging && outputLayout.enableOSC && outputLayout.hasFloatingOSC {
       currentControlBar = controlBarFloating
 
       oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
@@ -1426,7 +1426,7 @@ extension PlayerWindowController {
 
     if transition.isEnteringFullScreen {
       // Entering FullScreen
-      if transition.toLayout.isLegacyFullScreen {
+      if transition.outputLayout.isLegacyFullScreen {
         // Set window frame including camera housing (if any) so that it is filled with black pixels
         setWindowFrameForLegacyFullScreen()
       } else {
@@ -1435,7 +1435,7 @@ extension PlayerWindowController {
         Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
         player.window.setFrameImmediately(screen.frameWithoutCameraHousing)
       }
-    } else if !transition.isInitialLayout && !futureLayout.isFullScreen {
+    } else if !transition.isInitialLayout && !outputLayout.isFullScreen {
       let newWindowFrame = transition.toWindowGeometry.windowFrame
       log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       videoView.updateSizeConstraints(transition.toWindowGeometry.videoSize)
@@ -1445,16 +1445,16 @@ extension PlayerWindowController {
 
   private func fadeInNewViews(_ transition: LayoutTransition) {
     guard let window = window else { return }
-    let futureLayout = transition.toLayout
+    let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] FadeInNewViews")
 
-    if futureLayout.titleIconAndText.isShowable {
+    if outputLayout.titleIconAndText.isShowable {
       window.titleVisibility = .visible
     }
 
-    applyShowableOnly(visibility: futureLayout.controlBarFloating, to: controlBarFloating)
+    applyShowableOnly(visibility: outputLayout.controlBarFloating, to: controlBarFloating)
 
-    if futureLayout.isFullScreen {
+    if outputLayout.isFullScreen {
       if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
         apply(visibility: .showFadeableNonTopBar, to: additionalInfoView)
       }
@@ -1466,10 +1466,10 @@ extension PlayerWindowController {
       titleTextField?.alphaValue = 1
       documentIconButton?.alphaValue = 1
 
-      if futureLayout.trafficLightButtons != .hidden {
+      if outputLayout.trafficLightButtons != .hidden {
 
         // TODO: figure out whether to try to replicate title bar, or just leave it out
-        if false && futureLayout.spec.isLegacyStyle && fakeLeadingTitleBarView == nil {
+        if false && outputLayout.spec.isLegacyStyle && fakeLeadingTitleBarView == nil {
           // Add fake traffic light buttons. Needs a lot of work...
           let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
           let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
@@ -1508,21 +1508,21 @@ extension PlayerWindowController {
       addTitleBarAccessoryViews()
     }
 
-    applyShowableOnly(visibility: futureLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
-    applyShowableOnly(visibility: futureLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-    applyShowableOnly(visibility: futureLayout.pinToTopButton, to: pinToTopButton)
+    applyShowableOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
+    applyShowableOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
+    applyShowableOnly(visibility: outputLayout.pinToTopButton, to: pinToTopButton)
 
     // Add back title bar accessories (if needed):
-    applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
-    applyShowableOnly(visibility: futureLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
+    applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
+    applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
   }
 
   private func doPostTransitionWork(_ transition: LayoutTransition) {
     log.verbose("[\(transition.name)] DoPostTransitionWork")
     // Update blending mode:
-    updatePanelBlendingModes(to: transition.toLayout)
+    updatePanelBlendingModes(to: transition.outputLayout)
     /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out
-    apply(visibility: transition.toLayout.titleIconAndText, titleTextField, documentIconButton)
+    apply(visibility: transition.outputLayout.titleIconAndText, titleTextField, documentIconButton)
 
     fadeableViewsAnimationState = .shown
     fadeableTopBarAnimationState = .shown
@@ -1533,7 +1533,7 @@ extension PlayerWindowController {
     if transition.isEnteringFullScreen {
       // Entered FullScreen
 
-      let isLegacy = transition.toLayout.isLegacyFullScreen
+      let isLegacy = transition.outputLayout.isLegacyFullScreen
       if isLegacy {
         // Enter legacy full screen
         window.styleMask.insert(.borderless)
@@ -1589,8 +1589,8 @@ extension PlayerWindowController {
     } else if transition.isExitingFullScreen {
       // Exited FullScreen
 
-      let wasLegacy = transition.fromLayout.isLegacyFullScreen
-      let isLegacyWindowedMode = transition.toLayout.spec.isLegacyStyle
+      let wasLegacy = transition.inputLayout.isLegacyFullScreen
+      let isLegacyWindowedMode = transition.outputLayout.spec.isLegacyStyle
       if wasLegacy {
         // Go back to titled style
         window.styleMask.remove(.borderless)
@@ -1650,7 +1650,7 @@ extension PlayerWindowController {
 
       if !isLegacyWindowedMode {
         // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
-        apply(visibility: transition.toLayout.titleIconAndText, documentIconButton, titleTextField)
+        apply(visibility: transition.outputLayout.titleIconAndText, documentIconButton, titleTextField)
         for button in trafficLightButtons {
           /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
           /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
@@ -1666,7 +1666,7 @@ extension PlayerWindowController {
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
 
-    log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.toLayout.isFullScreen.yn), IsLegacy:\(transition.toLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
+    log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
     player.saveState()
   }
 
@@ -1805,54 +1805,54 @@ extension PlayerWindowController {
   }
 
   // This method should only make a layout plan. It should not alter or reference the current layout.
-  func buildFutureLayoutState(from layoutSpec: LayoutSpec) -> LayoutState {
+  func buildOutputLayoutState(from layoutSpec: LayoutSpec) -> LayoutState {
     let window = window!
 
-    let futureLayout = LayoutState(spec: layoutSpec)
+    let outputLayout = LayoutState(spec: layoutSpec)
 
     // Title bar & title bar accessories:
 
-    if futureLayout.isFullScreen {
-      futureLayout.titleIconAndText = .showAlways
-      futureLayout.trafficLightButtons = .showAlways
+    if outputLayout.isFullScreen {
+      outputLayout.titleIconAndText = .showAlways
+      outputLayout.trafficLightButtons = .showAlways
 
-      if futureLayout.isLegacyFullScreen, let unusableHeight = window.screen?.cameraHousingHeight {
+      if outputLayout.isLegacyFullScreen, let unusableHeight = window.screen?.cameraHousingHeight {
         // This screen contains an embedded camera. Want to avoid having part of the window obscured by the camera housing.
-        futureLayout.cameraHousingOffset = unusableHeight
+        outputLayout.cameraHousingOffset = unusableHeight
       }
-    } else if !futureLayout.isMusicMode {
-      let visibleState: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
+    } else if !outputLayout.isMusicMode {
+      let visibleState: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
 
-      futureLayout.topBarView = visibleState
+      outputLayout.topBarView = visibleState
 
       // If legacy window mode, do not show title bar.
       if !layoutSpec.isLegacyStyle {
-        futureLayout.titleBar = visibleState
+        outputLayout.titleBar = visibleState
 
-        futureLayout.trafficLightButtons = visibleState
-        futureLayout.titleIconAndText = visibleState
+        outputLayout.trafficLightButtons = visibleState
+        outputLayout.titleIconAndText = visibleState
         // May be overridden depending on OSC layout anyway
-        futureLayout.titleBarHeight = PlayerWindowController.standardTitleBarHeight
+        outputLayout.titleBarHeight = PlayerWindowController.standardTitleBarHeight
 
-        futureLayout.titlebarAccessoryViewControllers = visibleState
+        outputLayout.titlebarAccessoryViewControllers = visibleState
 
         // LeadingSidebar toggle button
         let hasLeadingSidebar = !layoutSpec.leadingSidebar.tabGroups.isEmpty
         if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
-          futureLayout.leadingSidebarToggleButton = visibleState
+          outputLayout.leadingSidebarToggleButton = visibleState
         }
         // TrailingSidebar toggle button
         let hasTrailingSidebar = !layoutSpec.trailingSidebar.tabGroups.isEmpty
         if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
-          futureLayout.trailingSidebarToggleButton = visibleState
+          outputLayout.trailingSidebarToggleButton = visibleState
         }
 
         // "On Top" (mpv) AKA "Pin to Top" (OS)
-        futureLayout.pinToTopButton = futureLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
+        outputLayout.pinToTopButton = outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
       }
 
-      if futureLayout.topBarPlacement == .insideVideo {
-        futureLayout.osdMinOffsetFromTop = futureLayout.titleBarHeight + 8
+      if outputLayout.topBarPlacement == .insideVideo {
+        outputLayout.osdMinOffsetFromTop = outputLayout.titleBarHeight + 8
       }
 
     }
@@ -1863,48 +1863,48 @@ extension PlayerWindowController {
       // add fragment views
       switch layoutSpec.oscPosition {
       case .floating:
-        futureLayout.controlBarFloating = .showFadeableNonTopBar  // floating is always fadeable
+        outputLayout.controlBarFloating = .showFadeableNonTopBar  // floating is always fadeable
       case .top:
-        if futureLayout.titleBar.isShowable {
+        if outputLayout.titleBar.isShowable {
           // If legacy window mode, do not show title bar.
           // Otherwise reduce its height a bit because it will share space with OSC
-          futureLayout.titleBarHeight = PlayerWindowController.reducedTitleBarHeight
+          outputLayout.titleBarHeight = PlayerWindowController.reducedTitleBarHeight
         }
 
-        let visibility: Visibility = futureLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
-        futureLayout.topBarView = visibility
-        futureLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
+        let visibility: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
+        outputLayout.topBarView = visibility
+        outputLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
       case .bottom:
-        futureLayout.bottomBarView = (futureLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
+        outputLayout.bottomBarView = (outputLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
       }
     } else {  // No OSC
       currentControlBar = nil
 
       if layoutSpec.mode == .musicMode {
-        assert(futureLayout.bottomBarPlacement == .outsideVideo)
-        futureLayout.bottomBarView = .showAlways
+        assert(outputLayout.bottomBarPlacement == .outsideVideo)
+        outputLayout.bottomBarView = .showAlways
       }
     }
 
     /// Sidebar tabHeight and downshift.
     /// Downshift: try to match height of title bar
     /// Tab height: if top OSC is `insideVideo`, try to match its height
-    if futureLayout.isMusicMode {
+    if outputLayout.isMusicMode {
       /// Special case for music mode. Only really applies to `playlistView`,
       /// because `quickSettingView` is never shown in this mode.
-      futureLayout.sidebarTabHeight = Constants.Sidebar.musicModeTabHeight
-    } else if futureLayout.topBarView.isShowable && futureLayout.topBarPlacement == .insideVideo {
-      futureLayout.sidebarDownshift = futureLayout.titleBarHeight
+      outputLayout.sidebarTabHeight = Constants.Sidebar.musicModeTabHeight
+    } else if outputLayout.topBarView.isShowable && outputLayout.topBarPlacement == .insideVideo {
+      outputLayout.sidebarDownshift = outputLayout.titleBarHeight
 
-      let tabHeight = futureLayout.topOSCHeight
+      let tabHeight = outputLayout.topOSCHeight
       // Put some safeguards in place. Don't want to waste space or be too tiny to read.
       // Leave default height if not in reasonable range.
       if tabHeight >= Constants.Sidebar.minTabHeight && tabHeight <= Constants.Sidebar.maxTabHeight {
-        futureLayout.sidebarTabHeight = tabHeight
+        outputLayout.sidebarTabHeight = tabHeight
       }
     }
 
-    return futureLayout
+    return outputLayout
   }
 
   // MARK: - Title bar items
@@ -2093,23 +2093,23 @@ extension PlayerWindowController {
     isMouseInSlider = false
   }
 
-  private func updatePanelBlendingModes(to futureLayout: LayoutState) {
+  private func updatePanelBlendingModes(to outputLayout: LayoutState) {
     // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.topBarPlacement == .insideVideo || futureLayout.isFullScreen {
+    if outputLayout.topBarPlacement == .insideVideo || outputLayout.isFullScreen {
       topBarView.blendingMode = .withinWindow
     } else {
       topBarView.blendingMode = .behindWindow
     }
 
     // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if futureLayout.bottomBarPlacement == .insideVideo || futureLayout.isFullScreen {
+    if outputLayout.bottomBarPlacement == .insideVideo || outputLayout.isFullScreen {
       bottomBarView.blendingMode = .withinWindow
     } else {
       bottomBarView.blendingMode = .behindWindow
     }
 
-    updateSidebarBlendingMode(.leadingSidebar, layout: futureLayout)
-    updateSidebarBlendingMode(.trailingSidebar, layout: futureLayout)
+    updateSidebarBlendingMode(.leadingSidebar, layout: outputLayout)
+    updateSidebarBlendingMode(.trailingSidebar, layout: outputLayout)
   }
 
 }

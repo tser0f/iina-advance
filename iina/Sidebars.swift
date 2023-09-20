@@ -718,8 +718,8 @@ extension PlayerWindowController {
         trailingSidebar = layout.trailingSidebar.clone(visibility: newVisibility)
       }
       let newLayoutSpec = layout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-      let futureLayout = buildFutureLayoutState(from: newLayoutSpec)
-      currentLayout = futureLayout
+      let outputLayout = buildOutputLayoutState(from: newLayoutSpec)
+      currentLayout = outputLayout
     }
   }
 
@@ -793,8 +793,8 @@ extension PlayerWindowController {
   }
 
   /// Make sure this is called AFTER `windowController.setupTitleBarAndOSC()` has updated its variables
-  func updateSidebarVerticalConstraints(layout futureLayout: LayoutState? = nil) {
-    let layout = futureLayout ?? currentLayout
+  func updateSidebarVerticalConstraints(layout outputLayout: LayoutState? = nil) {
+    let layout = outputLayout ?? currentLayout
     log.verbose("Sidebars downshift: \(layout.sidebarDownshift), tabHeight: \(layout.sidebarTabHeight)")
     quickSettingView.setVerticalConstraints(downshift: layout.sidebarDownshift, tabHeight: layout.sidebarTabHeight)
     playlistView.setVerticalConstraints(downshift: layout.sidebarDownshift, tabHeight: layout.sidebarTabHeight)

@@ -1067,8 +1067,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         return
       }
       let oldLayout = currentLayout
-      let futureLayoutSpec = LayoutSpec.fromPreferences(andSpec: oldLayout.spec)
-      let transition = buildLayoutTransition(named: "UpdateTitleBar&OSC", from: oldLayout, to: futureLayoutSpec)
+      let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: oldLayout.spec)
+      let transition = buildLayoutTransition(named: "UpdateTitleBar&OSC", from: oldLayout, to: outputLayoutSpec)
       animationQueue.run(transition.animationTasks)
     }
   }
