@@ -463,7 +463,7 @@ extension PlayerWindowController {
     if !transition.isInitialLayout {
       // FIXME: this is all screwed up. Need to integrate it with LayoutTransition build process.
       log.verbose("Calling updateWindowFrame() after show/hide sidebars. ΔOutsideLeft: \(ΔOutsideLeft), ΔOutsideRight: \(ΔOutsideRight)")
-      updateWindowFrame(fromGeometry: transition.fromWindowGeometry, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
+//      updateWindowFrame(startGeometry: transition.fromWindowGeometry, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
     }
 
     window?.contentView?.layoutSubtreeIfNeeded()
@@ -471,7 +471,7 @@ extension PlayerWindowController {
 
   // Resizes window to accomodate show or hide of "outside" sidebars.
   // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
-  private func updateWindowFrame(fromGeometry oldGeometry: PlayerWindowGeometry,
+  private func updateWindowFrame(startGeometry oldGeometry: PlayerWindowGeometry,
                                  ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) {
     let isExpandingWindow = ΔLeading + ΔTrailing > 0
     if isExpandingWindow {
@@ -505,7 +505,7 @@ extension PlayerWindowController {
     // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
     // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
     // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-    let resizedGeometry = oldGeometry.resizeOutsideBars(newOutsideTrailingWidth: newTrailingWidth, newOutsideLeadingWidth: newLeadingWidth)
+    let resizedGeometry = oldGeometry.withResizedOutsideBars(newOutsideTrailingWidth: newTrailingWidth, newOutsideLeadingWidth: newLeadingWidth)
 
     let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeometry.videoAspectRatio)
     // Work off of previously stored size (see notes above)

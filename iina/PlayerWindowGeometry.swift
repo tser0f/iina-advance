@@ -298,8 +298,8 @@ struct PlayerWindowGeometry: Equatable {
   }
 
   // Resizes the window appropriately
-  func resizeOutsideBars(newOutsideTopHeight: CGFloat? = nil, newOutsideTrailingWidth: CGFloat? = nil,
-                         newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingWidth: CGFloat? = nil) -> PlayerWindowGeometry {
+  func withResizedOutsideBars(newOutsideTopHeight: CGFloat? = nil, newOutsideTrailingWidth: CGFloat? = nil,
+                              newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingWidth: CGFloat? = nil) -> PlayerWindowGeometry {
 
     var ΔW: CGFloat = 0
     var ΔH: CGFloat = 0
@@ -333,6 +333,27 @@ struct PlayerWindowGeometry: Equatable {
                       outsideBottomBarHeight: newOutsideBottomBarHeight, outsideLeadingBarWidth: newOutsideLeadingWidth)
   }
 
+  func withResizedBars(outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
+                       outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
+                       insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
+                       insideBottomBarHeight: CGFloat? = nil, insideLeadingBarWidth: CGFloat? = nil,
+                       videoAspectRatio: CGFloat? = nil,
+                       constrainedWithin containerFrame: NSRect? = nil) -> PlayerWindowGeometry {
+
+    // Inside bars
+    var newGeo = clone(insideTopBarHeight: insideTopBarHeight,
+                       insideTrailingBarWidth: insideTrailingBarWidth,
+                       insideBottomBarHeight: insideBottomBarHeight,
+                       insideLeadingBarWidth: insideLeadingBarWidth,
+                       videoAspectRatio: videoAspectRatio)
+    
+    newGeo = newGeo.withResizedOutsideBars(newOutsideTopHeight: outsideTopBarHeight,
+                                           newOutsideTrailingWidth: outsideTrailingBarWidth,
+                                           newOutsideBottomBarHeight: outsideBottomBarHeight,
+                                           newOutsideLeadingWidth: outsideLeadingBarWidth)
+    return newGeo.scaleVideoContainer(constrainedWithin: containerFrame)
+  }
+  
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
   func apply(mpvGeometry: GeometryDef, andDesiredVideoSize desiredVideoSize: NSSize? = nil, inScreenFrame screenFrame: NSRect) -> PlayerWindowGeometry {
     let maxVideoSize = computeMaxVideoSize(in: screenFrame.size)
