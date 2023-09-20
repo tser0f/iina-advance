@@ -669,6 +669,9 @@ extension PlayerWindowController {
       }
     }
 
+    // Restore primary videoAspectRatio
+    videoAspectRatio = initialGeometry!.videoAspectRatio
+
     let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
     let transition = LayoutTransition(name: name, from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
 
