@@ -843,21 +843,19 @@ extension PlayerWindowController {
     player.events.emit(.windowResized, data: window.frame)
   }
 
-  // resize framebuffer in videoView after resizing.
+  /// Misleading name. Called during user drag of window border, but can also be called repeatedly during single pinch-to-zoom.
+  /// Do not use for most things! Use `windowDidResize` instead.
   func windowDidEndLiveResize(_ notification: Notification) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing, !isAnimating else { return }
 
     log.verbose("WindowDidEndLiveResize, mode: \(currentLayout.spec.mode)")
-    updateCachedGeometry()
 
     switch currentLayout.spec.mode {
     case .windowed:
-      let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: windowedModeGeometry.videoContainerSize)
-      videoView.updateSizeConstraints(videoSize)
+      // resize framebuffer in videoView after resizing.
       updateWindowParametersForMPV()
-      player.saveState()
     case .musicMode:
       miniPlayer.windowDidEndLiveResize()
     default:

@@ -176,7 +176,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     artistAlbumLabel.reset()
   }
 
-  private func saveCurrentPlaylistHeight() {
+  private func saveDefaultPlaylistHeight() {
     let playlistHeight = round(currentDisplayedPlaylistHeight)
     guard playlistHeight >= MiniPlayerController.PlaylistMinHeight else { return }
 
@@ -310,7 +310,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       newWindowFrame.size.height += targetHeightToAdd
     } else { // hide playlist
       // Save playlist height first
-      saveCurrentPlaylistHeight()
+      saveDefaultPlaylistHeight()
       newWindowFrame.size.height -= currentDisplayedPlaylistHeight
     }
 
@@ -360,11 +360,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     applyGeometryAfterResize(newWindowFrame: window!.frame)
   }
 
+  // Presumable playlist size was affected by the resize. Update the default playlist size to match
   func windowDidEndLiveResize() {
     if isPlaylistVisible {
-      saveCurrentPlaylistHeight()
+      saveDefaultPlaylistHeight()
     }
-    applyGeometryAfterResize(newWindowFrame: window!.frame)
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
