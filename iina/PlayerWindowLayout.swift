@@ -610,6 +610,8 @@ extension PlayerWindowController {
     }
   }
 
+  // MARK: - Initial Layout
+
   func setInitialWindowLayout() {
     var needsNativeFullScreen: Bool = false
     let initialLayoutSpec: LayoutSpec
@@ -734,105 +736,7 @@ extension PlayerWindowController {
     }
   }
 
-  /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildEndGeometry(futureLayout: LayoutState) -> PlayerWindowGeometry {
-    if futureLayout.isMusicMode {
-      /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
-      let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).constrainWithin(bestScreen.visibleFrame)
-      return musicModeGeometryCorrected.toPlayerWindowGeometry()
-
-    } else if futureLayout.isFullScreen {
-      // This will be ignored anyway, so just save the processing cycles
-      return windowedModeGeometry
-    } else {
-      let bottomBarHeight: CGFloat
-      if futureLayout.enableOSC && futureLayout.oscPosition == .bottom {
-        bottomBarHeight = OSCToolbarButton.oscBarHeight
-      } else {
-        bottomBarHeight = 0
-      }
-
-      let insideTopBarHeight = futureLayout.topBarPlacement == .insideVideo ? futureLayout.topBarHeight : 0
-      let insideBottomBarHeight = futureLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
-      let outsideBottomBarHeight = futureLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
-
-      return windowedModeGeometry.withResizedBars(outsideTopBarHeight: futureLayout.topBarOutsideHeight,
-                                                  outsideTrailingBarWidth: futureLayout.trailingBarOutsideWidth,
-                                                  outsideBottomBarHeight: outsideBottomBarHeight,
-                                                  outsideLeadingBarWidth: futureLayout.leadingBarOutsideWidth,
-                                                  insideTopBarHeight: insideTopBarHeight,
-                                                  insideTrailingBarWidth: futureLayout.trailingBarInsideWidth,
-                                                  insideBottomBarHeight: insideBottomBarHeight,
-                                                  insideLeadingBarWidth: futureLayout.leadingBarInsideWidth,
-                                                  videoAspectRatio: videoAspectRatio,
-                                                  constrainedWithin: bestScreen.visibleFrame)
-    }
-  }
-
-  // Currently there are 4 bars. Each can be either inside or outside, exclusively.
-  func buildMiddleGeometry(forTransition transition: LayoutTransition) {
-    // TOP
-    let topBarHeight: CGFloat
-    if !transition.isInitialLayout && transition.isTopBarPlacementChanging {
-      topBarHeight = 0  // close completely. will animate reopening if needed later
-    } else if transition.toLayout.topBarHeight < transition.fromLayout.topBarHeight {
-      topBarHeight = transition.toLayout.topBarHeight
-    } else {
-      topBarHeight = transition.toLayout.topBarHeight  // leave the same
-    }
-    let insideTopBarHeight = transition.toLayout.topBarPlacement == .insideVideo ? topBarHeight : 0
-    let outsideTopBarHeight = transition.toLayout.topBarPlacement == .outsideVideo ? topBarHeight : 0
-
-    // BOTTOM
-    let insideBottomBarHeight: CGFloat
-    let outsideBottomBarHeight: CGFloat
-    if !transition.isInitialLayout && transition.isBottomBarPlacementChanging || transition.isTogglingMusicMode {
-      // close completely. will animate reopening if needed later
-      insideBottomBarHeight = 0
-      outsideBottomBarHeight = 0
-    } else if transition.toWindowGeometry.outsideBottomBarHeight < transition.fromWindowGeometry.outsideBottomBarHeight {
-      insideBottomBarHeight = 0
-      outsideBottomBarHeight = transition.toWindowGeometry.outsideBottomBarHeight
-    } else if transition.toWindowGeometry.insideBottomBarHeight < transition.fromWindowGeometry.insideBottomBarHeight {
-      insideBottomBarHeight = transition.toWindowGeometry.insideBottomBarHeight
-      outsideBottomBarHeight = 0
-    } else {
-      insideBottomBarHeight = transition.fromWindowGeometry.insideBottomBarHeight
-      outsideBottomBarHeight = transition.fromWindowGeometry.outsideBottomBarHeight
-    }
-
-    // LEADING
-    let insideLeadingBarWidth: CGFloat
-    let outsideLeadingBarWidth: CGFloat
-    if transition.isHidingLeadingSidebar {
-      insideLeadingBarWidth = transition.fromWindowGeometry.insideLeadingBarWidth
-      outsideLeadingBarWidth = transition.fromWindowGeometry.outsideLeadingBarWidth
-    } else {
-      insideLeadingBarWidth = 0
-      outsideLeadingBarWidth = 0
-    }
-
-    // TRAILING
-    let insideTrailingBarWidth: CGFloat
-    let outsideTrailingBarWidth: CGFloat
-    if transition.isHidingTrailingSidebar {
-      insideTrailingBarWidth = transition.fromWindowGeometry.insideTrailingBarWidth
-      outsideTrailingBarWidth = transition.fromWindowGeometry.outsideTrailingBarWidth
-    } else {
-      insideTrailingBarWidth = 0
-      outsideTrailingBarWidth = 0
-    }
-
-    transition.middleGeometry = transition.fromWindowGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
-                                                                              outsideTrailingBarWidth: outsideTrailingBarWidth,
-                                                                              outsideBottomBarHeight: outsideBottomBarHeight,
-                                                                              outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                                                              insideTopBarHeight: insideTopBarHeight,
-                                                                              insideTrailingBarWidth: insideTrailingBarWidth,
-                                                                              insideBottomBarHeight: insideBottomBarHeight,
-                                                                              insideLeadingBarWidth: insideLeadingBarWidth,
-                                                                              constrainedWithin: bestScreen.visibleFrame)
-  }
+  // MARK: - Building LayoutTransition
 
   /// First builds a new `LayoutState` based on the given `LayoutSpec`, then builds & returns a `LayoutTransition`,
   /// which contains all the information needed to animate the UI changes from the current `LayoutState` to the new one.
@@ -855,7 +759,7 @@ extension PlayerWindowController {
     }
 
     // ToGeometry
-    let endGeometry: PlayerWindowGeometry = buildEndGeometry(futureLayout: toLayout)
+    let endGeometry: PlayerWindowGeometry = buildEndGeometry(oldGeometry: startGeometry, futureLayout: toLayout)
 
     let transition = LayoutTransition(name: transitionName,
                                       from: fromLayout, from: startGeometry,
@@ -967,7 +871,141 @@ extension PlayerWindowController {
     return transition
   }
 
-  // MARK: Transition Tasks
+  /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
+  private func buildEndGeometry(oldGeometry oldGeo: PlayerWindowGeometry, futureLayout: LayoutState) -> PlayerWindowGeometry {
+    switch futureLayout.spec.mode {
+
+    case .musicMode:
+      /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
+      let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).constrainWithin(bestScreen.visibleFrame)
+      return musicModeGeometryCorrected.toPlayerWindowGeometry()
+
+    case .fullScreen:
+      // This will be ignored anyway, so just save the processing cycles
+      return windowedModeGeometry
+
+    case .windowed:
+      break
+    }
+
+    let bottomBarHeight: CGFloat
+    if futureLayout.enableOSC && futureLayout.oscPosition == .bottom {
+      bottomBarHeight = OSCToolbarButton.oscBarHeight
+    } else {
+      bottomBarHeight = 0
+    }
+
+    let insideTopBarHeight = futureLayout.topBarPlacement == .insideVideo ? futureLayout.topBarHeight : 0
+    let insideBottomBarHeight = futureLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
+    let outsideBottomBarHeight = futureLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
+
+    let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: futureLayout.topBarOutsideHeight,
+                                                      outsideTrailingBarWidth: futureLayout.trailingBarOutsideWidth,
+                                                      outsideBottomBarHeight: outsideBottomBarHeight,
+                                                      outsideLeadingBarWidth: futureLayout.leadingBarOutsideWidth,
+                                                      insideTopBarHeight: insideTopBarHeight,
+                                                      insideTrailingBarWidth: futureLayout.trailingBarInsideWidth,
+                                                      insideBottomBarHeight: insideBottomBarHeight,
+                                                      insideLeadingBarWidth: futureLayout.leadingBarInsideWidth,
+                                                      videoAspectRatio: videoAspectRatio,
+                                                      constrainedWithin: bestScreen.visibleFrame)
+
+    // FIXME: this doesn't synchronize properly during animations when this is false. Remove this guard when fixed
+    guard Preference.bool(for: .allowEmptySpaceAroundVideo) else {
+      return newGeo
+    }
+
+    let outsideWidthIncrease = newGeo.outsideSidebarsTotalWidth - oldGeo.outsideSidebarsTotalWidth
+
+    if outsideWidthIncrease >= 0 {
+      // Is expanding the window to open a sidebar. First save the current size as the preferred size.
+      // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
+      // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
+      if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeo.videoAspectRatio),
+         existingPreferredSize.width > oldGeo.videoContainerSize.width {
+        // Probably the other sidebar was opened before this. Don't overwrite its previously saved pref with a smaller one
+        log.verbose("Before opening outer sidebar(s): will not update userPreferredVideoContainerSize; pref already exists and is larger")
+      } else {
+        log.verbose("Before opening outer sidebar(s): saving previous userPreferredVideoContainerSize")
+        player.info.setUserPreferredVideoContainerSize(oldGeo.videoContainerSize)
+      }
+      return newGeo
+
+    } else {   // Shrinking window width
+      let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeo.videoAspectRatio)
+      log.verbose("Before opening outer sidebar(s): restoring previous userPreferredVideoContainerSize")
+
+      // Work off of previously stored size (see notes above)
+      return newGeo.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? newGeo.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+    }
+  }
+
+  // Currently there are 4 bars. Each can be either inside or outside, exclusively.
+  func buildMiddleGeometry(forTransition transition: LayoutTransition) {
+    // TOP
+    let topBarHeight: CGFloat
+    if !transition.isInitialLayout && transition.isTopBarPlacementChanging {
+      topBarHeight = 0  // close completely. will animate reopening if needed later
+    } else if transition.toLayout.topBarHeight < transition.fromLayout.topBarHeight {
+      topBarHeight = transition.toLayout.topBarHeight
+    } else {
+      topBarHeight = transition.toLayout.topBarHeight  // leave the same
+    }
+    let insideTopBarHeight = transition.toLayout.topBarPlacement == .insideVideo ? topBarHeight : 0
+    let outsideTopBarHeight = transition.toLayout.topBarPlacement == .outsideVideo ? topBarHeight : 0
+
+    // BOTTOM
+    let insideBottomBarHeight: CGFloat
+    let outsideBottomBarHeight: CGFloat
+    if !transition.isInitialLayout && transition.isBottomBarPlacementChanging || transition.isTogglingMusicMode {
+      // close completely. will animate reopening if needed later
+      insideBottomBarHeight = 0
+      outsideBottomBarHeight = 0
+    } else if transition.toWindowGeometry.outsideBottomBarHeight < transition.fromWindowGeometry.outsideBottomBarHeight {
+      insideBottomBarHeight = 0
+      outsideBottomBarHeight = transition.toWindowGeometry.outsideBottomBarHeight
+    } else if transition.toWindowGeometry.insideBottomBarHeight < transition.fromWindowGeometry.insideBottomBarHeight {
+      insideBottomBarHeight = transition.toWindowGeometry.insideBottomBarHeight
+      outsideBottomBarHeight = 0
+    } else {
+      insideBottomBarHeight = transition.fromWindowGeometry.insideBottomBarHeight
+      outsideBottomBarHeight = transition.fromWindowGeometry.outsideBottomBarHeight
+    }
+
+    // LEADING
+    let insideLeadingBarWidth: CGFloat
+    let outsideLeadingBarWidth: CGFloat
+    if transition.isHidingLeadingSidebar {
+      insideLeadingBarWidth = 0
+      outsideLeadingBarWidth = 0
+    } else {
+      insideLeadingBarWidth = transition.fromWindowGeometry.insideLeadingBarWidth
+      outsideLeadingBarWidth = transition.fromWindowGeometry.outsideLeadingBarWidth
+    }
+
+    // TRAILING
+    let insideTrailingBarWidth: CGFloat
+    let outsideTrailingBarWidth: CGFloat
+    if transition.isHidingTrailingSidebar {
+      insideTrailingBarWidth = 0
+      outsideTrailingBarWidth = 0
+    } else {
+      insideTrailingBarWidth = transition.fromWindowGeometry.insideTrailingBarWidth
+      outsideTrailingBarWidth = transition.fromWindowGeometry.outsideTrailingBarWidth
+    }
+
+    transition.middleGeometry = transition.toWindowGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
+                                                                            outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                                                            outsideBottomBarHeight: outsideBottomBarHeight,
+                                                                            outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                                                            insideTopBarHeight: insideTopBarHeight,
+                                                                            insideTrailingBarWidth: insideTrailingBarWidth,
+                                                                            insideBottomBarHeight: insideBottomBarHeight,
+                                                                            insideLeadingBarWidth: insideLeadingBarWidth,
+                                                                            constrainedWithin: bestScreen.visibleFrame)
+  }
+
+  // MARK: - Transition Tasks
 
   private func doPreTransitionWork(_ transition: LayoutTransition) {
     log.verbose("[\(transition.name)] DoPreTransitionWork")
@@ -1148,7 +1186,7 @@ extension PlayerWindowController {
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
       if !transition.isExitingFullScreen && !futureLayout.isFullScreen {
         log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
-        player.window.setFrameImmediately(geo.windowFrame, animate: true)
+        player.window.setFrameImmediately(geo.windowFrame)
         videoView.updateSizeConstraints(geo.videoSize)
         videoView.layoutSubtreeIfNeeded()
       } else if transition.isExitingLegacyFullScreen && transition.fromLayout.cameraHousingOffset > 0 {
@@ -1355,23 +1393,6 @@ extension PlayerWindowController {
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: futureLayout)
 
-    if transition.isEnteringFullScreen {
-      // Entering FullScreen
-      if transition.toLayout.isLegacyFullScreen {
-        // Set window frame including camera housing (if any) so that it is filled with black pixels
-        setWindowFrameForLegacyFullScreen()
-      } else {
-        // Native FullScreen: set frame not including camera housing because it looks better with the native animation
-        let screen = bestScreen
-        Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
-        player.window.setFrameImmediately(screen.frameWithoutCameraHousing)
-      }
-    } else if !transition.isInitialLayout && !futureLayout.isFullScreen {
-      let newWindowFrame = transition.toWindowGeometry.windowFrame
-      log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
-      player.window.setFrameImmediately(newWindowFrame)
-    }
-
     // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
     if transition.isOSCChanging && futureLayout.enableOSC && futureLayout.hasFloatingOSC {
       currentControlBar = controlBarFloating
@@ -1403,8 +1424,23 @@ extension PlayerWindowController {
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
     }
 
-    bottomBarView.layoutSubtreeIfNeeded()
-    window.contentView?.layoutSubtreeIfNeeded()
+    if transition.isEnteringFullScreen {
+      // Entering FullScreen
+      if transition.toLayout.isLegacyFullScreen {
+        // Set window frame including camera housing (if any) so that it is filled with black pixels
+        setWindowFrameForLegacyFullScreen()
+      } else {
+        // Native FullScreen: set frame not including camera housing because it looks better with the native animation
+        let screen = bestScreen
+        Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
+        player.window.setFrameImmediately(screen.frameWithoutCameraHousing)
+      }
+    } else if !transition.isInitialLayout && !futureLayout.isFullScreen {
+      let newWindowFrame = transition.toWindowGeometry.windowFrame
+      log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
+      videoView.updateSizeConstraints(transition.toWindowGeometry.videoSize)
+      player.window.setFrameImmediately(newWindowFrame)
+    }
   }
 
   private func fadeInNewViews(_ transition: LayoutTransition) {

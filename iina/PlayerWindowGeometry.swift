@@ -153,8 +153,12 @@ struct PlayerWindowGeometry: Equatable {
     return NSRect(origin: origin, size: videoContainerSize)
   }
 
+  var outsideSidebarsTotalWidth: CGFloat {
+    return outsideTrailingBarWidth + outsideLeadingBarWidth
+  }
+
   var outsideBarsTotalSize: NSSize {
-    return NSSize(width: outsideTrailingBarWidth + outsideLeadingBarWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
+    return NSSize(width: outsideSidebarsTotalWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
   }
 
   var minVideoHeight: CGFloat {

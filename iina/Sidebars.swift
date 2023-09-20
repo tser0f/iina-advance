@@ -412,7 +412,6 @@ extension PlayerWindowController {
     let leadingSidebar = layout.leadingSidebar
     let trailingSidebar = layout.trailingSidebar
 
-    var ΔOutsideLeft: CGFloat = 0
     if let goal = leadingGoal {
       log.verbose("Setting leadingSidebar visibility to \(goal)")
       var shouldShow = false
@@ -432,11 +431,9 @@ extension PlayerWindowController {
       updateLeadingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: leadingSidebar.placement)
       if leadingSidebar.placement == .outsideVideo {
         leadingSidebarTrailingBorder.isHidden = !shouldShow
-        ΔOutsideLeft = shouldShow ? sidebarWidth : -sidebarWidth
       }
     }
 
-    var ΔOutsideRight: CGFloat = 0
     if let goal = trailingGoal {
       log.verbose("Setting trailingSidebar visibility to \(goal)")
       var shouldShow = false
@@ -456,65 +453,8 @@ extension PlayerWindowController {
       updateTrailingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: trailingSidebar.placement)
       if trailingSidebar.placement == .outsideVideo {
         trailingSidebarLeadingBorder.isHidden = !shouldShow
-        ΔOutsideRight = shouldShow ? sidebarWidth : -sidebarWidth
       }
     }
-
-    if !transition.isInitialLayout {
-      // FIXME: this is all screwed up. Need to integrate it with LayoutTransition build process.
-      log.verbose("Calling updateWindowFrame() after show/hide sidebars. ΔOutsideLeft: \(ΔOutsideLeft), ΔOutsideRight: \(ΔOutsideRight)")
-//      updateWindowFrame(startGeometry: transition.fromWindowGeometry, ΔLeadingOutsideWidth: ΔOutsideLeft, ΔTrailingOutsideWidth: ΔOutsideRight)
-    }
-
-    window?.contentView?.layoutSubtreeIfNeeded()
-  }
-
-  // Resizes window to accomodate show or hide of "outside" sidebars.
-  // Even if in fullscreen mode, this needs to be called to update the prior window's size for when fullscreen is exited
-  private func updateWindowFrame(startGeometry oldGeometry: PlayerWindowGeometry,
-                                 ΔLeadingOutsideWidth ΔLeading: CGFloat, ΔTrailingOutsideWidth ΔTrailing: CGFloat) {
-    let isExpandingWindow = ΔLeading + ΔTrailing > 0
-    if isExpandingWindow {
-      // Is expanding the window to open a sidebar. First save the current size as the preferred size.
-      // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
-      // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
-      if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeometry.videoAspectRatio),
-         existingPreferredSize.width > oldGeometry.videoContainerSize.width {
-        // Probably a sidebar was opened before this. Don't overwrite its previously saved pref with a smaller one
-        log.verbose("Before outer sidebar open: will not update userPreferredVideoContainerSize; pref already exists and is larger")
-      } else {
-        log.verbose("Before outer sidebar open: saving previous userPreferredVideoContainerSize")
-        player.info.setUserPreferredVideoContainerSize(oldGeometry.videoContainerSize)
-      }
-    }
-
-    var newLeadingWidth = oldGeometry.outsideLeadingBarWidth + ΔLeading
-    var newTrailingWidth = oldGeometry.outsideTrailingBarWidth + ΔTrailing
-
-    // Can happen for stale stored layout state. Try to recover
-    if newLeadingWidth < 0 {
-      log.error("Cannot set negative sidebar width (given: \(newLeadingWidth))! Will set leadingSidebar width to 0 instead")
-      newLeadingWidth = 0
-    }
-    if newTrailingWidth < 0 {
-      log.error("Cannot set negative sidebar width (given: \(newTrailingWidth))! Will set trailingSidebar width to 0 instead")
-      newTrailingWidth = 0
-    }
-
-    // Try to ensure that outside panels open or close outwards (as long as there is horizontal space on the screen)
-    // so that ideally the video doesn't move or get resized. When opening, (1) use all available space in that direction.
-    // and (2) if more space is still needed, expand the window in that direction, maintaining video size; and (3) if completely
-    // out of screen width, shrink the video until it fits, while preserving its aspect ratio.
-    let resizedGeometry = oldGeometry.withResizedOutsideBars(newOutsideTrailingWidth: newTrailingWidth, newOutsideLeadingWidth: newLeadingWidth)
-
-    let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeometry.videoAspectRatio)
-    // Work off of previously stored size (see notes above)
-    let newGeometry = resizedGeometry.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? resizedGeometry.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
-
-    if !isFullScreen {
-      log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
-    }
-    applyWindowGeometryLivePreview(newGeometry)
   }
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
