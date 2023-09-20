@@ -434,9 +434,9 @@ extension PlayerWindowController {
     let name: String  // just used for debugging
     let inputLayout: LayoutState
     let outputLayout: LayoutState
-    let fromWindowGeometry: PlayerWindowGeometry
+    let inputGeometry: PlayerWindowGeometry
     var middleGeometry: PlayerWindowGeometry?
-    let toWindowGeometry: PlayerWindowGeometry
+    let outputGeometry: PlayerWindowGeometry
 
     let isInitialLayout: Bool
 
@@ -448,10 +448,10 @@ extension PlayerWindowController {
          isInitialLayout: Bool = false) {
       self.name = name
       self.inputLayout = inputLayout
-      self.fromWindowGeometry = inputGeometry
+      self.inputGeometry = inputGeometry
       self.middleGeometry = middleGeometry
       self.outputLayout = outputLayout
-      self.toWindowGeometry = outputGeometry
+      self.outputGeometry = outputGeometry
       self.isInitialLayout = isInitialLayout
     }
 
@@ -735,7 +735,7 @@ extension PlayerWindowController {
 
     let outputLayout = buildOutputLayoutState(from: outputSpec)
 
-    // FromGeometry
+    // InputGeometry
     let inputGeometry: PlayerWindowGeometry
     if inputLayout.isMusicMode {
       inputGeometry = musicModeGeometry.toPlayerWindowGeometry()
@@ -743,7 +743,7 @@ extension PlayerWindowController {
       inputGeometry = windowedModeGeometry
     }
 
-    // ToGeometry
+    // OutputGeometry
     let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(oldGeometry: inputGeometry, outputLayout: outputLayout)
 
     let transition = LayoutTransition(name: transitionName,
@@ -822,8 +822,8 @@ extension PlayerWindowController {
     // Extra task when toggling music mode: move & resize window
     if transition.isTogglingMusicMode {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-        player.window.setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
-        videoView.updateSizeConstraints(transition.toWindowGeometry.videoSize)
+        player.window.setFrameImmediately(transition.outputGeometry.videoContainerFrameInScreenCoords)
+        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       }))
     }
 
@@ -935,7 +935,7 @@ extension PlayerWindowController {
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
   func buildMiddleGeometry(forTransition transition: LayoutTransition) {
     if transition.isTogglingMusicMode {
-      transition.middleGeometry = transition.fromWindowGeometry.withResizedBars(outsideTopBarHeight: 0,
+      transition.middleGeometry = transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
                                                                                 outsideTrailingBarWidth: 0,
                                                                                 outsideBottomBarHeight: 0,
                                                                                 outsideLeadingBarWidth: 0,
@@ -965,15 +965,15 @@ extension PlayerWindowController {
       // close completely. will animate reopening if needed later
       insideBottomBarHeight = 0
       outsideBottomBarHeight = 0
-    } else if transition.toWindowGeometry.outsideBottomBarHeight < transition.fromWindowGeometry.outsideBottomBarHeight {
+    } else if transition.outputGeometry.outsideBottomBarHeight < transition.inputGeometry.outsideBottomBarHeight {
       insideBottomBarHeight = 0
-      outsideBottomBarHeight = transition.toWindowGeometry.outsideBottomBarHeight
-    } else if transition.toWindowGeometry.insideBottomBarHeight < transition.fromWindowGeometry.insideBottomBarHeight {
-      insideBottomBarHeight = transition.toWindowGeometry.insideBottomBarHeight
+      outsideBottomBarHeight = transition.outputGeometry.outsideBottomBarHeight
+    } else if transition.outputGeometry.insideBottomBarHeight < transition.inputGeometry.insideBottomBarHeight {
+      insideBottomBarHeight = transition.outputGeometry.insideBottomBarHeight
       outsideBottomBarHeight = 0
     } else {
-      insideBottomBarHeight = transition.fromWindowGeometry.insideBottomBarHeight
-      outsideBottomBarHeight = transition.fromWindowGeometry.outsideBottomBarHeight
+      insideBottomBarHeight = transition.inputGeometry.insideBottomBarHeight
+      outsideBottomBarHeight = transition.inputGeometry.outsideBottomBarHeight
     }
 
     // LEADING
@@ -983,8 +983,8 @@ extension PlayerWindowController {
       insideLeadingBarWidth = 0
       outsideLeadingBarWidth = 0
     } else {
-      insideLeadingBarWidth = transition.fromWindowGeometry.insideLeadingBarWidth
-      outsideLeadingBarWidth = transition.fromWindowGeometry.outsideLeadingBarWidth
+      insideLeadingBarWidth = transition.inputGeometry.insideLeadingBarWidth
+      outsideLeadingBarWidth = transition.inputGeometry.outsideLeadingBarWidth
     }
 
     // TRAILING
@@ -994,11 +994,11 @@ extension PlayerWindowController {
       insideTrailingBarWidth = 0
       outsideTrailingBarWidth = 0
     } else {
-      insideTrailingBarWidth = transition.fromWindowGeometry.insideTrailingBarWidth
-      outsideTrailingBarWidth = transition.fromWindowGeometry.outsideTrailingBarWidth
+      insideTrailingBarWidth = transition.inputGeometry.insideTrailingBarWidth
+      outsideTrailingBarWidth = transition.inputGeometry.outsideTrailingBarWidth
     }
 
-    transition.middleGeometry = transition.toWindowGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
+    transition.middleGeometry = transition.outputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
                                                                             outsideTrailingBarWidth: outsideTrailingBarWidth,
                                                                             outsideBottomBarHeight: outsideBottomBarHeight,
                                                                             outsideLeadingBarWidth: outsideLeadingBarWidth,
@@ -1022,9 +1022,9 @@ extension PlayerWindowController {
     /// Set this here because we are setting `currentLayout`
     switch transition.outputLayout.spec.mode {
     case .windowed:
-      windowedModeGeometry = transition.toWindowGeometry
+      windowedModeGeometry = transition.outputGeometry
     case .musicMode:
-      musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.toWindowGeometry.windowFrame, videoAspectRatio: transition.toWindowGeometry.videoAspectRatio)
+      musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspectRatio: transition.outputGeometry.videoAspectRatio)
     case .fullScreen:
       break
     }
@@ -1181,7 +1181,7 @@ extension PlayerWindowController {
       updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.inputLayout.bottomBarPlacement)
 
       // Update title bar item spacing to align with sidebars
-      updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
+      updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
 
       // Sidebars (if closing)
       animateShowOrHideSidebars(transition: transition, layout: transition.inputLayout,
@@ -1385,7 +1385,7 @@ extension PlayerWindowController {
     // Update heights of top & bottom bars:
     updateTopBarHeight(to: outputLayout.topBarHeight, topBarPlacement: transition.outputLayout.topBarPlacement, cameraHousingOffset: transition.outputLayout.cameraHousingOffset)
 
-    let bottomBarHeight = transition.outputLayout.bottomBarPlacement == .insideVideo ? transition.toWindowGeometry.insideBottomBarHeight : transition.toWindowGeometry.outsideBottomBarHeight
+    let bottomBarHeight = transition.outputLayout.bottomBarPlacement == .insideVideo ? transition.outputGeometry.insideBottomBarHeight : transition.outputGeometry.outsideBottomBarHeight
     updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.outputLayout.bottomBarPlacement)
 
     // Sidebars (if opening)
@@ -1395,7 +1395,7 @@ extension PlayerWindowController {
                               layout: transition.outputLayout,
                               setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
                               setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
-    updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.toWindowGeometry.windowFrame.width)
+    updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: outputLayout)
 
@@ -1435,7 +1435,7 @@ extension PlayerWindowController {
       if transition.outputLayout.isLegacyFullScreen {
         Logger.log("Calling setFrame() to animate into legacy full screen from OpenNewPanelsAndFinalizeOffsets", level: .verbose)
         // Set window frame including camera housing (if any) so that it is filled with black pixels
-        setWindowFrameForLegacyFullScreen(using: transition.toWindowGeometry)
+        setWindowFrameForLegacyFullScreen(using: transition.outputGeometry)
       } else {
         // Native FullScreen: set frame not including camera housing because it looks better with the native animation
         let newWindowFrame = bestScreen.frameWithoutCameraHousing
@@ -1443,9 +1443,9 @@ extension PlayerWindowController {
         player.window.setFrameImmediately(newWindowFrame)
       }
     } else if !transition.isInitialLayout && !outputLayout.isFullScreen {
-      let newWindowFrame = transition.toWindowGeometry.windowFrame
+      let newWindowFrame = transition.outputGeometry.windowFrame
       log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
-      videoView.updateSizeConstraints(transition.toWindowGeometry.videoSize)
+      videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       player.window.setFrameImmediately(newWindowFrame)
     }
   }
