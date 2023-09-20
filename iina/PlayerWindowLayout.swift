@@ -867,8 +867,10 @@ extension PlayerWindowController {
       return musicModeGeometryCorrected.toPlayerWindowGeometry()
 
     case .fullScreen:
-      // This will be ignored anyway, so just save the processing cycles
-      return windowedModeGeometry
+      if outputLayout.spec.isNativeFullScreen {
+        // This will be ignored anyway, so just save the processing cycles
+        return windowedModeGeometry
+      }
 
     case .windowed:
       break
@@ -884,6 +886,22 @@ extension PlayerWindowController {
     let insideTopBarHeight = outputLayout.topBarPlacement == .insideVideo ? outputLayout.topBarHeight : 0
     let insideBottomBarHeight = outputLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
     let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
+
+    if outputLayout.isLegacyFullScreen {
+      // TODO: store screenFrame in PlayerWindowGeometry
+      // FIXME: deal with camera housing
+      let newGeo = PlayerWindowGeometry(windowFrame: bestScreen.visibleFrame,
+                                        outsideTopBarHeight: outputLayout.topBarOutsideHeight,
+                                        outsideTrailingBarWidth: outputLayout.trailingBarOutsideWidth,
+                                        outsideBottomBarHeight: outsideBottomBarHeight,
+                                        outsideLeadingBarWidth: outputLayout.leadingBarOutsideWidth,
+                                        insideTopBarHeight: insideTopBarHeight,
+                                        insideTrailingBarWidth: outputLayout.trailingBarInsideWidth,
+                                        insideBottomBarHeight: insideBottomBarHeight,
+                                        insideLeadingBarWidth: outputLayout.leadingBarInsideWidth,
+                                        videoAspectRatio: videoAspectRatio)
+      return newGeo.scaleVideoContainer(constrainedWithin: bestScreen.visibleFrame)
+    }
 
     let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.topBarOutsideHeight,
                                                       outsideTrailingBarWidth: outputLayout.trailingBarOutsideWidth,
@@ -935,7 +953,7 @@ extension PlayerWindowController {
     } else if transition.outputLayout.topBarHeight < transition.inputLayout.topBarHeight {
       topBarHeight = transition.outputLayout.topBarHeight
     } else {
-      topBarHeight = transition.outputLayout.topBarHeight  // leave the same
+      topBarHeight = transition.inputLayout.topBarHeight  // leave the same
     }
     let insideTopBarHeight = transition.outputLayout.topBarPlacement == .insideVideo ? topBarHeight : 0
     let outsideTopBarHeight = transition.outputLayout.topBarPlacement == .outsideVideo ? topBarHeight : 0
@@ -1415,13 +1433,14 @@ extension PlayerWindowController {
     if transition.isEnteringFullScreen {
       // Entering FullScreen
       if transition.outputLayout.isLegacyFullScreen {
+        Logger.log("Calling setFrame() to animate into legacy full screen from OpenNewPanelsAndFinalizeOffsets", level: .verbose)
         // Set window frame including camera housing (if any) so that it is filled with black pixels
-        setWindowFrameForLegacyFullScreen()
+        setWindowFrameForLegacyFullScreen(using: transition.toWindowGeometry)
       } else {
         // Native FullScreen: set frame not including camera housing because it looks better with the native animation
-        let screen = bestScreen
-        Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
-        player.window.setFrameImmediately(screen.frameWithoutCameraHousing)
+        let newWindowFrame = bestScreen.frameWithoutCameraHousing
+        Logger.log("Calling setFrame() to animate into full screen, to: \(newWindowFrame)", level: .verbose)
+        player.window.setFrameImmediately(newWindowFrame)
       }
     } else if !transition.isInitialLayout && !outputLayout.isFullScreen {
       let newWindowFrame = transition.toWindowGeometry.windowFrame
@@ -2061,11 +2080,16 @@ extension PlayerWindowController {
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
   ///
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
-  func setWindowFrameForLegacyFullScreen(animate: Bool = true) {
+  func setWindowFrameForLegacyFullScreen(using geometry: PlayerWindowGeometry? = nil) {
     let newWindowFrame = bestScreen.frame
-    log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
+    log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame), usingGeo: \(geometry != nil)")
     player.window.setFrameImmediately(newWindowFrame)
-    videoView.updateSizeConstraints(PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: bestScreen.visibleFrame.size))
+    if let geometry = geometry {
+      videoView.updateSizeConstraints(geometry.videoSize)
+    } else {
+      videoView.updateSizeConstraints(PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: bestScreen.visibleFrame.size))
+    }
+    videoView.layoutSubtreeIfNeeded()
   }
 
   private func resetViewsForFullScreenTransition() {

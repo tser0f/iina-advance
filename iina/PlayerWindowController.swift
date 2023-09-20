@@ -910,7 +910,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       for screen in NSScreen.screens {
         screenIDs.insert(screen.displayId)
       }
-      log.verbose("Got \(NSApplication.didChangeScreenParametersNotification.rawValue.quoted); screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)")
+      log.verbose("Got NSApplicationDidChangeScreenParametersNotification; screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)")
       if isFullScreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
         self.removeBlackWindows()
         self.blackOutOtherMonitors()
@@ -923,11 +923,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is moved to a new screen such as when the window is on an external display and that display
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
-//      if isFullScreen, Preference.bool(for: .useLegacyFullScreen) {
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
-//          setWindowFrameForLegacyFullScreen(animate: false)
-//        }
-//      }
+      if isFullScreen, Preference.bool(for: .useLegacyFullScreen) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+          setWindowFrameForLegacyFullScreen()
+        }
+      }
     }
 
     // Observe the loop knobs on the progress bar and update mpv when the knobs move.
@@ -1866,7 +1866,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // TODO: in the future, keep strict track of window size & position, and call
       /// `setFrame()` in `windowDidMove()` to preserve correctness
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
-        setWindowFrameForLegacyFullScreen(animate: false)
+        setWindowFrameForLegacyFullScreen()
       }
       return
     }
