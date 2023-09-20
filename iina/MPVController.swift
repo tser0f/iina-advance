@@ -1166,7 +1166,7 @@ not applying FFmpeg 9599 workaround
     let duration = getDouble(MPVProperty.duration)
     let position = getDouble(MPVProperty.timePos)
     let vParams = queryForVideoParams()
-    player.log.debug("OnFileLoaded: Got info for opened file. \(vParams), Loc(sec): \(position) / \(duration)")
+    player.log.debug("OnFileLoaded: Got info for opened file. \(vParams), Loc(sec): \(position.string6f) / \(duration.string6f)")
     player.info.totalRotation = vParams.totalRotation
     player.info.userRotation = vParams.userRotation
     player.info.videoRawWidth = vParams.videoRawWidth

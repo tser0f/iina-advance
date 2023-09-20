@@ -514,7 +514,7 @@ extension PlayerWindowController {
     if !isFullScreen {
       log.verbose("Calling setFrame() after updating sidebars, newLeadingWidth: \(newLeadingWidth), newTrailingWidth: \(newTrailingWidth)")
     }
-    applyWindowGeometryWithoutEnqueuing(newGeometry)
+    applyWindowGeometryLivePreview(newGeometry)
   }
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
@@ -988,7 +988,7 @@ extension PlayerWindowController {
 
       Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
       updateSpacingForTitleBarAccessories(windowWidth: oldGeo.windowFrame.width)
-      applyWindowGeometryWithoutEnqueuing(newGeo, updateCache: false)
+      applyWindowGeometryLivePreview(newGeo)
       return newGeo
     }
   }

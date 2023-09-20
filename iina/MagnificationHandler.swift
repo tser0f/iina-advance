@@ -54,9 +54,11 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
       if let newWindowGeometry = newWindowGeometry {
         if windowController.currentLayout.isMusicMode {
+          windowController.log.verbose("Updating musicModeGeometry from magnification gesture")
           windowController.musicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowGeometry.windowFrame)
           windowController.player.saveState()
         } else {
+          windowController.log.verbose("Updating windowedModeGeometry from magnification gesture")
           windowController.windowedModeGeometry = newWindowGeometry
           windowController.updateWindowParametersForMPV()  // also saves state
         }
@@ -133,7 +135,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     windowController.player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
 
     let newGeometry = newGeoUnconstrained.constrainWithin(windowController.bestScreen.visibleFrame)
-    windowController.applyWindowGeometryWithoutEnqueuing(newGeometry, updateCache: false, animate: false)
+    windowController.applyWindowGeometryLivePreview(newGeometry)
     return newGeometry
   }
 }

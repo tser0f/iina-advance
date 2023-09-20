@@ -50,6 +50,7 @@ class VideoView: NSView {
     wantsLayer = true
 
     widthConstraint = widthAnchor.constraint(equalToConstant: CGFloat(AppData.widthWhenNoVideo))
+    // Keep low, or else can't resize window
     widthConstraint.priority = .defaultLow
     widthConstraint.isActive = true
     heightConstraint = heightAnchor.constraint(equalToConstant: CGFloat(AppData.heightWhenNoVideo))

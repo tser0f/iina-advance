@@ -219,6 +219,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
+  // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
+  // build up and result in weird freezes or short episodes of "wandering window"
+  var geoUpdateRequestCount: Int = 0
+
   lazy var windowedModeGeometry: PlayerWindowGeometry = {
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
@@ -1884,6 +1888,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidMove(_ notification: Notification) {
+    guard !isAnimating else { return }
     guard let window = window else { return }
     log.verbose("WindowDidMove, frame=\(window.frame)")
     updateCachedGeometry()
@@ -2628,17 +2633,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
     guard let videoWidth = player.videoBaseDisplaySize?.width, videoWidth > 0 else {
-      log.debug("Skipping update to mpv windowScale; could not get width from videoBaseDisplaySize")
+      log.debug("Skipping send to mpv windowScale; could not get width from videoBaseDisplaySize")
       return
     }
 
-    log.verbose("Updating mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
+    log.verbose("Sending mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
     // this is also a good place to save state, if applicable
 
     let videoScale = Double((videoSize ?? windowedModeGeometry.videoSize).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
     if videoScale != prevVideoScale {
-      log.verbose("Updating mpv windowScale from: \(player.info.cachedWindowScale) to: \(videoScale)")
+      log.verbose("Sending mpv windowScale: \(player.info.cachedWindowScale) → \(videoScale)")
       player.info.cachedWindowScale = videoScale
       player.mpv.setDouble(MPVProperty.windowScale, videoScale)
     }

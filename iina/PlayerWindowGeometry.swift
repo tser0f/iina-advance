@@ -463,25 +463,15 @@ extension PlayerWindowController {
   }
 
   private func adjustWindowGeometryAfterVideoReconfig(videoBaseDisplaySize: NSSize) {
-    guard let window = window else { return }
     // Will only change the video size & video container size. Panels outside the video do not change size
     let newVideoAspectRatio = videoBaseDisplaySize.aspect
     let windowGeo = windowedModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
     let newWindowGeo: PlayerWindowGeometry
-    var scaleDownFactor: CGFloat? = nil
 
     if shouldResizeWindowAfterVideoReconfig() {
       // get videoSize on screen
       var newVideoSize: NSSize = videoBaseDisplaySize
       log.verbose("[AdjustFrameAfterVideoReconfig C step1]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
-
-      // TODO
-      if false && Preference.bool(for: .usePhysicalResolution) {
-        let invertedScaleFactor = 1.0 / window.backingScaleFactor
-        scaleDownFactor = invertedScaleFactor
-        newVideoSize = videoBaseDisplaySize.multiplyThenRound(invertedScaleFactor)
-        log.verbose("[AdjustFrameAfterVideoReconfig C step2] Converted newVideoSize to physical resolution → \(newVideoSize)")
-      }
 
       let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
       if let strategy = resizeWindowStrategy, strategy != .fitScreen {
@@ -532,17 +522,6 @@ extension PlayerWindowController {
     /// Finally call `setFrame()`
     log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
     applyWindowGeometry(newWindowGeo)
-
-    if !isFullScreen {
-      // If adjusted by backingScaleFactor, need to reverse the adjustment when reporting to mpv
-      let mpvVideoSize: CGSize
-      if let scaleDownFactor = scaleDownFactor {
-        mpvVideoSize = newWindowGeo.videoSize.multiplyThenRound(scaleDownFactor)
-      } else {
-        mpvVideoSize = newWindowGeo.videoSize
-      }
-      updateWindowParametersForMPV(withSize: mpvVideoSize)
-    }
 
     // UI and slider
     updatePlayTime(withDuration: true)
@@ -646,49 +625,51 @@ extension PlayerWindowController {
     return geo.scaleVideoContainer(desiredSize: videoContainerView.frame.size, constrainedWithin: bestScreen.frame)
   }
 
-  func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry,
-                           updateCache: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
+
+  func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry, animate: Bool = true) {
+    log.verbose("applyWindowGeometry: \(newGeometry.windowFrame)")
+    // Update video aspect ratio
+    videoAspectRatio = newGeometry.videoAspectRatio
+
+    guard !currentLayout.isMusicMode else {
+      log.error("applyWindowGeometry cannot be used in music mode!")
+      return
+    }
+
+    geoUpdateRequestCount += 1
+    let geoUpdateRequestID = geoUpdateRequestCount
 
     animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      if geoUpdateRequestID < geoUpdateRequestCount {
+        log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateRequestCount)")
+        return
+      }
+      log.verbose("Running geoUpdate \(geoUpdateRequestID)")
+      windowedModeGeometry = newGeometry
+      player.saveState()
+
       // Make sure this is up-to-date
-      videoView.updateSizeConstraints(newGeometry.videoSize)
-      
-      _applyWindowGeometryInternal(newGeometry, updateCache: updateCache, animate: animate, setFrameImmediately: setFrameImmediately)
+      videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
+
+      if !isFullScreen {
+        player.window.setFrameImmediately(newGeometry.windowFrame, animate: animate)
+      }
+      updateWindowParametersForMPV(withSize: newGeometry.videoSize)
     }))
   }
 
-  func applyWindowGeometryWithoutEnqueuing(_ newGeometry: PlayerWindowGeometry,
-                                           updateCache: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
+  func applyWindowGeometryLivePreview(_ newGeometry: PlayerWindowGeometry) {
+    log.verbose("applyWindowGeometryLivePreview: \(newGeometry.windowFrame)")
+    // Update video aspect ratio
+    videoAspectRatio = newGeometry.videoAspectRatio
+
     CocoaAnimation.disableAnimation{
       // Make sure this is up-to-date
       videoView.updateSizeConstraints(newGeometry.videoSize)
     }
 
-    _applyWindowGeometryInternal(newGeometry, updateCache: updateCache, animate: animate, setFrameImmediately: setFrameImmediately)
-  }
-
-  private func _applyWindowGeometryInternal(_ newGeometry: PlayerWindowGeometry,
-                                           updateCache: Bool = true, animate: Bool = true, setFrameImmediately: Bool = true) {
-
-    let needsSave = updateCache && !currentLayout.isMusicMode
-    if needsSave {
-      windowedModeGeometry = newGeometry
-      player.saveState()
-    }
-
-    // Update video aspect ratio
-    videoAspectRatio = newGeometry.videoAspectRatio
-
-    if isFullScreen {
-      log.verbose("Skipping update to windowFrame because window is in full screen")
-      return
-    }
-    let newWindowFrame = newGeometry.windowFrame
-    if setFrameImmediately {
-      player.window.setFrameImmediately(newWindowFrame, animate: animate)
-    } else {
-      guard let window = window else { return }
-      window.setFrame(newWindowFrame, display: true, animate: animate)
+    if !isFullScreen {
+      player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
     }
   }
 
