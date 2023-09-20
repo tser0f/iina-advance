@@ -98,14 +98,15 @@ class PlaybackInfo {
   /// Use a single preferred container size when allowing blackspace around video.
   /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`videoContainerSize`.
   /// Need to reconcile these requirements...
-  func setUserPreferredVideoContainerSize(_ newSize: NSSize) {
-    if Preference.bool(for: .allowEmptySpaceAroundVideo) || newSize.aspect >= 1 {
+  func setUserPreferredVideoContainerSize(from windowGeometry: PlayerWindowGeometry) {
+    let newSize = windowGeometry.videoContainerSize
+    if Preference.bool(for: .allowEmptySpaceAroundVideo) || windowGeometry.videoAspectRatio >= 1 {
       // Video is wide or square
-      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSize-Wide to \(newSize)")
+      log.verbose("Updating userPreferredVideoContainerSize-Wide to \(newSize)")
       userPreferredVideoContainerSizeWide = newSize
     } else {
       // Video is vertical: save to separate tall window pref
-      log.verbose("Updating PlaybackInfo.userPreferredVideoContainerSize-Tall to \(newSize)")
+      log.verbose("Updating userPreferredVideoContainerSize-Tall to \(newSize)")
       userPreferredVideoContainerSizeTall = newSize
     }
   }

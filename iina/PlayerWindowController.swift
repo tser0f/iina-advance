@@ -923,11 +923,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is moved to a new screen such as when the window is on an external display and that display
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
-      if isFullScreen, Preference.bool(for: .useLegacyFullScreen) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
-          setWindowFrameForLegacyFullScreen(animate: false)
-        }
-      }
+//      if isFullScreen, Preference.bool(for: .useLegacyFullScreen) {
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+//          setWindowFrameForLegacyFullScreen(animate: false)
+//        }
+//      }
     }
 
     // Observe the loop knobs on the progress bar and update mpv when the knobs move.
@@ -1827,7 +1827,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func exitFullScreen(legacy: Bool) {
-    guard let window = self.window, let contentView = window.contentView else { fatalError("make sure the window exists before animating") }
+    guard let window = self.window else { fatalError("make sure the window exists before animating") }
     log.verbose("ExitFullScreen called (legacy: \(legacy.yn))")
     guard currentLayout.isFullScreen else { return }
 

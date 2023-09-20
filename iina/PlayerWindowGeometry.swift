@@ -609,7 +609,7 @@ extension PlayerWindowController {
 
     let newGeoUnconstrained = windowedModeGeometry.scaleVideoContainer(desiredSize: desiredVideoContainerSize)
     // User has actively resized the video. Assume this is the new preferred resolution
-    player.info.setUserPreferredVideoContainerSize(newGeoUnconstrained.videoContainerSize)
+    player.info.setUserPreferredVideoContainerSize(from: newGeoUnconstrained)
 
     let newGeometry = newGeoUnconstrained.constrainWithin(bestScreen.visibleFrame, centerInContainer: centerOnScreen)
     log.verbose("\(isFullScreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
@@ -673,10 +673,9 @@ extension PlayerWindowController {
       windowedModeGeometry = newGeometry
       player.saveState()
 
-      // Make sure this is up-to-date
-      videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
-
       if !isFullScreen {
+        // Make sure this is up-to-date
+        videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
         player.window.setFrameImmediately(newGeometry.windowFrame, animate: animate)
       }
       updateWindowParametersForMPV(withSize: newGeometry.videoSize)
@@ -688,12 +687,12 @@ extension PlayerWindowController {
     // Update video aspect ratio
     videoAspectRatio = newGeometry.videoAspectRatio
 
-    CocoaAnimation.disableAnimation{
-      // Make sure this is up-to-date
-      videoView.updateSizeConstraints(newGeometry.videoSize)
-    }
-
     if !isFullScreen {
+      CocoaAnimation.disableAnimation{
+        // Make sure this is up-to-date
+        videoView.updateSizeConstraints(newGeometry.videoSize)
+      }
+
       player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
     }
   }
@@ -796,7 +795,7 @@ extension PlayerWindowController {
 
       if !isFullScreen && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
-        player.info.setUserPreferredVideoContainerSize(requestedGeo.videoContainerSize)
+        player.info.setUserPreferredVideoContainerSize(from: requestedGeo)
       }
       let requestedGeoConstrained = requestedGeo.constrainWithin(screenVisibleFrame)
       return requestedGeoConstrained
@@ -838,7 +837,7 @@ extension PlayerWindowController {
  
       if !isFullScreen {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise.
-        player.info.setUserPreferredVideoContainerSize(chosenGeometry.videoContainerSize)
+        player.info.setUserPreferredVideoContainerSize(from: chosenGeometry)
       }
     } else {
       // Resize request is not coming from the user. Could be BetterTouchTool, Retangle, or some window manager, or the OS.
@@ -899,6 +898,11 @@ extension PlayerWindowController {
 
     switch currentLayout.spec.mode {
     case .windowed:
+      // Do not save geometry, because user may be in the middle of pinch-to-zoom.
+      // But update preferred container size
+      let resizedGeo = windowedModeGeometry.clone(windowFrame: window!.frame).constrainWithin(bestScreen.visibleFrame)
+      player.info.setUserPreferredVideoContainerSize(from: resizedGeo)
+
       // resize framebuffer in videoView after resizing.
       updateWindowParametersForMPV()
     case .musicMode:

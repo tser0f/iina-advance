@@ -903,27 +903,15 @@ extension PlayerWindowController {
 
     let outsideWidthIncrease = newGeo.outsideSidebarsTotalWidth - oldGeo.outsideSidebarsTotalWidth
 
-    if outsideWidthIncrease >= 0 {
-      // Is expanding the window to open a sidebar. First save the current size as the preferred size.
+    if outsideWidthIncrease < 0 {   // Shrinking window width
       // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
-      if let existingPreferredSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeo.videoAspectRatio),
-         existingPreferredSize.width > oldGeo.videoContainerSize.width {
-        // Probably the other sidebar was opened before this. Don't overwrite its previously saved pref with a smaller one
-        log.verbose("Before opening outer sidebar(s): will not update userPreferredVideoContainerSize; pref already exists and is larger")
-      } else {
-        log.verbose("Before opening outer sidebar(s): saving previous userPreferredVideoContainerSize")
-        player.info.setUserPreferredVideoContainerSize(oldGeo.videoContainerSize)
-      }
-      return newGeo
-
-    } else {   // Shrinking window width
       let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeo.videoAspectRatio)
       log.verbose("Before opening outer sidebar(s): restoring previous userPreferredVideoContainerSize")
 
-      // Work off of previously stored size (see notes above)
       return newGeo.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? newGeo.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
     }
+    return newGeo
   }
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
@@ -1030,6 +1018,7 @@ extension PlayerWindowController {
       let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
       /// `windowedModeGeometry` should already be kept up to date. Might be hard to track down bugs...
       log.verbose("Entering fullscreen, priorWindowedGeometry := \(windowedModeGeometry)")
+      player.mpv.setFlag(MPVOption.Window.fullscreen, true)
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
@@ -1066,6 +1055,7 @@ extension PlayerWindowController {
 
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
+      player.mpv.setFlag(MPVOption.Window.fullscreen, false)
 
       resetViewsForFullScreenTransition()
 
