@@ -1310,25 +1310,8 @@ extension PlayerWindowController {
     osdMinOffsetFromTopConstraint.animateToConstant(futureLayout.osdMinOffsetFromTop)
 
     // Update heights of top & bottom bars:
-
-    // TODO: move these calculations into the `toGeometry` calculation when transition is built
-    var windowYDelta: CGFloat = 0
-    var windowHeightDelta: CGFloat = 0
-
-    if transition.fromLayout.topBarPlacement == .outsideVideo {
-      windowHeightDelta -= videoContainerTopOffsetFromContentViewTopConstraint.constant
-    }
-    windowHeightDelta += futureLayout.topBarOutsideHeight
     updateTopBarHeight(to: futureLayout.topBarHeight, transition: transition)
 
-    if transition.fromLayout.bottomBarPlacement == .outsideVideo {
-      windowHeightDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
-      windowYDelta -= videoContainerBottomOffsetFromContentViewBottomConstraint.constant
-    }
-    if transition.toLayout.bottomBarPlacement == .outsideVideo {
-      windowHeightDelta += transition.toWindowGeometry.outsideBottomBarHeight
-      windowYDelta += transition.toWindowGeometry.outsideBottomBarHeight
-    }
     let bottomBarHeight = transition.toLayout.bottomBarPlacement == .insideVideo ? transition.toWindowGeometry.insideBottomBarHeight : transition.toWindowGeometry.outsideBottomBarHeight
     updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.toLayout.bottomBarPlacement)
 
@@ -1343,16 +1326,8 @@ extension PlayerWindowController {
         Logger.log("Calling setFrame() to animate into full screen, to: \(screen.frameWithoutCameraHousing)", level: .verbose)
         player.window.setFrameImmediately(screen.frameWithoutCameraHousing)
       }
-    } else if transition.isExitingFullScreen {
-      // Exiting FullScreen
-      let priorWindowFrame = transition.toWindowGeometry.windowFrame
-      log.verbose("Calling setFrame() exiting \(transition.fromLayout.isLegacyFullScreen ? "legacy " : "")full screen, from priorWindowedFrame: \(priorWindowFrame)")
-      player.window.setFrameImmediately(priorWindowFrame)
     } else if !transition.isInitialLayout && !futureLayout.isFullScreen {
-      let windowFrame = window.frame
-      let newWindowSize = CGSize(width: windowFrame.width, height: windowFrame.height + windowHeightDelta)
-      let newOrigin = CGPoint(x: windowFrame.origin.x, y: windowFrame.origin.y - windowYDelta)
-      let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
+      let newWindowFrame = transition.toWindowGeometry.windowFrame
       log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       player.window.setFrameImmediately(newWindowFrame)
     }
@@ -2032,6 +2007,15 @@ extension PlayerWindowController {
   }
 
   // MARK: - Misc support functions
+
+  /// Set the window frame and if needed the content view frame to appropriately use the full screen.
+  ///
+  /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
+  func setWindowFrameForLegacyFullScreen(animate: Bool = true) {
+    let newWindowFrame = bestScreen.frame
+    log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
+    player.window.setFrameImmediately(newWindowFrame)
+  }
 
   private func resetViewsForFullScreenTransition() {
     // When playback is paused the display link is stopped in order to avoid wasting energy on

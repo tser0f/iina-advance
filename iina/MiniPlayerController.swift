@@ -323,7 +323,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
     windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showPlaylist, for: .musicModeShowPlaylist)
-      apply(newGeometry)
+      windowController.applyMusicModeGeometry(newGeometry)
     }))
   }
 
@@ -347,7 +347,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
       log.verbose("VideoView setting visible=\(isVideoVisible), videoHeight=\(newGeometry.videoHeight)")
       windowController.videoView.isHidden = !showVideo
-      apply(newGeometry)
+      windowController.applyMusicModeGeometry(newGeometry)
       player.saveState()
     }))
   }
@@ -387,7 +387,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   private func applyGeometryAfterResize(newWindowFrame: NSRect) {
     let newGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
     CocoaAnimation.disableAnimation{
-      apply(newGeometry, setFrame: false)  /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
+      /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
+      windowController.applyMusicModeGeometry(newGeometry, setFrame: false)
     }
   }
 
@@ -401,15 +402,13 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
-    guard let window = window else { return }
     resetScrollingLabels()
 
-    // FIXME: find fix for horizontal text flicker when moving in playlist
-
-    CocoaAnimation.runAsync(CocoaAnimation.Task{ [self] in
-      /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio (unless it doesn't fit in screen; see `apply()`)
+    windowController.animationQueue.run(CocoaAnimation.Task{ [self] in
+      /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
+      /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
-      apply(newGeometry)
+      windowController.applyMusicModeGeometry(newGeometry)
       log.verbose("Updating music mode geometry for video change")
     })
   }
@@ -434,25 +433,5 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
                                        videoAspectRatio: videoAspectRatio)
     // Resize as needed to fit on screen:
     return desiredGeo.constrainWithin(screenFrame)
-  }
-
-  /// Updates the current window to match the given `geometry`, and caches it.
-  func apply(_ geometry: MusicModeGeometry, setFrame: Bool = true, updateCache: Bool = true) {
-    let geometry = geometry.constrainWithin(windowController.bestScreen.visibleFrame)
-    log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
-
-    windowController.videoAspectRatio = geometry.videoAspectRatio
-
-    if let videoSize = geometry.videoSize {
-      windowController.videoView.updateSizeConstraints(videoSize)
-    }
-    windowController.updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
-    if setFrame {
-      player.window.setFrameImmediately(geometry.windowFrame, animate: true)
-    }
-    if updateCache {
-      windowController.musicModeGeometry = geometry
-      player.saveState()
-    }
   }
 }

@@ -119,7 +119,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       windowController.log.verbose("Scaling video from pinch gesture in music mode. Final width: \(originalGeometry.windowFrame.width) → \(newVideoWidth), bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newWindowFrame)")
 
       CocoaAnimation.disableAnimation{
-        windowController.miniPlayer.apply(newMusicModeGeometry, updateCache: false)
+        windowController.applyMusicModeGeometry(newMusicModeGeometry, updateCache: false)
       }
       // Kind of clunky to convert to PlayerWindowGeometry, just to fit the function signature, then convert it back. But...could be worse.
       return newMusicModeGeometry.toPlayerWindowGeometry()

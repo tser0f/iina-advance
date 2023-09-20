@@ -923,8 +923,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is moved to a new screen such as when the window is on an external display and that display
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
-      guard isFullScreen, Preference.bool(for: .useLegacyFullScreen) else { return }
-      setWindowFrameForLegacyFullScreen()
+      if isFullScreen, Preference.bool(for: .useLegacyFullScreen) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+          setWindowFrameForLegacyFullScreen(animate: false)
+        }
+      }
     }
 
     // Observe the loop knobs on the progress bar and update mpv when the knobs move.
@@ -979,7 +982,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       switch currentLayout.spec.mode {
       case .musicMode:
         let newGeo = musicModeGeometry.clone(videoAspectRatio: 1)
-        miniPlayer.apply(newGeo)
+        applyMusicModeGeometry(newGeo)
       case .windowed, .fullScreen:
         let newGeo = windowedModeGeometry.clone(videoAspectRatio: 1)
         applyWindowGeometry(newGeo)
@@ -1832,16 +1835,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  /// Set the window frame and if needed the content view frame to appropriately use the full screen.
-  ///
-  /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
-  func setWindowFrameForLegacyFullScreen(animate: Bool = true) {
-    let newWindowFrame = bestScreen.frame
-
-    log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
-    player.window.setFrameImmediately(newWindowFrame)
-  }
-
   // MARK: - Window Delegate: window move, screen changes
 
   func windowDidChangeBackingProperties(_ notification: Notification) {
@@ -1851,12 +1844,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.verbose("WindowDidChangeBackingProperties: scale factor changed from \(oldScale) to \(Double(window.backingScaleFactor))")
 
       videoView.videoLayer.contentsScale = window.backingScaleFactor
-
-      // TODO
-      if false && shouldResizeWindowAfterVideoReconfig() && Preference.bool(for: .usePhysicalResolution) {
-        // FIXME: need to keep relative location of pointer in relation to window
-        mpvVideoDidReconfig()
-      }
 
       // Do not allow MacOS to change the window size:
       denyNextWindowResize = true

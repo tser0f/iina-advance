@@ -1527,10 +1527,10 @@ class PlayerCore: NSObject {
   }
 
   func needReloadQuickSettingsView() {
-    guard !isShuttingDown, !isShutdown else { return }
     saveState()
-    DispatchQueue.main.async {
-      self.windowController.quickSettingView.reload()
+    DispatchQueue.main.async { [self] in
+      guard !isShuttingDown, !isShutdown else { return }
+      windowController.quickSettingView.reload()
     }
   }
 

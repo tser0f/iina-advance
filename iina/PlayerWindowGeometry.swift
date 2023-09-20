@@ -673,6 +673,26 @@ extension PlayerWindowController {
     }
   }
 
+  /// Updates the current window and its subviews to match the given `MusicModeGeometry`, and caches it.
+  func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, updateCache: Bool = true) {
+    let geometry = geometry.constrainWithin(bestScreen.visibleFrame)
+    log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
+
+    videoAspectRatio = geometry.videoAspectRatio
+
+    if let videoSize = geometry.videoSize {
+      videoView.updateSizeConstraints(videoSize)
+    }
+    updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
+    if setFrame {
+      player.window.setFrameImmediately(geometry.windowFrame, animate: true)
+    }
+    if updateCache {
+      musicModeGeometry = geometry
+      player.saveState()
+    }
+  }
+
   // MARK: - Window delegate: Resize
 
   func windowWillStartLiveResize(_ notification: Notification) {
