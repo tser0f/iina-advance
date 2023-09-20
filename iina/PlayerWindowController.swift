@@ -1677,21 +1677,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     updateBufferIndicatorView()
     updateOSDPosition()
 
+    // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
+    log.verbose("Showing Player Window")
+    window.setIsVisible(true)
+    addVideoViewToWindow()
+    log.verbose("Hiding defaultAlbumArt for window open")
+    defaultAlbumArtView.isHidden = true
+
+    player.initVideo()
+    videoView.videoLayer.draw(forced: true)
+    videoView.startDisplayLink()
+
     // Restore layout from last launch or configure from prefs. Do not animate, but run inside animationQueue
     animationQueue.run(CocoaAnimation.Task({ [self] in
-      addVideoViewToWindow()
-      log.verbose("Hiding defaultAlbumArt for window open")
-      defaultAlbumArtView.isHidden = true
-
-      // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
-      log.verbose("Showing Player Window")
-      window.setIsVisible(true)
-
       setInitialWindowLayout()
-
-      player.initVideo()
-      videoView.videoLayer.draw(forced: true)
-      videoView.startDisplayLink()
     }))
 
     log.verbose("PlayerWindow openWindow done")

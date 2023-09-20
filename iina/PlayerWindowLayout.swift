@@ -838,6 +838,7 @@ extension PlayerWindowController {
     if transition.isTogglingMusicMode {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         player.window.setFrameImmediately(transition.toWindowGeometry.videoContainerFrameInScreenCoords)
+        videoView.updateSizeConstraints(transition.toWindowGeometry.videoSize)
       }))
     }
 
@@ -942,6 +943,18 @@ extension PlayerWindowController {
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
   func buildMiddleGeometry(forTransition transition: LayoutTransition) {
+    if transition.isTogglingMusicMode {
+      transition.middleGeometry = transition.fromWindowGeometry.withResizedBars(outsideTopBarHeight: 0,
+                                                                                outsideTrailingBarWidth: 0,
+                                                                                outsideBottomBarHeight: 0,
+                                                                                outsideLeadingBarWidth: 0,
+                                                                                insideTopBarHeight: 0,
+                                                                                insideTrailingBarWidth: 0,
+                                                                                insideBottomBarHeight: 0,
+                                                                                insideLeadingBarWidth: 0,
+                                                                                constrainedWithin: bestScreen.visibleFrame)
+      return
+    }
     // TOP
     let topBarHeight: CGFloat
     if !transition.isInitialLayout && transition.isTopBarPlacementChanging {
