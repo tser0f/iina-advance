@@ -1813,11 +1813,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func enterFullScreen() {
+  func enterFullScreen(legacy: Bool? = nil) {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    guard currentLayout.spec.mode == .windowed else { return }
+    let isLegacy: Bool = legacy ?? Preference.bool(for: .useLegacyFullScreen)
+    log.verbose("EnterFullScreen called (legacy: \(isLegacy.yn))")
+    guard !currentLayout.isFullScreen else { return }
 
-    if Preference.bool(for: .useLegacyFullScreen) {
+    if isLegacy {
       animateEntryIntoFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
     } else {
       window.toggleFullScreen(self)
@@ -1825,7 +1827,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func exitFullScreen(legacy: Bool) {
-    guard let window = self.window else { fatalError("make sure the window exists before animating") }
+    guard let window = self.window, let contentView = window.contentView else { fatalError("make sure the window exists before animating") }
+    log.verbose("ExitFullScreen called (legacy: \(legacy.yn))")
+    guard currentLayout.isFullScreen else { return }
 
     if legacy {
       animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)

@@ -26,8 +26,8 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
       let controlViewHeight = MiniPlayerController.controlViewHeight
       self.playlistHeight = windowFrame.height - controlViewHeight - videoHeight
     } else {
-      assert(playlistHeight >= MiniPlayerController.PlaylistMinHeight, "Expected playlistHeight >= \(MiniPlayerController.PlaylistMinHeight), found \(playlistHeight)")
-      self.playlistHeight = playlistHeight
+      /// Sometimes `playlistHeight` can fall slightly below due to rounding errors. Just correct it:
+      self.playlistHeight = max(playlistHeight, MiniPlayerController.PlaylistMinHeight)
     }
     self.isVideoVisible = isVideoVisible
     self.isPlaylistVisible = isPlaylistVisible

@@ -613,7 +613,6 @@ extension PlayerWindowController {
   // MARK: - Initial Layout
 
   func setInitialWindowLayout() {
-    var needsNativeFullScreen: Bool = false
     let initialLayoutSpec: LayoutSpec
     var initialGeometry: PlayerWindowGeometry? = nil
     let isRestoringFromPrevLaunch: Bool
@@ -642,10 +641,8 @@ extension PlayerWindowController {
       }
 
       if priorLayoutSpec.isNativeFullScreen && !currentLayout.isFullScreen {
-        // Special handling for native fullscreen. Cannot avoid animation.
-        // So instead restore windowed layout first, then toggle fullscreen explicitly
+        // Special handling for native fullscreen. Rely on mpv to put us in FS when it is ready
         initialLayoutSpec = priorLayoutSpec.clone(mode: .windowed)
-        needsNativeFullScreen = true
       } else {
         initialLayoutSpec = priorLayoutSpec
       }
@@ -701,6 +698,7 @@ extension PlayerWindowController {
     animationQueue.run(CocoaAnimation.Task({ [self] in
       log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
       player.window.setFrameImmediately(initialGeometry!.windowFrame)
+      videoView.updateSizeConstraints(initialGeometry!.videoSize)
     }))
 
     if Preference.bool(for: .alwaysFloatOnTop) {
@@ -716,23 +714,10 @@ extension PlayerWindowController {
     let isConsistentWithPrefValues = initialLayoutSpec.hasSamePrefsValues(as: prefsSpec)
     if isConsistentWithPrefValues {
       log.verbose("Saved layout is consistent with IINA global prefs")
-
-      if needsNativeFullScreen {
-        log.verbose("Transitioning to native fullscreen from initial state")
-        window?.toggleFullScreen(self)
-      }
     } else {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
       log.debug("Player's saved layout does not match IINA app prefs. Will build and apply a corrected layout")
-      let fixerTransition = buildLayoutTransition(named: "FixInvalidInitialLayout", from: initialLayout, to: prefsSpec)
-      var tasks = fixerTransition.animationTasks
-      if needsNativeFullScreen {
-        tasks.append(CocoaAnimation.zeroDurationTask { [self] in
-          log.verbose("Transitioning to native fullscreen from corrected initial state")
-          window?.toggleFullScreen(self)
-        })
-      }
-      animationQueue.run(tasks)
+      buildLayoutTransition(named: "FixInvalidInitialLayout", from: initialLayout, to: prefsSpec, thenRun: true)
     }
   }
 
@@ -2090,6 +2075,7 @@ extension PlayerWindowController {
     let newWindowFrame = bestScreen.frame
     log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame)")
     player.window.setFrameImmediately(newWindowFrame)
+    videoView.updateSizeConstraints(PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: bestScreen.visibleFrame.size))
   }
 
   private func resetViewsForFullScreenTransition() {

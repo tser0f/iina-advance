@@ -1488,7 +1488,7 @@ class PlayerCore: NSObject {
       }
       windowController.playlistView.scrollPlaylistToCurrentItem()
 
-      if Preference.bool(for: .fullScreenWhenOpen) && !windowController.isFullScreen && !isInMiniPlayer {
+      if  Preference.bool(for: .fullScreenWhenOpen) && !windowController.isFullScreen && !isInMiniPlayer && !info.isRestoring {
         Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
         windowController.enterFullScreen()
       }
@@ -1703,11 +1703,16 @@ class PlayerCore: NSObject {
   private func checkUnsyncedWindowOptions() {
     guard windowController.loaded else { return }
 
-    let fs = mpv.getFlag(MPVOption.Window.fullscreen)
-    if fs != windowController.isFullScreen {
-      log.verbose("IINA FullScreen state (\(windowController.isFullScreen.yn)) does not match mpv (\(fs.yn)). Will change to match mpv state")
-      DispatchQueue.main.async {
-        self.windowController.toggleWindowFullScreen()
+    let mpvFS = mpv.getFlag(MPVOption.Window.fullscreen)
+    let iinaFS = windowController.isFullScreen
+    log.verbose("IINA FullScreen state: \(iinaFS.yn), mpv: \(mpvFS.yn)")
+    if mpvFS != iinaFS {
+      DispatchQueue.main.async { [self] in
+        if mpvFS {
+          windowController.enterFullScreen()
+        } else {
+          windowController.exitFullScreen(legacy: windowController.currentLayout.isLegacyFullScreen)
+        }
       }
     }
 
