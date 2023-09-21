@@ -7,7 +7,7 @@
 //
 
 import Foundation
-
+// TODO: Add screenFrame, screenVisibleFrame, and cameraHousingOffset
 /**
 `PlayerWindowGeometry`
  Data structure which describes:

@@ -762,22 +762,19 @@ extension PlayerWindowController {
     // MiddleGeometry (after closed panels step)
     transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
 
-    let startingAnimationDuration: CGFloat
+    var startingAnimationDuration = CocoaAnimation.DefaultDuration
     if transition.isTogglingFullScreen {
       startingAnimationDuration = 0
+    } else if transition.isEnteringMusicMode {
+      startingAnimationDuration = CocoaAnimation.DefaultDuration * 0.3
     } else if let totalStartingDuration = totalStartingDuration {
-      startingAnimationDuration = totalStartingDuration / 3
-    } else {
-      startingAnimationDuration = CocoaAnimation.DefaultDuration
+      startingAnimationDuration = totalStartingDuration * 0.3
     }
+
     var showFadeableViewsDuration: CGFloat = startingAnimationDuration
     var fadeOutOldViewsDuration: CGFloat = startingAnimationDuration
-    var closeOldPanelsDuration: CGFloat = startingAnimationDuration
-    if transition.isEnteringMusicMode {
-      showFadeableViewsDuration *= 0.3
-      fadeOutOldViewsDuration *= 0.3
-      closeOldPanelsDuration *= 0.3
-    } else if transition.isExitingMusicMode {
+    let closeOldPanelsDuration: CGFloat = startingAnimationDuration
+    if transition.isExitingMusicMode {
       showFadeableViewsDuration = 0
       fadeOutOldViewsDuration = 0
     }
@@ -1222,7 +1219,7 @@ extension PlayerWindowController {
 
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
-      if !transition.isExitingFullScreen && !outputLayout.spec.isNativeFullScreen {
+      if !transition.isInitialLayout && !transition.isExitingFullScreen && !outputLayout.spec.isNativeFullScreen {
         log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
         player.window.setFrameImmediately(geo.windowFrame)
         videoView.updateSizeConstraints(geo.videoSize)

@@ -890,8 +890,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// This ensures that `info.vid` will have been updated with the current audio track selection, or `0` if none selected.
     /// Before `fileLoaded` it may be `0` (indicating no selection) as the track info is still being processed, which is misleading.
     addObserver(to: .default, forName: .iinaFileLoaded, object: player) { [self] note in
-      guard let player = note.object as? PlayerCore else { return }
-      log.verbose("Got iinaFileLoaded notification for player\(player.label)")
+      log.verbose("Got iinaFileLoaded notification")
 
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
@@ -900,6 +899,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       refreshDefaultAlbumArtVisibility()
     }
+
+    // FIXME: this is triggered while file is loading. Need to tighten up state logic before uncommenting
+//    addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] note in
+//      guard !player.info.fileLoading && player.info.fileLoaded else { return }
+//      log.verbose("Got iinaVIDChanged notification")
+//      refreshDefaultAlbumArtVisibility()
+//    }
 
     // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
     addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
@@ -978,21 +984,33 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard loaded else { return }
 
     let vid = player.info.vid
+    let showDefaultArt: Bool
     // if received video size before switching to music mode, hide default album art
     if vid == 0 {
+      guard defaultAlbumArtView.isHidden else { return }
       log.verbose("Showing defaultAlbumArt because vid = 0")
-      defaultAlbumArtView.isHidden = false
-      switch currentLayout.spec.mode {
-      case .musicMode:
-        let newGeo = musicModeGeometry.clone(videoAspectRatio: 1)
-        applyMusicModeGeometry(newGeo)
-      case .windowed, .fullScreen:
-        let newGeo = windowedModeGeometry.clone(videoAspectRatio: 1)
-        applyWindowGeometry(newGeo)
-      }
+      showDefaultArt = true
     } else {
+      guard !defaultAlbumArtView.isHidden else { return }
       log.verbose("Hiding defaultAlbumArt because vid != 0")
-      defaultAlbumArtView.isHidden = true
+      showDefaultArt = false
+    }
+
+    defaultAlbumArtView.isHidden = !showDefaultArt
+    let newAspectRatio = showDefaultArt ? 1 : videoAspectRatio
+
+    switch currentLayout.spec.mode {
+    case .musicMode:
+      let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
+      applyMusicModeGeometry(newGeo)
+    case .windowed:
+      let vidCon = player.info.getUserPreferredVideoContainerSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.videoContainerSize
+      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleVideoContainer(desiredSize: vidCon, constrainedWithin: bestScreen.visibleFrame)
+      // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
+      applyWindowGeometry(newGeo)
+    case .fullScreen:
+      // TODO: legacy FS?
+      break
     }
   }
 
