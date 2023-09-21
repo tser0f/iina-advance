@@ -930,14 +930,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
       if currentLayout.isLegacyFullScreen {
-        let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
-        if newGeo.windowFrame != window.frame {
+        animationQueue.run(CocoaAnimation.Task({ [self] in
+          guard let screen = window.screen else { return }
           log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
-          animationQueue.run(CocoaAnimation.Task({ [self] in
-            let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
-            setWindowFrameForLegacyFullScreen(using: newGeo)
-          }))
-        }
+          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame)
+          let cameraHousingHeight = screen.cameraHousingHeight ?? 0
+          setWindowFrameForLegacyFullScreen(using: newGeo, cameraHousingHeight: cameraHousingHeight)
+        }))
       }
     }
 
@@ -1877,8 +1876,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidChangeScreen(_ notification: Notification) {
-    guard let window = window, let displayId = window.screen?.displayId else { return }
-    log.verbose("WindowDidChangeScreen, frame=\(window.frame)")
+    guard let window = window, let screen = window.screen else { return }
+    let displayId = screen.displayId
+    log.verbose("WindowDidChangeScreen, screenFrame=\(screen.frame)")
     // Legacy FS work below can be very slow. Try to avoid if possible
     guard videoView.currentDisplay != displayId else {
       Logger.log("No need to update window or DisplayLink currentDisplayID (\(displayId)) is unchanged", level: .verbose)
@@ -1893,10 +1893,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // TODO: in the future, keep strict track of window size & position, and call
     /// `setFrame()` in `windowDidMove()` to preserve correctness
     if currentLayout.isLegacyFullScreen {
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
+        guard let screen = window.screen else { return }
         animationQueue.run(CocoaAnimation.Task({ [self] in
-          let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
-          setWindowFrameForLegacyFullScreen(using: newGeo)
+          log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
+          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame)
+          let cameraHousingHeight = screen.cameraHousingHeight ?? 0
+          setWindowFrameForLegacyFullScreen(using: newGeo, cameraHousingHeight: cameraHousingHeight)
         }))
       }
       return

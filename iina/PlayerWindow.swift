@@ -11,12 +11,17 @@ import Cocoa
 class PlayerWindow: NSWindow {
   private var useZeroDurationForNextResize = false
 
+  var log: Logger.Subsystem {
+    return (windowController as! PlayerWindowController).player.log
+  }
+
   /**
    By default, `setFrame()` has its own implicit animation, and this can create an undesirable effect when combined with other animations. This function uses a `0` duration animation to effectively remove the implicit default animation.
    It will still animate if used inside an `NSAnimationContext` or `CocoaAnimation.Task` with non-zero duration.
    */
   func setFrameImmediately(_ newFrame: NSRect, animate: Bool = true) {
     useZeroDurationForNextResize = true
+    log.verbose("Entered setFrameImmediately: animate=\(animate.yn) frame=\(newFrame)")
     setFrame(newFrame, display: true, animate: animate)
   }
 
