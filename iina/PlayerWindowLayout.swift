@@ -616,6 +616,7 @@ extension PlayerWindowController {
     let initialLayoutSpec: LayoutSpec
     var initialGeometry: PlayerWindowGeometry? = nil
     let isRestoringFromPrevLaunch: Bool
+    var needsNativeFullScreen = false
 
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
       isRestoringFromPrevLaunch = true
@@ -643,6 +644,7 @@ extension PlayerWindowController {
       if priorLayoutSpec.isNativeFullScreen && !currentLayout.isFullScreen {
         // Special handling for native fullscreen. Rely on mpv to put us in FS when it is ready
         initialLayoutSpec = priorLayoutSpec.clone(mode: .windowed)
+        needsNativeFullScreen = true
       } else {
         initialLayoutSpec = priorLayoutSpec
       }
@@ -695,15 +697,22 @@ extension PlayerWindowController {
       log.verbose("Done with transition to initial layout")
     }
 
+    if Preference.bool(for: .alwaysFloatOnTop) {
+      log.verbose("Setting window to OnTop per app preference")
+      setWindowFloatingOnTop(true)
+    }
+
     animationQueue.run(CocoaAnimation.Task({ [self] in
       log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
       player.window.setFrameImmediately(initialGeometry!.windowFrame)
       videoView.updateSizeConstraints(initialGeometry!.videoSize)
     }))
 
-    if Preference.bool(for: .alwaysFloatOnTop) {
-      log.verbose("Setting window to OnTop per app preference")
-      setWindowFloatingOnTop(true)
+    if needsNativeFullScreen {
+      animationQueue.runZeroDuration({ [self] in
+        enterFullScreen()
+      })
+      return
     }
 
     guard isRestoringFromPrevLaunch else { return }
@@ -711,12 +720,11 @@ extension PlayerWindowController {
     /// Stored window state may not be consistent with global IINA prefs.
     /// To check this, build another `LayoutSpec` from the global prefs, then compare it to the player's.
     let prefsSpec = LayoutSpec.fromPreferences(andSpec: initialLayoutSpec)
-    let isConsistentWithPrefValues = initialLayoutSpec.hasSamePrefsValues(as: prefsSpec)
-    if isConsistentWithPrefValues {
+    if initialLayoutSpec.hasSamePrefsValues(as: prefsSpec) {
       log.verbose("Saved layout is consistent with IINA global prefs")
     } else {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
-      log.debug("Player's saved layout does not match IINA app prefs. Will build and apply a corrected layout")
+      log.warn("Player's saved layout does not match IINA app prefs. Will build and apply a corrected layout")
       buildLayoutTransition(named: "FixInvalidInitialLayout", from: initialLayout, to: prefsSpec, thenRun: true)
     }
   }
@@ -1036,7 +1044,6 @@ extension PlayerWindowController {
       let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
       /// `windowedModeGeometry` should already be kept up to date. Might be hard to track down bugs...
       log.verbose("Entering fullscreen, priorWindowedGeometry := \(windowedModeGeometry)")
-      player.mpv.setFlag(MPVOption.Window.fullscreen, true)
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
@@ -1066,6 +1073,7 @@ extension PlayerWindowController {
           window.styleMask.insert(.fullScreen)
         }
       }
+      player.mpv.setFlag(MPVOption.Window.fullscreen, true)
       // Let mpv decide the correct render region in full screen
       player.mpv.setFlag(MPVOption.Window.keepaspect, true)
 
@@ -1073,7 +1081,6 @@ extension PlayerWindowController {
 
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
-      player.mpv.setFlag(MPVOption.Window.fullscreen, false)
 
       resetViewsForFullScreenTransition()
 
@@ -1085,6 +1092,7 @@ extension PlayerWindowController {
       // Hide traffic light buttons & title during the animation:
       hideBuiltInTitleBarItems()
 
+      player.mpv.setFlag(MPVOption.Window.fullscreen, false)
       player.mpv.setFlag(MPVOption.Window.keepaspect, false)
     }
   }

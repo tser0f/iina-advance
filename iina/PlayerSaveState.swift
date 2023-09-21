@@ -524,10 +524,6 @@ struct PlayerSaveState {
       mpv.setString(MPVOption.PlaybackControl.start, startTime)
     }
 
-    if let layoutSpec = layoutSpec, layoutSpec.isFullScreen {
-      player.mpv.setFlag(MPVOption.Window.fullscreen, true)
-    }
-
     if let wasPaused = bool(for: .paused) {
       mpv.setFlag(MPVOption.PlaybackControl.pause, wasPaused)
     }
