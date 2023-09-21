@@ -760,7 +760,7 @@ extension PlayerWindowController {
                                       isInitialLayout: false)
 
     // MiddleGeometry (after closed panels step)
-    buildMiddleGeometry(forTransition: transition)
+    transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
 
     let startingAnimationDuration: CGFloat
     if transition.isTogglingFullScreen {
@@ -879,7 +879,7 @@ extension PlayerWindowController {
         // This will be ignored anyway, so just save the processing cycles
         return windowedModeGeometry
       }
-
+      break
     case .windowed:
       break
     }
@@ -898,17 +898,16 @@ extension PlayerWindowController {
     if outputLayout.isLegacyFullScreen {
       // TODO: store screenFrame in PlayerWindowGeometry
       // FIXME: deal with camera housing
-      let newGeo = PlayerWindowGeometry(windowFrame: bestScreen.visibleFrame,
-                                        outsideTopBarHeight: outputLayout.topBarOutsideHeight,
-                                        outsideTrailingBarWidth: outputLayout.trailingBarOutsideWidth,
-                                        outsideBottomBarHeight: outsideBottomBarHeight,
-                                        outsideLeadingBarWidth: outputLayout.leadingBarOutsideWidth,
-                                        insideTopBarHeight: insideTopBarHeight,
-                                        insideTrailingBarWidth: outputLayout.trailingBarInsideWidth,
-                                        insideBottomBarHeight: insideBottomBarHeight,
-                                        insideLeadingBarWidth: outputLayout.leadingBarInsideWidth,
-                                        videoAspectRatio: videoAspectRatio)
-      return newGeo.scaleVideoContainer(constrainedWithin: bestScreen.visibleFrame)
+      return PlayerWindowGeometry(windowFrame: bestScreen.frame,
+                                  outsideTopBarHeight: outputLayout.topBarOutsideHeight,
+                                  outsideTrailingBarWidth: outputLayout.trailingBarOutsideWidth,
+                                  outsideBottomBarHeight: outsideBottomBarHeight,
+                                  outsideLeadingBarWidth: outputLayout.leadingBarOutsideWidth,
+                                  insideTopBarHeight: insideTopBarHeight,
+                                  insideTrailingBarWidth: outputLayout.trailingBarInsideWidth,
+                                  insideBottomBarHeight: insideBottomBarHeight,
+                                  insideLeadingBarWidth: outputLayout.leadingBarInsideWidth,
+                                  videoAspectRatio: videoAspectRatio)
     }
 
     let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.topBarOutsideHeight,
@@ -941,18 +940,17 @@ extension PlayerWindowController {
   }
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
-  func buildMiddleGeometry(forTransition transition: LayoutTransition) {
+  func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry {
     if transition.isTogglingMusicMode {
-      transition.middleGeometry = transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
-                                                                                outsideTrailingBarWidth: 0,
-                                                                                outsideBottomBarHeight: 0,
-                                                                                outsideLeadingBarWidth: 0,
-                                                                                insideTopBarHeight: 0,
-                                                                                insideTrailingBarWidth: 0,
-                                                                                insideBottomBarHeight: 0,
-                                                                                insideLeadingBarWidth: 0,
-                                                                                constrainedWithin: bestScreen.visibleFrame)
-      return
+      return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
+                                                      outsideTrailingBarWidth: 0,
+                                                      outsideBottomBarHeight: 0,
+                                                      outsideLeadingBarWidth: 0,
+                                                      insideTopBarHeight: 0,
+                                                      insideTrailingBarWidth: 0,
+                                                      insideBottomBarHeight: 0,
+                                                      insideLeadingBarWidth: 0,
+                                                      constrainedWithin: bestScreen.visibleFrame)
     }
     // TOP
     let topBarHeight: CGFloat
@@ -1006,15 +1004,30 @@ extension PlayerWindowController {
       outsideTrailingBarWidth = transition.inputGeometry.outsideTrailingBarWidth
     }
 
-    transition.middleGeometry = transition.outputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
-                                                                            outsideTrailingBarWidth: outsideTrailingBarWidth,
-                                                                            outsideBottomBarHeight: outsideBottomBarHeight,
-                                                                            outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                                                            insideTopBarHeight: insideTopBarHeight,
-                                                                            insideTrailingBarWidth: insideTrailingBarWidth,
-                                                                            insideBottomBarHeight: insideBottomBarHeight,
-                                                                            insideLeadingBarWidth: insideLeadingBarWidth,
-                                                                            constrainedWithin: bestScreen.visibleFrame)
+    if transition.outputLayout.isLegacyFullScreen {
+      // TODO: store screenFrame in PlayerWindowGeometry
+      // FIXME: deal with camera housing
+      return PlayerWindowGeometry(windowFrame: bestScreen.frame,
+                                  outsideTopBarHeight: outsideTopBarHeight,
+                                  outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                  outsideBottomBarHeight: outsideBottomBarHeight,
+                                  outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                  insideTopBarHeight: insideTopBarHeight,
+                                  insideTrailingBarWidth: insideTrailingBarWidth,
+                                  insideBottomBarHeight: insideBottomBarHeight,
+                                  insideLeadingBarWidth: insideLeadingBarWidth,
+                                  videoAspectRatio: videoAspectRatio)
+    }
+
+    return transition.outputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
+                                                     outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                                     outsideBottomBarHeight: outsideBottomBarHeight,
+                                                     outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                                     insideTopBarHeight: insideTopBarHeight,
+                                                     insideTrailingBarWidth: insideTrailingBarWidth,
+                                                     insideBottomBarHeight: insideBottomBarHeight,
+                                                     insideLeadingBarWidth: insideLeadingBarWidth,
+                                                     constrainedWithin: bestScreen.visibleFrame)
   }
 
   // MARK: - Transition Tasks
@@ -1034,6 +1047,17 @@ extension PlayerWindowController {
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspectRatio: transition.outputGeometry.videoAspectRatio)
     case .fullScreen:
+      let geo = transition.outputGeometry
+      windowedModeGeometry = windowedModeGeometry.withResizedBars(outsideTopBarHeight: geo.outsideTopBarHeight,
+                                                                  outsideTrailingBarWidth: geo.outsideTrailingBarWidth,
+                                                                  outsideBottomBarHeight: geo.outsideBottomBarHeight,
+                                                                  outsideLeadingBarWidth: geo.outsideLeadingBarWidth,
+                                                                  insideTopBarHeight: geo.insideTopBarHeight,
+                                                                  insideTrailingBarWidth: geo.insideTrailingBarWidth,
+                                                                  insideBottomBarHeight: geo.insideBottomBarHeight,
+                                                                  insideLeadingBarWidth: geo.insideLeadingBarWidth,
+                                                                  videoAspectRatio: videoAspectRatio,
+                                                                  constrainedWithin: bestScreen.visibleFrame)
       break
     }
 
@@ -1198,7 +1222,7 @@ extension PlayerWindowController {
 
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
-      if !transition.isExitingFullScreen && !outputLayout.isFullScreen {
+      if !transition.isExitingFullScreen && !outputLayout.spec.isNativeFullScreen {
         log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
         player.window.setFrameImmediately(geo.windowFrame)
         videoView.updateSizeConstraints(geo.videoSize)
@@ -1438,21 +1462,19 @@ extension PlayerWindowController {
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
     }
 
-    if transition.isEnteringFullScreen {
-      // Entering FullScreen
-      if transition.outputLayout.isLegacyFullScreen {
-        Logger.log("Calling setFrame() to animate into legacy full screen from OpenNewPanelsAndFinalizeOffsets", level: .verbose)
-        // Set window frame including camera housing (if any) so that it is filled with black pixels
-        setWindowFrameForLegacyFullScreen(using: transition.outputGeometry)
-      } else {
-        // Native FullScreen: set frame not including camera housing because it looks better with the native animation
-        let newWindowFrame = bestScreen.frameWithoutCameraHousing
-        Logger.log("Calling setFrame() to animate into full screen, to: \(newWindowFrame)", level: .verbose)
-        player.window.setFrameImmediately(newWindowFrame)
-      }
+    if transition.isEnteringFullScreen && transition.outputLayout.spec.isNativeFullScreen {
+      // Native FullScreen: set frame not including camera housing because it looks better with the native animation
+      let newWindowFrame = bestScreen.frameWithoutCameraHousing
+      log.verbose("Calling setFrame() to animate into full screen, to: \(newWindowFrame)")
+      player.window.setFrameImmediately(newWindowFrame)
+    } else if transition.outputLayout.isLegacyFullScreen {
+      log.verbose("Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
+      // Set window frame including camera housing (if any) so that it is filled with black pixels
+      let newGeo = transition.outputGeometry.clone(windowFrame: bestScreen.frame)
+      setWindowFrameForLegacyFullScreen(using: newGeo)
     } else if !transition.isInitialLayout && !outputLayout.isFullScreen {
       let newWindowFrame = transition.outputGeometry.windowFrame
-      log.debug("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
+      log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       player.window.setFrameImmediately(newWindowFrame)
     }
@@ -2093,9 +2115,8 @@ extension PlayerWindowController {
     log.verbose("Calling setFrame() for legacy full screen, to: \(newWindowFrame), usingGeo: \(geometry != nil)")
     player.window.setFrameImmediately(newWindowFrame)
     if let geometry = geometry {
+      log.verbose("Updating videoSize constraints for legacy full screen, to: \(geometry.videoSize)")
       videoView.updateSizeConstraints(geometry.videoSize)
-    } else {
-      videoView.updateSizeConstraints(PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: bestScreen.visibleFrame.size))
     }
     videoView.layoutSubtreeIfNeeded()
   }

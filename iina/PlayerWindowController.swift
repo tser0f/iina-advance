@@ -923,9 +923,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is moved to a new screen such as when the window is on an external display and that display
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
-      if isFullScreen, Preference.bool(for: .useLegacyFullScreen) {
+      if currentLayout.isLegacyFullScreen {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
-          setWindowFrameForLegacyFullScreen()
+          animationQueue.run(CocoaAnimation.Task({ [self] in
+            let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
+            setWindowFrameForLegacyFullScreen(using: newGeo)
+          }))
         }
       }
     }
@@ -1865,8 +1868,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       /// Just wait until after it does its thing before calling `setFrame()`.
       // TODO: in the future, keep strict track of window size & position, and call
       /// `setFrame()` in `windowDidMove()` to preserve correctness
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
-        setWindowFrameForLegacyFullScreen()
+      if currentLayout.isLegacyFullScreen {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+          animationQueue.run(CocoaAnimation.Task({ [self] in
+            let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
+            setWindowFrameForLegacyFullScreen(using: newGeo)
+          }))
+        }
       }
       return
     }
