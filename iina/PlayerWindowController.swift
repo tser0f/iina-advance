@@ -930,7 +930,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
       if currentLayout.isLegacyFullScreen {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+        let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
+        if newGeo.windowFrame != window.frame {
+          log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
           animationQueue.run(CocoaAnimation.Task({ [self] in
             let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
             setWindowFrameForLegacyFullScreen(using: newGeo)
@@ -1875,24 +1877,27 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidChangeScreen(_ notification: Notification) {
-    guard let window = window else { return }
+    guard let window = window, let displayId = window.screen?.displayId else { return }
     log.verbose("WindowDidChangeScreen, frame=\(window.frame)")
+    // Legacy FS work below can be very slow. Try to avoid if possible
+    guard videoView.currentDisplay != displayId else {
+      Logger.log("No need to update window or DisplayLink currentDisplayID (\(displayId)) is unchanged", level: .verbose)
+      return
+    }
     videoView.updateDisplayLink()
     player.events.emit(.windowScreenChanged)
 
+    /// Need to recompute legacy FS's window size so it exactly fills the new screen.
+    /// But looks like the OS will try to reposition the window on its own and can't be stopped...
+    /// Just wait until after it does its thing before calling `setFrame()`.
+    // TODO: in the future, keep strict track of window size & position, and call
+    /// `setFrame()` in `windowDidMove()` to preserve correctness
     if currentLayout.isLegacyFullScreen {
-      /// Need to recompute legacy FS's window size so it exactly fills the new screen.
-      /// But looks like the OS will try to reposition the window on its own and can't be stopped...
-      /// Just wait until after it does its thing before calling `setFrame()`.
-      // TODO: in the future, keep strict track of window size & position, and call
-      /// `setFrame()` in `windowDidMove()` to preserve correctness
-      if currentLayout.isLegacyFullScreen {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
-          animationQueue.run(CocoaAnimation.Task({ [self] in
-            let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
-            setWindowFrameForLegacyFullScreen(using: newGeo)
-          }))
-        }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+        animationQueue.run(CocoaAnimation.Task({ [self] in
+          let newGeo = windowedModeGeometry.clone(windowFrame: bestScreen.frame)
+          setWindowFrameForLegacyFullScreen(using: newGeo)
+        }))
       }
       return
     }
