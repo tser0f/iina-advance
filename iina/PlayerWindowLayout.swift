@@ -828,13 +828,15 @@ extension PlayerWindowController {
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
       // This also can change window styleMask
       updateHiddenViewsAndConstraints(transition)
+      if transition.isExitingMusicMode {
+        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+      }
     })
 
     // Extra task when toggling music mode: move & resize window
     if transition.isTogglingMusicMode {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         player.window.setFrameImmediately(transition.outputGeometry.videoContainerFrameInScreenCoords)
-        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       }))
     }
 
@@ -2118,7 +2120,12 @@ extension PlayerWindowController {
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
   func setWindowFrameForLegacyFullScreen(using geometry: PlayerWindowGeometry, cameraHousingHeight: CGFloat) {
     guard let window = window else { return }
-    guard !(geometry.windowFrame.origin.x == window.frame.origin.x && geometry.windowFrame.origin.y == window.frame.origin.y && geometry.windowFrame.width == geometry.windowFrame.width && geometry.windowFrame.height == geometry.windowFrame.height && geometry.videoSize.width == videoView.widthConstraint.constant && geometry.videoSize.height == videoView.heightConstraint.constant) else {
+    guard !(geometry.windowFrame.origin.x == window.frame.origin.x
+            && geometry.windowFrame.origin.y == window.frame.origin.y
+            && geometry.windowFrame.width == window.frame.width
+            && geometry.windowFrame.height == window.frame.height
+            && geometry.videoSize.width == videoView.widthConstraint.constant
+            && geometry.videoSize.height == videoView.heightConstraint.constant) else {
       log.verbose("No need to update windowFrame for legacyFullScreen - no change")
       return
     }

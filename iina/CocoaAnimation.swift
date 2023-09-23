@@ -106,19 +106,7 @@ class CocoaAnimation {
     private func runTasks() {
       var nextTask: CocoaAnimation.Task? = nil
 
-      // Group zero-duration tasks together if possible
-      var zeroDurationTasks: [CocoaAnimation.Task] = []
-      while let task = self.taskQueue.first, task.duration == 0 {
-        self.taskQueue.removeFirst()
-        zeroDurationTasks.append(task)
-      }
-      if !zeroDurationTasks.isEmpty {
-        nextTask = CocoaAnimation.zeroDurationTask{
-          for task in zeroDurationTasks {
-            task.runFunc()
-          }
-        }
-      } else if let poppedTask = taskQueue.removeFirst() {
+      if let poppedTask = taskQueue.removeFirst() {
         nextTask = poppedTask
       } else {
         self.isRunning = false
