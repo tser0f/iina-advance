@@ -196,6 +196,7 @@ class VideoView: NSView {
   }
 
   func updateSizeConstraints(_ size: CGSize) {
+    player.log.verbose("Updating videoView size constraints to \(size)")
     widthConstraint.animateToConstant(size.width)
     heightConstraint.animateToConstant(size.height)
   }

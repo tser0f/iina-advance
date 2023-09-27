@@ -49,6 +49,9 @@ struct PlayerWindowGeometry: Equatable {
 
   let windowFrame: NSRect
 
+  // Extra black space (if any) above outsideTopBar, used for covering MacBook's magic camera housing while in legacy fullscreen
+  let topMarginHeight: CGFloat
+
   // Outside panels
   let outsideTopBarHeight: CGFloat
   let outsideTrailingBarWidth: CGFloat
@@ -70,15 +73,20 @@ struct PlayerWindowGeometry: Equatable {
 
   // MARK: - Initializers
 
-  init(windowFrame: NSRect,
+  init(windowFrame: NSRect, topMarginHeight: CGFloat,
        outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
        insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
        videoAspectRatio: CGFloat) {
+
+    self.windowFrame = windowFrame
+
+    assert(topMarginHeight >= 0, "Expected topMarginHeight >= 0, found \(topMarginHeight)")
+    self.topMarginHeight = topMarginHeight
+
     assert(outsideTopBarHeight >= 0, "Expected outsideTopBarHeight >= 0, found \(outsideTopBarHeight)")
     assert(outsideTrailingBarWidth >= 0, "Expected outsideTrailingBarWidth >= 0, found \(outsideTrailingBarWidth)")
     assert(outsideBottomBarHeight >= 0, "Expected outsideBottomBarHeight >= 0, found \(outsideBottomBarHeight)")
     assert(outsideLeadingBarWidth >= 0, "Expected outsideLeadingBarWidth >= 0, found \(outsideLeadingBarWidth)")
-    self.windowFrame = windowFrame
     self.outsideTopBarHeight = outsideTopBarHeight
     self.outsideTrailingBarWidth = outsideTrailingBarWidth
     self.outsideBottomBarHeight = outsideBottomBarHeight
@@ -95,32 +103,11 @@ struct PlayerWindowGeometry: Equatable {
 
     self.videoAspectRatio = videoAspectRatio
 
-    let videoContainerSize = PlayerWindowGeometry.computeVideoContainerSize(from: windowFrame, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
+    let videoContainerSize = PlayerWindowGeometry.computeVideoContainerSize(from: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
     self.videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
   }
 
-  init(windowFrame: NSRect,
-       videoContainerFrame: NSRect,
-       insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
-       videoAspectRatio: CGFloat) {
-    assert(videoContainerFrame.height <= windowFrame.height, "videoContainerFrame.height (\(videoContainerFrame.height)) cannot be larger than windowFrame.height (\(windowFrame.height))")
-    assert(videoContainerFrame.width <= windowFrame.width, "videoContainerFrame.width (\(videoContainerFrame.width)) cannot be larger than windowFrame.width (\(windowFrame.width))")
-
-    let outsideLeadingBarWidth = videoContainerFrame.origin.x
-    let outsideBottomBarHeight = videoContainerFrame.origin.y
-    self.init(windowFrame: windowFrame,
-              outsideTopBarHeight: windowFrame.height - videoContainerFrame.height - outsideBottomBarHeight,
-              outsideTrailingBarWidth: windowFrame.width - videoContainerFrame.width - outsideLeadingBarWidth,
-              outsideBottomBarHeight: videoContainerFrame.origin.y,
-              outsideLeadingBarWidth: videoContainerFrame.origin.x,
-              insideTopBarHeight: insideTopBarHeight,
-              insideTrailingBarWidth: insideTrailingBarWidth,
-              insideBottomBarHeight: insideBottomBarHeight,
-              insideLeadingBarWidth: insideLeadingBarWidth,
-              videoAspectRatio: videoAspectRatio)
-  }
-
-  func clone(windowFrame: NSRect? = nil,
+  func clone(windowFrame: NSRect? = nil, topMarginHeight: CGFloat? = nil,
              outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
              outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
              insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
@@ -128,15 +115,16 @@ struct PlayerWindowGeometry: Equatable {
              videoAspectRatio: CGFloat? = nil) -> PlayerWindowGeometry {
 
     return PlayerWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
-                              outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
-                              outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
-                              outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
-                              outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
-                              insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
-                              insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
-                              insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
-                              insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
-                              videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
+                                topMarginHeight: topMarginHeight ?? self.topMarginHeight,
+                                outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
+                                outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
+                                outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
+                                outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
+                                insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
+                                insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
+                                insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
+                                insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
+                                videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
   // MARK: - Computed properties
@@ -172,11 +160,11 @@ struct PlayerWindowGeometry: Equatable {
 
   // MARK: - Functions
 
-  static private func computeVideoContainerSize(from windowFrame: NSRect,
+  static private func computeVideoContainerSize(from windowFrame: NSRect, topMarginHeight: CGFloat,
                                                 outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat,
                                                 outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat) -> NSSize {
     return NSSize(width: windowFrame.width - outsideTrailingBarWidth - outsideLeadingBarWidth,
-                  height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight)
+                  height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight - topMarginHeight)
   }
 
   static func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn videoContainerSize: NSSize) -> NSSize {
@@ -638,6 +626,7 @@ extension PlayerWindowController {
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
 
     let geo = PlayerWindowGeometry(windowFrame: window!.frame,
+                                   topMarginHeight: layout.cameraHousingOffset,
                                    outsideTopBarHeight: layout.topBarOutsideHeight,
                                    outsideTrailingBarWidth: layout.trailingBarOutsideWidth,
                                    outsideBottomBarHeight: outsideBottomBarHeight,
@@ -857,12 +846,12 @@ extension PlayerWindowController {
     guard let window = notification.object as? NSWindow else { return }
     // Remember, this method can be called as a side effect of an animation
 
+    guard !isAnimating else { return }
     let vidContainerSize = videoContainerView.frame.size
     let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
-    videoView.updateSizeConstraints(videoSize)
+    log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
 
-    guard !isAnimating else { return }
-    log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
+    videoView.updateSizeConstraints(videoSize)
 
     if player.isInMiniPlayer {
       // Re-evaluate space requirements for labels. May need to toggle scroll

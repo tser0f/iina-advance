@@ -215,7 +215,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // The most up-to-date aspect ratio of the video (width/height)
   var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {
     didSet {
-      log.verbose("Updated videoAspectRatio: \(videoAspectRatio)")
+      log.verbose("Updated videoAspectRatio to \(videoAspectRatio)")
     }
   }
 
@@ -227,7 +227,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
     didSet {
-      log.verbose("Updated windowedModeGeometry: \(windowedModeGeometry.windowFrame)")
+      log.verbose("Updated windowedModeGeometry to \(windowedModeGeometry)")
     }
   }
 
@@ -930,12 +930,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
       if currentLayout.isLegacyFullScreen {
-        animationQueue.run(CocoaAnimation.Task({ [self] in
-          guard let screen = window.screen else { return }
+        guard let screen = window.screen else { return }
+        // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
+        animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
           log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
-          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame)
-          let cameraHousingHeight = screen.cameraHousingHeight ?? 0
-          setWindowFrameForLegacyFullScreen(using: newGeo, cameraHousingHeight: cameraHousingHeight)
+          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame, topMarginHeight: screen.cameraHousingHeight ?? 0)
+          setWindowFrameForLegacyFullScreen(using: newGeo)
         }))
       }
     }
@@ -1897,9 +1897,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         guard let screen = window.screen else { return }
         animationQueue.run(CocoaAnimation.Task({ [self] in
           log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
-          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame)
-          let cameraHousingHeight = screen.cameraHousingHeight ?? 0
-          setWindowFrameForLegacyFullScreen(using: newGeo, cameraHousingHeight: cameraHousingHeight)
+          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame, topMarginHeight: screen.cameraHousingHeight ?? 0)
+          setWindowFrameForLegacyFullScreen(using: newGeo)
         }))
       }
       return

@@ -95,6 +95,7 @@ struct PlayerSaveState {
   private static func toCSV(_ geo: PlayerWindowGeometry) -> String {
     return [windowGeometryPrefStringVersion,
             geo.videoAspectRatio.string6f,
+            geo.topMarginHeight.string2f,
             geo.outsideTopBarHeight.string2f,
             geo.outsideTrailingBarWidth.string2f,
             geo.outsideBottomBarHeight.string2f,
@@ -418,11 +419,12 @@ struct PlayerSaveState {
   /// String -> `PlayerWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> PlayerWindowGeometry? {
     return deserializeCSV(.windowedModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 14,
+                          expectedTokenCount: 15,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
       guard let videoAspectRatio = Double(iter.next()!),
+            let topMarginHeight = Double(iter.next()!),
             let outsideTopBarHeight = Double(iter.next()!),
             let outsideTrailingBarWidth = Double(iter.next()!),
             let outsideBottomBarHeight = Double(iter.next()!),
@@ -440,7 +442,7 @@ struct PlayerSaveState {
       }
 
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return PlayerWindowGeometry(windowFrame: windowFrame,
+      return PlayerWindowGeometry(windowFrame: windowFrame, topMarginHeight: topMarginHeight,
                                 outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                                 outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
                                 insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,

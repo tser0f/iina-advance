@@ -47,6 +47,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
   func toPlayerWindowGeometry() -> PlayerWindowGeometry {
     let outsideBottomBarHeight = MiniPlayerController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
     return PlayerWindowGeometry(windowFrame: windowFrame,
+                                topMarginHeight: 0,
                                 outsideTopBarHeight: 0,
                                 outsideTrailingBarWidth: 0,
                                 outsideBottomBarHeight: outsideBottomBarHeight,
