@@ -611,8 +611,10 @@ extension PlayerWindowController {
     switch currentLayout.spec.mode {
     case .windowed:
       windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
+      player.saveState()
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame, videoAspectRatio: videoAspectRatio)
+      player.saveState()
       break
     default:
       break
@@ -636,7 +638,7 @@ extension PlayerWindowController {
                                    insideBottomBarHeight: insideBottomBarHeight,
                                    insideLeadingBarWidth: layout.insideLeadingBarWidth,
                                    videoAspectRatio: videoAspectRatio)
-    return geo.scaleVideoContainer(desiredSize: videoContainerView.frame.size, constrainedWithin: bestScreen.frame)
+    return geo.scaleVideoContainer(constrainedWithin: bestScreen.frame)
   }
 
 
@@ -842,11 +844,13 @@ extension PlayerWindowController {
     return chosenGeometry
   }
 
+  /// Called anytime window is resized. May be called after every call to `window.setFrame()`.
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
-    // Remember, this method can be called as a side effect of an animation
 
+    // Remember, this method can be called as a side effect of an animation. Do nothing in this case.
     guard !isAnimating else { return }
+
     let vidContainerSize = videoContainerView.frame.size
     let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
     log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
@@ -854,13 +858,10 @@ extension PlayerWindowController {
     videoView.updateSizeConstraints(videoSize)
 
     if player.isInMiniPlayer {
-      // Re-evaluate space requirements for labels. May need to toggle scroll
+      // Re-evaluate space requirements for labels. May need to start scrolling.
+      // Will also update saved state
       miniPlayer.windowDidResize()
       return
-    }
-
-    defer {
-      updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
     }
 
     CocoaAnimation.disableAnimation {
@@ -873,10 +874,12 @@ extension PlayerWindowController {
       }
     }
 
+    updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
+    player.saveState()
     player.events.emit(.windowResized, data: window.frame)
   }
 
-  /// Misleading name. Called during user drag of window border, but can also be called repeatedly during single pinch-to-zoom.
+  /// Called when done with user drag of window border.
   /// Do not use for most things! Use `windowDidResize` instead.
   func windowDidEndLiveResize(_ notification: Notification) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
@@ -891,6 +894,7 @@ extension PlayerWindowController {
       // But update preferred container size
       let resizedGeo = windowedModeGeometry.clone(windowFrame: window!.frame).constrainWithin(bestScreen.visibleFrame)
       player.info.setUserPreferredVideoContainerSize(from: resizedGeo)
+      windowedModeGeometry = resizedGeo
 
       // resize framebuffer in videoView after resizing.
       updateWindowParametersForMPV()
@@ -899,6 +903,7 @@ extension PlayerWindowController {
     default:
       break
     }
+    player.saveState()
   }
 
   private func updateFloatingOSCAfterWindowDidResize() {

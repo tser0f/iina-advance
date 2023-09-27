@@ -1321,7 +1321,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       isDragging = false
     } else if finishResizingSidebar(with: event) {
       updateCachedGeometry()
-      player.saveState()
       return
     } else {
       // if it's a mouseup after clicking
@@ -1915,7 +1914,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window = window else { return }
     log.verbose("WindowDidMove, frame=\(window.frame)")
     updateCachedGeometry()
-    player.saveState()
     player.events.emit(.windowMoved, data: window.frame)
   }
 
@@ -1980,7 +1978,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
     updateCachedGeometry()
-    player.saveState()
     player.events.emit(.windowMiniaturized)
   }
 
@@ -1996,7 +1993,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
     updateCachedGeometry()
-    player.saveState()
     player.events.emit(.windowDeminiaturized)
   }
 
@@ -2660,13 +2656,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
-    log.verbose("Sending mpv windowScale\(videoSize == nil ? "" : " given videoSize \(videoSize!)")")
-    // this is also a good place to save state, if applicable
-
     let videoScale = Double((videoSize ?? windowedModeGeometry.videoSize).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
     if videoScale != prevVideoScale {
-      log.verbose("Sending mpv windowScale: \(player.info.cachedWindowScale) → \(videoScale)")
+      log.verbose("Sending mpv windowScale: \(player.info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : " (given videoSize \(videoSize!))")")
       player.info.cachedWindowScale = videoScale
       player.mpv.setDouble(MPVProperty.windowScale, videoScale)
     }
