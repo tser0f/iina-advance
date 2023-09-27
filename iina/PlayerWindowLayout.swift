@@ -258,29 +258,29 @@ extension PlayerWindowController {
 
     /// Bar widths/heights IF `outsideVideo`
 
-    var topBarOutsideHeight: CGFloat {
+    var outsideTopBarHeight: CGFloat {
       return topBarPlacement == .outsideVideo ? topBarHeight : 0
     }
 
     /// NOTE: Is mutable!
-    var trailingBarOutsideWidth: CGFloat {
+    var outsideTrailingBarWidth: CGFloat {
       return spec.trailingSidebar.outsideWidth
     }
 
     /// NOTE: Is mutable!
-    var leadingBarOutsideWidth: CGFloat {
+    var outsideLeadingBarWidth: CGFloat {
       return spec.leadingSidebar.outsideWidth
     }
 
     /// Bar widths/heights IF `insideVideo`
 
     /// NOTE: Is mutable!
-    var leadingBarInsideWidth: CGFloat {
+    var insideLeadingBarWidth: CGFloat {
       return spec.leadingSidebar.insideWidth
     }
 
     /// NOTE: Is mutable!
-    var trailingBarInsideWidth: CGFloat {
+    var insideTrailingBarWidth: CGFloat {
       return spec.trailingSidebar.insideWidth
     }
 
@@ -933,25 +933,25 @@ extension PlayerWindowController {
       // TODO: store screenFrame in PlayerWindowGeometry
       return PlayerWindowGeometry(windowFrame: bestScreen.frame,
                                   topMarginHeight: bestScreen.cameraHousingHeight ?? 0,
-                                  outsideTopBarHeight: outputLayout.topBarOutsideHeight,
-                                  outsideTrailingBarWidth: outputLayout.trailingBarOutsideWidth,
+                                  outsideTopBarHeight: outputLayout.outsideTopBarHeight,
+                                  outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
                                   outsideBottomBarHeight: outsideBottomBarHeight,
-                                  outsideLeadingBarWidth: outputLayout.leadingBarOutsideWidth,
+                                  outsideLeadingBarWidth: outputLayout.outsideLeadingBarWidth,
                                   insideTopBarHeight: insideTopBarHeight,
-                                  insideTrailingBarWidth: outputLayout.trailingBarInsideWidth,
+                                  insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
                                   insideBottomBarHeight: insideBottomBarHeight,
-                                  insideLeadingBarWidth: outputLayout.leadingBarInsideWidth,
+                                  insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
                                   videoAspectRatio: videoAspectRatio)
     }
 
-    let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.topBarOutsideHeight,
-                                                      outsideTrailingBarWidth: outputLayout.trailingBarOutsideWidth,
+    let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.outsideTopBarHeight,
+                                                      outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
                                                       outsideBottomBarHeight: outsideBottomBarHeight,
-                                                      outsideLeadingBarWidth: outputLayout.leadingBarOutsideWidth,
+                                                      outsideLeadingBarWidth: outputLayout.outsideLeadingBarWidth,
                                                       insideTopBarHeight: insideTopBarHeight,
-                                                      insideTrailingBarWidth: outputLayout.trailingBarInsideWidth,
+                                                      insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
                                                       insideBottomBarHeight: insideBottomBarHeight,
-                                                      insideLeadingBarWidth: outputLayout.leadingBarInsideWidth,
+                                                      insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
                                                       videoAspectRatio: videoAspectRatio,
                                                       constrainedWithin: bestScreen.visibleFrame)
 

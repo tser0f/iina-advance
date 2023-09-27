@@ -627,14 +627,14 @@ extension PlayerWindowController {
 
     let geo = PlayerWindowGeometry(windowFrame: window!.frame,
                                    topMarginHeight: layout.cameraHousingOffset,
-                                   outsideTopBarHeight: layout.topBarOutsideHeight,
-                                   outsideTrailingBarWidth: layout.trailingBarOutsideWidth,
+                                   outsideTopBarHeight: layout.outsideTopBarHeight,
+                                   outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
                                    outsideBottomBarHeight: outsideBottomBarHeight,
-                                   outsideLeadingBarWidth: layout.leadingBarOutsideWidth,
+                                   outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
                                    insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
-                                   insideTrailingBarWidth: layout.trailingBarInsideWidth,
+                                   insideTrailingBarWidth: layout.insideTrailingBarWidth,
                                    insideBottomBarHeight: insideBottomBarHeight,
-                                   insideLeadingBarWidth: layout.leadingBarInsideWidth,
+                                   insideLeadingBarWidth: layout.insideLeadingBarWidth,
                                    videoAspectRatio: videoAspectRatio)
     return geo.scaleVideoContainer(desiredSize: videoContainerView.frame.size, constrainedWithin: bestScreen.frame)
   }
