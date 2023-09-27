@@ -44,6 +44,7 @@ struct Preference {
 
     static let actionAfterLaunch = Key("actionAfterLaunch")
     static let alwaysOpenInNewWindow = Key("alwaysOpenInNewWindow")
+    /// Secret pref which, if set to `true`, makes the menu item `File` > `New Window` visible:
     static let enableCmdN = Key("enableCmdN")
 
     /** Record recent files */

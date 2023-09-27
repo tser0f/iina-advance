@@ -1070,6 +1070,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     showOpenURLWindow(isAlternativeAction: sender.tag == AlternativeMenuItemTag)
   }
 
+  /// Only used if `Preference.Key.enableCmdN` is set to `true`
   @IBAction func menuNewWindow(_ sender: Any) {
     showWelcomeWindow()
   }
