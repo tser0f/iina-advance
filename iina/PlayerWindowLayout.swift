@@ -521,6 +521,10 @@ extension PlayerWindowController {
       return isExitingFullScreen && inputLayout.isLegacyFullScreen
     }
 
+    var isTogglingLegacyFullScreen: Bool {
+      return isEnteringLegacyFullScreen || isExitingLegacyFullScreen
+    }
+
     var isEnteringMusicMode: Bool {
       return !inputLayout.isMusicMode && outputLayout.isMusicMode
     }
@@ -751,9 +755,13 @@ extension PlayerWindowController {
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
+    // - Build outputLayout
+
     let outputLayout = buildOutputLayoutState(from: outputSpec)
 
-    // InputGeometry
+    // - Build geometries
+
+    // Build InputGeometry
     let inputGeometry: PlayerWindowGeometry
     if inputLayout.isMusicMode {
       inputGeometry = musicModeGeometry.toPlayerWindowGeometry()
@@ -761,7 +769,7 @@ extension PlayerWindowController {
       inputGeometry = windowedModeGeometry
     }
 
-    // OutputGeometry
+    // Build OutputGeometry
     let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(oldGeometry: inputGeometry, outputLayout: outputLayout)
 
     let transition = LayoutTransition(name: transitionName,
@@ -769,9 +777,20 @@ extension PlayerWindowController {
                                       to: outputLayout, to: outputGeometry,
                                       isInitialLayout: false)
 
-    // MiddleGeometry (after closed panels step)
+    // Build MiddleGeometry (after closed panels step)
     transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
     log.verbose("Built middleGeometry for transition \(transition.name.quoted): \(transition.middleGeometry!)")
+
+    let panelTimingName: CAMediaTimingFunctionName?
+    if transition.isTogglingFullScreen {
+      panelTimingName = nil
+    } else if transition.isTogglingVisibilityOfAnySidebar {
+      panelTimingName = .easeIn
+    } else {
+      panelTimingName = .linear
+    }
+
+    // - Determine durations
 
     var startingAnimationDuration = CocoaAnimation.DefaultDuration
     if transition.isTogglingFullScreen {
@@ -784,7 +803,6 @@ extension PlayerWindowController {
 
     var showFadeableViewsDuration: CGFloat = startingAnimationDuration
     var fadeOutOldViewsDuration: CGFloat = startingAnimationDuration
-    let closeOldPanelsDuration: CGFloat = startingAnimationDuration
     if transition.isExitingMusicMode {
       showFadeableViewsDuration = 0
       fadeOutOldViewsDuration = 0
@@ -792,18 +810,13 @@ extension PlayerWindowController {
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
-    let panelTimingName: CAMediaTimingFunctionName?
-    if transition.isTogglingFullScreen {
-      panelTimingName = nil
-    } else if transition.isTogglingVisibilityOfAnySidebar {
-      panelTimingName = .easeIn
-    } else {
-      panelTimingName = .linear
-    }
+    // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
+    let openFinalPanelsDuration = transition.isTogglingLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
 
     log.verbose("Building layout transition \(transition.name.quoted). EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
+    let screen = bestScreen
 
-    // Starting animations:
+    // - Starting animations:
 
     // 0: Set initial var or other tasks which happen before main animations
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
@@ -822,12 +835,16 @@ extension PlayerWindowController {
       }))
     }
 
-    // StartingAnimation 3: Close/Minimize panels which are no longer needed.
+    // StartingAnimation 3: Close/Minimize panels which are no longer needed. Not used for fullScreen transitions.
+    // Applies middleGeometry if it exists.
     if transition.needsCloseOldPanels {
+      let closeOldPanelsDuration = transition.isExitingLegacyFullScreen ? (startingAnimationDuration * 0.8) : startingAnimationDuration
       transition.animationTasks.append(CocoaAnimation.Task(duration: closeOldPanelsDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
       }))
     }
+
+    // - Middle animations:
 
     // 0: Middle point: update style & constraints. Should have minimal visual changes
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
@@ -845,11 +862,17 @@ extension PlayerWindowController {
       }))
     }
 
-    // Ending animations:
+    // - Ending animations:
 
-    let screen = bestScreen
-    // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
-    let openFinalPanelsDuration = transition.isEnteringLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
+    // Extra animation for exiting legacy full screen
+    if transition.isExitingLegacyFullScreen {
+      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
+        let screen = bestScreen
+        let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
+        log.verbose("Updating legacy full screen window to show camera housing")
+        setWindowFrameForLegacyFullScreen(using: newGeo)
+      }))
+    }
 
     // EndingAnimation: Open new panels and fade in new views
     transition.animationTasks.append(CocoaAnimation.Task(duration: openFinalPanelsDuration, timing: .linear, { [self] in
@@ -862,15 +885,16 @@ extension PlayerWindowController {
       }
     }))
 
+    // EndingAnimation: Fade in new views
     if !transition.isTogglingFullScreen && transition.needsFadeInNewViews {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
         fadeInNewViews(transition)
       }))
     }
 
+    // Extra animation for entering legacy full screen
     if transition.isEnteringLegacyFullScreen {
-      // Enter legacy full screen
-      transition.animationTasks.append(CocoaAnimation.Task(duration: openFinalPanelsDuration * 0.2, timing: .easeIn, { [self] in
+      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         guard let window = window else { return }
         window.styleMask.insert(.borderless)
         window.styleMask.remove(.resizable)
@@ -1215,6 +1239,7 @@ extension PlayerWindowController {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] CloseOldPanels: title_H=\(outputLayout.titleBarHeight), topOSC_H=\(outputLayout.topOSCHeight)")
+    assert(!transition.isEnteringFullScreen, "CloseOldPanels() should not be called for exiting full screen")
 
     if transition.inputLayout.titleBarHeight > 0 && outputLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
