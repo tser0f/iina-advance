@@ -814,7 +814,6 @@ extension PlayerWindowController {
     let openFinalPanelsDuration = transition.isTogglingLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
 
     log.verbose("Building layout transition \(transition.name.quoted). EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
-    let screen = bestScreen
 
     // - Starting animations:
 

@@ -49,13 +49,14 @@ struct AppInputConfig {
 
       var doReplace = true
 
-      if onlyIfDifferent {
-        let existingCount = sharedSection.keyMappingList.count
-        let newCount = mappings.count
+//      if onlyIfDifferent {
         // TODO: get more sophisticated than this simple check
-        let didChange = !(existingCount == 0 && newCount == 0)
-        doReplace = didChange
-      }
+//        let existingCount = sharedSection.keyMappingList.count
+//        let newCount = mappings.count
+//        let didChange = !(existingCount == 0 && newCount == 0)
+//        doReplace = didChange
+//        doReplace = true
+//      }
 
       if doReplace {
         sharedSection.setKeyMappingList(mappings)

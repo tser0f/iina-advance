@@ -41,6 +41,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     .enableAdvancedSettings,
     .iinaLaunchCount,
     .iinaPing,
+    .enableCmdN,
   ]
 
   // Windows
@@ -134,6 +135,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       } else if let pingValue = change[.newKey] {
         Logger.log("Ping unrecognized: \(pingValue)", level: .warning)
       }
+
+    case PK.enableCmdN.rawValue:
+      menuController.refreshBuiltInMenuItemBindings()
+      break
 
     default:
       break
@@ -319,6 +324,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     JavascriptPlugin.loadGlobalInstances()
     menuController.updatePluginMenu()
+    menuController.refreshBuiltInMenuItemBindings()
 
     let nextID = Preference.integer(for: .iinaLaunchCount) + 1
     AppDelegate.launchID = nextID

@@ -421,8 +421,6 @@ class MenuController: NSObject, NSMenuDelegate {
 
     inspector.action = #selector(PlayerWindowController.menuShowInspector(_:))
     miniPlayer.action = #selector(PlayerWindowController.menuSwitchToMiniPlayer(_:))
-
-    updateBuiltInMenuItemBindings()
   }
 
   // MARK: - Update Menus
@@ -837,8 +835,9 @@ class MenuController: NSObject, NSMenuDelegate {
   // Refreshes list of built-in menu items, replacing the lastmost input section. They override all other bindings.
   // Instead of trying to keep track of them manually, just see which menu items have bindings which  haven't already been
   // accounted for.
-  func updateBuiltInMenuItemBindings() {
-    let builtInMenuItemBindings: [KeyMapping] = self.getBuiltInMenuItems(filterOut: AppInputConfig.current.resolverDict)
+  func refreshBuiltInMenuItemBindings() {
+    let filterDict = AppInputConfig.current.resolverDict.filter{$0.value.origin != .builtInMenuItem}
+    let builtInMenuItemBindings: [KeyMapping] = self.getBuiltInMenuItems(filterOut: filterDict)
     AppInputConfig.replaceMappings(forSharedSectionName: SharedInputSection.BUILTIN_MENU_ITEMS_SECTION_NAME, with: builtInMenuItemBindings, onlyIfDifferent: true)
   }
 
@@ -851,12 +850,18 @@ class MenuController: NSObject, NSMenuDelegate {
         for subMenuItem in subMenu.items {
           forMenuItemAndAllDescendents(subMenuItem, do: { menuItem in
             guard !menuItem.keyEquivalent.isEmpty else { return }
+            // filter out media keys; they can't be bound anyway
+            guard KeyCodeHelper.isPrintable(menuItem.keyEquivalent) else { return }
             let rawKey = KeyCodeHelper.macOSToMpv(key: menuItem.keyEquivalent, modifiers: menuItem.keyEquivalentModifierMask)
             guard !rawKey.isEmpty else {
               return
             }
 
             if let binding = filterDict[rawKey], binding.menuItem?.action == menuItem.action {
+              return
+            }
+            if menuItem.action == #selector(AppDelegate.menuNewWindow(_:)) && !Preference.bool(for: .enableCmdN) {
+              /// Exclude `File` > `New Window` if it is not enabled
               return
             }
             menuItemMappings.append(MenuItemMapping(rawKey: rawKey, sourceName: "built-in", menuItem: menuItem,
@@ -1027,12 +1032,13 @@ class MenuController: NSObject, NSMenuDelegate {
             kbMenuItem = NSMenuItem(title: menuItem.title, action: menuItem.action, keyEquivalent: "")
           } else {
             // First qualifying mapping
-            binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
             kbMenuItem = menuItem
             didBindMenuItem = true
           }
           updateMenuItem(kbMenuItem, kEqv: kEqv, kMdf: kMdf, l10nKey: l10nKey, value: value, extraData: extraData)
           kb.menuItem = kbMenuItem
+          /// Make sure this is executed after `updateMenuItem()` to ensure it contains the accurate menu item title:
+          binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
         }
       }
 
