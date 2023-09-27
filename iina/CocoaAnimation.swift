@@ -13,12 +13,20 @@ typealias AnimationBlock = (NSAnimationContext) -> Void
 
 class CocoaAnimation {
 
-  // MARK: Constants
+  // MARK: Durations
 
-  static let DefaultDuration = 0.25
-  static let FullScreenTransitionDuration = 0.25  // Roughly matching the noticeable portion of the native duration (as of MacOS 13.4)
-  static let OSDAnimationDuration = 0.5
-  static let CropAnimationDuration = 0.2
+  static var DefaultDuration: CGFloat {
+    return CGFloat(Preference.float(for: .animationDurationDefault))
+  }
+  static var FullScreenTransitionDuration: CGFloat {
+    return CGFloat(Preference.float(for: .animationDurationFullScreen))
+  }
+  static var OSDAnimationDuration: CGFloat {
+    return CGFloat(Preference.float(for: .animationDurationOSD))
+  }
+  static var CropAnimationDuration: CGFloat {
+    CGFloat(Preference.float(for: .animationDurationCrop))
+  }
 
   // MARK: "Disable all" override switch
 

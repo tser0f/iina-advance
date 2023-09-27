@@ -47,7 +47,7 @@ struct AppInputConfig {
     InputSectionStack.dq.sync {
       guard let sharedSection = sharedSectionStack.sectionsDefined[forSharedSectionName] as? SharedInputSection else { return }
 
-      var doReplace = true
+      let doReplace = true
 
 //      if onlyIfDifferent {
         // TODO: get more sophisticated than this simple check

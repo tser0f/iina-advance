@@ -47,6 +47,11 @@ struct Preference {
     /// Secret pref which, if set to `true`, makes the menu item `File` > `New Window` visible:
     static let enableCmdN = Key("enableCmdN")
 
+    static let animationDurationDefault = Key("animationDurationDefault")
+    static let animationDurationFullScreen = Key("animationDurationFullScreen")
+    static let animationDurationOSD = Key("animationDurationOSD")
+    static let animationDurationCrop = Key("animationDurationCrop")
+
     /** Record recent files */
     static let recordPlaybackHistory = Key("recordPlaybackHistory")
     static let recordRecentFiles = Key("recordRecentFiles")
@@ -938,6 +943,11 @@ struct Preference {
     .actionAfterLaunch: ActionAfterLaunch.welcomeWindow.rawValue,
     .alwaysOpenInNewWindow: true,
     .enableCmdN: false,
+    .animationDurationDefault: 0.25,
+    // Should roughly match the noticeable portion of the native duration (as of MacOS 13.4):
+    .animationDurationFullScreen: 0.25,
+    .animationDurationOSD: 0.5,
+    .animationDurationCrop: 0.2,
     .recordPlaybackHistory: true,
     .recordRecentFiles: true,
     .trackAllFilesInRecentOpenMenu: true,
