@@ -1698,6 +1698,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     updateBufferIndicatorView()
     updateOSDPosition()
 
+    // Position the window frame before showing it to create the smoothest effect
+    if let priorWindowFrame = player.info.priorState?.windowedModeGeometry?.windowFrame {
+      player.window.setFrameImmediately(priorWindowFrame)
+    }
+
     // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
     log.verbose("Showing Player Window")
     window.setIsVisible(true)

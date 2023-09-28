@@ -715,11 +715,11 @@ extension PlayerWindowController {
     }
 
     if !initialLayout.isLegacyFullScreen {
-      animationQueue.run(CocoaAnimation.Task({ [self] in
+      animationQueue.runZeroDuration({ [self] in
         log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
         player.window.setFrameImmediately(initialGeometry!.windowFrame)
         videoView.updateSizeConstraints(initialGeometry!.videoSize)
-      }))
+      })
     }
 
     if needsNativeFullScreen {
