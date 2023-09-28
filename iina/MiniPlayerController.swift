@@ -357,6 +357,10 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func windowDidResize() {
     _ = view
     resetScrollingLabels()
+
+    // Very important: do not interfere with animation by changing view geometry in process
+    guard !windowController.isAnimating else { return }
+
     applyGeometryAfterResize(newWindowFrame: window!.frame)
   }
 
