@@ -654,8 +654,10 @@ extension PlayerWindowController {
 
     geoUpdateRequestCount += 1
     let geoUpdateRequestID = geoUpdateRequestCount
+    let isFullScreen = isFullScreen
 
-    animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    let duration = isFullScreen ? 0 : CocoaAnimation.DefaultDuration
+    animationQueue.run(CocoaAnimation.Task(duration: duration, timing: .easeInEaseOut, { [self] in
       if geoUpdateRequestID < geoUpdateRequestCount {
         log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateRequestCount)")
         return
@@ -664,7 +666,11 @@ extension PlayerWindowController {
       windowedModeGeometry = newGeometry
       player.saveState()
 
-      if !isFullScreen {
+      if isFullScreen {
+        // Make sure video constraints are up to date, even in full screen
+        let newVideoSizeFS = PlayerWindowGeometry.computeVideoSize(withAspectRatio: newGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
+        videoView.updateSizeConstraints(newVideoSizeFS)
+      } else {
         // Make sure this is up-to-date
         videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
         player.window.setFrameImmediately(newGeometry.windowFrame, animate: animate)
