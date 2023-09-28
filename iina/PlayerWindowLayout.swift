@@ -699,6 +699,7 @@ extension PlayerWindowController {
 
     // Restore primary videoAspectRatio
     videoAspectRatio = initialGeometry!.videoAspectRatio
+    videoView.updateSizeConstraints(initialGeometry!.videoSize)
 
     let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
     let transition = LayoutTransition(name: name, from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
@@ -722,7 +723,7 @@ extension PlayerWindowController {
       setWindowFloatingOnTop(true)
     }
 
-    if !initialLayout.isLegacyFullScreen {
+    if !initialLayout.isLegacyFullScreen && !initialLayout.isMusicMode {
       animationQueue.runZeroDuration({ [self] in
         log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
         player.window.setFrameImmediately(initialGeometry!.windowFrame)
@@ -773,6 +774,8 @@ extension PlayerWindowController {
     let inputGeometry: PlayerWindowGeometry
     if inputLayout.isMusicMode {
       inputGeometry = musicModeGeometry.toPlayerWindowGeometry()
+    } else if inputLayout.isLegacyFullScreen {
+      inputGeometry = buildLegacyFullScreenGeometry(from: inputLayout)
     } else {
       inputGeometry = windowedModeGeometry
     }
@@ -1684,17 +1687,17 @@ extension PlayerWindowController {
         restoreDockSettings()
       }
 
-      if transition.isRemovingLegacyStyle {
+      if transition.outputLayout.spec.isLegacyStyle {
+        log.verbose("Removing window styleMask.titled")
+        window.styleMask.remove(.titled)
+        window.styleMask.insert(.borderless)
+      } else {
         // Go back to titled style
         if #available(macOS 10.16, *) {
           log.verbose("Inserting window styleMask.titled")
           window.styleMask.insert(.titled)
           window.styleMask.remove(.borderless)
         }
-      } else if transition.isAddingLegacyStyle {
-        log.verbose("Removing window styleMask.titled")
-        window.styleMask.remove(.titled)
-        window.styleMask.insert(.borderless)
       }
 
       if Preference.bool(for: .blackOutMonitor) {
@@ -1751,8 +1754,7 @@ extension PlayerWindowController {
     }
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
-
-    log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode) mpvFS:\(player.mpv.getFlag(MPVOption.Window.fullscreen))")
+    log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode)")
     player.saveState()
   }
 

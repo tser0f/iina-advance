@@ -1698,27 +1698,31 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     resetCollectionBehavior()
     updateBufferIndicatorView()
     updateOSDPosition()
+    addVideoViewToWindow()
 
-    // Position the window frame before showing it to create the smoothest effect
-    if let priorWindowFrame = player.info.priorState?.windowedModeGeometry?.windowFrame {
-      player.window.setFrameImmediately(priorWindowFrame)
+    if let priorState = player.info.priorState {
+      // Position the window frame before showing it to create the smoothest effect
+      if priorState.layoutSpec?.mode == .windowed, let priorWindowGeo = priorState.windowedModeGeometry {
+        player.window.setFrameImmediately(priorWindowGeo.windowFrame)
+        videoView.updateSizeConstraints(priorWindowGeo.videoSize)
+      } else if priorState.layoutSpec?.mode == .musicMode, let priorWindowGeo = priorState.musicModeGeometry?.toPlayerWindowGeometry() {
+        player.window.setFrameImmediately(priorWindowGeo.windowFrame)
+        videoView.updateSizeConstraints(priorWindowGeo.videoSize)
+      }
     }
+
+    // Restore layout from last launch or configure from prefs. Do not animate.
+    setInitialWindowLayout()
 
     // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
     log.verbose("Showing Player Window")
     window.setIsVisible(true)
-    addVideoViewToWindow()
     log.verbose("Hiding defaultAlbumArt for window open")
     defaultAlbumArtView.isHidden = true
 
     player.initVideo()
     videoView.videoLayer.draw(forced: true)
     videoView.startDisplayLink()
-
-    // Restore layout from last launch or configure from prefs. Do not animate, but run inside animationQueue
-    animationQueue.run(CocoaAnimation.Task({ [self] in
-      setInitialWindowLayout()
-    }))
 
     log.verbose("PlayerWindow openWindow done")
   }
