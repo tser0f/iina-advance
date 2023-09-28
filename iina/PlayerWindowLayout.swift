@@ -1459,6 +1459,11 @@ extension PlayerWindowController {
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(outputLayout.titleBarHeight), TopOSC: \(outputLayout.topOSCHeight)")
 
+    if transition.isEnteringNativeFullScreen {
+      let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
+      videoView.updateSizeConstraints(videoSize)
+    }
+
     // Update heights to their final values:
     topOSCHeightConstraint.animateToConstant(outputLayout.topOSCHeight)
     titleBarHeightConstraint.animateToConstant(outputLayout.titleBarHeight)

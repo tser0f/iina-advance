@@ -1899,10 +1899,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
     log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
 
-    CocoaAnimation.disableAnimation {
+    if !isFullScreen {
       // Need to update this always when resizing window, even when resizing non-interactively:
       videoView.updateSizeConstraints(videoSize)
+    }
 
+    CocoaAnimation.disableAnimation {
       if player.isInMiniPlayer {
         // Re-evaluate space requirements for labels. May need to start scrolling.
         // Will also update saved state

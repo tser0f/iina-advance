@@ -656,8 +656,7 @@ extension PlayerWindowController {
     let geoUpdateRequestID = geoUpdateRequestCount
     let isFullScreen = isFullScreen
 
-    let duration = isFullScreen ? 0 : CocoaAnimation.DefaultDuration
-    animationQueue.run(CocoaAnimation.Task(duration: duration, timing: .easeInEaseOut, { [self] in
+    animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       if geoUpdateRequestID < geoUpdateRequestCount {
         log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateRequestCount)")
         return
