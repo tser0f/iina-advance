@@ -195,10 +195,17 @@ class VideoView: NSView {
     window?.layoutIfNeeded()
   }
 
-  func updateSizeConstraints(_ size: CGSize) {
-    player.log.verbose("Updating videoView size constraints to \(size)")
-    widthConstraint.animateToConstant(size.width)
-    heightConstraint.animateToConstant(size.height)
+  func updateSizeConstraints(_ size: CGSize?) {
+    if let size = size {
+      player.log.verbose("Updating videoView size constraints to \(size)")
+      widthConstraint.isActive = true
+      widthConstraint.isActive = true
+      widthConstraint.animateToConstant(size.width)
+      heightConstraint.animateToConstant(size.height)
+    } else {
+      widthConstraint.isActive = false
+      widthConstraint.isActive = false
+    }
   }
 
   // MARK: - Mouse events

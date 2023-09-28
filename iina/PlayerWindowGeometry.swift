@@ -708,35 +708,9 @@ extension PlayerWindowController {
     }
   }
 
-  // MARK: - Window delegate: Resize
-
-  func windowWillStartLiveResize(_ notification: Notification) {
-    guard let window = notification.object as? NSWindow else { return }
-    guard !isAnimating else { return }
-    log.verbose("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)")
-    isLiveResizingWidth = false
-  }
-
-  func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    // This method can be called as a side effect of the animation. If so, ignore.
-    guard !isFullScreen else { return requestedSize }
-    log.verbose("WindowWillResize: requestedSize \(requestedSize)")
-
-    if player.isInMiniPlayer {
-      return miniPlayer.windowWillResize(window, to: requestedSize)
-    }
-
-    let newGeo = tryToResizeWindow(window, to: requestedSize)
-    CocoaAnimation.disableAnimation{
-      videoView.updateSizeConstraints(newGeo.videoSize)
-    }
-
-    updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
-    return newGeo.windowFrame.size
-  }
-
-  private func tryToResizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> PlayerWindowGeometry {
+  func resizeWindowedModeGeometry(desiredSize requestedSize: NSSize) -> PlayerWindowGeometry {
     assert(currentLayout.spec.mode == .windowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.spec.mode)")
+    guard let window = window else { return windowedModeGeometry }
     let currentGeo = windowedModeGeometry
 
     if denyNextWindowResize {
@@ -844,69 +818,7 @@ extension PlayerWindowController {
     return chosenGeometry
   }
 
-  /// Called anytime window is resized. May be called after every call to `window.setFrame()`.
-  func windowDidResize(_ notification: Notification) {
-    guard let window = notification.object as? NSWindow else { return }
-
-    // Remember, this method can be called as a side effect of an animation. Do nothing in this case.
-    guard !isAnimating else { return }
-
-    let vidContainerSize = videoContainerView.frame.size
-    let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
-    log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
-
-    videoView.updateSizeConstraints(videoSize)
-
-    if player.isInMiniPlayer {
-      // Re-evaluate space requirements for labels. May need to start scrolling.
-      // Will also update saved state
-      miniPlayer.windowDidResize()
-      return
-    }
-
-    CocoaAnimation.disableAnimation {
-      if isInInteractiveMode {
-        // interactive mode
-        cropSettingsView?.cropBoxView.resized(with: videoView.frame)
-      } else if currentLayout.oscPosition == .floating {
-        // Update floating control bar position
-        updateFloatingOSCAfterWindowDidResize()
-      }
-    }
-
-    updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
-    player.saveState()
-    player.events.emit(.windowResized, data: window.frame)
-  }
-
-  /// Called when done with user drag of window border.
-  /// Do not use for most things! Use `windowDidResize` instead.
-  func windowDidEndLiveResize(_ notification: Notification) {
-    // Must not access mpv while it is asynchronously processing stop and quit commands.
-    // See comments in windowWillExitFullScreen for details.
-    guard !isClosing, !isAnimating else { return }
-
-    log.verbose("WindowDidEndLiveResize, mode: \(currentLayout.spec.mode)")
-
-    switch currentLayout.spec.mode {
-    case .windowed:
-      // Do not save geometry, because user may be in the middle of pinch-to-zoom.
-      // But update preferred container size
-      let resizedGeo = windowedModeGeometry.clone(windowFrame: window!.frame).constrainWithin(bestScreen.visibleFrame)
-      player.info.setUserPreferredVideoContainerSize(from: resizedGeo)
-      windowedModeGeometry = resizedGeo
-
-      // resize framebuffer in videoView after resizing.
-      updateWindowParametersForMPV()
-    case .musicMode:
-      miniPlayer.windowDidEndLiveResize()
-    default:
-      break
-    }
-    player.saveState()
-  }
-
-  private func updateFloatingOSCAfterWindowDidResize() {
+  func updateFloatingOSCAfterWindowDidResize() {
     guard let window = window, currentLayout.oscPosition == .floating else { return }
     let cph = Preference.float(for: .controlBarPositionHorizontal)
     let cpv = Preference.float(for: .controlBarPositionVertical)

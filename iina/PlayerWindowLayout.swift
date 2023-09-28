@@ -1112,7 +1112,6 @@ extension PlayerWindowController {
 
     if transition.isEnteringFullScreen {
       // Entering FullScreen
-      let isTogglingLegacyStyle = transition.isTogglingLegacyWindowStyle
       /// `windowedModeGeometry` should already be kept up to date. Might be hard to track down bugs...
       log.verbose("Entering fullscreen, priorWindowedGeometry := \(windowedModeGeometry)")
 
@@ -1131,7 +1130,7 @@ extension PlayerWindowController {
 
       setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
-      if isTogglingLegacyStyle {
+      if transition.isTogglingLegacyWindowStyle {
         // Legacy fullscreen cannot handle transition while playing and will result in a black flash or jittering.
         // This will briefly freeze the video output, which is slightly better
         videoView.videoLayer.suspend()
