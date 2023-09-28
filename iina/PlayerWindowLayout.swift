@@ -493,6 +493,14 @@ extension PlayerWindowController {
       || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
     }
 
+    var isAddingLegacyStyle: Bool {
+      return !inputLayout.spec.isLegacyStyle && outputLayout.spec.isLegacyStyle
+    }
+
+    var isRemovingLegacyStyle: Bool {
+      return inputLayout.spec.isLegacyStyle && !outputLayout.spec.isLegacyStyle
+    }
+
     var isTogglingLegacyWindowStyle: Bool {
       return inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle
     }
@@ -932,11 +940,12 @@ extension PlayerWindowController {
       return musicModeGeometryCorrected.toPlayerWindowGeometry()
 
     case .fullScreen:
-      if outputLayout.spec.isNativeFullScreen {
+      if outputLayout.spec.isLegacyStyle {
+        return buildLegacyFullScreenGeometry(from: outputLayout)
+      } else {
         // This will be ignored anyway, so just save the processing cycles
         return windowedModeGeometry
       }
-      break
     case .windowed:
       break
     }
@@ -951,21 +960,6 @@ extension PlayerWindowController {
     let insideTopBarHeight = outputLayout.topBarPlacement == .insideVideo ? outputLayout.topBarHeight : 0
     let insideBottomBarHeight = outputLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
     let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
-
-    if outputLayout.isLegacyFullScreen {
-      // TODO: store screenFrame in PlayerWindowGeometry
-      return PlayerWindowGeometry(windowFrame: bestScreen.frame,
-                                  topMarginHeight: bestScreen.cameraHousingHeight ?? 0,
-                                  outsideTopBarHeight: outputLayout.outsideTopBarHeight,
-                                  outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
-                                  outsideBottomBarHeight: outsideBottomBarHeight,
-                                  outsideLeadingBarWidth: outputLayout.outsideLeadingBarWidth,
-                                  insideTopBarHeight: insideTopBarHeight,
-                                  insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
-                                  insideBottomBarHeight: insideBottomBarHeight,
-                                  insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
-                                  videoAspectRatio: videoAspectRatio)
-    }
 
     let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.outsideTopBarHeight,
                                                       outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
@@ -1237,7 +1231,6 @@ extension PlayerWindowController {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] CloseOldPanels: title_H=\(outputLayout.titleBarHeight), topOSC_H=\(outputLayout.topOSCHeight)")
-    assert(!transition.isEnteringFullScreen, "CloseOldPanels() should not be called for exiting full screen")
 
     if transition.inputLayout.titleBarHeight > 0 && outputLayout.titleBarHeight == 0 {
       titleBarHeightConstraint.animateToConstant(0)
@@ -1679,24 +1672,26 @@ extension PlayerWindowController {
     } else if transition.isExitingFullScreen {
       // Exited FullScreen
 
-      let wasLegacyFullScreen = transition.inputLayout.isLegacyFullScreen
-      let isLegacyWindowedMode = transition.outputLayout.spec.isLegacyStyle
-      if wasLegacyFullScreen {
-        // Go back to titled style
+      if transition.isExitingLegacyFullScreen {
         window.styleMask.insert(.resizable)
+
         if #available(macOS 10.16, *) {
-          if !isLegacyWindowedMode {
-            log.verbose("Inserting window styleMask.titled")
-            window.styleMask.insert(.titled)
-            window.styleMask.remove(.borderless)
-          }
           window.level = .normal
         } else {
           window.styleMask.remove(.fullScreen)
         }
 
         restoreDockSettings()
-      } else if isLegacyWindowedMode {
+      }
+
+      if transition.isRemovingLegacyStyle {
+        // Go back to titled style
+        if #available(macOS 10.16, *) {
+          log.verbose("Inserting window styleMask.titled")
+          window.styleMask.insert(.titled)
+          window.styleMask.remove(.borderless)
+        }
+      } else if transition.isAddingLegacyStyle {
         log.verbose("Removing window styleMask.titled")
         window.styleMask.remove(.titled)
         window.styleMask.insert(.borderless)
@@ -1739,7 +1734,7 @@ extension PlayerWindowController {
       resetCollectionBehavior()
       updateWindowParametersForMPV()
 
-      if !isLegacyWindowedMode {
+      if !transition.outputLayout.spec.isLegacyStyle {
         // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
         apply(visibility: transition.outputLayout.titleIconAndText, documentIconButton, titleTextField)
         for button in trafficLightButtons {
@@ -2160,6 +2155,31 @@ extension PlayerWindowController {
   }
 
   // MARK: - Misc support functions
+
+  func buildLegacyFullScreenGeometry(from layout: LayoutState) -> PlayerWindowGeometry {
+    // TODO: store screenFrame in PlayerWindowGeometry
+    let screen = bestScreen
+    let bottomBarHeight: CGFloat
+    if layout.enableOSC && layout.oscPosition == .bottom {
+      bottomBarHeight = OSCToolbarButton.oscBarHeight
+    } else {
+      bottomBarHeight = 0
+    }
+    let insideTopBarHeight = layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0
+    let insideBottomBarHeight = layout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
+    let outsideBottomBarHeight = layout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
+    return PlayerWindowGeometry(windowFrame: screen.frame,
+                                topMarginHeight: screen.cameraHousingHeight ?? 0,
+                                outsideTopBarHeight: layout.outsideTopBarHeight,
+                                outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
+                                outsideBottomBarHeight: outsideBottomBarHeight,
+                                outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
+                                insideTopBarHeight: insideTopBarHeight,
+                                insideTrailingBarWidth: layout.insideTrailingBarWidth,
+                                insideBottomBarHeight: insideBottomBarHeight,
+                                insideLeadingBarWidth: layout.insideLeadingBarWidth,
+                                videoAspectRatio: videoAspectRatio)
+  }
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.

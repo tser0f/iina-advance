@@ -933,8 +933,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         guard let screen = window.screen else { return }
         // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
         animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+          guard currentLayout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
-          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame, topMarginHeight: screen.cameraHousingHeight ?? 0)
+          let newGeo = buildLegacyFullScreenGeometry(from: currentLayout)
           setWindowFrameForLegacyFullScreen(using: newGeo)
         }))
       }
@@ -1989,8 +1990,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
         guard let screen = window.screen else { return }
         animationQueue.run(CocoaAnimation.Task({ [self] in
+          guard currentLayout.isLegacyFullScreen else { return }  // check again
           log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
-          let newGeo = windowedModeGeometry.clone(windowFrame: screen.frame, topMarginHeight: screen.cameraHousingHeight ?? 0)
+          let newGeo = buildLegacyFullScreenGeometry(from: currentLayout)
           setWindowFrameForLegacyFullScreen(using: newGeo)
         }))
       }
