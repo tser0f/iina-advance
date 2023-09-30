@@ -356,11 +356,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func windowDidResize() {
     _ = view
     resetScrollingLabels()
-
-    // Very important: do not interfere with animation by changing view geometry in process
-    guard !windowController.isAnimating else { return }
-
-    applyGeometryAfterResize(newWindowFrame: window!.frame)
+    // Do not save musicModeGeometry here! Pinch gesture will handle itself. Drag-to-resize will be handled below.
   }
 
   // Presumable playlist size was affected by the resize. Update the default playlist size to match
@@ -368,6 +364,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     if isPlaylistVisible {
       saveDefaultPlaylistHeight()
     }
+    applyGeometryAfterResize(newWindowFrame: window!.frame)
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
@@ -435,8 +432,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
-      windowController.applyMusicModeGeometry(newGeometry)
       log.verbose("Updating music mode geometry for video change")
+      windowController.applyMusicModeGeometry(newGeometry)
     })
   }
 

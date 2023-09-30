@@ -235,7 +235,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return miniPlayer.buildMusicModeGeometryFromPrefs()
   }(){
     didSet {
-      log.verbose("Updated \(musicModeGeometry)")
+      log.verbose("Updated musicModeGeometry to \(musicModeGeometry)")
     }
   }
 

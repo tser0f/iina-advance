@@ -682,7 +682,7 @@ extension PlayerWindowController {
   }
 
   func applyWindowGeometryLivePreview(_ newGeometry: PlayerWindowGeometry) {
-    log.verbose("applyWindowGeometryLivePreview: \(newGeometry.windowFrame)")
+    log.verbose("applyWindowGeometryLivePreview: \(newGeometry)")
     // Update video aspect ratio
     videoAspectRatio = newGeometry.videoAspectRatio
 

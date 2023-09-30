@@ -204,7 +204,7 @@
                         </textField>
                     </subviews>
                     <constraints>
-                        <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="Wxl-Ex-FWV" secondAttribute="bottom" constant="24" id="2TO-2y-vp5"/>
+                        <constraint firstAttribute="bottom" secondItem="Wxl-Ex-FWV" secondAttribute="bottom" constant="24" id="2TO-2y-vp5"/>
                         <constraint firstItem="Cef-Fd-eDH" firstAttribute="leading" secondItem="Q6R-eL-qkW" secondAttribute="leading" constant="20" id="8fE-Km-0Pi"/>
                         <constraint firstAttribute="trailing" secondItem="Cef-Fd-eDH" secondAttribute="trailing" constant="22" id="FnO-yn-yDx"/>
                         <constraint firstItem="gnl-l6-h4q" firstAttribute="top" secondItem="Q6R-eL-qkW" secondAttribute="top" constant="46" id="GkK-6U-BVf"/>
@@ -236,9 +236,7 @@
                 </visualEffectView>
             </subviews>
             <constraints>
-                <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="Q6R-eL-qkW" secondAttribute="bottom" id="0Gh-vQ-qTN"/>
                 <constraint firstItem="Q6R-eL-qkW" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="7rj-tJ-Dbv"/>
-                <constraint firstAttribute="bottom" secondItem="2bL-q1-qry" secondAttribute="bottom" priority="249" id="Blb-2m-vTp"/>
                 <constraint firstItem="2bL-q1-qry" firstAttribute="top" secondItem="Q6R-eL-qkW" secondAttribute="bottom" id="CBE-jt-ewJ"/>
                 <constraint firstItem="Q6R-eL-qkW" firstAttribute="top" secondItem="98Q-Fi-3N5" secondAttribute="top" id="HKs-Rq-hwV"/>
                 <constraint firstAttribute="trailing" relation="lessThanOrEqual" secondItem="qHK-Ae-PRZ" secondAttribute="trailing" priority="501" id="I7R-Jj-KYD"/>
@@ -247,6 +245,7 @@
                 <constraint firstAttribute="trailing" secondItem="Q6R-eL-qkW" secondAttribute="trailing" id="aFO-ag-c2T"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="qHK-Ae-PRZ" secondAttribute="trailing" priority="499" id="mvA-Hm-ujy"/>
                 <constraint firstItem="qHK-Ae-PRZ" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="n4z-DE-xyQ"/>
+                <constraint firstAttribute="bottom" secondItem="2bL-q1-qry" secondAttribute="bottom" id="rXy-cV-9EW"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="jAX-WD-i2a" secondAttribute="trailing" priority="499" id="red-gP-AmK"/>
                 <constraint firstItem="jAX-WD-i2a" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="uDk-4s-KAt"/>
                 <constraint firstItem="2bL-q1-qry" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="yJm-hm-4s8"/>
