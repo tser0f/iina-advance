@@ -779,6 +779,7 @@ extension PlayerWindowController {
     } else {
       inputGeometry = windowedModeGeometry
     }
+    log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
     // Build OutputGeometry
     let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(oldGeometry: inputGeometry, outputLayout: outputLayout)
@@ -790,7 +791,7 @@ extension PlayerWindowController {
 
     // Build MiddleGeometry (after closed panels step)
     transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
-    log.verbose("Built middleGeometry for transition \(transition.name.quoted): \(transition.middleGeometry!)")
+    log.verbose("[\(transitionName)] Built middleGeometry: \(transition.middleGeometry!)")
 
     let panelTimingName: CAMediaTimingFunctionName?
     if transition.isTogglingFullScreen {
@@ -824,7 +825,7 @@ extension PlayerWindowController {
     // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
     let openFinalPanelsDuration = transition.isTogglingLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
 
-    log.verbose("Building layout transition \(transition.name.quoted). EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
+    log.verbose("[\(transitionName)] Building transition animations. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
 
     // - Starting animations:
 
@@ -860,14 +861,27 @@ extension PlayerWindowController {
     transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
       // This also can change window styleMask
       updateHiddenViewsAndConstraints(transition)
-      if transition.isExitingMusicMode {
-        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
-      }
     })
 
     // Extra task when toggling music mode: move & resize window
     if transition.isTogglingMusicMode {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+        // FIXME: develop a nice sliding animation if possible
+
+        if transition.isEnteringMusicMode && !musicModeGeometry.isVideoVisible {
+          // Entering music mode when album art is not shown
+          let heightConstraint = videoContainerView.heightAnchor.constraint(equalToConstant: 0)
+          heightConstraint.isActive = true
+          videoContainerViewHeightContraint = heightConstraint
+        } else if transition.isExitingMusicMode {
+          // Exiting music mode when album art is not shown
+          let videoSize = transition.outputGeometry.videoSize
+          videoView.updateSizeConstraints(videoSize)
+
+          // Set videoView to visible
+          miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: true)
+        }
+
         player.window.setFrameImmediately(transition.outputGeometry.videoContainerFrameInScreenCoords)
       }))
     }
@@ -995,7 +1009,7 @@ extension PlayerWindowController {
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
   func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry {
-    if transition.isTogglingMusicMode {
+    if transition.isEnteringMusicMode {
       return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
                                                       outsideTrailingBarWidth: 0,
                                                       outsideBottomBarHeight: 0,
@@ -1005,6 +1019,9 @@ extension PlayerWindowController {
                                                       insideBottomBarHeight: 0,
                                                       insideLeadingBarWidth: 0,
                                                       constrainedWithin: bestScreen.visibleFrame)
+    } else if transition.isExitingMusicMode {
+      // Only bottom bar needs to be closed. No need to constrain in screen
+      return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
     }
     // TOP
     let topBarHeight: CGFloat
@@ -1454,6 +1471,10 @@ extension PlayerWindowController {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(outputLayout.titleBarHeight), TopOSC: \(outputLayout.topOSCHeight)")
+
+    if transition.isEnteringMusicMode {
+      miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: musicModeGeometry.isVideoVisible)
+    }
 
     if transition.isEnteringNativeFullScreen {
       let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)

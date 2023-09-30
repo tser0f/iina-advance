@@ -483,6 +483,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // - Outlets: Constraints
 
+  var videoContainerViewHeightContraint: NSLayoutConstraint? = nil
+
   // Spacers in left title bar accessory view:
   @IBOutlet weak var leadingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var leadingTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
@@ -930,7 +932,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
       // frame.
       if currentLayout.isLegacyFullScreen {
-        guard let screen = window.screen else { return }
         // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
         animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
           guard currentLayout.isLegacyFullScreen else { return }  // check again now that we are inside animation
@@ -1705,9 +1706,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if priorState.layoutSpec?.mode == .windowed, let priorWindowGeo = priorState.windowedModeGeometry {
         player.window.setFrameImmediately(priorWindowGeo.windowFrame)
         videoView.updateSizeConstraints(priorWindowGeo.videoSize)
-      } else if priorState.layoutSpec?.mode == .musicMode, let priorWindowGeo = priorState.musicModeGeometry?.toPlayerWindowGeometry() {
-        player.window.setFrameImmediately(priorWindowGeo.windowFrame)
-        videoView.updateSizeConstraints(priorWindowGeo.videoSize)
+      } else if priorState.layoutSpec?.mode == .musicMode, let priorMusicModeGeo = priorState.musicModeGeometry {
+        player.window.setFrameImmediately(priorMusicModeGeo.windowFrame)
+        videoView.updateSizeConstraints(priorMusicModeGeo.videoSize)
       }
     }
 
@@ -1900,14 +1901,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
 
-    let vidContainerSize = videoContainerView.frame.size
-    let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
-    log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
-
-    if !isFullScreen {
-      // Need to update this always when resizing window, even when resizing non-interactively:
-      videoView.updateSizeConstraints(videoSize)
-    }
+    guard !isAnimating else { return }
 
     CocoaAnimation.disableAnimation {
       if player.isInMiniPlayer {
@@ -1915,6 +1909,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // Will also update saved state
         miniPlayer.windowDidResize()
         return
+      }
+
+      let vidContainerSize = videoContainerView.frame.size
+      let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
+      log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
+
+      if !isFullScreen {
+        // Need to update this always when resizing window, even when resizing non-interactively:
+        videoView.updateSizeConstraints(videoSize)
       }
 
       if isInInteractiveMode {
@@ -1992,7 +1995,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// `setFrame()` in `windowDidMove()` to preserve correctness
     if currentLayout.isLegacyFullScreen {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
-        guard let screen = window.screen else { return }
         animationQueue.run(CocoaAnimation.Task({ [self] in
           guard currentLayout.isLegacyFullScreen else { return }  // check again
           log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
@@ -2111,14 +2113,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // Shows fadeableViews and titlebar via fade
-  func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true, duration: CGFloat = CocoaAnimation.DefaultDuration,
-                                 forceShowTopBar: Bool = false) {
+  func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true,
+                         duration: CGFloat = CocoaAnimation.DefaultDuration,
+                         forceShowTopBar: Bool = false) {
     let animationTasks: [CocoaAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: duration,
                                                                                forceShowTopBar: forceShowTopBar)
     animationQueue.run(animationTasks)
   }
 
-  func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true, duration: CGFloat = CocoaAnimation.DefaultDuration,
+  func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true,
+                                         duration: CGFloat = CocoaAnimation.DefaultDuration,
                                          forceShowTopBar: Bool = false) -> [CocoaAnimation.Task] {
     var animationTasks: [CocoaAnimation.Task] = []
 

@@ -168,6 +168,9 @@ struct PlayerWindowGeometry: Equatable {
   }
 
   static func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn videoContainerSize: NSSize) -> NSSize {
+    if videoContainerSize.width == 0 || videoContainerSize.height == 0 {
+      return NSSize(width: 0, height: 0)
+    }
     /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
     if videoAspectRatio < videoContainerSize.aspect {  // video is taller, shrink to meet height
       return NSSize(width: videoContainerSize.height * videoAspectRatio, height: videoContainerSize.height)
@@ -290,19 +293,19 @@ struct PlayerWindowGeometry: Equatable {
   }
 
   // Resizes the window appropriately
-  func withResizedOutsideBars(newOutsideTopHeight: CGFloat? = nil, newOutsideTrailingWidth: CGFloat? = nil,
-                              newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingWidth: CGFloat? = nil) -> PlayerWindowGeometry {
+  func withResizedOutsideBars(newOutsideTopBarHeight: CGFloat? = nil, newOutsideTrailingBarWidth: CGFloat? = nil,
+                              newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingBarWidth: CGFloat? = nil) -> PlayerWindowGeometry {
 
     var ΔW: CGFloat = 0
     var ΔH: CGFloat = 0
     var ΔX: CGFloat = 0
     var ΔY: CGFloat = 0
-    if let newOutsideTopHeight = newOutsideTopHeight {
-      let ΔTop = abs(newOutsideTopHeight) - self.outsideTopBarHeight
+    if let newOutsideTopBarHeight = newOutsideTopBarHeight {
+      let ΔTop = abs(newOutsideTopBarHeight) - self.outsideTopBarHeight
       ΔH += ΔTop
     }
-    if let newOutsideTrailingWidth = newOutsideTrailingWidth {
-      let ΔRight = abs(newOutsideTrailingWidth) - self.outsideTrailingBarWidth
+    if let newOutsideTrailingBarWidth = newOutsideTrailingBarWidth {
+      let ΔRight = abs(newOutsideTrailingBarWidth) - self.outsideTrailingBarWidth
       ΔW += ΔRight
     }
     if let newOutsideBottomBarHeight = newOutsideBottomBarHeight {
@@ -310,8 +313,8 @@ struct PlayerWindowGeometry: Equatable {
       ΔH += ΔBottom
       ΔY -= ΔBottom
     }
-    if let newOutsideLeadingWidth = newOutsideLeadingWidth {
-      let ΔLeft = abs(newOutsideLeadingWidth) - self.outsideLeadingBarWidth
+    if let newOutsideLeadingBarWidth = newOutsideLeadingBarWidth {
+      let ΔLeft = abs(newOutsideLeadingBarWidth) - self.outsideLeadingBarWidth
       ΔW += ΔLeft
       ΔX -= ΔLeft
     }
@@ -321,8 +324,8 @@ struct PlayerWindowGeometry: Equatable {
                                 width: windowFrame.width + ΔW,
                                 height: windowFrame.height + ΔH)
     return self.clone(windowFrame: newWindowFrame,
-                      outsideTopBarHeight: newOutsideTopHeight, outsideTrailingBarWidth: newOutsideTrailingWidth,
-                      outsideBottomBarHeight: newOutsideBottomBarHeight, outsideLeadingBarWidth: newOutsideLeadingWidth)
+                      outsideTopBarHeight: newOutsideTopBarHeight, outsideTrailingBarWidth: newOutsideTrailingBarWidth,
+                      outsideBottomBarHeight: newOutsideBottomBarHeight, outsideLeadingBarWidth: newOutsideLeadingBarWidth)
   }
 
   func withResizedBars(outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
@@ -339,10 +342,10 @@ struct PlayerWindowGeometry: Equatable {
                        insideLeadingBarWidth: insideLeadingBarWidth,
                        videoAspectRatio: videoAspectRatio)
     
-    newGeo = newGeo.withResizedOutsideBars(newOutsideTopHeight: outsideTopBarHeight,
-                                           newOutsideTrailingWidth: outsideTrailingBarWidth,
+    newGeo = newGeo.withResizedOutsideBars(newOutsideTopBarHeight: outsideTopBarHeight,
+                                           newOutsideTrailingBarWidth: outsideTrailingBarWidth,
                                            newOutsideBottomBarHeight: outsideBottomBarHeight,
-                                           newOutsideLeadingWidth: outsideLeadingBarWidth)
+                                           newOutsideLeadingBarWidth: outsideLeadingBarWidth)
     return newGeo.scaleVideoContainer(constrainedWithin: containerFrame)
   }
   
@@ -703,6 +706,8 @@ extension PlayerWindowController {
     if let videoSize = geometry.videoSize {
       videoView.updateSizeConstraints(videoSize)
     }
+    videoView.videoLayer.draw(forced: true)
+    miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
     updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     if setFrame {
       player.window.setFrameImmediately(geometry.windowFrame, animate: true)

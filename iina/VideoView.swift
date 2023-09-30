@@ -148,7 +148,7 @@ class VideoView: NSView {
   private func rebuildConstraints(top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0,
                                    eqIsActive: Bool = true, eqPriority: NSLayoutConstraint.Priority = .required,
                                    gtIsActive: Bool = true, gtPriority: NSLayoutConstraint.Priority = .required,
-                                   centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority = .required) {
+                                  centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority = .defaultHigh) {
     var existing = self.videoViewConstraints
     self.videoViewConstraints = nil
     let newConstraints = VideoViewConstraints(
@@ -178,7 +178,7 @@ class VideoView: NSView {
     player.log.verbose("Contraining videoView for fixed offsets only")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
-                       eqIsActive: true, eqPriority: .defaultHigh,
+                       eqIsActive: true, eqPriority: .required,
                        gtIsActive: false,
                        centerIsActive: false)
 
@@ -187,10 +187,11 @@ class VideoView: NSView {
 
   func constrainForNormalLayout() {
     player.log.verbose("Contraining videoView for normal layout")
-    // GT + center constraints are main priority, but include EQ as hint for ideal placement
+    /// GT + center constraints are main priority, but include EQ as hint for ideal placement
+    /// Set center priority to `.defaultHigh` instead of `.required` to avoid constraint error when toggling music mode with no video...
     rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,
                        gtIsActive: true, gtPriority: .required,
-                       centerIsActive: true, centerPriority: .required)
+                       centerIsActive: true, centerPriority: .defaultHigh)
 
     window?.layoutIfNeeded()
   }
@@ -199,12 +200,12 @@ class VideoView: NSView {
     if let size = size {
       player.log.verbose("Updating videoView size constraints to \(size)")
       widthConstraint.isActive = true
-      widthConstraint.isActive = true
       widthConstraint.animateToConstant(size.width)
+      heightConstraint.isActive = true
       heightConstraint.animateToConstant(size.height)
     } else {
       widthConstraint.isActive = false
-      widthConstraint.isActive = false
+      heightConstraint.isActive = false
     }
   }
 

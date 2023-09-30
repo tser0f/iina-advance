@@ -93,8 +93,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: MiniPlayerController.PlaylistMinHeight).isActive = true
-
     backgroundView.heightAnchor.constraint(equalToConstant: MiniPlayerController.controlViewHeight).isActive = true
 
     /// Set up tracking area to show controller when hovering over it
@@ -330,7 +328,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBAction func toggleVideoView(_ sender: Any) {
     let showVideo = !isVideoVisible
     log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
-    windowController.updateMusicModeButtonsVisibility()
 
     let oldGeometry = windowController.musicModeGeometry
     var newWindowFrame = oldGeometry.windowFrame
@@ -339,17 +336,19 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     } else {
       newWindowFrame.size.height -= oldGeometry.videoHeightIfVisible
     }
-
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
+    windowController.videoView.videoLayer.draw(forced: true)
 
     windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      windowController.updateMusicModeButtonsVisibility()
+
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
-      log.verbose("VideoView setting visible=\(isVideoVisible), videoHeight=\(newGeometry.videoHeight)")
-      windowController.videoView.isHidden = !showVideo
+      log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
       windowController.applyMusicModeGeometry(newGeometry)
       player.saveState()
     }))
+
   }
 
   // MARK: - Window size & layout
@@ -397,12 +396,36 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   func cleanUpForMusicModeExit() {
+    log.verbose("Cleaning up for music mode exit")
     view.removeFromSuperview()
 
     /// Remove `playlistView` from wrapper. It will be added elsewhere if/when it is needed there
     for view in playlistWrapperView.subviews {
       view.removeFromSuperview()
     }
+  }
+
+  func applyVideoViewVisibilityConstraints(isVideoVisible: Bool) {
+    log.verbose("Applying videoView visibility=\(isVideoVisible.yesno)")
+    player.disableUI = !isVideoVisible
+
+    if isVideoVisible {
+      if let heightContraint = windowController.videoContainerViewHeightContraint {
+        heightContraint.isActive = false
+        windowController.videoContainerViewHeightContraint = nil
+      }
+    } else {
+      if let heightConstraint = windowController.videoContainerViewHeightContraint {
+        heightConstraint.constant = 0
+        heightConstraint.isActive = true
+      } else {
+        let heightConstraint = windowController.videoContainerView.heightAnchor.constraint(equalToConstant: 0)
+        heightConstraint.isActive = true
+        windowController.videoContainerViewHeightContraint = heightConstraint
+      }
+    }
+    windowController.videoContainerView.layoutSubtreeIfNeeded()
+    windowController.videoView.videoLayer.draw(forced: true)
   }
 
   func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
