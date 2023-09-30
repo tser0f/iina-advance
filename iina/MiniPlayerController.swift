@@ -340,8 +340,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.videoView.videoLayer.draw(forced: true)
 
     windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-      windowController.updateMusicModeButtonsVisibility()
-
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
       log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
@@ -407,13 +405,14 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     player.disableUI = !isVideoVisible
 
     if isVideoVisible {
+      // Remove zero-height constraint
       if let heightContraint = windowController.videoContainerViewHeightContraint {
         heightContraint.isActive = false
         windowController.videoContainerViewHeightContraint = nil
       }
     } else {
+      // Add or reactivate zero-height constraint
       if let heightConstraint = windowController.videoContainerViewHeightContraint {
-        heightConstraint.constant = 0
         heightConstraint.isActive = true
       } else {
         let heightConstraint = windowController.videoContainerView.heightAnchor.constraint(equalToConstant: 0)
@@ -421,6 +420,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
         windowController.videoContainerViewHeightContraint = heightConstraint
       }
     }
+
     windowController.videoContainerView.layoutSubtreeIfNeeded()
     windowController.videoView.videoLayer.draw(forced: true)
   }

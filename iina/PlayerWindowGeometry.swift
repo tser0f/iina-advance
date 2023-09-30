@@ -701,6 +701,8 @@ extension PlayerWindowController {
     let geometry = geometry.constrainWithin(bestScreen.visibleFrame)
     log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
 
+    updateMusicModeButtonsVisibility()
+
     videoAspectRatio = geometry.videoAspectRatio
 
     if let videoSize = geometry.videoSize {
