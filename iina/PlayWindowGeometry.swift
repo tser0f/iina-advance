@@ -756,7 +756,6 @@ extension PlayWindowController {
     if let videoSize = geometry.videoSize {
       videoView.updateSizeConstraints(videoSize)
     }
-    videoView.videoLayer.draw(forced: true)
     miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
     updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     if setFrame {

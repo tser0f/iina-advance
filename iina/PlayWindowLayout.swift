@@ -1333,9 +1333,10 @@ extension PlayWindowController {
       /// if `isTogglingLegacyStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
       /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
     } else if !transition.outputLayout.spec.isLegacyStyle && !transition.isEnteringFullScreen {
-      log.verbose("Inserting window styleMask.titled")
       if !window.styleMask.contains(.titled) {
+        log.verbose("Inserting window styleMask.titled")
         window.styleMask.insert(.titled)
+        window.styleMask.remove(.borderless)
       }
 
       // Remove fake traffic light buttons (if any)
@@ -1355,8 +1356,6 @@ extension PlayWindowController {
         window.titleVisibility = .hidden
       }
     }
-    // Changing the window style while paused will lose displayed video. Draw it again:
-    videoView.videoLayer.draw(forced: true)
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
@@ -1587,7 +1586,6 @@ extension PlayWindowController {
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       player.window.setFrameImmediately(newWindowFrame)
     }
-    videoView.videoLayer.draw(forced: true)
   }
 
   private func fadeInNewViews(_ transition: LayoutTransition) {
@@ -1662,8 +1660,6 @@ extension PlayWindowController {
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
-
-    videoView.videoLayer.draw(forced: true)
   }
 
   private func doPostTransitionWork(_ transition: LayoutTransition) {

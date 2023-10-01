@@ -337,7 +337,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       newWindowFrame.size.height -= oldGeometry.videoHeightIfVisible
     }
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
-    windowController.videoView.videoLayer.draw(forced: true)
 
     windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
