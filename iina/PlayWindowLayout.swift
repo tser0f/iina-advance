@@ -460,7 +460,7 @@ extension PlayWindowController {
     }
 
     var needsFadeOutOldViews: Bool {
-      return isTogglingLegacyWindowStyle || isTopBarPlacementChanging
+      return isTogglingLegacyStyle || isTopBarPlacementChanging
       || (inputLayout.spec.mode != outputLayout.spec.mode)
       || (inputLayout.bottomBarPlacement == .insideVideo && outputLayout.bottomBarPlacement == .outsideVideo)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
@@ -471,7 +471,7 @@ extension PlayWindowController {
     }
 
     var needsFadeInNewViews: Bool {
-      return isTogglingLegacyWindowStyle || isTopBarPlacementChanging
+      return isTogglingLegacyStyle || isTopBarPlacementChanging
       || (inputLayout.spec.mode != outputLayout.spec.mode)
       || (inputLayout.bottomBarPlacement == .outsideVideo && outputLayout.bottomBarPlacement == .insideVideo)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
@@ -501,7 +501,7 @@ extension PlayWindowController {
       return inputLayout.spec.isLegacyStyle && !outputLayout.spec.isLegacyStyle
     }
 
-    var isTogglingLegacyWindowStyle: Bool {
+    var isTogglingLegacyStyle: Bool {
       return inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle
     }
 
@@ -1144,11 +1144,13 @@ extension PlayWindowController {
 
       setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
-      if transition.isTogglingLegacyWindowStyle {
+      if transition.isTogglingLegacyStyle {
         // Legacy fullscreen cannot handle transition while playing and will result in a black flash or jittering.
         // This will briefly freeze the video output, which is slightly better
         videoView.videoLayer.suspend()
+      }
 
+      if transition.outputLayout.isLegacyFullScreen {
         // stylemask
         log.verbose("Removing window styleMask.titled")
         if #available(macOS 10.16, *) {
@@ -1171,7 +1173,7 @@ extension PlayWindowController {
 
       apply(visibility: .hidden, to: additionalInfoView)
 
-      if transition.isTogglingLegacyWindowStyle {
+      if transition.isTogglingLegacyStyle {
         videoView.videoLayer.suspend()
       }
       // Hide traffic light buttons & title during the animation:
@@ -1188,7 +1190,7 @@ extension PlayWindowController {
 
     // Title bar & title bar accessories:
 
-    let needToHideTopBar = transition.isTopBarPlacementChanging || transition.isTogglingLegacyWindowStyle
+    let needToHideTopBar = transition.isTopBarPlacementChanging || transition.isTogglingLegacyStyle
 
     // Hide all title bar items if top bar placement is changing
     if needToHideTopBar || outputLayout.titleIconAndText == .hidden {
@@ -1305,39 +1307,37 @@ extension PlayWindowController {
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] UpdateHiddenViewsAndConstraints")
 
-    if transition.isTogglingLegacyWindowStyle {
-      if transition.outputLayout.spec.isLegacyStyle && !transition.isExitingFullScreen {
-        log.verbose("Removing window styleMask.titled")
-        window.styleMask.remove(.titled)
-        window.styleMask.insert(.borderless)
-        window.styleMask.insert(.resizable)
-        window.styleMask.insert(.closable)
-        window.styleMask.insert(.miniaturizable)
+    if transition.outputLayout.spec.isLegacyStyle {
+      log.verbose("Removing window styleMask.titled")
+      window.styleMask.remove(.titled)
+      window.styleMask.insert(.borderless)
+      window.styleMask.insert(.resizable)
+      window.styleMask.insert(.closable)
+      window.styleMask.insert(.miniaturizable)
 
-        /// if `isTogglingLegacyWindowStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
-        /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
-      } else if !transition.isTogglingFullScreen {
-        log.verbose("Inserting window styleMask.titled")
-        window.styleMask.insert(.titled)
+      /// if `isTogglingLegacyStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
+      /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
+    } else if !transition.outputLayout.spec.isLegacyStyle && !transition.isEnteringFullScreen {
+      log.verbose("Inserting window styleMask.titled")
+      window.styleMask.insert(.titled)
 
-        // Remove fake traffic light buttons (if any)
-        if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
-          for subview in fakeLeadingTitleBarView.subviews {
-            subview.removeFromSuperview()
-          }
-          fakeLeadingTitleBarView.removeFromSuperview()
-          self.fakeLeadingTitleBarView = nil
+      // Remove fake traffic light buttons (if any)
+      if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
+        for subview in fakeLeadingTitleBarView.subviews {
+          subview.removeFromSuperview()
         }
-
-        /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
-        for button in trafficLightButtons {
-          button.isHidden = true
-        }
-        window.titleVisibility = .hidden
+        fakeLeadingTitleBarView.removeFromSuperview()
+        self.fakeLeadingTitleBarView = nil
       }
-      // Changing the window style while paused will lose displayed video. Draw it again:
-      videoView.videoLayer.draw(forced: true)
+
+      /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
+      for button in trafficLightButtons {
+        button.isHidden = true
+      }
+      window.titleVisibility = .hidden
     }
+    // Changing the window style while paused will lose displayed video. Draw it again:
+    videoView.videoLayer.draw(forced: true)
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
@@ -1667,7 +1667,7 @@ extension PlayWindowController {
         }
       }
 
-      if transition.isTogglingLegacyWindowStyle {
+      if transition.isTogglingLegacyStyle {
         videoView.videoLayer.resume()
       }
 
@@ -1703,29 +1703,16 @@ extension PlayWindowController {
     } else if transition.isExitingFullScreen {
       // Exited FullScreen
 
-      if transition.isExitingLegacyFullScreen {
-        window.styleMask.insert(.resizable)
-
-        if #available(macOS 10.16, *) {
-          window.level = .normal
-        } else {
-          window.styleMask.remove(.fullScreen)
-        }
-
-        restoreDockSettings()
+      // Make sure legacy FS styling is removed always
+      window.styleMask.insert(.resizable)
+      if #available(macOS 10.16, *) {
+        window.level = .normal
+      } else {
+        window.styleMask.remove(.fullScreen)
       }
 
-      if transition.outputLayout.spec.isLegacyStyle {
-        log.verbose("Removing window styleMask.titled")
-        window.styleMask.remove(.titled)
-        window.styleMask.insert(.borderless)
-      } else {
-        // Go back to titled style
-        if #available(macOS 10.16, *) {
-          log.verbose("Inserting window styleMask.titled")
-          window.styleMask.insert(.titled)
-          window.styleMask.remove(.borderless)
-        }
+      if transition.isExitingLegacyFullScreen {
+        restoreDockSettings()
       }
 
       if Preference.bool(for: .blackOutMonitor) {
@@ -1749,7 +1736,7 @@ extension PlayWindowController {
 
       videoView.needsLayout = true
       videoView.layoutSubtreeIfNeeded()
-      if transition.isTogglingLegacyWindowStyle {
+      if transition.isTogglingLegacyStyle {
         videoView.videoLayer.resume()
       }
 
@@ -1765,7 +1752,20 @@ extension PlayWindowController {
       resetCollectionBehavior()
       updateWindowParametersForMPV()
 
-      if !transition.outputLayout.spec.isLegacyStyle {
+      if transition.outputLayout.spec.isLegacyStyle {
+        log.verbose("Removing window styleMask.titled")
+        window.styleMask.remove(.titled)
+        window.styleMask.insert(.borderless)
+
+        window.titleVisibility = .hidden
+      } else {
+        // Go back to titled style
+        if #available(macOS 10.16, *) {
+          log.verbose("Inserting window styleMask.titled")
+          window.styleMask.insert(.titled)
+          window.styleMask.remove(.borderless)
+        }
+
         // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
         apply(visibility: transition.outputLayout.titleIconAndText, documentIconButton, titleTextField)
         for button in trafficLightButtons {
