@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "त्रुटि";
 
-// PlayerWindowController.swift
+// PlayWindowController.swift
 "main.buffering_indicator" = "बफरिंग… %d%%";
 "main.opening_stream" = "खुलने की धारा…";
 "osc.precision" = "Precision";

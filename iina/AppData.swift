@@ -209,7 +209,7 @@ extension Notification.Name {
   // User changed System Settings > Appearance > Accent Color. Must handle via DistributedNotificationCenter
   static let appleColorPreferencesChangedNotification = Notification.Name("AppleColorPreferencesChangedNotification")
 
-  static let iinaPlayerWindowChanged = Notification.Name("IINAPlayerWindowChanged")
+  static let iinaPlayWindowChanged = Notification.Name("IINAPlayWindowChanged")
   static let iinaPlaylistChanged = Notification.Name("IINAPlaylistChanged")
   static let iinaTracklistChanged = Notification.Name("IINATracklistChanged")
   static let iinaVIDChanged = Notification.Name("iinaVIDChanged")

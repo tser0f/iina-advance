@@ -1,5 +1,5 @@
 //
-//  PlayerWindowPreviewImageBuilder.swift
+//  PlayWindowPreviewImageBuilder.swift
 //  iina
 //
 //  Created by Matt Svoboda on 2023-03-01.
@@ -45,7 +45,7 @@ fileprivate extension CGContext {
   }
 }
 
-class PlayerWindowPreviewImageBuilder {
+class PlayWindowPreviewImageBuilder {
   static var cgImageCache: [String: CGImage] = [:]
 
   let isLegacyWindow = Preference.bool(for: .useLegacyWindowedMode)
@@ -334,7 +334,7 @@ class PlayerWindowPreviewImageBuilder {
   }
 
   private func loadCGImage(named name: String) -> CGImage? {
-    if let cachedImage = PlayerWindowPreviewImageBuilder.cgImageCache[name] {
+    if let cachedImage = PlayWindowPreviewImageBuilder.cgImageCache[name] {
       return cachedImage
     }
     guard let image = NSImage(named: name) else {
@@ -345,7 +345,7 @@ class PlayerWindowPreviewImageBuilder {
       Logger.log("DrawImage: Failed to get CGImage for \(name.quoted)!", level: .error)
       return nil
     }
-    PlayerWindowPreviewImageBuilder.cgImageCache[name] = cgImage
+    PlayWindowPreviewImageBuilder.cgImageCache[name] = cgImage
     return cgImage
   }
 

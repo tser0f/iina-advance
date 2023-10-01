@@ -634,7 +634,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.uiStateSaveName)
 
     // Player window was closed? Need to remove some additional state
-    if let player = (window.windowController as? PlayerWindowController)?.player {
+    if let player = (window.windowController as? PlayWindowController)?.player {
       Preference.UIState.clearPlayerSaveState(forPlayerID: player.label)
 
       // Check whether this is the last player closed; show welcome or history window if configured.

@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Chyba";
 
-// PlayerWindowController.swift
+// PlayWindowController.swift
 "main.buffering_indicator" = "Načítava sa… %d%%";
 "main.opening_stream" = "Otváram stream…";
 "osc.precision" = "Presnosť";

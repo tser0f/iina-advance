@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Error";
 
-// PlayerWindowController.swift
+// PlayWindowController.swift
 "main.buffering_indicator" = "Carregant… %d%%";
 "main.opening_stream" = "Obrint fluxe de dades…";
 "osc.precision" = "Precisió";

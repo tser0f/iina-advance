@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Erreur";
 
-// PlayerWindowController.swift
+// PlayWindowController.swift
 "main.buffering_indicator" = "Mise en mémoire tampon… %d%%";
 "main.opening_stream" = "Lancement du stream…";
 "osc.precision" = "Précision";

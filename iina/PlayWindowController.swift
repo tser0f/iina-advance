@@ -1,5 +1,5 @@
 //
-//  PlayerWindowController.swift
+//  PlayWindowController.swift
 //  iina
 //
 //  Created by lhc on 8/7/16.
@@ -16,14 +16,14 @@ fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
 
 // MARK: - Constants
 
-class PlayerWindowController: NSWindowController, NSWindowDelegate {
+class PlayWindowController: NSWindowController, NSWindowDelegate {
   unowned var player: PlayerCore
   unowned var log: Logger.Subsystem {
     return player.log
   }
 
   override var windowNibName: NSNib.Name {
-    return NSNib.Name("PlayerWindowController")
+    return NSNib.Name("PlayWindowController")
   }
 
   var videoView: VideoView {
@@ -223,7 +223,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // build up and result in weird freezes or short episodes of "wandering window"
   var geoUpdateRequestCount: Int = 0
 
-  lazy var windowedModeGeometry: PlayerWindowGeometry = {
+  lazy var windowedModeGeometry: PlayWindowGeometry = {
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
     didSet {
@@ -291,7 +291,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal lazy var horizontalScrollAction: Preference.ScrollAction = Preference.enum(for: .horizontalScrollAction)
   internal lazy var verticalScrollAction: Preference.ScrollAction = Preference.enum(for: .verticalScrollAction)
 
-  static let playerWindowPrefKeys: [Preference.Key] = [
+  static let playWindowPrefKeys: [Preference.Key] = [
     .themeMaterial,
     .showRemainingTime,
     .alwaysFloatOnTop,
@@ -761,7 +761,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   init(playerCore: PlayerCore) {
     self.player = playerCore
     super.init(window: nil)
-    log.verbose("PlayerWindowController init")
+    log.verbose("PlayWindowController init")
   }
 
   required init?(coder: NSCoder) {
@@ -769,7 +769,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func windowDidLoad() {
-    log.verbose("PlayerWindow windowDidLoad starting")
+    log.verbose("PlayWindow windowDidLoad starting")
     super.windowDidLoad()
     loaded = true
 
@@ -804,7 +804,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Titlebar accessories
 
     // Update this here to reduce animation jitter on older versions of MacOS:
-    videoContainerTopOffsetFromTopBarTopConstraint.constant = PlayerWindowController.standardTitleBarHeight
+    videoContainerTopOffsetFromTopBarTopConstraint.constant = PlayWindowController.standardTitleBarHeight
 
     addTitleBarAccessoryViews()
 
@@ -962,17 +962,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    PlayerWindowController.playerWindowPrefKeys.forEach { key in
+    PlayWindowController.playWindowPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
 
-    log.verbose("PlayerWindow windowDidLoad done")
+    log.verbose("PlayWindow windowDidLoad done")
     player.events.emit(.windowLoaded)
   }
 
   deinit {
     ObjcUtils.silenced {
-      for key in PlayerWindowController.playerWindowPrefKeys {
+      for key in PlayWindowController.playWindowPrefKeys {
         UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
       }
     }
@@ -1266,7 +1266,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   override func mouseDown(with event: NSEvent) {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
-      log.verbose("PlayerWindow mouseDown @ \(event.locationInWindow)")
+      log.verbose("PlayWindow mouseDown @ \(event.locationInWindow)")
     }
     workaroundCursorDefect()
     // do nothing if it's related to floating OSC
@@ -1281,7 +1281,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         player: player, arguments: mouseEventArgs(event)
       )
       // we don't call super here because before adding the plugin system,
-      // PlayerWindowController didn't call super at all
+      // PlayWindowController didn't call super at all
     }
   }
 
@@ -1302,7 +1302,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             return
           }
           if Logger.enabled && Logger.Level.preferred >= .verbose {
-            log.verbose("PlayerWindow mouseDrag: minimum dragging distance was met")
+            log.verbose("PlayWindow mouseDrag: minimum dragging distance was met")
           }
           isDragging = true
         }
@@ -1314,7 +1314,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   override func mouseUp(with event: NSEvent) {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
-      log.verbose("PlayerWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
+      log.verbose("PlayWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
     }
     workaroundCursorDefect()
     mousePosRelatedToWindow = nil
@@ -1378,7 +1378,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   override func otherMouseUp(with event: NSEvent) {
     workaroundCursorDefect()
-    Logger.log("PlayerWindow otherMouseUp!", level: .verbose, subsystem: player.subsystem)
+    Logger.log("PlayWindow otherMouseUp!", level: .verbose, subsystem: player.subsystem)
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
 
     PluginInputManager.handle(
@@ -1407,7 +1407,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func rightMouseUp(with event: NSEvent) {
-    log.verbose("PlayerWindow rightMouseUp!")
+    log.verbose("PlayWindow rightMouseUp!")
     workaroundCursorDefect()
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
 
@@ -1645,7 +1645,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window = self.window, let cv = window.contentView else { return }
     isClosing = false
 
-    log.verbose("PlayerWindow openWindow starting")
+    log.verbose("PlayWindow openWindow starting")
 
     // Must workaround an AppKit defect in some versions of macOS. This defect is known to exist in
     // Catalina and Big Sur. The problem was not reproducible in early versions of Monterey. It
@@ -1725,7 +1725,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     videoView.videoLayer.draw(forced: true)
     videoView.startDisplayLink()
 
-    log.verbose("PlayerWindow openWindow done")
+    log.verbose("PlayWindow openWindow done")
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -1912,7 +1912,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
 
       let vidContainerSize = videoContainerView.frame.size
-      let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
+      let videoSize = PlayWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
       log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
 
       if !isFullScreen {
@@ -2031,8 +2031,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowDidResignKey(_ notification: Notification) {
     // keyWindow is nil: The whole app is inactive
-    // keyWindow is another PlayerWindow: Switched to another video window
-    if NSApp.keyWindow == nil || (NSApp.keyWindow?.windowController is PlayerWindowController) {
+    // keyWindow is another PlayWindow: Switched to another video window
+    if NSApp.keyWindow == nil || (NSApp.keyWindow?.windowController is PlayWindowController) {
       if Preference.bool(for: .pauseWhenInactive), player.info.isPlaying {
         player.pause()
         isPausedDueToInactive = true
@@ -2053,7 +2053,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       blackOutOtherMonitors()
     }
     player.events.emit(.windowMainStatusChanged, data: true)
-    NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: true)
+    NotificationCenter.default.post(name: .iinaPlayWindowChanged, object: true)
   }
 
   func windowDidResignMain(_ notification: Notification) {
@@ -2063,7 +2063,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       removeBlackWindows()
     }
     player.events.emit(.windowMainStatusChanged, data: false)
-    NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: false)
+    NotificationCenter.default.post(name: .iinaPlayWindowChanged, object: false)
   }
 
   func windowWillMiniaturize(_ notification: Notification) {
@@ -2345,7 +2345,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // NSInvalidArgumentException [NSNextStepFrame _displayName]: unrecognized selector
       // When running on an M1 under Big Sur and using legacy full screen.
       //
-      // Changes in Big Sur broke the legacy full screen feature. The PlayerWindowController method
+      // Changes in Big Sur broke the legacy full screen feature. The PlayWindowController method
       // legacyAnimateToFullscreen had to be changed to get this feature working again. Under Big
       // Sur that method now calls "window.styleMask.remove(.titled)". Removing titled from the
       // style mask causes the AppKit method NSWindow.setTitleWithRepresentedFilename to trigger the
@@ -2569,7 +2569,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.view])
 
       isInInteractiveMode = true
-      let titleBarHeight = PlayerWindowController.standardTitleBarHeight
+      let titleBarHeight = PlayWindowController.standardTitleBarHeight
       // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
       // the max region that the video view can occupy
       let newVideoViewBounds = NSRect(x: titleBarHeight,
@@ -3188,7 +3188,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 // MARK: - Picture in Picture
 
 @available(macOS 10.12, *)
-extension PlayerWindowController: PIPViewControllerDelegate {
+extension PlayWindowController: PIPViewControllerDelegate {
 
   func enterPIP() {
     guard pipStatus != .inPIP else { return }

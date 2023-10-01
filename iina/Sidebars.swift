@@ -12,8 +12,8 @@ private func clampPlaylistWidth(_ width: CGFloat) -> CGFloat {
   return width.clamped(to: Constants.Sidebar.minPlaylistWidth...Constants.Sidebar.maxPlaylistWidth).rounded()
 }
 
-/// Enapsulates code relating to leading & trailing sidebars in PlayerWindow.
-extension PlayerWindowController {
+/// Enapsulates code relating to leading & trailing sidebars in PlayWindow.
+extension PlayWindowController {
 
   // MARK: - Structs & Enums
 
@@ -849,8 +849,8 @@ extension PlayerWindowController {
     return false
   }
 
-  /// Returns new or existing `PlayerWindowGeometry` if handled; `nil` if not
-  func resizeSidebar(with dragEvent: NSEvent) -> PlayerWindowGeometry? {
+  /// Returns new or existing `PlayWindowGeometry` if handled; `nil` if not
+  func resizeSidebar(with dragEvent: NSEvent) -> PlayWindowGeometry? {
     guard leadingSidebarIsResizing || trailingSidebarIsResizing else { return nil }
     assert(currentLayout.spec.mode == .windowed || currentLayout.spec.mode == .fullScreen, "ResizeSidebar: current mode unexpected: \(currentLayout.spec.mode)")
     let oldGeo = windowedModeGeometry
@@ -859,7 +859,7 @@ extension PlayerWindowController {
       let currentLocation = dragEvent.locationInWindow
       let layout = currentLayout
 
-      let newGeo: PlayerWindowGeometry
+      let newGeo: PlayWindowGeometry
       let newPlaylistWidth: CGFloat
 
       if leadingSidebarIsResizing {
@@ -974,7 +974,7 @@ extension PlayerWindowController {
 // MARK: - SidebarTabGroupViewController
 
 protocol SidebarTabGroupViewController {
-  var windowController: PlayerWindowController! { get }
+  var windowController: PlayWindowController! { get }
   var customTabHeight: CGFloat? { get }
 
   // Implementing classes need to define this

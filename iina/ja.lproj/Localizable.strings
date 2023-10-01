@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "エラー";
 
-// PlayerWindowController.swift
+// PlayWindowController.swift
 "main.buffering_indicator" = "バッファ中… %d%%";
 "main.opening_stream" = "ストリームを展開中…";
 "osc.precision" = "精度";

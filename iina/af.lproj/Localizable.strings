@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Fout";
 
-// PlayerWindowController.swift
+// PlayWindowController.swift
 "main.buffering_indicator" = "Bufferwerking… %d%%";
 "main.opening_stream" = "Open tans stroom…";
 "osc.precision" = "Presisie";

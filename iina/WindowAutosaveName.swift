@@ -9,9 +9,9 @@
 import Foundation
 
 enum WindowAutosaveName: Equatable {
-  static let playerWindowPrefix = "PlayerWindow-"
-  static let miniPlayerPrefix = "MiniPlayerWindow-"
-  static let playerWindowFmt = "\(playerWindowPrefix)%@"
+  static let playWindowPrefix = "PlayWindow-"
+  static let miniPlayerPrefix = "MiniPlayWindow-"
+  static let playWindowFmt = "\(playWindowPrefix)%@"
   static let miniPlayerFmt = "\(miniPlayerPrefix)%@"
 
   case preference
@@ -48,7 +48,7 @@ enum WindowAutosaveName: Equatable {
     case .fontPicker:
       return "IINAFontPickerWindow"
     case .mainPlayer(let id):
-      return String(format: WindowAutosaveName.playerWindowFmt, id)
+      return String(format: WindowAutosaveName.playWindowFmt, id)
     case .miniPlayer(let id):
       return String(format: WindowAutosaveName.miniPlayerFmt, id)
     }
@@ -75,7 +75,7 @@ enum WindowAutosaveName: Equatable {
     case WindowAutosaveName.fontPicker.string:
       self = .fontPicker
     default:
-      if let id = WindowAutosaveName.parseID(from: string, mustStartWith: WindowAutosaveName.playerWindowPrefix) {
+      if let id = WindowAutosaveName.parseID(from: string, mustStartWith: WindowAutosaveName.playWindowPrefix) {
         self = .mainPlayer(id: id)
       } else if let id = WindowAutosaveName.parseID(from: string, mustStartWith: WindowAutosaveName.miniPlayerPrefix) {
         self = .miniPlayer(id: id)

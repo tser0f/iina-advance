@@ -885,7 +885,7 @@ extension NSScreen {
 extension NSWindow {
   /// Provides a unique window ID for reference by `UIState`.
   var uiStateSaveName: String {
-    if let playerController = windowController as? PlayerWindowController {
+    if let playerController = windowController as? PlayWindowController {
       // Not using AppKit autosave for player windows. Instead build ID based on player label
       return WindowAutosaveName.mainPlayer(id: playerController.player.label).string
     }
@@ -936,7 +936,7 @@ extension NSWindow {
   }
 
   func isOpen() -> Bool {
-    if let windowController = self.windowController as? PlayerWindowController, windowController.isOpen {
+    if let windowController = self.windowController as? PlayWindowController, windowController.isOpen {
       return true
     } else if self.isVisible {
       return true

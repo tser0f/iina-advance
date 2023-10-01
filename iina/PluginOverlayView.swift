@@ -48,7 +48,7 @@ class PluginOverlayView: WKWebView, WKNavigationDelegate {
     configuration.userContentController.removeScriptMessageHandler(forName: "iina")
   }
 
-  func attachTo(windowController: PlayerWindowController) {
+  func attachTo(windowController: PlayWindowController) {
     windowController.pluginOverlayViewContainer.addSubview(self)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": self])
   }
@@ -102,7 +102,7 @@ class PluginOverlayView: WKWebView, WKNavigationDelegate {
   }
 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!){
-    if let wc = window?.windowController as? PlayerWindowController {
+    if let wc = window?.windowController as? PlayWindowController {
       wc.player.events.emit(.pluginOverlayLoaded)
     }
 

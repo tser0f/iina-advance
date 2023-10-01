@@ -81,7 +81,7 @@ class FilterWindowController: NSWindowController, NSWindowDelegate {
     // notifications
     let notiName: Notification.Name = filterType == MPVProperty.af ? .iinaAFChanged : .iinaVFChanged
     NotificationCenter.default.addObserver(self, selector: #selector(reloadTableInMainThread), name: notiName, object: nil)
-    NotificationCenter.default.addObserver(self, selector: #selector(reloadTable), name: .iinaPlayerWindowChanged, object: nil)
+    NotificationCenter.default.addObserver(self, selector: #selector(reloadTable), name: .iinaPlayWindowChanged, object: nil)
   }
 
   @objc
@@ -94,7 +94,7 @@ class FilterWindowController: NSWindowController, NSWindowDelegate {
   @objc
   func reloadTable() {
     let pc = PlayerCore.lastActive
-    // When IINA is terminating player windows are closed, which causes the iinaPlayerWindowChanged
+    // When IINA is terminating player windows are closed, which causes the iinaPlayWindowChanged
     // notification to be posted and that results in the observer established above calling this
     // method. Thus this method may be called after IINA has commanded mpv to shutdown. Once mpv has
     // been told to shutdown mpv APIs must not be called as it can trigger a crash in mpv.

@@ -47,7 +47,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
 
-  unowned var windowController: PlayerWindowController!
+  unowned var windowController: PlayWindowController!
   var player: PlayerCore {
     return windowController.player
   }
