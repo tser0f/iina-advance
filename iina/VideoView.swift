@@ -215,6 +215,13 @@ class VideoView: NSView {
     return Preference.bool(for: .videoViewAcceptsFirstMouse)
   }
 
+  /// In native full screen, `VideoView` receives mouse events instead of the window, so it is necessary to forward them
+  /// to the window controller for handling.
+  override func mouseDown(with event: NSEvent) {
+    player.windowController.mouseDown(with: event)
+    super.mouseDown(with: event)
+  }
+
   /// Workaround for issue #4183, Cursor remains visible after resuming playback with the touchpad using secondary click
   ///
   /// See `PlayWindowController.workaroundCursorDefect` and the issue for details on this workaround.

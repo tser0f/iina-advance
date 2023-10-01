@@ -138,10 +138,6 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   var isPausedDueToMiniaturization: Bool = false
   var isPausedPriorToInteractiveMode: Bool = false
 
-  // Need to keep track of whether window is currently in native full screen (oddly, there seems to be no AppKit API for this).
-  // Can prevent being put into a bad state if "Use native full screen" is toggled while in full screen.
-  var isInNativeFullScreen = false
-
   // - Mouse
 
   var mousePosRelatedToWindow: CGPoint?
@@ -1094,11 +1090,13 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     guard inputLayout.isFullScreen else { return }
     let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: inputLayout.spec)
     if inputLayout.spec.isLegacyStyle != outputLayoutSpec.isLegacyStyle {
-      log.verbose("User toggled legacy fullscreen option while in fullscreen - transitioning to windowed mode instead")
-      if inputLayout.isNativeFullScreen {
-        window?.toggleFullScreen(self)
-      } else {
-        exitFullScreen(legacy: true)
+      DispatchQueue.main.async { [self] in
+        log.verbose("User toggled legacy fullscreen option while in fullscreen - transitioning to windowed mode instead")
+        if inputLayout.isNativeFullScreen {
+          window?.toggleFullScreen(self)
+        } else {
+          exitFullScreen(legacy: true)
+        }
       }
     }
   }
@@ -1111,20 +1109,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
       }
       let inputLayout = currentLayout
       let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: inputLayout.spec)
-
-      /// There seems to be no way to switch between legacy & native full screen directly, and visual bugs can result if trying to set
-      /// `titled` layout while in native fullscreen. Save effort and sanity by just exiting full screen in this case.
-      /// User will have to enter full screen again when they are done changing prefs.
-      if inputLayout.isFullScreen && outputLayoutSpec.isFullScreen && (inputLayout.spec.isLegacyStyle != outputLayoutSpec.isLegacyStyle) {
-        log.verbose("User toggled legacy fullscreen option while in fullscreen - transitioning to windowed mode instead")
-        if inputLayout.isNativeFullScreen {
-          window?.toggleFullScreen(self)
-        } else {
-          exitFullScreen(legacy: true)
-        }
-      } else {
-        buildLayoutTransition(named: "UpdateTitleBar&OSC", from: inputLayout, to: outputLayoutSpec, thenRun: true)
-      }
+      buildLayoutTransition(named: "UpdateTitleBar&OSC", from: inputLayout, to: outputLayoutSpec, thenRun: true)
     }
   }
 
@@ -1803,7 +1788,6 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowWillEnterFullScreen(_ notification: Notification) {
-    isInNativeFullScreen = true
   }
 
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
@@ -1832,7 +1816,6 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   /// animation completes, or the window size will be incorrectly set to the same size of the screen.
   /// There does not appear to be any similar problem when entering fullscreen.
   func windowDidExitFullScreen(_ notification: Notification) {
-    isInNativeFullScreen = false
     if AccessibilityPreferences.motionReductionEnabled {
       animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: false)
     }
@@ -1886,18 +1869,18 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     if isLegacy {
       animateEntryIntoFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
     } else {
-      window.toggleFullScreen(nil)
+      window.toggleFullScreen(self)
     }
   }
 
   func exitFullScreen(legacy: Bool) {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    log.verbose("ExitFullScreen called (legacy: \(legacy.yn), isInNativeFS: \(isInNativeFullScreen.yn))")
+    log.verbose("ExitFullScreen called (legacy: \(legacy.yn))")
 
     // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
     // TODO: switch between native & legacy FS as soon as pref is toggled
-    if isInNativeFullScreen || !legacy {
-      window.toggleFullScreen(nil)
+    if !legacy {
+      window.toggleFullScreen(self)
     } else {
       animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
     }
