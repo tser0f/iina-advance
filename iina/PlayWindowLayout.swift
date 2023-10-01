@@ -294,6 +294,10 @@ extension PlayWindowController {
       return spec.mode == .fullScreen || spec.mode == .windowed
     }
 
+    var isNativeFullScreen: Bool {
+      return isFullScreen && !spec.isLegacyStyle
+    }
+
     var isLegacyFullScreen: Bool {
       return isFullScreen && spec.isLegacyStyle
     }
@@ -846,6 +850,16 @@ extension PlayWindowController {
       }))
     }
 
+    // Extra animation for exiting legacy full screen (to Native Windowed Mode)
+    if transition.isExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
+      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
+        let screen = bestScreen
+        let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
+        log.verbose("Updating legacy full screen window to show camera housing prior to entering native windowed mode")
+        setWindowFrameForLegacyFullScreen(using: newGeo)
+      }))
+    }
+
     // StartingAnimation 3: Close/Minimize panels which are no longer needed. Not used for fullScreen transitions.
     // Applies middleGeometry if it exists.
     if transition.needsCloseOldPanels {
@@ -888,12 +902,12 @@ extension PlayWindowController {
 
     // - Ending animations:
 
-    // Extra animation for exiting legacy full screen
-    if transition.isExitingLegacyFullScreen {
+    // Extra animation for exiting legacy full screen  (to Legacy Windowed Mode)
+    if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let screen = bestScreen
         let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
-        log.verbose("Updating legacy full screen window to show camera housing")
+        log.verbose("Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
         setWindowFrameForLegacyFullScreen(using: newGeo)
       }))
     }
@@ -1268,7 +1282,7 @@ extension PlayWindowController {
     if let geo = transition.middleGeometry {
       let topBarHeight = transition.inputLayout.topBarPlacement == .insideVideo ? geo.insideTopBarHeight : geo.outsideTopBarHeight
       let cameraOffset: CGFloat
-      if transition.isExitingLegacyFullScreen {
+      if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
         // Use prev offset for a smoother animation
         cameraOffset = transition.inputLayout.cameraHousingOffset
       } else {
@@ -1308,18 +1322,21 @@ extension PlayWindowController {
     log.verbose("[\(transition.name)] UpdateHiddenViewsAndConstraints")
 
     if transition.outputLayout.spec.isLegacyStyle {
-      log.verbose("Removing window styleMask.titled")
-      window.styleMask.remove(.titled)
-      window.styleMask.insert(.borderless)
-      window.styleMask.insert(.resizable)
-      window.styleMask.insert(.closable)
-      window.styleMask.insert(.miniaturizable)
-
+      if window.styleMask.contains(.titled) {
+        log.verbose("Removing window styleMask.titled")
+        window.styleMask.remove(.titled)
+        window.styleMask.insert(.borderless)
+        window.styleMask.insert(.resizable)
+        window.styleMask.insert(.closable)
+        window.styleMask.insert(.miniaturizable)
+      }
       /// if `isTogglingLegacyStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
       /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
     } else if !transition.outputLayout.spec.isLegacyStyle && !transition.isEnteringFullScreen {
       log.verbose("Inserting window styleMask.titled")
-      window.styleMask.insert(.titled)
+      if !window.styleMask.contains(.titled) {
+        window.styleMask.insert(.titled)
+      }
 
       // Remove fake traffic light buttons (if any)
       if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
@@ -1330,11 +1347,13 @@ extension PlayWindowController {
         self.fakeLeadingTitleBarView = nil
       }
 
-      /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
-      for button in trafficLightButtons {
-        button.isHidden = true
+      if transition.isExitingFullScreen {
+        /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
+        for button in trafficLightButtons {
+          button.isHidden = true
+        }
+        window.titleVisibility = .hidden
       }
-      window.titleVisibility = .hidden
     }
     // Changing the window style while paused will lose displayed video. Draw it again:
     videoView.videoLayer.draw(forced: true)
@@ -1568,6 +1587,7 @@ extension PlayWindowController {
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       player.window.setFrameImmediately(newWindowFrame)
     }
+    videoView.videoLayer.draw(forced: true)
   }
 
   private func fadeInNewViews(_ transition: LayoutTransition) {
@@ -1642,6 +1662,8 @@ extension PlayWindowController {
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
+
+    videoView.videoLayer.draw(forced: true)
   }
 
   private func doPostTransitionWork(_ transition: LayoutTransition) {
@@ -1734,24 +1756,6 @@ extension PlayWindowController {
       // See comments in resetViewsForFullScreenTransition for details.
       guard !isClosing else { return }
 
-      videoView.needsLayout = true
-      videoView.layoutSubtreeIfNeeded()
-      if transition.isTogglingLegacyStyle {
-        videoView.videoLayer.resume()
-      }
-
-      if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
-        player.pause()
-      }
-
-      // restore ontop status
-      if player.info.isPlaying {
-        setWindowFloatingOnTop(isOntop, updateOnTopStatus: false)
-      }
-
-      resetCollectionBehavior()
-      updateWindowParametersForMPV()
-
       if transition.outputLayout.spec.isLegacyStyle {
         log.verbose("Removing window styleMask.titled")
         window.styleMask.remove(.titled)
@@ -1778,8 +1782,28 @@ extension PlayWindowController {
         window.titleVisibility = .visible
       }
 
+      // restore ontop status
+      if player.info.isPlaying {
+        setWindowFloatingOnTop(isOntop, updateOnTopStatus: false)
+      }
+
+      if transition.isTogglingLegacyStyle {
+        videoView.videoLayer.resume()
+      }
+
+      if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
+        player.pause()
+      }
+
+      resetCollectionBehavior()
+      updateWindowParametersForMPV()
+
       player.events.emit(.windowFullscreenChanged, data: false)
     }
+    
+    videoView.needsLayout = true
+    videoView.layoutSubtreeIfNeeded()
+    videoView.videoLayer.draw(forced: true)
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
     log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode)")
@@ -1826,7 +1850,7 @@ extension PlayWindowController {
     topBarTrailingSpaceConstraint.isActive = true
   }
 
-  private func updateTopBarHeight(to topBarHeight: CGFloat, topBarPlacement: Preference.PanelPlacement, cameraHousingOffset: CGFloat) {
+  func updateTopBarHeight(to topBarHeight: CGFloat, topBarPlacement: Preference.PanelPlacement, cameraHousingOffset: CGFloat) {
     log.verbose("Updating topBar height: \(topBarHeight), placement: \(topBarPlacement), cameraOffset: \(cameraHousingOffset)")
 
     switch topBarPlacement {
@@ -2185,55 +2209,6 @@ extension PlayWindowController {
   }
 
   // MARK: - Misc support functions
-
-  func buildLegacyFullScreenGeometry(from layout: LayoutState) -> PlayWindowGeometry {
-    // TODO: store screenFrame in PlayWindowGeometry
-    let screen = bestScreen
-    let bottomBarHeight: CGFloat
-    if layout.enableOSC && layout.oscPosition == .bottom {
-      bottomBarHeight = OSCToolbarButton.oscBarHeight
-    } else {
-      bottomBarHeight = 0
-    }
-    let insideTopBarHeight = layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0
-    let insideBottomBarHeight = layout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
-    let outsideBottomBarHeight = layout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
-    return PlayWindowGeometry(windowFrame: screen.frame,
-                                topMarginHeight: screen.cameraHousingHeight ?? 0,
-                                outsideTopBarHeight: layout.outsideTopBarHeight,
-                                outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
-                                outsideBottomBarHeight: outsideBottomBarHeight,
-                                outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
-                                insideTopBarHeight: insideTopBarHeight,
-                                insideTrailingBarWidth: layout.insideTrailingBarWidth,
-                                insideBottomBarHeight: insideBottomBarHeight,
-                                insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                                videoAspectRatio: videoAspectRatio)
-  }
-
-  /// Set the window frame and if needed the content view frame to appropriately use the full screen.
-  /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
-  func setWindowFrameForLegacyFullScreen(using geometry: PlayWindowGeometry) {
-    guard let window = window else { return }
-    guard !(geometry.windowFrame.origin.x == window.frame.origin.x
-            && geometry.windowFrame.origin.y == window.frame.origin.y
-            && geometry.windowFrame.width == window.frame.width
-            && geometry.windowFrame.height == window.frame.height
-            && geometry.videoSize.width == videoView.widthConstraint.constant
-            && geometry.videoSize.height == videoView.heightConstraint.constant) else {
-      log.verbose("No need to update windowFrame for legacyFullScreen - no change")
-      return
-    }
-    // kludge!
-    let layout = currentLayout
-    let topBarHeight = geometry.insideTopBarHeight + geometry.outsideTopBarHeight
-
-    log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")
-    updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
-    videoView.updateSizeConstraints(geometry.videoSize)
-    player.window.setFrameImmediately(geometry.windowFrame)
-    videoView.layoutSubtreeIfNeeded()
-  }
 
   private func resetViewsForFullScreenTransition() {
     // When playback is paused the display link is stopped in order to avoid wasting energy on

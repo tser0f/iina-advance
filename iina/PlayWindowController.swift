@@ -406,11 +406,12 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
       PK.showTrailingSidebarToggleButton.rawValue,
       PK.oscBarToolbarIconSize.rawValue,
       PK.oscBarToolbarIconSpacing.rawValue,
-      PK.controlBarToolbarButtons.rawValue:
+      PK.controlBarToolbarButtons.rawValue,
+      PK.useLegacyWindowedMode.rawValue:
 
       updateTitleBarAndOSC()
-    case PK.useLegacyWindowedMode.rawValue:
-      updateTitleBarAndOSC()
+    case PK.useLegacyFullScreen.rawValue:
+      updateUseLegacyFullScreen()
     case PK.allowEmptySpaceAroundVideo.rawValue:
       if let isAllowed = change[.newKey] as? Bool, !isAllowed {
         log.debug("Pref \(keyPath.quoted) changed to \(isAllowed): resizing window to remove any black space")
@@ -1088,16 +1089,42 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     window.appearance = appearance
   }
 
+  func updateUseLegacyFullScreen() {
+    let inputLayout = currentLayout
+    guard inputLayout.isFullScreen else { return }
+    let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: inputLayout.spec)
+    if inputLayout.spec.isLegacyStyle != outputLayoutSpec.isLegacyStyle {
+      log.verbose("User toggled legacy fullscreen option while in fullscreen - transitioning to windowed mode instead")
+      if inputLayout.isNativeFullScreen {
+        window?.toggleFullScreen(self)
+      } else {
+        exitFullScreen(legacy: true)
+      }
+    }
+  }
+
   func updateTitleBarAndOSC() {
     animationQueue.runZeroDuration { [self] in
       guard !isInInteractiveMode else {
         log.verbose("Skipping layout refresh due to interactive mode")
         return
       }
-      let oldLayout = currentLayout
-      let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: oldLayout.spec)
-      let transition = buildLayoutTransition(named: "UpdateTitleBar&OSC", from: oldLayout, to: outputLayoutSpec)
-      animationQueue.run(transition.animationTasks)
+      let inputLayout = currentLayout
+      let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: inputLayout.spec)
+
+      /// There seems to be no way to switch between legacy & native full screen directly, and visual bugs can result if trying to set
+      /// `titled` layout while in native fullscreen. Save effort and sanity by just exiting full screen in this case.
+      /// User will have to enter full screen again when they are done changing prefs.
+      if inputLayout.isFullScreen && outputLayoutSpec.isFullScreen && (inputLayout.spec.isLegacyStyle != outputLayoutSpec.isLegacyStyle) {
+        log.verbose("User toggled legacy fullscreen option while in fullscreen - transitioning to windowed mode instead")
+        if inputLayout.isNativeFullScreen {
+          window?.toggleFullScreen(self)
+        } else {
+          exitFullScreen(legacy: true)
+        }
+      } else {
+        buildLayoutTransition(named: "UpdateTitleBar&OSC", from: inputLayout, to: outputLayoutSpec, thenRun: true)
+      }
     }
   }
 
@@ -1859,18 +1886,18 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     if isLegacy {
       animateEntryIntoFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
     } else {
-      window.toggleFullScreen(self)
+      window.toggleFullScreen(nil)
     }
   }
 
   func exitFullScreen(legacy: Bool) {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    log.verbose("ExitFullScreen called (legacy: \(legacy.yn))")
+    log.verbose("ExitFullScreen called (legacy: \(legacy.yn), isInNativeFS: \(isInNativeFullScreen.yn))")
 
     // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
     // TODO: switch between native & legacy FS as soon as pref is toggled
     if isInNativeFullScreen || !legacy {
-      window.toggleFullScreen(self)
+      window.toggleFullScreen(nil)
     } else {
       animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
     }

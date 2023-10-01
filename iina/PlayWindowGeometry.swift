@@ -644,6 +644,54 @@ extension PlayWindowController {
     return geo.scaleVideoContainer(constrainedWithin: bestScreen.frame)
   }
 
+  func buildLegacyFullScreenGeometry(from layout: LayoutState) -> PlayWindowGeometry {
+    // TODO: store screenFrame in PlayWindowGeometry
+    let screen = bestScreen
+    let bottomBarHeight: CGFloat
+    if layout.enableOSC && layout.oscPosition == .bottom {
+      bottomBarHeight = OSCToolbarButton.oscBarHeight
+    } else {
+      bottomBarHeight = 0
+    }
+    let insideTopBarHeight = layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0
+    let insideBottomBarHeight = layout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
+    let outsideBottomBarHeight = layout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
+    return PlayWindowGeometry(windowFrame: screen.frame,
+                              topMarginHeight: screen.cameraHousingHeight ?? 0,
+                              outsideTopBarHeight: layout.outsideTopBarHeight,
+                              outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
+                              outsideBottomBarHeight: outsideBottomBarHeight,
+                              outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
+                              insideTopBarHeight: insideTopBarHeight,
+                              insideTrailingBarWidth: layout.insideTrailingBarWidth,
+                              insideBottomBarHeight: insideBottomBarHeight,
+                              insideLeadingBarWidth: layout.insideLeadingBarWidth,
+                              videoAspectRatio: videoAspectRatio)
+  }
+
+  /// Set the window frame and if needed the content view frame to appropriately use the full screen.
+  /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
+  func setWindowFrameForLegacyFullScreen(using geometry: PlayWindowGeometry) {
+    guard let window = window else { return }
+    guard !(geometry.windowFrame.origin.x == window.frame.origin.x
+            && geometry.windowFrame.origin.y == window.frame.origin.y
+            && geometry.windowFrame.width == window.frame.width
+            && geometry.windowFrame.height == window.frame.height
+            && geometry.videoSize.width == videoView.widthConstraint.constant
+            && geometry.videoSize.height == videoView.heightConstraint.constant) else {
+      log.verbose("No need to update windowFrame for legacyFullScreen - no change")
+      return
+    }
+    // kludge!
+    let layout = currentLayout
+    let topBarHeight = geometry.insideTopBarHeight + geometry.outsideTopBarHeight
+
+    log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")
+    updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
+    videoView.updateSizeConstraints(geometry.videoSize)
+    player.window.setFrameImmediately(geometry.windowFrame)
+    videoView.layoutSubtreeIfNeeded()
+  }
 
   func applyWindowGeometry(_ newGeometry: PlayWindowGeometry, animate: Bool = true) {
     log.verbose("applyWindowGeometry: \(newGeometry.windowFrame)")
