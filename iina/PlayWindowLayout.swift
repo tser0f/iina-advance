@@ -648,12 +648,20 @@ extension PlayWindowController {
       // Restore saved geometries
       if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
         windowedModeGeometry = priorWindowedModeGeometry
+        // Restore primary videoAspectRatio
+        if priorLayoutSpec.mode != .musicMode {
+          videoAspectRatio = windowedModeGeometry.videoAspectRatio
+        }
       } else {
         log.error("Failed to get player window geometry from prefs")
       }
 
       if let priorMusicModeGeometry = priorState.musicModeGeometry {
         musicModeGeometry = priorMusicModeGeometry
+        // Restore primary videoAspectRatio
+        if priorLayoutSpec.mode == .musicMode {
+          videoAspectRatio = musicModeGeometry.videoAspectRatio
+        }
       } else {
         log.error("Failed to get player window layout and/or geometry from prefs")
       }
@@ -678,10 +686,6 @@ extension PlayWindowController {
 
     let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
     let transition = buildLayoutTransition(named: name, from: currentLayout, to: initialLayoutSpec, isInitialLayout: true)
-
-    // Restore primary videoAspectRatio
-    videoAspectRatio = transition.inputGeometry.videoAspectRatio
-    videoView.updateSizeConstraints(transition.inputGeometry.videoSize)
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
@@ -755,7 +759,7 @@ extension PlayWindowController {
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
     // Build OutputGeometry
-    let outputGeometry: PlayWindowGeometry = buildOutputGeometry(oldGeometry: inputGeometry, outputLayout: outputLayout)
+    let outputGeometry: PlayWindowGeometry = buildOutputGeometry(inputGeometry: inputGeometry, outputLayout: outputLayout)
 
     let transition = LayoutTransition(name: transitionName,
                                       from: inputLayout, from: inputGeometry,
@@ -933,7 +937,7 @@ extension PlayWindowController {
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildOutputGeometry(oldGeometry oldGeo: PlayWindowGeometry, outputLayout: LayoutState) -> PlayWindowGeometry {
+  private func buildOutputGeometry(inputGeometry oldGeo: PlayWindowGeometry, outputLayout: LayoutState) -> PlayWindowGeometry {
     switch outputLayout.spec.mode {
 
     case .musicMode:
@@ -971,7 +975,7 @@ extension PlayWindowController {
                                                       insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
                                                       insideBottomBarHeight: insideBottomBarHeight,
                                                       insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
-                                                      videoAspectRatio: videoAspectRatio,
+                                                      videoAspectRatio: oldGeo.videoAspectRatio,
                                                       constrainedWithin: bestScreen.visibleFrame)
 
     // FIXME: this doesn't synchronize properly during animations when this is false. Remove this guard when fixed
