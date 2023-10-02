@@ -887,7 +887,7 @@ extension NSWindow {
   var uiStateSaveName: String {
     if let playerController = windowController as? PlayWindowController {
       // Not using AppKit autosave for player windows. Instead build ID based on player label
-      return WindowAutosaveName.mainPlayer(id: playerController.player.label).string
+      return WindowAutosaveName.playWindow(id: playerController.player.label).string
     }
     // Default to the AppKit autosave ID.
     return frameAutosaveName

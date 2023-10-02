@@ -390,7 +390,7 @@ struct Preference {
     /// don't overwrite each other's data. To do that, we can have each instance listen for changes to this counter and respond
     /// appropriately.
     static let iinaLaunchCount = Key("iinaLaunchCount")
-    static let iinaPing = Key("iinaPing")
+    static let smallestValidLaunchID = Key("smallestValidLaunchID")
 
     /// If true, saves the state of UI components as they change. This includes things like open windows & their sizes & positions,
     /// current scroll offsets, search entries, and more.
@@ -403,10 +403,6 @@ struct Preference {
 
     static let alwaysAskBeforeRestoreAtLaunch = Key("alwaysAskBeforeRestoreAtLaunch")
     static let isRestoreInProgress = Key("isRestoreInProgress")
-    static let isSaveRestoreInUse = Key("isSaveRestoreInUse")
-
-    // Comma-separated list of window names
-    static let uiOpenWindowsBackToFrontList = Key("uiOpenWindowsBackToFront")
 
     // Index of currently selected tab in Navigator table
     static let uiPrefWindowNavTableSelectionIndex = Key("uiPrefWindowNavTableSelectionIndex")
@@ -1111,13 +1107,11 @@ struct Preference {
     .animateKeyBindingTableReloadAll: true,
     .tableEditKeyNavContinuesBetweenRows: false,
     .iinaLaunchCount: 0,
-    .iinaPing: 0,
+    .smallestValidLaunchID: 0,
     .enableSaveUIState: true,
     .enableRestoreUIState: true,
     .alwaysAskBeforeRestoreAtLaunch: false,
     .isRestoreInProgress: false,
-    .isSaveRestoreInUse: false,
-    .uiOpenWindowsBackToFrontList: "",
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
     .uiCollapseViewMediaIsOpened: true,

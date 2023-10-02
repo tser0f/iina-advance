@@ -18,7 +18,7 @@ class PlayerCoreManager {
 
   // Attempt to exactly restore play state & UI from last run of IINA (for given player)
   static func restoreFromPriorLaunch(playerID id: String) {
-    Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.mainPlayer(id: id).string.quoted)")
+    Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.playWindow(id: id).string.quoted)")
     _ = PlayerCore.manager.createNewPlayerCore(withLabel: id, restore: true)
     /// see `start(restore: Bool)` below
   }
@@ -128,10 +128,10 @@ class PlayerCoreManager {
       }
       pc = PlayerCore(label)
     } else {
-      while _playerExists(withLabel: "\(playerCoreCounter)") {
+      while _playerExists(withLabel: "\(AppDelegate.launchID)-\(playerCoreCounter)") {
         playerCoreCounter += 1
       }
-      pc = PlayerCore("\(playerCoreCounter)")
+      pc = PlayerCore("\(AppDelegate.launchID)-\(playerCoreCounter)")
       playerCoreCounter += 1
     }
     Logger.log("Successfully created PlayerCore \(pc.label)")

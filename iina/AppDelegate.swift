@@ -21,7 +21,16 @@ fileprivate let AlternativeMenuItemTag = 1
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
-  static var launchID: Int!
+  /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1, which becomes its launchID.
+  static let launchID: Int = {
+    let nextID = Preference.integer(for: .iinaLaunchCount) + 1
+    Preference.set(nextID, for: .iinaLaunchCount)
+    Logger.log("LaunchID: \(nextID)", level: .verbose)
+    return nextID
+  }()
+
+  /// The unique name for this launch, used as a pref key
+  static var launchName: String = Preference.UIState.launchName(forID: launchID)
 
   /**
    Becomes true once `application(_:openFile:)` or `droppedText()` is called.
@@ -39,8 +48,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     .logLevel,
     .enableLogging,
     .enableAdvancedSettings,
-    .iinaLaunchCount,
-    .iinaPing,
     .enableCmdN,
   ]
 
@@ -98,6 +105,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath, let change = change else { return }
 
+    if keyPath == AppDelegate.launchName {
+      if let newLaunchStatus = change[.newKey] as? Int {
+        guard newLaunchStatus != 0 else { return }
+        Logger.log("Detected status update to launch status pref (\(keyPath.quoted)) but we are still running.")
+        Logger.log("Will assume a newer instance of IINA has started and is trying to restore. Will reset its value to 'stillRunning' so it will skip this instance.")
+        UserDefaults.standard.setValue(Preference.UIState.LaunchStatus.stillRunning, forKey: keyPath)
+      }
+      return
+    }
+
     switch keyPath {
     case Preference.Key.enableAdvancedSettings.rawValue, Preference.Key.enableLogging.rawValue:
       Logger.updateEnablement()
@@ -105,35 +122,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     case Preference.Key.logLevel.rawValue:
       if let newValue = change[.newKey] as? Int {
         Logger.Level.preferred = Logger.Level(rawValue: newValue.clamped(to: 0...3))!
-      }
-
-    case PK.iinaLaunchCount.rawValue:
-      /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1.
-      /// It uses it this value as its launchID, and stores the new value back to the prefs, which will notify anyone listening to pref changes.
-      /// So this acts like a sort of registration mechanism. Each instance listens to see if the pref is updated by other instances.
-      /// If an older launch hears a newer launch register itself, it will set an `.iinaPing`, which the newer instance will hear.
-      /// Any IINA instance which detects a ping not match its own `launchID` will, if well-behaved, immediately disable its usage of shared UI state
-      /// for the remainder of its run, so that multiple instances don't corrupt each other's shared state or create echo-like behavior.
-      if let newLaunchID = change[.newKey] as? Int {
-        guard let launchID = AppDelegate.launchID, newLaunchID != launchID else { return }
-        if newLaunchID < launchID {
-          Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which looks invalid because it is below the current value! Will disable UI state load/save functionality to be safe.", level: .warning)
-          Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
-        } else {
-          Logger.log("Detected update to iinaLaunchCount (\(newLaunchID)) which is larger than this instance's launchID (\(AppDelegate.launchID!)).")
-          Logger.log("Will assume a newer instance of IINA has started; sending a ping to notify it.")
-          Preference.set(AppDelegate.launchID, for: .iinaPing)
-        }
-      }
-
-    case PK.iinaPing.rawValue:
-      if let pingID = change[.newKey] as? Int {
-        if pingID >= 0 && pingID != AppDelegate.launchID {
-          Logger.log("Ping received: \(pingID). Will assume an instance of IINA is already running, and disable loading/saving UI state.")
-          Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
-        }
-      } else if let pingValue = change[.newKey] {
-        Logger.log("Ping unrecognized: \(pingValue)", level: .warning)
       }
 
     case PK.enableCmdN.rawValue:
@@ -326,11 +314,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     menuController.updatePluginMenu()
     menuController.refreshBuiltInMenuItemBindings()
 
-    let nextID = Preference.integer(for: .iinaLaunchCount) + 1
-    AppDelegate.launchID = nextID
-    Logger.log("LaunchID: \(nextID). Checking for other running instances of IINA...", level: .verbose)
-    Preference.set(nextID, for: .iinaLaunchCount)
-    Preference.set(nextID, for: .iinaPing)  // need to set this for comparison later
+    // Register to restore for successive launches. Set status to currently running so that it isn't restored immediately by the next launch
+    UserDefaults.standard.setValue(Preference.UIState.LaunchStatus.stillRunning, forKey: AppDelegate.launchName)
+    UserDefaults.standard.addObserver(self, forKeyPath: AppDelegate.launchName, options: .new, context: nil)
 
     let activePlayer = PlayerCore.active  // Load the first PlayerCore
     Logger.log("Using \(activePlayer.mpv.mpvVersion!)")
@@ -340,8 +326,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       startFromCommandLine()
     } else if openFileCalled {
       // (Option B) Launch app from UI with open file(s)
-      // Delete state of previous launch if file opened at launch. Is this the best approach?
-      Preference.UIState.clearAllSavedWindowsState()
+      // do nothing special here
     } else {
       // (Option C) Launch app (standalone)
       startWithNoOpenedFiles()
@@ -483,21 +468,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return false
     }
 
-    if Preference.bool(for: .isSaveRestoreInUse) {
-      Logger.log("Waiting 1s to see if another instance is still running...", level: .verbose)
-      Thread.sleep(forTimeInterval: 1)
-      if Preference.integer(for: .iinaPing) != AppDelegate.launchID {
-        Logger.log("Looks like another IINA instance is still running. Disabling restore/save of window state for this instance")
-        Utility.showAlert("restore_cancelled", style: .informational)
-        Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
-        return false
-      }
-    } else {
-      Logger.log("Didn't detect any pings. Proceeding with restore of windows", level: .verbose)
-      Preference.set(true, for: .isSaveRestoreInUse)
+    let pastLaunches: [String] = Preference.UIState.collectPastLaunches()
+    Logger.log("Found \(pastLaunches.count) past launches to restore", level: .verbose)
+    if pastLaunches.isEmpty {
+      return false
     }
 
-    let windowNamesBackToFront = Preference.UIState.getSavedWindowsWithPlayerZeroWorkaround()
+    let isRestoreApproved: Bool // false means delete restored state
+    if Preference.bool(for: .isRestoreInProgress) {
+      // If this flag is still set, the last restore probably failed. If it keeps failing, launch will be impossible.
+      // Let user decide whether to try again or delete saved state.
+      Logger.log("Looks like there was a previous restore which didn't complete (pref \(Preference.Key.isRestoreInProgress.rawValue) == true). Asking user whether to retry or skip")
+      isRestoreApproved = Utility.quickAskPanel("restore_prev_error", useCustomButtons: true)
+    } else if Preference.bool(for: .alwaysAskBeforeRestoreAtLaunch) {
+      Logger.log("Prompting user whether to restore app state, per pref", level: .verbose)
+      isRestoreApproved = Utility.quickAskPanel("restore_confirm", useCustomButtons: true)
+    } else {
+      isRestoreApproved = true
+    }
+
+    if !isRestoreApproved {
+      // Clear out old state. It may have been causing errors, or user wants to start new
+      Preference.UIState.clearAllSavedWindowsState()
+      Preference.set(false, for: .isRestoreInProgress)
+      return false
+    }
+
+    let windowNamesBackToFront = Preference.UIState.consolidateOpenWindowsFromPastLaunches()
 
     guard !windowNamesBackToFront.isEmpty else {
       Logger.log("Not restoring windows: stored window list empty")
@@ -524,26 +521,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    let tryToRestoreWindows: Bool // false means delete restored state
-    if Preference.bool(for: .isRestoreInProgress) {
-      // If this flag is still set, the last restore probably failed. If it keeps failing, launch will be impossible.
-      // Let user decide whether to try again or delete saved state.
-      Logger.log("Looks like there was a previous restore which didn't complete (pref \(Preference.Key.isRestoreInProgress.rawValue) == true). Asking user whether to retry or skip")
-      tryToRestoreWindows = Utility.quickAskPanel("restore_prev_error", useCustomButtons: true)
-    } else if Preference.bool(for: .alwaysAskBeforeRestoreAtLaunch) {
-      Logger.log("Prompting user whether to restore app state, per pref", level: .verbose)
-      tryToRestoreWindows = Utility.quickAskPanel("restore_confirm", useCustomButtons: true)
-    } else {
-      tryToRestoreWindows = true
-    }
-
-    if !tryToRestoreWindows {
-      // Clear out old state. It may have been causing errors, or user wants to start new
-      Preference.UIState.clearAllSavedWindowsState()
-      Preference.set(false, for: .isRestoreInProgress)
-      return false
-    }
-
     Logger.log("Starting restore of \(windowNamesBackToFront.count) windows", level: .verbose)
     Preference.set(true, for: .isRestoreInProgress)
 
@@ -567,10 +544,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         showVideoFilterWindow(self)
       case .audioFilter:
         showAudioFilterWindow(self)
-      case .mainPlayer(let id):
+      case .playWindow(let id):
         PlayerCoreManager.restoreFromPriorLaunch(playerID: id)
-      case .miniPlayer(_):
-        break
       default:
         Logger.log("Cannot restore unrecognized autosave enum: \(autosaveName)", level: .error)
         break
@@ -614,7 +589,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard !PlayerCore.active.windowController.isOpen else { return false }
 
     if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .quit {
-      Preference.UIState.clearOpenWindowList()
+      Preference.UIState.clearSavedStateForThisLaunch()
       Logger.log("Will quit on last window closed", level: .verbose)
       return true
     } else {
@@ -671,7 +646,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       Logger.log("ActionWhenNoOpenedWindow: \(whatToDo)", level: .verbose)
       if whatToDo == quitForAction {
         Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
-        Preference.UIState.clearOpenWindowList()
+        Preference.UIState.clearSavedStateForThisLaunch()
         DispatchQueue.main.async {
           NSApp.terminate(nil)
         }
@@ -744,8 +719,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     if Preference.UIState.isSaveEnabled {
       // unlock for new launch
-      Logger.log("Unlocking 'isSaveRestoreInUse' pref entry", level: .verbose)
-      Preference.set(false, for: .isSaveRestoreInUse)
+      Logger.log("Setting launchName \(AppDelegate.launchName.quoted) status to 'done' in prefs", level: .verbose)
+      UserDefaults.standard.setValue(Preference.UIState.LaunchStatus.done, forKey: AppDelegate.launchName)
     }
 
     // Close all windows. When a player window is closed it will send a stop command to mpv to stop

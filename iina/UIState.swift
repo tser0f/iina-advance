@@ -15,6 +15,35 @@ import Foundation
 /// data-intensive, writes to the .plist should be trivial by comparison.
 extension Preference {
   class UIState {
+    class LaunchStatus {
+      static let stillRunning: Int = 1
+      static let indeterminate1: Int = 2
+      static let indeterminate2: Int = 3
+      static let done: Int = 9
+    }
+
+    static private let iinaLaunchFmt = "iinaLaunch-%@"
+    // Comma-separated list of open windows, back to front
+    static private let openWindowListFmt = "uiOpenWindows-%@"
+
+    static func makeOpenWindowListKey(forLaunchID launchID: Int) -> String {
+      return String(format: Preference.UIState.openWindowListFmt, String(launchID))
+    }
+
+    static func launchName(forID launchID: Int) -> String {
+      return String(format: Preference.UIState.iinaLaunchFmt, String(launchID))
+    }
+
+    static func launchID(fromLaunchName launchName: String) -> Int? {
+      if launchName.starts(with: "iinaLaunch-") {
+        let splitted = launchName.split(separator: "-", maxSplits: 1)
+        if splitted.count == 2 {
+          return Int(splitted[1])
+        }
+      }
+      return nil
+    }
+
     /// This value, when set to true, disables state loading & saving for the remaining lifetime of this instance of IINA
     /// (overriding any user settings); calls to `set()` will not be saved for the next launch, and any new get() requests
     /// will return the default values.
@@ -53,13 +82,14 @@ extension Preference {
     }
 
     // Returns the autosave names of windows which have been saved in the set of open windows
-    static func getSavedOpenWindowsBackToFront() -> [String] {
+    static func getSavedOpenWindowsBackToFront(forLaunchID launchID: Int) -> [String] {
       guard isRestoreEnabled else {
         Logger.log("UI restore disabled. Returning empty open window list")
         return []
       }
 
-      let csv = Preference.string(for: Key.uiOpenWindowsBackToFrontList)?.trimmingCharacters(in: .whitespaces) ?? ""
+      let key = Preference.UIState.makeOpenWindowListKey(forLaunchID: launchID)
+      let csv = UserDefaults.standard.string(forKey: key)?.trimmingCharacters(in: .whitespaces) ?? ""
       Logger.log("Loaded list of previously open windows: \(csv.quoted)", level: .verbose)
       if csv.isEmpty {
         return []
@@ -83,19 +113,39 @@ extension Preference {
 
     static func saveCurrentOpenWindowList(excludingWindowName nameToExclude: String? = nil) {
       let openWindowNames = self.getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
-      saveOpenWindowList(windowNamesBackToFront: openWindowNames)
+      saveOpenWindowList(windowNamesBackToFront: openWindowNames, forLaunchID: AppDelegate.launchID)
     }
 
-    static private func saveOpenWindowList(windowNamesBackToFront: [String]) {
+    static private func saveOpenWindowList(windowNamesBackToFront: [String], forLaunchID launchID: Int) {
       guard isSaveEnabled else { return }
-//      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
+      //      Logger.log("Saving open windows: \(windowNamesBackToFront)", level: .verbose)
       let csv = windowNamesBackToFront.map{ $0 }.joined(separator: ",")
-      Preference.set(csv, for: Key.uiOpenWindowsBackToFrontList)
+      let key = Preference.UIState.makeOpenWindowListKey(forLaunchID: launchID)
+
+      UserDefaults.standard.setValue(csv, forKey: key)
     }
 
-    static func clearOpenWindowList() {
-      Logger.log("Clearing saved list of open windows")
-      saveOpenWindowList(windowNamesBackToFront: [])
+    static func clearSavedStateForThisLaunch() {
+      clearSavedState(forLaunchID: AppDelegate.launchID)
+    }
+
+    static func clearSavedState(forLaunchID launchID: Int) {
+      let launchName = Preference.UIState.launchName(forID: launchID)
+
+      // Clear state for saved players:
+      let openWindowList = getSavedOpenWindowsBackToFront(forLaunchID: launchID)
+      for windowEnum in openWindowList.compactMap({WindowAutosaveName($0)}) {
+        if let playerID = windowEnum.playWindowID {
+          Preference.UIState.clearPlayerSaveState(forPlayerID: playerID)
+        }
+      }
+
+      let windowListKey = Preference.UIState.makeOpenWindowListKey(forLaunchID: launchID)
+      Logger.log("Clearing saved list of open windows (pref key: \(windowListKey.quoted))")
+      UserDefaults.standard.removeObject(forKey: windowListKey)
+
+      Logger.log("Clearing saved launch status (pref key: \(launchName.quoted))")
+      UserDefaults.standard.removeObject(forKey: launchName)
     }
 
     static func clearAllSavedWindowsState() {
@@ -103,21 +153,21 @@ extension Preference {
         Logger.log("Will not clear saved UI state; UI save is disabled")
         return
       }
-      let windowNamesStrings = Preference.UIState.getSavedOpenWindowsBackToFront()
-      let playerIDs = getPlayerIDs(from: windowNamesStrings.compactMap{WindowAutosaveName($0)})
-      Logger.log("Clearing saved UI state of \(windowNamesStrings.count) windows, including \(playerIDs.count) player windows")
-      for id in playerIDs {
-        Preference.UIState.clearPlayerSaveState(forPlayerID: String(id))
+      Logger.log("Clearing all saved window states from prefs", level: .debug)
+
+      let pastLaunchNames = Preference.UIState.collectPastLaunches()
+      for pastLaunchName in pastLaunchNames {
+        guard let pastLaunchID = Preference.UIState.launchID(fromLaunchName: pastLaunchName) else { continue }
+        clearSavedState(forLaunchID: pastLaunchID)
       }
-      clearOpenWindowList()
+      clearSavedStateForThisLaunch()
     }
 
-    static private func getPlayerIDs(from windowAutosaveNames: [WindowAutosaveName]) -> [UInt] {
-      var ids: [UInt] = []
+    static private func getPlayerIDs(from windowAutosaveNames: [WindowAutosaveName]) -> [String] {
+      var ids: [String] = []
       for windowName in windowAutosaveNames {
         switch windowName {
-        case WindowAutosaveName.mainPlayer(let id):
-          guard let id = UInt(id) else { break }
+        case WindowAutosaveName.playWindow(let id):
           ids.append(id)
         default:
           break
@@ -126,52 +176,9 @@ extension Preference {
       return ids
     }
 
-    /// Workaround for IINA PlayerCore init weirdness which sometimes creates a new `player0` at startup, if some random other UI code
-    /// happens to call `PlayerCore.lastActive` or `PlayerCore.active`. If this happens before we try to restore the `player0` from a
-    /// previous launch, that would cause a conflict. Workaround: look for previous `player0` and remap it to some higher number.
-    static func getSavedWindowsWithPlayerZeroWorkaround() -> [WindowAutosaveName] {
-      let windowNamesStrings = Preference.UIState.getSavedOpenWindowsBackToFront()
-      let windowNamesBackToFront = windowNamesStrings.compactMap{WindowAutosaveName($0)}
-
-      var foundPlayerZero = false
-      var largestPlayerID: UInt = 0
-
-      for playerID in getPlayerIDs(from: windowNamesBackToFront) {
-        if playerID == 0 {
-          foundPlayerZero = true
-        } else if playerID > largestPlayerID {
-          largestPlayerID = playerID
-        }
-      }
-
-      guard foundPlayerZero else {
-        Logger.log("PlayerZero not found in saved windows", level: .verbose)
-        return windowNamesBackToFront
-      }
-
-      let newPlayerZeroID = String(largestPlayerID + 1)
-      let oldPlayerZeroString = WindowAutosaveName.mainPlayer(id: "0").string
-      let newPlayerZeroString = WindowAutosaveName.mainPlayer(id: newPlayerZeroID).string
-
-      if let saveState = Preference.UIState.getPlayerSaveState(forPlayerID: "0") {
-        Preference.UIState.savePlayerState(forPlayerID: newPlayerZeroID, properties: saveState.properties)
-        Logger.log("Remapped saved window props: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
-      } else {
-        Logger.log("PlayerZero was listed in saved windows but could not find a prop list entry for it! Skipping...", level: .error)
-      }
-
-      let newWindowNamesStrings = windowNamesStrings.map { $0 == oldPlayerZeroString ? newPlayerZeroString : $0 }
-      Preference.UIState.saveOpenWindowList(windowNamesBackToFront: newWindowNamesStrings)
-      Logger.log("Re-saved window list with remapped name: \(oldPlayerZeroString.quoted) -> \(newPlayerZeroString.quoted)")
-      // Remove old entry now that it's been re-mapped
-      Preference.UIState.clearPlayerSaveState(forPlayerID: "0")
-
-      return newWindowNamesStrings.compactMap{WindowAutosaveName($0)}
-    }
-
     static func getPlayerSaveState(forPlayerID playerID: String) -> PlayerSaveState? {
       guard isRestoreEnabled else { return nil }
-      let key = WindowAutosaveName.mainPlayer(id: playerID).string
+      let key = WindowAutosaveName.playWindow(id: playerID).string
       guard let propDict = UserDefaults.standard.dictionary(forKey: key) else {
         return nil
       }
@@ -180,14 +187,118 @@ extension Preference {
 
     static func savePlayerState(forPlayerID playerID: String, properties: [String: Any]) {
       guard isSaveEnabled else { return }
-      let key = WindowAutosaveName.mainPlayer(id: playerID).string
+      let key = WindowAutosaveName.playWindow(id: playerID).string
       UserDefaults.standard.setValue(properties, forKey: key)
     }
 
     static func clearPlayerSaveState(forPlayerID playerID: String) {
-      let key = WindowAutosaveName.mainPlayer(id: playerID).string
-      UserDefaults.standard.setValue(nil, forKey: key)
-      Logger.log("Removed stored UI state for player \(playerID)", level: .verbose)
+      let key = WindowAutosaveName.playWindow(id: playerID).string
+      UserDefaults.standard.removeObject(forKey: key)
+      Logger.log("Removed stored UI state for player \(key.quoted)", level: .verbose)
+    }
+
+    /// Returns list of "launch name" identifiers for past launches of IINA which have saved state to restore.
+    /// This omits launches which are detected as still running.
+    static func collectPastLaunches() -> [String] {
+      let smallestValidLaunchID = Preference.integer(for: .smallestValidLaunchID)
+      var foundNextSmallestLaunchID = false
+      var newSmallestValidLaunchID: Int = smallestValidLaunchID
+
+      var pastLaunches: [String: Int] = [:]
+      for launchID in smallestValidLaunchID..<AppDelegate.launchID {
+        let launchName = Preference.UIState.launchName(forID: launchID)
+        let launchStatus: Int = UserDefaults.standard.integer(forKey: launchName)
+        // 0 === nil
+        if launchStatus > 0 {
+          if !foundNextSmallestLaunchID {
+            // Don't need to make this logic too smart. It's just an optimization for future launches
+            newSmallestValidLaunchID = launchID
+            foundNextSmallestLaunchID = true
+          }
+          pastLaunches[launchName] = launchStatus
+        }
+      }
+
+      var countOfLaunchesToWaitOn = 0
+      for (pastLaunchName, pastLaunchStatus) in pastLaunches {
+        if pastLaunchStatus != Preference.UIState.LaunchStatus.done {
+          Logger.log("Looks like past launch is still running: \(pastLaunchName.quoted)", level: .verbose)
+          countOfLaunchesToWaitOn += 1
+          var newValue = Preference.UIState.LaunchStatus.indeterminate1
+          if pastLaunchStatus == Preference.UIState.LaunchStatus.indeterminate1 {
+            newValue = Preference.UIState.LaunchStatus.indeterminate2
+          }
+          UserDefaults.standard.setValue(newValue, forKey: pastLaunchName)
+        }
+      }
+
+      if newSmallestValidLaunchID != smallestValidLaunchID {
+        Logger.log("Updating smallestValidLaunchID pref to: \(newSmallestValidLaunchID)", level: .verbose)
+        Preference.set(newSmallestValidLaunchID, for: .smallestValidLaunchID)
+      }
+
+      if countOfLaunchesToWaitOn > 0 {
+        Logger.log("Waiting 1s to see if \(countOfLaunchesToWaitOn) past instances are still running...", level: .verbose)
+        Thread.sleep(forTimeInterval: 1)
+      }
+
+      var pastLaunchNames: [String] = []
+      for (pastLaunchName, _) in pastLaunches {
+        let launchStatus: Int = UserDefaults.standard.integer(forKey: pastLaunchName)
+        if launchStatus == Preference.UIState.LaunchStatus.stillRunning {
+          Logger.log("Instance is still running: \(pastLaunchName.quoted)", level: .verbose)
+        } else {
+          if launchStatus != Preference.UIState.LaunchStatus.done {
+            Logger.log("Instance \(pastLaunchName.quoted) has launchStatus \(launchStatus). Assuming it is defunct. Will roll its windows into current launch", level: .verbose)
+          }
+          pastLaunchNames.append(pastLaunchName)
+        }
+      }
+
+      return pastLaunchNames
+    }
+
+    /// Consolidates all player windows (& others) from any past launches which are no longer running into the windows for this instance.
+    /// Updates prefs to reflect new conslidated state.
+    /// Returns all window names for this launch instance, back to front.
+    static func consolidateOpenWindowsFromPastLaunches() -> [WindowAutosaveName] {
+      // Could have been a long time since data was last collected. Get a fresh set of data:
+      let pastLaunchNames = Preference.UIState.collectPastLaunches()
+
+      var completeNameList: [String] = []
+      var nameSet = Set<String>()
+      for pastLaunchName in pastLaunchNames {
+        guard let launchID = Preference.UIState.launchID(fromLaunchName: pastLaunchName) else {
+          Logger.log("Failed to parse launchID from launchName: \(pastLaunchName.quoted)", level: .error)
+          continue
+        }
+        let savedWindowNameStrings = getSavedOpenWindowsBackToFront(forLaunchID: launchID)
+        for nameString in savedWindowNameStrings {
+          completeNameList.append(nameString)
+          nameSet.insert(nameString)
+        }
+      }
+
+      // Remove duplicates, favoring front-most copies
+      var deduplicatedReverseNameList: [String] = []
+      for nameString in completeNameList.reversed() {
+        if nameSet.contains(nameString) {
+          deduplicatedReverseNameList.append(nameString)
+          nameSet.remove(nameString)
+        } else {
+          Logger.log("Skipping duplicate open window: \(nameString.quoted)", level: .verbose)
+        }
+      }
+
+      let finalWindowNameList = Array(deduplicatedReverseNameList.reversed())
+      Logger.log("Consolidated open windows from past launches, saving under this launchID: \(finalWindowNameList)", level: .verbose)
+      saveOpenWindowList(windowNamesBackToFront: finalWindowNameList, forLaunchID: AppDelegate.launchID)
+      for pastLaunchName in pastLaunchNames {
+        Logger.log("Removing past launch from prefs: \(pastLaunchName.quoted)", level: .verbose)
+        UserDefaults.standard.removeObject(forKey: pastLaunchName)
+      }
+
+      return finalWindowNameList.compactMap{WindowAutosaveName($0)}
     }
   }
 }

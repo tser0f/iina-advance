@@ -10,9 +10,7 @@ import Foundation
 
 enum WindowAutosaveName: Equatable {
   static let playWindowPrefix = "PlayWindow-"
-  static let miniPlayerPrefix = "MiniPlayWindow-"
   static let playWindowFmt = "\(playWindowPrefix)%@"
-  static let miniPlayerFmt = "\(miniPlayerPrefix)%@"
 
   case preference
   case welcome
@@ -24,8 +22,7 @@ enum WindowAutosaveName: Equatable {
   case videoFilter
   case audioFilter
   case fontPicker
-  case mainPlayer(id: String)
-  case miniPlayer(id: String)
+  case playWindow(id: String)
 
   var string: String {
     switch self {
@@ -47,10 +44,8 @@ enum WindowAutosaveName: Equatable {
       return "AudioFilterWindow"
     case .fontPicker:
       return "IINAFontPickerWindow"
-    case .mainPlayer(let id):
+    case .playWindow(let id):
       return String(format: WindowAutosaveName.playWindowFmt, id)
-    case .miniPlayer(let id):
-      return String(format: WindowAutosaveName.miniPlayerFmt, id)
     }
   }
 
@@ -76,18 +71,27 @@ enum WindowAutosaveName: Equatable {
       self = .fontPicker
     default:
       if let id = WindowAutosaveName.parseID(from: string, mustStartWith: WindowAutosaveName.playWindowPrefix) {
-        self = .mainPlayer(id: id)
-      } else if let id = WindowAutosaveName.parseID(from: string, mustStartWith: WindowAutosaveName.miniPlayerPrefix) {
-        self = .miniPlayer(id: id)
+        self = .playWindow(id: id)
       } else {
         return nil
       }
     }
   }
 
+  /// Returns `id` if `self` is type `.playWindow`; otherwise `nil`
+  var playWindowID: String? {
+    switch self {
+    case .playWindow(let id):
+      return id
+    default:
+      break
+    }
+    return nil
+  }
+
   private static func parseID(from string: String, mustStartWith prefix: String) -> String? {
     if string.starts(with: prefix) {
-      let splitted = string.split(separator: "-")
+      let splitted = string.split(separator: "-", maxSplits: 1)
       if splitted.count == 2 {
         return String(splitted[1])
       }
