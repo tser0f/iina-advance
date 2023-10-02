@@ -474,6 +474,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return false
     }
 
+    let stopwatch = Utility.Stopwatch()
+
     let isRestoreApproved: Bool // false means delete restored state
     if Preference.bool(for: .isRestoreInProgress) {
       // If this flag is still set, the last restore probably failed. If it keeps failing, launch will be impossible.
@@ -494,7 +496,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return false
     }
 
-    let windowNamesBackToFront = Preference.UIState.consolidateOpenWindowsFromPastLaunches()
+    // If too much time has passed (in particular if user took a long time to respond to confirmation dialog), consider the data stale.
+    // Due to 1s delay in chosen strategy for verifying whether other instances are running, try not to repeat it twice.
+    // Users who are quick with their user interface device probably know what they are doing and will be impatient.
+    let pastLaunchesCache = stopwatch.msElapsed > 1000 ? nil : pastLaunches
+    let windowNamesBackToFront = Preference.UIState.consolidateOpenWindowsFromPastLaunches(pastLaunches: pastLaunchesCache)
 
     guard !windowNamesBackToFront.isEmpty else {
       Logger.log("Not restoring windows: stored window list empty")

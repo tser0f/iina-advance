@@ -90,7 +90,7 @@ extension Preference {
 
       let key = Preference.UIState.makeOpenWindowListKey(forLaunchID: launchID)
       let csv = UserDefaults.standard.string(forKey: key)?.trimmingCharacters(in: .whitespaces) ?? ""
-      Logger.log("Loaded list of previously open windows: \(csv.quoted)", level: .verbose)
+      Logger.log("Loaded list of open windows for launchID \(launchID): \(csv.quoted)", level: .verbose)
       if csv.isEmpty {
         return []
       }
@@ -204,7 +204,7 @@ extension Preference {
       var foundNextSmallestLaunchID = false
       var newSmallestValidLaunchID: Int = smallestValidLaunchID
 
-      var pastLaunches: [String: Int] = [:]
+      var allPastLaunches: [String: Int] = [:]
       for launchID in smallestValidLaunchID..<AppDelegate.launchID {
         let launchName = Preference.UIState.launchName(forID: launchID)
         let launchStatus: Int = UserDefaults.standard.integer(forKey: launchName)
@@ -215,14 +215,13 @@ extension Preference {
             newSmallestValidLaunchID = launchID
             foundNextSmallestLaunchID = true
           }
-          pastLaunches[launchName] = launchStatus
+          allPastLaunches[launchName] = launchStatus
         }
       }
 
       var countOfLaunchesToWaitOn = 0
-      for (pastLaunchName, pastLaunchStatus) in pastLaunches {
+      for (pastLaunchName, pastLaunchStatus) in allPastLaunches {
         if pastLaunchStatus != Preference.UIState.LaunchStatus.done {
-          Logger.log("Looks like past launch is still running: \(pastLaunchName.quoted)", level: .verbose)
           countOfLaunchesToWaitOn += 1
           var newValue = Preference.UIState.LaunchStatus.indeterminate1
           if pastLaunchStatus == Preference.UIState.LaunchStatus.indeterminate1 {
@@ -238,12 +237,14 @@ extension Preference {
       }
 
       if countOfLaunchesToWaitOn > 0 {
+        let iffyKeys = allPastLaunches.filter{$0.value != Preference.UIState.LaunchStatus.done}.keys.map{$0.quoted}.joined(separator: ", ")
+        Logger.log("Looks like these launches may not be done: \(iffyKeys)", level: .verbose)
         Logger.log("Waiting 1s to see if \(countOfLaunchesToWaitOn) past instances are still running...", level: .verbose)
         Thread.sleep(forTimeInterval: 1)
       }
 
-      var pastLaunchNames: [String] = []
-      for (pastLaunchName, _) in pastLaunches {
+      var pastLaunchesToRestore: [String] = []
+      for (pastLaunchName, _) in allPastLaunches {
         let launchStatus: Int = UserDefaults.standard.integer(forKey: pastLaunchName)
         if launchStatus == Preference.UIState.LaunchStatus.stillRunning {
           Logger.log("Instance is still running: \(pastLaunchName.quoted)", level: .verbose)
@@ -251,19 +252,19 @@ extension Preference {
           if launchStatus != Preference.UIState.LaunchStatus.done {
             Logger.log("Instance \(pastLaunchName.quoted) has launchStatus \(launchStatus). Assuming it is defunct. Will roll its windows into current launch", level: .verbose)
           }
-          pastLaunchNames.append(pastLaunchName)
+          pastLaunchesToRestore.append(pastLaunchName)
         }
       }
 
-      return pastLaunchNames
+      return pastLaunchesToRestore
     }
 
     /// Consolidates all player windows (& others) from any past launches which are no longer running into the windows for this instance.
     /// Updates prefs to reflect new conslidated state.
     /// Returns all window names for this launch instance, back to front.
-    static func consolidateOpenWindowsFromPastLaunches() -> [WindowAutosaveName] {
+    static func consolidateOpenWindowsFromPastLaunches(pastLaunches cachedLaunches: [String]? = nil) -> [WindowAutosaveName] {
       // Could have been a long time since data was last collected. Get a fresh set of data:
-      let pastLaunchNames = Preference.UIState.collectPastLaunches()
+      let pastLaunchNames = cachedLaunches ?? Preference.UIState.collectPastLaunches()
 
       var completeNameList: [String] = []
       var nameSet = Set<String>()
