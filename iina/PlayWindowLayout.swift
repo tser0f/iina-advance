@@ -647,14 +647,12 @@ extension PlayWindowController {
 
       // Restore saved geometries
       if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
-        log.debug("Restoring windowedMode windowFrame to \(priorWindowedModeGeometry.windowFrame), videoAspectRatio: \(priorWindowedModeGeometry.videoAspectRatio)")
         windowedModeGeometry = priorWindowedModeGeometry
       } else {
         log.error("Failed to get player window geometry from prefs")
       }
 
       if let priorMusicModeGeometry = priorState.musicModeGeometry {
-        log.debug("Restoring \(priorMusicModeGeometry)")
         musicModeGeometry = priorMusicModeGeometry
       } else {
         log.error("Failed to get player window layout and/or geometry from prefs")
@@ -851,7 +849,7 @@ extension PlayWindowController {
     })
 
     // Extra task when toggling music mode: move & resize window
-    if transition.isTogglingMusicMode && !transition.isInitialLayout {
+    if transition.isTogglingMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         // FIXME: develop a nice sliding animation if possible
 

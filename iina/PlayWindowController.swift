@@ -1826,8 +1826,8 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
       enterFullScreen()
     case .fullScreen:
       exitFullScreen(legacy: layout.spec.isLegacyStyle)
-    default:
-      return
+    case .musicMode:
+      enterFullScreen()
     }
   }
 
