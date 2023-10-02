@@ -911,37 +911,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
 //    }
 
     // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
-    addObserver(to: .default, forName: NSApplication.didChangeScreenParametersNotification) { [unowned self] _ in
-
-      // FIXME: this also handles the case where Dock was shown/hidden! Need to update window sizes accordingly
-
-      var screenIDs = Set<UInt32>()
-      for screen in NSScreen.screens {
-        screenIDs.insert(screen.displayId)
-      }
-      log.verbose("Got NSApplicationDidChangeScreenParametersNotification; screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)")
-      if isFullScreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
-        self.removeBlackWindows()
-        self.blackOutOtherMonitors()
-      }
-      // Update the cached value
-      self.cachedScreenIDs = screenIDs
-
-      self.videoView.updateDisplayLink()
-      // In normal full screen mode AppKit will automatically adjust the window frame if the window
-      // is moved to a new screen such as when the window is on an external display and that display
-      // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
-      // frame.
-      if currentLayout.isLegacyFullScreen {
-        // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
-        animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
-          guard currentLayout.isLegacyFullScreen else { return }  // check again now that we are inside animation
-          log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
-          let newGeo = buildLegacyFullScreenGeometry(from: currentLayout)
-          setWindowFrameForLegacyFullScreen(using: newGeo)
-        }))
-      }
-    }
+    NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main, using: self.windowDidChangeScreenParameters)
 
     // Observe the loop knobs on the progress bar and update mpv when the knobs move.
     addObserver(to: .default, forName: .iinaPlaySliderLoopKnobChanged, object: playSlider.abLoopA) { [weak self] _ in
@@ -2022,6 +1992,38 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
+  /// This also handles the case where Dock was shown/hidden.
+  private func windowDidChangeScreenParameters(_ notification: Notification) {
+    var screenIDs = Set<UInt32>()
+    for screen in NSScreen.screens {
+      screenIDs.insert(screen.displayId)
+    }
+    log.verbose("Got NSApplicationDidChangeScreenParametersNotification; screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)")
+
+    if isFullScreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
+      self.removeBlackWindows()
+      self.blackOutOtherMonitors()
+    }
+    // Update the cached value
+    self.cachedScreenIDs = screenIDs
+
+    self.videoView.updateDisplayLink()
+
+    // In normal full screen mode AppKit will automatically adjust the window frame if the window
+    // is moved to a new screen such as when the window is on an external display and that display
+    // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
+    // frame.
+    if currentLayout.isLegacyFullScreen {
+      // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
+      animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+        guard currentLayout.isLegacyFullScreen else { return }  // check again now that we are inside animation
+        log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
+        let newGeo = buildLegacyFullScreenGeometry(from: currentLayout)
+        setWindowFrameForLegacyFullScreen(using: newGeo)
+      }))
+    }
+  }
+
   func windowWillMove(_ notification: Notification) {
     guard let window = window else { return }
     log.verbose("WindowWillMove, frame=\(window.frame)")
@@ -2038,7 +2040,11 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Window delegate: Activeness status
 
   func windowDidBecomeKey(_ notification: Notification) {
-    window!.makeFirstResponder(window!)
+    if currentLayout.isLegacyFullScreen {
+      /// In case window was set to normal by `windowDidResignKey`
+      window?.level = .floating
+    }
+
     if Preference.bool(for: .pauseWhenInactive) && isPausedDueToInactive {
       player.resume()
       isPausedDueToInactive = false
@@ -2046,6 +2052,11 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidResignKey(_ notification: Notification) {
+    if currentLayout.isLegacyFullScreen {
+      /// Change from `floating` to `normal` so that window doesn't block all others
+      window?.level = .normal
+    }
+
     // keyWindow is nil: The whole app is inactive
     // keyWindow is another PlayWindow: Switched to another video window
     if NSApp.keyWindow == nil || (NSApp.keyWindow?.windowController is PlayWindowController) {
