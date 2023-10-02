@@ -1848,11 +1848,10 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("ExitFullScreen called (legacy: \(legacy.yn))")
 
     // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
-    // TODO: switch between native & legacy FS as soon as pref is toggled
-    if !legacy {
-      window.toggleFullScreen(self)
-    } else {
+    if legacy {
       animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
+    } else {
+      window.toggleFullScreen(self)
     }
   }
 

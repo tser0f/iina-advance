@@ -638,7 +638,6 @@ extension PlayWindowController {
 
   func setInitialWindowLayout() {
     let initialLayoutSpec: LayoutSpec
-    var initialGeometry: PlayWindowGeometry? = nil
     let isRestoringFromPrevLaunch: Bool
     var needsNativeFullScreen = false
 
@@ -673,66 +672,31 @@ extension PlayWindowController {
         initialLayoutSpec = priorLayoutSpec
       }
 
-      // Restore window size & position
-      switch initialLayoutSpec.mode {
-      case .fullScreen, .windowed:
-        initialGeometry = windowedModeGeometry
-      case .musicMode:
-        /// `musicModeGeometry` should have already been deserialized and set.
-        /// But make sure we correct any size problems
-        initialGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toPlayWindowGeometry()
-      }
-
     } else {
       isRestoringFromPrevLaunch = false
       log.verbose("Transitioning to initial layout from app prefs")
       initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
     }
 
-    let initialLayout = buildOutputLayoutState(from: initialLayoutSpec)
-
-    if initialGeometry == nil {
-      log.verbose("Building initial geometry from current window")
-      switch initialLayoutSpec.mode {
-      case .fullScreen, .windowed:
-        initialGeometry = buildWindowGeometryFromCurrentFrame(using: initialLayout)
-      case .musicMode:
-        initialGeometry = musicModeGeometry.clone(windowFrame: window!.frame).toPlayWindowGeometry()
-      }
-    }
+    let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
+    let transition = buildLayoutTransition(named: name, from: currentLayout, to: initialLayoutSpec, isInitialLayout: true)
 
     // Restore primary videoAspectRatio
-    videoAspectRatio = initialGeometry!.videoAspectRatio
-    videoView.updateSizeConstraints(initialGeometry!.videoSize)
-
-    let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
-    let transition = LayoutTransition(name: name, from: currentLayout, from: initialGeometry!, to: initialLayout, to: initialGeometry!, isInitialLayout: true)
+    videoAspectRatio = transition.inputGeometry.videoAspectRatio
+    videoView.updateSizeConstraints(transition.inputGeometry.videoSize)
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
     CocoaAnimation.disableAnimation{
-      controlBarFloating.isDragging = false
-      doPreTransitionWork(transition)
-      fadeOutOldViews(transition)
-      closeOldPanels(transition)
-      updateHiddenViewsAndConstraints(transition)
-      openNewPanelsAndFinalizeOffsets(transition)
-      fadeInNewViews(transition)
-      doPostTransitionWork(transition)
+      for task in transition.animationTasks {
+        task.runFunc()
+      }
       log.verbose("Done with transition to initial layout")
     }
 
     if Preference.bool(for: .alwaysFloatOnTop) {
       log.verbose("Setting window to OnTop per app preference")
       setWindowFloatingOnTop(true)
-    }
-
-    if !initialLayout.isLegacyFullScreen && !initialLayout.isMusicMode {
-      animationQueue.runZeroDuration({ [self] in
-        log.verbose("Setting window frame for initial layout to: \(initialGeometry!.windowFrame)")
-        player.window.setFrameImmediately(initialGeometry!.windowFrame)
-        videoView.updateSizeConstraints(initialGeometry!.videoSize)
-      })
     }
 
     if needsNativeFullScreen {
@@ -752,7 +716,7 @@ extension PlayWindowController {
     } else {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
       log.warn("Player's saved layout does not match IINA app prefs. Will build and apply a corrected layout")
-      buildLayoutTransition(named: "FixInvalidInitialLayout", from: initialLayout, to: prefsSpec, thenRun: true)
+      buildLayoutTransition(named: "FixInvalidInitialLayout", from: transition.outputLayout, to: prefsSpec, thenRun: true)
     }
   }
 
@@ -764,6 +728,7 @@ extension PlayWindowController {
   func buildLayoutTransition(named transitionName: String,
                              from inputLayout: LayoutState,
                              to outputSpec: LayoutSpec,
+                             isInitialLayout: Bool = false,
                              totalStartingDuration: CGFloat? = nil,
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
@@ -776,12 +741,18 @@ extension PlayWindowController {
 
     // Build InputGeometry
     let inputGeometry: PlayWindowGeometry
-    if inputLayout.isMusicMode {
-      inputGeometry = musicModeGeometry.toPlayWindowGeometry()
-    } else if inputLayout.isLegacyFullScreen {
-      inputGeometry = buildLegacyFullScreenGeometry(from: inputLayout)
-    } else {
-      inputGeometry = windowedModeGeometry
+    // Restore window size & position
+    switch inputLayout.spec.mode {
+    case .fullScreen, .windowed:
+      if inputLayout.isLegacyFullScreen {
+        inputGeometry = buildLegacyFullScreenGeometry(from: inputLayout)
+      } else {
+        inputGeometry = windowedModeGeometry
+      }
+    case .musicMode:
+      /// `musicModeGeometry` should have already been deserialized and set.
+      /// But make sure we correct any size problems
+      inputGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toPlayWindowGeometry()
     }
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
@@ -791,11 +762,13 @@ extension PlayWindowController {
     let transition = LayoutTransition(name: transitionName,
                                       from: inputLayout, from: inputGeometry,
                                       to: outputLayout, to: outputGeometry,
-                                      isInitialLayout: false)
+                                      isInitialLayout: isInitialLayout)
 
-    // Build MiddleGeometry (after closed panels step)
-    transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
-    log.verbose("[\(transitionName)] Built middleGeometry: \(transition.middleGeometry!)")
+    if !isInitialLayout {
+      // Build MiddleGeometry (after closed panels step)
+      transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
+      log.verbose("[\(transitionName)] Built middleGeometry: \(transition.middleGeometry!)")
+    }
 
     let panelTimingName: CAMediaTimingFunctionName?
     if transition.isTogglingFullScreen {
@@ -878,7 +851,7 @@ extension PlayWindowController {
     })
 
     // Extra task when toggling music mode: move & resize window
-    if transition.isTogglingMusicMode {
+    if transition.isTogglingMusicMode && !transition.isInitialLayout {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         // FIXME: develop a nice sliding animation if possible
 
@@ -903,7 +876,7 @@ extension PlayWindowController {
     // - Ending animations:
 
     // Extra animation for exiting legacy full screen  (to Legacy Windowed Mode)
-    if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
+    if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle && !transition.isInitialLayout {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let screen = bestScreen
         let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
@@ -931,7 +904,7 @@ extension PlayWindowController {
     }
 
     // Extra animation for entering legacy full screen
-    if transition.isEnteringLegacyFullScreen {
+    if transition.isEnteringLegacyFullScreen && !transition.isInitialLayout {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         guard let window = window else { return }
         window.styleMask.insert(.borderless)
