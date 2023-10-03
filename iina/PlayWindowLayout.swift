@@ -321,7 +321,8 @@ extension PlayWindowController {
         NSApp.presentationOptions.insert(.autoHideMenuBar)
         NSApp.presentationOptions.insert(.autoHideDock)
 
-        window.level = .floating
+        /// Set to `.iinaFloating` instead of `.floating` so that Settings & other windows can be displayed
+        window.level = .iinaFloating
 
         let screen = bestScreen
         let newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: screen.cameraHousingHeight ?? 0)

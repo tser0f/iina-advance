@@ -2042,7 +2042,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   func windowDidBecomeKey(_ notification: Notification) {
     if currentLayout.isLegacyFullScreen {
       /// In case window was set to normal by `windowDidResignKey`
-      window?.level = .floating
+      window?.level = .iinaFloating
     }
 
     if Preference.bool(for: .pauseWhenInactive) && isPausedDueToInactive {
