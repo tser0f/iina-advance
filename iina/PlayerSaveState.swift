@@ -75,7 +75,7 @@ struct PlayerSaveState {
   /// Cached values parsed from `properties`
 
   /// Describes the current layout configuration of the player window.
-  /// See `setInitialWindowLayout()` in PlayWindowLayout.swift.
+  /// See `setInitialWindowLayout()` in `PlayWindowLayout.swift`.
   let layoutSpec: PlayWindowController.LayoutSpec?
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
   let windowedModeGeometry: PlayWindowGeometry?

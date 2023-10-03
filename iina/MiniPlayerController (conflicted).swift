@@ -343,6 +343,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     if showVideo {
       windowController.animationQueue.runZeroDuration({ [self] in
         windowController.videoContainerBottomOffsetFromContentViewBottomConstraint.isActive = true
+        windowController.videoView.updateSizeConstraints(newGeometry.videoSize)
       })
     }
 
@@ -350,7 +351,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
       log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
-      windowController.applyMusicModeGeometry(newGeometry)
+      windowController.window?.contentView?.layout()
+      windowController.applyMusicModeGeometry(newGeometry, animate: false)
     }))
 
   }
