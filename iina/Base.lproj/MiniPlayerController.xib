@@ -35,13 +35,13 @@
             <rect key="frame" x="0.0" y="0.0" width="300" height="72"/>
             <subviews>
                 <visualEffectView wantsLayer="YES" blendingMode="behindWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Q6R-eL-qkW" userLabel="Background View">
-                    <rect key="frame" x="0.0" y="0.0" width="300" height="72"/>
+                    <rect key="frame" x="8" y="0.0" width="284" height="72"/>
                     <subviews>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Cef-Fd-eDH" userLabel="MediaInfo View">
-                            <rect key="frame" x="20" y="24" width="258" height="48"/>
+                            <rect key="frame" x="20" y="24" width="242" height="48"/>
                             <subviews>
                                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="jAX-WD-i2a" userLabel="Title Label" customClass="ScrollingTextField" customModule="IINA" customModuleProvider="target">
-                                    <rect key="frame" x="-22" y="26" width="304" height="16"/>
+                                    <rect key="frame" x="-30" y="26" width="304" height="16"/>
                                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" sendsActionOnEndEditing="YES" alignment="center" title="Title" id="3VO-PF-tPl">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -49,7 +49,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qHK-Ae-PRZ" userLabel="Artist-Album Label" customClass="ScrollingTextField" customModule="IINA" customModuleProvider="target">
-                                    <rect key="frame" x="-22" y="8" width="304" height="14"/>
+                                    <rect key="frame" x="-30" y="8" width="304" height="14"/>
                                     <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="Artist - Album" id="KpO-jH-qw5">
                                         <font key="font" metaFont="message" size="11"/>
                                         <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
@@ -64,10 +64,10 @@
                             </constraints>
                         </customView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Wxl-Ex-FWV" userLabel="Control View">
-                            <rect key="frame" x="0.0" y="24" width="300" height="48"/>
+                            <rect key="frame" x="0.0" y="24" width="284" height="48"/>
                             <subviews>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="BS3-lV-sRn" userLabel="Volume Button">
-                                    <rect key="frame" x="49" y="15" width="17" height="14"/>
+                                    <rect key="frame" x="41" y="15" width="17" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="BS3-lV-sRn" secondAttribute="height" multiplier="17:14" id="GSG-n3-UAH"/>
                                         <constraint firstAttribute="height" constant="14" id="cQK-eB-gma"/>
@@ -81,7 +81,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jfj-IC-e3B" userLabel="Prev Button">
-                                    <rect key="frame" x="86" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="78" y="8" width="28" height="28"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="jfj-IC-e3B" secondAttribute="height" multiplier="1:1" id="3Tu-Mf-AWA"/>
                                         <constraint firstAttribute="height" constant="28" id="AVQ-eY-Sqg"/>
@@ -95,7 +95,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="28c-iK-4mT" userLabel="Play Button">
-                                    <rect key="frame" x="138" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="130" y="8" width="28" height="28"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="28" id="SI7-5f-3Nl"/>
                                         <constraint firstAttribute="width" secondItem="28c-iK-4mT" secondAttribute="height" multiplier="1:1" id="sqa-rc-fhZ"/>
@@ -109,7 +109,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="nwm-1g-9Dl" userLabel="Next Button">
-                                    <rect key="frame" x="186" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="178" y="8" width="28" height="28"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="nwm-1g-9Dl" secondAttribute="height" multiplier="1:1" id="P9S-Ze-mSU"/>
                                         <constraint firstAttribute="height" constant="28" id="cuX-5c-RtE"/>
@@ -123,7 +123,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jJt-GH-mJQ" userLabel="TogglePlaylist Button">
-                                    <rect key="frame" x="234" y="15" width="14" height="14"/>
+                                    <rect key="frame" x="226" y="15" width="14" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="jJt-GH-mJQ" secondAttribute="height" multiplier="1:1" id="EOL-Yj-rmd"/>
                                         <constraint firstAttribute="height" constant="14" id="Mpi-Dg-vRO"/>
@@ -137,7 +137,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="6q3-fy-whD" userLabel="ToggleVideo Button">
-                                    <rect key="frame" x="260" y="15" width="14" height="14"/>
+                                    <rect key="frame" x="252" y="15" width="14" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="6q3-fy-whD" secondAttribute="height" multiplier="1:1" id="5TE-Mp-tbF"/>
                                         <constraint firstAttribute="height" constant="14" id="5wi-g6-Mhb"/>
@@ -182,14 +182,14 @@
                             </connections>
                         </textField>
                         <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="gnl-l6-h4q" userLabel="Play Slider">
-                            <rect key="frame" x="42" y="0.0" width="216" height="28"/>
+                            <rect key="frame" x="42" y="0.0" width="200" height="28"/>
                             <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="88B-PU-AHp" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                             <connections>
                                 <action selector="playSliderChanges:" target="-2" id="jQh-h3-RD4"/>
                             </connections>
                         </slider>
                         <textField wantsLayer="YES" horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="QnB-gd-QmI" userLabel="RightPlayPosition Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
-                            <rect key="frame" x="260" y="11" width="36" height="11"/>
+                            <rect key="frame" x="244" y="11" width="36" height="11"/>
                             <constraints>
                                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="32" id="1Io-Yb-1zX"/>
                             </constraints>
@@ -236,13 +236,13 @@
                 </visualEffectView>
             </subviews>
             <constraints>
-                <constraint firstItem="Q6R-eL-qkW" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="7rj-tJ-Dbv"/>
+                <constraint firstItem="Q6R-eL-qkW" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" constant="8" id="7rj-tJ-Dbv"/>
                 <constraint firstItem="2bL-q1-qry" firstAttribute="top" secondItem="Q6R-eL-qkW" secondAttribute="bottom" id="CBE-jt-ewJ"/>
                 <constraint firstItem="Q6R-eL-qkW" firstAttribute="top" secondItem="98Q-Fi-3N5" secondAttribute="top" id="HKs-Rq-hwV"/>
                 <constraint firstAttribute="trailing" relation="lessThanOrEqual" secondItem="qHK-Ae-PRZ" secondAttribute="trailing" priority="501" id="I7R-Jj-KYD"/>
                 <constraint firstAttribute="trailing" secondItem="2bL-q1-qry" secondAttribute="trailing" id="J3U-a2-f9B"/>
                 <constraint firstAttribute="trailing" relation="lessThanOrEqual" secondItem="jAX-WD-i2a" secondAttribute="trailing" priority="501" id="aAr-pk-xUd"/>
-                <constraint firstAttribute="trailing" secondItem="Q6R-eL-qkW" secondAttribute="trailing" id="aFO-ag-c2T"/>
+                <constraint firstAttribute="trailing" secondItem="Q6R-eL-qkW" secondAttribute="trailing" constant="8" id="aFO-ag-c2T"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="qHK-Ae-PRZ" secondAttribute="trailing" priority="499" id="mvA-Hm-ujy"/>
                 <constraint firstItem="qHK-Ae-PRZ" firstAttribute="leading" secondItem="98Q-Fi-3N5" secondAttribute="leading" id="n4z-DE-xyQ"/>
                 <constraint firstAttribute="bottom" secondItem="2bL-q1-qry" secondAttribute="bottom" id="rXy-cV-9EW"/>

@@ -1265,8 +1265,10 @@ extension PlayWindowController {
       }
       updateTopBarHeight(to: topBarHeight, topBarPlacement: transition.inputLayout.topBarPlacement, cameraHousingOffset: cameraOffset)
 
-      // Update sidebar vertical alignments to match top bar:
-      updateSidebarVerticalConstraints(layout: outputLayout)
+      if !transition.isExitingMusicMode {  // don't do this too soon when exiting Music Mode
+        // Update sidebar vertical alignments to match top bar:
+        updateSidebarVerticalConstraints(layout: outputLayout)
+      }
 
       let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideVideo ? geo.insideBottomBarHeight : geo.outsideBottomBarHeight
       updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.inputLayout.bottomBarPlacement)
@@ -1404,7 +1406,7 @@ extension PlayWindowController {
     if transition.isEnteringMusicMode {
       oscBottomMainView.removeFromSuperview()
       bottomBarView.addSubview(miniPlayer.view, positioned: .above, relativeTo: oscBottomMainView)
-      miniPlayer.view.addConstraintsToFillSuperview(top: 0, leading: 8, trailing: 8)
+      miniPlayer.view.addConstraintsToFillSuperview(top: 0, leading: 0, trailing: 0)
 
       let bottomConstraint = miniPlayer.view.superview!.bottomAnchor.constraint(equalTo: miniPlayer.view.bottomAnchor, constant: 0)
       bottomConstraint.priority = .defaultHigh

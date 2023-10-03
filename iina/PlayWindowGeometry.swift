@@ -7,19 +7,23 @@
 //
 
 import Foundation
-// TODO: Add screenFrame, screenVisibleFrame, and cameraHousingOffset
+
 /**
 `PlayWindowGeometry`
  Data structure which describes:
  1. The size & position (`windowFrame`) of an IINA player window which is in normal windowed mode
     (not fullscreen, music mode, etc.)
- 2. The distance between each of the 4 `outsideVideo` panels and the video container. If a given outside panel is
-    hidden or instead is shown as `insideVideo`, its value will be `0`.
- 3. The size of the video container (`videoContainerView`), whose size is inferred by subtracting the bar sizes
-    from `windowFrame`.
- 4. The size of the video itself (`videoView`), which may or may not be equal to the size of `videoContainerView`,
+ 2. The size of the video container (`videoContainerSize`), whose size is inferred by subtracting the bar sizes
+ from `windowFrame`.
+ 3. Either the height or width of each of the 4 `outsideVideo` bars, measured as the distance between the
+    outside edge of `videoContainerView` and the outermost edge of the bar. This is the minimum needed to determine
+    its size & position; the rest can be inferred from `windowFrame` and `videoContainerSize`.
+    If instead the bar is hidden or is shown as `insideVideo`, its outside value will be `0`.
+ 4. Either  height or width of each of the 4 `insideVideo` bars. These are measured from the nearest outside wall of
+    `videoContainerView`.  If instead the bar is hidden or is shown as `outsideVideo`, its inside value will be `0`.
+ 5. The size of the video itself (`videoView`), which may or may not be equal to the size of `videoContainerView`,
     depending on whether empty space is allowed around the video.
- 5. The video aspect ratio. This is stored here mainly to create a central reference for it, to avoid differing
+ 6. The video aspect ratio. This is stored here mainly to create a central reference for it, to avoid differing
     values which can arise if calculating it from disparate sources.
 
  Below is an example of a player window with letterboxed video, where `videoContainerView` is taller than `videoView`.
@@ -28,6 +32,9 @@ import Foundation
  •                        `videoContainerSize` (W)
  •                        │◄───────────────►│
  ┌─────────────────────────────────────────────────────────────────────┐`windowFrame`
+ │                                 ▲`topMarginHeight`                  │
+ │                                 ▼                                   │
+ ├─────────────────────────────────────────────────────────────────────┤
  │                               ▲                                     │
  │                               │`outsideTopBarHeight`                │
  │                               ▼                                     │
@@ -66,6 +73,8 @@ struct PlayWindowGeometry: Equatable {
 
   let videoAspectRatio: CGFloat
   let videoSize: NSSize
+
+  // TODO: Add screenFrame, screenVisibleFrame
 
   var allowEmptySpaceAroundVideo: Bool {
     return Preference.bool(for: .allowEmptySpaceAroundVideo)

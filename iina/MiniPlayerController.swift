@@ -8,12 +8,11 @@
 
 import Cocoa
 
-// Hide playlist if its height is too small to display at least 3 items:
-
 class MiniPlayerController: NSViewController, NSPopoverDelegate {
   static let controlViewHeight: CGFloat = 72
   static let defaultWindowWidth: CGFloat = 280
   static let minWindowWidth: CGFloat = 260
+  // Hide playlist if its height is too small to display at least 3 items:
   static let PlaylistMinHeight: CGFloat = 138
   static private let animationDurationShowControl: TimeInterval = 0.2
 
@@ -394,9 +393,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     view.removeFromSuperview()
 
     /// Remove `playlistView` from wrapper. It will be added elsewhere if/when it is needed there
-    for view in playlistWrapperView.subviews {
-      view.removeFromSuperview()
-    }
+    windowController.playlistView.view.removeFromSuperview()
   }
 
   func applyVideoViewVisibilityConstraints(isVideoVisible: Bool) {
