@@ -347,8 +347,12 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     case MenuItemTagShowInFinder:
       if selectedEntries.isEmpty { return false }
       return selectedEntries.contains { FileManager.default.fileExists(atPath: $0.url.path) }
-    case MenuItemTagDelete, MenuItemTagPlay, MenuItemTagPlayInNewWindow:
+    case MenuItemTagDelete:
+      // "Delete" in this case only removes from history
       return !selectedEntries.isEmpty
+    case MenuItemTagPlay, MenuItemTagPlayInNewWindow:
+      if selectedEntries.isEmpty { return false }
+      return selectedEntries.contains { !$0.url.isFileURL || FileManager.default.fileExists(atPath: $0.url.path) }
     case MenuItemTagSearchFilename:
       menuItem.state = searchType == .filename ? .on : .off
     case MenuItemTagSearchFullPath:
