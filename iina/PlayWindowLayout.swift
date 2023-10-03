@@ -857,15 +857,19 @@ extension PlayWindowController {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         // FIXME: develop a nice sliding animation if possible
 
-        if transition.isEnteringMusicMode && !musicModeGeometry.isVideoVisible {
-          // Entering music mode when album art is not shown
-          let heightConstraint = videoContainerView.heightAnchor.constraint(equalToConstant: 0)
-          heightConstraint.isActive = true
-          videoContainerViewHeightContraint = heightConstraint
+        if transition.isEnteringMusicMode {
+          if musicModeGeometry.isVideoVisible {
+            // Entering music mode when album art is visible
+            videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+          } else {
+            // Entering music mode when album art is hidden
+            let heightConstraint = videoContainerView.heightAnchor.constraint(equalToConstant: 0)
+            heightConstraint.isActive = true
+            videoContainerViewHeightContraint = heightConstraint
+          }
         } else if transition.isExitingMusicMode {
-          // Exiting music mode when album art is not shown
-          let videoSize = transition.outputGeometry.videoSize
-          videoView.updateSizeConstraints(videoSize)
+          // Exiting music mode
+          videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
 
           // Set videoView to visible
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: true)

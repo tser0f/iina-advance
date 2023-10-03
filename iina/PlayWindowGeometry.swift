@@ -754,7 +754,7 @@ extension PlayWindowController {
   }
 
   /// Updates the current window and its subviews to match the given `MusicModeGeometry`, and caches it.
-  func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, updateCache: Bool = true) {
+  func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
     let geometry = geometry.constrainWithin(bestScreen.visibleFrame)
     log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
 
@@ -762,13 +762,14 @@ extension PlayWindowController {
 
     videoAspectRatio = geometry.videoAspectRatio
 
+    /// Make sure to call `updateSizeConstraints` AFTER `applyVideoViewVisibilityConstraints`:
+    miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
     if let videoSize = geometry.videoSize {
       videoView.updateSizeConstraints(videoSize)
     }
-    miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
     updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideVideo)
     if setFrame {
-      player.window.setFrameImmediately(geometry.windowFrame, animate: true)
+      player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
     }
     if updateCache {
       musicModeGeometry = geometry

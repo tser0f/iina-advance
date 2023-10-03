@@ -1889,20 +1889,21 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     guard !isAnimating else { return }
 
     CocoaAnimation.disableAnimation {
+      log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
+
+      if !isFullScreen {
+        // Do this also for music mode
+        let vidContainerSize = videoContainerView.frame.size
+        let videoSize = PlayWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
+        // Need to update this always when resizing window, even when resizing non-interactively:
+        videoView.updateSizeConstraints(videoSize)
+      }
+
       if player.isInMiniPlayer {
         // Re-evaluate space requirements for labels. May need to start scrolling.
         // Will also update saved state
         miniPlayer.windowDidResize()
         return
-      }
-
-      let vidContainerSize = videoContainerView.frame.size
-      let videoSize = PlayWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
-      log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame), videoSize: \(videoSize)")
-
-      if !isFullScreen {
-        // Need to update this always when resizing window, even when resizing non-interactively:
-        videoView.updateSizeConstraints(videoSize)
       }
 
       if isInInteractiveMode {

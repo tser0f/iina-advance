@@ -67,7 +67,7 @@
                             <rect key="frame" x="0.0" y="24" width="284" height="48"/>
                             <subviews>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="BS3-lV-sRn" userLabel="Volume Button">
-                                    <rect key="frame" x="41" y="15" width="17" height="14"/>
+                                    <rect key="frame" x="35" y="15" width="17" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="BS3-lV-sRn" secondAttribute="height" multiplier="17:14" id="GSG-n3-UAH"/>
                                         <constraint firstAttribute="height" constant="14" id="cQK-eB-gma"/>
@@ -81,7 +81,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jfj-IC-e3B" userLabel="Prev Button">
-                                    <rect key="frame" x="78" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="76" y="8" width="28" height="28"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="jfj-IC-e3B" secondAttribute="height" multiplier="1:1" id="3Tu-Mf-AWA"/>
                                         <constraint firstAttribute="height" constant="28" id="AVQ-eY-Sqg"/>
@@ -95,7 +95,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="28c-iK-4mT" userLabel="Play Button">
-                                    <rect key="frame" x="130" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="124" y="8" width="28" height="28"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="28" id="SI7-5f-3Nl"/>
                                         <constraint firstAttribute="width" secondItem="28c-iK-4mT" secondAttribute="height" multiplier="1:1" id="sqa-rc-fhZ"/>
@@ -109,7 +109,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="nwm-1g-9Dl" userLabel="Next Button">
-                                    <rect key="frame" x="178" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="172" y="8" width="28" height="28"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="nwm-1g-9Dl" secondAttribute="height" multiplier="1:1" id="P9S-Ze-mSU"/>
                                         <constraint firstAttribute="height" constant="28" id="cuX-5c-RtE"/>
@@ -123,7 +123,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jJt-GH-mJQ" userLabel="TogglePlaylist Button">
-                                    <rect key="frame" x="226" y="15" width="14" height="14"/>
+                                    <rect key="frame" x="220" y="15" width="14" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="jJt-GH-mJQ" secondAttribute="height" multiplier="1:1" id="EOL-Yj-rmd"/>
                                         <constraint firstAttribute="height" constant="14" id="Mpi-Dg-vRO"/>
@@ -137,7 +137,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="6q3-fy-whD" userLabel="ToggleVideo Button">
-                                    <rect key="frame" x="252" y="15" width="14" height="14"/>
+                                    <rect key="frame" x="246" y="15" width="14" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="6q3-fy-whD" secondAttribute="height" multiplier="1:1" id="5TE-Mp-tbF"/>
                                         <constraint firstAttribute="height" constant="14" id="5wi-g6-Mhb"/>
@@ -152,10 +152,10 @@
                                 </button>
                             </subviews>
                             <constraints>
-                                <constraint firstItem="28c-iK-4mT" firstAttribute="centerX" secondItem="Wxl-Ex-FWV" secondAttribute="centerX" constant="2" id="1ju-K0-ozQ"/>
+                                <constraint firstItem="28c-iK-4mT" firstAttribute="centerX" secondItem="Wxl-Ex-FWV" secondAttribute="centerX" constant="-4" id="1ju-K0-ozQ"/>
                                 <constraint firstItem="nwm-1g-9Dl" firstAttribute="centerY" secondItem="28c-iK-4mT" secondAttribute="centerY" id="5EN-th-vUu"/>
-                                <constraint firstItem="28c-iK-4mT" firstAttribute="leading" secondItem="jfj-IC-e3B" secondAttribute="trailing" constant="24" id="7rg-lU-iAe"/>
-                                <constraint firstItem="jfj-IC-e3B" firstAttribute="leading" secondItem="BS3-lV-sRn" secondAttribute="trailing" constant="20" id="9bL-po-15l"/>
+                                <constraint firstItem="28c-iK-4mT" firstAttribute="leading" secondItem="jfj-IC-e3B" secondAttribute="trailing" constant="20" id="7rg-lU-iAe"/>
+                                <constraint firstItem="jfj-IC-e3B" firstAttribute="leading" secondItem="BS3-lV-sRn" secondAttribute="trailing" constant="24" id="9bL-po-15l"/>
                                 <constraint firstItem="6q3-fy-whD" firstAttribute="centerY" secondItem="jJt-GH-mJQ" secondAttribute="centerY" id="OVk-GE-6VW"/>
                                 <constraint firstItem="6q3-fy-whD" firstAttribute="leading" secondItem="jJt-GH-mJQ" secondAttribute="trailing" constant="12" id="SUc-7W-7ey"/>
                                 <constraint firstItem="jfj-IC-e3B" firstAttribute="centerY" secondItem="28c-iK-4mT" secondAttribute="centerY" id="Xbr-4t-Xjw"/>

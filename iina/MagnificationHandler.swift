@@ -54,10 +54,10 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
       if let newWindowGeometry = newWindowGeometry {
         if windowController.currentLayout.isMusicMode {
-          windowController.log.verbose("Updating musicModeGeometry from magnification gesture")
+          windowController.log.verbose("Updating musicModeGeometry from magnification gesture state \(recognizer.state.rawValue)")
           windowController.musicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowGeometry.windowFrame)
         } else {
-          windowController.log.verbose("Updating windowedModeGeometry from magnification gesture")
+          windowController.log.verbose("Updating windowedModeGeometry from magnification gesture state \(recognizer.state.rawValue)")
           windowController.windowedModeGeometry = newWindowGeometry
           windowController.updateWindowParametersForMPV()  // also saves state
         }
@@ -88,38 +88,36 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         return nil
       }
       let screenFrame = windowController.bestScreen.visibleFrame
-      // TODO: figure out why extra 8px on each side is needed for min width
-      let minWindowWidth = MiniPlayerController.minWindowWidth + 16
       // Window height should not change. Only video size should be scaled
       let windowHeight = min(screenFrame.height, originalGeometry.windowFrame.height)  // should stay fixed
 
       // Constrain desired width within min and max allowed, then recalculate height from new value
       var newVideoWidth = originalGeometry.windowFrame.width * scale
-      newVideoWidth = max(newVideoWidth, minWindowWidth)
+      newVideoWidth = max(newVideoWidth, MiniPlayerController.minWindowWidth)
       newVideoWidth = min(newVideoWidth, MiniPlayerController.maxWindowWidth)
-      windowController.log.verbose("Scaling video from pinch gesture in music mode. Aspect: \(originalGeometry.videoAspectRatio), trying width: \(newVideoWidth)")
+      newVideoWidth = min(newVideoWidth, screenFrame.width)
+
+      windowController.log.verbose("Scaling video from pinch gesture in music mode, aspect: \(originalGeometry.videoAspectRatio). Trying width: \(newVideoWidth)")
 
       var newVideoHeight = newVideoWidth / originalGeometry.videoAspectRatio
 
       let minPlaylistHeight: CGFloat = windowController.miniPlayer.isPlaylistVisible ? MiniPlayerController.PlaylistMinHeight : 0
       let minBottomBarHeight: CGFloat = MiniPlayerController.controlViewHeight + minPlaylistHeight
       let maxVideoHeight = windowHeight - minBottomBarHeight
-      if newVideoWidth < minWindowWidth {
-        newVideoWidth = minWindowWidth
-        newVideoHeight = minWindowWidth / originalGeometry.videoAspectRatio
-      }
       if newVideoHeight > maxVideoHeight {
         newVideoHeight = maxVideoHeight
-        newVideoWidth = maxVideoHeight * originalGeometry.videoAspectRatio
+        newVideoWidth = newVideoHeight * originalGeometry.videoAspectRatio
       }
 
       let newWindowFrame = NSRect(origin: originalGeometry.windowFrame.origin, size: NSSize(width: newVideoWidth, height: windowHeight)).constrain(in: screenFrame)
 
       let newMusicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
-      windowController.log.verbose("Scaling video from pinch gesture in music mode. Final width: \(originalGeometry.windowFrame.width) → \(newVideoWidth), bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newWindowFrame)")
+      windowController.log.verbose("Scaling video from pinch gesture in music mode. Applying result bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newWindowFrame)")
 
+      // TODO: instead of using `animate: false`, try using boolean to keep track of pinch gesture & update video size constraints in WindowDidEndLiveResize
+      // (might provide a smoother animation)
       CocoaAnimation.disableAnimation{
-        windowController.applyMusicModeGeometry(newMusicModeGeometry, updateCache: false)
+        windowController.applyMusicModeGeometry(newMusicModeGeometry, animate: false, updateCache: false)
       }
       // Kind of clunky to convert to PlayWindowGeometry, just to fit the function signature, then convert it back. But...could be worse.
       return newMusicModeGeometry.toPlayWindowGeometry()
