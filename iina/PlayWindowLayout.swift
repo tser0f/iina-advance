@@ -1366,6 +1366,10 @@ extension PlayWindowController {
       updateBottomBarPlacement(placement: outputLayout.bottomBarPlacement)
     }
 
+    /// Show dividing line only for `.outsideVideo` bottom bar. Don't show in music mode as it doesn't look good
+    let showBottomBarTopBorder = outputLayout.bottomBarPlacement == .outsideVideo && !outputLayout.isMusicMode
+    bottomBarTopBorder.isHidden = !showBottomBarTopBorder
+
     if transition.isOSCChanging && outputLayout.enableOSC {
       switch outputLayout.oscPosition {
       case .top:
@@ -1405,7 +1409,7 @@ extension PlayWindowController {
     // Music mode
     if transition.isEnteringMusicMode {
       oscBottomMainView.removeFromSuperview()
-      bottomBarView.addSubview(miniPlayer.view, positioned: .above, relativeTo: oscBottomMainView)
+      bottomBarView.addSubview(miniPlayer.view, positioned: .below, relativeTo: bottomBarTopBorder)
       miniPlayer.view.addConstraintsToFillSuperview(top: 0, leading: 0, trailing: 0)
 
       let bottomConstraint = miniPlayer.view.superview!.bottomAnchor.constraint(equalTo: miniPlayer.view.bottomAnchor, constant: 0)
@@ -1889,14 +1893,10 @@ extension PlayWindowController {
 
     switch placement {
     case .insideVideo:
-      bottomBarTopBorder.isHidden = true
-
       // Align left & right sides with sidebars (top bar will squeeze to make space for sidebars)
       bottomBarLeadingSpaceConstraint = bottomBarView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       bottomBarTrailingSpaceConstraint = bottomBarView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
     case .outsideVideo:
-      bottomBarTopBorder.isHidden = false
-
       // Align left & right sides with window (sidebars go below top bar)
       bottomBarLeadingSpaceConstraint = bottomBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
       bottomBarTrailingSpaceConstraint = bottomBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
