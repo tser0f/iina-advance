@@ -1555,7 +1555,10 @@ extension PlayWindowController {
       }
       log.verbose("Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
       setWindowFrameForLegacyFullScreen(using: newGeo)
-    } else if !transition.isInitialLayout && !outputLayout.isFullScreen {
+    } else if outputLayout.isMusicMode {
+      // Especially needed when applying initial layout:
+      applyMusicModeGeometry(musicModeGeometry)
+    } else if !outputLayout.isFullScreen {
       let newWindowFrame = transition.outputGeometry.windowFrame
       log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
