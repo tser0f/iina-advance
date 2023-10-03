@@ -83,7 +83,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }()
 
   var currentDisplayedPlaylistHeight: CGFloat {
-    let bottomBarHeight = windowController.videoContainerBottomOffsetFromContentViewBottomConstraint.constant
+    // most reliable first-hand source for this is a constraint:
+    let bottomBarHeight = -windowController.videoContainerBottomOffsetFromBottomBarBottomConstraint.constant
     return bottomBarHeight - MiniPlayerController.controlViewHeight
   }
 
@@ -337,12 +338,19 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
 
+    /// If needing to reactivate this constraint, do it before the toggle animation, so that window doesn't jump.
+    /// (See note in `applyMusicModeGeometry` for why this constraint needed to be disabled in the first place)
+    if showVideo && isPlaylistVisible {
+      windowController.animationQueue.runZeroDuration({ [self] in
+        windowController.videoContainerBottomOffsetFromContentViewBottomConstraint.isActive = true
+      })
+    }
+
     windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
       log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
       windowController.applyMusicModeGeometry(newGeometry)
-      player.saveState()
     }))
 
   }
@@ -394,6 +402,9 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
     /// Remove `playlistView` from wrapper. It will be added elsewhere if/when it is needed there
     windowController.playlistView.view.removeFromSuperview()
+
+    // make sure this is enabled
+    windowController.videoContainerBottomOffsetFromContentViewBottomConstraint.isActive = true
   }
 
   func applyVideoViewVisibilityConstraints(isVideoVisible: Bool) {

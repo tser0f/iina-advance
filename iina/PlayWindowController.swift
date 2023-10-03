@@ -506,7 +506,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   // - Bottom OSC constraints
   @IBOutlet weak var videoContainerBottomOffsetFromBottomBarTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var videoContainerBottomOffsetFromBottomBarBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerBottomOffsetFromContentViewBottomConstraint: NSLayoutConstraint!
+  @IBOutlet var videoContainerBottomOffsetFromContentViewBottomConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var bottomBarLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
