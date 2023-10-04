@@ -1056,13 +1056,13 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateUseLegacyFullScreen() {
-    let inputLayout = currentLayout
-    guard inputLayout.isFullScreen else { return }
-    let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: inputLayout.spec)
-    if inputLayout.spec.isLegacyStyle != outputLayoutSpec.isLegacyStyle {
+    let oldLayout = currentLayout
+    guard oldLayout.isFullScreen else { return }
+    let outputLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: oldLayout.spec)
+    if oldLayout.spec.isLegacyStyle != outputLayoutSpec.isLegacyStyle {
       DispatchQueue.main.async { [self] in
         log.verbose("User toggled legacy fullscreen option while in fullscreen - transitioning to windowed mode instead")
-        if inputLayout.isNativeFullScreen {
+        if oldLayout.isNativeFullScreen {
           window?.toggleFullScreen(self)
         } else {
           exitFullScreen(legacy: true)
@@ -1077,9 +1077,9 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
         log.verbose("Skipping layout refresh due to interactive mode")
         return
       }
-      let inputLayout = currentLayout
-      let outputLayoutSpec = LayoutSpec.fromPreferences(andSpec: inputLayout.spec)
-      buildLayoutTransition(named: "UpdateTitleBar&OSC", from: inputLayout, to: outputLayoutSpec, thenRun: true)
+      let oldLayout = currentLayout
+      let newLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: oldLayout.spec)
+      buildLayoutTransition(named: "UpdateTitleBar&OSC", from: oldLayout, to: newLayoutSpec, thenRun: true)
     }
   }
 
@@ -1770,7 +1770,8 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     let oldLayout = currentLayout
 
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
-    let fullscreenLayout = oldLayout.spec.clone(mode: .fullScreen, isLegacyStyle: isLegacy)
+    let fullscreenLayout = LayoutSpec.fromPreferences(andMode: .fullScreen, isLegacyStyle: isLegacy, fillingInFrom: oldLayout.spec)
+
     let transition = buildLayoutTransition(named: "Enter\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
     animationQueue.run(transition.animationTasks)
   }
@@ -1809,7 +1810,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
 
     // May be in interactive mode, with some panels hidden (overriding stored preferences).
     // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = oldLayout.spec.clone(mode: .windowed, isLegacyStyle: Preference.bool(for: .useLegacyWindowedMode))
+    let windowedLayout = LayoutSpec.fromPreferences(andMode: .windowed, fillingInFrom: oldLayout.spec)
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(named: "Exit\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
@@ -2671,7 +2672,8 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
       self.cropSettingsView = nil
     })
 
-    let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: LayoutSpec.fromPreferences(andSpec: oldLayout.spec),
+    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: oldLayout.spec.mode, fillingInFrom: oldLayout.spec)
+    let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
                                            totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
 
     animationTasks.append(contentsOf: transition.animationTasks)
@@ -2865,11 +2867,9 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     animationQueue.runZeroDuration { [self] in
       /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
-      let miniPlayerLayout = currentLayout
-      
-      let newSpec = miniPlayerLayout.spec.clone(mode: .windowed)
-      let windowedLayout = LayoutSpec.fromPreferences(andSpec: newSpec)
-      buildLayoutTransition(named: "ExitMusicMode", from: miniPlayerLayout, to: windowedLayout, thenRun: true)
+      let oldLayout = currentLayout
+      let windowedLayout = LayoutSpec.fromPreferences(andMode: .windowed, fillingInFrom: oldLayout.spec)
+      buildLayoutTransition(named: "ExitMusicMode", from: oldLayout, to: windowedLayout, thenRun: true)
     }
   }
 

@@ -36,6 +36,7 @@ class PlaySliderCell: NSSliderCell {
     return knobWidth
   }
 
+  // TODO: parameterize these for variable size
   let knobWidth: CGFloat = 3
   let knobHeight: CGFloat = 15
   let knobRadius: CGFloat = 1

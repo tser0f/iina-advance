@@ -1624,44 +1624,6 @@ not applying FFmpeg 9599 workaround
     }
   }
 
-  /// Similar to `setUserOption()` but supports arbitrary values instead of pref entries
-  private func setOption(forName name: String, toValue value: Any, type: UserOptionType) {
-    var code: Int32 = 0
-
-    switch type {
-    case .int:
-      var i = value
-      code = mpv_set_option(mpv, name, MPV_FORMAT_INT64, &i)
-
-    case .float:
-      var d = value
-      code = mpv_set_option(mpv, name, MPV_FORMAT_DOUBLE, &d)
-
-    case .bool:
-      code = mpv_set_option_string(mpv, name, (value as! Bool) ? yes_str : no_str)
-
-    case .string:
-      code = mpv_set_option_string(mpv, name, value as! String)
-
-    case .color:
-      code = mpv_set_option_string(mpv, name, value as! String)
-      // Random error here (perhaps a Swift or mpv one), so set it twice
-      // 「没有什么是 set 不了的；如果有，那就 set 两次」
-      if code < 0 {
-        code = mpv_set_option_string(mpv, name, value as! String)
-      }
-
-    case .other:
-      Logger.fatal("setOption() with type '.other' not supported!")
-    }
-
-    if code < 0 {
-      let message = String(cString: mpv_error_string(code))
-      player.log.error("Displaying mpv msg popup for error (\(code), name: \(name.quoted)): \"\(message)\"")
-      Utility.showAlert("mpv_error", arguments: [message, "\(code)", name])
-    }
-  }
-
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard !(change?[NSKeyValueChangeKey.oldKey] is NSNull) else { return }
 

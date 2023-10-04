@@ -30,7 +30,7 @@ public enum LinkedListError: Error {
 
 public final class LinkedList<T> {
 
-  public class LinkedListNode<T> {
+  public class LinkedListNode {
     var value: T
     var next: LinkedListNode?
     weak var prev: LinkedListNode?
@@ -41,7 +41,7 @@ public final class LinkedList<T> {
   }
 
   /// Typealiasing the node class to increase readability of code
-  public typealias Node = LinkedListNode<T>
+  public typealias Node = LinkedListNode
 
   /// The first element of the LinkedList
   public var firstNode: Node?
@@ -450,14 +450,14 @@ extension LinkedList: Collection {
 // MARK: - Collection Index
 /// Custom index type that contains a reference to the node at index 'tag'
 public struct LinkedListIndex<T>: Comparable {
-  fileprivate let node: LinkedList<T>.LinkedListNode<T>?
+  fileprivate let node: LinkedList<T>.LinkedListNode?
   fileprivate let tag: Int
 
-  public static func==<T>(lhs: LinkedListIndex<T>, rhs: LinkedListIndex<T>) -> Bool {
+  public static func==<I>(lhs: LinkedListIndex<I>, rhs: LinkedListIndex<I>) -> Bool {
     return (lhs.tag == rhs.tag)
   }
 
-  public static func< <T>(lhs: LinkedListIndex<T>, rhs: LinkedListIndex<T>) -> Bool {
+  public static func< <I>(lhs: LinkedListIndex<I>, rhs: LinkedListIndex<I>) -> Bool {
     return (lhs.tag < rhs.tag)
   }
 }

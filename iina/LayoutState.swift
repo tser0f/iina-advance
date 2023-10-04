@@ -76,17 +76,30 @@ extension PlayWindowController {
                         oscPosition: .floating)
     }
 
-    /// Factory method. Init from preferences (and fill in remainder from given `LayoutSpec`)
-    static func fromPreferences(andSpec prevSpec: LayoutSpec) -> LayoutSpec {
-      // If in fullscreen, top & bottom bars are always .insideVideo
+    /// Factory method. Init from preferences, except for `mode` and tab params
+    static func fromPreferences(andMode newMode: WindowMode? = nil,
+                                isLegacyStyle: Bool? = nil,
+                                fillingInFrom oldSpec: LayoutSpec) -> LayoutSpec {
 
-      let leadingSidebar = prevSpec.leadingSidebar.clone(tabGroups: Sidebar.TabGroup.fromPrefs(for: .leadingSidebar),
-                                                         placement: Preference.enum(for: .leadingSidebarPlacement))
-      let trailingSidebar = prevSpec.trailingSidebar.clone(tabGroups: Sidebar.TabGroup.fromPrefs(for: .trailingSidebar),
-                                                           placement: Preference.enum(for: .trailingSidebarPlacement))
-      let isLegacyStyle = prevSpec.mode == .fullScreen ? Preference.bool(for: .useLegacyFullScreen) : Preference.bool(for: .useLegacyWindowedMode)
+      let leadingSidebarVisibility = oldSpec.leadingSidebar.visibility
+      let leadingSidebarLastVisibleTab = oldSpec.leadingSidebar.lastVisibleTab
+      let trailingSidebarVisibility = oldSpec.trailingSidebar.visibility
+      let trailingSidebarLastVisibleTab = oldSpec.trailingSidebar.lastVisibleTab
+
+      let leadingSidebar =  Sidebar(.leadingSidebar,
+                                    tabGroups: Sidebar.TabGroup.fromPrefs(for: .leadingSidebar),
+                                    placement: Preference.enum(for: .leadingSidebarPlacement),
+                                    visibility: leadingSidebarVisibility,
+                                    lastVisibleTab: leadingSidebarLastVisibleTab)
+      let trailingSidebar = Sidebar(.trailingSidebar,
+                                    tabGroups: Sidebar.TabGroup.fromPrefs(for: .trailingSidebar),
+                                    placement: Preference.enum(for: .trailingSidebarPlacement),
+                                    visibility: trailingSidebarVisibility,
+                                    lastVisibleTab: trailingSidebarLastVisibleTab)
+      let mode = newMode ?? oldSpec.mode
+      let isLegacyStyle = isLegacyStyle ?? (mode == .fullScreen ? Preference.bool(for: .useLegacyFullScreen) : Preference.bool(for: .useLegacyWindowedMode))
       return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar,
-                        mode: prevSpec.mode,
+                        mode: mode,
                         isLegacyStyle: isLegacyStyle,
                         topBarPlacement: Preference.enum(for: .topBarPlacement),
                         bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),

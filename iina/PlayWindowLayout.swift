@@ -43,8 +43,8 @@ extension PlayWindowController {
     var needsNativeFullScreen = false
 
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
-      isRestoringFromPrevLaunch = true
       log.verbose("Transitioning to initial layout from prior window state")
+      isRestoringFromPrevLaunch = true
 
       // Restore saved geometries
       if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
@@ -80,9 +80,9 @@ extension PlayWindowController {
       }
 
     } else {
-      isRestoringFromPrevLaunch = false
       log.verbose("Transitioning to initial layout from app prefs")
-      initialLayoutSpec = LayoutSpec.fromPreferences(andSpec: currentLayout.spec)
+      isRestoringFromPrevLaunch = false
+      initialLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: currentLayout.spec)
     }
 
     let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
@@ -113,7 +113,7 @@ extension PlayWindowController {
 
     /// Stored window state may not be consistent with global IINA prefs.
     /// To check this, build another `LayoutSpec` from the global prefs, then compare it to the player's.
-    let prefsSpec = LayoutSpec.fromPreferences(andSpec: initialLayoutSpec)
+    let prefsSpec = LayoutSpec.fromPreferences(fillingInFrom: currentLayout.spec)
     if initialLayoutSpec.hasSamePrefsValues(as: prefsSpec) {
       log.verbose("Saved layout is consistent with IINA global prefs")
     } else {
@@ -359,7 +359,7 @@ extension PlayWindowController {
         return windowedModeGeometry
       }
     case .windowed:
-      break
+      break  // see below
     }
 
     let bottomBarHeight: CGFloat
@@ -875,7 +875,7 @@ extension PlayWindowController {
   private func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
-    log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleHeight: \(outputLayout.titleBarHeight), TopOSC: \(outputLayout.topOSCHeight)")
+    log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleBar_H: \(outputLayout.titleBarHeight), TopOSC_H: \(outputLayout.topOSCHeight)")
 
     if transition.isEnteringMusicMode {
       miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: musicModeGeometry.isVideoVisible)

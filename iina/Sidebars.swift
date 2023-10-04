@@ -143,14 +143,12 @@ extension PlayWindowController {
         Logger.log("Can no longer show visible tab \(newVisibleTab.name) in \(self.locationID). The sidebar will close.", level: .verbose)
         newVisibility = .hide
       }
-      /// Save current tab, if present, as `lastVisibleTab`:
-      let newLastVisibleTab: Tab? = self.visibleTab ?? self.lastVisibleTab
 
       return Sidebar(self.locationID,
                      tabGroups: newTabGroups,
                      placement: placement ?? self.placement,
                      visibility: newVisibility,
-                     lastVisibleTab: newLastVisibleTab)
+                     lastVisibleTab: self.lastVisibleTab)
     }
 
 
