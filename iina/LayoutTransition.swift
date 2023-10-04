@@ -55,7 +55,6 @@ extension PlayWindowController {
       || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
       || (inputLayout.leadingSidebarToggleButton.isShowable && !outputLayout.leadingSidebarToggleButton.isShowable)
       || (inputLayout.trailingSidebarToggleButton.isShowable && !outputLayout.trailingSidebarToggleButton.isShowable)
-      || (inputLayout.pinToTopButton.isShowable && !outputLayout.pinToTopButton.isShowable)
     }
 
     var needsFadeInNewViews: Bool {
@@ -66,7 +65,6 @@ extension PlayWindowController {
       || (outputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
       || (!inputLayout.leadingSidebarToggleButton.isShowable && outputLayout.leadingSidebarToggleButton.isShowable)
       || (!inputLayout.trailingSidebarToggleButton.isShowable && outputLayout.trailingSidebarToggleButton.isShowable)
-      || (!inputLayout.pinToTopButton.isShowable && outputLayout.pinToTopButton.isShowable)
     }
 
     var needsCloseOldPanels: Bool {

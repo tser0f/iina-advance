@@ -138,7 +138,7 @@ extension PlayWindowController {
 
     // - Build outputLayout
 
-    let outputLayout = buildOutputLayoutState(from: outputSpec)
+    let outputLayout = LayoutState.from(outputSpec)
 
     // - Build geometries
 
@@ -619,7 +619,9 @@ extension PlayWindowController {
         trailingSidebarToggleButton.alphaValue = 0
         fadeableViewsTopBar.remove(trailingSidebarToggleButton)
       }
-      if outputLayout.pinToTopButton == .hidden {
+
+      let pinToTopButtonVisibility = transition.outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
+      if pinToTopButtonVisibility == .hidden {
         pinToTopButton.alphaValue = 0
         fadeableViewsTopBar.remove(pinToTopButton)
       }
@@ -665,9 +667,9 @@ extension PlayWindowController {
       let cameraOffset: CGFloat
       if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
         // Use prev offset for a smoother animation
-        cameraOffset = transition.inputLayout.cameraHousingOffset
+        cameraOffset = transition.inputGeometry.topMarginHeight
       } else {
-        cameraOffset = outputLayout.cameraHousingOffset
+        cameraOffset = transition.outputGeometry.topMarginHeight
       }
       updateTopBarHeight(to: topBarHeight, topBarPlacement: transition.inputLayout.topBarPlacement, cameraHousingOffset: cameraOffset)
 
@@ -742,7 +744,8 @@ extension PlayWindowController {
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-    applyHiddenOnly(visibility: outputLayout.pinToTopButton, to: pinToTopButton)
+    let pinToTopButtonVisibility = transition.outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
+    applyHiddenOnly(visibility: pinToTopButtonVisibility, to: pinToTopButton)
 
     if outputLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
@@ -892,7 +895,7 @@ extension PlayWindowController {
     osdMinOffsetFromTopConstraint.animateToConstant(outputLayout.osdMinOffsetFromTop)
 
     // Update heights of top & bottom bars:
-    updateTopBarHeight(to: outputLayout.topBarHeight, topBarPlacement: transition.outputLayout.topBarPlacement, cameraHousingOffset: transition.outputLayout.cameraHousingOffset)
+    updateTopBarHeight(to: outputLayout.topBarHeight, topBarPlacement: transition.outputLayout.topBarPlacement, cameraHousingOffset: transition.outputGeometry.topMarginHeight)
 
     let bottomBarHeight = transition.outputLayout.bottomBarPlacement == .insideVideo ? transition.outputGeometry.insideBottomBarHeight : transition.outputGeometry.outsideBottomBarHeight
     updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.outputLayout.bottomBarPlacement)
@@ -908,8 +911,10 @@ extension PlayWindowController {
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(layout: outputLayout)
 
-    // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
-    if transition.isOSCChanging && outputLayout.enableOSC && outputLayout.hasFloatingOSC {
+    if !outputLayout.enableOSC {
+      currentControlBar = nil
+    } else if transition.isOSCChanging && outputLayout.hasFloatingOSC {
+      // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
       currentControlBar = controlBarFloating
 
       oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
@@ -1045,7 +1050,7 @@ extension PlayWindowController {
 
     applyShowableOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyShowableOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-    applyShowableOnly(visibility: outputLayout.pinToTopButton, to: pinToTopButton)
+    updatePinToTopButton()
 
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
@@ -1198,6 +1203,8 @@ extension PlayWindowController {
 
   // MARK: - Bars Layout
 
+  // - Top bar
+
   /**
    This ONLY updates the constraints to toggle between `inside` and `outside` placement types.
    Whether it is actually shown is a concern for somewhere else.
@@ -1251,45 +1258,7 @@ extension PlayWindowController {
     }
   }
 
-  func updateDepthOrderOfBars(topBar: Preference.PanelPlacement, bottomBar: Preference.PanelPlacement,
-                                leadingSidebar: Preference.PanelPlacement, trailingSidebar: Preference.PanelPlacement) {
-    guard let window = window, let contentView = window.contentView else { return }
-
-    // If a sidebar is "outsideVideo", need to put it behind the video because:
-    // (1) Don't want sidebar to cast a shadow on the video
-    // (2) Animate sidebar open/close with "slide in" / "slide out" from behind the video
-    if leadingSidebar == .outsideVideo {
-      contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: videoContainerView)
-    }
-    if trailingSidebar == .outsideVideo {
-      contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: videoContainerView)
-    }
-
-    contentView.addSubview(topBarView, positioned: .above, relativeTo: videoContainerView)
-    contentView.addSubview(bottomBarView, positioned: .above, relativeTo: videoContainerView)
-
-    if leadingSidebar == .insideVideo {
-      contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
-
-      if topBar == .insideVideo {
-        contentView.addSubview(topBarView, positioned: .below, relativeTo: leadingSidebarView)
-      }
-      if bottomBar == .insideVideo {
-        contentView.addSubview(bottomBarView, positioned: .below, relativeTo: leadingSidebarView)
-      }
-    }
-
-    if trailingSidebar == .insideVideo {
-      contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: videoContainerView)
-
-      if topBar == .insideVideo {
-        contentView.addSubview(topBarView, positioned: .below, relativeTo: trailingSidebarView)
-      }
-      if bottomBar == .insideVideo {
-        contentView.addSubview(bottomBarView, positioned: .below, relativeTo: trailingSidebarView)
-      }
-    }
-  }
+  // - Bottom bar
 
   private func updateBottomBarPlacement(placement: Preference.PanelPlacement) {
     log.verbose("Updating bottomBar placement to: \(placement)")
@@ -1326,107 +1295,48 @@ extension PlayWindowController {
     }
   }
 
-  // This method should only make a layout plan. It should not alter or reference the current layout.
-  func buildOutputLayoutState(from layoutSpec: LayoutSpec) -> LayoutState {
-    let window = window!
+  /// After bars are shown or hidden, or their placement changes, this ensures that their shadows appear in the correct places.
+  /// • Outside bars never cast shadows or have shadows cast on them.
+  /// • Inside sidebars cast shadows over inside top bar & inside bottom bar, and over `videoContainerView`.
+  /// • Inside top & inside bottom bars do not cast shadows over `videoContainerView`.
+  private func updateDepthOrderOfBars(topBar: Preference.PanelPlacement, bottomBar: Preference.PanelPlacement,
+                                      leadingSidebar: Preference.PanelPlacement, trailingSidebar: Preference.PanelPlacement) {
+    guard let window = window, let contentView = window.contentView else { return }
 
-    let outputLayout = LayoutState(spec: layoutSpec)
-
-    // Title bar & title bar accessories:
-
-    if outputLayout.isFullScreen {
-      outputLayout.titleIconAndText = .showAlways
-      outputLayout.trafficLightButtons = .showAlways
-
-      if outputLayout.isLegacyFullScreen, let unusableHeight = window.screen?.cameraHousingHeight {
-        // This screen contains an embedded camera. Want to avoid having part of the window obscured by the camera housing.
-        outputLayout.cameraHousingOffset = unusableHeight
-      }
-    } else if !outputLayout.isMusicMode {
-      let visibleState: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
-
-      outputLayout.topBarView = visibleState
-
-      // If legacy window mode, do not show title bar.
-      if !layoutSpec.isLegacyStyle {
-        outputLayout.titleBar = visibleState
-
-        outputLayout.trafficLightButtons = visibleState
-        outputLayout.titleIconAndText = visibleState
-        // May be overridden depending on OSC layout anyway
-        outputLayout.titleBarHeight = PlayWindowController.standardTitleBarHeight
-
-        outputLayout.titlebarAccessoryViewControllers = visibleState
-
-        // LeadingSidebar toggle button
-        let hasLeadingSidebar = !layoutSpec.leadingSidebar.tabGroups.isEmpty
-        if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
-          outputLayout.leadingSidebarToggleButton = visibleState
-        }
-        // TrailingSidebar toggle button
-        let hasTrailingSidebar = !layoutSpec.trailingSidebar.tabGroups.isEmpty
-        if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
-          outputLayout.trailingSidebarToggleButton = visibleState
-        }
-
-        // "On Top" (mpv) AKA "Pin to Top" (OS)
-        outputLayout.pinToTopButton = outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
-      }
-
-      if outputLayout.topBarPlacement == .insideVideo {
-        outputLayout.osdMinOffsetFromTop = outputLayout.titleBarHeight + 8
-      }
-
+    // If a sidebar is "outsideVideo", need to put it behind the video because:
+    // (1) Don't want sidebar to cast a shadow on the video
+    // (2) Animate sidebar open/close with "slide in" / "slide out" from behind the video
+    if leadingSidebar == .outsideVideo {
+      contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: videoContainerView)
+    }
+    if trailingSidebar == .outsideVideo {
+      contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: videoContainerView)
     }
 
-    // OSC:
+    contentView.addSubview(topBarView, positioned: .above, relativeTo: videoContainerView)
+    contentView.addSubview(bottomBarView, positioned: .above, relativeTo: videoContainerView)
 
-    if layoutSpec.enableOSC {
-      // add fragment views
-      switch layoutSpec.oscPosition {
-      case .floating:
-        outputLayout.controlBarFloating = .showFadeableNonTopBar  // floating is always fadeable
-      case .top:
-        if outputLayout.titleBar.isShowable {
-          // If legacy window mode, do not show title bar.
-          // Otherwise reduce its height a bit because it will share space with OSC
-          outputLayout.titleBarHeight = PlayWindowController.reducedTitleBarHeight
-        }
+    if leadingSidebar == .insideVideo {
+      contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
 
-        let visibility: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
-        outputLayout.topBarView = visibility
-        outputLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
-      case .bottom:
-        outputLayout.bottomBarView = (outputLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
+      if topBar == .insideVideo {
+        contentView.addSubview(topBarView, positioned: .below, relativeTo: leadingSidebarView)
       }
-    } else {  // No OSC
-      currentControlBar = nil
-
-      if layoutSpec.mode == .musicMode {
-        assert(outputLayout.bottomBarPlacement == .outsideVideo)
-        outputLayout.bottomBarView = .showAlways
+      if bottomBar == .insideVideo {
+        contentView.addSubview(bottomBarView, positioned: .below, relativeTo: leadingSidebarView)
       }
     }
 
-    /// Sidebar tabHeight and downshift.
-    /// Downshift: try to match height of title bar
-    /// Tab height: if top OSC is `insideVideo`, try to match its height
-    if outputLayout.isMusicMode {
-      /// Special case for music mode. Only really applies to `playlistView`,
-      /// because `quickSettingView` is never shown in this mode.
-      outputLayout.sidebarTabHeight = Constants.Sidebar.musicModeTabHeight
-    } else if outputLayout.topBarView.isShowable && outputLayout.topBarPlacement == .insideVideo {
-      outputLayout.sidebarDownshift = outputLayout.titleBarHeight
+    if trailingSidebar == .insideVideo {
+      contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: videoContainerView)
 
-      let tabHeight = outputLayout.topOSCHeight
-      // Put some safeguards in place. Don't want to waste space or be too tiny to read.
-      // Leave default height if not in reasonable range.
-      if tabHeight >= Constants.Sidebar.minTabHeight && tabHeight <= Constants.Sidebar.maxTabHeight {
-        outputLayout.sidebarTabHeight = tabHeight
+      if topBar == .insideVideo {
+        contentView.addSubview(topBarView, positioned: .below, relativeTo: trailingSidebarView)
+      }
+      if bottomBar == .insideVideo {
+        contentView.addSubview(bottomBarView, positioned: .below, relativeTo: trailingSidebarView)
       }
     }
-
-    return outputLayout
   }
 
   // MARK: - Title bar items
@@ -1482,11 +1392,12 @@ extension PlayWindowController {
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
   private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutState, windowWidth: CGFloat) {
     var spaceForButtons: CGFloat = 0
+    let isPinToTopButtonShowable = layout.computePinToTopButtonVisibility(isOnTop: isOntop).isShowable
 
     if layout.trailingSidebarToggleButton.isShowable {
       spaceForButtons += trailingSidebarToggleButton.frame.width
     }
-    if layout.pinToTopButton.isShowable {
+    if isPinToTopButtonShowable {
       spaceForButtons += pinToTopButton.frame.width
     }
 
@@ -1497,7 +1408,7 @@ extension PlayWindowController {
     trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
 
     // Add padding to the side for buttons
-    let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || layout.pinToTopButton.isShowable
+    let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || isPinToTopButtonShowable
     let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
     trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
 

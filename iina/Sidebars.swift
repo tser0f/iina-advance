@@ -715,8 +715,9 @@ extension PlayWindowController {
       } else if layout.trailingSidebar.tabGroups.contains(tab.group) {
         trailingSidebar = layout.trailingSidebar.clone(visibility: newVisibility)
       }
+      // Need to update current layout, but no need for animation
       let newLayoutSpec = layout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-      let outputLayout = buildOutputLayoutState(from: newLayoutSpec)
+      let outputLayout = LayoutState.from(newLayoutSpec)
       currentLayout = outputLayout
     }
   }

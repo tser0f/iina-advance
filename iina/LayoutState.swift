@@ -13,13 +13,15 @@ extension PlayWindowController {
   enum WindowMode: Int {
     case windowed = 1
     case fullScreen
-    //    case pip
     case musicMode
     //    case interactiveWindow
     //    case interactiveFullScreen
   }
 
-  /// `struct LayoutSpec`: data structure which is the blueprint for building a `LayoutState`
+  /// `LayoutSpec`: data structure containing a window's layout configuration, and is the blueprint for building a `LayoutState`.
+  /// Most of the fields in this struct can be derived from IINA's application settings, although some state like active sidebar tab
+  /// and window mode can vary for each window.
+  /// See also: `LayoutState.from()`, which contains the logic to compile a `LayoutState` from a `LayoutSpec`.
   struct LayoutSpec {
     let leadingSidebar: Sidebar
     let trailingSidebar: Sidebar
@@ -209,7 +211,6 @@ extension PlayWindowController {
     var titlebarAccessoryViewControllers: Visibility = .hidden
     var leadingSidebarToggleButton: Visibility = .hidden
     var trailingSidebarToggleButton: Visibility = .hidden
-    var pinToTopButton: Visibility = .hidden
 
     var controlBarFloating: Visibility = .hidden
 
@@ -217,8 +218,6 @@ extension PlayWindowController {
     var topBarView: Visibility = .hidden
 
     // Sizes / offsets
-
-    var cameraHousingOffset: CGFloat = 0
 
     /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
     /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
@@ -364,6 +363,100 @@ extension PlayWindowController {
 
       return .showAlways
     }
+
+    // MARK: - Build LayoutState from LayoutSpec
+
+    static func from(_ layoutSpec: LayoutSpec) -> LayoutState {
+      let outputLayout = LayoutState(spec: layoutSpec)
+
+      // Title bar & title bar accessories:
+
+      if outputLayout.isFullScreen {
+        outputLayout.titleIconAndText = .showAlways
+        outputLayout.trafficLightButtons = .showAlways
+
+      } else if !outputLayout.isMusicMode {
+        let visibleState: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
+
+        outputLayout.topBarView = visibleState
+
+        // If legacy window mode, do not show title bar.
+        if !layoutSpec.isLegacyStyle {
+          outputLayout.titleBar = visibleState
+
+          outputLayout.trafficLightButtons = visibleState
+          outputLayout.titleIconAndText = visibleState
+          // May be overridden depending on OSC layout anyway
+          outputLayout.titleBarHeight = PlayWindowController.standardTitleBarHeight
+
+          outputLayout.titlebarAccessoryViewControllers = visibleState
+
+          // LeadingSidebar toggle button
+          let hasLeadingSidebar = !layoutSpec.leadingSidebar.tabGroups.isEmpty
+          if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
+            outputLayout.leadingSidebarToggleButton = visibleState
+          }
+          // TrailingSidebar toggle button
+          let hasTrailingSidebar = !layoutSpec.trailingSidebar.tabGroups.isEmpty
+          if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
+            outputLayout.trailingSidebarToggleButton = visibleState
+          }
+        }
+
+        if outputLayout.topBarPlacement == .insideVideo {
+          outputLayout.osdMinOffsetFromTop = outputLayout.titleBarHeight + 8
+        }
+
+      }
+
+      // OSC:
+
+      if layoutSpec.enableOSC {
+        // add fragment views
+        switch layoutSpec.oscPosition {
+        case .floating:
+          outputLayout.controlBarFloating = .showFadeableNonTopBar  // floating is always fadeable
+        case .top:
+          if outputLayout.titleBar.isShowable {
+            // If legacy window mode, do not show title bar.
+            // Otherwise reduce its height a bit because it will share space with OSC
+            outputLayout.titleBarHeight = PlayWindowController.reducedTitleBarHeight
+          }
+
+          let visibility: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
+          outputLayout.topBarView = visibility
+          outputLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
+        case .bottom:
+          outputLayout.bottomBarView = (outputLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
+        }
+      } else {  // No OSC
+        if layoutSpec.mode == .musicMode {
+          assert(outputLayout.bottomBarPlacement == .outsideVideo)
+          outputLayout.bottomBarView = .showAlways
+        }
+      }
+
+      /// Sidebar tabHeight and downshift.
+      /// Downshift: try to match height of title bar
+      /// Tab height: if top OSC is `insideVideo`, try to match its height
+      if outputLayout.isMusicMode {
+        /// Special case for music mode. Only really applies to `playlistView`,
+        /// because `quickSettingView` is never shown in this mode.
+        outputLayout.sidebarTabHeight = Constants.Sidebar.musicModeTabHeight
+      } else if outputLayout.topBarView.isShowable && outputLayout.topBarPlacement == .insideVideo {
+        outputLayout.sidebarDownshift = outputLayout.titleBarHeight
+
+        let tabHeight = outputLayout.topOSCHeight
+        // Put some safeguards in place. Don't want to waste space or be too tiny to read.
+        // Leave default height if not in reasonable range.
+        if tabHeight >= Constants.Sidebar.minTabHeight && tabHeight <= Constants.Sidebar.maxTabHeight {
+          outputLayout.sidebarTabHeight = tabHeight
+        }
+      }
+
+      return outputLayout
+    }
+
   }  // end class LayoutState
 
   // MARK: - Visibility States

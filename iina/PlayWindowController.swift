@@ -224,6 +224,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   var geoUpdateRequestCount: Int = 0
 
   lazy var windowedModeGeometry: PlayWindowGeometry = {
+    // TODO: better logic here
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
     didSet {
@@ -1866,21 +1867,29 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    // This method can be called as a side effect of the animation. If so, ignore.
-    guard !isFullScreen else { return requestedSize }
-    log.verbose("WindowWillResize: requestedSize \(requestedSize)")
+    let currentMode = currentLayout.spec.mode
+    log.verbose("WindowWillResize entered. RequestedSize: \(requestedSize), mode: \(currentMode)")
 
-    if player.isInMiniPlayer {
+    switch currentMode {
+    case .musicMode:
       return miniPlayer.windowWillResize(window, to: requestedSize)
-    }
+    case .fullScreen:
+      if currentLayout.isLegacyFullScreen {
+        let geo = buildLegacyFullScreenGeometry(from: currentLayout)
+        return geo.windowFrame.size
+      } else {  // is native full screen
+        // This method can be called as a side effect of the animation. If so, ignore.
+        return requestedSize
+      }
+    case .windowed:
+      let newGeo = resizeWindowedModeGeometry(desiredSize: requestedSize)
+      CocoaAnimation.disableAnimation{
+        videoView.updateSizeConstraints(newGeo.videoSize)
+      }
 
-    let newGeo = resizeWindowedModeGeometry(desiredSize: requestedSize)
-    CocoaAnimation.disableAnimation{
-      videoView.updateSizeConstraints(newGeo.videoSize)
+      updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
+      return newGeo.windowFrame.size
     }
-
-    updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
-    return newGeo.windowFrame.size
   }
 
   /// Called anytime window is resized. May be called after every call to `window.setFrame()`.

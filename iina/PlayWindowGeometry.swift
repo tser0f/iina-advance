@@ -124,16 +124,16 @@ struct PlayWindowGeometry: Equatable {
              videoAspectRatio: CGFloat? = nil) -> PlayWindowGeometry {
 
     return PlayWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
-                                topMarginHeight: topMarginHeight ?? self.topMarginHeight,
-                                outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
-                                outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
-                                outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
-                                outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
-                                insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
-                                insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
-                                insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
-                                insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
-                                videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
+                              topMarginHeight: topMarginHeight ?? self.topMarginHeight,
+                              outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
+                              outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
+                              outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
+                              outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
+                              insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
+                              insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
+                              insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
+                              insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
+                              videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
   // MARK: - Computed properties
@@ -640,16 +640,16 @@ extension PlayWindowController {
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
 
     let geo = PlayWindowGeometry(windowFrame: window!.frame,
-                                   topMarginHeight: layout.cameraHousingOffset,
-                                   outsideTopBarHeight: layout.outsideTopBarHeight,
-                                   outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
-                                   outsideBottomBarHeight: outsideBottomBarHeight,
-                                   outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
-                                   insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
-                                   insideTrailingBarWidth: layout.insideTrailingBarWidth,
-                                   insideBottomBarHeight: insideBottomBarHeight,
-                                   insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                                   videoAspectRatio: videoAspectRatio)
+                                 topMarginHeight: 0,  // is only nonzero when in legacy FS
+                                 outsideTopBarHeight: layout.outsideTopBarHeight,
+                                 outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
+                                 outsideBottomBarHeight: outsideBottomBarHeight,
+                                 outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
+                                 insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
+                                 insideTrailingBarWidth: layout.insideTrailingBarWidth,
+                                 insideBottomBarHeight: insideBottomBarHeight,
+                                 insideLeadingBarWidth: layout.insideLeadingBarWidth,
+                                 videoAspectRatio: videoAspectRatio)
     return geo.scaleVideoContainer(constrainedWithin: bestScreen.frame)
   }
 
