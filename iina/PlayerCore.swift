@@ -1550,7 +1550,7 @@ class PlayerCore: NSObject {
     Logger.log("Playback restarted", subsystem: subsystem)
     reloadSavedIINAfilters()
     videoView.displayActive()
-    videoView.videoLayer.draw(forced: true)
+    windowController.forceDraw()
     syncUITime()
 
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {

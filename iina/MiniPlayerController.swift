@@ -429,7 +429,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
 
     windowController.videoContainerView.layoutSubtreeIfNeeded()
-    windowController.videoView.videoLayer.draw(forced: true)
+    windowController.forceDraw()
   }
 
   func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {

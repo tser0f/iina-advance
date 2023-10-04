@@ -265,10 +265,10 @@ struct PlayWindowGeometry: Equatable {
                            height: round(newVidConSize.height + outsideBarsSize.height))
 
     // Round the results to prevent excessive window drift due to small imprecisions in calculation
-    let deltaX = round((newWindowSize.width - windowFrame.size.width) / 2)
-    let deltaY = round((newWindowSize.height - windowFrame.size.height) / 2)
-    let newWindowOrigin = NSPoint(x: windowFrame.origin.x - deltaX,
-                                  y: windowFrame.origin.y - deltaY)
+    let deltaX = ((newWindowSize.width - windowFrame.size.width) / 2).rounded(.up)
+    let deltaY = ((newWindowSize.height - windowFrame.size.height) / 2).rounded(.up)
+    let newWindowOrigin = NSPoint(x: (windowFrame.origin.x - deltaX).rounded(.up),
+                                  y: (windowFrame.origin.y - deltaY).rounded(.up))
 
     // Move window if needed to make sure the window is not offscreen
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
@@ -699,7 +699,6 @@ extension PlayWindowController {
     updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
     videoView.updateSizeConstraints(geometry.videoSize)
     player.window.setFrameImmediately(geometry.windowFrame)
-    videoView.layoutSubtreeIfNeeded()
   }
 
   func applyWindowGeometry(_ newGeometry: PlayWindowGeometry, animate: Bool = true) {

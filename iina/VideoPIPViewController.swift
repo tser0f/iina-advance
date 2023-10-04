@@ -15,9 +15,8 @@ class VideoPIPViewController: PIPViewController {
   /// If the image is changing there is no need to force a draw. However if playback is paused, or if playback is in progress but the video
   /// track is an album art still image then drawing is required.
   private func forceDraw() {
-    guard let controller = delegate as? PlayWindowController, controller.player.info.isPaused
-            || controller.player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
-    controller.videoView.videoLayer.draw(forced: true)
+    guard let controller = delegate as? PlayWindowController else { return }
+    controller.forceDraw()
   }
 
   /// Force a draw after entering PiP.

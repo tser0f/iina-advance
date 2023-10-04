@@ -133,6 +133,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   var isWindowMiniaturizedDueToPip = false
 
   var denyNextWindowResize = false
+  var modeToSetAfterExitingFullScreen: WindowMode? = nil
 
   var isPausedDueToInactive: Bool = false
   var isPausedDueToMiniaturization: Bool = false
@@ -1426,6 +1427,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   override func scrollWheel(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
     guard !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, titleBarView, subPopoverView]) else { return }
+    // TODO: figure out hit test to make sure scroll doesn't happen when window is occluded
 
     if isMouseEvent(event, inAnyOf: [fragPositionSliderView]) && playSlider.isEnabled {
       seekOverride = true
@@ -1709,7 +1711,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     defaultAlbumArtView.isHidden = true
 
     player.initVideo()
-    videoView.videoLayer.draw(forced: true)
+    forceDraw()
     videoView.startDisplayLink()
 
     log.verbose("PlayWindow openWindow done")
@@ -1809,9 +1811,10 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
 
     let oldLayout = currentLayout
 
-    // May be in interactive mode, with some panels hidden (overriding stored preferences).
-    // Honor existing layout but change value of isFullScreen:
-    let windowedLayout = LayoutSpec.fromPreferences(andMode: .windowed, fillingInFrom: oldLayout.spec)
+    // support exiting native FS and directly into music mode
+    let newMode = modeToSetAfterExitingFullScreen ?? .windowed
+    modeToSetAfterExitingFullScreen = nil
+    let windowedLayout = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
 
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(named: "Exit\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
@@ -2871,8 +2874,14 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
       /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
       let oldLayout = currentLayout
-      let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
-      buildLayoutTransition(named: "EnterMusicMode", from: oldLayout, to: miniPlayerLayout, thenRun: true)
+      if oldLayout.isNativeFullScreen {
+        // Need to do some gymnastics to parameterize exit from native full screen
+        modeToSetAfterExitingFullScreen = .musicMode
+        window?.toggleFullScreen(self)
+      } else {
+        let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
+        buildLayoutTransition(named: "EnterMusicMode", from: oldLayout, to: miniPlayerLayout, thenRun: true)
+      }
     }
   }
 
@@ -2923,6 +2932,11 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // MARK: - Sync UI with playback
+
+  func forceDraw() {
+    guard player.info.isPaused || player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
+    videoView.videoLayer.draw(forced: true)
+  }
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
     guard loaded else { return }
@@ -3292,9 +3306,7 @@ extension PlayWindowController: PIPViewControllerDelegate {
     // it's not necessary while the video is playing and significantly more
     // noticeable, we only redraw if we are paused.
     let currentTrackIsAlbumArt = player.info.currentTrack(.video)?.isAlbumart ?? false
-    if player.info.isPaused || currentTrackIsAlbumArt {
-      videoView.videoLayer.draw(forced: true)
-    }
+    forceDraw()
 
     resetFadeTimer()
 

@@ -1190,9 +1190,9 @@ extension PlayWindowController {
       player.events.emit(.windowFullscreenChanged, data: false)
     }
     
-//    videoView.needsLayout = true
-//    videoView.layoutSubtreeIfNeeded()
-    videoView.videoLayer.draw(forced: true)
+    videoView.needsLayout = true
+    videoView.layoutSubtreeIfNeeded()
+    forceDraw()
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
     log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode)")
