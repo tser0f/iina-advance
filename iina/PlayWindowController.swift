@@ -2793,6 +2793,10 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
+    // Must not access mpv while it is asynchronously processing stop and quit commands.
+    // See comments in resetViewsForFullScreenTransition for details.
+    guard !isClosing else { return }
+
     guard let videoWidth = player.videoBaseDisplaySize?.width, videoWidth > 0 else {
       log.debug("Skipping send to mpv windowScale; could not get width from videoBaseDisplaySize")
       return

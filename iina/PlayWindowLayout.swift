@@ -313,17 +313,6 @@ extension PlayWindowController {
     // Extra animation for entering legacy full screen
     if transition.isEnteringLegacyFullScreen && !transition.isInitialLayout {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        guard let window = window else { return }
-        window.styleMask.insert(.borderless)
-        window.styleMask.remove(.resizable)
-
-        // auto hide menubar and dock (this will freeze all other animations, so must do it last)
-        NSApp.presentationOptions.insert(.autoHideMenuBar)
-        NSApp.presentationOptions.insert(.autoHideDock)
-
-        /// Set to `.iinaFloating` instead of `.floating` so that Settings & other windows can be displayed
-        window.level = .iinaFloating
-
         let screen = bestScreen
         let newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: screen.cameraHousingHeight ?? 0)
         log.verbose("Updating legacy full screen window to cover camera housing / menu bar / dock")
@@ -554,10 +543,21 @@ extension PlayWindowController {
         } else {
           window.styleMask.insert(.fullScreen)
         }
+
+        window.styleMask.remove(.resizable)
+
+        // auto hide menubar and dock (this will freeze all other animations, so must do it last)
+        NSApp.presentationOptions.insert(.autoHideMenuBar)
+        NSApp.presentationOptions.insert(.autoHideDock)
+
+        /// Set to `.iinaFloating` instead of `.floating` so that Settings & other windows can be displayed
+        window.level = .iinaFloating
       }
-      player.mpv.setFlag(MPVOption.Window.fullscreen, true)
-      // Let mpv decide the correct render region in full screen
-      player.mpv.setFlag(MPVOption.Window.keepaspect, true)
+      if !isClosing {
+        player.mpv.setFlag(MPVOption.Window.fullscreen, true)
+        // Let mpv decide the correct render region in full screen
+        player.mpv.setFlag(MPVOption.Window.keepaspect, true)
+      }
 
       resetViewsForFullScreenTransition()
 
@@ -574,8 +574,10 @@ extension PlayWindowController {
       // Hide traffic light buttons & title during the animation:
       hideBuiltInTitleBarItems()
 
-      player.mpv.setFlag(MPVOption.Window.fullscreen, false)
-      player.mpv.setFlag(MPVOption.Window.keepaspect, false)
+      if !isClosing {
+        player.mpv.setFlag(MPVOption.Window.fullscreen, false)
+        player.mpv.setFlag(MPVOption.Window.keepaspect, false)
+      }
     }
   }
 
@@ -1143,10 +1145,6 @@ extension PlayWindowController {
         player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
       }
 
-      // Must not access mpv while it is asynchronously processing stop and quit commands.
-      // See comments in resetViewsForFullScreenTransition for details.
-      guard !isClosing else { return }
-
       if transition.outputLayout.spec.isLegacyStyle {
         log.verbose("Removing window styleMask.titled")
         window.styleMask.remove(.titled)
@@ -1192,8 +1190,8 @@ extension PlayWindowController {
       player.events.emit(.windowFullscreenChanged, data: false)
     }
     
-    videoView.needsLayout = true
-    videoView.layoutSubtreeIfNeeded()
+//    videoView.needsLayout = true
+//    videoView.layoutSubtreeIfNeeded()
     videoView.videoLayer.draw(forced: true)
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
