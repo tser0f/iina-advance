@@ -114,6 +114,8 @@ extension PlayerWindowController {
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
+    let screen = bestScreen
+
     // - Build outputLayout
 
     let outputLayout = LayoutState.from(outputSpec)
@@ -180,8 +182,12 @@ extension PlayerWindowController {
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
-    // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
-    let openFinalPanelsDuration = transition.isTogglingLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
+    // Extra animation for entering legacy full screen: cover camera housing with black bar
+    let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
+
+    let openFinalPanelsDuration = useExtraAnimationForEnteringLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
+
+    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
 
     log.verbose("[\(transitionName)] Building transition animations. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
 
@@ -205,7 +211,7 @@ extension PlayerWindowController {
     }
 
     // Extra animation for exiting legacy full screen (to Native Windowed Mode)
-    if transition.isExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
+    if useExtraAnimationForExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let screen = bestScreen
         let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
@@ -217,7 +223,7 @@ extension PlayerWindowController {
     // StartingAnimation 3: Close/Minimize panels which are no longer needed. Not used for fullScreen transitions.
     // Applies middleGeometry if it exists.
     if transition.needsCloseOldPanels {
-      let closeOldPanelsDuration = transition.isExitingLegacyFullScreen ? (startingAnimationDuration * 0.8) : startingAnimationDuration
+      let closeOldPanelsDuration = useExtraAnimationForExitingLegacyFullScreen ? (startingAnimationDuration * 0.8) : startingAnimationDuration
       transition.animationTasks.append(CocoaAnimation.Task(duration: closeOldPanelsDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
       }))
@@ -260,10 +266,9 @@ extension PlayerWindowController {
 
     // - Ending animations:
 
-    // Extra animation for exiting legacy full screen  (to Legacy Windowed Mode)
-    if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle && !transition.isInitialLayout {
+    // Extra animation for exiting legacy full screen to legacy windowed mode, if black space around camera housing
+    if useExtraAnimationForExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let screen = bestScreen
         let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
         setWindowFrameForLegacyFullScreen(using: newGeo)
@@ -288,8 +293,8 @@ extension PlayerWindowController {
       }))
     }
 
-    // Extra animation for entering legacy full screen
-    if transition.isEnteringLegacyFullScreen && !transition.isInitialLayout {
+    // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
+    if useExtraAnimationForEnteringLegacyFullScreen {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let screen = bestScreen
         let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0

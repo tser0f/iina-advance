@@ -832,6 +832,10 @@ extension NSScreen {
     }
   }
 
+  var hasCameraHousing: Bool {
+    return (cameraHousingHeight ?? 0) > 0
+  }
+
   var displayId: UInt32 {
     return deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
   }

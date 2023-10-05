@@ -167,6 +167,10 @@ struct PlayerWindowGeometry: Equatable {
     return max(AppData.minVideoSize.width, insideLeadingBarWidth + insideTrailingBarWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars)
   }
 
+  var hasTopPaddingForCameraHousing: Bool {
+    return topMarginHeight > 0
+  }
+
   // MARK: - Functions
 
   static private func computeVideoContainerSize(from windowFrame: NSRect, topMarginHeight: CGFloat,

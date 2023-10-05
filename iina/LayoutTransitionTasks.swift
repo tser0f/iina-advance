@@ -490,7 +490,7 @@ extension PlayerWindowController {
     }
 
     if transition.isEnteringNativeFullScreen {
-      // Native FullScreen: set frame not including camera housing because it looks better with the native animation
+      // Native Full Screen: set frame not including camera housing because it looks better with the native animation
       let newWindowFrame = bestScreen.frameWithoutCameraHousing
       log.verbose("Calling setFrame() to animate into native full screen, to: \(newWindowFrame)")
       player.window.setFrameImmediately(newWindowFrame)
