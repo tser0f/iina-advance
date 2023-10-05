@@ -177,6 +177,7 @@
 		D18333BE2834CE620060A4E9 /* PlayerBindingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D18333BD2834CE620060A4E9 /* PlayerBindingController.swift */; };
 		D188CB2228D6DE1900F166FD /* InputBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = D188CB2128D6DE1900F166FD /* InputBinding.swift */; };
 		D188CB2628D9E95500F166FD /* BindingTableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D188CB2528D9E95500F166FD /* BindingTableState.swift */; };
+		D191EE152ACE763A00FEF801 /* LayoutTransitionTasks.swift in Sources */ = {isa = PBXBuildFile; fileRef = D191EE142ACE763A00FEF801 /* LayoutTransitionTasks.swift */; };
 		D19AF88428A3CBCE009B598C /* InputConfFileCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19AF88328A3CBCE009B598C /* InputConfFileCache.swift */; };
 		D19CF7162AB846D300511F80 /* MusicModeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */; };
 		D19F9DAA28645C860054CC45 /* EditableTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19F9DA928645C860054CC45 /* EditableTableView.swift */; };
@@ -185,7 +186,7 @@
 		D1A8878E29D1696C000D1AE4 /* Sidebars.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A8878D29D1696C000D1AE4 /* Sidebars.swift */; };
 		D1AD325A2ACC078600F86EE8 /* LayoutState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AD32592ACC078600F86EE8 /* LayoutState.swift */; };
 		D1AD325C2ACC07E500F86EE8 /* LayoutTransition.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AD325B2ACC07E500F86EE8 /* LayoutTransition.swift */; };
-		D1AE04CE2A9317CD00F58860 /* PlayWindowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AE04CD2A9317CD00F58860 /* PlayWindowLayout.swift */; };
+		D1AE04CE2A9317CD00F58860 /* LayoutTransitionFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AE04CD2A9317CD00F58860 /* LayoutTransitionFactory.swift */; };
 		D1AF3D7928F16CA4002A15A7 /* CellEditTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AF3D7828F16CA4002A15A7 /* CellEditTracker.swift */; };
 		D1B492E62AA0BB9A00212E9C /* MagnificationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */; };
 		D1B787DB29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B787DA29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift */; };
@@ -1556,6 +1557,7 @@
 		D18333BD2834CE620060A4E9 /* PlayerBindingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerBindingController.swift; sourceTree = "<group>"; };
 		D188CB2128D6DE1900F166FD /* InputBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputBinding.swift; sourceTree = "<group>"; };
 		D188CB2528D9E95500F166FD /* BindingTableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingTableState.swift; sourceTree = "<group>"; };
+		D191EE142ACE763A00FEF801 /* LayoutTransitionTasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutTransitionTasks.swift; sourceTree = "<group>"; };
 		D19AF88328A3CBCE009B598C /* InputConfFileCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputConfFileCache.swift; sourceTree = "<group>"; };
 		D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicModeGeometry.swift; sourceTree = "<group>"; };
 		D19F9DA928645C860054CC45 /* EditableTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableTableView.swift; sourceTree = "<group>"; };
@@ -1564,7 +1566,7 @@
 		D1A8878D29D1696C000D1AE4 /* Sidebars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebars.swift; sourceTree = "<group>"; };
 		D1AD32592ACC078600F86EE8 /* LayoutState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutState.swift; sourceTree = "<group>"; };
 		D1AD325B2ACC07E500F86EE8 /* LayoutTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutTransition.swift; sourceTree = "<group>"; };
-		D1AE04CD2A9317CD00F58860 /* PlayWindowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayWindowLayout.swift; sourceTree = "<group>"; };
+		D1AE04CD2A9317CD00F58860 /* LayoutTransitionFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutTransitionFactory.swift; sourceTree = "<group>"; };
 		D1AF3D7828F16CA4002A15A7 /* CellEditTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CellEditTracker.swift; sourceTree = "<group>"; };
 		D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagnificationHandler.swift; sourceTree = "<group>"; };
 		D1B787DA29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerWindowPreviewImageBuilder.swift; sourceTree = "<group>"; };
@@ -2555,7 +2557,8 @@
 				E38BD4AE20054BD9007635FC /* PlayWindow.swift */,
 				84A0BA9C1D2FAD4000BC8DA1 /* PlayWindowController.swift */,
 				8400D5C81E1AB2F1006785F5 /* PlayWindowController.xib */,
-				D1AE04CD2A9317CD00F58860 /* PlayWindowLayout.swift */,
+				D1AE04CD2A9317CD00F58860 /* LayoutTransitionFactory.swift */,
+				D191EE142ACE763A00FEF801 /* LayoutTransitionTasks.swift */,
 				D1AD32592ACC078600F86EE8 /* LayoutState.swift */,
 				D1AD325B2ACC07E500F86EE8 /* LayoutTransition.swift */,
 				D1A44D892A5E18D00089B283 /* PlayWindowGeometry.swift */,
@@ -3034,6 +3037,7 @@
 				E3785B092A83380E00787CB7 /* WebSocketServer.swift in Sources */,
 				84E48D4E1E0F1090002C7A3F /* FilterWindowController.swift in Sources */,
 				E3F698872120D878005792C9 /* ExtendedColors.swift in Sources */,
+				D191EE152ACE763A00FEF801 /* LayoutTransitionTasks.swift in Sources */,
 				D18333BC2834CDF40060A4E9 /* RingBuffer.swift in Sources */,
 				E3839C5924FFF817007D0AB4 /* JavascriptAPIStandaloneWindow.swift in Sources */,
 				E3366AFA224A039500EF3C32 /* JavascriptAPIPreferences.swift in Sources */,
@@ -3074,7 +3078,7 @@
 				84C6D3621EAF8D63009BF721 /* HistoryController.swift in Sources */,
 				D1AF3D7928F16CA4002A15A7 /* CellEditTracker.swift in Sources */,
 				E38B3213214FB9EA000F6D27 /* PrefPluginPermissionView.swift in Sources */,
-				D1AE04CE2A9317CD00F58860 /* PlayWindowLayout.swift in Sources */,
+				D1AE04CE2A9317CD00F58860 /* LayoutTransitionFactory.swift in Sources */,
 				51E63DFD29CFB04C008AFC20 /* PlaySliderLoopKnob.swift in Sources */,
 				847644081D48B413004F6DF5 /* MPVOption.swift in Sources */,
 				D1D87E0629320F7C00737886 /* UndoHelper.swift in Sources */,
