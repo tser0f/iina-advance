@@ -8,7 +8,7 @@
 
 import Foundation
 
-/// This file is not really a factory class due to limitations of the AppKit paradigm, but it contains
+/// This file is not really a factory class due to limitations of the AppKit paradigm, but it contain
 /// methods for creating/running `LayoutTransition`s to change between `LayoutState`s for the
 /// given `PlayWindowController`.
 extension PlayWindowController {

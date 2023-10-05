@@ -258,22 +258,17 @@ extension PlayWindowController {
     log.verbose("[\(transition.name)] UpdateHiddenViewsAndConstraints")
 
     if transition.outputLayout.spec.isLegacyStyle {
-      if window.styleMask.contains(.titled) {
-        log.verbose("Removing window styleMask.titled")
-        window.styleMask.remove(.titled)
-        window.styleMask.insert(.borderless)
-        window.styleMask.insert(.resizable)
-        window.styleMask.insert(.closable)
-        window.styleMask.insert(.miniaturizable)
-      }
+      log.verbose("Removing window styleMask.titled")
+      window.styleMask.remove(.titled)
+      window.styleMask.insert(.borderless)
+      window.styleMask.insert(.closable)
+      window.styleMask.insert(.miniaturizable)
       /// if `isTogglingLegacyStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
       /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
     } else if !transition.outputLayout.spec.isLegacyStyle && !transition.isEnteringFullScreen {
-      if !window.styleMask.contains(.titled) {
-        log.verbose("Inserting window styleMask.titled")
-        window.styleMask.insert(.titled)
-        window.styleMask.remove(.borderless)
-      }
+      log.verbose("Inserting window styleMask.titled")
+      window.styleMask.insert(.titled)
+      window.styleMask.remove(.borderless)
 
       // Remove fake traffic light buttons (if any)
       if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
@@ -408,6 +403,16 @@ extension PlayWindowController {
       } else if transition.inputLayout.trailingSidebar.visibleTabGroup == transition.outputLayout.trailingSidebar.visibleTabGroup {
         // Tab group is already showing, but just need to switch tab
         switchToTabInTabGroup(tab: tabToShow)
+      }
+    }
+
+    if transition.outputLayout.isMusicMode {
+      window.titleVisibility = .hidden
+
+      /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
+      /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
+      for button in trafficLightButtons {
+        button.isHidden = true
       }
     }
 
@@ -549,7 +554,7 @@ extension PlayWindowController {
       if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
         apply(visibility: .showFadeableNonTopBar, to: additionalInfoView)
       }
-    } else {
+    } else if !outputLayout.isMusicMode {
       /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
       for button in trafficLightButtons {
         button.alphaValue = 1
@@ -667,20 +672,10 @@ extension PlayWindowController {
     } else if transition.isExitingFullScreen {
       // Exited FullScreen
 
-      // Make sure legacy FS styling is removed always
-      window.styleMask.insert(.resizable)
       if #available(macOS 10.16, *) {
         window.level = .normal
       } else {
         window.styleMask.remove(.fullScreen)
-      }
-
-      if transition.isExitingLegacyFullScreen {
-        restoreDockSettings()
-      }
-
-      if Preference.bool(for: .blackOutMonitor) {
-        removeBlackWindows()
       }
 
       if player.info.isPaused {
@@ -694,10 +689,14 @@ extension PlayWindowController {
         player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: false)
       }
 
+      resetCollectionBehavior()
+      updateWindowParametersForMPV()
+
       if transition.outputLayout.spec.isLegacyStyle {
         log.verbose("Removing window styleMask.titled")
         window.styleMask.remove(.titled)
         window.styleMask.insert(.borderless)
+        window.styleMask.insert(.resizable)
 
         window.titleVisibility = .hidden
       } else {
@@ -707,17 +706,28 @@ extension PlayWindowController {
           window.styleMask.insert(.titled)
           window.styleMask.remove(.borderless)
         }
+        if !transition.outputLayout.isMusicMode {
+          window.titleVisibility = .visible
+        }
+
+        if transition.isExitingLegacyFullScreen {
+          restoreDockSettings()
+        }
+
+        if Preference.bool(for: .blackOutMonitor) {
+          removeBlackWindows()
+        }
+
 
         // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
-        apply(visibility: transition.outputLayout.titleIconAndText, documentIconButton, titleTextField)
-        for button in trafficLightButtons {
-          /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
-          /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
-          /// but should be ok for brief animations
-          button.alphaValue = 1
-          button.isHidden = false
-        }
-        window.titleVisibility = .visible
+//        apply(visibility: transition.outputLayout.titleIconAndText, documentIconButton, titleTextField)
+//        for button in trafficLightButtons {
+//          /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
+//          /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
+//          /// but should be ok for brief animations
+//          button.alphaValue = 1
+//          button.isHidden = false
+//        }
       }
 
       // restore ontop status
@@ -733,17 +743,16 @@ extension PlayWindowController {
         player.pause()
       }
 
-      resetCollectionBehavior()
-      updateWindowParametersForMPV()
-
       player.events.emit(.windowFullscreenChanged, data: false)
     }
+
+    // Need to make sure this executes after styleMask is .titled
+    addTitleBarAccessoryViews()
 
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     forceDraw()
-    // Need to make sure this executes after styleMask is .titled
-    addTitleBarAccessoryViews()
+
     log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode)")
     player.saveState()
   }
