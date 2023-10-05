@@ -408,8 +408,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       PK.useLegacyWindowedMode.rawValue:
 
       updateTitleBarAndOSC()
-    case PK.useLegacyFullScreen.rawValue:
-      updateUseLegacyFullScreen()
     case PK.allowEmptySpaceAroundVideo.rawValue:
       if let isAllowed = change[.newKey] as? Bool, !isAllowed {
         log.debug("Pref \(keyPath.quoted) changed to \(isAllowed): resizing window to remove any black space")
@@ -452,7 +450,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       }
     case PK.useLegacyFullScreen.rawValue:
-      resetCollectionBehavior()
+      updateUseLegacyFullScreen()
     case PK.displayTimeAndBatteryInFullScreen.rawValue:
       if let newValue = change[.newKey] as? Bool {
         displayTimeAndBatteryInFullScreen = newValue
@@ -1058,6 +1056,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateUseLegacyFullScreen() {
+    resetCollectionBehavior()
+    
     let oldLayout = currentLayout
     guard oldLayout.isFullScreen else { return }
     let outputLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: oldLayout.spec)
