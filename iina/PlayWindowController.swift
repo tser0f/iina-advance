@@ -1541,10 +1541,8 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
       isMouseInSlider = true
       timePreviewWhenSeek.isHidden = false
       thumbnailPeekView.isHidden = !player.info.thumbnailsReady
-
-      let mousePos = playSlider.convert(event.locationInWindow, from: nil)
-      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
     }
+    refreshSeekTimeAndThumnail(from: event)
   }
 
   override func mouseExited(with event: NSEvent) {
@@ -1567,8 +1565,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
     } else if obj == 1 {
       // slider
       isMouseInSlider = false
-      let mousePos = playSlider.convert(event.locationInWindow, from: nil)
-      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
+      refreshSeekTimeAndThumnail(from: event)
       timePreviewWhenSeek.isHidden = true
       thumbnailPeekView.isHidden = true
     }
@@ -1592,14 +1589,7 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    let mousePos = playSlider.convert(event.locationInWindow, from: nil)
-    if isMouseInSlider {
-      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
-    } else {
-      // Just to be sure
-      timePreviewWhenSeek.isHidden = true
-      thumbnailPeekView.isHidden = true
-    }
+    refreshSeekTimeAndThumnail(from: event)
 
     if isMouseInWindow {
       let isPrefEnabled = Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.topBarHover
@@ -2692,6 +2682,17 @@ class PlayWindowController: NSWindowController, NSWindowDelegate {
 
     log.verbose("Exiting interactive mode")
     animationQueue.run(animationTasks, then: doAfter)
+  }
+
+  private func refreshSeekTimeAndThumnail(from event: NSEvent) {
+    let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
+    let mousePos = playSlider.convert(event.locationInWindow, from: nil)
+    if isMouseInSlider && !isCoveredByOSD {
+      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
+    } else {
+      thumbnailPeekView.isHidden = true
+      timePreviewWhenSeek.isHidden = true
+    }
   }
 
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..
