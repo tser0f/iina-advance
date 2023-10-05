@@ -175,7 +175,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     case #keyPath(view.effectiveAppearance):
       if Preference.enum(for: .themeMaterial) == Preference.Theme.system {
         // Refresh image in case dark mode changed
-        let ib = PlayWindowPreviewImageBuilder(self.view)
+        let ib = PlayerWindowPreviewImageBuilder(self.view)
         windowPreviewImageView.image = ib.updateWindowPreviewImage()
       }
     default:
@@ -193,7 +193,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 
   private func refreshTitleBarAndOSCSection(animate: Bool = true) {
-    let ib = PlayWindowPreviewImageBuilder(self.view)
+    let ib = PlayerWindowPreviewImageBuilder(self.view)
 
     let titleBarIsOverlay = ib.topBarPlacement == .insideVideo
     let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .floating ||
@@ -424,7 +424,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 }
 
 
-class PlayWindowPreviewView: NSView {
+class PlayerWindowPreviewView: NSView {
 
   override func awakeFromNib() {
     self.wantsLayer = true

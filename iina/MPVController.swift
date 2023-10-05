@@ -1476,7 +1476,7 @@ not applying FFmpeg 9599 workaround
       if let idleActive = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee, idleActive {
         if receivedEndFileWhileLoading && player.info.fileLoading {
           player.log.error("Received MPV_EVENT_END_FILE and 'idle-active' while loading \(player.info.currentURL?.path.pii.quoted ?? "nil"). Will display alert to user and close window")
-          player.errorOpeningFileAndClosePlayWindow()
+          player.errorOpeningFileAndClosePlayerWindow()
           player.info.fileLoading = false
           player.info.currentURL = nil
         }

@@ -34,7 +34,7 @@ fileprivate extension NSStackView.VisibilityPriority {
 }
 
 /// This file contains tasks to run in the animation queue, which form a `LayoutTransition`.
-extension PlayWindowController {
+extension PlayerWindowController {
 
   func doPreTransitionWork(_ transition: LayoutTransition) {
     log.verbose("[\(transition.name)] DoPreTransitionWork")
@@ -441,7 +441,7 @@ extension PlayWindowController {
     }
 
     if transition.isEnteringNativeFullScreen {
-      let videoSize = PlayWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
+      let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
       videoView.updateSizeConstraints(videoSize)
     }
 
@@ -507,7 +507,7 @@ extension PlayWindowController {
       player.window.setFrameImmediately(newWindowFrame)
     } else if transition.outputLayout.isLegacyFullScreen {
       let screen = bestScreen
-      let newGeo: PlayWindowGeometry
+      let newGeo: PlayerWindowGeometry
       if transition.isEnteringLegacyFullScreen {
         if (screen.cameraHousingHeight ?? 0) > 0 {
           /// Entering legacy FS on a screen with camera housing.
@@ -577,7 +577,7 @@ extension PlayWindowController {
           leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
           leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
           leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
-          leadingStackView.heightAnchor.constraint(equalToConstant: PlayWindowController.standardTitleBarHeight).isActive = true
+          leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
           leadingStackView.detachesHiddenViews = false
           leadingStackView.spacing = 6
           /// Because of possible top OSC, `titleBarView` may have reduced height.
@@ -905,7 +905,7 @@ extension PlayWindowController {
       controller.view = leadingTitleBarAccessoryView
       controller.layoutAttribute = .leading
 
-      leadingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: PlayWindowController.standardTitleBarHeight).isActive = true
+      leadingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
     }
     if trailingTitlebarAccesoryViewController == nil {
       let controller = NSTitlebarAccessoryViewController()
@@ -913,7 +913,7 @@ extension PlayWindowController {
       controller.view = trailingTitleBarAccessoryView
       controller.layoutAttribute = .trailing
 
-      trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: PlayWindowController.standardTitleBarHeight).isActive = true
+      trailingTitleBarAccessoryView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
     }
     if window.styleMask.contains(.titled) && window.titlebarAccessoryViewControllers.isEmpty {
       window.addTitlebarAccessoryViewController(leadingTitlebarAccesoryViewController!)

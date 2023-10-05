@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Grеška";
 
-// PlayWindowController.swift
+// PlayerWindowController.swift
 "main.buffering_indicator" = "Smeštanje u bafer… %d%%";
 "main.opening_stream" = "Otvaram strim…";
 "osc.precision" = "Preciznost";

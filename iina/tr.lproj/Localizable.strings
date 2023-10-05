@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Hata";
 
-// PlayWindowController.swift
+// PlayerWindowController.swift
 "main.buffering_indicator" = "Arabelleğe alınıyor... %%%d";
 "main.opening_stream" = "Akış açılıyor...";
 "osc.precision" = "Kesinlik";

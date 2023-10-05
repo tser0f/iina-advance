@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Fel";
 
-// PlayWindowController.swift
+// PlayerWindowController.swift
 "main.buffering_indicator" = "Buffrar… %d%%";
 "main.opening_stream" = "Öppnar ström…";
 "osc.precision" = "Precision";

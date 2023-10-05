@@ -98,10 +98,10 @@ class PlayerCore: NSObject {
 
   // Windows
 
-  var windowController: PlayWindowController!
+  var windowController: PlayerWindowController!
 
-  var window: PlayWindow {
-    return (windowController.window as! PlayWindow)
+  var window: PlayerWindow {
+    return (windowController.window as! PlayerWindow)
   }
 
   var mpv: MPVController!
@@ -218,7 +218,7 @@ class PlayerCore: NSObject {
     super.init()
     self.mpv = MPVController(playerCore: self)
     self.bindingController = PlayerBindingController(playerCore: self)
-    self.windowController = PlayWindowController(playerCore: self)
+    self.windowController = PlayerWindowController(playerCore: self)
     if #available(macOS 10.12.2, *) {
       self._touchBarSupport = TouchBarSupport(playerCore: self)
     }
@@ -271,7 +271,7 @@ class PlayerCore: NSObject {
     if shouldAutoLoad {
       info.shouldAutoLoadFiles = true
     }
-    openPlayWindow(url: url)
+    openPlayerWindow(url: url)
   }
 
   /**
@@ -337,7 +337,7 @@ class PlayerCore: NSObject {
 
   func openURLString(_ str: String) {
     if str == "-" {
-      openPlayWindow()
+      openPlayerWindow()
       return
     }
     if str.first == "/" {
@@ -352,7 +352,7 @@ class PlayerCore: NSObject {
   }
 
   /// if `url` is `nil`, assumed to be `stdin`
-  private func openPlayWindow(url: URL? = nil) {
+  private func openPlayerWindow(url: URL? = nil) {
     let path: String
     if let url = url, url.absoluteString != "stdin" {
       path = url.isFileURL ? url.path : url.absoluteString
@@ -373,7 +373,7 @@ class PlayerCore: NSObject {
     isStopping = false
     isStopped = false
 
-    (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayWindow()
+    (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
     windowController.openWindow()
 
     mpv.command(.loadfile, args: [path])
@@ -1725,7 +1725,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  // MARK: - Sync with UI in PlayWindow
+  // MARK: - Sync with UI in PlayerWindow
 
   /// Call this when `syncUITimer` may need to be started, stopped, or needs its interval changed. It will figure out the correct action.
   /// Just need to make sure that any state variables (e.g., `info.isPaused`, `isInMiniPlayer`, the vars checked by `windowController.isUITimerNeeded()`,
@@ -1934,7 +1934,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  func errorOpeningFileAndClosePlayWindow() {
+  func errorOpeningFileAndClosePlayerWindow() {
     DispatchQueue.main.async {
       Utility.showAlert("error_open")
       self.isStopped = true

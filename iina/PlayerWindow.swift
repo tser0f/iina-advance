@@ -1,5 +1,5 @@
 //
-//  PlayWindow.swift
+//  PlayerWindow.swift
 //  iina
 //
 //  Created by Collider LI on 10/1/2018.
@@ -8,11 +8,11 @@
 
 import Cocoa
 
-class PlayWindow: NSWindow {
+class PlayerWindow: NSWindow {
   private var useZeroDurationForNextResize = false
 
   var log: Logger.Subsystem {
-    return (windowController as! PlayWindowController).player.log
+    return (windowController as! PlayerWindowController).player.log
   }
 
   /**
@@ -43,7 +43,7 @@ class PlayWindow: NSWindow {
     /// Forward all key events which the window receives to its controller.
     /// This allows `ESC` & `TAB` key bindings to work, instead of getting swallowed by
     /// MacOS keyboard focus navigation (which we don't use).
-    if let controller = windowController as? PlayWindowController {
+    if let controller = windowController as? PlayerWindowController {
       controller.keyDown(with: event)
     } else {
       super.keyDown(with: event)

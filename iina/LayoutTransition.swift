@@ -8,31 +8,31 @@
 
 import Foundation
 
-extension PlayWindowController {
+extension PlayerWindowController {
   /// `LayoutTransition`: data structure which holds metadata needed to execute a series of animations which transition
-  /// a single `PlayerWindow` from one layout (`inputLayout`) to another (`outputLayout`). Instances of `PlayWindowGeometry`
+  /// a single `PlayerWindow` from one layout (`inputLayout`) to another (`outputLayout`). Instances of `PlayerWindowGeometry`
   /// are also used along the way to dictate window location/size, video container size, sidebar sizes, & other geometry.
   ///
   /// See `buildLayoutTransition()`, where an instance of this class is assembled.
-  /// Other important variables: `currentLayout`, `windowedModeGeometry`, `musicModeGeometry` (in `PlayWindowController`)
+  /// Other important variables: `currentLayout`, `windowedModeGeometry`, `musicModeGeometry` (in `PlayerWindowController`)
   class LayoutTransition {
     let name: String  // just used for debugging
 
     let inputLayout: LayoutState
     let outputLayout: LayoutState
 
-    let inputGeometry: PlayWindowGeometry
-    var middleGeometry: PlayWindowGeometry?
-    let outputGeometry: PlayWindowGeometry
+    let inputGeometry: PlayerWindowGeometry
+    var middleGeometry: PlayerWindowGeometry?
+    let outputGeometry: PlayerWindowGeometry
 
-    /// Should only be true when setting layout on window open. See `setInitialWindowLayout()` in `PlayWindowController`.
+    /// Should only be true when setting layout on window open. See `setInitialWindowLayout()` in `PlayerWindowController`.
     let isInitialLayout: Bool
 
     var animationTasks: [CocoaAnimation.Task] = []
 
-    init(name: String, from inputLayout: LayoutState, from inputGeometry: PlayWindowGeometry,
-         to outputLayout: LayoutState, to outputGeometry: PlayWindowGeometry,
-         middleGeometry: PlayWindowGeometry? = nil,
+    init(name: String, from inputLayout: LayoutState, from inputGeometry: PlayerWindowGeometry,
+         to outputLayout: LayoutState, to outputGeometry: PlayerWindowGeometry,
+         middleGeometry: PlayerWindowGeometry? = nil,
          isInitialLayout: Bool = false) {
       self.name = name
       self.inputLayout = inputLayout

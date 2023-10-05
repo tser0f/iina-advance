@@ -75,7 +75,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   weak var player: PlayerCore!
 
-  weak var windowController: PlayWindowController! {
+  weak var windowController: PlayerWindowController! {
     didSet {
       self.player = windowController.player
     }

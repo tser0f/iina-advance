@@ -1,5 +1,5 @@
 //
-//  PlayWindowMenuActions.swift
+//  PlayerWindowMenuActions.swift
 //  iina
 //
 //  Created by lhc on 25/12/2016.
@@ -8,7 +8,7 @@
 
 import Cocoa
 
-extension PlayWindowController {
+extension PlayerWindowController {
 
   @objc func menuShowInspector(_ sender: AnyObject) {
     (NSApp.delegate as! AppDelegate).showInspectorWindow()

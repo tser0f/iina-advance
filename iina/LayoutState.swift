@@ -8,7 +8,7 @@
 
 import Foundation
 
-extension PlayWindowController {
+extension PlayerWindowController {
 
   enum WindowMode: Int {
     case windowed = 1
@@ -187,14 +187,14 @@ extension PlayWindowController {
     }
   }
 
-  /// `LayoutState`: data structure which contains all the variables which describe a single layout configuration of the `PlayWindow`.
+  /// `LayoutState`: data structure which contains all the variables which describe a single layout configuration of the `PlayerWindow`.
   /// ("Layout" might have been a better name for this class, but it's already used by AppKit). Notes:
   /// • With all the different window layout configurations which are now possible, it's crucial to use this class in order for animations
   ///   to work reliably.
   /// • It should be treated like a read-only object after it's built. Its member variables are only mutable to make it easier to build.
   /// • When any member variable inside it needs to be changed, a new `LayoutState` object should be constructed to describe the new state,
   ///   and a `LayoutTransition` should be built to describe the animations needs to go from old to new.
-  /// • The new `LayoutState`, once active, should be stored in the `currentLayout` of `PlayWindowController` for future reference.
+  /// • The new `LayoutState`, once active, should be stored in the `currentLayout` of `PlayerWindowController` for future reference.
   class LayoutState {
     init(spec: LayoutSpec) {
       self.spec = spec
@@ -387,7 +387,7 @@ extension PlayWindowController {
           outputLayout.trafficLightButtons = visibleState
           outputLayout.titleIconAndText = visibleState
           // May be overridden depending on OSC layout anyway
-          outputLayout.titleBarHeight = PlayWindowController.standardTitleBarHeight
+          outputLayout.titleBarHeight = PlayerWindowController.standardTitleBarHeight
 
           outputLayout.titlebarAccessoryViewControllers = visibleState
 
@@ -420,7 +420,7 @@ extension PlayWindowController {
           if outputLayout.titleBar.isShowable {
             // If legacy window mode, do not show title bar.
             // Otherwise reduce its height a bit because it will share space with OSC
-            outputLayout.titleBarHeight = PlayWindowController.reducedTitleBarHeight
+            outputLayout.titleBarHeight = PlayerWindowController.reducedTitleBarHeight
           }
 
           let visibility: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways

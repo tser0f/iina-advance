@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Błąd";
 
-// PlayWindowController.swift
+// PlayerWindowController.swift
 "main.buffering_indicator" = "Buforowanie… %d%%";
 "main.opening_stream" = "Otwieram strumień…";
 "osc.precision" = "Dokładność";

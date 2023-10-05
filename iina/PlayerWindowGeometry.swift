@@ -1,5 +1,5 @@
 //
-//  PlayWindowGeometry.swift
+//  PlayerWindowGeometry.swift
 //  iina
 //
 //  Created by Matt Svoboda on 7/11/23.
@@ -9,7 +9,7 @@
 import Foundation
 
 /**
-`PlayWindowGeometry`
+`PlayerWindowGeometry`
  Data structure which describes:
  1. The size & position (`windowFrame`) of an IINA player window which is in normal windowed mode
     (not fullscreen, music mode, etc.)
@@ -51,7 +51,7 @@ import Foundation
  │                            ▼                                        │
  └─────────────────────────────────────────────────────────────────────┘
  */
-struct PlayWindowGeometry: Equatable {
+struct PlayerWindowGeometry: Equatable {
   // MARK: - Stored properties
 
   let windowFrame: NSRect
@@ -112,8 +112,8 @@ struct PlayWindowGeometry: Equatable {
 
     self.videoAspectRatio = videoAspectRatio
 
-    let videoContainerSize = PlayWindowGeometry.computeVideoContainerSize(from: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
-    self.videoSize = PlayWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
+    let videoContainerSize = PlayerWindowGeometry.computeVideoContainerSize(from: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
+    self.videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
   }
 
   func clone(windowFrame: NSRect? = nil, topMarginHeight: CGFloat? = nil,
@@ -121,9 +121,9 @@ struct PlayWindowGeometry: Equatable {
              outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
              insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
              insideBottomBarHeight: CGFloat? = nil, insideLeadingBarWidth: CGFloat? = nil,
-             videoAspectRatio: CGFloat? = nil) -> PlayWindowGeometry {
+             videoAspectRatio: CGFloat? = nil) -> PlayerWindowGeometry {
 
-    return PlayWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
+    return PlayerWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
                               topMarginHeight: topMarginHeight ?? self.topMarginHeight,
                               outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
                               outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
@@ -198,7 +198,7 @@ struct PlayWindowGeometry: Equatable {
   // Computes & returns the max video size with proper aspect ratio which can fit in the given container, after subtracting outside bars
   fileprivate func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
     let maxVidConSize = computeMaxVideoContainerSize(in: containerSize)
-    return PlayWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: maxVidConSize)
+    return PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: maxVidConSize)
   }
 
   private func constrainAboveMin(desiredVideoContainerSize: NSSize) -> NSSize {
@@ -213,12 +213,12 @@ struct PlayWindowGeometry: Equatable {
                   height: min(desiredVideoContainerSize.height, maxSize.height - outsideBarsTotalSize.height))
   }
 
-  func constrainWithin(_ containerFrame: NSRect, centerInContainer: Bool = false) -> PlayWindowGeometry {
+  func constrainWithin(_ containerFrame: NSRect, centerInContainer: Bool = false) -> PlayerWindowGeometry {
     return scaleVideoContainer(desiredSize: nil, constrainedWithin: containerFrame, centerInContainer: centerInContainer)
   }
 
   func scale(desiredWindowSize: NSSize? = nil,
-             constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> PlayWindowGeometry {
+             constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> PlayerWindowGeometry {
     if let desiredWindowSize = desiredWindowSize {
       let outsideBarsTotalSize = outsideBarsTotalSize
       let requestedVideoContainerSize = NSSize(width: desiredWindowSize.width - outsideBarsTotalSize.width,
@@ -228,12 +228,12 @@ struct PlayWindowGeometry: Equatable {
     if let containerFrame = containerFrame {
       return constrainWithin(containerFrame, centerInContainer: centerInContainer)
     } else {
-      Logger.log("Call made to PlayWindowGeometry scale() but all args are nil! Doing nothing.", level: .warning)
+      Logger.log("Call made to PlayerWindowGeometry scale() but all args are nil! Doing nothing.", level: .warning)
       return self
     }
   }
 
-  /// Computes a new `PlayWindowGeometry` from this one.
+  /// Computes a new `PlayerWindowGeometry` from this one.
   /// • If `desiredVideoContainerSize` is given, the `windowFrame` will be shrunk or grown as needed, as will the `videoSize` which will
   /// be resized to fit in the new `videoContainerSize` based on `videoAspectRatio`.
   /// • If `allowEmptySpaceAroundVideo` is enabled, `videoContainerSize` will be shrunk to the same size as `videoSize`, and
@@ -243,9 +243,9 @@ struct PlayWindowGeometry: Equatable {
   /// • If `containerFrame` is `nil`, center point & size of resulting `windowFrame` will not be changed.
   /// • If `centerInContainer` is `true`, `windowFrame` will be centered inside `containerFrame` (will be ignored if `containerFrame` is nil)
   func scaleVideoContainer(desiredSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil,
-                           centerInContainer: Bool = false) -> PlayWindowGeometry {
+                           centerInContainer: Bool = false) -> PlayerWindowGeometry {
     var newVidConSize = desiredSize ?? videoContainerSize
-    Logger.log("Scaling PlayWindowGeometry newVidConSize: \(newVidConSize), allowEmptySpace=\(allowEmptySpaceAroundVideo.yn)", level: .verbose)
+    Logger.log("Scaling PlayerWindowGeometry newVidConSize: \(newVidConSize), allowEmptySpace=\(allowEmptySpaceAroundVideo.yn)", level: .verbose)
 
     /// Make sure `videoContainerSize` is at least as large as `minVideoSize`:
     newVidConSize = constrainAboveMin(desiredVideoContainerSize: newVidConSize)
@@ -257,7 +257,7 @@ struct PlayWindowGeometry: Equatable {
 
     if !allowEmptySpaceAroundVideo {
       /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
-      newVidConSize = PlayWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newVidConSize)
+      newVidConSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newVidConSize)
     }
 
     let outsideBarsSize = self.outsideBarsTotalSize
@@ -273,20 +273,20 @@ struct PlayWindowGeometry: Equatable {
     // Move window if needed to make sure the window is not offscreen
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
     if let containerFrame = containerFrame {
-      Logger.log("Constraining PlayWindowGeometry in containerFrame=\(containerFrame)", level: .verbose)
+      Logger.log("Constraining PlayerWindowGeometry in containerFrame=\(containerFrame)", level: .verbose)
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
       if centerInContainer {
         newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)
       }
     }
 
-    Logger.log("Done scaling PlayWindowGeometry. Result winFrame: \(newWindowFrame)", level: .verbose)
+    Logger.log("Done scaling PlayerWindowGeometry. Result winFrame: \(newWindowFrame)", level: .verbose)
     return self.clone(windowFrame: newWindowFrame)
   }
 
   func scale(desiredVideoSize: NSSize,
-             constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> PlayWindowGeometry {
-    Logger.log("Scaling PlayWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio)", level: .debug)
+             constrainedWithin containerFrame: NSRect? = nil, centerInContainer: Bool = false) -> PlayerWindowGeometry {
+    Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio)", level: .debug)
     var newVideoSize = desiredVideoSize
 
     let newWidth = max(minVideoWidth, desiredVideoSize.width)
@@ -303,7 +303,7 @@ struct PlayWindowGeometry: Equatable {
 
   // Resizes the window appropriately
   func withResizedOutsideBars(newOutsideTopBarHeight: CGFloat? = nil, newOutsideTrailingBarWidth: CGFloat? = nil,
-                              newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingBarWidth: CGFloat? = nil) -> PlayWindowGeometry {
+                              newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingBarWidth: CGFloat? = nil) -> PlayerWindowGeometry {
 
     var ΔW: CGFloat = 0
     var ΔH: CGFloat = 0
@@ -342,7 +342,7 @@ struct PlayWindowGeometry: Equatable {
                        insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
                        insideBottomBarHeight: CGFloat? = nil, insideLeadingBarWidth: CGFloat? = nil,
                        videoAspectRatio: CGFloat? = nil,
-                       constrainedWithin containerFrame: NSRect? = nil) -> PlayWindowGeometry {
+                       constrainedWithin containerFrame: NSRect? = nil) -> PlayerWindowGeometry {
 
     // Inside bars
     var newGeo = clone(insideTopBarHeight: insideTopBarHeight,
@@ -359,7 +359,7 @@ struct PlayWindowGeometry: Equatable {
   }
   
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
-  func apply(mpvGeometry: GeometryDef, andDesiredVideoSize desiredVideoSize: NSSize? = nil, inScreenFrame screenFrame: NSRect) -> PlayWindowGeometry {
+  func apply(mpvGeometry: GeometryDef, andDesiredVideoSize desiredVideoSize: NSSize? = nil, inScreenFrame screenFrame: NSRect) -> PlayerWindowGeometry {
     let maxVideoSize = computeMaxVideoSize(in: screenFrame.size)
 
     var newVideoSize = videoSize
@@ -438,7 +438,7 @@ struct PlayWindowGeometry: Equatable {
 
 }
 
-extension PlayWindowController {
+extension PlayerWindowController {
 
   // MARK: - UI: Window size / aspect
 
@@ -491,7 +491,7 @@ extension PlayWindowController {
     // Will only change the video size & video container size. Panels outside the video do not change size
     let newVideoAspectRatio = videoBaseDisplaySize.aspect
     let windowGeo = windowedModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
-    let newWindowGeo: PlayWindowGeometry
+    let newWindowGeo: PlayerWindowGeometry
 
     if shouldResizeWindowAfterVideoReconfig() {
       // get videoSize on screen
@@ -633,13 +633,13 @@ extension PlayWindowController {
     }
   }
 
-  func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> PlayWindowGeometry {
+  func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> PlayerWindowGeometry {
     assert(layout.spec.mode == .windowed, "buildWindowGeometryFromCurrentFrame(): unexpected mode: \(layout.spec.mode)")
     // TODO: find a better solution than just replicating this logic here
     let insideBottomBarHeight = (layout.bottomBarPlacement == .insideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
 
-    let geo = PlayWindowGeometry(windowFrame: window!.frame,
+    let geo = PlayerWindowGeometry(windowFrame: window!.frame,
                                  topMarginHeight: 0,  // is only nonzero when in legacy FS
                                  outsideTopBarHeight: layout.outsideTopBarHeight,
                                  outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
@@ -653,8 +653,8 @@ extension PlayWindowController {
     return geo.scaleVideoContainer(constrainedWithin: bestScreen.frame)
   }
 
-  func buildLegacyFullScreenGeometry(from layout: LayoutState) -> PlayWindowGeometry {
-    // TODO: store screenFrame in PlayWindowGeometry
+  func buildLegacyFullScreenGeometry(from layout: LayoutState) -> PlayerWindowGeometry {
+    // TODO: store screenFrame in PlayerWindowGeometry
     let screen = bestScreen
     let bottomBarHeight: CGFloat
     if layout.enableOSC && layout.oscPosition == .bottom {
@@ -665,7 +665,7 @@ extension PlayWindowController {
     let insideTopBarHeight = layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0
     let insideBottomBarHeight = layout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
     let outsideBottomBarHeight = layout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
-    return PlayWindowGeometry(windowFrame: screen.frame,
+    return PlayerWindowGeometry(windowFrame: screen.frame,
                               topMarginHeight: screen.cameraHousingHeight ?? 0,
                               outsideTopBarHeight: layout.outsideTopBarHeight,
                               outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
@@ -680,7 +680,7 @@ extension PlayWindowController {
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
-  func setWindowFrameForLegacyFullScreen(using geometry: PlayWindowGeometry) {
+  func setWindowFrameForLegacyFullScreen(using geometry: PlayerWindowGeometry) {
     guard let window = window else { return }
     guard !(geometry.windowFrame.origin.x == window.frame.origin.x
             && geometry.windowFrame.origin.y == window.frame.origin.y
@@ -701,7 +701,7 @@ extension PlayWindowController {
     player.window.setFrameImmediately(geometry.windowFrame)
   }
 
-  func applyWindowGeometry(_ newGeometry: PlayWindowGeometry, animate: Bool = true) {
+  func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry, animate: Bool = true) {
     log.verbose("applyWindowGeometry: \(newGeometry.windowFrame)")
     // Update video aspect ratio
     videoAspectRatio = newGeometry.videoAspectRatio
@@ -726,7 +726,7 @@ extension PlayWindowController {
 
       if isFullScreen {
         // Make sure video constraints are up to date, even in full screen
-        let newVideoSizeFS = PlayWindowGeometry.computeVideoSize(withAspectRatio: newGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
+        let newVideoSizeFS = PlayerWindowGeometry.computeVideoSize(withAspectRatio: newGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
         videoView.updateSizeConstraints(newVideoSizeFS)
       } else {
         // Make sure this is up-to-date
@@ -737,7 +737,7 @@ extension PlayWindowController {
     }))
   }
 
-  func applyWindowGeometryLivePreview(_ newGeometry: PlayWindowGeometry) {
+  func applyWindowGeometryLivePreview(_ newGeometry: PlayerWindowGeometry) {
     log.verbose("applyWindowGeometryLivePreview: \(newGeometry)")
     // Update video aspect ratio
     videoAspectRatio = newGeometry.videoAspectRatio
@@ -784,7 +784,7 @@ extension PlayWindowController {
     }
   }
 
-  func resizeWindowedModeGeometry(desiredSize requestedSize: NSSize) -> PlayWindowGeometry {
+  func resizeWindowedModeGeometry(desiredSize requestedSize: NSSize) -> PlayerWindowGeometry {
     assert(currentLayout.spec.mode == .windowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.spec.mode)")
     guard let window = window else { return windowedModeGeometry }
     let currentGeo = windowedModeGeometry
@@ -804,7 +804,7 @@ extension PlayWindowController {
         // about whether the saved size is valid. It will be handled elsewhere.
         if savedLayoutSpec.mode == .musicMode, let savedMusicModeGeo = savedState.musicModeGeometry {
           log.verbose("WindowWillResize: denying request due to restore; returning saved musicMode size \(savedMusicModeGeo.windowFrame.size)")
-          return savedMusicModeGeo.toPlayWindowGeometry()
+          return savedMusicModeGeo.toPlayerWindowGeometry()
         } else if savedLayoutSpec.mode == .windowed, let savedWindowedModeGeo = savedState.windowedModeGeometry {
           log.verbose("WindowWillResize: denying request due to restore; returning saved windowedMode size \(savedWindowedModeGeo.windowFrame.size)")
           return savedWindowedModeGeo
@@ -854,7 +854,7 @@ extension PlayWindowController {
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeo.videoAspectRatio, height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeo.scale(desiredVideoSize: resizeFromHeightRequestedVideoSize, constrainedWithin: screenVisibleFrame)
 
-    let chosenGeometry: PlayWindowGeometry
+    let chosenGeometry: PlayerWindowGeometry
     if window.inLiveResize {
       /// Notes on the trickiness of live window resize:
       /// 1. We need to decide whether to (A) keep the width fixed, and resize the height, or (B) keep the height fixed, and resize the width.

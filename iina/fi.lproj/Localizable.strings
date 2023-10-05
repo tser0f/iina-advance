@@ -31,7 +31,7 @@
 // Inspector Window
 "inspector.error" = "Virhe";
 
-// PlayWindowController.swift
+// PlayerWindowController.swift
 "main.buffering_indicator" = "Puskuroidaan… %d%%";
 "main.opening_stream" = "Avataan streamia…";
 "osc.precision" = "Tarkkuus";

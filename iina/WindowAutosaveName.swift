@@ -9,7 +9,7 @@
 import Foundation
 
 enum WindowAutosaveName: Equatable {
-  static let playWindowPrefix = "PlayWindow-"
+  static let playWindowPrefix = "PlayerWindow-"
   static let playWindowFmt = "\(playWindowPrefix)%@"
 
   case preference

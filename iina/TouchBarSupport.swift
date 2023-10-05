@@ -1,5 +1,5 @@
 //
-//  PlayWindowTouchBarSupport.swift
+//  PlayerWindowTouchBarSupport.swift
 //  iina
 //
 //  Created by lhc on 16/5/2017.
@@ -245,7 +245,7 @@ class TouchBarSupport: NSObject, NSTouchBarDelegate {
 }
 
 @available(macOS 10.12.2, *)
-extension PlayWindowController {
+extension PlayerWindowController {
 
   override func makeTouchBar() -> NSTouchBar? {
     return player.makeTouchBar()
@@ -260,7 +260,7 @@ class TouchBarPlaySlider: NSSlider {
   var wasPlayingBeforeTouching = false
 
   var playerCore: PlayerCore {
-    return (self.window?.windowController as? PlayWindowController)?.player ?? .active
+    return (self.window?.windowController as? PlayerWindowController)?.player ?? .active
   }
 
   override func touchesBegan(with event: NSEvent) {

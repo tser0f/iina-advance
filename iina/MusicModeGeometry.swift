@@ -44,9 +44,9 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
                              videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
-  func toPlayWindowGeometry() -> PlayWindowGeometry {
+  func toPlayerWindowGeometry() -> PlayerWindowGeometry {
     let outsideBottomBarHeight = MiniPlayerController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
-    return PlayWindowGeometry(windowFrame: windowFrame,
+    return PlayerWindowGeometry(windowFrame: windowFrame,
                                 topMarginHeight: 0,
                                 outsideTopBarHeight: 0,
                                 outsideTrailingBarWidth: 0,
@@ -76,7 +76,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     return windowFrame.height - videoHeight
   }
 
-  /// The MiniPlayWindow's width must be between `MiniPlayerMinWidth` and `Preference.musicModeMaxWidth`.
+  /// The MiniPlayerWindow's width must be between `MiniPlayerMinWidth` and `Preference.musicModeMaxWidth`.
   /// It is composed of up to 3 vertical sections:
   /// 1. `videoWrapperView`: Visible if `isVideoVisible` is true). Scales with the aspect ratio of its video
   /// 2. `backgroundView`: Visible always. Fixed height

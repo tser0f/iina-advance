@@ -1,5 +1,5 @@
 //
-//  PlayWindowLayout.swift
+//  PlayerWindowLayout.swift
 //  iina
 //
 //  Created by Matt Svoboda on 8/20/23.
@@ -10,8 +10,8 @@ import Foundation
 
 /// This file is not really a factory class due to limitations of the AppKit paradigm, but it contain
 /// methods for creating/running `LayoutTransition`s to change between `LayoutState`s for the
-/// given `PlayWindowController`.
-extension PlayWindowController {
+/// given `PlayerWindowController`.
+extension PlayerWindowController {
 
   // MARK: - Window Initial Layout
 
@@ -121,7 +121,7 @@ extension PlayWindowController {
     // - Build geometries
 
     // Build InputGeometry
-    let inputGeometry: PlayWindowGeometry
+    let inputGeometry: PlayerWindowGeometry
     // Restore window size & position
     switch inputLayout.spec.mode {
     case .fullScreen, .windowed:
@@ -133,12 +133,12 @@ extension PlayWindowController {
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
       /// But make sure we correct any size problems
-      inputGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toPlayWindowGeometry()
+      inputGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toPlayerWindowGeometry()
     }
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
     // Build OutputGeometry
-    let outputGeometry: PlayWindowGeometry = buildOutputGeometry(inputGeometry: inputGeometry, outputLayout: outputLayout)
+    let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputGeometry: inputGeometry, outputLayout: outputLayout)
 
     let transition = LayoutTransition(name: transitionName,
                                       from: inputLayout, from: inputGeometry,
@@ -310,13 +310,13 @@ extension PlayWindowController {
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildOutputGeometry(inputGeometry oldGeo: PlayWindowGeometry, outputLayout: LayoutState) -> PlayWindowGeometry {
+  private func buildOutputGeometry(inputGeometry oldGeo: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
     switch outputLayout.spec.mode {
 
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).constrainWithin(bestScreen.visibleFrame)
-      return musicModeGeometryCorrected.toPlayWindowGeometry()
+      return musicModeGeometryCorrected.toPlayerWindowGeometry()
 
     case .fullScreen:
       if outputLayout.spec.isLegacyStyle {
@@ -370,7 +370,7 @@ extension PlayWindowController {
   }
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
-  func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayWindowGeometry {
+  func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry {
     if transition.isEnteringMusicMode {
       return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
                                                       outsideTrailingBarWidth: 0,
@@ -438,8 +438,8 @@ extension PlayWindowController {
     }
 
     if transition.outputLayout.isLegacyFullScreen {
-      // TODO: store screenFrame in PlayWindowGeometry
-      return PlayWindowGeometry(windowFrame: bestScreen.frame,
+      // TODO: store screenFrame in PlayerWindowGeometry
+      return PlayerWindowGeometry(windowFrame: bestScreen.frame,
                                   topMarginHeight: bestScreen.cameraHousingHeight ?? 0,
                                   outsideTopBarHeight: outsideTopBarHeight,
                                   outsideTrailingBarWidth: outsideTrailingBarWidth,
