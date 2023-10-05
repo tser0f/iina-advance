@@ -265,10 +265,10 @@ struct PlayerWindowGeometry: Equatable {
                            height: round(newVidConSize.height + outsideBarsSize.height))
 
     // Round the results to prevent excessive window drift due to small imprecisions in calculation
-    let deltaX = ((newWindowSize.width - windowFrame.size.width) / 2).rounded(.up)
-    let deltaY = ((newWindowSize.height - windowFrame.size.height) / 2).rounded(.up)
-    let newWindowOrigin = NSPoint(x: (windowFrame.origin.x - deltaX).rounded(.up),
-                                  y: (windowFrame.origin.y - deltaY).rounded(.up))
+    let deltaX = (newWindowSize.width - windowFrame.size.width) / 2
+    let deltaY = (newWindowSize.height - windowFrame.size.height) / 2
+    let newWindowOrigin = NSPoint(x: (windowFrame.origin.x - deltaX),
+                                  y: (windowFrame.origin.y - deltaY))
 
     // Move window if needed to make sure the window is not offscreen
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
@@ -291,7 +291,7 @@ struct PlayerWindowGeometry: Equatable {
 
     let newWidth = max(minVideoWidth, desiredVideoSize.width)
     /// Enforce `videoView` aspectRatio: Recalculate height using width
-    newVideoSize = NSSize(width: newWidth, height: (newWidth / videoAspectRatio).rounded())
+    newVideoSize = NSSize(width: newWidth, height: (newWidth / videoAspectRatio))
     if newVideoSize.height != desiredVideoSize.height {
       // We don't want to see too much of this ideally
       Logger.log("While scaling: applied aspectRatio (\(videoAspectRatio)): changed newVideoSize.height by \(newVideoSize.height - desiredVideoSize.height)", level: .debug)
@@ -666,16 +666,16 @@ extension PlayerWindowController {
     let insideBottomBarHeight = layout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
     let outsideBottomBarHeight = layout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
     return PlayerWindowGeometry(windowFrame: screen.frame,
-                              topMarginHeight: screen.cameraHousingHeight ?? 0,
-                              outsideTopBarHeight: layout.outsideTopBarHeight,
-                              outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
-                              outsideBottomBarHeight: outsideBottomBarHeight,
-                              outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
-                              insideTopBarHeight: insideTopBarHeight,
-                              insideTrailingBarWidth: layout.insideTrailingBarWidth,
-                              insideBottomBarHeight: insideBottomBarHeight,
-                              insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                              videoAspectRatio: videoAspectRatio)
+                                topMarginHeight: Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0,
+                                outsideTopBarHeight: layout.outsideTopBarHeight,
+                                outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
+                                outsideBottomBarHeight: outsideBottomBarHeight,
+                                outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
+                                insideTopBarHeight: insideTopBarHeight,
+                                insideTrailingBarWidth: layout.insideTrailingBarWidth,
+                                insideBottomBarHeight: insideBottomBarHeight,
+                                insideLeadingBarWidth: layout.insideLeadingBarWidth,
+                                videoAspectRatio: videoAspectRatio)
   }
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.

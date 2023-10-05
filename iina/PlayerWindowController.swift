@@ -336,6 +336,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .showTrailingSidebarToggleButton,
     .useLegacyWindowedMode,
     .allowEmptySpaceAroundVideo,
+    .allowVideoToOverlapCameraHousing,
   ]
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -405,6 +406,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       PK.oscBarToolbarIconSize.rawValue,
       PK.oscBarToolbarIconSpacing.rawValue,
       PK.controlBarToolbarButtons.rawValue,
+      PK.allowVideoToOverlapCameraHousing.rawValue,
       PK.useLegacyWindowedMode.rawValue:
 
       updateTitleBarAndOSC()

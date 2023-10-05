@@ -292,7 +292,8 @@ extension PlayerWindowController {
     if transition.isEnteringLegacyFullScreen && !transition.isInitialLayout {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let screen = bestScreen
-        let newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: screen.cameraHousingHeight ?? 0)
+        let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
+        let newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: topBlackBarHeight)
         log.verbose("Updating legacy full screen window to cover camera housing / menu bar / dock")
         setWindowFrameForLegacyFullScreen(using: newGeo)
       }))
@@ -440,7 +441,7 @@ extension PlayerWindowController {
     if transition.outputLayout.isLegacyFullScreen {
       // TODO: store screenFrame in PlayerWindowGeometry
       return PlayerWindowGeometry(windowFrame: bestScreen.frame,
-                                  topMarginHeight: bestScreen.cameraHousingHeight ?? 0,
+                                  topMarginHeight: transition.outputGeometry.topMarginHeight,
                                   outsideTopBarHeight: outsideTopBarHeight,
                                   outsideTrailingBarWidth: outsideTrailingBarWidth,
                                   outsideBottomBarHeight: outsideBottomBarHeight,

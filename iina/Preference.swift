@@ -85,6 +85,10 @@ struct Preference {
     /// `true`: allow user to resize window and show black bars.
     static let allowEmptySpaceAroundVideo = Key("allowEmptySpaceAroundVideo")
 
+    /// If enabled, in legacy full screen, video will fill entire screen including camera housing, showing a
+    /// visible notch in the middle top
+    static let allowVideoToOverlapCameraHousing = Key("allowVideoToOverlapCameraHousing")
+
     static let actionWhenNoOpenedWindow = Key("actionWhenNoOpenedWindow")
 
     /** Keep player window open on end of file / playlist. (bool) */
@@ -983,6 +987,7 @@ struct Preference {
     .arrowButtonAction: ArrowButtonAction.speed.rawValue,
     .useLegacyWindowedMode: false,
     .allowEmptySpaceAroundVideo: false,
+    .allowVideoToOverlapCameraHousing: false,
     .pauseWhenOpen: false,
     .fullScreenWhenOpen: false,
     .useLegacyFullScreen: false,
