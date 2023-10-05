@@ -1258,11 +1258,10 @@ not applying FFmpeg 9599 workaround
           if #available(macOS 10.12, *), player.windowController.pipStatus == .inPIP {
             player.windowController.pip.playing = !paused
           }
-        }
-      }
-      if player.windowController.loaded && Preference.bool(for: .alwaysFloatOnTop) {
-        DispatchQueue.main.async {
-          self.player.windowController.setWindowFloatingOnTop(!paused)
+
+          if player.windowController.loaded && Preference.bool(for: .alwaysFloatOnTop) {
+            player.windowController.setWindowFloatingOnTop(!paused)
+          }
         }
       }
       player.syncUI(.playButton)

@@ -128,6 +128,9 @@ extension PlayerWindowController {
         player.mpv.setFlag(MPVOption.Window.keepaspect, false)
       }
     }
+    if transition.isTogglingLegacyStyle {
+      forceDraw()
+    }
   }
 
   func fadeOutOldViews(_ transition: LayoutTransition) {
@@ -249,6 +252,9 @@ extension PlayerWindowController {
       }
     }
 
+    if transition.isTogglingLegacyStyle {
+      forceDraw()
+    }
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
@@ -429,6 +435,9 @@ extension PlayerWindowController {
     player.syncUITime()
 
     window.contentView?.layoutSubtreeIfNeeded()
+    if transition.isTogglingLegacyStyle {
+      forceDraw()
+    }
   }
 
   func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
@@ -536,6 +545,10 @@ extension PlayerWindowController {
       log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       player.window.setFrameImmediately(newWindowFrame)
+    }
+    
+    if transition.isTogglingLegacyStyle {
+      forceDraw()
     }
   }
 
@@ -717,17 +730,6 @@ extension PlayerWindowController {
         if Preference.bool(for: .blackOutMonitor) {
           removeBlackWindows()
         }
-
-
-        // Workaround for AppKit quirk : do this here to ensure document icon & title don't get stuck in "visible" or "hidden" states
-//        apply(visibility: transition.outputLayout.titleIconAndText, documentIconButton, titleTextField)
-//        for button in trafficLightButtons {
-//          /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
-//          /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
-//          /// but should be ok for brief animations
-//          button.alphaValue = 1
-//          button.isHidden = false
-//        }
       }
 
       // restore ontop status

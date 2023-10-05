@@ -1057,7 +1057,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updateUseLegacyFullScreen() {
     resetCollectionBehavior()
-    
+
     let oldLayout = currentLayout
     guard oldLayout.isFullScreen else { return }
     let outputLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: oldLayout.spec)
@@ -2926,7 +2926,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard !isFullScreen else { return }
     guard let window = window else { return }
     window.level = onTop ? .iinaFloating : .normal
-    if (updateOnTopStatus) {
+    if updateOnTopStatus {
       self.isOntop = onTop
     }
     resetCollectionBehavior()
