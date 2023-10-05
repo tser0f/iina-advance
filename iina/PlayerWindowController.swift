@@ -2596,7 +2596,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       cropController.windowController = self
       bottomView.isHidden = false
       bottomView.addSubview(cropController.view)
-      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.view])
+      cropController.view.addConstraintsToFillSuperview()
+
+      let windowFrame: NSRect
+      if isFullScreen {
+        windowFrame = bestScreen.visibleFrame
+      } else {
+        windowFrame = window.frame
+      }
 
       isInInteractiveMode = true
       let titleBarHeight = PlayerWindowController.standardTitleBarHeight
@@ -2604,15 +2611,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // the max region that the video view can occupy
       let newVideoViewBounds = NSRect(x: titleBarHeight,
                                       y: InteractiveModeBottomViewHeight + titleBarHeight,
-                                      width: window.frame.width - titleBarHeight - titleBarHeight,
-                                      height: window.frame.height - InteractiveModeBottomViewHeight - titleBarHeight - titleBarHeight)
+                                      width: windowFrame.width - titleBarHeight - titleBarHeight,
+                                      height: windowFrame.height - InteractiveModeBottomViewHeight - titleBarHeight - titleBarHeight)
       let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
       let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
 
       bottomBarBottomConstraint.animateToConstant(0)
       videoView.constrainLayoutToEqualsOffsetOnly(
-        top: window.frame.height - newVideoViewFrame.maxY,
-        right: newVideoViewFrame.maxX - window.frame.width,
+        top: windowFrame.height - newVideoViewFrame.maxY,
+        right: newVideoViewFrame.maxX - windowFrame.width,
         bottom: -newVideoViewFrame.minY,
         left: newVideoViewFrame.minX
       )
@@ -2623,8 +2630,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       cropController.cropBoxView.actualSize = origVideoSize
       cropController.cropBoxView.resized(with: newVideoViewFrame)
       cropController.cropBoxView.isHidden = true
-      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": cropController.cropBoxView])
-
+      cropController.cropBoxView.addConstraintsToFillSuperview()
       self.cropSettingsView = cropController
     }))
 
@@ -3306,7 +3312,6 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     // are paused, because this causes a janky animation in either case but as
     // it's not necessary while the video is playing and significantly more
     // noticeable, we only redraw if we are paused.
-    let currentTrackIsAlbumArt = player.info.currentTrack(.video)?.isAlbumart ?? false
     forceDraw()
 
     resetFadeTimer()

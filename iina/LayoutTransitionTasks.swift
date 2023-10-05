@@ -264,33 +264,19 @@ extension PlayerWindowController {
     log.verbose("[\(transition.name)] UpdateHiddenViewsAndConstraints")
 
     if transition.outputLayout.spec.isLegacyStyle {
-      log.verbose("Removing window styleMask.titled")
-      window.styleMask.remove(.titled)
-      window.styleMask.insert(.borderless)
-      window.styleMask.insert(.closable)
-      window.styleMask.insert(.miniaturizable)
+      // Set legacy style
+      setWindowStyleToLegacy()
       /// if `isTogglingLegacyStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
       /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
-    } else if !transition.outputLayout.spec.isLegacyStyle && !transition.isEnteringFullScreen {
-      log.verbose("Inserting window styleMask.titled")
-      window.styleMask.insert(.titled)
-      window.styleMask.remove(.borderless)
-
-      // Remove fake traffic light buttons (if any)
-      if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
-        for subview in fakeLeadingTitleBarView.subviews {
-          subview.removeFromSuperview()
-        }
-        fakeLeadingTitleBarView.removeFromSuperview()
-        self.fakeLeadingTitleBarView = nil
+    } else {
+      // Not legacy style
+      if !transition.isEnteringFullScreen {
+        setWindowStyleToNative()
       }
 
       if transition.isExitingFullScreen {
         /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
-        for button in trafficLightButtons {
-          button.isHidden = true
-        }
-        window.titleVisibility = .hidden
+        hideBuiltInTitleBarViews()
       }
     }
 
@@ -299,11 +285,11 @@ extension PlayerWindowController {
     let pinToTopButtonVisibility = transition.outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
     applyHiddenOnly(visibility: pinToTopButtonVisibility, to: pinToTopButton)
 
-    if outputLayout.titleIconAndText == .hidden || transition.isTopBarPlacementChanging {
+    if outputLayout.titleBar == .hidden || transition.isTopBarPlacementChanging {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
       /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
       /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
-      window.titleVisibility = .hidden
+      hideBuiltInTitleBarViews()
     }
 
     /// These should all be either 0 height or unchanged from `transition.inputLayout`
@@ -413,13 +399,7 @@ extension PlayerWindowController {
     }
 
     if transition.outputLayout.isMusicMode {
-      window.titleVisibility = .hidden
-
-      /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
-      /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
-      for button in trafficLightButtons {
-        button.isHidden = true
-      }
+      hideBuiltInTitleBarViews()
     }
 
     updateDepthOrderOfBars(topBar: outputLayout.topBarPlacement, bottomBar: outputLayout.bottomBarPlacement,
@@ -571,45 +551,40 @@ extension PlayerWindowController {
       /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
       for button in trafficLightButtons {
         button.alphaValue = 1
+        button.isHidden = false
       }
+      titleTextField?.isHidden = false
       titleTextField?.alphaValue = 1
+      documentIconButton?.isHidden = false
       documentIconButton?.alphaValue = 1
 
-      if outputLayout.trafficLightButtons != .hidden {
-
-        // TODO: figure out whether to try to replicate title bar, or just leave it out
-        if false && outputLayout.spec.isLegacyStyle && fakeLeadingTitleBarView == nil {
-          // Add fake traffic light buttons. Needs a lot of work...
-          let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-          let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
-          let leadingStackView = NSStackView(views: trafficLightButtons)
-          leadingStackView.wantsLayer = true
-          leadingStackView.layer?.backgroundColor = .clear
-          leadingStackView.orientation = .horizontal
-          window.contentView!.addSubview(leadingStackView)
-          leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
-          leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
-          leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
-          leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
-          leadingStackView.detachesHiddenViews = false
-          leadingStackView.spacing = 6
-          /// Because of possible top OSC, `titleBarView` may have reduced height.
-          /// So do not vertically center the buttons. Use offset from top instead:
-          leadingStackView.alignment = .top
-          leadingStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
-          for btn in trafficLightButtons {
-            btn.alphaValue = 1
-            //            btn.isHighlighted = true
-            btn.display()
-          }
-          leadingStackView.layout()
-          fakeLeadingTitleBarView = leadingStackView
+      // TODO: figure out whether to try to replicate title bar, or just leave it out
+      if false && outputLayout.spec.isLegacyStyle && fakeLeadingTitleBarView == nil {
+        // Add fake traffic light buttons. Needs a lot of work...
+        let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
+        let leadingStackView = NSStackView(views: trafficLightButtons)
+        leadingStackView.wantsLayer = true
+        leadingStackView.layer?.backgroundColor = .clear
+        leadingStackView.orientation = .horizontal
+        window.contentView!.addSubview(leadingStackView)
+        leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
+        leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
+        leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
+        leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
+        leadingStackView.detachesHiddenViews = false
+        leadingStackView.spacing = 6
+        /// Because of possible top OSC, `titleBarView` may have reduced height.
+        /// So do not vertically center the buttons. Use offset from top instead:
+        leadingStackView.alignment = .top
+        leadingStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
+        for btn in trafficLightButtons {
+          btn.alphaValue = 1
+          //            btn.isHighlighted = true
+          btn.display()
         }
-
-        // This works for legacy too
-        for button in trafficLightButtons {
-          button.isHidden = false
-        }
+        leadingStackView.layout()
+        fakeLeadingTitleBarView = leadingStackView
       }
 
       /// Title bar accessories get removed by legacy fullscreen or if window `styleMask` did not include `.titled`.
@@ -705,31 +680,22 @@ extension PlayerWindowController {
       resetCollectionBehavior()
       updateWindowParametersForMPV()
 
-      if transition.outputLayout.spec.isLegacyStyle {
-        log.verbose("Removing window styleMask.titled")
-        window.styleMask.remove(.titled)
-        window.styleMask.insert(.borderless)
+      if transition.outputLayout.spec.isLegacyStyle {  // legacy windowed
+        setWindowStyleToLegacy()
         window.styleMask.insert(.resizable)
-
-        window.titleVisibility = .hidden
-      } else {
-        // Go back to titled style
-        if #available(macOS 10.16, *) {
-          log.verbose("Inserting window styleMask.titled")
-          window.styleMask.insert(.titled)
-          window.styleMask.remove(.borderless)
-        }
+      } else {  // native windowed
+        setWindowStyleToNative()
         if !transition.outputLayout.isMusicMode {
           window.titleVisibility = .visible
         }
+      }
 
-        if transition.isExitingLegacyFullScreen {
-          restoreDockSettings()
-        }
+      if transition.isExitingLegacyFullScreen {
+        restoreDockSettings()
+      }
 
-        if Preference.bool(for: .blackOutMonitor) {
-          removeBlackWindows()
-        }
+      if Preference.bool(for: .blackOutMonitor) {
+        removeBlackWindows()
       }
 
       // restore ontop status
@@ -1060,6 +1026,44 @@ extension PlayerWindowController {
   }
 
   // MARK: - Misc support functions
+
+  // Either legacy FS or windowed
+  private func setWindowStyleToLegacy() {
+    guard let window = window else { return }
+    log.verbose("Removing window styleMask.titled")
+    window.styleMask.remove(.titled)
+    window.styleMask.insert(.borderless)
+    window.styleMask.insert(.closable)
+    window.styleMask.insert(.miniaturizable)
+  }
+
+  // "Native" == "titled"
+  private func setWindowStyleToNative() {
+    guard let window = window else { return }
+    log.verbose("Inserting window styleMask.titled")
+    window.styleMask.insert(.titled)
+    window.styleMask.remove(.borderless)
+
+    // Remove fake traffic light buttons (if any)
+    if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
+      for subview in fakeLeadingTitleBarView.subviews {
+        subview.removeFromSuperview()
+      }
+      fakeLeadingTitleBarView.removeFromSuperview()
+      self.fakeLeadingTitleBarView = nil
+    }
+  }
+
+  private func hideBuiltInTitleBarViews() {
+    guard let window = window else { return }
+    window.titleVisibility = .hidden
+
+    /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
+    /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
+    for button in trafficLightButtons {
+      button.isHidden = true
+    }
+  }
 
   private func resetViewsForFullScreenTransition() {
     // When playback is paused the display link is stopped in order to avoid wasting energy on
