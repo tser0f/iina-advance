@@ -153,7 +153,7 @@ class ViewLayer: CAOpenGLLayer {
 #endif
 
     blocked = false
-    drawAsync(forced: true)
+    drawSync(forced: true)
     mpvGLQueue.resume()
   }
 

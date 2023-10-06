@@ -3134,7 +3134,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       player.mpv.command(left ? .playlistPrev : .playlistNext, checkError: false)
 
     case .seek:
-      player.seek(relativeSecond: left ? -10 : 10, option: .relative)
+      player.seek(relativeSecond: left ? -10 : 10, option: .defaultValue)
 
     }
   }

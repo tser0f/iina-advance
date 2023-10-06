@@ -1280,12 +1280,12 @@ class RemoteCommandController {
     }
     remoteCommand.skipForwardCommand.preferredIntervals = [15]
     remoteCommand.skipForwardCommand.addTarget { event in
-      PlayerCore.lastActive.seek(relativeSecond: (event as! MPSkipIntervalCommandEvent).interval, option: .exact)
+      PlayerCore.lastActive.seek(relativeSecond: (event as! MPSkipIntervalCommandEvent).interval, option: .defaultValue)
       return .success
     }
     remoteCommand.skipBackwardCommand.preferredIntervals = [15]
     remoteCommand.skipBackwardCommand.addTarget { event in
-      PlayerCore.lastActive.seek(relativeSecond: -(event as! MPSkipIntervalCommandEvent).interval, option: .exact)
+      PlayerCore.lastActive.seek(relativeSecond: -(event as! MPSkipIntervalCommandEvent).interval, option: .defaultValue)
       return .success
     }
     remoteCommand.changePlaybackPositionCommand.addTarget { event in

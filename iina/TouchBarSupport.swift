@@ -187,7 +187,7 @@ class TouchBarSupport: NSObject, NSTouchBarDelegate {
 
   @objc func touchBarSeekAction(_ sender: NSButton) {
     let sec = sender.tag
-    player.seek(relativeSecond: Double(sec), option: .relative)
+    player.seek(relativeSecond: Double(sec), option: .defaultValue)
   }
 
   @objc func touchBarSkipAction(_ sender: NSButton) {
