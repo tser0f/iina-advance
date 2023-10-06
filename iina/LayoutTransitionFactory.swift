@@ -220,7 +220,6 @@ extension PlayerWindowController {
     // StartingAnimation 3: Close/Minimize panels which are no longer needed. Not used for fullScreen transitions.
     // Applies middleGeometry if it exists.
     if transition.needsCloseOldPanels {
-      let closeOldPanelsDuration = useExtraAnimationForExitingLegacyFullScreen ? (startingAnimationDuration * 0.8) : startingAnimationDuration
       transition.animationTasks.append(CocoaAnimation.Task(duration: closeOldPanelsDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
       }))
