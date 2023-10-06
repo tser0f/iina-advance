@@ -49,20 +49,13 @@ struct VideoTime {
   }
 
   init?(_ format: String) {
-    let split = format.split(separator: ":").map { Int($0) }
-    if split.contains(nil) {
-      return nil
-    }
-    switch split.count {
-    case 1:
-      self.init(0, 0, split[0]!)
-    case 2:
-      self.init(0, split[0]!, split[1]!)
-    case 3:
-      self.init(split[0]!, split[1]!, split[2]!)
-    default:
-      return nil
-    }
+    let split = Array(format.split(separator: ":").map { String($0) }.reversed())
+
+    let hour : Int? = split.count > 2 ? Int(split[2]) : nil
+    let minute : Int? = split.count > 1 ? Int(split[1]) : nil
+    let second : Double? = !split.isEmpty ? Double(split[0]) : nil
+
+    self.init(hour ?? 0, minute ?? 0, second ?? 0.0)
   }
 
   init(_ second: Double) {
@@ -70,8 +63,8 @@ struct VideoTime {
 
   }
 
-  init(_ hour: Int, _ minute: Int, _ second: Int) {
-    self.second = Double(hour * 3600 + minute * 60 + second)
+  init(_ hour: Int, _ minute: Int, _ second: Double) {
+    self.second = Double(hour * 3600 + minute * 60) + second
   }
 
   /** whether self in [min, max) */
