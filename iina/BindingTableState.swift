@@ -426,6 +426,7 @@ struct BindingTableState {
     return (!confBindingsOnly || binding.origin == .confFile)
       && (filterString.isEmpty
       || binding.getKeyColumnDisplay(raw: true).localizedStandardContains(filterString)
-      || binding.getActionColumnDisplay(raw: true).localizedStandardContains(filterString))
+      || binding.getActionColumnDisplay(raw: true).localizedStandardContains(filterString)
+      || binding.getActionColumnDisplay(raw: false).localizedStandardContains(filterString))
   }
 }
