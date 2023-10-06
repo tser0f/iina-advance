@@ -114,11 +114,11 @@
             </constraints>
             <point key="canvasLocation" x="2" y="-1042"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="56"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="480" height="80"/>
             <subviews>
                 <textField identifier="SectionTitleFullScreen" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fkF-Rz-sk3">
-                    <rect key="frame" x="-2" y="32" width="81" height="16"/>
+                    <rect key="frame" x="-2" y="56" width="81" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Full Screen:" id="615-la-NDK">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -126,10 +126,10 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9m-Hf-6wE" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="360" height="40"/>
+                    <rect key="frame" x="120" y="8" width="360" height="64"/>
                     <subviews>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="KlA-Ot-dln">
-                            <rect key="frame" x="-2" y="23" width="160" height="18"/>
+                            <rect key="frame" x="-2" y="47" width="160" height="18"/>
                             <buttonCell key="cell" type="check" title="Use legacy full screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9yD-ki-5zh">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -139,6 +139,38 @@
                             </constraints>
                             <connections>
                                 <binding destination="lH7-Vv-0M1" name="value" keyPath="values.useLegacyFullScreen" id="7NU-Ss-Bmz"/>
+                            </connections>
+                        </button>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="olV-5h-wSi" userLabel="0pt Spacer">
+                            <rect key="frame" x="0.0" y="44" width="1" height="0.0"/>
+                            <constraints>
+                                <constraint firstAttribute="height" id="5Og-TH-Aq0"/>
+                                <constraint firstAttribute="width" constant="1" id="WU8-nC-Rlo"/>
+                            </constraints>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyFullScreen" id="cNJ-KZ-fLB">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
+                        </customView>
+                        <button translatesAutoresizingMaskIntoConstraints="NO" id="Nuv-dC-vHt">
+                            <rect key="frame" x="18" y="23" width="277" height="18"/>
+                            <buttonCell key="cell" type="check" title="Fill entire screen on Macbooks with notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
+                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                <font key="font" metaFont="system"/>
+                            </buttonCell>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="16" id="A3f-UU-ve0"/>
+                            </constraints>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyFullScreen" id="ndf-cy-9qe">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.allowVideoToOverlapCameraHousing" id="AQ6-lq-boF"/>
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="16b-qv-nql" userLabel="0pt Spacer">
@@ -160,14 +192,19 @@
                         </button>
                     </subviews>
                     <constraints>
+                        <constraint firstItem="Nuv-dC-vHt" firstAttribute="leading" secondItem="KlA-Ot-dln" secondAttribute="leading" constant="20" id="3op-0g-EX0"/>
                         <constraint firstItem="prD-fv-qux" firstAttribute="height" secondItem="KlA-Ot-dln" secondAttribute="height" id="L95-0p-rXD"/>
                     </constraints>
                     <visibilityPriorities>
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
                     </visibilityPriorities>
                     <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
@@ -206,7 +243,7 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="350" width="436" height="70"/>
+                    <rect key="frame" x="120" y="350" width="446" height="70"/>
                     <subviews>
                         <button identifier="Trigger0" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
                             <rect key="frame" x="-2" y="53" width="139" height="18"/>
@@ -222,9 +259,9 @@
                             </connections>
                         </button>
                         <box identifier="Content0" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="L5c-uf-ged">
-                            <rect key="frame" x="-3" y="-4" width="442" height="56"/>
+                            <rect key="frame" x="-3" y="-4" width="452" height="56"/>
                             <view key="contentView" id="dCZ-8R-c9z">
-                                <rect key="frame" x="4" y="5" width="434" height="48"/>
+                                <rect key="frame" x="4" y="5" width="444" height="48"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sCc-NR-e8c">
@@ -309,7 +346,7 @@
                     </customSpacing>
                 </stackView>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="100" verticalStackHuggingPriority="249.99998474121094" horizontalHuggingPriority="100" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="224" width="436" height="118"/>
+                    <rect key="frame" x="120" y="224" width="446" height="118"/>
                     <subviews>
                         <button identifier="Trigger1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
                             <rect key="frame" x="-2" y="101" width="164" height="18"/>
@@ -322,9 +359,9 @@
                             </connections>
                         </button>
                         <box identifier="Content1" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Mye-uz-WUr">
-                            <rect key="frame" x="-3" y="-4" width="442" height="104"/>
+                            <rect key="frame" x="-3" y="-4" width="452" height="104"/>
                             <view key="contentView" id="Z8T-H5-nff">
-                                <rect key="frame" x="4" y="5" width="434" height="96"/>
+                                <rect key="frame" x="4" y="5" width="444" height="96"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <textField identifier="AccessoryLabelXL" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="HYE-ax-4VK">
@@ -532,9 +569,9 @@
                     </customSpacing>
                 </stackView>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="0kj-QC-B9P" userLabel="ResizeWindowWhen Box">
-                    <rect key="frame" x="117" y="92" width="442" height="96"/>
+                    <rect key="frame" x="117" y="92" width="452" height="96"/>
                     <view key="contentView" id="EMo-yB-IEL">
-                        <rect key="frame" x="4" y="5" width="434" height="88"/>
+                        <rect key="frame" x="4" y="5" width="444" height="88"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UhD-Lf-aPQ">
@@ -620,10 +657,10 @@
                     </view>
                 </box>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3GV-dH-tZQ" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="436" height="72"/>
+                    <rect key="frame" x="120" y="8" width="446" height="72"/>
                     <subviews>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Xgb-im-tqO">
-                            <rect key="frame" x="-2" y="55" width="438" height="18"/>
+                            <rect key="frame" x="-2" y="55" width="448" height="18"/>
                             <buttonCell key="cell" type="check" title="Lock window's aspect ratio to prevent extra black space around video" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9Cn-gh-mtB">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -1093,7 +1130,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="SyB-0R-TLF" userLabel="Arrow-Button-Action Popup">
-                    <rect key="frame" x="311" y="152" width="173" height="27"/>
+                    <rect key="frame" x="313" y="152" width="171" height="27"/>
                     <popUpButtonCell key="cell" type="push" title="Speed" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="TWq-Xb-8Ee" id="8Ke-vJ-gp6" userLabel="Arrow-Button-Action Popup Button Cell">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -1141,9 +1178,9 @@
                     </textFieldCell>
                 </textField>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="0eU-xI-byi" userLabel="Hide-Inside-Video-Controls Box">
-                    <rect key="frame" x="117" y="4" width="339" height="68"/>
+                    <rect key="frame" x="117" y="4" width="262" height="68"/>
                     <view key="contentView" id="s79-ch-C1D" userLabel="Hide-Inside-Video-Controls Box View">
-                        <rect key="frame" x="4" y="5" width="331" height="60"/>
+                        <rect key="frame" x="4" y="5" width="254" height="60"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="NpR-4X-AUC" userLabel="Auto-hide after:">
@@ -1184,7 +1221,7 @@
                                 </textFieldCell>
                             </textField>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="kw0-f3-qrz">
-                                <rect key="frame" x="14" y="9" width="301" height="18"/>
+                                <rect key="frame" x="14" y="9" width="224" height="18"/>
                                 <buttonCell key="cell" type="check" title="Hide when cursor leaves window" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="ZJL-Jz-cNh">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
@@ -1834,7 +1871,7 @@
             </constraints>
             <point key="canvasLocation" x="10" y="855"/>
         </customView>
-        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1fz-oP-RhZ" userLabel="Prefs &gt; UI &gt; PIP" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="1fz-oP-RhZ" userLabel="Prefs &gt; UI &gt; PIP" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="-14" width="480" height="138"/>
             <subviews>
                 <textField identifier="SectionTitlePictureInPicture" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ghC-br-cK9">
