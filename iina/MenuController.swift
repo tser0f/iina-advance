@@ -237,9 +237,9 @@ class MenuController: NSObject, NSMenuDelegate {
 
     // -- seeking
     forward.action = #selector(PlayerWindowController.menuStep(_:))
-    nextFrame.action = #selector(PlayerWindowController.menuStepFrame(_:))
+    nextFrame.action = #selector(PlayerWindowController.menuStepNextFrame(_:))
     backward.action = #selector(PlayerWindowController.menuStep(_:))
-    previousFrame.action = #selector(PlayerWindowController.menuStepFrame(_:))
+    previousFrame.action = #selector(PlayerWindowController.menuStepPrevFrame(_:))
     jumpToBegin.action = #selector(PlayerWindowController.menuJumpToBegin(_:))
     jumpTo.action = #selector(PlayerWindowController.menuJumpTo(_:))
 
@@ -1030,6 +1030,7 @@ class MenuController: NSObject, NSMenuDelegate {
             /// To make this work while not disturbing legacy code, create a dummy `NSMenuItem` to hold the data needed to call
             /// the action. Store it in the `KeyMapping` so that it can be called from the player window.
             kbMenuItem = NSMenuItem(title: menuItem.title, action: menuItem.action, keyEquivalent: "")
+            kbMenuItem.tag = menuItem.tag
           } else {
             // First qualifying mapping
             kbMenuItem = menuItem
