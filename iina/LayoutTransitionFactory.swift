@@ -127,11 +127,7 @@ extension PlayerWindowController {
     // Restore window size & position
     switch inputLayout.spec.mode {
     case .fullScreen, .windowed:
-      if inputLayout.isLegacyFullScreen {
-        inputGeometry = buildLegacyFullScreenGeometry(from: inputLayout)
-      } else {
-        inputGeometry = windowedModeGeometry
-      }
+      inputGeometry = buildFullScreenGeometry(from: inputLayout, legacy: inputLayout.isLegacyFullScreen)
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
       /// But make sure we correct any size problems
@@ -180,14 +176,15 @@ extension PlayerWindowController {
       fadeOutOldViewsDuration = 0
     }
 
+    // Extra animation for exiting legacy full screen: remove camera housing with black bar
+    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
+    let closeOldPanelsDuration = useExtraAnimationForExitingLegacyFullScreen ? (startingAnimationDuration * 0.8) : startingAnimationDuration
+
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
     // Extra animation for entering legacy full screen: cover camera housing with black bar
     let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
-
     let openFinalPanelsDuration = useExtraAnimationForEnteringLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
-
-    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
 
     log.verbose("[\(transitionName)] Building transition animations. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
 
@@ -316,20 +313,14 @@ extension PlayerWindowController {
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildOutputGeometry(inputGeometry oldGeo: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
+  private func buildOutputGeometry(inputGeometry: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
     switch outputLayout.spec.mode {
-
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).constrainWithin(bestScreen.visibleFrame)
       return musicModeGeometryCorrected.toPlayerWindowGeometry()
-
     case .fullScreen:
-      if outputLayout.spec.isLegacyStyle {
-        return buildLegacyFullScreenGeometry(from: outputLayout)
-      } else {
-        return windowedModeGeometry.clone(windowFrame: bestScreen.frameWithoutCameraHousing)
-      }
+      return buildFullScreenGeometry(from: outputLayout, legacy: outputLayout.spec.isLegacyStyle)
     case .windowed:
       break  // see below
     }
@@ -345,7 +336,7 @@ extension PlayerWindowController {
     let insideBottomBarHeight = outputLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
     let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
 
-    let newGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.outsideTopBarHeight,
+    let outputGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.outsideTopBarHeight,
                                                       outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
                                                       outsideBottomBarHeight: outsideBottomBarHeight,
                                                       outsideLeadingBarWidth: outputLayout.outsideLeadingBarWidth,
@@ -353,25 +344,25 @@ extension PlayerWindowController {
                                                       insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
                                                       insideBottomBarHeight: insideBottomBarHeight,
                                                       insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
-                                                      videoAspectRatio: oldGeo.videoAspectRatio,
+                                                      videoAspectRatio: inputGeometry.videoAspectRatio,
                                                       constrainedWithin: bestScreen.visibleFrame)
 
     // FIXME: this doesn't synchronize properly during animations when this is false. Remove this guard when fixed
     guard Preference.bool(for: .allowEmptySpaceAroundVideo) else {
-      return newGeo
+      return outputGeo
     }
 
-    let outsideWidthIncrease = newGeo.outsideSidebarsTotalWidth - oldGeo.outsideSidebarsTotalWidth
+    let outsideWidthIncrease = outputGeo.outsideSidebarsTotalWidth - inputGeometry.outsideSidebarsTotalWidth
 
     if outsideWidthIncrease < 0 {   // Shrinking window width
       // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
-      let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: oldGeo.videoAspectRatio)
+      let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: inputGeometry.videoAspectRatio)
       log.verbose("Before opening outer sidebar(s): restoring previous userPreferredVideoContainerSize")
 
-      return newGeo.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? newGeo.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+      return outputGeo.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? outputGeo.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
     }
-    return newGeo
+    return outputGeo
   }
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
@@ -442,10 +433,9 @@ extension PlayerWindowController {
       outsideTrailingBarWidth = transition.inputGeometry.outsideTrailingBarWidth
     }
 
-    if transition.outputLayout.isLegacyFullScreen {
+    if transition.outputLayout.isFullScreen {
       // TODO: store screenFrame in PlayerWindowGeometry
-      return PlayerWindowGeometry(windowFrame: bestScreen.frame,
-                                  topMarginHeight: transition.outputGeometry.topMarginHeight,
+      return PlayerWindowGeometry.forFullScreen(in: bestScreen, legacy: transition.outputLayout.isLegacyFullScreen,
                                   outsideTopBarHeight: outsideTopBarHeight,
                                   outsideTrailingBarWidth: outsideTrailingBarWidth,
                                   outsideBottomBarHeight: outsideBottomBarHeight,

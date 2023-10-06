@@ -1870,7 +1870,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return miniPlayer.windowWillResize(window, to: requestedSize)
     case .fullScreen:
       if currentLayout.isLegacyFullScreen {
-        let geo = buildLegacyFullScreenGeometry(from: currentLayout)
+        let geo = buildFullScreenGeometry(from: currentLayout, legacy: true)
         return geo.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
@@ -1989,7 +1989,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         animationQueue.run(CocoaAnimation.Task({ [self] in
           guard currentLayout.isLegacyFullScreen else { return }  // check again
           log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
-          let newGeo = buildLegacyFullScreenGeometry(from: currentLayout)
+          let newGeo = buildFullScreenGeometry(from: currentLayout, legacy: true)
           setWindowFrameForLegacyFullScreen(using: newGeo)
         }))
       }
@@ -2023,7 +2023,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
         guard currentLayout.isLegacyFullScreen else { return }  // check again now that we are inside animation
         log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
-        let newGeo = buildLegacyFullScreenGeometry(from: currentLayout)
+        let newGeo = buildFullScreenGeometry(from: currentLayout, legacy: true)
         setWindowFrameForLegacyFullScreen(using: newGeo)
       }))
     }

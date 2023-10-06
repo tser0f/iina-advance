@@ -245,7 +245,7 @@ extension PlayerWindowController {
 
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
-      if !transition.isInitialLayout && !transition.isExitingFullScreen && !outputLayout.spec.isNativeFullScreen {
+      if !transition.isInitialLayout && !transition.isTogglingFullScreen {
         log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
         player.window.setFrameImmediately(geo.windowFrame)
         videoView.updateSizeConstraints(geo.videoSize)
@@ -484,40 +484,43 @@ extension PlayerWindowController {
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
     }
 
-    if transition.outputLayout.isNativeFullScreen {
-      // Native Full Screen: set frame not including camera housing because it looks better with the native animation
-      log.verbose("Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
-      videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
-      player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
-    } else if transition.outputLayout.isLegacyFullScreen {
-      let screen = bestScreen
-      let newGeo: PlayerWindowGeometry
-      if transition.isEnteringLegacyFullScreen {
-        // Deal with possible top margin needed to hide camera housing
-        if transition.outputGeometry.topMarginHeight > 0 {
-          /// Entering legacy FS on a screen with camera housing.
-          /// Prevent an unwanted bouncing near the top by using this animation to expand to visibleFrame.
-          /// (will expand window to cover `cameraHousingHeight` in next animation)
-          let fsWindowFrame = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? screen.frame : screen.frameWithoutCameraHousing
-          newGeo = transition.outputGeometry.clone(windowFrame: fsWindowFrame, topMarginHeight: 0)
+    switch transition.outputLayout.spec.mode {
+    case .fullScreen:
+      if transition.outputLayout.isNativeFullScreen {
+        // Native Full Screen: set frame not including camera housing because it looks better with the native animation
+        log.verbose("Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
+        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+        player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
+      } else if transition.outputLayout.isLegacyFullScreen {
+        let screen = bestScreen
+        let newGeo: PlayerWindowGeometry
+        if transition.isEnteringLegacyFullScreen {
+          // Deal with possible top margin needed to hide camera housing
+          if transition.outputGeometry.topMarginHeight > 0 {
+            /// Entering legacy FS on a screen with camera housing.
+            /// Prevent an unwanted bouncing near the top by using this animation to expand to visibleFrame.
+            /// (will expand window to cover `cameraHousingHeight` in next animation)
+            let fsWindowFrame = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? screen.frame : screen.frameWithoutCameraHousing
+            newGeo = transition.outputGeometry.clone(windowFrame: fsWindowFrame, topMarginHeight: 0)
+          } else {
+            /// Set window size to `visibleFrame` for now. This excludes menu bar, which takes a while to hide.
+            /// Later, when menu bar is hidden, a `NSApplicationDidChangeScreenParametersNotification` will be sent, which will
+            /// trigger the window to resize again and cover the whole screen.
+            newGeo = transition.outputGeometry.clone(windowFrame: screen.visibleFrame, topMarginHeight: transition.outputGeometry.topMarginHeight)
+          }
         } else {
-          /// Set window size to `visibleFrame` for now. This excludes menu bar, which takes a while to hide.
+          /// Either already in legacy FS, or entering legacy FS. Set window size to `visibleFrame` for now.
           /// Later, when menu bar is hidden, a `NSApplicationDidChangeScreenParametersNotification` will be sent, which will
           /// trigger the window to resize again and cover the whole screen.
-          newGeo = transition.outputGeometry.clone(windowFrame: screen.visibleFrame, topMarginHeight: transition.outputGeometry.topMarginHeight)
+          newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: transition.outputGeometry.topMarginHeight)
         }
-      } else {
-        /// Either already in legacy FS, or entering legacy FS. Set window size to `visibleFrame` for now.
-        /// Later, when menu bar is hidden, a `NSApplicationDidChangeScreenParametersNotification` will be sent, which will
-        /// trigger the window to resize again and cover the whole screen.
-        newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: transition.outputGeometry.topMarginHeight)
+        log.verbose("Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
+        setWindowFrameForLegacyFullScreen(using: newGeo)
       }
-      log.verbose("Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
-      setWindowFrameForLegacyFullScreen(using: newGeo)
-    } else if outputLayout.isMusicMode {
+    case .musicMode:
       // Especially needed when applying initial layout:
       applyMusicModeGeometry(musicModeGeometry)
-    } else if !outputLayout.isFullScreen {
+    case .windowed:
       let newWindowFrame = transition.outputGeometry.windowFrame
       log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)

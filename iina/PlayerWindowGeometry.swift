@@ -116,6 +116,22 @@ struct PlayerWindowGeometry: Equatable {
     self.videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
   }
 
+  static func forFullScreen(in screen: NSScreen, legacy: Bool,
+       outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
+       insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
+       videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
+
+    let windowFrame = legacy ? screen.frame : screen.frameWithoutCameraHousing
+    let topMarginHeight: CGFloat
+    if legacy {
+      topMarginHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
+    } else {
+      topMarginHeight = 0
+    }
+
+    return PlayerWindowGeometry(windowFrame: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth, insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth, insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth, videoAspectRatio: videoAspectRatio)
+  }
+
   func clone(windowFrame: NSRect? = nil, topMarginHeight: CGFloat? = nil,
              outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
              outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
@@ -657,7 +673,7 @@ extension PlayerWindowController {
     return geo.scaleVideoContainer(constrainedWithin: bestScreen.frame)
   }
 
-  func buildLegacyFullScreenGeometry(from layout: LayoutState) -> PlayerWindowGeometry {
+  func buildFullScreenGeometry(from layout: LayoutState, legacy: Bool) -> PlayerWindowGeometry {
     // TODO: store screenFrame in PlayerWindowGeometry
     let screen = bestScreen
     let bottomBarHeight: CGFloat
@@ -669,8 +685,16 @@ extension PlayerWindowController {
     let insideTopBarHeight = layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0
     let insideBottomBarHeight = layout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
     let outsideBottomBarHeight = layout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
-    return PlayerWindowGeometry(windowFrame: screen.frame,
-                                topMarginHeight: Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0,
+
+    let windowFrame = legacy ? screen.frame : screen.frameWithoutCameraHousing
+    var topMarginHeight: CGFloat
+    if legacy {
+      topMarginHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
+    } else {
+      topMarginHeight = 0
+    }
+    return PlayerWindowGeometry(windowFrame: windowFrame,
+                                topMarginHeight: topMarginHeight,
                                 outsideTopBarHeight: layout.outsideTopBarHeight,
                                 outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
                                 outsideBottomBarHeight: outsideBottomBarHeight,
