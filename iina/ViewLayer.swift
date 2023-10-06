@@ -15,12 +15,20 @@ class ViewLayer: CAOpenGLLayer {
   weak var videoView: VideoView!
 
   let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
-  @Atomic var blocked = false
+  @Atomic private var blocked = false
 
   private var fbo: GLint = 1
 
   private var needsMPVRender = false
   private var forceRender = false
+
+#if DEBUG
+  // For measuring frames per second
+  var drawCountTotal: Int = 0
+  var fpsStartTime = Date().timeIntervalSince1970
+  var lastPrintTime = Date().timeIntervalSince1970
+  var drawCountLastPrint: Int = 0
+#endif
 
   override init() {
     super.init()
@@ -137,12 +145,27 @@ class ViewLayer: CAOpenGLLayer {
   }
 
   func resume() {
+#if DEBUG
+    drawCountTotal = 0
+    fpsStartTime = CFAbsoluteTimeGetCurrent()
+    lastPrintTime = fpsStartTime
+    drawCountLastPrint = drawCountTotal
+#endif
+
     blocked = false
-    draw(forced: true)
+    drawAsync(forced: true)
     mpvGLQueue.resume()
   }
 
-  func draw(forced: Bool = false) {
+  func drawAsync(forced: Bool = false) {
+    guard !blocked else { return }
+
+    mpvGLQueue.async { [self] in
+      drawSync(forced: forced)
+    }
+  }
+
+  func drawSync(forced: Bool = false) {
     videoView.$isUninited.withLock() { isUninited in
       // The properties forceRender and needsMPVRender are always accessed while holding isUninited's
       // lock. This avoids the need for separate locks to avoid data races with these flags. No need
@@ -150,6 +173,19 @@ class ViewLayer: CAOpenGLLayer {
       needsMPVRender = true
       if forced { forceRender = true }
     }
+
+#if DEBUG
+    drawCountTotal += 1
+    let now = Date().timeIntervalSince1970
+    let secsSinceLastPrint = now - lastPrintTime
+    if secsSinceLastPrint >= 1.0 {  // print at most once per sec
+      let drawsSinceLastPrint = drawCountTotal - drawCountLastPrint
+      let fps = CGFloat(drawsSinceLastPrint) / secsSinceLastPrint
+      lastPrintTime = now
+      drawCountLastPrint = drawCountTotal
+      NSLog("FPS: \(fps.string2f)")
+    }
+#endif
 
     // Must not call display while holding isUninited's lock as that method will attempt to acquire
     // the lock and our locks do not support recursion.

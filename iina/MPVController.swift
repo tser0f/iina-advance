@@ -1688,9 +1688,5 @@ fileprivate func mpvGetOpenGLFunc(_ ctx: UnsafeMutableRawPointer?, _ name: Unsaf
 
 fileprivate func mpvUpdateCallback(_ ctx: UnsafeMutableRawPointer?) {
   let layer = bridge(ptr: ctx!) as ViewLayer
-  guard !layer.blocked else { return }
-
-  layer.mpvGLQueue.async {
-    layer.draw()
-  }
+  layer.drawAsync()
 }

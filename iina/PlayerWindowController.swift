@@ -2944,7 +2944,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func forceDraw() {
     guard player.info.isPaused || player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
-    videoView.videoLayer.draw(forced: true)
+    videoView.videoLayer.drawSync(forced: true)
   }
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
