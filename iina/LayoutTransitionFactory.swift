@@ -328,8 +328,7 @@ extension PlayerWindowController {
       if outputLayout.spec.isLegacyStyle {
         return buildLegacyFullScreenGeometry(from: outputLayout)
       } else {
-        // This will be ignored anyway, so just save the processing cycles
-        return windowedModeGeometry
+        return windowedModeGeometry.clone(windowFrame: bestScreen.frameWithoutCameraHousing)
       }
     case .windowed:
       break  // see below

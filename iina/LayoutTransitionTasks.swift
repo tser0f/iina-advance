@@ -429,11 +429,6 @@ extension PlayerWindowController {
       miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: musicModeGeometry.isVideoVisible)
     }
 
-    if transition.isEnteringNativeFullScreen {
-      let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
-      videoView.updateSizeConstraints(videoSize)
-    }
-
     // Update heights to their final values:
     topOSCHeightConstraint.animateToConstant(outputLayout.topOSCHeight)
     titleBarHeightConstraint.animateToConstant(outputLayout.titleBarHeight)
@@ -489,11 +484,11 @@ extension PlayerWindowController {
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
     }
 
-    if transition.isEnteringNativeFullScreen {
+    if transition.outputLayout.isNativeFullScreen {
       // Native Full Screen: set frame not including camera housing because it looks better with the native animation
-      let newWindowFrame = bestScreen.frameWithoutCameraHousing
-      log.verbose("Calling setFrame() to animate into native full screen, to: \(newWindowFrame)")
-      player.window.setFrameImmediately(newWindowFrame)
+      log.verbose("Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
+      videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+      player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
     } else if transition.outputLayout.isLegacyFullScreen {
       let screen = bestScreen
       let newGeo: PlayerWindowGeometry
