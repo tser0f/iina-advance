@@ -496,23 +496,20 @@ extension PlayerWindowController {
         let newGeo: PlayerWindowGeometry
         if transition.isEnteringLegacyFullScreen {
           // Deal with possible top margin needed to hide camera housing
-          if transition.outputGeometry.topMarginHeight > 0 {
+          if transition.outputGeometry.hasTopPaddingForCameraHousing {
             /// Entering legacy FS on a screen with camera housing.
             /// Prevent an unwanted bouncing near the top by using this animation to expand to visibleFrame.
             /// (will expand window to cover `cameraHousingHeight` in next animation)
-            let fsWindowFrame = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? screen.frame : screen.frameWithoutCameraHousing
-            newGeo = transition.outputGeometry.clone(windowFrame: fsWindowFrame, topMarginHeight: 0)
+            newGeo = transition.outputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
           } else {
-            /// Set window size to `visibleFrame` for now. This excludes menu bar, which takes a while to hide.
+            /// Set window size to `visibleFrame` for now. This excludes menu bar which needs a separate animation to hide.
             /// Later, when menu bar is hidden, a `NSApplicationDidChangeScreenParametersNotification` will be sent, which will
             /// trigger the window to resize again and cover the whole screen.
             newGeo = transition.outputGeometry.clone(windowFrame: screen.visibleFrame, topMarginHeight: transition.outputGeometry.topMarginHeight)
           }
         } else {
-          /// Either already in legacy FS, or entering legacy FS. Set window size to `visibleFrame` for now.
-          /// Later, when menu bar is hidden, a `NSApplicationDidChangeScreenParametersNotification` will be sent, which will
-          /// trigger the window to resize again and cover the whole screen.
-          newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: transition.outputGeometry.topMarginHeight)
+          /// Either already in legacy FS, or entering legacy FS. Apply final geometry.
+          newGeo = transition.outputGeometry
         }
         log.verbose("Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
         setWindowFrameForLegacyFullScreen(using: newGeo)

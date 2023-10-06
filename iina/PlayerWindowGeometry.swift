@@ -140,16 +140,32 @@ struct PlayerWindowGeometry: Equatable {
              videoAspectRatio: CGFloat? = nil) -> PlayerWindowGeometry {
 
     return PlayerWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
-                              topMarginHeight: topMarginHeight ?? self.topMarginHeight,
-                              outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
-                              outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
-                              outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
-                              outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
-                              insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
-                              insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
-                              insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
-                              insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
-                              videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
+                                topMarginHeight: topMarginHeight ?? self.topMarginHeight,
+                                outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
+                                outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
+                                outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
+                                outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
+                                insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
+                                insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
+                                insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
+                                insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
+                                videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
+  }
+
+  func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
+    if let other = windowFrame2 {
+      if !(windowFrame.origin.x == other.origin.x && windowFrame.origin.y == other.origin.y
+           && windowFrame.width == other.width && windowFrame.height == other.height) {
+
+        return false
+      }
+    }
+    if let other = videoSize2 {
+      if !(videoSize.width == other.width && videoSize.height == other.height) {
+        return false
+      }
+    }
+    return true
   }
 
   // MARK: - Computed properties
@@ -660,16 +676,16 @@ extension PlayerWindowController {
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
 
     let geo = PlayerWindowGeometry(windowFrame: window!.frame,
-                                 topMarginHeight: 0,  // is only nonzero when in legacy FS
-                                 outsideTopBarHeight: layout.outsideTopBarHeight,
-                                 outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
-                                 outsideBottomBarHeight: outsideBottomBarHeight,
-                                 outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
-                                 insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
-                                 insideTrailingBarWidth: layout.insideTrailingBarWidth,
-                                 insideBottomBarHeight: insideBottomBarHeight,
-                                 insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                                 videoAspectRatio: videoAspectRatio)
+                                   topMarginHeight: 0,  // is only nonzero when in legacy FS
+                                   outsideTopBarHeight: layout.outsideTopBarHeight,
+                                   outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
+                                   outsideBottomBarHeight: outsideBottomBarHeight,
+                                   outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
+                                   insideTopBarHeight: layout.topBarPlacement == .insideVideo ? layout.topBarHeight : 0,
+                                   insideTrailingBarWidth: layout.insideTrailingBarWidth,
+                                   insideBottomBarHeight: insideBottomBarHeight,
+                                   insideLeadingBarWidth: layout.insideLeadingBarWidth,
+                                   videoAspectRatio: videoAspectRatio)
     return geo.scaleVideoContainer(constrainedWithin: bestScreen.frame)
   }
 
@@ -710,12 +726,8 @@ extension PlayerWindowController {
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
   func setWindowFrameForLegacyFullScreen(using geometry: PlayerWindowGeometry) {
     guard let window = window else { return }
-    guard !(geometry.windowFrame.origin.x == window.frame.origin.x
-            && geometry.windowFrame.origin.y == window.frame.origin.y
-            && geometry.windowFrame.width == window.frame.width
-            && geometry.windowFrame.height == window.frame.height
-            && geometry.videoSize.width == videoView.widthConstraint.constant
-            && geometry.videoSize.height == videoView.heightConstraint.constant) else {
+    let currentVideoSize = NSSize(width: videoView.widthConstraint.constant, height: videoView.heightConstraint.constant)
+    guard !geometry.hasEqual(windowFrame: window.frame, videoSize: currentVideoSize) else {
       log.verbose("No need to update windowFrame for legacyFullScreen - no change")
       return
     }

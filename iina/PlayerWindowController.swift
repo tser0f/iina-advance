@@ -1682,17 +1682,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     updateOSDPosition()
     addVideoViewToWindow()
 
-    if let priorState = player.info.priorState {
-      // Position the window frame before showing it to create the smoothest effect
-      if priorState.layoutSpec?.mode == .windowed, let priorWindowGeo = priorState.windowedModeGeometry {
-        player.window.setFrameImmediately(priorWindowGeo.windowFrame)
-        videoView.updateSizeConstraints(priorWindowGeo.videoSize)
-      } else if priorState.layoutSpec?.mode == .musicMode, let priorMusicModeGeo = priorState.musicModeGeometry {
-        player.window.setFrameImmediately(priorMusicModeGeo.windowFrame)
-        videoView.updateSizeConstraints(priorMusicModeGeo.videoSize)
-      }
-    }
-
     // Restore layout from last launch or configure from prefs. Do not animate.
     setInitialWindowLayout()
 

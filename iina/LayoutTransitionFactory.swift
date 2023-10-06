@@ -63,6 +63,18 @@ extension PlayerWindowController {
       initialLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: currentLayout.spec)
     }
 
+    // Position the window frame before showing it to create the smoothest effect
+    switch initialLayoutSpec.mode {
+    case .windowed:
+      player.window.setFrameImmediately(windowedModeGeometry.windowFrame)
+      videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
+    case .musicMode:
+      player.window.setFrameImmediately(musicModeGeometry.windowFrame)
+      videoView.updateSizeConstraints(musicModeGeometry.videoSize)
+    case .fullScreen:
+      break
+    }
+
     let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
     let transition = buildLayoutTransition(named: name, from: currentLayout, to: initialLayoutSpec, isInitialLayout: true)
 
@@ -180,13 +192,19 @@ extension PlayerWindowController {
 
     // Extra animation for exiting legacy full screen: remove camera housing with black bar
     let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
-    let closeOldPanelsDuration = useExtraAnimationForExitingLegacyFullScreen ? (startingAnimationDuration * 0.8) : startingAnimationDuration
+    var closeOldPanelsDuration = startingAnimationDuration
+    if useExtraAnimationForExitingLegacyFullScreen {
+      closeOldPanelsDuration *= 0.8
+    }
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
     // Extra animation for entering legacy full screen: cover camera housing with black bar
     let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
-    let openFinalPanelsDuration = useExtraAnimationForEnteringLegacyFullScreen ? (endingAnimationDuration * 0.8) : endingAnimationDuration
+    var openFinalPanelsDuration = endingAnimationDuration
+    if useExtraAnimationForEnteringLegacyFullScreen {
+      openFinalPanelsDuration *= 0.8
+    }
 
     log.verbose("[\(transitionName)] Building transition animations. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
 
