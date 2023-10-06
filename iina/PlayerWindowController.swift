@@ -975,7 +975,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     defaultAlbumArtView.isHidden = !showDefaultArt
     let newAspectRatio = showDefaultArt ? 1 : videoAspectRatio
 
-    switch currentLayout.spec.mode {
+    switch currentLayout.mode {
     case .musicMode:
       let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
       applyMusicModeGeometry(newGeo)
@@ -1818,7 +1818,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("ToggleWindowFullScreen() entered")
     let layout = currentLayout
 
-    switch layout.spec.mode {
+    switch layout.mode {
     case .windowed:
       enterFullScreen()
     case .fullScreen:
@@ -1862,7 +1862,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    let currentMode = currentLayout.spec.mode
+    let currentMode = currentLayout.mode
     log.verbose("WindowWillResize entered. RequestedSize: \(requestedSize), mode: \(currentMode)")
 
     switch currentMode {
@@ -1932,9 +1932,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing, !isAnimating else { return }
 
-    log.verbose("WindowDidEndLiveResize, mode: \(currentLayout.spec.mode)")
+    log.verbose("WindowDidEndLiveResize mode: \(currentLayout.mode)")
 
-    switch currentLayout.spec.mode {
+    switch currentLayout.mode {
     case .windowed:
       // Do not save geometry, because user may be in the middle of pinch-to-zoom.
       // But update preferred container size
@@ -1973,7 +1973,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("WindowDidChangeScreen, screenFrame=\(screen.frame)")
     // Legacy FS work below can be very slow. Try to avoid if possible
     guard videoView.currentDisplay != displayId else {
-      Logger.log("No need to update window or DisplayLink currentDisplayID (\(displayId)) is unchanged", level: .verbose)
+      log.verbose("No need to update window or DisplayLink currentDisplayID (\(displayId)) is unchanged")
       return
     }
     videoView.updateDisplayLink()
@@ -2031,13 +2031,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowWillMove(_ notification: Notification) {
     guard let window = window else { return }
-    log.verbose("WindowWillMove, frame=\(window.frame)")
+    log.verbose("WindowWillMove frame: \(window.frame)")
   }
 
   func windowDidMove(_ notification: Notification) {
     guard !isAnimating else { return }
     guard let window = window else { return }
-    log.verbose("WindowDidMove, frame=\(window.frame)")
+    log.verbose("WindowDidMove frame: \(window.frame)")
     updateCachedGeometry()
     player.events.emit(.windowMoved, data: window.frame)
   }
@@ -2579,7 +2579,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let oldLayout = currentLayout
     let interactiveModeLayout = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
                                                      trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide),
-                                                     mode: oldLayout.spec.mode,
+                                                     mode: oldLayout.mode,
                                                      topBarPlacement: .insideVideo,
                                                      enableOSC: false)
     let transition = buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout, totalEndingDuration: 0)
@@ -2682,7 +2682,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       self.cropSettingsView = nil
     })
 
-    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: oldLayout.spec.mode, fillingInFrom: oldLayout.spec)
+    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: oldLayout.mode, fillingInFrom: oldLayout.spec)
     let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
                                            totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
 

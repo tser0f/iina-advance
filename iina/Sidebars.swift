@@ -851,7 +851,7 @@ extension PlayerWindowController {
   /// Returns new or existing `PlayerWindowGeometry` if handled; `nil` if not
   func resizeSidebar(with dragEvent: NSEvent) -> PlayerWindowGeometry? {
     guard leadingSidebarIsResizing || trailingSidebarIsResizing else { return nil }
-    assert(currentLayout.spec.mode == .windowed || currentLayout.spec.mode == .fullScreen, "ResizeSidebar: current mode unexpected: \(currentLayout.spec.mode)")
+    assert(currentLayout.mode == .windowed || currentLayout.mode == .fullScreen, "ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
     let oldGeo = windowedModeGeometry
 
     return CocoaAnimation.disableAnimation {

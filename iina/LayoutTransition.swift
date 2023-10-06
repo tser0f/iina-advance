@@ -49,7 +49,7 @@ extension PlayerWindowController {
 
     var needsFadeOutOldViews: Bool {
       return isTogglingLegacyStyle || isTopBarPlacementChanging
-      || (inputLayout.spec.mode != outputLayout.spec.mode)
+      || (inputLayout.mode != outputLayout.mode)
       || (inputLayout.bottomBarPlacement == .insideVideo && outputLayout.bottomBarPlacement == .outsideVideo)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
       || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
@@ -59,7 +59,7 @@ extension PlayerWindowController {
 
     var needsFadeInNewViews: Bool {
       return isTogglingLegacyStyle || isTopBarPlacementChanging
-      || (inputLayout.spec.mode != outputLayout.spec.mode)
+      || (inputLayout.mode != outputLayout.mode)
       || (inputLayout.bottomBarPlacement == .outsideVideo && outputLayout.bottomBarPlacement == .insideVideo)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
       || (outputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
@@ -74,7 +74,7 @@ extension PlayerWindowController {
       }
       return isHidingLeadingSidebar || isHidingTrailingSidebar || isTopBarPlacementChanging || isBottomBarPlacementChanging
       || (inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle)
-      || (inputLayout.spec.mode != outputLayout.spec.mode)
+      || (inputLayout.mode != outputLayout.mode)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
       || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
     }

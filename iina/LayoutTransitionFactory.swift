@@ -125,8 +125,10 @@ extension PlayerWindowController {
     // Build InputGeometry
     let inputGeometry: PlayerWindowGeometry
     // Restore window size & position
-    switch inputLayout.spec.mode {
-    case .fullScreen, .windowed:
+    switch inputLayout.mode {
+    case .windowed:
+      inputGeometry = windowedModeGeometry
+    case .fullScreen:
       inputGeometry = buildFullScreenGeometry(from: inputLayout, legacy: inputLayout.isLegacyFullScreen)
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
@@ -313,7 +315,7 @@ extension PlayerWindowController {
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
   private func buildOutputGeometry(inputGeometry: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
-    switch outputLayout.spec.mode {
+    switch outputLayout.mode {
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).constrainWithin(bestScreen.visibleFrame)

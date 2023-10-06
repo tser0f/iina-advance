@@ -157,7 +157,7 @@
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Nuv-dC-vHt">
                             <rect key="frame" x="18" y="23" width="277" height="18"/>
-                            <buttonCell key="cell" type="check" title="Fill entire screen on Macbooks with notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
+                            <buttonCell key="cell" type="check" title="Fill whole screen on Macbooks with notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>

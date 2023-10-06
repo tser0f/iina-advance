@@ -265,7 +265,7 @@ struct PlayerWindowGeometry: Equatable {
   func scaleVideoContainer(desiredSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil,
                            centerInContainer: Bool = false) -> PlayerWindowGeometry {
     var newVidConSize = desiredSize ?? videoContainerSize
-    Logger.log("Scaling PlayerWindowGeometry newVidConSize: \(newVidConSize), allowEmptySpace=\(allowEmptySpaceAroundVideo.yn)", level: .verbose)
+    Logger.log("Scaling PlayerWindowGeometry newVidConSize: \(newVidConSize), allowEmptySpace: \(allowEmptySpaceAroundVideo.yn)", level: .verbose)
 
     /// Make sure `videoContainerSize` is at least as large as `minVideoSize`:
     newVidConSize = constrainAboveMin(desiredVideoContainerSize: newVidConSize)
@@ -293,14 +293,14 @@ struct PlayerWindowGeometry: Equatable {
     // Move window if needed to make sure the window is not offscreen
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
     if let containerFrame = containerFrame {
-      Logger.log("Constraining PlayerWindowGeometry in containerFrame=\(containerFrame)", level: .verbose)
+      Logger.log("Constraining PlayerWindowGeometry in containerFrame: \(containerFrame)", level: .verbose)
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
       if centerInContainer {
         newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)
       }
     }
 
-    Logger.log("Done scaling PlayerWindowGeometry. Result winFrame: \(newWindowFrame)", level: .verbose)
+    Logger.log("Done scaling PlayerWindowGeometry to windowFrame: \(newWindowFrame)", level: .verbose)
     return self.clone(windowFrame: newWindowFrame)
   }
 
@@ -625,7 +625,7 @@ extension PlayerWindowController {
    ensure it is placed entirely inside `bestScreen.visibleFrame`.
    */
   func resizeVideoContainer(desiredVideoContainerSize: CGSize? = nil, centerOnScreen: Bool = false) {
-    guard !isInInteractiveMode, currentLayout.spec.mode == .windowed else { return }
+    guard !isInInteractiveMode, currentLayout.mode == .windowed else { return }
 
     let newGeoUnconstrained = windowedModeGeometry.scaleVideoContainer(desiredSize: desiredVideoContainerSize)
     // User has actively resized the video. Assume this is the new preferred resolution
@@ -638,9 +638,9 @@ extension PlayerWindowController {
 
   func updateCachedGeometry() {
     guard !isAnimating else { return }
-    log.verbose("Updating cached geometry from current window dimensions, mode=\(currentLayout.spec.mode)")
+    log.verbose("Recomputing \(currentLayout.mode) geometry from current window")
 
-    switch currentLayout.spec.mode {
+    switch currentLayout.mode {
     case .windowed:
       windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
       player.saveState()
@@ -654,7 +654,7 @@ extension PlayerWindowController {
   }
 
   func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> PlayerWindowGeometry {
-    assert(layout.spec.mode == .windowed, "buildWindowGeometryFromCurrentFrame(): unexpected mode: \(layout.spec.mode)")
+    assert(layout.mode == .windowed, "buildWindowGeometryFromCurrentFrame(): unexpected mode: \(layout.mode)")
     // TODO: find a better solution than just replicating this logic here
     let insideBottomBarHeight = (layout.bottomBarPlacement == .insideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideVideo && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
@@ -813,7 +813,7 @@ extension PlayerWindowController {
   }
 
   func resizeWindowedModeGeometry(desiredSize requestedSize: NSSize) -> PlayerWindowGeometry {
-    assert(currentLayout.spec.mode == .windowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.spec.mode)")
+    assert(currentLayout.mode == .windowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
     guard let window = window else { return windowedModeGeometry }
     let currentGeo = windowedModeGeometry
 

@@ -45,7 +45,7 @@ extension PlayerWindowController {
     currentLayout = transition.outputLayout
 
     /// Set this here because we are setting `currentLayout`
-    switch transition.outputLayout.spec.mode {
+    switch transition.outputLayout.mode {
     case .windowed:
       windowedModeGeometry = transition.outputGeometry
     case .musicMode:
@@ -484,7 +484,7 @@ extension PlayerWindowController {
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
     }
 
-    switch transition.outputLayout.spec.mode {
+    switch transition.outputLayout.mode {
     case .fullScreen:
       if transition.outputLayout.isNativeFullScreen {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
@@ -721,7 +721,7 @@ extension PlayerWindowController {
     videoView.layoutSubtreeIfNeeded()
     forceDraw()
 
-    log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.spec.mode)")
+    log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.mode)")
     player.saveState()
   }
 

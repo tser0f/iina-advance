@@ -342,6 +342,10 @@ extension PlayerWindowController {
                            (oscPosition == .bottom && bottomBarPlacement == .outsideVideo))
     }
 
+    var mode: WindowMode {
+      return spec.mode
+    }
+
     func sidebar(withID id: Preference.SidebarLocation) -> Sidebar {
       switch id {
       case .leadingSidebar:
