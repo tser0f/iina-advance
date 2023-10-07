@@ -1011,12 +1011,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// When entering "windowed" mode (either from initial load, PIP, or music mode), call this to add/return `videoView`
   /// to this window. Will do nothing if it's already there.
   func addVideoViewToWindow() {
+    guard let window else { return }
     guard !videoContainerView.subviews.contains(videoView) else { return }
-    player.log.verbose("Adding videoView to videoContainerView")
+    player.log.verbose("Adding videoView to videoContainerView, screenScaleFactor: \(window.screenScaleFactor)")
     /// Make sure `defaultAlbumArtView` stays above `videoView`
     videoContainerView.addSubview(videoView, positioned: .below, relativeTo: defaultAlbumArtView)
-    videoView.translatesAutoresizingMaskIntoConstraints = false
+    // Screen may have changed. Refresh contentsScale
+    videoView.refreshContentsScale()
     // add constraints
+    videoView.translatesAutoresizingMaskIntoConstraints = false
     videoView.constrainForNormalLayout()
   }
 
@@ -1944,13 +1947,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Window Delegate: window move, screen changes
 
   func windowDidChangeBackingProperties(_ notification: Notification) {
-    log.verbose("WindowDidChangeBackingProperties()")
-    if let oldScale = (notification.userInfo?[NSWindow.oldScaleFactorUserInfoKey] as? NSNumber)?.doubleValue,
-       let window = window, oldScale != Double(window.backingScaleFactor) {
-      log.verbose("WindowDidChangeBackingProperties: scale factor changed from \(oldScale) to \(Double(window.backingScaleFactor))")
-
-      videoView.videoLayer.contentsScale = window.backingScaleFactor
-
+    if videoView.refreshContentsScale() {
       // Do not allow MacOS to change the window size:
       denyNextWindowResize = true
     }

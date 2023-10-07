@@ -14,6 +14,10 @@ class VideoView: NSView {
   weak var player: PlayerCore!
   var link: CVDisplayLink?
 
+  var log: Logger.Subsystem {
+    return player.log
+  }
+
   lazy var videoLayer: ViewLayer = {
     let layer = ViewLayer()
     layer.videoView = self
@@ -45,16 +49,14 @@ class VideoView: NSView {
     // set up layer
     layer = videoLayer
     videoLayer.colorspace = VideoView.SRGB
-    // FIXME: parameterize this
-    videoLayer.contentsScale = NSScreen.main!.backingScaleFactor
     wantsLayer = true
 
     widthConstraint = widthAnchor.constraint(equalToConstant: CGFloat(AppData.widthWhenNoVideo))
     // Keep low, or else can't resize window
-    widthConstraint.priority = .defaultLow
+    widthConstraint.priority = .required
     widthConstraint.isActive = true
     heightConstraint = heightAnchor.constraint(equalToConstant: CGFloat(AppData.heightWhenNoVideo))
-    heightConstraint.priority = .defaultLow
+    heightConstraint.priority = .required
     heightConstraint.isActive = true
 
     // other settings
@@ -98,32 +100,46 @@ class VideoView: NSView {
     // do nothing
   }
 
+  /// Returns `true` if screenScaleFactor changed
+  @discardableResult
+  func refreshContentsScale() -> Bool {
+    guard let window else { return false }
+    let oldScaleFactor = videoLayer.contentsScale
+    let newScaleFactor = window.screenScaleFactor
+    if oldScaleFactor != newScaleFactor {
+      log.verbose("ScreenScaleFactor changed from \(oldScaleFactor) to \(newScaleFactor)")
+      videoLayer.contentsScale = newScaleFactor
+      return true
+    }
+    return false
+  }
+
   // MARK: - VideoView Constraints
 
   struct VideoViewConstraints {
-    let eqOffsetTop: NSLayoutConstraint
-    let eqOffsetRight: NSLayoutConstraint
-    let eqOffsetBottom: NSLayoutConstraint
-    let eqOffsetLeft: NSLayoutConstraint
+//    let eqOffsetTop: NSLayoutConstraint
+//    let eqOffsetRight: NSLayoutConstraint
+//    let eqOffsetBottom: NSLayoutConstraint
+//    let eqOffsetLeft: NSLayoutConstraint
 
-    let gtOffsetTop: NSLayoutConstraint
-    let gtOffsetRight: NSLayoutConstraint
-    let gtOffsetBottom: NSLayoutConstraint
-    let gtOffsetLeft: NSLayoutConstraint
+//    let gtOffsetTop: NSLayoutConstraint
+//    let gtOffsetRight: NSLayoutConstraint
+//    let gtOffsetBottom: NSLayoutConstraint
+//    let gtOffsetLeft: NSLayoutConstraint
 
     let centerX: NSLayoutConstraint
     let centerY: NSLayoutConstraint
 
     func setActive(eq: Bool = true, gt: Bool = true, center: Bool = true, aspect: Bool = true) {
-      eqOffsetTop.isActive = eq
-      eqOffsetRight.isActive = eq
-      eqOffsetBottom.isActive = eq
-      eqOffsetLeft.isActive = eq
+//      eqOffsetTop.isActive = eq
+//      eqOffsetRight.isActive = eq
+//      eqOffsetBottom.isActive = eq
+//      eqOffsetLeft.isActive = eq
 
-      gtOffsetTop.isActive = gt
-      gtOffsetRight.isActive = gt
-      gtOffsetBottom.isActive = gt
-      gtOffsetLeft.isActive = gt
+//      gtOffsetTop.isActive = gt
+//      gtOffsetRight.isActive = gt
+//      gtOffsetBottom.isActive = gt
+//      gtOffsetLeft.isActive = gt
 
       centerX.isActive = center
       centerY.isActive = center
@@ -152,15 +168,15 @@ class VideoView: NSView {
     var existing = self.videoViewConstraints
     self.videoViewConstraints = nil
     let newConstraints = VideoViewConstraints(
-      eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
-      eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
-      eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
-      eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
+//      eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
+//      eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
+//      eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
+//      eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
 
-      gtOffsetTop: addOrUpdate(existing?.gtOffsetTop, .top, .greaterThanOrEqual, top, gtPriority),
-      gtOffsetRight: addOrUpdate(existing?.gtOffsetRight, .right, .lessThanOrEqual, right, gtPriority),
-      gtOffsetBottom: addOrUpdate(existing?.gtOffsetBottom, .bottom, .lessThanOrEqual, bottom, gtPriority),
-      gtOffsetLeft: addOrUpdate(existing?.gtOffsetLeft, .left, .greaterThanOrEqual, left, gtPriority),
+//      gtOffsetTop: addOrUpdate(existing?.gtOffsetTop, .top, .greaterThanOrEqual, top, gtPriority),
+//      gtOffsetRight: addOrUpdate(existing?.gtOffsetRight, .right, .lessThanOrEqual, right, gtPriority),
+//      gtOffsetBottom: addOrUpdate(existing?.gtOffsetBottom, .bottom, .lessThanOrEqual, bottom, gtPriority),
+//      gtOffsetLeft: addOrUpdate(existing?.gtOffsetLeft, .left, .greaterThanOrEqual, left, gtPriority),
 
       centerX: existing?.centerX ?? centerXAnchor.constraint(equalTo: superview!.centerXAnchor),
       centerY: existing?.centerY ?? centerYAnchor.constraint(equalTo: superview!.centerYAnchor)
@@ -191,7 +207,7 @@ class VideoView: NSView {
     /// Set center priority to `.defaultHigh` instead of `.required` to avoid constraint error when toggling music mode with no video...
     rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,
                        gtIsActive: true, gtPriority: .required,
-                       centerIsActive: true, centerPriority: .defaultHigh)
+                       centerIsActive: true, centerPriority: .required)
 
     window?.layoutIfNeeded()
   }

@@ -183,7 +183,7 @@ class ViewLayer: CAOpenGLLayer {
       let fps = CGFloat(drawsSinceLastPrint) / secsSinceLastPrint
       lastPrintTime = now
       drawCountLastPrint = drawCountTotal
-      NSLog("FPS: \(fps.string2f)")
+      NSLog("FPS: \(fps.string2f), ContentsScale: \(contentsScale), ViewFrame: \(frame)")
     }
 #endif
 
