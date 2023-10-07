@@ -1489,7 +1489,7 @@ class PlayerCore: NSObject {
       windowController.playlistView.scrollPlaylistToCurrentItem()
 
       if  Preference.bool(for: .fullScreenWhenOpen) && !windowController.isFullScreen && !isInMiniPlayer && !info.isRestoring {
-        Logger.log("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true", subsystem: subsystem)
+        log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
         windowController.enterFullScreen()
       }
     }

@@ -96,7 +96,7 @@ extension PlayerWindowController {
     }
 
     var isEnteringFullScreen: Bool {
-      return !inputLayout.isFullScreen && outputLayout.isFullScreen
+      return outputLayout.isFullScreen && (!inputLayout.isFullScreen || isInitialLayout)
     }
 
     var isExitingFullScreen: Bool {

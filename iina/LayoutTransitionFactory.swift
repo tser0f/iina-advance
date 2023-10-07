@@ -49,7 +49,7 @@ extension PlayerWindowController {
         player.overrideAutoMusicMode = true
       }
 
-      if priorLayoutSpec.isNativeFullScreen && !currentLayout.isFullScreen {
+      if priorLayoutSpec.isNativeFullScreen {
         // Special handling for native fullscreen. Rely on mpv to put us in FS when it is ready
         initialLayoutSpec = priorLayoutSpec.clone(mode: .windowed)
         needsNativeFullScreen = true
@@ -60,8 +60,23 @@ extension PlayerWindowController {
     } else {
       log.verbose("Transitioning to initial layout from app prefs")
       isRestoringFromPrevLaunch = false
-      initialLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: currentLayout.spec)
+
+      let mode: WindowMode
+      if Preference.bool(for: .fullScreenWhenOpen) {
+        log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
+        mode = .fullScreen
+      } else if currentLayout.isFullScreen {
+        // TODO: set initial layout from prefs
+        // Go back to windowed mode
+        mode = .windowed
+      } else {
+        mode = currentLayout.mode
+      }
+
+      initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: currentLayout.spec)
     }
+
+    log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")
 
     // Position the window frame before showing it to create the smoothest effect
     switch initialLayoutSpec.mode {
