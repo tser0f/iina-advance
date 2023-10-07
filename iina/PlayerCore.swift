@@ -1810,6 +1810,8 @@ class PlayerCore: NSObject {
     syncUITimer?.tolerance = timerConfig.tolerance
   }
 
+  private var lastSaveTime = Date().timeIntervalSince1970
+
   @objc func syncUITime() {
     let isNetworkStream = info.isNetworkResource
     if isNetworkStream {
@@ -1834,6 +1836,15 @@ class PlayerCore: NSObject {
       info.cacheTime = mpv.getInt(MPVProperty.demuxerCacheTime)
       info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
     }
+
+    // Ensure user can resume playback by periodically saving
+    let now = Date().timeIntervalSince1970
+    let secSinceLastSave = now - lastSaveTime
+    if secSinceLastSave >= AppData.playTimeSaveStateIntervalSec {
+      saveState()
+      lastSaveTime = now
+    }
+
     DispatchQueue.main.async { [self] in
       // don't let play/pause icon fall out of sync
       windowController.playButton.state = info.isPaused ? .off : .on

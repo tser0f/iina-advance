@@ -24,9 +24,8 @@ class ViewLayer: CAOpenGLLayer {
 
 #if DEBUG
   // For measuring frames per second
-  var drawCountTotal: Int = 0
-  var fpsStartTime = Date().timeIntervalSince1970
   var lastPrintTime = Date().timeIntervalSince1970
+  var drawCountTotal: Int = 0
   var drawCountLastPrint: Int = 0
 #endif
 
@@ -147,8 +146,7 @@ class ViewLayer: CAOpenGLLayer {
   func resume() {
 #if DEBUG
     drawCountTotal = 0
-    fpsStartTime = CFAbsoluteTimeGetCurrent()
-    lastPrintTime = fpsStartTime
+    lastPrintTime = Date().timeIntervalSince1970
     drawCountLastPrint = drawCountTotal
 #endif
 

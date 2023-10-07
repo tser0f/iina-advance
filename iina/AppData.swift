@@ -18,6 +18,9 @@ struct AppData {
   static let syncTimerConfig = SyncTimerConfig(interval: 0.1, tolerance: 0.02)
   static let syncTimerPreciseConfig = SyncTimerConfig(interval: 0.04, tolerance: 0.01)
 
+  /// If state save is enabled and video is playing, make sure player is saved every this number of secs
+  static let playTimeSaveStateIntervalSec: Double = 10.0
+
   /** speed values when clicking left / right arrow button */
 
 //  static let availableSpeedValues: [Double] = [-32, -16, -8, -4, -2, -1, 1, 2, 4, 8, 16, 32]

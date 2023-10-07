@@ -2332,12 +2332,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if player.isInMiniPlayer {
       // Music mode
       _ = player.windowController.miniPlayer.view // make sure it is loaded
-      player.windowController.miniPlayer.playSlider.doubleValue = percentage
+      player.windowController.miniPlayer.playSlider.updateTo(percentage: percentage)
       [player.windowController.miniPlayer.leftLabel, player.windowController.miniPlayer.rightLabel].forEach { $0.updateText(with: duration, given: pos) }
     } else {
       // Normal player
       [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
-      playSlider.doubleValue = percentage
+      playSlider.updateTo(percentage: percentage)
     }
     // Touch bar
     if #available(macOS 10.12.2, *) {

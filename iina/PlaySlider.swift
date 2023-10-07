@@ -17,6 +17,8 @@ import Cocoa
 /// - Requires: The custom slider cell provided by `PlaySliderCell` **must** be used with this class.
 /// - Note: Unlike `NSSlider` the `draw` method of this class will do nothing if the view is hidden.
 final class PlaySlider: NSSlider {
+  // Redrawing the slider bar is a very expensive operation, so do not redraw it if there is no noticeable change.
+  static let minPixelChangeThreshold: CGFloat = 1.0
 
   /// Knob representing the A loop point for the mpv A-B loop feature.
   var abLoopA: PlaySliderLoopKnob { abLoopAKnob }
@@ -75,5 +77,14 @@ final class PlaySlider: NSSlider {
     // thought the NSView method would do this. The current Apple documentation does not say what
     // the NSView method does or even if it needs to be called by subclasses.
     needsDisplay = true
+  }
+
+  func updateTo(percentage: Double) {
+    let oldPercentage = doubleValue
+    let delta = abs(percentage - oldPercentage) * 0.01
+    let pxChange = frame.size.width * delta
+    if pxChange >= PlaySlider.minPixelChangeThreshold {
+      doubleValue = percentage
+    }
   }
 }

@@ -31,6 +31,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   /// The unique name for this launch, used as a pref key
   static var launchName: String = Preference.UIState.launchName(forID: launchID)
+  static var launchTime = Date().timeIntervalSince1970
 
   /**
    Becomes true once `application(_:openFile:)` or `droppedText()` is called.
