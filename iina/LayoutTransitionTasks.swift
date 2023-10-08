@@ -99,8 +99,7 @@ extension PlayerWindowController {
         NSApp.presentationOptions.insert(.autoHideMenuBar)
         NSApp.presentationOptions.insert(.autoHideDock)
 
-        /// Set to `.iinaFloating` instead of `.floating` so that Settings & other windows can be displayed
-        window.level = .iinaFloating
+        window.level = .floating
       }
       if !isClosing {
         player.mpv.setFlag(MPVOption.Window.fullscreen, true)

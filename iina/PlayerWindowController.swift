@@ -2027,16 +2027,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard !isAnimating else { return }
     guard let window = window else { return }
     log.verbose("WindowDidMove frame: \(window.frame)")
-    updateCachedGeometry()
-    player.events.emit(.windowMoved, data: window.frame)
+    if !isFullScreen {
+      updateCachedGeometry()
+      player.events.emit(.windowMoved, data: window.frame)
+    }
   }
 
   // MARK: - Window delegate: Activeness status
 
   func windowDidBecomeKey(_ notification: Notification) {
     if currentLayout.isLegacyFullScreen {
-      /// In case window was set to normal by `windowDidResignKey`
-      window?.level = .iinaFloating
+      window?.level = .floating
     }
 
     if Preference.bool(for: .pauseWhenInactive) && isPausedDueToInactive {

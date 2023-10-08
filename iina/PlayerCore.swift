@@ -402,9 +402,6 @@ class PlayerCore: NSObject {
     loadPlugins()
 
     if restore, let savedState = Preference.UIState.getPlayerSaveState(forPlayerID: label) {
-      log.verbose("Loading player state from prefs for \(label.quoted): \(savedState.properties)")
-      info.priorState = savedState
-
       savedState.restoreTo(self)
     }
   }

@@ -20,6 +20,7 @@ struct PlayerSaveState {
     case layoutSpec = "layoutSpec"
     case windowedModeGeometry = "windowedModeGeometry"
     case musicModeGeometry = "musicModeGeometry"
+    case screens = "screens"
     case isMinimized = "minimized"
     case overrideAutoMusicMode = "overrideAutoMusicMode"
     case isOnTop = "onTop"
@@ -80,6 +81,7 @@ struct PlayerSaveState {
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
   let windowedModeGeometry: PlayerWindowGeometry?
   let musicModeGeometry: MusicModeGeometry?
+  let screens: [ScreenMeta]
 
   init(_ props: [String: Any]) {
     self.properties = props
@@ -87,6 +89,7 @@ struct PlayerSaveState {
     self.layoutSpec = PlayerSaveState.deserializeLayoutSpec(from: props)
     self.windowedModeGeometry = PlayerSaveState.deserializeWindowGeometry(from: props)
     self.musicModeGeometry = PlayerSaveState.deserializeMusicModeGeometry(from: props)
+    self.screens = (props[PropName.screens.rawValue] as? [String] ?? []).compactMap({ScreenMeta.from($0)})
   }
 
   // MARK: - Save State / Serialize to prefs strings
@@ -162,6 +165,9 @@ struct PlayerSaveState {
 
     /// `musicModeGeometry`
     props[PropName.musicModeGeometry.rawValue] = toCSV(player.windowController.musicModeGeometry)
+
+    let screenMetaList: [String] = NSScreen.screens.map{ScreenMeta.from($0).toCSV()}
+    props[PropName.screens.rawValue] = screenMetaList
 
     if let size = info.userPreferredVideoContainerSizeWide {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
@@ -481,9 +487,14 @@ struct PlayerSaveState {
   /// Restore player state from prior launch
   func restoreTo(_ player: PlayerCore) {
     let log = player.log
-    log.verbose("Restoring player state from prior launch")
+    // log properties but not playlist paths (not very useful, takes up space, is private info)
+    log.verbose("Restoring player state from prior launch for \(player.label.quoted), props: \(properties.filter{ $0.key != PropName.playlistPaths.rawValue}))")
     let info = player.info
+    info.priorState = self
+
     let windowController = player.windowController!
+
+    log.verbose("Screens from prior launch: \(self.screens)")
 
     if let hdrEnabled = bool(for: .hdrEnabled) {
       info.hdrEnabled = hdrEnabled
@@ -621,4 +632,74 @@ struct PlayerSaveState {
     }
   }
 
+}
+
+struct ScreenMeta {
+  static private let expectedCSVTokenCount = 14
+  static private let csvVersion = String(1)
+
+  let displayID: UInt32
+  let name: String
+  let frame: NSRect
+  let visibleFrame: NSRect
+  let nativeResolution: CGSize
+  let cameraHousingHeight: CGFloat
+
+  func toCSV() -> String {
+    return [ScreenMeta.csvVersion, String(displayID), name,
+            frame.origin.x.string2f, frame.origin.y.string2f, frame.size.width.string2f, frame.size.height.string2f,
+            visibleFrame.origin.x.string2f, visibleFrame.origin.y.string2f, visibleFrame.size.width.string2f, visibleFrame.size.height.string2f,
+            nativeResolution.width.string2f, nativeResolution.height.string2f,
+            cameraHousingHeight.string2f
+    ].joined(separator: ",")
+  }
+
+  static func from(_ screen: NSScreen) -> ScreenMeta {
+    let name: String
+    if #available(macOS 10.15, *) {
+      // Can't store comma in CSV. Just convert to semicolon
+      name = screen.localizedName.replacingOccurrences(of: ",", with: ";")
+    } else {
+      name = ""
+    }
+    return ScreenMeta(displayID: screen.displayId, name: name, frame: screen.frame, visibleFrame: screen.visibleFrame,
+                      nativeResolution: screen.nativeResolution ?? CGSizeZero, cameraHousingHeight: screen.cameraHousingHeight ?? 0)
+  }
+
+  static func from(_ csv: String) -> ScreenMeta? {
+    let tokens = csv.split(separator: ",").map{String($0)}
+    guard tokens.count == expectedCSVTokenCount else {
+      Logger.log("While parsing ScreenMeta from CSV: not enough tokens (expected \(expectedCSVTokenCount) but found \(tokens.count))", level: .error)
+      return nil
+    }
+    var iter = tokens.makeIterator()
+
+    let version = iter.next()
+    guard version == csvVersion else {
+      Logger.log("While parsing ScreenMeta from CSV: bad version (expected \(csvVersion.quoted) but found \(version?.quoted ?? "nil"))", level: .error)
+      return nil
+    }
+
+      guard let displayID = UInt32(iter.next()!),
+            let name = iter.next(),
+            let frameX = Double(iter.next()!),
+            let frameY = Double(iter.next()!),
+            let frameW = Double(iter.next()!),
+            let frameH = Double(iter.next()!),
+            let visibleFrameX = Double(iter.next()!),
+            let visibleFrameY = Double(iter.next()!),
+            let visibleFrameW = Double(iter.next()!),
+            let visibleFrameH = Double(iter.next()!),
+            let nativeResW = Double(iter.next()!),
+            let nativeResH = Double(iter.next()!),
+            let cameraHousingHeight = Double(iter.next()!) else {
+        Logger.log("While parsing ScreenMeta from CSV: could not parse one or more tokens", level: .error)
+        return nil
+      }
+
+    let frame = NSRect(x: frameX, y: frameY, width: frameW, height: frameH)
+    let visibleFrame = NSRect(x: visibleFrameX, y: visibleFrameY, width: visibleFrameW, height: visibleFrameH)
+    let nativeResolution = NSSize(width: nativeResW, height: nativeResH)
+    return ScreenMeta(displayID: displayID, name: name, frame: frame, visibleFrame: visibleFrame, nativeResolution: nativeResolution, cameraHousingHeight: cameraHousingHeight)
+  }
 }
