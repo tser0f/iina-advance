@@ -99,7 +99,7 @@ extension PlayerWindowController {
         NSApp.presentationOptions.insert(.autoHideMenuBar)
         NSApp.presentationOptions.insert(.autoHideDock)
 
-        window.level = .floating
+        window.level = .iinaFloating
       }
       if !isClosing {
         player.mpv.setFlag(MPVOption.Window.fullscreen, true)

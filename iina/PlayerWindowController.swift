@@ -2027,7 +2027,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard !isAnimating else { return }
     guard let window = window else { return }
     log.verbose("WindowDidMove frame: \(window.frame)")
-    if !isFullScreen {
+    if currentLayout.isLegacyFullScreen {
+      // Sometimes MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
+      // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
+      // window management app such as Amethyst. If this happens, move the window back to its proper place:
+      log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
+      let newGeo = buildFullScreenGeometry(from: currentLayout, legacy: true)
+      setWindowFrameForLegacyFullScreen(using: newGeo)
+    } else {
       updateCachedGeometry()
       player.events.emit(.windowMoved, data: window.frame)
     }
@@ -2037,7 +2044,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowDidBecomeKey(_ notification: Notification) {
     if currentLayout.isLegacyFullScreen {
-      window?.level = .floating
+      window?.level = .iinaFloating
     }
 
     if Preference.bool(for: .pauseWhenInactive) && isPausedDueToInactive {
