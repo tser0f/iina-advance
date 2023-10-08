@@ -100,7 +100,7 @@ extension Preference {
     static private func getCurrentOpenWindowNames(excludingWindowName nameToExclude: String? = nil) -> [String] {
       var orderNamePairs: [(Int, String)] = []
       for window in NSApp.windows {
-        let name = window.uiStateSaveName
+        let name = window.savedStateName
         if !name.isEmpty && window.isVisible {
           if let nameToExclude = nameToExclude, nameToExclude == name {
             continue

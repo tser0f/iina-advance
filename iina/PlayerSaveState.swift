@@ -267,7 +267,7 @@ struct PlayerSaveState {
     guard Preference.UIState.isSaveEnabled else { return }
     DispatchQueue.main.async {
       guard player.windowController.loaded else {
-        player.log.debug("Skipping player state save: player window is not loaded")
+//        player.log.debug("Skipping player state save: player window is not loaded")
         return
       }
       guard !player.info.isRestoring else {

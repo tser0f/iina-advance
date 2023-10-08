@@ -222,7 +222,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
-  var geoUpdateRequestCount: Int = 0
+  var geoUpdateTicketCount: Int = 0
 
   lazy var windowedModeGeometry: PlayerWindowGeometry = {
     // TODO: better logic here
@@ -1983,7 +1983,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  /// This also handles the case where Dock was shown/hidden.
+  /// Can be:
+  /// • A Screen was connected or disconnected
+  /// • Dock visiblity was toggled
+  /// • More...
   private func windowDidChangeScreenParameters(_ notification: Notification) {
     var screenIDs = Set<UInt32>()
     for screen in NSScreen.screens {
@@ -2059,7 +2062,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidBecomeMain(_ notification: Notification) {
-    log.verbose("Window became main: \(player.subsystem.rawValue)")
+    guard let window else { return }
+    log.verbose("Window became main: \(window.savedStateName.quoted)")
 
     PlayerCore.lastActive = player
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
@@ -2075,7 +2079,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidResignMain(_ notification: Notification) {
-    log.verbose("Window is no longer main: \(player.subsystem.rawValue)")
+    guard let window else { return }
+    log.verbose("Window is no longer main: \(window.savedStateName.quoted)")
 
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()

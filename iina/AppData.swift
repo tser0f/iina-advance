@@ -16,7 +16,7 @@ struct AppData {
     let tolerance: TimeInterval
   }
   static let syncTimerConfig = SyncTimerConfig(interval: 0.1, tolerance: 0.02)
-  static let syncTimerPreciseConfig = SyncTimerConfig(interval: 0.04, tolerance: 0.01)
+//  static let syncTimerPreciseConfig = SyncTimerConfig(interval: 0.04, tolerance: 0.01)
 
   /// If state save is enabled and video is playing, make sure player is saved every this number of secs
   static let playTimeSaveStateIntervalSec: Double = 10.0

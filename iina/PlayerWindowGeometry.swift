@@ -741,6 +741,7 @@ extension PlayerWindowController {
     player.window.setFrameImmediately(geometry.windowFrame)
   }
 
+  // Uses animation
   func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry, animate: Bool = true) {
     log.verbose("applyWindowGeometry: \(newGeometry.windowFrame)")
     // Update video aspect ratio
@@ -751,13 +752,13 @@ extension PlayerWindowController {
       return
     }
 
-    geoUpdateRequestCount += 1
-    let geoUpdateRequestID = geoUpdateRequestCount
+    geoUpdateTicketCount += 1
+    let geoUpdateRequestID = geoUpdateTicketCount
     let isFullScreen = isFullScreen
 
     animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-      if geoUpdateRequestID < geoUpdateRequestCount {
-        log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateRequestCount)")
+      if geoUpdateRequestID < geoUpdateTicketCount {
+        log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateTicketCount)")
         return
       }
       log.verbose("Running geoUpdate \(geoUpdateRequestID)")
@@ -777,6 +778,7 @@ extension PlayerWindowController {
     }))
   }
 
+  // Not animated
   func applyWindowGeometryLivePreview(_ newGeometry: PlayerWindowGeometry) {
     log.verbose("applyWindowGeometryLivePreview: \(newGeometry)")
     // Update video aspect ratio

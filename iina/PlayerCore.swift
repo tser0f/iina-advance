@@ -96,6 +96,9 @@ class PlayerCore: NSObject {
    */
   @Atomic var backgroundQueueTicket = 0
 
+  // Ticket for sync UI update request
+  private var syncUITicketCount: Int = 0
+
   // Windows
 
   var windowController: PlayerWindowController!
@@ -1761,7 +1764,7 @@ class PlayerCore: NSObject {
       useTimer = windowController.isUITimerNeeded()
     }
 
-    let timerConfig = DurationDisplayTextField.precision >= 2 ? AppData.syncTimerConfig : AppData.syncTimerPreciseConfig
+    let timerConfig = AppData.syncTimerConfig
 
     /// Invalidate existing timer:
     /// - if no longer needed
@@ -1841,22 +1844,36 @@ class PlayerCore: NSObject {
     let now = Date().timeIntervalSince1970
     let secSinceLastSave = now - lastSaveTime
     if secSinceLastSave >= AppData.playTimeSaveStateIntervalSec {
+      log.verbose("Another \(AppData.playTimeSaveStateIntervalSec)s has passed: saving player state")
       saveState()
       lastSaveTime = now
     }
 
     DispatchQueue.main.async { [self] in
-      // don't let play/pause icon fall out of sync
-      windowController.playButton.state = info.isPaused ? .off : .on
-      windowController.updatePlayTime(withDuration: isNetworkStream)
-      windowController.updateAdditionalInfo()
-      if isInMiniPlayer {
-        _ = windowController.miniPlayer.view // make sure it is loaded
-        windowController.miniPlayer.updateScrollingLabels()
-        windowController.miniPlayer.playButton.state = info.isPaused ? .off : .on
+      guard !windowController.isAnimating else {
+        return
       }
-      if isNetworkStream {
-        self.windowController.updateNetworkState()
+
+      syncUITicketCount += 1
+      let syncUITicket = syncUITicketCount
+
+      windowController.animationQueue.runZeroDuration { [self] in
+        guard syncUITicket == syncUITicketCount else {
+          return
+        }
+
+        // don't let play/pause icon fall out of sync
+        windowController.playButton.state = info.isPaused ? .off : .on
+        windowController.updatePlayTime(withDuration: isNetworkStream)
+        windowController.updateAdditionalInfo()
+        if isInMiniPlayer {
+          _ = windowController.miniPlayer.view // make sure it is loaded
+          windowController.miniPlayer.updateScrollingLabels()
+          windowController.miniPlayer.playButton.state = info.isPaused ? .off : .on
+        }
+        if isNetworkStream {
+          self.windowController.updateNetworkState()
+        }
       }
     }
   }

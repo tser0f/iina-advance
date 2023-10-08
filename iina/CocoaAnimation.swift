@@ -52,18 +52,14 @@ class CocoaAnimation {
 
   struct Task {
     let duration: CGFloat
-    let timingFunction: CAMediaTimingFunction?
+    let timingName: CAMediaTimingFunctionName?
     let runFunc: TaskFunc
 
     init(duration: CGFloat = CocoaAnimation.DefaultDuration,
          timing timingName: CAMediaTimingFunctionName? = nil,
          _ runFunc: @escaping TaskFunc) {
       self.duration = duration
-      if let timingName = timingName {
-        self.timingFunction = CAMediaTimingFunction(name: timingName)
-      } else {
-        self.timingFunction = nil
-      }
+      self.timingName = timingName
       self.runFunc = runFunc
     }
   }
@@ -84,6 +80,8 @@ class CocoaAnimation {
       run([task], then: doAfter)
     }
 
+    // Convenience function. Run the task with no animation / zero duration.
+    // Useful for updating constraints, etc., which cannot be animated or do not look good animated.
     func runZeroDuration(_ runFunc: @escaping TaskFunc, then doAfter: TaskFunc? = nil) {
       run(CocoaAnimation.zeroDurationTask(runFunc), then: doAfter)
     }
@@ -92,6 +90,8 @@ class CocoaAnimation {
     /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `CocoaAnimation.disableAnimation()`.
     /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `CocoaAnimation.DefaultDuration`.
     func run(_ tasks: [Task], then doAfter: TaskFunc? = nil) {
+      // Fail if not running on main thread:
+      dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
 
       var needsLaunch = false
       taskQueue.appendAll(tasks)
@@ -131,8 +131,8 @@ class CocoaAnimation {
         }
         context.allowsImplicitAnimation = !disableAnimation
 
-        if let timingFunc = nextTask.timingFunction {
-          context.timingFunction = timingFunc
+        if let timingName = nextTask.timingName {
+          context.timingFunction = CAMediaTimingFunction(name: timingName)
         }
         nextTask.runFunc()
       }, completionHandler: {
@@ -141,7 +141,11 @@ class CocoaAnimation {
     }
   }
 
+  /// Convenience wrapper for chaining multiple tasks together via `NSAnimationContext.runAnimationGroup()`. Does not use serial queue.
   static func runAsync(_ task: Task, then doAfter: TaskFunc? = nil) {
+    // Fail if not running on main thread:
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    
     NSAnimationContext.runAnimationGroup({ context in
       let disableAnimation = !isAnimationEnabled || AccessibilityPreferences.motionReductionEnabled
       if disableAnimation {
@@ -151,8 +155,8 @@ class CocoaAnimation {
       }
       context.allowsImplicitAnimation = !disableAnimation
 
-      if let timingFunc = task.timingFunction {
-        context.timingFunction = timingFunc
+      if let timingName = task.timingName {
+        context.timingFunction = CAMediaTimingFunction(name: timingName)
       }
       task.runFunc()
     }, completionHandler: {

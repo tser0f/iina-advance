@@ -509,7 +509,7 @@ class PrefSearchResultMaskView: NSView {
     } else {
       NSColor(calibratedWhite: 0.5, alpha: 0.5).setFill()
     }
-    dirtyRect.fill()
+    bounds.fill()
     NSGraphicsContext.restoreGraphicsState()
   }
 

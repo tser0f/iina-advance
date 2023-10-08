@@ -613,7 +613,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     /// Query for the list of open windows and save it (excluding the window which is about to close).
     /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
     /// the user closes a window which is not in the foreground.
-    Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.uiStateSaveName)
+
+    Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.savedStateName)
 
     // Player window was closed? Need to remove some additional state
     if let player = (window.windowController as? PlayerWindowController)?.player {
@@ -622,7 +623,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       // Check whether this is the last player closed; show welcome or history window if configured.
       // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
       if player.isOnlyOpenPlayer {
-        player.log.verbose("Window was last player window open: \(window.uiStateSaveName.quoted)")
+        player.log.verbose("Window was last player window open: \(window.savedStateName.quoted)")
         doActionWhenLastWindowWillClose()
         return
       }
@@ -630,7 +631,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     if window.isOnlyOpenWindow() {
       let quitForAction: Preference.ActionWhenNoOpenedWindow?
-      switch window.uiStateSaveName {
+      switch window.savedStateName {
       case WindowAutosaveName.playbackHistory.string:
         quitForAction = .historyWindow
       case WindowAutosaveName.welcome.string:
