@@ -186,6 +186,10 @@ struct PlayerWindowGeometry: Equatable {
     return outsideTrailingBarWidth + outsideLeadingBarWidth
   }
 
+  var outsideSidebarsTotalHeight: CGFloat {
+    return outsideTopBarHeight + outsideBottomBarHeight
+  }
+
   var outsideBarsTotalSize: NSSize {
     return NSSize(width: outsideSidebarsTotalWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
   }
@@ -645,20 +649,22 @@ extension PlayerWindowController {
 
     let newGeoUnconstrained = windowedModeGeometry.scaleVideoContainer(desiredSize: desiredVideoContainerSize)
     // User has actively resized the video. Assume this is the new preferred resolution
-    player.info.setUserPreferredVideoContainerSize(from: newGeoUnconstrained)
+    player.info.setUserIntendedVideoContainerSize(from: newGeoUnconstrained)
 
     let newGeometry = newGeoUnconstrained.constrainWithin(bestScreen.visibleFrame, centerInContainer: centerOnScreen)
     log.verbose("\(isFullScreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeVideoContainer (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
     applyWindowGeometry(newGeometry)
   }
 
-  func updateCachedGeometry() {
+  /// `updatePreferredSizeAlso` only applies to `.windowed` mode
+  func updateCachedGeometry(updatePreferredSizeAlso: Bool = true) {
     guard !isAnimating else { return }
     log.verbose("Recomputing \(currentLayout.mode) geometry from current window")
 
     switch currentLayout.mode {
     case .windowed:
       windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
+      player.info.setUserIntendedVideoContainerSize(from: windowedModeGeometry)
       player.saveState()
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame, videoAspectRatio: videoAspectRatio)
@@ -826,7 +832,7 @@ extension PlayerWindowController {
     }
   }
 
-  func resizeWindowedModeGeometry(desiredSize requestedSize: NSSize) -> PlayerWindowGeometry {
+  func resizeWindowedModeGeometry(to requestedSize: NSSize) -> PlayerWindowGeometry {
     assert(currentLayout.mode == .windowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
     guard let window = window else { return windowedModeGeometry }
     let currentGeo = windowedModeGeometry
@@ -878,7 +884,7 @@ extension PlayerWindowController {
 
       if !isFullScreen && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
-        player.info.setUserPreferredVideoContainerSize(from: requestedGeo)
+        player.info.setUserIntendedVideoContainerSize(from: requestedGeo)
       }
       let requestedGeoConstrained = requestedGeo.constrainWithin(screenVisibleFrame)
       return requestedGeoConstrained
@@ -920,7 +926,7 @@ extension PlayerWindowController {
  
       if !isFullScreen {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise.
-        player.info.setUserPreferredVideoContainerSize(from: chosenGeometry)
+        player.info.setUserIntendedVideoContainerSize(from: chosenGeometry)
       }
     } else {
       // Resize request is not coming from the user. Could be BetterTouchTool, Retangle, or some window manager, or the OS.

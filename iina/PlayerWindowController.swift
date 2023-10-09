@@ -1869,13 +1869,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         return requestedSize
       }
     case .windowed:
-      let newGeo = resizeWindowedModeGeometry(desiredSize: requestedSize)
+      let newGeometry = resizeWindowedModeGeometry(to: requestedSize)
       CocoaAnimation.disableAnimation{
-        videoView.updateSizeConstraints(newGeo.videoSize)
+        videoView.updateSizeConstraints(newGeometry.videoSize)
       }
 
-      updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
-      return newGeo.windowFrame.size
+      // We know the size, but don't yet know where AppKit is actually going to put the resized window.
+      // Enqueue task which will run after this method returns, so we can check once the window is in its new location.
+      DispatchQueue.main.async { [self] in
+        updateCachedGeometry()
+      }
+
+      updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
+      return newGeometry.windowFrame.size
     }
   }
 
@@ -1928,12 +1934,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     switch currentLayout.mode {
     case .windowed:
-      // Do not save geometry, because user may be in the middle of pinch-to-zoom.
-      // But update preferred container size
-      let resizedGeo = windowedModeGeometry.clone(windowFrame: window!.frame).constrainWithin(bestScreen.visibleFrame)
-      player.info.setUserPreferredVideoContainerSize(from: resizedGeo)
-      windowedModeGeometry = resizedGeo
-
+      updateCachedGeometry()
       // resize framebuffer in videoView after resizing.
       updateWindowParametersForMPV()
     case .musicMode:
@@ -1986,6 +1987,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Can be:
   /// • A Screen was connected or disconnected
   /// • Dock visiblity was toggled
+  /// • Adding or removing window style mask `.titled`
   /// • More...
   private func windowDidChangeScreenParameters(_ notification: Notification) {
     var screenIDs = Set<UInt32>()
@@ -2035,7 +2037,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeo = buildFullScreenGeometry(from: currentLayout, legacy: true)
       setWindowFrameForLegacyFullScreen(using: newGeo)
     } else {
-      updateCachedGeometry()
+      updateCachedGeometry(updatePreferredSizeAlso: false)
       player.events.emit(.windowMoved, data: window.frame)
     }
   }
@@ -2125,7 +2127,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         exitPIP()
       }
     }
-    updateCachedGeometry()
     player.events.emit(.windowDeminiaturized)
   }
 

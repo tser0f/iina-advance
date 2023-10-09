@@ -85,12 +85,17 @@ class PlaybackInfo {
   var isNetworkResource: Bool = false
   var mpvMd5: String?
 
-  // MARK: - Audio/Video
+  // MARK: - Geometry
 
   // When navigating in playlist, and user does not have any other predefined resizing strategy, try to maintain the same window width
   // even for different video sizes and aspect ratios. Since it may not be possible to fit all videos onscreen, some videos will need to
   // be shrunk down, and over time this would lead to the window shrinking into the smallest size. Instead, remember the last window size
   // which the user manually chose, and try to match that across videos.
+  //
+  // This is also useful when opening outside sidebars:
+  // When opening a sidebar and there is not enough space on screen, the video container will be shrunk so that the sidebar can open while
+  // keeping the window fully within the bounds of the screen. But when the sidebar is closed again, the video container / window wiil be
+  // expanded again to the preferred container size.
   var userPreferredVideoContainerSizeWide: NSSize? = nil
   // Track vertical videos separately since they are so different:
   var userPreferredVideoContainerSizeTall: NSSize? = nil
@@ -98,7 +103,7 @@ class PlaybackInfo {
   /// Use a single preferred container size when allowing blackspace around video.
   /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`videoContainerSize`.
   /// Need to reconcile these requirements...
-  func setUserPreferredVideoContainerSize(from windowGeometry: PlayerWindowGeometry) {
+  func setUserIntendedVideoContainerSize(from windowGeometry: PlayerWindowGeometry) {
     let newSize = windowGeometry.videoContainerSize
     if Preference.bool(for: .allowEmptySpaceAroundVideo) || windowGeometry.videoAspectRatio >= 1 {
       // Video is wide or square
@@ -150,6 +155,8 @@ class PlaybackInfo {
   var totalRotation: Int?
 
   var cachedWindowScale: Double = 1.0
+
+  // - MARK: Filters & Equalizers
 
   /** The current applied aspect, used for find current aspect in menu, etc. Maybe not a good approach. */
   var unsureAspect: String = "Default"

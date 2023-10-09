@@ -59,7 +59,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         } else {
           windowController.log.verbose("Updating windowedModeGeometry from magnification gesture state \(recognizer.state.rawValue)")
           windowController.windowedModeGeometry = newWindowGeometry
-          windowController.updateWindowParametersForMPV()  // also saves state
+          windowController.updateWindowParametersForMPV()
         }
         windowController.player.saveState()
       }
@@ -114,9 +114,8 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       let newMusicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
       windowController.log.verbose("Scaling video from pinch gesture in music mode. Applying result bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newWindowFrame)")
 
-      // TODO: instead of using `animate: false`, try using boolean to keep track of pinch gesture & update video size constraints in WindowDidEndLiveResize
-      // (might provide a smoother animation)
       CocoaAnimation.disableAnimation{
+        /// Important: use `animate: false` so that window controller callbacks are not triggered
         windowController.applyMusicModeGeometry(newMusicModeGeometry, animate: false, updateCache: false)
       }
       // Kind of clunky to convert to PlayerWindowGeometry, just to fit the function signature, then convert it back. But...could be worse.
@@ -127,10 +126,10 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     let origVideoContainerSize = originalGeometry.videoContainerSize
     let newVideoContainerSize = origVideoContainerSize.multiply(scale)
 
-
     let newGeoUnconstrained = originalGeometry.scaleVideoContainer(desiredSize: newVideoContainerSize)
-    // User has actively resized the video. Assume this is the new preferred resolution
-    windowController.player.info.setUserPreferredVideoContainerSize(from: newGeoUnconstrained)
+    // User has actively resized the video. Assume this is the new intended resolution, even if it is outside the current screen size.
+    // This is useful for various features such as resizing with "allowEmptySpaceAroundVideo", or toggling visibility of outside bars.
+    windowController.player.info.setUserIntendedVideoContainerSize(from: newGeoUnconstrained)
 
     let newGeometry = newGeoUnconstrained.constrainWithin(windowController.bestScreen.visibleFrame)
     windowController.applyWindowGeometryLivePreview(newGeometry)

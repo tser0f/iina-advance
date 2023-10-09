@@ -66,7 +66,6 @@ extension PlayerWindowController {
         log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
         mode = .fullScreen
       } else if currentLayout.isFullScreen {
-        // TODO: set initial layout from prefs
         // Go back to windowed mode
         mode = .windowed
       } else {
@@ -371,30 +370,27 @@ extension PlayerWindowController {
     let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
 
     let outputGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.outsideTopBarHeight,
-                                                      outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
-                                                      outsideBottomBarHeight: outsideBottomBarHeight,
-                                                      outsideLeadingBarWidth: outputLayout.outsideLeadingBarWidth,
-                                                      insideTopBarHeight: insideTopBarHeight,
-                                                      insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
-                                                      insideBottomBarHeight: insideBottomBarHeight,
-                                                      insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
-                                                      videoAspectRatio: inputGeometry.videoAspectRatio,
-                                                      constrainedWithin: bestScreen.visibleFrame)
+                                                         outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
+                                                         outsideBottomBarHeight: outsideBottomBarHeight,
+                                                         outsideLeadingBarWidth: outputLayout.outsideLeadingBarWidth,
+                                                         insideTopBarHeight: insideTopBarHeight,
+                                                         insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
+                                                         insideBottomBarHeight: insideBottomBarHeight,
+                                                         insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
+                                                         videoAspectRatio: inputGeometry.videoAspectRatio,
+                                                         constrainedWithin: bestScreen.visibleFrame)
 
-    // FIXME: this doesn't synchronize properly during animations when this is false. Remove this guard when fixed
-    guard Preference.bool(for: .allowEmptySpaceAroundVideo) else {
-      return outputGeo
-    }
-
-    let outsideWidthIncrease = outputGeo.outsideSidebarsTotalWidth - inputGeometry.outsideSidebarsTotalWidth
-
-    if outsideWidthIncrease < 0 {   // Shrinking window width
-      // If opening the sidebar causes the video to be shrunk to fit everything on screen, we want to be able to restore
-      // its previous size when the sidebar is closed again, instead of leaving the window in a smaller size.
+    let ΔOutsideWidth = outputGeo.outsideSidebarsTotalWidth - inputGeometry.outsideSidebarsTotalWidth
+    let ΔOutsideHeight = outputGeo.outsideSidebarsTotalHeight - inputGeometry.outsideSidebarsTotalHeight
+    // Shrinking window width, or keeping width the same but shrinking height?
+    if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
+      // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
+      // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
       let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: inputGeometry.videoAspectRatio)
       log.verbose("Before opening outer sidebar(s): restoring previous userPreferredVideoContainerSize")
 
-      return outputGeo.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? outputGeo.videoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+      return outputGeo.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? outputGeo.videoContainerSize, 
+                                           constrainedWithin: bestScreen.visibleFrame)
     }
     return outputGeo
   }
