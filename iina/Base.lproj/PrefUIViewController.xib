@@ -114,11 +114,11 @@
             </constraints>
             <point key="canvasLocation" x="2" y="-1042"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="636" height="104"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="636" height="112"/>
             <subviews>
                 <textField identifier="SectionTitleFullScreen" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fkF-Rz-sk3">
-                    <rect key="frame" x="-2" y="80" width="81" height="16"/>
+                    <rect key="frame" x="-2" y="88" width="81" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Full Screen:" id="615-la-NDK">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -126,10 +126,27 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9m-Hf-6wE" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="516" height="88"/>
+                    <rect key="frame" x="120" y="8" width="516" height="96"/>
                     <subviews>
+                        <button translatesAutoresizingMaskIntoConstraints="NO" id="prD-fv-qux">
+                            <rect key="frame" x="-2" y="79" width="291" height="18"/>
+                            <buttonCell key="cell" type="check" title="Black out other monitors while in full screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="KYi-0W-zOr">
+                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                <font key="font" metaFont="system"/>
+                            </buttonCell>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.blackOutMonitor" id="PpI-yz-ZcJ"/>
+                            </connections>
+                        </button>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="glX-jw-WmF" userLabel="4pt Spacer">
+                            <rect key="frame" x="0.0" y="72" width="1" height="4"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="4" id="Ly0-ch-8zc"/>
+                                <constraint firstAttribute="width" constant="1" id="Vbz-ew-PAi"/>
+                            </constraints>
+                        </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="KlA-Ot-dln">
-                            <rect key="frame" x="-2" y="71" width="165" height="18"/>
+                            <rect key="frame" x="-2" y="51" width="165" height="18"/>
                             <buttonCell key="cell" type="check" title="Use custom full screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="TvB-UM-FrS">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -142,7 +159,7 @@
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="cyV-Gs-jgb" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="68" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="48" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="LS6-pm-MKB"/>
                                 <constraint firstAttribute="width" constant="1" id="f4s-XJ-jKY"/>
@@ -156,7 +173,7 @@
                             </connections>
                         </customView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="BqM-nJ-IDU" userLabel="ToggleAnimationSpeedContainer View">
-                            <rect key="frame" x="20" y="48" width="362" height="16"/>
+                            <rect key="frame" x="20" y="28" width="362" height="16"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="NbK-vD-Iek">
                                     <rect key="frame" x="-2" y="0.0" width="110" height="16"/>
@@ -194,7 +211,7 @@
                             </connections>
                         </customView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="olV-5h-wSi" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="44" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="24" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="5Og-TH-Aq0"/>
                                 <constraint firstAttribute="width" constant="1" id="WU8-nC-Rlo"/>
@@ -208,7 +225,7 @@
                             </connections>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Nuv-dC-vHt">
-                            <rect key="frame" x="18" y="23" width="375" height="18"/>
+                            <rect key="frame" x="18" y="3" width="375" height="18"/>
                             <buttonCell key="cell" type="check" title="Use entire Macbook screen even if there is a visible notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -226,22 +243,12 @@
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="16b-qv-nql" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="20" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="0.0" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="1" id="3HA-7R-TSp"/>
                                 <constraint firstAttribute="height" id="otP-WD-XWh"/>
                             </constraints>
                         </customView>
-                        <button translatesAutoresizingMaskIntoConstraints="NO" id="prD-fv-qux">
-                            <rect key="frame" x="-2" y="-1" width="291" height="18"/>
-                            <buttonCell key="cell" type="check" title="Black out other monitors while in full screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="KYi-0W-zOr">
-                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                <font key="font" metaFont="system"/>
-                            </buttonCell>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.blackOutMonitor" id="PpI-yz-ZcJ"/>
-                            </connections>
-                        </button>
                     </subviews>
                     <constraints>
                         <constraint firstItem="Nuv-dC-vHt" firstAttribute="leading" secondItem="KlA-Ot-dln" secondAttribute="leading" constant="20" id="3op-0g-EX0"/>
@@ -250,6 +257,7 @@
                         <constraint firstItem="BqM-nJ-IDU" firstAttribute="leading" secondItem="Nuv-dC-vHt" secondAttribute="leading" id="xuM-La-f16"/>
                     </constraints>
                     <visibilityPriorities>
+                        <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
@@ -266,12 +274,13 @@
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
                     </customSpacing>
                 </stackView>
             </subviews>
             <constraints>
                 <constraint firstItem="fkF-Rz-sk3" firstAttribute="top" secondItem="2Pv-Ut-0kz" secondAttribute="top" constant="8" id="4K5-H2-tOO"/>
-                <constraint firstItem="KlA-Ot-dln" firstAttribute="firstBaseline" secondItem="fkF-Rz-sk3" secondAttribute="firstBaseline" id="AKn-T7-Ox1"/>
+                <constraint firstItem="prD-fv-qux" firstAttribute="firstBaseline" secondItem="fkF-Rz-sk3" secondAttribute="firstBaseline" id="6JH-BW-fkp"/>
                 <constraint firstItem="fkF-Rz-sk3" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="2Pv-Ut-0kz" secondAttribute="leading" constant="120" id="QFc-9n-B6e"/>
                 <constraint firstItem="fkF-Rz-sk3" firstAttribute="leading" secondItem="2Pv-Ut-0kz" secondAttribute="leading" id="QkP-SM-25o"/>
                 <constraint firstItem="d9m-Hf-6wE" firstAttribute="leading" secondItem="2Pv-Ut-0kz" secondAttribute="leading" constant="120" id="YlZ-7O-9cw"/>
@@ -842,11 +851,11 @@
             </constraints>
             <point key="canvasLocation" x="8" y="-737"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="482" height="694"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="482" height="726"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
-                    <rect key="frame" x="-2" y="654" width="124" height="32"/>
+                    <rect key="frame" x="-2" y="686" width="124" height="32"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Title Bar and Controller:" id="g06-Ja-Ot8">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -854,10 +863,10 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="6" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4SE-r9-OnD" userLabel="Top-Bar Vertical Stack View">
-                    <rect key="frame" x="120" y="236" width="361" height="450"/>
+                    <rect key="frame" x="120" y="236" width="362" height="482"/>
                     <subviews>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="HbB-K7-G5g" userLabel="Player-Window-Preview-Container View">
-                            <rect key="frame" x="0.0" y="174" width="360" height="276"/>
+                            <rect key="frame" x="0.0" y="206" width="360" height="276"/>
                             <subviews>
                                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="2IQ-cb-xFe" userLabel="Player-Window-Preview-Border View">
                                     <rect key="frame" x="0.0" y="6" width="360" height="270"/>
@@ -887,7 +896,7 @@
                             </constraints>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Jf5-XY-THf">
-                            <rect key="frame" x="-2" y="149" width="180" height="20"/>
+                            <rect key="frame" x="-2" y="183" width="180" height="18"/>
                             <buttonCell key="cell" type="check" title="Use custom window style" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="mRo-KS-u6M">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -896,6 +905,29 @@
                                 <binding destination="lH7-Vv-0M1" name="value" keyPath="values.useLegacyWindowedMode" id="Jru-iO-YyQ"/>
                             </connections>
                         </button>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="FzN-vg-jJ7">
+                            <rect key="frame" x="18" y="150" width="346" height="28"/>
+                            <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="For smoother full screen transitions, combine with custom full screen." id="DrH-3F-GvB">
+                                <font key="font" metaFont="label" size="11"/>
+                                <color key="textColor" name="disabledControlTextColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="hidden2" keyPath="values.useLegacyFullScreen" previousBinding="uho-HT-KDU" id="g9l-DL-hAl">
+                                    <dictionary key="options">
+                                        <integer key="NSMultipleValuesPlaceholder" value="-1"/>
+                                        <integer key="NSNoSelectionPlaceholder" value="-1"/>
+                                        <integer key="NSNotApplicablePlaceholder" value="-1"/>
+                                        <integer key="NSNullPlaceholder" value="-1"/>
+                                    </dictionary>
+                                </binding>
+                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyWindowedMode" id="uho-HT-KDU">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
+                        </textField>
                         <customView identifier="topBarPlacementContainerView" translatesAutoresizingMaskIntoConstraints="NO" id="TRL-kd-T5g" userLabel="Top-Bar-Position-Container View">
                             <rect key="frame" x="0.0" y="114" width="361" height="30"/>
                             <subviews>
@@ -1087,6 +1119,7 @@
                     <constraints>
                         <constraint firstItem="mk9-4m-UZR" firstAttribute="leading" secondItem="mJq-OS-xid" secondAttribute="leading" constant="20" id="5Vn-3l-FjP"/>
                         <constraint firstItem="f7b-zH-WwI" firstAttribute="height" secondItem="67g-AK-VP6" secondAttribute="height" id="69G-XR-fDU"/>
+                        <constraint firstItem="FzN-vg-jJ7" firstAttribute="leading" secondItem="Jf5-XY-THf" secondAttribute="leading" constant="20" id="7gV-FU-j3X"/>
                         <constraint firstItem="GbG-nw-ict" firstAttribute="trailing" secondItem="HbB-K7-G5g" secondAttribute="trailing" id="BDZ-k0-Ofy"/>
                         <constraint firstItem="f7b-zH-WwI" firstAttribute="leading" secondItem="67g-AK-VP6" secondAttribute="leading" id="DVX-Xf-0iq"/>
                         <constraint firstItem="f7b-zH-WwI" firstAttribute="trailing" secondItem="67g-AK-VP6" secondAttribute="trailing" id="PCz-gU-m8d"/>
@@ -1107,8 +1140,10 @@
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
+                        <integer value="1000"/>
                     </visibilityPriorities>
                     <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
