@@ -768,13 +768,13 @@ extension PlayerWindowController {
 
     switch topBarPlacement {
     case .insideVideo:
-      videoContainerTopOffsetFromTopBarBottomConstraint.animateToConstant(-topBarHeight)
-      videoContainerTopOffsetFromTopBarTopConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(0 + cameraHousingOffset)
+      viewportTopOffsetFromTopBarBottomConstraint.animateToConstant(-topBarHeight)
+      viewportTopOffsetFromTopBarTopConstraint.animateToConstant(0)
+      viewportTopOffsetFromContentViewTopConstraint.animateToConstant(0 + cameraHousingOffset)
     case .outsideVideo:
-      videoContainerTopOffsetFromTopBarBottomConstraint.animateToConstant(0)
-      videoContainerTopOffsetFromTopBarTopConstraint.animateToConstant(topBarHeight)
-      videoContainerTopOffsetFromContentViewTopConstraint.animateToConstant(topBarHeight + cameraHousingOffset)
+      viewportTopOffsetFromTopBarBottomConstraint.animateToConstant(0)
+      viewportTopOffsetFromTopBarTopConstraint.animateToConstant(topBarHeight)
+      viewportTopOffsetFromContentViewTopConstraint.animateToConstant(topBarHeight + cameraHousingOffset)
     }
   }
 
@@ -805,20 +805,20 @@ extension PlayerWindowController {
 
     switch bottomBarPlacement {
     case .insideVideo:
-      videoContainerBottomOffsetFromBottomBarTopConstraint.animateToConstant(bottomBarHeight)
-      videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(0)
-      videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(0)
+      viewportBottomOffsetFromBottomBarTopConstraint.animateToConstant(bottomBarHeight)
+      viewportBottomOffsetFromBottomBarBottomConstraint.animateToConstant(0)
+      viewportBottomOffsetFromContentViewBottomConstraint.animateToConstant(0)
     case .outsideVideo:
-      videoContainerBottomOffsetFromBottomBarTopConstraint.animateToConstant(0)
-      videoContainerBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
-      videoContainerBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
+      viewportBottomOffsetFromBottomBarTopConstraint.animateToConstant(0)
+      viewportBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
+      viewportBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
     }
   }
 
   /// After bars are shown or hidden, or their placement changes, this ensures that their shadows appear in the correct places.
   /// • Outside bars never cast shadows or have shadows cast on them.
-  /// • Inside sidebars cast shadows over inside top bar & inside bottom bar, and over `videoContainerView`.
-  /// • Inside top & inside bottom bars do not cast shadows over `videoContainerView`.
+  /// • Inside sidebars cast shadows over inside top bar & inside bottom bar, and over `viewportView`.
+  /// • Inside top & inside bottom bars do not cast shadows over `viewportView`.
   private func updateDepthOrderOfBars(topBar: Preference.PanelPlacement, bottomBar: Preference.PanelPlacement,
                                       leadingSidebar: Preference.PanelPlacement, trailingSidebar: Preference.PanelPlacement) {
     guard let window = window, let contentView = window.contentView else { return }
@@ -827,17 +827,17 @@ extension PlayerWindowController {
     // (1) Don't want sidebar to cast a shadow on the video
     // (2) Animate sidebar open/close with "slide in" / "slide out" from behind the video
     if leadingSidebar == .outsideVideo {
-      contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: videoContainerView)
+      contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: viewportView)
     }
     if trailingSidebar == .outsideVideo {
-      contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: videoContainerView)
+      contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: viewportView)
     }
 
-    contentView.addSubview(topBarView, positioned: .above, relativeTo: videoContainerView)
-    contentView.addSubview(bottomBarView, positioned: .above, relativeTo: videoContainerView)
+    contentView.addSubview(topBarView, positioned: .above, relativeTo: viewportView)
+    contentView.addSubview(bottomBarView, positioned: .above, relativeTo: viewportView)
 
     if leadingSidebar == .insideVideo {
-      contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: videoContainerView)
+      contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: viewportView)
 
       if topBar == .insideVideo {
         contentView.addSubview(topBarView, positioned: .below, relativeTo: leadingSidebarView)
@@ -848,7 +848,7 @@ extension PlayerWindowController {
     }
 
     if trailingSidebar == .insideVideo {
-      contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: videoContainerView)
+      contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: viewportView)
 
       if topBar == .insideVideo {
         contentView.addSubview(topBarView, positioned: .below, relativeTo: trailingSidebarView)

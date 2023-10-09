@@ -10,50 +10,59 @@ import Foundation
 
 /**
 `PlayerWindowGeometry`
- Data structure which describes:
- 1. The size & position (`windowFrame`) of an IINA player window which is in normal windowed mode
-    (not fullscreen, music mode, etc.)
- 2. The size of the video container (`videoContainerSize`), whose size is inferred by subtracting the bar sizes
+ Data structure which describes the basic layout configuration of a player window (`PlayerWindowController`).
+
+ For `let wc = PlayerWindowController()`, an instance of this class describes:
+ 1. The size & position (`windowFrame`) of an IINA player `NSWindow`.
+ 2. The size of the window's viewport (`viewportView` in a `PlayerWindowController` instance).
+    The viewport contains the `videoView` and all of the `Preference.PanelPlacement.inside` views (`viewportSize`). size is inferred by subtracting the bar sizes
  from `windowFrame`.
  3. Either the height or width of each of the 4 `outsideVideo` bars, measured as the distance between the
-    outside edge of `videoContainerView` and the outermost edge of the bar. This is the minimum needed to determine
-    its size & position; the rest can be inferred from `windowFrame` and `videoContainerSize`.
+    outside edge of `viewportView` and the outermost edge of the bar. This is the minimum needed to determine
+    its size & position; the rest can be inferred from `windowFrame` and `viewportSize`.
     If instead the bar is hidden or is shown as `insideVideo`, its outside value will be `0`.
  4. Either  height or width of each of the 4 `insideVideo` bars. These are measured from the nearest outside wall of
-    `videoContainerView`.  If instead the bar is hidden or is shown as `outsideVideo`, its inside value will be `0`.
- 5. The size of the video itself (`videoView`), which may or may not be equal to the size of `videoContainerView`,
+    `viewportView`.  If instead the bar is hidden or is shown as `outsideVideo`, its inside value will be `0`.
+ 5. The size of the video itself (`videoView`), which may or may not be equal to the size of `viewportView`,
     depending on whether empty space is allowed around the video.
  6. The video aspect ratio. This is stored here mainly to create a central reference for it, to avoid differing
     values which can arise if calculating it from disparate sources.
 
- Below is an example of a player window with letterboxed video, where `videoContainerView` is taller than `videoView`.
- The `windowFrame` is the outermost rectangle.
+ Below is an example of a player window with letterboxed video, where the viewport is taller than `videoView`.
+ • Identifiers beginning with `wc.` refer to fields in the `PlayerWindowController` instance.
+ • Identifiers beginning with `geo.` are `PlayerWindowGeometry` fields.
+ • The window's frame (`windowFrame`) is the outermost rectangle.
+ • The frame of `wc.videoView` is the innermost dotted-lined rectangle.
+ • The frame of `wc.viewportView` contains `wc.videoView` and additional space for black bars.
  •
- •                        `videoContainerSize` (W)
- •                        │◄───────────────►│
- ┌─────────────────────────────────────────────────────────────────────┐`windowFrame`
- │                                 ▲`topMarginHeight`                  │
- │                                 ▼                                   │
- ├─────────────────────────────────────────────────────────────────────┤
- │                               ▲                                     │
- │                               │`outsideTopBarHeight`                │
- │                               ▼                                     │
- ├────────────────────────┬─────────────────┬──────────────────────────┤ ─
- │                        │                 │                          │ ▲
- │                        │-----------------│                          │ │
- │◄──────────────────────►|   `videoSize`   |◄────────────────────────►│ │`videoContainerSize`
- │`outsideLeadingBarWidth`|                 | `outsideTrailingBarWidth`│ │ (H)
- │                        │-----------------│                          │ │
- │                        │                 │                          │ ▼
- ├────────────────────────┴─────────────────┴──────────────────────────┤ ─
- │                            ▲                                        │
- │                            │`outsideBottomBarHeight`                │
- │                            ▼                                        │
- └─────────────────────────────────────────────────────────────────────┘
+ ~
+ ~                            `geo.viewportSize.width`
+ ~                             (of `wc.viewportView`)
+ ~                             ◄---------------►
+ ┌─────────────────────────────────────────────────────────────────────────────┐`geo.windowFrame`
+ │                                 ▲`geo.topMarginHeight`                      │
+ │                                 ▼ (only used to cover Macbook notch)        │
+ ├─────────────────────────────────────────────────────────────────────────────┤
+ │                               ▲                                             │
+ │                               ┊`geo.outsideTopBarHeight`                    │
+ │                               ▼   (`wc.topBarView`)                         │
+ ├────────────────────────────┬─────────────────┬──────────────────────────────┤ ─ ◄--- `geo.insideTopBarHeight == 0`
+ │                            │black bar (empty)│                              │ ▲
+ │                            ├─────────────────┤                              │ ┊ `geo.viewportSize.height`
+ │◄--------------------------►│ `geo.videoSize` │◄----------------------------►│ ┊  (of `wc.viewportView`)
+ │                            │(`wc.videoView`) │ `geo.outsideTrailingBarWidth`│ ┊
+ │`geo.outsideLeadingBarWidth`├─────────────────┤ (of `wc.trailingSidebarView`)│ ┊
+ │(of `wc.leadingSidebarView`)│black bar (empty)│                              │ ▼
+ ├────────────────────────────┴─────────────────┴──────────────────────────────┤ ─ ◄--- `geo.insideBottomBarHeight == 0`
+ │                                ▲                                            │
+ │                                ┊`geo.outsideBottomBarHeight`                │
+ │                                ▼   (of `wc.bottomBarView`)                  │
+ └─────────────────────────────────────────────────────────────────────────────┘
  */
 struct PlayerWindowGeometry: Equatable {
   // MARK: - Stored properties
 
+  /// The size & position (`window.frame`) of an IINA player `NSWindow`.
   let windowFrame: NSRect
 
   // Extra black space (if any) above outsideTopBar, used for covering MacBook's magic camera housing while in legacy fullscreen
@@ -112,8 +121,8 @@ struct PlayerWindowGeometry: Equatable {
 
     self.videoAspectRatio = videoAspectRatio
 
-    let videoContainerSize = PlayerWindowGeometry.computeVideoContainerSize(from: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
-    self.videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: videoContainerSize)
+    let viewportSize = PlayerWindowGeometry.computeVideoContainerSize(from: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
+    self.videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize)
   }
 
   static func forFullScreen(in screen: NSScreen, legacy: Bool,
@@ -172,14 +181,14 @@ struct PlayerWindowGeometry: Equatable {
 
   /// This will be equal to `videoSize`, unless IINA is configured to allow the window to expand beyond
   /// the bounds of the video for a letterbox/pillarbox effect (separate from anything mpv includes)
-  var videoContainerSize: NSSize {
+  var viewportSize: NSSize {
     return NSSize(width: windowFrame.width - outsideTrailingBarWidth - outsideLeadingBarWidth,
                   height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight)
   }
 
-  var videoContainerFrameInScreenCoords: NSRect {
+  var viewportFrameInScreenCoords: NSRect {
     let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth, y: windowFrame.origin.y + outsideBottomBarHeight)
-    return NSRect(origin: origin, size: videoContainerSize)
+    return NSRect(origin: origin, size: viewportSize)
   }
 
   var outsideSidebarsTotalWidth: CGFloat {
@@ -216,15 +225,15 @@ struct PlayerWindowGeometry: Equatable {
                   height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight - topMarginHeight)
   }
 
-  static func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn videoContainerSize: NSSize) -> NSSize {
-    if videoContainerSize.width == 0 || videoContainerSize.height == 0 {
+  static func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn viewportSize: NSSize) -> NSSize {
+    if viewportSize.width == 0 || viewportSize.height == 0 {
       return NSSize(width: 0, height: 0)
     }
-    /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
-    if videoAspectRatio < videoContainerSize.aspect {  // video is taller, shrink to meet height
-      return NSSize(width: videoContainerSize.height * videoAspectRatio, height: videoContainerSize.height)
+    /// Compute `videoSize` to fit within `viewportSize` while maintaining `videoAspectRatio`:
+    if videoAspectRatio < viewportSize.aspect {  // video is taller, shrink to meet height
+      return NSSize(width: viewportSize.height * videoAspectRatio, height: viewportSize.height)
     } else {  // video is wider, shrink to meet width
-      return NSSize(width: videoContainerSize.width, height: videoContainerSize.width / videoAspectRatio)
+      return NSSize(width: viewportSize.width, height: viewportSize.width / videoAspectRatio)
     }
   }
 
@@ -275,8 +284,8 @@ struct PlayerWindowGeometry: Equatable {
 
   /// Computes a new `PlayerWindowGeometry` from this one.
   /// • If `desiredVideoContainerSize` is given, the `windowFrame` will be shrunk or grown as needed, as will the `videoSize` which will
-  /// be resized to fit in the new `videoContainerSize` based on `videoAspectRatio`.
-  /// • If `allowEmptySpaceAroundVideo` is enabled, `videoContainerSize` will be shrunk to the same size as `videoSize`, and
+  /// be resized to fit in the new `viewportSize` based on `videoAspectRatio`.
+  /// • If `allowEmptySpaceAroundVideo` is enabled, `viewportSize` will be shrunk to the same size as `videoSize`, and
   /// `windowFrame` will be resized accordingly.
   /// • If `containerFrame` is given, resulting `windowFrame` (and its subviews) will be sized and repositioned as ncessary to fit within it.
   /// (The `containerFrame` will typically be `screen.visibleFrame`)
@@ -284,19 +293,19 @@ struct PlayerWindowGeometry: Equatable {
   /// • If `centerInContainer` is `true`, `windowFrame` will be centered inside `containerFrame` (will be ignored if `containerFrame` is nil)
   func scaleVideoContainer(desiredSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil,
                            centerInContainer: Bool = false) -> PlayerWindowGeometry {
-    var newVidConSize = desiredSize ?? videoContainerSize
+    var newVidConSize = desiredSize ?? viewportSize
     Logger.log("Scaling PlayerWindowGeometry newVidConSize: \(newVidConSize), allowEmptySpace: \(allowEmptySpaceAroundVideo.yn)", level: .verbose)
 
-    /// Make sure `videoContainerSize` is at least as large as `minVideoSize`:
+    /// Make sure `viewportSize` is at least as large as `minVideoSize`:
     newVidConSize = constrainAboveMin(desiredVideoContainerSize: newVidConSize)
 
-    /// If `containerFrame` is specified, constrain `videoContainerSize` within `containerFrame`:
+    /// If `containerFrame` is specified, constrain `viewportSize` within `containerFrame`:
     if let containerFrame = containerFrame {
       newVidConSize = constrainBelowMax(desiredVideoContainerSize: newVidConSize, maxSize: containerFrame.size)
     }
 
     if !allowEmptySpaceAroundVideo {
-      /// Compute `videoSize` to fit within `videoContainerSize` while maintaining `videoAspectRatio`:
+      /// Compute `videoSize` to fit within `viewportSize` while maintaining `videoAspectRatio`:
       newVidConSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newVidConSize)
     }
 
@@ -565,7 +574,7 @@ extension PlayerWindowController {
       // user is navigating in playlist. retain same window width.
       // This often isn't possible for vertical videos, which will end up shrinking the width.
       // So try to remember the preferred width so it can be restored when possible
-      var desiredVidConSize = windowGeo.videoContainerSize
+      var desiredVidConSize = windowGeo.viewportSize
 
       if !Preference.bool(for: .allowEmptySpaceAroundVideo) {
         if let prefVidConSize = player.info.getIntendedVideoContainerSize(forAspectRatio: videoBaseDisplaySize.aspect)  {
@@ -827,7 +836,7 @@ extension PlayerWindowController {
       /// Need to execute this in its own task so that other animations are not affected.
       let shouldDisableConstraint = !geometry.isVideoVisible && geometry.isPlaylistVisible
       animationQueue.runZeroDuration({ [self] in
-        videoContainerBottomOffsetFromContentViewBottomConstraint.isActive = !shouldDisableConstraint
+        viewportBottomOffsetFromContentViewBottomConstraint.isActive = !shouldDisableConstraint
       })
     }
   }

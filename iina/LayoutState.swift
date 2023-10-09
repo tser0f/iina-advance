@@ -153,18 +153,18 @@ extension PlayerWindowController {
       && otherSpec.trailingSidebar.tabGroups == trailingSidebar.tabGroups
     }
 
-    func getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: CGFloat? = nil, trailingSidebarWidth: CGFloat? = nil, in videoContainerWidth: CGFloat) -> CGFloat {
+    func getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: CGFloat? = nil, trailingSidebarWidth: CGFloat? = nil, in viewportWidth: CGFloat) -> CGFloat {
       let lead = leadingSidebarWidth ?? leadingSidebar.insideWidth
       let trail = trailingSidebarWidth ?? trailingSidebar.insideWidth
-      return videoContainerWidth - (lead + trail + Constants.Sidebar.minSpaceBetweenInsideSidebars)
+      return viewportWidth - (lead + trail + Constants.Sidebar.minSpaceBetweenInsideSidebars)
     }
 
     /// Returns `(shouldCloseLeadingSidebar, shouldCloseTrailingSidebar)`, indicating which sidebars should be hidden
-    /// due to lack of space in the videoContainer.
-    func isHideSidebarNeeded(in videoContainerWidth: CGFloat) -> (Bool, Bool) {
+    /// due to lack of space in the viewport.
+    func isHideSidebarNeeded(in viewportWidth: CGFloat) -> (Bool, Bool) {
       var leadingSidebarSpace = leadingSidebar.insideWidth
       var trailingSidebarSpace = trailingSidebar.insideWidth
-      var vidConSpace = videoContainerWidth
+      var vidConSpace = viewportWidth
 
       var shouldCloseLeadingSidebar = false
       var shouldCloseTrailingSidebar = false
@@ -220,7 +220,7 @@ extension PlayerWindowController {
     // Sizes / offsets
 
     /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
-    /// For most cases, spacing between OSD and top of `videoContainerView` >= 8pts
+    /// For most cases, spacing between OSD and top of `viewportView` >= 8pts
     var osdMinOffsetFromTop: CGFloat = 0
 
     var sidebarDownshift: CGFloat = Constants.Sidebar.defaultDownshift

@@ -84,7 +84,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   var currentDisplayedPlaylistHeight: CGFloat {
     // most reliable first-hand source for this is a constraint:
-    let bottomBarHeight = -windowController.videoContainerBottomOffsetFromBottomBarBottomConstraint.constant
+    let bottomBarHeight = -windowController.viewportBottomOffsetFromBottomBarBottomConstraint.constant
     return bottomBarHeight - MiniPlayerController.controlViewHeight
   }
 
@@ -96,7 +96,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     backgroundView.heightAnchor.constraint(equalToConstant: MiniPlayerController.controlViewHeight).isActive = true
 
     /// Set up tracking area to show controller when hovering over it
-    windowController.videoContainerView.addTrackingArea(NSTrackingArea(rect: windowController.videoContainerView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
+    windowController.viewportView.addTrackingArea(NSTrackingArea(rect: windowController.viewportView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
     backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
 
     // close button
@@ -136,7 +136,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     /// The goal is to always show the control when the cursor is hovering over either of the 2 tracking areas.
     /// Although they are adjacent to each other, `mouseExited` can still be called when moving from one to the other.
     /// Detect and ignore this case.
-    guard !windowController.isMouseEvent(event, inAnyOf: [backgroundView, windowController.videoContainerView]) else {
+    guard !windowController.isMouseEvent(event, inAnyOf: [backgroundView, windowController.viewportView]) else {
       return
     }
 
@@ -342,7 +342,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     /// (See note in `applyMusicModeGeometry` for why this constraint needed to be disabled in the first place)
     if showVideo {
       windowController.animationQueue.runZeroDuration({ [self] in
-        windowController.videoContainerBottomOffsetFromContentViewBottomConstraint.isActive = true
+        windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
       })
     }
 
@@ -404,7 +404,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.playlistView.view.removeFromSuperview()
 
     // make sure this is enabled
-    windowController.videoContainerBottomOffsetFromContentViewBottomConstraint.isActive = true
+    windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
   }
 
   func applyVideoViewVisibilityConstraints(isVideoVisible: Bool) {
@@ -413,22 +413,22 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
     if isVideoVisible {
       // Remove zero-height constraint
-      if let heightContraint = windowController.videoContainerViewHeightContraint {
+      if let heightContraint = windowController.viewportViewHeightContraint {
         heightContraint.isActive = false
-        windowController.videoContainerViewHeightContraint = nil
+        windowController.viewportViewHeightContraint = nil
       }
     } else {
       // Add or reactivate zero-height constraint
-      if let heightConstraint = windowController.videoContainerViewHeightContraint {
+      if let heightConstraint = windowController.viewportViewHeightContraint {
         heightConstraint.isActive = true
       } else {
-        let heightConstraint = windowController.videoContainerView.heightAnchor.constraint(equalToConstant: 0)
+        let heightConstraint = windowController.viewportView.heightAnchor.constraint(equalToConstant: 0)
         heightConstraint.isActive = true
-        windowController.videoContainerViewHeightContraint = heightConstraint
+        windowController.viewportViewHeightContraint = heightConstraint
       }
     }
 
-    windowController.videoContainerView.layoutSubtreeIfNeeded()
+    windowController.viewportView.layoutSubtreeIfNeeded()
     windowController.forceDraw()
   }
 

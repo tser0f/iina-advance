@@ -123,7 +123,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     }
     // Not music mode, OR scaling music mode without playlist (only fixed-height controller)
 
-    let origVideoContainerSize = originalGeometry.videoContainerSize
+    let origVideoContainerSize = originalGeometry.viewportSize
     let newVideoContainerSize = origVideoContainerSize.multiply(scale)
 
     let newGeoUnconstrained = originalGeometry.scaleVideoContainer(desiredSize: newVideoContainerSize)

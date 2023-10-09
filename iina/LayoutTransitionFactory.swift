@@ -278,9 +278,9 @@ extension PlayerWindowController {
             videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
           } else {
             // Entering music mode when album art is hidden
-            let heightConstraint = videoContainerView.heightAnchor.constraint(equalToConstant: 0)
+            let heightConstraint = viewportView.heightAnchor.constraint(equalToConstant: 0)
             heightConstraint.isActive = true
-            videoContainerViewHeightContraint = heightConstraint
+            viewportViewHeightContraint = heightConstraint
           }
         } else if transition.isExitingMusicMode {
           // Exiting music mode
@@ -290,7 +290,7 @@ extension PlayerWindowController {
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: true)
         }
 
-        player.window.setFrameImmediately(transition.outputGeometry.videoContainerFrameInScreenCoords)
+        player.window.setFrameImmediately(transition.outputGeometry.viewportFrameInScreenCoords)
       }))
     }
 

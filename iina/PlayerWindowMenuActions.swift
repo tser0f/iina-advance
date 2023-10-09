@@ -463,10 +463,10 @@ extension PlayerWindowController {
   }
 
   func scaleVideoByIncrement(_ widthStep: CGFloat) {
-    let currentVideoContainerSize = videoContainerView.frame.size
+    let currentVideoContainerSize = viewportView.frame.size
     let heightStep = widthStep / currentVideoContainerSize.aspect
     let desiredVideoContainerSize = CGSize(width: currentVideoContainerSize.width + widthStep, height: currentVideoContainerSize.height + heightStep)
-    log.verbose("Incrementing videoContainer width by \(widthStep), to desired size \(desiredVideoContainerSize)")
+    log.verbose("Incrementing viewport width by \(widthStep), to desired size \(desiredVideoContainerSize)")
     resizeVideoContainer(desiredVideoContainerSize: desiredVideoContainerSize)
   }
 

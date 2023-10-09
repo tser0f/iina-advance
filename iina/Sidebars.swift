@@ -462,9 +462,9 @@ extension PlayerWindowController {
     let tabToShow: Sidebar.Tab = leadingSidebar.visibleTab!
 
     // - Remove old:
-    for constraint in [videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint,
-                       videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint,
-                       videoContainerLeadingToLeadingSidebarCropTrailingConstraint] {
+    for constraint in [viewportLeadingOffsetFromLeadingSidebarTrailingConstraint,
+                       viewportLeadingOffsetFromLeadingSidebarLeadingConstraint,
+                       viewportLeadingToLeadingSidebarCropTrailingConstraint] {
       if let constraint = constraint {
         window.contentView?.removeConstraint(constraint)
       }
@@ -496,20 +496,20 @@ extension PlayerWindowController {
       tabContainerView = cropView
 
       // extra constraint for cropView:
-      videoContainerLeadingToLeadingSidebarCropTrailingConstraint = videoContainerView.leadingAnchor.constraint(
+      viewportLeadingToLeadingSidebarCropTrailingConstraint = viewportView.leadingAnchor.constraint(
         equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-      videoContainerLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
+      viewportLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
     }
 
     let coefficients = getLeadingSidebarWidthCoefficients(visible: false, placement: leadingSidebar.placement)
 
-    videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint = videoContainerView.leadingAnchor.constraint(
+    viewportLeadingOffsetFromLeadingSidebarLeadingConstraint = viewportView.leadingAnchor.constraint(
       equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
-    videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
+    viewportLeadingOffsetFromLeadingSidebarLeadingConstraint.isActive = true
 
-    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint = videoContainerView.leadingAnchor.constraint(
+    viewportLeadingOffsetFromLeadingSidebarTrailingConstraint = viewportView.leadingAnchor.constraint(
       equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
-    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
+    viewportLeadingOffsetFromLeadingSidebarTrailingConstraint.isActive = true
 
     prepareRemainingLayoutForOpening(sidebar: leadingSidebar, sidebarView: leadingSidebarView, tabContainerView: tabContainerView, tab: tabToShow)
   }
@@ -521,9 +521,9 @@ extension PlayerWindowController {
     let tabToShow: Sidebar.Tab = trailingSidebar.visibleTab!
 
     // - Remove old:
-    for constraint in [videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint,
-                       videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint,
-                       videoContainerTrailingToTrailingSidebarCropLeadingConstraint] {
+    for constraint in [viewportTrailingOffsetFromTrailingSidebarLeadingConstraint,
+                       viewportTrailingOffsetFromTrailingSidebarTrailingConstraint,
+                       viewportTrailingToTrailingSidebarCropLeadingConstraint] {
       if let constraint = constraint {
         window.contentView?.removeConstraint(constraint)
       }
@@ -555,20 +555,20 @@ extension PlayerWindowController {
       tabContainerView = cropView
 
       // extra constraint for cropView:
-      videoContainerTrailingToTrailingSidebarCropLeadingConstraint = videoContainerView.trailingAnchor.constraint(
+      viewportTrailingToTrailingSidebarCropLeadingConstraint = viewportView.trailingAnchor.constraint(
         equalTo: trailingSidebarView.leadingAnchor, constant: 0)
-      videoContainerTrailingToTrailingSidebarCropLeadingConstraint.isActive = true
+      viewportTrailingToTrailingSidebarCropLeadingConstraint.isActive = true
     }
 
     let coefficients = getTrailingSidebarWidthCoefficients(visible: false, placement: trailingSidebar.placement)
 
-    videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint = videoContainerView.trailingAnchor.constraint(
+    viewportTrailingOffsetFromTrailingSidebarLeadingConstraint = viewportView.trailingAnchor.constraint(
       equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
-    videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.isActive = true
+    viewportTrailingOffsetFromTrailingSidebarLeadingConstraint.isActive = true
 
-    videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint = videoContainerView.trailingAnchor.constraint(
+    viewportTrailingOffsetFromTrailingSidebarTrailingConstraint = viewportView.trailingAnchor.constraint(
       equalTo: tabContainerView.trailingAnchor, constant: coefficients.1 * sidebarWidth)
-    videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.isActive = true
+    viewportTrailingOffsetFromTrailingSidebarTrailingConstraint.isActive = true
 
     prepareRemainingLayoutForOpening(sidebar: trailingSidebar, sidebarView: trailingSidebarView, tabContainerView: tabContainerView, tab: tabToShow)
   }
@@ -602,9 +602,9 @@ extension PlayerWindowController {
   /**
    For opening/closing `leadingSidebar` via constraints, multiply each times the sidebar width
    Correesponding to:
-   (`videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint`,
-   `videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint`,
-   `videoContainerLeadingOffsetFromContentViewLeadingConstraint`)
+   (`viewportLeadingOffsetFromLeadingSidebarLeadingConstraint`,
+   `viewportLeadingOffsetFromLeadingSidebarTrailingConstraint`,
+   `viewportLeadingOffsetFromContentViewLeadingConstraint`)
    */
   private func getLeadingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
@@ -631,17 +631,17 @@ extension PlayerWindowController {
     Logger.log("\(visible ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
 
     let coefficients = getLeadingSidebarWidthCoefficients(visible: visible, placement: placement)
-    videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
-    videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
-    videoContainerLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(coefficients.2 * newWidth)
+    viewportLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
+    viewportLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
+    viewportLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(coefficients.2 * newWidth)
   }
 
   /**
    For opening/closing `trailingSidebar` via constraints, multiply each times the sidebar width
    Correesponding to:
-   (`videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint`,
-   `videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint`,
-   `videoContainerTrailingOffsetFromContentViewTrailingConstraint`)
+   (`viewportTrailingOffsetFromTrailingSidebarLeadingConstraint`,
+   `viewportTrailingOffsetFromTrailingSidebarTrailingConstraint`,
+   `viewportTrailingOffsetFromContentViewTrailingConstraint`)
    */
   private func getTrailingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
@@ -667,9 +667,9 @@ extension PlayerWindowController {
   private func updateTrailingSidebarWidth(to newWidth: CGFloat, visible: Bool, placement: Preference.PanelPlacement) {
     Logger.log("\(visible ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
     let coefficients = getTrailingSidebarWidthCoefficients(visible: visible, placement: placement)
-    videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
-    videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
-    videoContainerTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(coefficients.2 * newWidth)
+    viewportTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
+    viewportTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
+    viewportTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(coefficients.2 * newWidth)
   }
 
   // MARK: - Changing tabs
@@ -864,8 +864,8 @@ extension PlayerWindowController {
       if leadingSidebarIsResizing {
         let desiredPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
         if layout.leadingSidebar.placement == .insideVideo {
-          // Stop sidebar from resizing when the videoContainerView is not wide enough to fit it.
-          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.videoContainerSize.width))
+          // Stop sidebar from resizing when the viewportView is not wide enough to fit it.
+          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
           newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
           if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
             // should not happen in theory, because playlist shouldn't have been shown when resize started
@@ -885,10 +885,10 @@ extension PlayerWindowController {
         /// new horizontal black bars where they don't exist.
         if layout.leadingSidebar.placement == .outsideVideo {
           let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideLeadingBarWidth
-          let videoContainerSize = oldGeo.videoContainerSize
-          let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
+          let viewportSize = oldGeo.viewportSize
+          let newVideoContainerWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
-          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
+          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / viewportSize.aspect)
           newGeo = resizedPlaylistGeo.scaleVideoContainer(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
         } else {
           newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
@@ -897,7 +897,7 @@ extension PlayerWindowController {
       } else if trailingSidebarIsResizing {
         let desiredPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
         if layout.trailingSidebar.placement == .insideVideo {
-          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.videoContainerSize.width))
+          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
 
           newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
           if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
@@ -912,10 +912,10 @@ extension PlayerWindowController {
         // See comments for leading sidebar above
         if layout.trailingSidebar.placement == .outsideVideo {
           let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideTrailingBarWidth
-          let videoContainerSize = oldGeo.videoContainerSize
-          let newVideoContainerWidth = videoContainerSize.width - playlistWidthDifference
+          let viewportSize = oldGeo.viewportSize
+          let newVideoContainerWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
-          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / videoContainerSize.aspect)
+          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / viewportSize.aspect)
           newGeo = resizedPlaylistGeo.scaleVideoContainer(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
         } else {
           newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)

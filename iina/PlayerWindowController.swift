@@ -486,7 +486,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // - Outlets: Constraints
 
-  var videoContainerViewHeightContraint: NSLayoutConstraint? = nil
+  var viewportViewHeightContraint: NSLayoutConstraint? = nil
 
   // Spacers in left title bar accessory view:
   @IBOutlet weak var leadingTitleBarLeadingSpaceConstraint: NSLayoutConstraint!
@@ -497,36 +497,36 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var trailingTitleBarTrailingSpaceConstraint: NSLayoutConstraint!
 
   // - Top bar (title bar and/or top OSC) constraints
-  @IBOutlet weak var videoContainerTopOffsetFromTopBarBottomConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTopOffsetFromTopBarTopConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTopOffsetFromContentViewTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportTopOffsetFromTopBarBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportTopOffsetFromTopBarTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportTopOffsetFromContentViewTopConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var topBarLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
   @IBOutlet weak var topBarTrailingSpaceConstraint: NSLayoutConstraint!
 
   // - Bottom OSC constraints
-  @IBOutlet weak var videoContainerBottomOffsetFromBottomBarTopConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerBottomOffsetFromBottomBarBottomConstraint: NSLayoutConstraint!
-  @IBOutlet var videoContainerBottomOffsetFromContentViewBottomConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportBottomOffsetFromBottomBarTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportBottomOffsetFromBottomBarBottomConstraint: NSLayoutConstraint!
+  @IBOutlet var viewportBottomOffsetFromContentViewBottomConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or left of screen:
   @IBOutlet weak var bottomBarLeadingSpaceConstraint: NSLayoutConstraint!
   // Needs to be changed to align with either sidepanel or right of screen:
   @IBOutlet weak var bottomBarTrailingSpaceConstraint: NSLayoutConstraint!
 
   // - Leading sidebar constraints
-  @IBOutlet weak var videoContainerLeadingOffsetFromContentViewLeadingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerLeadingOffsetFromLeadingSidebarLeadingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerLeadingOffsetFromLeadingSidebarTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportLeadingOffsetFromContentViewLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportLeadingOffsetFromLeadingSidebarLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportLeadingOffsetFromLeadingSidebarTrailingConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var videoContainerLeadingToLeadingSidebarCropTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportLeadingToLeadingSidebarCropTrailingConstraint: NSLayoutConstraint!
 
   // - Trailing sidebar constraints
-  @IBOutlet weak var videoContainerTrailingOffsetFromContentViewTrailingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTrailingOffsetFromTrailingSidebarLeadingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var videoContainerTrailingOffsetFromTrailingSidebarTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportTrailingOffsetFromContentViewTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportTrailingOffsetFromTrailingSidebarLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportTrailingOffsetFromTrailingSidebarTrailingConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var videoContainerTrailingToTrailingSidebarCropLeadingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var viewportTrailingToTrailingSidebarCropLeadingConstraint: NSLayoutConstraint!
 
   /**
    OSD: shown here in "upper-left" configuration.
@@ -634,7 +634,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var osdAccessoryProgress: NSProgressIndicator!
 
   @IBOutlet weak var pipOverlayView: NSVisualEffectView!
-  @IBOutlet weak var videoContainerView: NSView!
+  @IBOutlet weak var viewportView: NSView!
   let defaultAlbumArtView = NSView()
 
   @IBOutlet weak var volumeSlider: NSSlider!
@@ -799,15 +799,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     window.backgroundColor = .black
 //    window.backgroundColor = .clear
 
-    /// Set `videoContainerView`'s background to black so that when `allowEmptySpaceAroundVideo`
+    /// Set `viewportView`'s background to black so that when `allowEmptySpaceAroundVideo`
     /// pref is enabled, sidebars do not bleed through during their open/close animations.
-    videoContainerView.wantsLayer = true
-    videoContainerView.layer?.backgroundColor = .black
+    viewportView.wantsLayer = true
+    viewportView.layer?.backgroundColor = .black
 
     // Titlebar accessories
 
     // Update this here to reduce animation jitter on older versions of MacOS:
-    videoContainerTopOffsetFromTopBarTopConstraint.constant = PlayerWindowController.standardTitleBarHeight
+    viewportTopOffsetFromTopBarTopConstraint.constant = PlayerWindowController.standardTitleBarHeight
 
     addTitleBarAccessoryViews()
 
@@ -843,7 +843,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     defaultAlbumArtView.alphaValue = 1
     defaultAlbumArtView.isHidden = true
     defaultAlbumArtView.layer?.contents = #imageLiteral(resourceName: "default-album-art")
-    videoContainerView.addSubview(defaultAlbumArtView)
+    viewportView.addSubview(defaultAlbumArtView)
     defaultAlbumArtView.addConstraintsToFillSuperview()
 
     // init quick setting view now
@@ -980,7 +980,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
       applyMusicModeGeometry(newGeo)
     case .windowed:
-      let vidCon = player.info.getIntendedVideoContainerSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.videoContainerSize
+      let vidCon = player.info.getIntendedVideoContainerSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.viewportSize
       let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleVideoContainer(desiredSize: vidCon, constrainedWithin: bestScreen.visibleFrame)
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
@@ -1012,10 +1012,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// to this window. Will do nothing if it's already there.
   func addVideoViewToWindow() {
     guard let window else { return }
-    guard !videoContainerView.subviews.contains(videoView) else { return }
-    player.log.verbose("Adding videoView to videoContainerView, screenScaleFactor: \(window.screenScaleFactor)")
+    guard !viewportView.subviews.contains(videoView) else { return }
+    player.log.verbose("Adding videoView to viewportView, screenScaleFactor: \(window.screenScaleFactor)")
     /// Make sure `defaultAlbumArtView` stays above `videoView`
-    videoContainerView.addSubview(videoView, positioned: .below, relativeTo: defaultAlbumArtView)
+    viewportView.addSubview(videoView, positioned: .below, relativeTo: defaultAlbumArtView)
     // Screen may have changed. Refresh contentsScale
     videoView.refreshContentsScale()
     // add constraints
@@ -1896,7 +1896,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       if !isFullScreen {
         // Do this also for music mode
-        let vidContainerSize = videoContainerView.frame.size
+        let vidContainerSize = viewportView.frame.size
         let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
         // Need to update this always when resizing window, even when resizing non-interactively:
         videoView.updateSizeConstraints(videoSize)
@@ -2567,9 +2567,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window = self.window else { return }
 
     if #available(macOS 10.14, *) {
-      videoContainerView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+      viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
     } else {
-      videoContainerView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
+      viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
     }
 
     // TODO: use key interceptor to support ESC and ENTER keys for interactive mode
@@ -2627,7 +2627,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       )
 
       // add crop setting view
-      videoContainerView.addSubview(cropController.cropBoxView)
+      viewportView.addSubview(cropController.cropBoxView)
       cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
       cropController.cropBoxView.actualSize = origVideoSize
       cropController.cropBoxView.resized(with: newVideoViewFrame)
@@ -2640,10 +2640,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       guard let cropController = cropSettingsView else { return }
       // show crop settings view
       cropController.cropBoxView.isHidden = false
-      videoContainerView.layer?.shadowColor = .black
-      videoContainerView.layer?.shadowOpacity = 1
-      videoContainerView.layer?.shadowOffset = .zero
-      videoContainerView.layer?.shadowRadius = 3
+      viewportView.layer?.shadowColor = .black
+      viewportView.layer?.shadowOpacity = 1
+      viewportView.layer?.shadowOffset = .zero
+      viewportView.layer?.shadowRadius = 3
 
       cropController.cropBoxView.resized(with: videoView.frame)
       cropController.cropBoxView.layoutSubtreeIfNeeded()
@@ -2673,7 +2673,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       self.bottomView.subviews.removeAll()
       self.bottomView.isHidden = true
       self.showFadeableViews(duration: 0)
-      videoContainerView.layer?.backgroundColor = .black
+      viewportView.layer?.backgroundColor = .black
 
       if !isPausedPriorToInteractiveMode {
         player.resume()
