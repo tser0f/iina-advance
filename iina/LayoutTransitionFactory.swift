@@ -204,17 +204,15 @@ extension PlayerWindowController {
       fadeOutOldViewsDuration = 0
     }
 
-    // Extra animation for exiting legacy full screen: remove camera housing with black bar
-    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
-    var closeOldPanelsDuration = startingAnimationDuration
-    if useExtraAnimationForExitingLegacyFullScreen {
-      closeOldPanelsDuration *= 0.8
-    }
-
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
+    // Extra animation for exiting legacy full screen: remove camera housing with black bar
+    log.verbose("\(transition.isExitingLegacyFullScreen) \(screen.hasCameraHousing) \(startingAnimationDuration)")
+    var closeOldPanelsDuration = startingAnimationDuration
+    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
+
     // Extra animation for entering legacy full screen: cover camera housing with black bar
-    let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout
+    let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
     var openFinalPanelsDuration = endingAnimationDuration
     if useExtraAnimationForEnteringLegacyFullScreen {
       openFinalPanelsDuration *= 0.8
@@ -270,7 +268,7 @@ extension PlayerWindowController {
     // Extra task when toggling music mode: move & resize window
     if transition.isTogglingMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-        // FIXME: develop a nice sliding animation if possible
+        // TODO: develop a nice sliding animation if possible
 
         if transition.isEnteringMusicMode {
           if musicModeGeometry.isVideoVisible {
