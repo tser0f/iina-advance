@@ -55,8 +55,12 @@ class PlayerWindowPreviewImageBuilder {
   let bottomBarPlacement: Preference.PanelPlacement = Preference.enum(for: .bottomBarPlacement)
   let appearance: NSAppearance
 
+  lazy var hasTitleBar: Bool = {
+    return !isLegacyWindow  // No title bar for legacy window
+  }()
+
   lazy var hasTopBar: Bool = {
-    return !isLegacyWindow || (oscEnabled && oscPosition == .top)
+    return hasTitleBar || (oscEnabled && oscPosition == .top)
   }()
 
   init(_ enclosingView: NSView) {
@@ -91,7 +95,7 @@ class PlayerWindowPreviewImageBuilder {
       Logger.log("Cannot generate window preview image: failed to load asset(s)", level: .error)
       return nil
     }
-    let titleBarHeight = isLegacyWindow ? 0 : titleBarHeight  // No title bar for legacy window
+    let titleBarHeight = hasTitleBar ? titleBarHeight : 0
     let roundedCornerRadius = isLegacyWindow ? 0 : CGFloat(10.0) * CGFloat(scaleFactor)
 
     var videoViewOffsetY: Int = 0

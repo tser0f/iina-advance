@@ -980,7 +980,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
       applyMusicModeGeometry(newGeo)
     case .windowed:
-      let vidCon = player.info.getUserPreferredVideoContainerSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.videoContainerSize
+      let vidCon = player.info.getIntendedVideoContainerSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.videoContainerSize
       let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleVideoContainer(desiredSize: vidCon, constrainedWithin: bestScreen.visibleFrame)
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)

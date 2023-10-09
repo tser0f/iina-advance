@@ -96,31 +96,31 @@ class PlaybackInfo {
   // When opening a sidebar and there is not enough space on screen, the video container will be shrunk so that the sidebar can open while
   // keeping the window fully within the bounds of the screen. But when the sidebar is closed again, the video container / window wiil be
   // expanded again to the preferred container size.
-  var userPreferredVideoContainerSizeWide: NSSize? = nil
+  var intendedVideoContainerSizeWide: NSSize? = nil
   // Track vertical videos separately since they are so different:
-  var userPreferredVideoContainerSizeTall: NSSize? = nil
+  var intendedVideoContainerSizeTall: NSSize? = nil
 
   /// Use a single preferred container size when allowing blackspace around video.
   /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`videoContainerSize`.
   /// Need to reconcile these requirements...
-  func setUserIntendedVideoContainerSize(from windowGeometry: PlayerWindowGeometry) {
+  func setIntendedVideoContainerSize(from windowGeometry: PlayerWindowGeometry) {
     let newSize = windowGeometry.videoContainerSize
     if Preference.bool(for: .allowEmptySpaceAroundVideo) || windowGeometry.videoAspectRatio >= 1 {
       // Video is wide or square
-      log.verbose("Updating userPreferredVideoContainerSize-Wide to \(newSize)")
-      userPreferredVideoContainerSizeWide = newSize
+      log.verbose("Updating intendedVideoContainerSize-Wide to \(newSize)")
+      intendedVideoContainerSizeWide = newSize
     } else {
       // Video is vertical: save to separate tall window pref
-      log.verbose("Updating userPreferredVideoContainerSize-Tall to \(newSize)")
-      userPreferredVideoContainerSizeTall = newSize
+      log.verbose("Updating intendedVideoContainerSize-Tall to \(newSize)")
+      intendedVideoContainerSizeTall = newSize
     }
   }
 
-  func getUserPreferredVideoContainerSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
+  func getIntendedVideoContainerSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
     if Preference.bool(for: .allowEmptySpaceAroundVideo) || aspectRatio >= 1 {
-      return userPreferredVideoContainerSizeWide
+      return intendedVideoContainerSizeWide
     } else {
-      return userPreferredVideoContainerSizeTall
+      return intendedVideoContainerSizeTall
     }
   }
 

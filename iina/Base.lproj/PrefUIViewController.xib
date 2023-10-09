@@ -209,7 +209,7 @@
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Nuv-dC-vHt">
                             <rect key="frame" x="18" y="23" width="498" height="18"/>
-                            <buttonCell key="cell" type="check" title="Fill all vertical space even if there is a visible notch (only applies to Macbooks)" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
+                            <buttonCell key="cell" type="check" title="Use entire Macbook screen even if there is a visible notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>

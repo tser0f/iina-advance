@@ -15,8 +15,8 @@ struct PlayerSaveState {
 
     case playlistPaths = "playlistPaths"
 
-    case userPreferredVideoContainerSizeWide = "userVidConSize_Wide"
-    case userPreferredVideoContainerSizeTall = "userVidConSize_Tall"
+    case intendedVideoContainerSizeWide = "intendedVidConSize_Wide"
+    case intendedVideoContainerSizeTall = "intendedVidConSize_Tall"
     case layoutSpec = "layoutSpec"
     case windowedModeGeometry = "windowedModeGeometry"
     case musicModeGeometry = "musicModeGeometry"
@@ -169,14 +169,14 @@ struct PlayerSaveState {
     let screenMetaList: [String] = NSScreen.screens.map{ScreenMeta.from($0).toCSV()}
     props[PropName.screens.rawValue] = screenMetaList
 
-    if let size = info.userPreferredVideoContainerSizeWide {
+    if let size = info.intendedVideoContainerSizeWide {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
-      props[PropName.userPreferredVideoContainerSizeWide.rawValue] = sizeString
+      props[PropName.intendedVideoContainerSizeWide.rawValue] = sizeString
     }
 
-    if let size = info.userPreferredVideoContainerSizeTall {
+    if let size = info.intendedVideoContainerSizeTall {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
-      props[PropName.userPreferredVideoContainerSizeTall.rawValue] = sizeString
+      props[PropName.intendedVideoContainerSizeTall.rawValue] = sizeString
     }
 
     if player.windowController.isOntop {
@@ -500,11 +500,11 @@ struct PlayerSaveState {
       info.hdrEnabled = hdrEnabled
     }
 
-    if let size = nsSize(for: .userPreferredVideoContainerSizeWide) {
-      info.userPreferredVideoContainerSizeWide = size
+    if let size = nsSize(for: .intendedVideoContainerSizeWide) {
+      info.intendedVideoContainerSizeWide = size
     }
-    if let size = nsSize(for: .userPreferredVideoContainerSizeTall) {
-      info.userPreferredVideoContainerSizeTall = size
+    if let size = nsSize(for: .intendedVideoContainerSizeTall) {
+      info.intendedVideoContainerSizeTall = size
     }
 
     guard let urlString = string(for: .url), let url = URL(string: urlString) else {

@@ -26,9 +26,11 @@ extension PlayerWindowController {
 
       // Restore saved geometries
       if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
+        log.verbose("Setting windowedModeGeometry from prior state")
         windowedModeGeometry = priorWindowedModeGeometry
         // Restore primary videoAspectRatio
         if priorLayoutSpec.mode != .musicMode {
+          log.verbose("Setting videoAspectRatio from prior windowedModeGeometry (\(windowedModeGeometry.videoAspectRatio))")
           videoAspectRatio = windowedModeGeometry.videoAspectRatio
         }
       } else {
@@ -102,7 +104,7 @@ extension PlayerWindowController {
     }
 
     if Preference.bool(for: .alwaysFloatOnTop) {
-      log.verbose("Setting window to OnTop per app preference")
+      log.verbose("Setting window OnTop=true per app pref")
       setWindowFloatingOnTop(true)
     }
 
@@ -123,6 +125,7 @@ extension PlayerWindowController {
     } else {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
       log.warn("Player's saved layout does not match IINA app prefs. Will build and apply a corrected layout")
+      log.debug("SavedSpec: \(currentLayout.spec). PrefsSpec: \(prefsSpec)")
       buildLayoutTransition(named: "FixInvalidInitialLayout", from: transition.outputLayout, to: prefsSpec, thenRun: true)
     }
   }
@@ -207,8 +210,7 @@ extension PlayerWindowController {
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
 
     // Extra animation for exiting legacy full screen: remove camera housing with black bar
-    log.verbose("\(transition.isExitingLegacyFullScreen) \(screen.hasCameraHousing) \(startingAnimationDuration)")
-    var closeOldPanelsDuration = startingAnimationDuration
+    let closeOldPanelsDuration = startingAnimationDuration
     let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
 
     // Extra animation for entering legacy full screen: cover camera housing with black bar
@@ -384,11 +386,11 @@ extension PlayerWindowController {
     if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
       // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
-      let prevVideoContainerSize = player.info.getUserPreferredVideoContainerSize(forAspectRatio: inputGeometry.videoAspectRatio)
-      log.verbose("Before opening outer sidebar(s): restoring previous userPreferredVideoContainerSize")
+      if let prevIntendedVideoContainerSize = player.info.getIntendedVideoContainerSize(forAspectRatio: inputGeometry.videoAspectRatio) {
+        log.verbose("Before opening outer sidebar(s): restoring prev intendedVideoContainerSize (\(prevIntendedVideoContainerSize))")
 
-      return outputGeo.scaleVideoContainer(desiredSize: prevVideoContainerSize ?? outputGeo.videoContainerSize, 
-                                           constrainedWithin: bestScreen.visibleFrame)
+        return outputGeo.scaleVideoContainer(desiredSize: prevIntendedVideoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+      }
     }
     return outputGeo
   }
