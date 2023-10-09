@@ -156,10 +156,10 @@
                             </connections>
                         </customView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="BqM-nJ-IDU" userLabel="ToggleAnimationSpeedContainer View">
-                            <rect key="frame" x="20" y="48" width="292" height="16"/>
+                            <rect key="frame" x="20" y="48" width="362" height="16"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="NbK-vD-Iek">
-                                    <rect key="frame" x="-2" y="0.0" width="124" height="16"/>
+                                    <rect key="frame" x="-2" y="0.0" width="110" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Animation speed:" id="R8D-0O-y1f">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -167,18 +167,18 @@
                                     </textFieldCell>
                                 </textField>
                                 <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1oZ-lo-QsR" userLabel="ToggleAnimationSpeed Horizontal Slider">
-                                    <rect key="frame" x="130" y="-2" width="164" height="17"/>
+                                    <rect key="frame" x="120" y="-2" width="244" height="17"/>
                                     <constraints>
-                                        <constraint firstAttribute="width" constant="160" id="8g7-LI-2hr"/>
+                                        <constraint firstAttribute="width" constant="240" id="8g7-LI-2hr"/>
                                     </constraints>
-                                    <sliderCell key="cell" controlSize="mini" state="on" userInterfaceLayoutDirection="rightToLeft" alignment="left" minValue="0.125" maxValue="1" doubleValue="0.25" tickMarkPosition="below" numberOfTickMarks="8" allowsTickMarkValuesOnly="YES" sliderType="linear" id="fc5-xy-pnP"/>
+                                    <sliderCell key="cell" controlSize="mini" state="on" userInterfaceLayoutDirection="rightToLeft" alignment="left" minValue="0.0625" maxValue="0.75" doubleValue="0.5" tickMarkPosition="below" numberOfTickMarks="12" allowsTickMarkValuesOnly="YES" sliderType="linear" id="fc5-xy-pnP"/>
                                     <connections>
                                         <binding destination="lH7-Vv-0M1" name="value" keyPath="values.animationDurationFullScreen" id="uPJ-wT-miW"/>
                                     </connections>
                                 </slider>
                             </subviews>
                             <constraints>
-                                <constraint firstItem="1oZ-lo-QsR" firstAttribute="leading" secondItem="NbK-vD-Iek" secondAttribute="trailing" constant="12" id="24A-bN-JTN"/>
+                                <constraint firstItem="1oZ-lo-QsR" firstAttribute="leading" secondItem="NbK-vD-Iek" secondAttribute="trailing" constant="16" id="24A-bN-JTN"/>
                                 <constraint firstItem="NbK-vD-Iek" firstAttribute="leading" secondItem="BqM-nJ-IDU" secondAttribute="leading" id="diV-O4-b1D"/>
                                 <constraint firstAttribute="trailing" secondItem="1oZ-lo-QsR" secondAttribute="trailing" id="jl4-pl-Xk9"/>
                                 <constraint firstAttribute="bottom" secondItem="NbK-vD-Iek" secondAttribute="bottom" id="uNJ-cE-8ip"/>
@@ -208,7 +208,7 @@
                             </connections>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Nuv-dC-vHt">
-                            <rect key="frame" x="18" y="23" width="498" height="18"/>
+                            <rect key="frame" x="18" y="23" width="375" height="18"/>
                             <buttonCell key="cell" type="check" title="Use entire Macbook screen even if there is a visible notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -633,7 +633,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UhD-Lf-aPQ">
-                                <rect key="frame" x="15" y="30" width="58" height="15"/>
+                                <rect key="frame" x="15" y="29.5" width="58" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Always" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="yIN-jg-MxS">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -643,7 +643,7 @@
                                 </connections>
                             </button>
                             <button tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Wn6-zz-utQ">
-                                <rect key="frame" x="15" y="48" width="190" height="15"/>
+                                <rect key="frame" x="15" y="47.5" width="190" height="15"/>
                                 <buttonCell key="cell" type="radio" title="When media is opened manually" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="CJE-ap-IH8">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -653,7 +653,7 @@
                                 </connections>
                             </button>
                             <button tag="2" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="z5X-oj-MdV">
-                                <rect key="frame" x="15" y="66" width="67" height="15"/>
+                                <rect key="frame" x="15" y="65.5" width="67" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Disabled" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="duf-3s-3bL">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -1975,7 +1975,7 @@ Picture:</string>
                                 </textFieldCell>
                             </textField>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="o7N-Tm-Aly">
-                                <rect key="frame" x="69" y="31" width="79" height="15"/>
+                                <rect key="frame" x="69" y="29.5" width="79" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Do nothing" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="Zc7-sP-Rdp">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -1985,7 +1985,7 @@ Picture:</string>
                                 </connections>
                             </button>
                             <button tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BMA-ed-2gf">
-                                <rect key="frame" x="155" y="31" width="46" height="15"/>
+                                <rect key="frame" x="155" y="29.5" width="46" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Hide" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="xtL-XT-xzb">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -1995,7 +1995,7 @@ Picture:</string>
                                 </connections>
                             </button>
                             <button tag="2" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="YWw-1J-3Gr">
-                                <rect key="frame" x="208" y="31" width="68" height="15"/>
+                                <rect key="frame" x="208" y="29.5" width="68" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Minimize" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="H1F-mm-Saq">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>

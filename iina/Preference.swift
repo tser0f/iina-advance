@@ -945,7 +945,7 @@ struct Preference {
     .enableCmdN: false,
     .animationDurationDefault: 0.25,
     // Should roughly match the noticeable portion of the native duration (as of MacOS 13.4):
-    .animationDurationFullScreen: 0.25,
+    .animationDurationFullScreen: 0.5,
     .animationDurationOSD: 0.5,
     .animationDurationCrop: 0.2,
     .recordPlaybackHistory: true,
