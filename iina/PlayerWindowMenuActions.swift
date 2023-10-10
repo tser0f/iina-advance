@@ -451,7 +451,7 @@ extension PlayerWindowController {
     case 2:  //  2: double
       setWindowScale(2)
     case 3:  // fit screen
-      resizeVideoContainer(desiredVideoContainerSize: bestScreen.visibleFrame.size, centerOnScreen: true)
+      resizeViewport(to: bestScreen.visibleFrame.size, centerOnScreen: true)
 
     case 10:  // smaller size
       scaleVideoByIncrement(-AppData.scaleStep)
@@ -463,11 +463,11 @@ extension PlayerWindowController {
   }
 
   func scaleVideoByIncrement(_ widthStep: CGFloat) {
-    let currentVideoContainerSize = viewportView.frame.size
-    let heightStep = widthStep / currentVideoContainerSize.aspect
-    let desiredVideoContainerSize = CGSize(width: currentVideoContainerSize.width + widthStep, height: currentVideoContainerSize.height + heightStep)
-    log.verbose("Incrementing viewport width by \(widthStep), to desired size \(desiredVideoContainerSize)")
-    resizeVideoContainer(desiredVideoContainerSize: desiredVideoContainerSize)
+    let currentViewportSize = viewportView.frame.size
+    let heightStep = widthStep / currentViewportSize.aspect
+    let desiredViewportSize = CGSize(width: currentViewportSize.width + widthStep, height: currentViewportSize.height + heightStep)
+    log.verbose("Incrementing viewport width by \(widthStep), to desired size \(desiredViewportSize)")
+    resizeViewport(to: desiredViewportSize)
   }
 
   @objc func menuAlwaysOnTop(_ sender: AnyObject) {

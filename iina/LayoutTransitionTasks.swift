@@ -216,7 +216,7 @@ extension PlayerWindowController {
 
     // Update heights of top & bottom bars
     if let geo = transition.middleGeometry {
-      let topBarHeight = transition.inputLayout.topBarPlacement == .insideVideo ? geo.insideTopBarHeight : geo.outsideTopBarHeight
+      let topBarHeight = transition.inputLayout.topBarPlacement == .insideViewport ? geo.insideTopBarHeight : geo.outsideTopBarHeight
       let cameraOffset: CGFloat
       if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
         // Use prev offset for a smoother animation
@@ -231,7 +231,7 @@ extension PlayerWindowController {
         updateSidebarVerticalConstraints(layout: outputLayout)
       }
 
-      let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideVideo ? geo.insideBottomBarHeight : geo.outsideBottomBarHeight
+      let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideViewport ? geo.insideBottomBarHeight : geo.outsideBottomBarHeight
       updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.inputLayout.bottomBarPlacement)
 
       // Update title bar item spacing to align with sidebars
@@ -312,8 +312,8 @@ extension PlayerWindowController {
       updateBottomBarPlacement(placement: outputLayout.bottomBarPlacement)
     }
 
-    /// Show dividing line only for `.outsideVideo` bottom bar. Don't show in music mode as it doesn't look good
-    let showBottomBarTopBorder = outputLayout.bottomBarPlacement == .outsideVideo && !outputLayout.isMusicMode
+    /// Show dividing line only for `.outsideViewport` bottom bar. Don't show in music mode as it doesn't look good
+    let showBottomBarTopBorder = outputLayout.bottomBarPlacement == .outsideViewport && !outputLayout.isMusicMode
     bottomBarTopBorder.isHidden = !showBottomBarTopBorder
 
     if transition.isOSCChanging && outputLayout.enableOSC {
@@ -436,7 +436,7 @@ extension PlayerWindowController {
     // Update heights of top & bottom bars:
     updateTopBarHeight(to: outputLayout.topBarHeight, topBarPlacement: transition.outputLayout.topBarPlacement, cameraHousingOffset: transition.outputGeometry.topMarginHeight)
 
-    let bottomBarHeight = transition.outputLayout.bottomBarPlacement == .insideVideo ? transition.outputGeometry.insideBottomBarHeight : transition.outputGeometry.outsideBottomBarHeight
+    let bottomBarHeight = transition.outputLayout.bottomBarPlacement == .insideViewport ? transition.outputGeometry.insideBottomBarHeight : transition.outputGeometry.outsideBottomBarHeight
     updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.outputLayout.bottomBarPlacement)
 
     // Sidebars (if opening)
@@ -748,12 +748,12 @@ extension PlayerWindowController {
     contentView.removeConstraint(topBarTrailingSpaceConstraint)
 
     switch placement {
-    case .insideVideo:
+    case .insideViewport:
       // Align left & right sides with sidebars (top bar will squeeze to make space for sidebars)
       topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
 
-    case .outsideVideo:
+    case .outsideViewport:
       // Align left & right sides with window (sidebars go below top bar)
       topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
       topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
@@ -767,11 +767,11 @@ extension PlayerWindowController {
     log.verbose("Updating topBar height: \(topBarHeight), placement: \(topBarPlacement), cameraOffset: \(cameraHousingOffset)")
 
     switch topBarPlacement {
-    case .insideVideo:
+    case .insideViewport:
       viewportTopOffsetFromTopBarBottomConstraint.animateToConstant(-topBarHeight)
       viewportTopOffsetFromTopBarTopConstraint.animateToConstant(0)
       viewportTopOffsetFromContentViewTopConstraint.animateToConstant(0 + cameraHousingOffset)
-    case .outsideVideo:
+    case .outsideViewport:
       viewportTopOffsetFromTopBarBottomConstraint.animateToConstant(0)
       viewportTopOffsetFromTopBarTopConstraint.animateToConstant(topBarHeight)
       viewportTopOffsetFromContentViewTopConstraint.animateToConstant(topBarHeight + cameraHousingOffset)
@@ -787,11 +787,11 @@ extension PlayerWindowController {
     contentView.removeConstraint(bottomBarTrailingSpaceConstraint)
 
     switch placement {
-    case .insideVideo:
+    case .insideViewport:
       // Align left & right sides with sidebars (top bar will squeeze to make space for sidebars)
       bottomBarLeadingSpaceConstraint = bottomBarView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
       bottomBarTrailingSpaceConstraint = bottomBarView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
-    case .outsideVideo:
+    case .outsideViewport:
       // Align left & right sides with window (sidebars go below top bar)
       bottomBarLeadingSpaceConstraint = bottomBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
       bottomBarTrailingSpaceConstraint = bottomBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
@@ -804,11 +804,11 @@ extension PlayerWindowController {
     log.verbose("Updating bottomBar height to: \(bottomBarHeight), placement: \(bottomBarPlacement)")
 
     switch bottomBarPlacement {
-    case .insideVideo:
+    case .insideViewport:
       viewportBottomOffsetFromBottomBarTopConstraint.animateToConstant(bottomBarHeight)
       viewportBottomOffsetFromBottomBarBottomConstraint.animateToConstant(0)
       viewportBottomOffsetFromContentViewBottomConstraint.animateToConstant(0)
-    case .outsideVideo:
+    case .outsideViewport:
       viewportBottomOffsetFromBottomBarTopConstraint.animateToConstant(0)
       viewportBottomOffsetFromBottomBarBottomConstraint.animateToConstant(-bottomBarHeight)
       viewportBottomOffsetFromContentViewBottomConstraint.animateToConstant(bottomBarHeight)
@@ -823,37 +823,37 @@ extension PlayerWindowController {
                                       leadingSidebar: Preference.PanelPlacement, trailingSidebar: Preference.PanelPlacement) {
     guard let window = window, let contentView = window.contentView else { return }
 
-    // If a sidebar is "outsideVideo", need to put it behind the video because:
+    // If a sidebar is "outsideViewport", need to put it behind the video because:
     // (1) Don't want sidebar to cast a shadow on the video
     // (2) Animate sidebar open/close with "slide in" / "slide out" from behind the video
-    if leadingSidebar == .outsideVideo {
+    if leadingSidebar == .outsideViewport {
       contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: viewportView)
     }
-    if trailingSidebar == .outsideVideo {
+    if trailingSidebar == .outsideViewport {
       contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: viewportView)
     }
 
     contentView.addSubview(topBarView, positioned: .above, relativeTo: viewportView)
     contentView.addSubview(bottomBarView, positioned: .above, relativeTo: viewportView)
 
-    if leadingSidebar == .insideVideo {
+    if leadingSidebar == .insideViewport {
       contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: viewportView)
 
-      if topBar == .insideVideo {
+      if topBar == .insideViewport {
         contentView.addSubview(topBarView, positioned: .below, relativeTo: leadingSidebarView)
       }
-      if bottomBar == .insideVideo {
+      if bottomBar == .insideViewport {
         contentView.addSubview(bottomBarView, positioned: .below, relativeTo: leadingSidebarView)
       }
     }
 
-    if trailingSidebar == .insideVideo {
+    if trailingSidebar == .insideViewport {
       contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: viewportView)
 
-      if topBar == .insideVideo {
+      if topBar == .insideViewport {
         contentView.addSubview(topBarView, positioned: .below, relativeTo: trailingSidebarView)
       }
-      if bottomBar == .insideVideo {
+      if bottomBar == .insideViewport {
         contentView.addSubview(bottomBarView, positioned: .below, relativeTo: trailingSidebarView)
       }
     }
@@ -902,7 +902,7 @@ extension PlayerWindowController {
 
     // Subtract space taken by the 3 standard buttons + other visible buttons
     // Add standard space before title text by default
-    let trailingSpace: CGFloat = layout.topBarPlacement == .outsideVideo ? 8 : max(8, layout.leadingSidebar.insideWidth - trafficLightButtonsWidth - sidebarButtonSpace)
+    let trailingSpace: CGFloat = layout.topBarPlacement == .outsideViewport ? 8 : max(8, layout.leadingSidebar.insideWidth - trafficLightButtonsWidth - sidebarButtonSpace)
     leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
 
     leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
@@ -921,7 +921,7 @@ extension PlayerWindowController {
       spaceForButtons += pinToTopButton.frame.width
     }
 
-    let leadingSpaceNeeded: CGFloat = layout.topBarPlacement == .outsideVideo ? 0 : max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
+    let leadingSpaceNeeded: CGFloat = layout.topBarPlacement == .outsideViewport ? 0 : max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
     // The title icon & text looks very bad if we try to push it too far to the left. Try to detect this and just remove the offset in this case
     let maxSpaceAllowed: CGFloat = max(0, windowWidth * 0.5 - 20)
     let leadingSpace = leadingSpaceNeeded > maxSpaceAllowed ? 0 : leadingSpaceNeeded
@@ -1077,14 +1077,14 @@ extension PlayerWindowController {
 
   private func updatePanelBlendingModes(to outputLayout: LayoutState) {
     // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if outputLayout.topBarPlacement == .insideVideo || outputLayout.isFullScreen {
+    if outputLayout.topBarPlacement == .insideViewport || outputLayout.isFullScreen {
       topBarView.blendingMode = .withinWindow
     } else {
       topBarView.blendingMode = .behindWindow
     }
 
     // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-    if outputLayout.bottomBarPlacement == .insideVideo || outputLayout.isFullScreen {
+    if outputLayout.bottomBarPlacement == .insideViewport || outputLayout.isFullScreen {
       bottomBarView.blendingMode = .withinWindow
     } else {
       bottomBarView.blendingMode = .behindWindow

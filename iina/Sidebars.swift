@@ -199,12 +199,12 @@ extension PlayerWindowController {
 
     /// NOTE: Is mutable if showing `playlist` tab group!
     var insideWidth: CGFloat {
-      return placement == .insideVideo ? currentWidth : 0
+      return placement == .insideViewport ? currentWidth : 0
     }
 
     /// NOTE: Is mutable if showing `playlist` tab group!
     var outsideWidth: CGFloat {
-      return placement == .outsideVideo ? currentWidth : 0
+      return placement == .outsideViewport ? currentWidth : 0
     }
 
     var defaultTabToShow: Sidebar.Tab? {
@@ -427,7 +427,7 @@ extension PlayerWindowController {
         }
       }
       updateLeadingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: leadingSidebar.placement)
-      if leadingSidebar.placement == .outsideVideo {
+      if leadingSidebar.placement == .outsideViewport {
         leadingSidebarTrailingBorder.isHidden = !shouldShow
       }
     }
@@ -449,7 +449,7 @@ extension PlayerWindowController {
         }
       }
       updateTrailingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: trailingSidebar.placement)
-      if trailingSidebar.placement == .outsideVideo {
+      if trailingSidebar.placement == .outsideViewport {
         trailingSidebarLeadingBorder.isHidden = !shouldShow
       }
     }
@@ -481,10 +481,10 @@ extension PlayerWindowController {
     let sidebarWidth = tabToShow.group.width()
     let tabContainerView: NSView
 
-    if leadingSidebar.placement == .insideVideo {
+    if leadingSidebar.placement == .insideViewport {
       tabContainerView = leadingSidebarView
     } else {
-      assert(leadingSidebar.placement == .outsideVideo)
+      assert(leadingSidebar.placement == .outsideViewport)
       let cropView = NSView()
       cropView.identifier = NSUserInterfaceItemIdentifier(rawValue: "leadingSidebarCropView")
       leadingSidebarView.addSubview(cropView, positioned: .below, relativeTo: leadingSidebarTrailingBorder)
@@ -540,10 +540,10 @@ extension PlayerWindowController {
     let sidebarWidth = tabToShow.group.width()
     let tabContainerView: NSView
 
-    if trailingSidebar.placement == .insideVideo {
+    if trailingSidebar.placement == .insideViewport {
       tabContainerView = trailingSidebarView
     } else {
-      assert(trailingSidebar.placement == .outsideVideo)
+      assert(trailingSidebar.placement == .outsideViewport)
       let cropView = NSView()
       cropView.identifier = NSUserInterfaceItemIdentifier(rawValue: "trailingSidebarCropView")
       trailingSidebarView.addSubview(cropView, positioned: .below, relativeTo: trailingSidebarLeadingBorder)
@@ -608,13 +608,13 @@ extension PlayerWindowController {
    */
   private func getLeadingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
-    case .insideVideo:
+    case .insideViewport:
       if visible {
         return (0, -1, 0)
       } else {
         return (1, 0, 0)
       }
-    case .outsideVideo:
+    case .outsideViewport:
       if visible {
         return (1, 0, 1)
       } else {
@@ -645,13 +645,13 @@ extension PlayerWindowController {
    */
   private func getTrailingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
-    case .insideVideo:
+    case .insideViewport:
       if visible {
         return (1, 0, 0)
       } else {
         return (0, -1, 0)
       }
-    case .outsideVideo:
+    case .outsideViewport:
       if visible {
         return (0, -1, -1)
       } else {
@@ -777,13 +777,13 @@ extension PlayerWindowController {
     switch sidebarID {
     case .leadingSidebar:
       // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
-      if layout.leadingSidebarPlacement == .insideVideo || layout.isFullScreen {
+      if layout.leadingSidebarPlacement == .insideViewport || layout.isFullScreen {
         leadingSidebarView.blendingMode = .withinWindow
       } else {
         leadingSidebarView.blendingMode = .behindWindow
       }
     case .trailingSidebar:
-      if layout.trailingSidebarPlacement == .insideVideo || layout.isFullScreen {
+      if layout.trailingSidebarPlacement == .insideViewport || layout.isFullScreen {
         trailingSidebarView.blendingMode = .withinWindow
       } else {
         trailingSidebarView.blendingMode = .behindWindow
@@ -863,7 +863,7 @@ extension PlayerWindowController {
 
       if leadingSidebarIsResizing {
         let desiredPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
-        if layout.leadingSidebar.placement == .insideVideo {
+        if layout.leadingSidebar.placement == .insideViewport {
           // Stop sidebar from resizing when the viewportView is not wide enough to fit it.
           let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
           newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
@@ -881,22 +881,22 @@ extension PlayerWindowController {
         /// grow or shrink, which will require its height to change according to its aspectRatio.
         /// If `allowEmptySpaceAroundVideo` is `false`, it is necessary to resize the window to
         /// accomodate the change in height to avoid black bars. But even if it is `true`, it
-        /// seems more useful to scale the whole video container, which will avoid creating
+        /// seems more useful to scale the whole viewport, which will avoid creating
         /// new horizontal black bars where they don't exist.
-        if layout.leadingSidebar.placement == .outsideVideo {
+        if layout.leadingSidebar.placement == .outsideViewport {
           let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideLeadingBarWidth
           let viewportSize = oldGeo.viewportSize
-          let newVideoContainerWidth = viewportSize.width - playlistWidthDifference
+          let newViewportWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
-          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / viewportSize.aspect)
-          newGeo = resizedPlaylistGeo.scaleVideoContainer(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+          let desiredContainerViewSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+          newGeo = resizedPlaylistGeo.scaleViewport(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
         } else {
           newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
         }
 
       } else if trailingSidebarIsResizing {
         let desiredPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
-        if layout.trailingSidebar.placement == .insideVideo {
+        if layout.trailingSidebar.placement == .insideViewport {
           let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
 
           newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
@@ -910,13 +910,13 @@ extension PlayerWindowController {
         updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.trailingSidebarPlacement)
 
         // See comments for leading sidebar above
-        if layout.trailingSidebar.placement == .outsideVideo {
+        if layout.trailingSidebar.placement == .outsideViewport {
           let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideTrailingBarWidth
           let viewportSize = oldGeo.viewportSize
-          let newVideoContainerWidth = viewportSize.width - playlistWidthDifference
+          let newViewportWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
-          let desiredContainerViewSize = NSSize(width: newVideoContainerWidth, height: newVideoContainerWidth / viewportSize.aspect)
-          newGeo = resizedPlaylistGeo.scaleVideoContainer(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+          let desiredContainerViewSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+          newGeo = resizedPlaylistGeo.scaleViewport(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
         } else {
           newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)
         }

@@ -195,10 +195,10 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   private func refreshTitleBarAndOSCSection(animate: Bool = true) {
     let ib = PlayerWindowPreviewImageBuilder(self.view)
 
-    let titleBarIsOverlay = ib.hasTitleBar && ib.topBarPlacement == .insideVideo
+    let titleBarIsOverlay = ib.hasTitleBar && ib.topBarPlacement == .insideViewport
     let oscIsOverlay = ib.oscEnabled && (ib.oscPosition == .floating ||
-                                         (ib.oscPosition == .top && ib.topBarPlacement == .insideVideo) ||
-                                         (ib.oscPosition == .bottom && ib.bottomBarPlacement == .insideVideo))
+                                         (ib.oscPosition == .top && ib.topBarPlacement == .insideViewport) ||
+                                         (ib.oscPosition == .bottom && ib.bottomBarPlacement == .insideViewport))
     let hasOverlay = titleBarIsOverlay || oscIsOverlay
 
     var viewHidePairs: [(NSView, Bool)] = []
@@ -228,7 +228,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         viewHidePairs.append((topBarPositionContainerView, !hasTopBar))
       }
 
-      let showTopBarTrigger = hasTopBar && ib.topBarPlacement == .insideVideo
+      let showTopBarTrigger = hasTopBar && ib.topBarPlacement == .insideViewport
       if showTopBarTriggerContainerView.isHidden != !showTopBarTrigger {
         viewHidePairs.append((showTopBarTriggerContainerView, !showTopBarTrigger))
       }

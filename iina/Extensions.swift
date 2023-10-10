@@ -204,11 +204,14 @@ extension NSRect {
                   height: newSize.height)
   }
 
-  // TODO: find source of imprecision here
   func constrain(in biggerRect: NSRect) -> NSRect {
     // new size, keeping aspect ratio
     var newSize = size
     if newSize.width > biggerRect.width || newSize.height > biggerRect.height {
+      /// We should have adjusted the rect's size before getting here. Using `shrink()` is not always 100% correct.
+      /// If in debug environment, fail fast. Otherwise log and continue.
+      assert(false, "Rect \(newSize) should already be <= rect in which it is being constrained (\(biggerRect))")
+      Logger.log("Rect \(newSize) is larger than rect in which it is being constrained (\(biggerRect))! Will attempt to resize but it may be imprecise.")
       newSize = size.shrink(toSize: biggerRect.size)
     }
     // new origin

@@ -365,9 +365,9 @@ extension PlayerWindowController {
       bottomBarHeight = 0
     }
 
-    let insideTopBarHeight = outputLayout.topBarPlacement == .insideVideo ? outputLayout.topBarHeight : 0
-    let insideBottomBarHeight = outputLayout.bottomBarPlacement == .insideVideo ? bottomBarHeight : 0
-    let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideVideo ? bottomBarHeight : 0
+    let insideTopBarHeight = outputLayout.topBarPlacement == .insideViewport ? outputLayout.topBarHeight : 0
+    let insideBottomBarHeight = outputLayout.bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
+    let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
 
     let outputGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.outsideTopBarHeight,
                                                          outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
@@ -386,10 +386,10 @@ extension PlayerWindowController {
     if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
       // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
-      if let prevIntendedVideoContainerSize = player.info.getIntendedVideoContainerSize(forAspectRatio: inputGeometry.videoAspectRatio) {
-        log.verbose("Before opening outer sidebar(s): restoring prev intendedVideoContainerSize (\(prevIntendedVideoContainerSize))")
+      if let prevIntendedViewportSize = player.info.getIntendedViewportSize(forAspectRatio: inputGeometry.videoAspectRatio) {
+        log.verbose("Before opening outer sidebar(s): restoring prev intendedViewportSize (\(prevIntendedViewportSize))")
 
-        return outputGeo.scaleVideoContainer(desiredSize: prevIntendedVideoContainerSize, constrainedWithin: bestScreen.visibleFrame)
+        return outputGeo.scaleViewport(desiredSize: prevIntendedViewportSize, constrainedWithin: bestScreen.visibleFrame)
       }
     }
     return outputGeo
@@ -420,8 +420,8 @@ extension PlayerWindowController {
     } else {
       topBarHeight = transition.inputLayout.topBarHeight  // leave the same
     }
-    let insideTopBarHeight = transition.outputLayout.topBarPlacement == .insideVideo ? topBarHeight : 0
-    let outsideTopBarHeight = transition.outputLayout.topBarPlacement == .outsideVideo ? topBarHeight : 0
+    let insideTopBarHeight = transition.outputLayout.topBarPlacement == .insideViewport ? topBarHeight : 0
+    let outsideTopBarHeight = transition.outputLayout.topBarPlacement == .outsideViewport ? topBarHeight : 0
 
     // BOTTOM
     let insideBottomBarHeight: CGFloat

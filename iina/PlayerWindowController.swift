@@ -413,7 +413,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case PK.allowEmptySpaceAroundVideo.rawValue:
       if let isAllowed = change[.newKey] as? Bool, !isAllowed {
         log.debug("Pref \(keyPath.quoted) changed to \(isAllowed): resizing window to remove any black space")
-        resizeVideoContainer()
+        resizeViewport()
       }
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -574,7 +574,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var leadingSidebarToggleButton: NSButton!
   @IBOutlet weak var trailingSidebarToggleButton: NSButton!
 
-  /** Panel at top of window. May be `insideVideo` or `outsideVideo`. May contain `titleBarView` and/or `controlBarTop`
+  /** Panel at top of window. May be `insideViewport` or `outsideViewport`. May contain `titleBarView` and/or `controlBarTop`
    depending on configuration. */
   @IBOutlet weak var topBarView: NSVisualEffectView!
   /** Bottom border of `topBarView`. */
@@ -586,7 +586,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @IBOutlet weak var controlBarFloating: ControlBarView!
 
-  /** Control bar at bottom of window, if configured. May be `insideVideo` or `outsideVideo`. */
+  /** Control bar at bottom of window, if configured. May be `insideViewport` or `outsideViewport`. */
   @IBOutlet weak var bottomBarView: NSVisualEffectView!
   /** Top border of `bottomBarView`. */
   @IBOutlet weak var bottomBarTopBorder: NSBox!
@@ -980,8 +980,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
       applyMusicModeGeometry(newGeo)
     case .windowed:
-      let vidCon = player.info.getIntendedVideoContainerSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.viewportSize
-      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleVideoContainer(desiredSize: vidCon, constrainedWithin: bestScreen.visibleFrame)
+      let vidCon = player.info.getIntendedViewportSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.viewportSize
+      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(desiredSize: vidCon, constrainedWithin: bestScreen.visibleFrame)
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
     case .fullScreen:
@@ -2580,7 +2580,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let interactiveModeLayout = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
                                                      trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide),
                                                      mode: oldLayout.mode,
-                                                     topBarPlacement: .insideVideo,
+                                                     topBarPlacement: .insideViewport,
                                                      enableOSC: false)
     let transition = buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout, totalEndingDuration: 0)
     var animationTasks: [CocoaAnimation.Task] = transition.animationTasks

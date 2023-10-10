@@ -123,13 +123,13 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     }
     // Not music mode, OR scaling music mode without playlist (only fixed-height controller)
 
-    let origVideoContainerSize = originalGeometry.viewportSize
-    let newVideoContainerSize = origVideoContainerSize.multiply(scale)
+    let origViewportSize = originalGeometry.viewportSize
+    let newViewportSize = origViewportSize.multiply(scale)
 
-    let newGeoUnconstrained = originalGeometry.scaleVideoContainer(desiredSize: newVideoContainerSize)
+    let newGeoUnconstrained = originalGeometry.scaleViewport(desiredSize: newViewportSize)
     // User has actively resized the video. Assume this is the new intended resolution, even if it is outside the current screen size.
     // This is useful for various features such as resizing with "allowEmptySpaceAroundVideo", or toggling visibility of outside bars.
-    windowController.player.info.setIntendedVideoContainerSize(from: newGeoUnconstrained)
+    windowController.player.info.setIntendedViewportSize(from: newGeoUnconstrained)
 
     let newGeometry = newGeoUnconstrained.constrainWithin(windowController.bestScreen.visibleFrame)
     windowController.applyWindowGeometryLivePreview(newGeometry)

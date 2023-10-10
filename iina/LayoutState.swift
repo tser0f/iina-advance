@@ -47,8 +47,8 @@ extension PlayerWindowController {
         // Override most properties for music mode
         self.leadingSidebar = leadingSidebar.clone(visibility: .hide)
         self.trailingSidebar = trailingSidebar.clone(visibility: .hide)
-        self.topBarPlacement = .insideVideo
-        self.bottomBarPlacement = .outsideVideo
+        self.topBarPlacement = .insideViewport
+        self.bottomBarPlacement = .outsideViewport
         self.enableOSC = false
       } else {
         self.leadingSidebar = leadingSidebar
@@ -72,8 +72,8 @@ extension PlayerWindowController {
                         trailingSidebar: trailingSidebar,
                         mode: .windowed,
                         isLegacyStyle: false,
-                        topBarPlacement:.insideVideo,
-                        bottomBarPlacement: .insideVideo,
+                        topBarPlacement:.insideViewport,
+                        bottomBarPlacement: .insideViewport,
                         enableOSC: false,
                         oscPosition: .floating)
     }
@@ -243,10 +243,10 @@ extension PlayerWindowController {
       return spec.leadingSidebar.currentWidth
     }
 
-    /// Bar widths/heights IF `outsideVideo`
+    /// Bar widths/heights IF `outsideViewport`
 
     var outsideTopBarHeight: CGFloat {
-      return topBarPlacement == .outsideVideo ? topBarHeight : 0
+      return topBarPlacement == .outsideViewport ? topBarHeight : 0
     }
 
     /// NOTE: Is mutable!
@@ -259,7 +259,7 @@ extension PlayerWindowController {
       return spec.leadingSidebar.outsideWidth
     }
 
-    /// Bar widths/heights IF `insideVideo`
+    /// Bar widths/heights IF `insideViewport`
 
     /// NOTE: Is mutable!
     var insideLeadingBarWidth: CGFloat {
@@ -338,8 +338,8 @@ extension PlayerWindowController {
     }
 
     var hasPermanentOSC: Bool {
-      return enableOSC && ((oscPosition == .top && topBarPlacement == .outsideVideo) ||
-                           (oscPosition == .bottom && bottomBarPlacement == .outsideVideo))
+      return enableOSC && ((oscPosition == .top && topBarPlacement == .outsideViewport) ||
+                           (oscPosition == .bottom && bottomBarPlacement == .outsideViewport))
     }
 
     var mode: WindowMode {
@@ -361,7 +361,7 @@ extension PlayerWindowController {
         return .hidden
       }
 
-      if topBarPlacement == .insideVideo {
+      if topBarPlacement == .insideViewport {
         return .showFadeableNonTopBar
       }
 
@@ -380,7 +380,7 @@ extension PlayerWindowController {
         outputLayout.trafficLightButtons = .showAlways
 
       } else if !outputLayout.isMusicMode {
-        let visibleState: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
+        let visibleState: Visibility = outputLayout.topBarPlacement == .insideViewport ? .showFadeableTopBar : .showAlways
 
         outputLayout.topBarView = visibleState
 
@@ -407,7 +407,7 @@ extension PlayerWindowController {
           }
         }
 
-        if outputLayout.topBarPlacement == .insideVideo {
+        if outputLayout.topBarPlacement == .insideViewport {
           outputLayout.osdMinOffsetFromTop = outputLayout.titleBarHeight + 8
         }
 
@@ -427,27 +427,27 @@ extension PlayerWindowController {
             outputLayout.titleBarHeight = PlayerWindowController.reducedTitleBarHeight
           }
 
-          let visibility: Visibility = outputLayout.topBarPlacement == .insideVideo ? .showFadeableTopBar : .showAlways
+          let visibility: Visibility = outputLayout.topBarPlacement == .insideViewport ? .showFadeableTopBar : .showAlways
           outputLayout.topBarView = visibility
           outputLayout.topOSCHeight = OSCToolbarButton.oscBarHeight
         case .bottom:
-          outputLayout.bottomBarView = (outputLayout.bottomBarPlacement == .insideVideo) ? .showFadeableNonTopBar : .showAlways
+          outputLayout.bottomBarView = (outputLayout.bottomBarPlacement == .insideViewport) ? .showFadeableNonTopBar : .showAlways
         }
       } else {  // No OSC
         if layoutSpec.mode == .musicMode {
-          assert(outputLayout.bottomBarPlacement == .outsideVideo)
+          assert(outputLayout.bottomBarPlacement == .outsideViewport)
           outputLayout.bottomBarView = .showAlways
         }
       }
 
       /// Sidebar tabHeight and downshift.
       /// Downshift: try to match height of title bar
-      /// Tab height: if top OSC is `insideVideo`, try to match its height
+      /// Tab height: if top OSC is `insideViewport`, try to match its height
       if outputLayout.isMusicMode {
         /// Special case for music mode. Only really applies to `playlistView`,
         /// because `quickSettingView` is never shown in this mode.
         outputLayout.sidebarTabHeight = Constants.Sidebar.musicModeTabHeight
-      } else if outputLayout.topBarView.isShowable && outputLayout.topBarPlacement == .insideVideo {
+      } else if outputLayout.topBarView.isShowable && outputLayout.topBarPlacement == .insideViewport {
         outputLayout.sidebarDownshift = outputLayout.titleBarHeight
 
         let tabHeight = outputLayout.topOSCHeight

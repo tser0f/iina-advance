@@ -99,7 +99,7 @@ class PlayerWindowPreviewImageBuilder {
     let roundedCornerRadius = isLegacyWindow ? 0 : CGFloat(10.0) * CGFloat(scaleFactor)
 
     var videoViewOffsetY: Int = 0
-    if oscEnabled && oscPosition == .bottom && bottomBarPlacement == .outsideVideo {
+    if oscEnabled && oscPosition == .bottom && bottomBarPlacement == .outsideViewport {
       // add extra space for bottom bar
       videoViewOffsetY += oscFullWidthHeight
     }
@@ -117,11 +117,11 @@ class PlayerWindowPreviewImageBuilder {
 
         switch topBarPlacement {
 
-        case .outsideVideo:
+        case .outsideViewport:
           oscAlpha = opaqueControlAlpha
           oscOffsetY = videoViewOffsetY + videoHeight
 
-        case .insideVideo:
+        case .insideViewport:
           oscAlpha = overlayAlpha
           oscOffsetY = videoViewOffsetY + videoHeight - oscHeight - titleBarHeight
 
@@ -131,10 +131,10 @@ class PlayerWindowPreviewImageBuilder {
         oscHeight = oscFullWidthHeight
 
         switch bottomBarPlacement {
-        case .outsideVideo:
+        case .outsideViewport:
           oscAlpha = opaqueControlAlpha
           oscOffsetY = videoViewOffsetY - oscFullWidthHeight
-        case .insideVideo:
+        case .insideViewport:
           oscAlpha = overlayAlpha
           oscOffsetY = videoViewOffsetY
         }  // end switch bottomBarPlacement
@@ -154,7 +154,7 @@ class PlayerWindowPreviewImageBuilder {
     }
 
     var winHeight: Int = videoViewOffsetY + videoHeight
-    if topBarPlacement == .outsideVideo {
+    if topBarPlacement == .outsideViewport {
       if oscEnabled && oscPosition == .top {
         winHeight += oscHeight
       }
@@ -297,7 +297,7 @@ class PlayerWindowPreviewImageBuilder {
       if titleBarHeight > 0 {
         // Draw title bar
         var titleBarOffsetY: Int = videoViewOffsetY + videoHeight
-        if topBarPlacement == .insideVideo {
+        if topBarPlacement == .insideViewport {
           titleBarOffsetY -= titleBarHeight
         } else {  // outside
           if oscEnabled && oscPosition == .top {
@@ -305,7 +305,7 @@ class PlayerWindowPreviewImageBuilder {
           }
         }
 
-        let isTitleBarInside = topBarPlacement == .insideVideo
+        let isTitleBarInside = topBarPlacement == .insideViewport
         let drawTitleBarBackground: Bool
         if isTitleBarInside || (oscEnabled && oscPosition == .top) {
           drawTitleBarBackground = true

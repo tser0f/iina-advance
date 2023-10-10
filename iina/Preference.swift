@@ -524,10 +524,10 @@ struct Preference {
   }
 
   enum PanelPlacement: Int, InitializingFromKey {
-    case insideVideo = 1
-    case outsideVideo
+    case insideViewport = 1
+    case outsideViewport
 
-    static var defaultValue = PanelPlacement.insideVideo
+    static var defaultValue = PanelPlacement.insideViewport
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -960,8 +960,8 @@ struct Preference {
     .oscBarToolbarIconSpacing: 5,  // spacing between icons is x2 this number
     .enableOSC: true,
     .showTopBarTrigger: ShowTopBarTrigger.windowHover.rawValue,
-    .topBarPlacement: PanelPlacement.insideVideo.rawValue,
-    .bottomBarPlacement: PanelPlacement.insideVideo.rawValue,
+    .topBarPlacement: PanelPlacement.insideViewport.rawValue,
+    .bottomBarPlacement: PanelPlacement.insideViewport.rawValue,
     .oscBarHeight: 44,
     .oscBarPlaybackIconSize: 24,
     .oscBarPlaybackIconSpacing: 16,
@@ -970,8 +970,8 @@ struct Preference {
     .playlistWidth: 270,
     .settingsTabGroupLocation: SidebarLocation.trailingSidebar.rawValue,
     .playlistTabGroupLocation: SidebarLocation.trailingSidebar.rawValue,
-    .leadingSidebarPlacement: PanelPlacement.insideVideo.rawValue,
-    .trailingSidebarPlacement: PanelPlacement.insideVideo.rawValue,
+    .leadingSidebarPlacement: PanelPlacement.insideViewport.rawValue,
+    .trailingSidebarPlacement: PanelPlacement.insideViewport.rawValue,
     .showLeadingSidebarToggleButton: false,
     .showTrailingSidebarToggleButton: false,
     .hideLeadingSidebarOnClick: true,

@@ -93,34 +93,34 @@ class PlaybackInfo {
   // which the user manually chose, and try to match that across videos.
   //
   // This is also useful when opening outside sidebars:
-  // When opening a sidebar and there is not enough space on screen, the video container will be shrunk so that the sidebar can open while
-  // keeping the window fully within the bounds of the screen. But when the sidebar is closed again, the video container / window wiil be
+  // When opening a sidebar and there is not enough space on screen, the viewport will be shrunk so that the sidebar can open while
+  // keeping the window fully within the bounds of the screen. But when the sidebar is closed again, the viewport / window wiil be
   // expanded again to the preferred container size.
-  var intendedVideoContainerSizeWide: NSSize? = nil
+  var intendedViewportSizeWide: NSSize? = nil
   // Track vertical videos separately since they are so different:
-  var intendedVideoContainerSizeTall: NSSize? = nil
+  var intendedViewportSizeTall: NSSize? = nil
 
   /// Use a single preferred container size when allowing blackspace around video.
   /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`viewportSize`.
   /// Need to reconcile these requirements...
-  func setIntendedVideoContainerSize(from windowGeometry: PlayerWindowGeometry) {
+  func setIntendedViewportSize(from windowGeometry: PlayerWindowGeometry) {
     let newSize = windowGeometry.viewportSize
     if Preference.bool(for: .allowEmptySpaceAroundVideo) || windowGeometry.videoAspectRatio >= 1 {
       // Video is wide or square
-      log.verbose("Updating intendedVideoContainerSize-Wide to \(newSize)")
-      intendedVideoContainerSizeWide = newSize
+      log.verbose("Updating intendedViewportSize-Wide to \(newSize)")
+      intendedViewportSizeWide = newSize
     } else {
       // Video is vertical: save to separate tall window pref
-      log.verbose("Updating intendedVideoContainerSize-Tall to \(newSize)")
-      intendedVideoContainerSizeTall = newSize
+      log.verbose("Updating intendedViewportSize-Tall to \(newSize)")
+      intendedViewportSizeTall = newSize
     }
   }
 
-  func getIntendedVideoContainerSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
+  func getIntendedViewportSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
     if Preference.bool(for: .allowEmptySpaceAroundVideo) || aspectRatio >= 1 {
-      return intendedVideoContainerSizeWide
+      return intendedViewportSizeWide
     } else {
-      return intendedVideoContainerSizeTall
+      return intendedViewportSizeTall
     }
   }
 

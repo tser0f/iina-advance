@@ -15,8 +15,8 @@ struct PlayerSaveState {
 
     case playlistPaths = "playlistPaths"
 
-    case intendedVideoContainerSizeWide = "intendedVidConSize_Wide"
-    case intendedVideoContainerSizeTall = "intendedVidConSize_Tall"
+    case intendedViewportSizeWide = "intendedViewportSize_Wide"
+    case intendedViewportSizeTall = "intendedViewportSize_Tall"
     case layoutSpec = "layoutSpec"
     case windowedModeGeometry = "windowedModeGeometry"
     case musicModeGeometry = "musicModeGeometry"
@@ -169,14 +169,14 @@ struct PlayerSaveState {
     let screenMetaList: [String] = NSScreen.screens.map{ScreenMeta.from($0).toCSV()}
     props[PropName.screens.rawValue] = screenMetaList
 
-    if let size = info.intendedVideoContainerSizeWide {
+    if let size = info.intendedViewportSizeWide {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
-      props[PropName.intendedVideoContainerSizeWide.rawValue] = sizeString
+      props[PropName.intendedViewportSizeWide.rawValue] = sizeString
     }
 
-    if let size = info.intendedVideoContainerSizeTall {
+    if let size = info.intendedViewportSizeTall {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
-      props[PropName.intendedVideoContainerSizeTall.rawValue] = sizeString
+      props[PropName.intendedViewportSizeTall.rawValue] = sizeString
     }
 
     if player.windowController.isOntop {
@@ -500,11 +500,11 @@ struct PlayerSaveState {
       info.hdrEnabled = hdrEnabled
     }
 
-    if let size = nsSize(for: .intendedVideoContainerSizeWide) {
-      info.intendedVideoContainerSizeWide = size
+    if let size = nsSize(for: .intendedViewportSizeWide) {
+      info.intendedViewportSizeWide = size
     }
-    if let size = nsSize(for: .intendedVideoContainerSizeTall) {
-      info.intendedVideoContainerSizeTall = size
+    if let size = nsSize(for: .intendedViewportSizeTall) {
+      info.intendedViewportSizeTall = size
     }
 
     guard let urlString = string(for: .url), let url = URL(string: urlString) else {

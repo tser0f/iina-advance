@@ -11,7 +11,7 @@ import Foundation
 extension PlayerWindowController {
   /// `LayoutTransition`: data structure which holds metadata needed to execute a series of animations which transition
   /// a single `PlayerWindow` from one layout (`inputLayout`) to another (`outputLayout`). Instances of `PlayerWindowGeometry`
-  /// are also used along the way to dictate window location/size, video container size, sidebar sizes, & other geometry.
+  /// are also used along the way to dictate window location/size, viewport size, sidebar sizes, & other geometry.
   ///
   /// See `buildLayoutTransition()`, where an instance of this class is assembled.
   /// Other important variables: `currentLayout`, `windowedModeGeometry`, `musicModeGeometry` (in `PlayerWindowController`)
@@ -50,7 +50,7 @@ extension PlayerWindowController {
     var needsFadeOutOldViews: Bool {
       return isTogglingLegacyStyle || isTopBarPlacementChanging
       || (inputLayout.mode != outputLayout.mode)
-      || (inputLayout.bottomBarPlacement == .insideVideo && outputLayout.bottomBarPlacement == .outsideVideo)
+      || (inputLayout.bottomBarPlacement == .insideViewport && outputLayout.bottomBarPlacement == .outsideViewport)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
       || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
       || (inputLayout.leadingSidebarToggleButton.isShowable && !outputLayout.leadingSidebarToggleButton.isShowable)
@@ -60,7 +60,7 @@ extension PlayerWindowController {
     var needsFadeInNewViews: Bool {
       return isTogglingLegacyStyle || isTopBarPlacementChanging
       || (inputLayout.mode != outputLayout.mode)
-      || (inputLayout.bottomBarPlacement == .outsideVideo && outputLayout.bottomBarPlacement == .insideVideo)
+      || (inputLayout.bottomBarPlacement == .outsideViewport && outputLayout.bottomBarPlacement == .insideViewport)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
       || (outputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
       || (!inputLayout.leadingSidebarToggleButton.isShowable && outputLayout.leadingSidebarToggleButton.isShowable)
