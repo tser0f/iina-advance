@@ -13,13 +13,16 @@ import Foundation
  */
 struct MusicModeGeometry: Equatable, CustomStringConvertible {
   let windowFrame: NSRect
+  let screenID: String
   let playlistHeight: CGFloat  /// indicates playlist height whether or not `isPlaylistVisible`
   let isVideoVisible: Bool
   let isPlaylistVisible: Bool
   let videoAspectRatio: CGFloat
 
-  init(windowFrame: NSRect, playlistHeight: CGFloat, isVideoVisible: Bool, isPlaylistVisible: Bool, videoAspectRatio: CGFloat) {
+  init(windowFrame: NSRect, screenID: String, playlistHeight: CGFloat, 
+       isVideoVisible: Bool, isPlaylistVisible: Bool, videoAspectRatio: CGFloat) {
     self.windowFrame = windowFrame
+    self.screenID = screenID
     if isPlaylistVisible {
       /// Ignore given `playlistHeight` and calculate it from the other params
       let videoHeight = isVideoVisible ? windowFrame.width / videoAspectRatio : 0
@@ -34,9 +37,11 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     self.videoAspectRatio = videoAspectRatio
   }
 
-  func clone(windowFrame: NSRect? = nil, playlistHeight: CGFloat? = nil, isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil,
+  func clone(windowFrame: NSRect? = nil, screenID: String? = nil, playlistHeight: CGFloat? = nil,
+             isVideoVisible: Bool? = nil, isPlaylistVisible: Bool? = nil,
              videoAspectRatio: CGFloat? = nil) -> MusicModeGeometry {
     return MusicModeGeometry(windowFrame: windowFrame ?? self.windowFrame,
+                             screenID: screenID ?? self.screenID,
                              // if playlist is visible, this will be ignored and recalculated in the constructor
                              playlistHeight: playlistHeight ?? self.playlistHeight,
                              isVideoVisible: isVideoVisible ?? self.isVideoVisible,
@@ -47,6 +52,8 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
   func toPlayerWindowGeometry() -> PlayerWindowGeometry {
     let outsideBottomBarHeight = MiniPlayerController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
     return PlayerWindowGeometry(windowFrame: windowFrame,
+                                screenID: screenID,
+                                fitOption: .constrainInVisibleFrame,
                                 topMarginHeight: 0,
                                 outsideTopBarHeight: 0,
                                 outsideTrailingBarWidth: 0,

@@ -8,6 +8,14 @@
 
 import Foundation
 
+enum ScreenFitOption: Int {
+  case none = 0
+  case constrainInVisibleFrame
+  case centerInVisibleFrame  /// Also constrains in `screen.visibleFrame`
+  case legacyFullScreen      /// Constrains in `screen.frame`
+  case nativeFullScreen      /// Constrains in `screen.frameWithoutCameraHousing`. Not really used though.
+}
+
 /**
 `PlayerWindowGeometry`
  Data structure which describes the basic layout configuration of a player window (`PlayerWindowController`).
@@ -62,6 +70,10 @@ import Foundation
 struct PlayerWindowGeometry: Equatable {
   // MARK: - Stored properties
 
+  // The ID of the screen on which this window is displayed
+  let screenID: String
+  let fitOption: ScreenFitOption
+
   /// The size & position (`window.frame`) of an IINA player `NSWindow`.
   let windowFrame: NSRect
 
@@ -83,20 +95,20 @@ struct PlayerWindowGeometry: Equatable {
   let videoAspectRatio: CGFloat
   let videoSize: NSSize
 
-  // TODO: Add screenFrame, screenVisibleFrame
-
   var allowEmptySpaceAroundVideo: Bool {
     return Preference.bool(for: .allowEmptySpaceAroundVideo)
   }
 
   // MARK: - Initializers
 
-  init(windowFrame: NSRect, topMarginHeight: CGFloat,
+  init(windowFrame: NSRect, screenID: String, fitOption: ScreenFitOption, topMarginHeight: CGFloat,
        outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
        insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
        videoAspectRatio: CGFloat) {
 
     self.windowFrame = windowFrame
+    self.screenID = screenID
+    self.fitOption = fitOption
 
     assert(topMarginHeight >= 0, "Expected topMarginHeight >= 0, found \(topMarginHeight)")
     self.topMarginHeight = topMarginHeight
@@ -130,7 +142,15 @@ struct PlayerWindowGeometry: Equatable {
        insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
        videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
 
-    let windowFrame = legacy ? screen.frame : screen.frameWithoutCameraHousing
+    let windowFrame: NSRect
+    let fitOption: ScreenFitOption
+    if legacy {
+      windowFrame = screen.frame
+      fitOption = .legacyFullScreen
+    } else {
+      windowFrame = screen.frameWithoutCameraHousing
+      fitOption = .nativeFullScreen
+    }
     let topMarginHeight: CGFloat
     if legacy {
       topMarginHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
@@ -138,10 +158,11 @@ struct PlayerWindowGeometry: Equatable {
       topMarginHeight = 0
     }
 
-    return PlayerWindowGeometry(windowFrame: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth, insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth, insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth, videoAspectRatio: videoAspectRatio)
+    return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth, insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth, insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth, videoAspectRatio: videoAspectRatio)
   }
 
-  func clone(windowFrame: NSRect? = nil, topMarginHeight: CGFloat? = nil,
+  func clone(windowFrame: NSRect? = nil, screenID: String? = nil, fitOption: ScreenFitOption? = nil,
+             topMarginHeight: CGFloat? = nil,
              outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
              outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
              insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
@@ -149,6 +170,8 @@ struct PlayerWindowGeometry: Equatable {
              videoAspectRatio: CGFloat? = nil) -> PlayerWindowGeometry {
 
     return PlayerWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
+                                screenID: screenID ?? self.screenID,
+                                fitOption: fitOption ?? self.fitOption,
                                 topMarginHeight: topMarginHeight ?? self.topMarginHeight,
                                 outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
                                 outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
@@ -292,7 +315,7 @@ struct PlayerWindowGeometry: Equatable {
   /// • If `containerFrame` is `nil`, center point & size of resulting `windowFrame` will not be changed.
   /// • If `centerInContainer` is `true`, `windowFrame` will be centered inside `containerFrame` (will be ignored if `containerFrame` is nil)
   func scaleViewport(desiredSize: NSSize? = nil, constrainedWithin containerFrame: NSRect? = nil,
-                           centerInContainer: Bool = false) -> PlayerWindowGeometry {
+                     centerInContainer: Bool = false) -> PlayerWindowGeometry {
     var newVidConSize = desiredSize ?? viewportSize
     Logger.log("Scaling PlayerWindowGeometry newVidConSize: \(newVidConSize), allowEmptySpace: \(allowEmptySpaceAroundVideo.yn)", level: .verbose)
 
@@ -487,9 +510,10 @@ struct PlayerWindowGeometry: Equatable {
 
 }
 
-extension PlayerWindowController {
 
-  // MARK: - UI: Window size / aspect
+// MARK: - PlayerWindowController geometry functions
+
+extension PlayerWindowController {
 
   /** Set window size when info available, or video size changed. Called in response to receiving 'video-reconfig' msg  */
   func mpvVideoDidReconfig() {
@@ -684,13 +708,19 @@ extension PlayerWindowController {
     }
   }
 
+  // For windowed mode
   func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> PlayerWindowGeometry {
     assert(layout.mode == .windowed, "buildWindowGeometryFromCurrentFrame(): unexpected mode: \(layout.mode)")
     // TODO: find a better solution than just replicating this logic here
     let insideBottomBarHeight = (layout.bottomBarPlacement == .insideViewport && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideViewport && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
 
-    let geo = PlayerWindowGeometry(windowFrame: window!.frame,
+    let window = window!
+    let screen = bestScreen
+
+    let geo = PlayerWindowGeometry(windowFrame: window.frame,
+                                   screenID: screen.screenID,
+                                   fitOption: .constrainInVisibleFrame,
                                    topMarginHeight: 0,  // is only nonzero when in legacy FS
                                    outsideTopBarHeight: layout.outsideTopBarHeight,
                                    outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
@@ -701,12 +731,10 @@ extension PlayerWindowController {
                                    insideBottomBarHeight: insideBottomBarHeight,
                                    insideLeadingBarWidth: layout.insideLeadingBarWidth,
                                    videoAspectRatio: videoAspectRatio)
-    return geo.scaleViewport(constrainedWithin: bestScreen.frame)
+    return geo.scaleViewport(constrainedWithin: screen.frame)
   }
 
   func buildFullScreenGeometry(from layout: LayoutState, legacy: Bool) -> PlayerWindowGeometry {
-    // TODO: store screenFrame in PlayerWindowGeometry
-    let screen = bestScreen
     let bottomBarHeight: CGFloat
     if layout.enableOSC && layout.oscPosition == .bottom {
       bottomBarHeight = OSCToolbarButton.oscBarHeight
@@ -717,24 +745,16 @@ extension PlayerWindowController {
     let insideBottomBarHeight = layout.bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
     let outsideBottomBarHeight = layout.bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
 
-    let windowFrame = legacy ? screen.frame : screen.frameWithoutCameraHousing
-    var topMarginHeight: CGFloat
-    if legacy {
-      topMarginHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
-    } else {
-      topMarginHeight = 0
-    }
-    return PlayerWindowGeometry(windowFrame: windowFrame,
-                                topMarginHeight: topMarginHeight,
-                                outsideTopBarHeight: layout.outsideTopBarHeight,
-                                outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
-                                outsideBottomBarHeight: outsideBottomBarHeight,
-                                outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
-                                insideTopBarHeight: insideTopBarHeight,
-                                insideTrailingBarWidth: layout.insideTrailingBarWidth,
-                                insideBottomBarHeight: insideBottomBarHeight,
-                                insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                                videoAspectRatio: videoAspectRatio)
+    return PlayerWindowGeometry.forFullScreen(in: bestScreen, legacy: legacy,
+                                              outsideTopBarHeight: layout.outsideTopBarHeight,
+                                              outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
+                                              outsideBottomBarHeight: outsideBottomBarHeight,
+                                              outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
+                                              insideTopBarHeight: insideTopBarHeight,
+                                              insideTrailingBarWidth: layout.insideTrailingBarWidth,
+                                              insideBottomBarHeight: insideBottomBarHeight,
+                                              insideLeadingBarWidth: layout.insideLeadingBarWidth,
+                                              videoAspectRatio: videoAspectRatio)
   }
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
@@ -1024,17 +1044,4 @@ extension PlayerWindowController {
     }
   }
 
-}
-
-struct MiniWindowGeometry: Equatable {
-  // MARK: - Stored properties
-
-  let windowFrame: NSRect
-
-  let videoSize: NSSize
-  let videoAspectRatio: CGFloat
-
-  let isPlaylistVisible: Bool
-  let isVideoVisible: Bool
-  let playlistHeight: CGFloat
 }

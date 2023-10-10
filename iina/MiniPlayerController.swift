@@ -446,7 +446,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   func buildMusicModeGeometryFromPrefs() -> MusicModeGeometry {
     // Default to left-top of screen. Try to use last-saved playlist height and visibility settings.
-    // TODO: just save the whole struct in a prefs entry
     let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
     let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
@@ -455,11 +454,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
     let desiredWindowHeight = desiredVideoHeight + MiniPlayerController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
 
-    let screenFrame = windowController.bestScreen.visibleFrame
+    let screen = windowController.bestScreen
+    let screenFrame = screen.visibleFrame
     let windowSize = NSSize(width: desiredWindowWidth, height: desiredWindowHeight)
     let windowOrigin = NSPoint(x: screenFrame.origin.x, y: screenFrame.maxY - windowSize.height)
     let windowFrame = NSRect(origin: windowOrigin, size: windowSize)
-    let desiredGeo = MusicModeGeometry(windowFrame: windowFrame, playlistHeight: desiredPlaylistHeight,
+    let desiredGeo = MusicModeGeometry(windowFrame: windowFrame, screenID: screen.screenID, playlistHeight: desiredPlaylistHeight,
                                        isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
                                        videoAspectRatio: videoAspectRatio)
     // Resize as needed to fit on screen:

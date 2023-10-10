@@ -843,6 +843,13 @@ extension NSScreen {
     return deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! UInt32
   }
 
+  var screenID: String {
+    if #available(macOS 10.15, *) {
+      return "\(displayId):\(localizedName)"
+    }
+    return "\(displayId)"
+  }
+
   // Returns nil on failure (not sure if success is guaranteed)
   var nativeResolution: CGSize? {
     // if there's a native resolution found in this method, that's more accurate than above

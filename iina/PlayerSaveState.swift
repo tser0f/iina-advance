@@ -110,7 +110,9 @@ struct PlayerSaveState {
             geo.windowFrame.origin.x.string2f,
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
-            geo.windowFrame.height.string2f
+            geo.windowFrame.height.string2f,
+            String(geo.fitOption.rawValue),
+            geo.screenID
     ].joined(separator: ",")
   }
 
@@ -124,7 +126,8 @@ struct PlayerSaveState {
             geo.playlistHeight.string2f,
             geo.isVideoVisible.yn,
             geo.isPlaylistVisible.yn,
-            geo.videoAspectRatio.string6f
+            geo.videoAspectRatio.string6f,
+            geo.screenID
     ].joined(separator: ",")
   }
 
@@ -425,7 +428,7 @@ struct PlayerSaveState {
   /// String -> `PlayerWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> PlayerWindowGeometry? {
     return deserializeCSV(.windowedModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 15,
+                          expectedTokenCount: 17,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
@@ -442,13 +445,20 @@ struct PlayerSaveState {
             let winOriginX = Double(iter.next()!),
             let winOriginY = Double(iter.next()!),
             let winWidth = Double(iter.next()!),
-            let winHeight = Double(iter.next()!) else {
+            let winHeight = Double(iter.next()!),
+            let fitOptionRawValue = Int(iter.next()!),
+            let screenID = iter.next()
+      else {
         Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
         return nil
       }
 
+      guard let fitOption = ScreenFitOption(rawValue: fitOptionRawValue) else {
+        Logger.log("\(errPreamble) unrecognized ScreenFitOption: \(fitOptionRawValue)", level: .error)
+        return nil
+      }
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return PlayerWindowGeometry(windowFrame: windowFrame, topMarginHeight: topMarginHeight,
+      return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, topMarginHeight: topMarginHeight,
                                 outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                                 outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
                                 insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
@@ -458,9 +468,11 @@ struct PlayerSaveState {
   }
 
   /// String -> `MusicModeGeometry`
+  /// Note to maintainers: if compiler is complaining with the message "nil is not compatible with closure result type MusicModeGeometry",
+  /// check the arguments to the `MusicModeGeometry` constructor. For some reason the error lands in the wrong place.
   static private func deserializeMusicModeGeometry(from properties: [String: Any]) -> MusicModeGeometry? {
     return deserializeCSV(.musicModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 9,
+                          expectedTokenCount: 10,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
@@ -471,13 +483,16 @@ struct PlayerSaveState {
             let playlistHeight = Double(iter.next()!),
             let isVideoVisible = Bool.yn(iter.next()!),
             let isPlaylistVisible = Bool.yn(iter.next()!),
-            let videoAspectRatio = Double(iter.next()!) else {
+            let videoAspectRatio = Double(iter.next()!),
+            let screenID = iter.next()
+      else {
         Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
         return nil
       }
 
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
       return MusicModeGeometry(windowFrame: windowFrame,
+                               screenID: screenID,
                                playlistHeight: playlistHeight,
                                isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
                                videoAspectRatio: videoAspectRatio)
