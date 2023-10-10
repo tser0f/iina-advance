@@ -463,6 +463,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
                                        isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
                                        videoAspectRatio: videoAspectRatio)
     // Resize as needed to fit on screen:
-    return desiredGeo.constrainWithin(screenFrame)
+    return desiredGeo.refit()
   }
 }

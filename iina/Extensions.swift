@@ -816,6 +816,22 @@ extension NSAppearance {
 }
 
 extension NSScreen {
+  static func forScreenID(_ screenID: String) -> NSScreen? {
+    let splitted = screenID.split(separator: ":")
+    guard splitted.count > 0,
+          let displayID = UInt32(splitted[0]) 
+    else {
+      return nil
+    }
+
+    for screen in NSScreen.screens {
+      if screen.displayId == displayID {
+        return screen
+      }
+    }
+    Logger.log("Failed to find an NSScreen for screenID \(screenID.quoted). Returning nil", level: .error)
+    return nil
+  }
 
   /// Height of the camera housing on this screen if this screen has an embedded camera.
   var cameraHousingHeight: CGFloat? {

@@ -14,7 +14,7 @@ extension PlayerWindowController {
     case windowed = 1
     case fullScreen
     case musicMode
-    //    case interactiveWindow
+    //    TODO: case interactiveWindow
     //    case interactiveFullScreen
   }
 
@@ -459,6 +459,30 @@ extension PlayerWindowController {
       }
 
       return outputLayout
+    }
+
+    func buildFullScreenGeometry(inside screen: NSScreen, videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
+      assert(isFullScreen)
+      let bottomBarHeight: CGFloat
+      if enableOSC && oscPosition == .bottom {
+        bottomBarHeight = OSCToolbarButton.oscBarHeight
+      } else {
+        bottomBarHeight = 0
+      }
+      let insideTopBarHeight = topBarPlacement == .insideViewport ? topBarHeight : 0
+      let insideBottomBarHeight = bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
+      let outsideBottomBarHeight = bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
+
+      return PlayerWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle,
+                                                outsideTopBarHeight: outsideTopBarHeight,
+                                                outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                                outsideBottomBarHeight: outsideBottomBarHeight,
+                                                outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                                insideTopBarHeight: insideTopBarHeight,
+                                                insideTrailingBarWidth: insideTrailingBarWidth,
+                                                insideBottomBarHeight: insideBottomBarHeight,
+                                                insideLeadingBarWidth: insideLeadingBarWidth,
+                                                videoAspectRatio: videoAspectRatio)
     }
 
   }  // end class LayoutState

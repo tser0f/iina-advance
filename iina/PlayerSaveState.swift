@@ -169,8 +169,8 @@ struct PlayerSaveState {
     /// `musicModeGeometry`
     props[PropName.musicModeGeometry.rawValue] = toCSV(player.windowController.musicModeGeometry)
 
-    let screenMetaList: [String] = NSScreen.screens.map{ScreenMeta.from($0).toCSV()}
-    props[PropName.screens.rawValue] = screenMetaList
+    let screenMetaCSVList: [String] = player.windowController.cachedScreens.values.map{$0.toCSV()}
+    props[PropName.screens.rawValue] = screenMetaCSVList
 
     if let size = info.intendedViewportSizeWide {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
@@ -511,6 +511,8 @@ struct PlayerSaveState {
 
     log.verbose("Screens from prior launch: \(self.screens)")
 
+    // FIXME: map current geometry to prior screen. Deal with mismatch
+
     if let hdrEnabled = bool(for: .hdrEnabled) {
       info.hdrEnabled = hdrEnabled
     }
@@ -549,6 +551,7 @@ struct PlayerSaveState {
     let mpv: MPVController = player.mpv
     if let startTime = string(for: .progress) {
       // This is actaully a decimal number but mpv expects a string
+      // FIXME: this doesn't always work
       mpv.setString(MPVOption.PlaybackControl.start, startTime)
     }
 

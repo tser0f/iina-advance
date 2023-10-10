@@ -143,6 +143,7 @@ extension PlayerWindowController {
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
+    // TODO: externalize this
     let screen = bestScreen
 
     // - Build outputLayout
@@ -158,11 +159,11 @@ extension PlayerWindowController {
     case .windowed:
       inputGeometry = windowedModeGeometry
     case .fullScreen:
-      inputGeometry = buildFullScreenGeometry(from: inputLayout, legacy: inputLayout.isLegacyFullScreen)
+      inputGeometry = inputLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
       /// But make sure we correct any size problems
-      inputGeometry = musicModeGeometry.constrainWithin(bestScreen.visibleFrame).toPlayerWindowGeometry()
+      inputGeometry = musicModeGeometry.refit().toPlayerWindowGeometry()
     }
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
@@ -244,7 +245,6 @@ extension PlayerWindowController {
     // Extra animation for exiting legacy full screen (to Native Windowed Mode)
     if useExtraAnimationForExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let screen = bestScreen
         let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("Updating legacy full screen window to show camera housing prior to entering native windowed mode")
         setWindowFrameForLegacyFullScreen(using: newGeo)
@@ -299,9 +299,9 @@ extension PlayerWindowController {
     // Extra animation for exiting legacy full screen to legacy windowed mode, if black space around camera housing
     if useExtraAnimationForExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
+        let extraGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
-        setWindowFrameForLegacyFullScreen(using: newGeo)
+        setWindowFrameForLegacyFullScreen(using: extraGeo)
       }))
     }
 
@@ -326,7 +326,6 @@ extension PlayerWindowController {
     // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
     if useExtraAnimationForEnteringLegacyFullScreen {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let screen = bestScreen
         let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
         let newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: topBlackBarHeight)
         log.verbose("Updating legacy full screen window to cover camera housing / menu bar / dock")
@@ -350,10 +349,11 @@ extension PlayerWindowController {
     switch outputLayout.mode {
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
-      let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).constrainWithin(bestScreen.visibleFrame)
+      let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).refit()
       return musicModeGeometryCorrected.toPlayerWindowGeometry()
     case .fullScreen:
-      return buildFullScreenGeometry(from: outputLayout, legacy: outputLayout.spec.isLegacyStyle)
+      // FIXME: externalize screen ID here
+      return outputLayout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
     case .windowed:
       break  // see below
     }
@@ -377,8 +377,7 @@ extension PlayerWindowController {
                                                          insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
                                                          insideBottomBarHeight: insideBottomBarHeight,
                                                          insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
-                                                         videoAspectRatio: inputGeometry.videoAspectRatio,
-                                                         constrainedWithin: bestScreen.visibleFrame)
+                                                         videoAspectRatio: inputGeometry.videoAspectRatio)
 
     let ΔOutsideWidth = outputGeo.outsideSidebarsTotalWidth - inputGeometry.outsideSidebarsTotalWidth
     let ΔOutsideHeight = outputGeo.outsideSidebarsTotalHeight - inputGeometry.outsideSidebarsTotalHeight
@@ -389,7 +388,7 @@ extension PlayerWindowController {
       if let prevIntendedViewportSize = player.info.getIntendedViewportSize(forAspectRatio: inputGeometry.videoAspectRatio) {
         log.verbose("Before opening outer sidebar(s): restoring prev intendedViewportSize (\(prevIntendedViewportSize))")
 
-        return outputGeo.scaleViewport(desiredSize: prevIntendedViewportSize, constrainedWithin: bestScreen.visibleFrame)
+        return outputGeo.scaleViewport(to: prevIntendedViewportSize)
       }
     }
     return outputGeo
@@ -405,8 +404,7 @@ extension PlayerWindowController {
                                                       insideTopBarHeight: 0,
                                                       insideTrailingBarWidth: 0,
                                                       insideBottomBarHeight: 0,
-                                                      insideLeadingBarWidth: 0,
-                                                      constrainedWithin: bestScreen.visibleFrame)
+                                                      insideLeadingBarWidth: 0)
     } else if transition.isExitingMusicMode {
       // Only bottom bar needs to be closed. No need to constrain in screen
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
@@ -464,7 +462,7 @@ extension PlayerWindowController {
     }
 
     if transition.outputLayout.isFullScreen {
-      // TODO: store screenFrame in PlayerWindowGeometry
+      // FIXME: figure out where to get `bestScreen`. Not here.
       return PlayerWindowGeometry.forFullScreen(in: bestScreen, legacy: transition.outputLayout.isLegacyFullScreen,
                                   outsideTopBarHeight: outsideTopBarHeight,
                                   outsideTrailingBarWidth: outsideTrailingBarWidth,
@@ -484,7 +482,6 @@ extension PlayerWindowController {
                                                      insideTopBarHeight: insideTopBarHeight,
                                                      insideTrailingBarWidth: insideTrailingBarWidth,
                                                      insideBottomBarHeight: insideBottomBarHeight,
-                                                     insideLeadingBarWidth: insideLeadingBarWidth,
-                                                     constrainedWithin: bestScreen.visibleFrame)
+                                                     insideLeadingBarWidth: insideLeadingBarWidth)
   }
 }

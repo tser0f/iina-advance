@@ -67,7 +67,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   /** For blacking out other screens. */
-  var cachedScreenIDs = Set<UInt32>()
+  var cachedScreens: [UInt32: ScreenMeta] = PlayerWindowController.buildScreenMap()
   var blackWindows: [NSWindow] = []
 
   /** The quick setting sidebar (video, audio, subtitles). */
@@ -225,7 +225,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var geoUpdateTicketCount: Int = 0
 
   lazy var windowedModeGeometry: PlayerWindowGeometry = {
-    // TODO: better logic here
+    // Build default window geometry from preferences and default frame
     return buildWindowGeometryFromCurrentFrame(using: currentLayout)
   }() {
     didSet {
@@ -854,10 +854,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if #available(macOS 10.14, *) {
       topBarBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     }
-    cachedScreenIDs.removeAll()
-    for screen in NSScreen.screens {
-      cachedScreenIDs.insert(screen.displayId)
-    }
+
     // Do not make visual effects views opaque when window is not in focus
     for view in [topBarView, osdVisualEffectView, bottomBarView, controlBarFloating,
                  leadingSidebarView, trailingSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
@@ -955,6 +952,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     notificationCenter.addObserver(forName: name, object: object, queue: .main, using: block)
   }
 
+  static func buildScreenMap() -> [UInt32 : ScreenMeta] {
+    return NSScreen.screens.map{ScreenMeta.from($0)}.reduce(Dictionary<UInt32, ScreenMeta>(), {(dict, screenMeta) in
+      var dict = dict
+      dict[screenMeta.displayID] = screenMeta
+      return dict
+    })
+  }
+
   // default album art
   func refreshDefaultAlbumArtVisibility() {
     guard loaded else { return }
@@ -980,8 +985,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
       applyMusicModeGeometry(newGeo)
     case .windowed:
-      let vidCon = player.info.getIntendedViewportSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.viewportSize
-      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(desiredSize: vidCon, constrainedWithin: bestScreen.visibleFrame)
+      let viewportSize = player.info.getIntendedViewportSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.viewportSize
+      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize)
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
     case .fullScreen:
@@ -1862,8 +1867,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return miniPlayer.windowWillResize(window, to: requestedSize)
     case .fullScreen:
       if currentLayout.isLegacyFullScreen {
-        let geo = buildFullScreenGeometry(from: currentLayout, legacy: true)
-        return geo.windowFrame.size
+        let fsGeo = currentLayout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+        return fsGeo.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
         return requestedSize
@@ -1896,8 +1901,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       if !isFullScreen {
         // Do this also for music mode
-        let vidContainerSize = viewportView.frame.size
-        let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: vidContainerSize)
+        let viewportSize = viewportView.frame.size
+        let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize)
         // Need to update this always when resizing window, even when resizing non-interactively:
         videoView.updateSizeConstraints(videoSize)
       }
@@ -1974,10 +1979,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if currentLayout.isLegacyFullScreen {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
         animationQueue.run(CocoaAnimation.Task({ [self] in
-          guard currentLayout.isLegacyFullScreen else { return }  // check again
+          let layout = currentLayout
+          guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
-          let newGeo = buildFullScreenGeometry(from: currentLayout, legacy: true)
-          setWindowFrameForLegacyFullScreen(using: newGeo)
+          let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+          setWindowFrameForLegacyFullScreen(using: fsGeo)
         }))
       }
       return
@@ -1990,18 +1996,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// • Adding or removing window style mask `.titled`
   /// • More...
   private func windowDidChangeScreenParameters(_ notification: Notification) {
-    var screenIDs = Set<UInt32>()
-    for screen in NSScreen.screens {
-      screenIDs.insert(screen.displayId)
-    }
-    log.verbose("Got NSApplicationDidChangeScreenParametersNotification; screenIDs was: \(self.cachedScreenIDs), is now: \(screenIDs)")
+    let screens = PlayerWindowController.buildScreenMap()
+    let screenIDs = screens.keys.sorted()
+    let cachedScreenIDs = cachedScreens.keys.sorted()
+    log.verbose("Got NSApplicationDidChangeScreenParametersNotification; screenIDs was: \(cachedScreenIDs), is now: \(screenIDs)")
 
-    if isFullScreen && Preference.bool(for: .blackOutMonitor) && screenIDs != self.cachedScreenIDs {
+    if isFullScreen && Preference.bool(for: .blackOutMonitor) && !screenIDs.elementsEqual(cachedScreenIDs) {
       self.removeBlackWindows()
       self.blackOutOtherMonitors()
     }
     // Update the cached value
-    self.cachedScreenIDs = screenIDs
+    self.cachedScreens = screens
 
     self.videoView.updateDisplayLink()
 
@@ -2012,10 +2017,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if currentLayout.isLegacyFullScreen {
       // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
       animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
-        guard currentLayout.isLegacyFullScreen else { return }  // check again now that we are inside animation
+        let layout = currentLayout
+        guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
         log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
-        let newGeo = buildFullScreenGeometry(from: currentLayout, legacy: true)
-        setWindowFrameForLegacyFullScreen(using: newGeo)
+        let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+        setWindowFrameForLegacyFullScreen(using: fsGeo)
       }))
     }
   }
@@ -2029,13 +2035,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard !isAnimating else { return }
     guard let window = window else { return }
     log.verbose("WindowDidMove frame: \(window.frame)")
-    if currentLayout.isLegacyFullScreen {
+    let layout = currentLayout
+    if layout.isLegacyFullScreen {
       // Sometimes MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
       // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
       // window management app such as Amethyst. If this happens, move the window back to its proper place:
       log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
-      let newGeo = buildFullScreenGeometry(from: currentLayout, legacy: true)
-      setWindowFrameForLegacyFullScreen(using: newGeo)
+      let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+      setWindowFrameForLegacyFullScreen(using: fsGeo)
     } else {
       updateCachedGeometry(updatePreferredSizeAlso: false)
       player.events.emit(.windowMoved, data: window.frame)

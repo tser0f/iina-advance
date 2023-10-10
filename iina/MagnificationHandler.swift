@@ -126,12 +126,12 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     let origViewportSize = originalGeometry.viewportSize
     let newViewportSize = origViewportSize.multiply(scale)
 
-    let newGeoUnconstrained = originalGeometry.scaleViewport(desiredSize: newViewportSize)
+    let intendedGeo = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .noConstraints)
     // User has actively resized the video. Assume this is the new intended resolution, even if it is outside the current screen size.
     // This is useful for various features such as resizing with "allowEmptySpaceAroundVideo", or toggling visibility of outside bars.
-    windowController.player.info.setIntendedViewportSize(from: newGeoUnconstrained)
+    windowController.player.info.setIntendedViewportSize(from: intendedGeo)
 
-    let newGeometry = newGeoUnconstrained.constrainWithin(windowController.bestScreen.visibleFrame)
+    let newGeometry = intendedGeo.refit(.insideVisibleFrame)
     windowController.applyWindowGeometryLivePreview(newGeometry)
     return newGeometry
   }

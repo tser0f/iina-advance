@@ -53,7 +53,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     let outsideBottomBarHeight = MiniPlayerController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
     return PlayerWindowGeometry(windowFrame: windowFrame,
                                 screenID: screenID,
-                                fitOption: .constrainInVisibleFrame,
+                                fitOption: .insideVisibleFrame,
                                 topMarginHeight: 0,
                                 outsideTopBarHeight: 0,
                                 outsideTrailingBarWidth: 0,
@@ -90,7 +90,9 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
   /// 3. `playlistWrapperView`: Visible if `isPlaylistVisible` is true. Height is user resizable, and must be >= `PlaylistMinHeight`
   /// Must also ensure that window stays within the bounds of the screen it is in. Almost all of the time the window  will be
   /// height-bounded instead of width-bounded.
-  func constrainWithin(_ containerFrame: NSRect) -> MusicModeGeometry {
+  func refit() -> MusicModeGeometry {
+    let containerFrame = PlayerWindowGeometry.getContainerFrame(forScreenID: screenID, fitOption: .insideVisibleFrame)!
+
     /// When the window's width changes, the video scales to match while keeping its aspect ratio,
     /// and the control bar (`backgroundView`) and playlist are pushed down.
     /// Calculate the maximum width/height the art can grow to so that `backgroundView` is not pushed off the screen.

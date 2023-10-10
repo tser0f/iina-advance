@@ -888,8 +888,8 @@ extension PlayerWindowController {
           let viewportSize = oldGeo.viewportSize
           let newViewportWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
-          let desiredContainerViewSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
-          newGeo = resizedPlaylistGeo.scaleViewport(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+          let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+          newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
         } else {
           newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
         }
@@ -915,8 +915,8 @@ extension PlayerWindowController {
           let viewportSize = oldGeo.viewportSize
           let newViewportWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
-          let desiredContainerViewSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
-          newGeo = resizedPlaylistGeo.scaleViewport(desiredSize: desiredContainerViewSize, constrainedWithin: bestScreen.visibleFrame)
+          let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+          newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
         } else {
           newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)
         }
