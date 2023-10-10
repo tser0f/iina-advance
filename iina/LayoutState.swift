@@ -461,6 +461,11 @@ extension PlayerWindowController {
       return outputLayout
     }
 
+    func buildFullScreenGeometry(inScreenID screenID: String, videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
+      let screen = NSScreen.getScreenOrDefault(screenID: screenID)
+      return buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
+    }
+
     func buildFullScreenGeometry(inside screen: NSScreen, videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
       assert(isFullScreen)
       let bottomBarHeight: CGFloat

@@ -88,6 +88,8 @@ extension PlayerWindowController {
       player.window.setFrameImmediately(musicModeGeometry.windowFrame)
       videoView.updateSizeConstraints(musicModeGeometry.videoSize)
     case .fullScreen:
+      /// Don't need to set window frame here because it will be set by `LayoutTransition` to full screen (below).
+      /// Similarly, when window exits full screen, the windowed mode position will be restored from `windowedModeGeometry`.
       break
     }
 
@@ -143,8 +145,9 @@ extension PlayerWindowController {
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
-    // TODO: externalize this
-    let screen = bestScreen
+    // This also applies to full screen, because full screen always uses the same screen as windowed.
+    // Does not apply to music mode, which can be a different screen.
+    let windowedModeScreen = NSScreen.getScreenOrDefault(screenID: windowedModeGeometry.screenID)
 
     // - Build outputLayout
 
@@ -159,7 +162,7 @@ extension PlayerWindowController {
     case .windowed:
       inputGeometry = windowedModeGeometry
     case .fullScreen:
-      inputGeometry = inputLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
+      inputGeometry = inputLayout.buildFullScreenGeometry(inside: windowedModeScreen, videoAspectRatio: videoAspectRatio)
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
       /// But make sure we correct any size problems
@@ -212,10 +215,10 @@ extension PlayerWindowController {
 
     // Extra animation for exiting legacy full screen: remove camera housing with black bar
     let closeOldPanelsDuration = startingAnimationDuration
-    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
+    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && windowedModeScreen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
 
     // Extra animation for entering legacy full screen: cover camera housing with black bar
-    let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && screen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
+    let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && windowedModeScreen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
     var openFinalPanelsDuration = endingAnimationDuration
     if useExtraAnimationForEnteringLegacyFullScreen {
       openFinalPanelsDuration *= 0.8
@@ -245,7 +248,7 @@ extension PlayerWindowController {
     // Extra animation for exiting legacy full screen (to Native Windowed Mode)
     if useExtraAnimationForExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let newGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
+        let newGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("Updating legacy full screen window to show camera housing prior to entering native windowed mode")
         setWindowFrameForLegacyFullScreen(using: newGeo)
       }))
@@ -299,7 +302,7 @@ extension PlayerWindowController {
     // Extra animation for exiting legacy full screen to legacy windowed mode, if black space around camera housing
     if useExtraAnimationForExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let extraGeo = transition.inputGeometry.clone(windowFrame: screen.frameWithoutCameraHousing, topMarginHeight: 0)
+        let extraGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
         setWindowFrameForLegacyFullScreen(using: extraGeo)
       }))
@@ -326,8 +329,8 @@ extension PlayerWindowController {
     // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
     if useExtraAnimationForEnteringLegacyFullScreen {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
-        let newGeo = transition.outputGeometry.clone(windowFrame: screen.frame, topMarginHeight: topBlackBarHeight)
+        let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : windowedModeScreen.cameraHousingHeight ?? 0
+        let newGeo = transition.outputGeometry.clone(windowFrame: windowedModeScreen.frame, topMarginHeight: topBlackBarHeight)
         log.verbose("Updating legacy full screen window to cover camera housing / menu bar / dock")
         setWindowFrameForLegacyFullScreen(using: newGeo)
       }))
@@ -352,8 +355,8 @@ extension PlayerWindowController {
       let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).refit()
       return musicModeGeometryCorrected.toPlayerWindowGeometry()
     case .fullScreen:
-      // FIXME: externalize screen ID here
-      return outputLayout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+      // Full screen always uses same screen as windowed mode
+      return outputLayout.buildFullScreenGeometry(inScreenID: inputGeometry.screenID, videoAspectRatio: videoAspectRatio)
     case .windowed:
       break  // see below
     }
@@ -462,17 +465,18 @@ extension PlayerWindowController {
     }
 
     if transition.outputLayout.isFullScreen {
-      // FIXME: figure out where to get `bestScreen`. Not here.
-      return PlayerWindowGeometry.forFullScreen(in: bestScreen, legacy: transition.outputLayout.isLegacyFullScreen,
-                                  outsideTopBarHeight: outsideTopBarHeight,
-                                  outsideTrailingBarWidth: outsideTrailingBarWidth,
-                                  outsideBottomBarHeight: outsideBottomBarHeight,
-                                  outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                  insideTopBarHeight: insideTopBarHeight,
-                                  insideTrailingBarWidth: insideTrailingBarWidth,
-                                  insideBottomBarHeight: insideBottomBarHeight,
-                                  insideLeadingBarWidth: insideLeadingBarWidth,
-                                  videoAspectRatio: videoAspectRatio)
+      let screen = NSScreen.getScreenOrDefault(screenID: transition.inputGeometry.screenID)
+      return PlayerWindowGeometry.forFullScreen(in: screen,
+                                                legacy: transition.outputLayout.isLegacyFullScreen,
+                                                outsideTopBarHeight: outsideTopBarHeight,
+                                                outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                                outsideBottomBarHeight: outsideBottomBarHeight,
+                                                outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                                insideTopBarHeight: insideTopBarHeight,
+                                                insideTrailingBarWidth: insideTrailingBarWidth,
+                                                insideBottomBarHeight: insideBottomBarHeight,
+                                                insideLeadingBarWidth: insideLeadingBarWidth,
+                                                videoAspectRatio: videoAspectRatio)
     }
 
     return transition.outputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,

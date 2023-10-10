@@ -833,6 +833,15 @@ extension NSScreen {
     return nil
   }
 
+  static func getScreenOrDefault(screenID: String) -> NSScreen {
+    if let screen = forScreenID(screenID) {
+      return screen
+    }
+
+    Logger.log("Failed to find an NSScreen for screenID \(screenID.quoted). Returning default screen", level: .debug)
+    return NSScreen.screens[0]
+  }
+
   /// Height of the camera housing on this screen if this screen has an embedded camera.
   var cameraHousingHeight: CGFloat? {
     if #available(macOS 12.0, *) {

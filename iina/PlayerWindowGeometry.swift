@@ -257,12 +257,7 @@ struct PlayerWindowGeometry: Equatable {
   /// Returns the limiting frame for the given `fitOption`, inside which the player window must fit.
   /// If no fit needed, returns `nil`.
   static func getContainerFrame(forScreenID screenID: String, fitOption: ScreenFitOption) -> NSRect? {
-    let screen: NSScreen
-    if let screenFound = NSScreen.forScreenID(screenID) {
-      screen = screenFound
-    } else {
-      screen = NSScreen.screens[0]
-    }
+    let screen = NSScreen.getScreenOrDefault(screenID: screenID)
 
     switch fitOption {
     case .noConstraints:
@@ -630,7 +625,9 @@ extension PlayerWindowController {
         log.verbose("[AdjustFrameAfterVideoReconfig C step3] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
       }
 
-      let screenVisibleFrame = bestScreen.visibleFrame
+      let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
+      let screen = NSScreen.getScreenOrDefault(screenID: screenID)
+      let screenVisibleFrame = screen.visibleFrame
 
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let mpvGeometry = player.getGeometry() {
@@ -725,9 +722,9 @@ extension PlayerWindowController {
 
   /**
    Resizes and repositions the window, attempting to match `desiredViewportSize`, but the actual resulting
-   video size will be scaled if needed so it is`>= AppData.minVideoSize` and `<= bestScreen.visibleFrame`.
+   video size will be scaled if needed so it is`>= AppData.minVideoSize` and `<= screen.visibleFrame`.
    The window's position will also be updated to maintain its current center if possible, but also to
-   ensure it is placed entirely inside `bestScreen.visibleFrame`.
+   ensure it is placed entirely inside `screen.visibleFrame`.
    */
   func resizeViewport(to desiredViewportSize: CGSize? = nil, centerOnScreen: Bool = false) {
     guard !isInInteractiveMode, currentLayout.mode == .windowed else { return }
@@ -742,6 +739,7 @@ extension PlayerWindowController {
     applyWindowGeometry(newGeometry)
   }
 
+  /// Updates the appropriate in-memory cached geometry (based on the current window mode) using the current window & view frames.
   /// `updatePreferredSizeAlso` only applies to `.windowed` mode
   func updateCachedGeometry(updatePreferredSizeAlso: Bool = true) {
     guard !isAnimating else { return }
@@ -805,7 +803,7 @@ extension PlayerWindowController {
     player.window.setFrameImmediately(geometry.windowFrame)
   }
 
-  /// Updates current `window.frame` and its internal views from `newGeometry`. Animated.
+  /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
   /// Also updates cached `windowedModeGeometry` and saves updated state.
   func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry, animate: Bool = true) {
     log.verbose("applyWindowGeometry: \(newGeometry.windowFrame)")
@@ -831,8 +829,9 @@ extension PlayerWindowController {
       player.saveState()
 
       if isFullScreen {
-        // Make sure video constraints are up to date, even in full screen
-        let newVideoSizeFS = PlayerWindowGeometry.computeVideoSize(withAspectRatio: newGeometry.videoAspectRatio, toFillIn: bestScreen.visibleFrame.size)
+        // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
+        let screen = NSScreen.getScreenOrDefault(screenID: newGeometry.screenID)
+        let newVideoSizeFS = PlayerWindowGeometry.computeVideoSize(withAspectRatio: newGeometry.videoAspectRatio, toFillIn: screen.visibleFrame.size)
         videoView.updateSizeConstraints(newVideoSizeFS)
       } else {
         // Make sure this is up-to-date

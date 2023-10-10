@@ -1867,7 +1867,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return miniPlayer.windowWillResize(window, to: requestedSize)
     case .fullScreen:
       if currentLayout.isLegacyFullScreen {
-        let fsGeo = currentLayout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+        let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: videoAspectRatio)
         return fsGeo.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
@@ -1974,15 +1974,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// Need to recompute legacy FS's window size so it exactly fills the new screen.
     /// But looks like the OS will try to reposition the window on its own and can't be stopped...
     /// Just wait until after it does its thing before calling `setFrame()`.
-    // TODO: in the future, keep strict track of window size & position, and call
-    /// `setFrame()` in `windowDidMove()` to preserve correctness
-    if currentLayout.isLegacyFullScreen {
+    // TODO: in the future, keep strict track of window size & position, and call `setFrame()` in `windowDidMove()` to preserve correctness
+    if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
         animationQueue.run(CocoaAnimation.Task({ [self] in
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
           let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+          // FIXME: update windowedModeGeometry with new screenID
           setWindowFrameForLegacyFullScreen(using: fsGeo)
         }))
       }
@@ -2014,7 +2014,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // is moved to a new screen such as when the window is on an external display and that display
     // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
     // frame.
-    if currentLayout.isLegacyFullScreen {
+    if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
       // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
       animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
         let layout = currentLayout
@@ -2036,7 +2036,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window = window else { return }
     log.verbose("WindowDidMove frame: \(window.frame)")
     let layout = currentLayout
-    if layout.isLegacyFullScreen {
+    if layout.isLegacyFullScreen && !player.info.isRestoring {
       // Sometimes MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
       // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
       // window management app such as Amethyst. If this happens, move the window back to its proper place:

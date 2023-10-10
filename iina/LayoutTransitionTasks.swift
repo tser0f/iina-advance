@@ -491,7 +491,7 @@ extension PlayerWindowController {
         videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
         player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
       } else if transition.outputLayout.isLegacyFullScreen {
-        let screen = bestScreen
+        let screen = NSScreen.getScreenOrDefault(screenID: transition.outputGeometry.screenID)
         let newGeo: PlayerWindowGeometry
         if transition.isEnteringLegacyFullScreen {
           // Deal with possible top margin needed to hide camera housing
