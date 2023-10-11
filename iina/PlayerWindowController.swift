@@ -3267,6 +3267,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       showSidebar(forTabGroup: .settings)
     case .subTrack:
       quickSettingView.showSubChooseMenu(forView: sender, showLoadedSubs: true)
+    case .screenshot:
+      player.screenshot()
     }
   }
 
