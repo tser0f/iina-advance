@@ -1458,6 +1458,14 @@ class PlayerCore: NSObject {
     isStopped = false
     info.haveDownloadedSub = false
 
+    /// If `--no-resume-playback` is given to `mpv` (i.e., the `watch-later` feature is disabled, mpv will ignore
+    /// the `--start` param. For this case, fall back to an explicit seek.
+    if let priorState = info.priorState, !mpv.getFlag("resume-playback"),
+       let priorPlayPosition = priorState.double(for: .playPosition) {
+      log.verbose("Restoring playback time via seek: \(priorPlayPosition)")
+      seek(absoluteSecond: priorPlayPosition)
+    }
+
     // Kick off thumbnails load/gen - it can happen in background
     reloadThumbnails()
 

@@ -368,7 +368,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     if isPlaylistVisible {
       saveDefaultPlaylistHeight()
     }
-    applyGeometryAfterResize(newWindowFrame: window!.frame)
+    applyGeometryForResize(newWindowFrame: window!.frame)
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
@@ -383,12 +383,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
 
     let requestedWindowFrame = NSRect(origin: windowController.musicModeGeometry.windowFrame.origin, size: requestedSize)
-    applyGeometryAfterResize(newWindowFrame: requestedWindowFrame)
+    applyGeometryForResize(newWindowFrame: requestedWindowFrame)
 
     return windowController.musicModeGeometry.windowFrame.size
   }
 
-  private func applyGeometryAfterResize(newWindowFrame: NSRect) {
+  private func applyGeometryForResize(newWindowFrame: NSRect) {
     let newGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
     CocoaAnimation.disableAnimation{
       /// this will set `windowController.musicModeGeometry` after applying any necessary constraints

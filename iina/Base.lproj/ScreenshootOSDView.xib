@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22154" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21701"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22154"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -33,6 +33,9 @@
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="systemBold"/>
                     </buttonCell>
+                    <constraints>
+                        <constraint firstAttribute="height" priority="249" id="JhH-M1-uCK"/>
+                    </constraints>
                     <connections>
                         <action selector="deleteBtnAction:" target="-2" id="3ZK-R3-UME"/>
                     </connections>
@@ -61,12 +64,14 @@
             <constraints>
                 <constraint firstItem="q1D-Q2-PWP" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="1Ys-JJ-HpL"/>
                 <constraint firstItem="u7L-iO-hp4" firstAttribute="top" secondItem="q1D-Q2-PWP" secondAttribute="bottom" constant="12" id="92W-Kb-AbB"/>
+                <constraint firstItem="sfo-Mh-tkL" firstAttribute="height" secondItem="u7L-iO-hp4" secondAttribute="height" id="Fih-Xq-aEG"/>
                 <constraint firstItem="sfo-Mh-tkL" firstAttribute="leading" secondItem="8sY-3E-IFw" secondAttribute="trailing" constant="12" id="OSW-b3-t7Z"/>
                 <constraint firstItem="q1D-Q2-PWP" firstAttribute="top" secondItem="Hz6-mo-xeY" secondAttribute="top" id="QG1-H1-haW"/>
                 <constraint firstItem="sfo-Mh-tkL" firstAttribute="firstBaseline" secondItem="8sY-3E-IFw" secondAttribute="firstBaseline" id="SsV-YW-pkz"/>
                 <constraint firstItem="8sY-3E-IFw" firstAttribute="leading" secondItem="u7L-iO-hp4" secondAttribute="trailing" constant="12" id="Y5m-yN-VRf"/>
                 <constraint firstAttribute="bottom" secondItem="u7L-iO-hp4" secondAttribute="bottom" constant="8" id="a8f-KO-ruP"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="sfo-Mh-tkL" secondAttribute="trailing" id="d4C-qE-qrP"/>
+                <constraint firstItem="8sY-3E-IFw" firstAttribute="height" secondItem="u7L-iO-hp4" secondAttribute="height" id="dp7-XK-BJu"/>
                 <constraint firstItem="8sY-3E-IFw" firstAttribute="firstBaseline" secondItem="u7L-iO-hp4" secondAttribute="firstBaseline" id="fWM-BN-pPf"/>
                 <constraint firstAttribute="bottom" secondItem="q1D-Q2-PWP" secondAttribute="bottom" constant="36" id="pSo-2Q-ukD"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="q1D-Q2-PWP" secondAttribute="trailing" id="xcJ-B0-QKa"/>

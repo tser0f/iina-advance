@@ -26,7 +26,7 @@ struct PlayerSaveState {
     case isOnTop = "onTop"
 
     case url = "url"
-    case progress = "progress"        /// `MPVOption.PlaybackControl.start`
+    case playPosition = "playPosition"/// `MPVOption.PlaybackControl.start`
     case paused = "paused"            /// `MPVOption.PlaybackControl.pause`
 
     case vid = "vid"                  /// `MPVOption.TrackSelection.vid`
@@ -208,7 +208,7 @@ struct PlayerSaveState {
     }
 
     if let videoPosition = info.videoPosition?.second {
-      props[PropName.progress.rawValue] = videoPosition.string6f
+      props[PropName.playPosition.rawValue] = videoPosition.string6f
     }
     props[PropName.paused.rawValue] = info.isPaused.yn
 
@@ -547,11 +547,16 @@ struct PlayerSaveState {
 
     // mpv properties
 
-    // Must wait until after mpv init, otherwise they will stick
+    /// Must wait until after mpv init, so that the lifetime of these options is limited to the current file.
+    /// Otherwise the mpv core will keep the options for the lifetime of the player, which is often undesirable (for example,
+    /// `MPVOption.PlaybackControl.start` will skip any files in the playlist which have durations shorter than its start time).
     let mpv: MPVController = player.mpv
-    if let startTime = string(for: .progress) {
-      // This is actaully a decimal number but mpv expects a string
-      // FIXME: this doesn't always work
+
+    // This is actaully a decimal number but mpv expects a string
+    /// Note: mpv will not honor this if `--no-resume-playback` is specified.
+    /// There is logic in `player.fileLoaded()` to work around this.
+    if let startTime = string(for: .playPosition), Preference.bool(for: .resumeLastPosition) {
+      log.verbose("Restoring playback time: \(startTime.quoted)")
       mpv.setString(MPVOption.PlaybackControl.start, startTime)
     }
 
