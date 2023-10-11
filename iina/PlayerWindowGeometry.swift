@@ -319,7 +319,7 @@ struct PlayerWindowGeometry: Equatable {
                   height: min(desiredViewportSize.height, maxSize.height - outsideBarsTotalSize.height))
   }
 
-  func refit(_ newFit: ScreenFitOption) -> PlayerWindowGeometry {
+  func refit(_ newFit: ScreenFitOption? = nil) -> PlayerWindowGeometry {
     return scaleViewport(fitOption: newFit)
   }
 
@@ -626,21 +626,18 @@ extension PlayerWindowController {
       }
 
       let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
-      let screen = NSScreen.getScreenOrDefault(screenID: screenID)
-      let screenVisibleFrame = screen.visibleFrame
+      let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
 
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let mpvGeometry = player.getGeometry() {
         log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionA] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
         newWindowGeo = windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
+      } else if let strategy = resizeWindowStrategy, strategy == .fitScreen {
+        log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionB] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
+        newWindowGeo = windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInsideVisibleFrame)
       } else {
-        if let strategy = resizeWindowStrategy, strategy == .fitScreen {
-          log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionB] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
-          newWindowGeo = windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInsideVisibleFrame)
-        } else {
-          log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → windowFrame")
-          newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInsideVisibleFrame)
-        }
+        log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → windowFrame")
+        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInsideVisibleFrame)
       }
 
     } else {  /// `!shouldResizeWindowAfterVideoReconfig()`
@@ -740,7 +737,7 @@ extension PlayerWindowController {
   }
 
   /// Updates the appropriate in-memory cached geometry (based on the current window mode) using the current window & view frames.
-  /// `updatePreferredSizeAlso` only applies to `.windowed` mode
+  /// Param `updatePreferredSizeAlso` only applies to `.windowed` mode.
   func updateCachedGeometry(updatePreferredSizeAlso: Bool = true) {
     guard !isAnimating else { return }
     log.verbose("Recomputing \(currentLayout.mode) geometry from current window")
@@ -755,8 +752,7 @@ extension PlayerWindowController {
                                                   screenID: bestScreen.screenID,
                                                   videoAspectRatio: videoAspectRatio)
       player.saveState()
-      break
-    default:
+    case .fullScreen:
       break
     }
   }
@@ -793,11 +789,10 @@ extension PlayerWindowController {
       log.verbose("No need to update windowFrame for legacyFullScreen - no change")
       return
     }
-    // kludge!
-    let layout = currentLayout
-    let topBarHeight = geometry.insideTopBarHeight + geometry.outsideTopBarHeight
 
     log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")
+    let layout = currentLayout
+    let topBarHeight = layout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
     updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
     videoView.updateSizeConstraints(geometry.videoSize)
     player.window.setFrameImmediately(geometry.windowFrame)
@@ -817,7 +812,6 @@ extension PlayerWindowController {
 
     geoUpdateTicketCount += 1
     let geoUpdateRequestID = geoUpdateTicketCount
-    let isFullScreen = isFullScreen
 
     animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       if geoUpdateRequestID < geoUpdateTicketCount {
@@ -830,9 +824,8 @@ extension PlayerWindowController {
 
       if isFullScreen {
         // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
-        let screen = NSScreen.getScreenOrDefault(screenID: newGeometry.screenID)
-        let newVideoSizeFS = PlayerWindowGeometry.computeVideoSize(withAspectRatio: newGeometry.videoAspectRatio, toFillIn: screen.visibleFrame.size)
-        videoView.updateSizeConstraints(newVideoSizeFS)
+        let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID, videoAspectRatio: newGeometry.videoAspectRatio)
+        videoView.updateSizeConstraints(fsGeo.videoSize)
       } else {
         // Make sure this is up-to-date
         videoView.updateSizeConstraints(windowedModeGeometry.videoSize)

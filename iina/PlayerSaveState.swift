@@ -659,6 +659,7 @@ struct ScreenMeta {
   let displayID: UInt32
   let name: String
   let frame: NSRect
+  /// NOTE: `visibleFrame` is highly volatile and will change when Dock or title bar is shown/hidden
   let visibleFrame: NSRect
   let nativeResolution: CGSize
   let cameraHousingHeight: CGFloat

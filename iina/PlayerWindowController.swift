@@ -953,11 +953,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   static func buildScreenMap() -> [UInt32 : ScreenMeta] {
-    return NSScreen.screens.map{ScreenMeta.from($0)}.reduce(Dictionary<UInt32, ScreenMeta>(), {(dict, screenMeta) in
+    let newMap = NSScreen.screens.map{ScreenMeta.from($0)}.reduce(Dictionary<UInt32, ScreenMeta>(), {(dict, screenMeta) in
       var dict = dict
       dict[screenMeta.displayID] = screenMeta
       return dict
     })
+    Logger.log("Built screen meta: \(newMap.values)", level: .verbose)
+    return newMap
   }
 
   // default album art
@@ -1959,15 +1961,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
+  // Note: this gets triggered by many unnecessary situations, e.g. several times each time full screen is toggled.
   func windowDidChangeScreen(_ notification: Notification) {
     guard let window = window, let screen = window.screen else { return }
+
     let displayId = screen.displayId
-    log.verbose("WindowDidChangeScreen, screenFrame=\(screen.frame)")
     // Legacy FS work below can be very slow. Try to avoid if possible
     guard videoView.currentDisplay != displayId else {
-      log.verbose("No need to update window or DisplayLink currentDisplayID (\(displayId)) is unchanged")
+      log.verbose("WindowDidChangeScreen: no work needed; currentDisplayID \(displayId) is unchanged")
       return
     }
+
+    log.verbose("WindowDidChangeScreen: screenFrame=\(screen.frame)")
     videoView.updateDisplayLink()
     player.events.emit(.windowScreenChanged)
 
@@ -1980,10 +1985,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         animationQueue.run(CocoaAnimation.Task({ [self] in
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
-          log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
-          let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
-          // FIXME: update windowedModeGeometry with new screenID
+          log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
+          let screenID = bestScreen.screenID
+          let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspectRatio: videoAspectRatio)
           setWindowFrameForLegacyFullScreen(using: fsGeo)
+          windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
+          player.saveState()
         }))
       }
       return
@@ -1993,13 +2000,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Can be:
   /// • A Screen was connected or disconnected
   /// • Dock visiblity was toggled
+  /// • Menu bar visibility toggled
   /// • Adding or removing window style mask `.titled`
-  /// • More...
+  /// • Possibly more...
   private func windowDidChangeScreenParameters(_ notification: Notification) {
     let screens = PlayerWindowController.buildScreenMap()
     let screenIDs = screens.keys.sorted()
     let cachedScreenIDs = cachedScreens.keys.sorted()
-    log.verbose("Got NSApplicationDidChangeScreenParametersNotification; screenIDs was: \(cachedScreenIDs), is now: \(screenIDs)")
+    log.verbose("WindowDidChangeScreenParameters: screenIDs was \(cachedScreenIDs), is now \(screenIDs)")
 
     if isFullScreen && Preference.bool(for: .blackOutMonitor) && !screenIDs.elementsEqual(cachedScreenIDs) {
       self.removeBlackWindows()
@@ -2010,11 +2018,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     self.videoView.updateDisplayLink()
 
+    guard !player.info.isRestoring else { return }
     // In normal full screen mode AppKit will automatically adjust the window frame if the window
     // is moved to a new screen such as when the window is on an external display and that display
     // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
     // frame.
-    if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
+    if currentLayout.isLegacyFullScreen {
       // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
       animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
         let layout = currentLayout
@@ -2023,6 +2032,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
         setWindowFrameForLegacyFullScreen(using: fsGeo)
       }))
+    } else if currentLayout.mode == .windowed {
+      /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
+      /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
+      /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
+      let newGeo = windowedModeGeometry.refit()
+      let newWindowFrame = newGeo.windowFrame
+      log.verbose("Calling setFrame() in response to NSApplicationDidChangeScreenParametersNotification with newWindowFrame \(newWindowFrame)")
+      videoView.updateSizeConstraints(newGeo.videoSize)
+      player.window.setFrameImmediately(newWindowFrame)
     }
   }
 
@@ -2037,7 +2055,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("WindowDidMove frame: \(window.frame)")
     let layout = currentLayout
     if layout.isLegacyFullScreen && !player.info.isRestoring {
-      // Sometimes MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
+      // MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
       // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
       // window management app such as Amethyst. If this happens, move the window back to its proper place:
       log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
