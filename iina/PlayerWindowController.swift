@@ -2387,15 +2387,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @objc
   func updateTitle() {
+    guard let window else { return }
+
+    let title: String
     if player.isInMiniPlayer {
       let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
-      window?.title = mediaTitle
+      title = mediaTitle
+      window.title = title
       _ = miniPlayer.view
       miniPlayer.updateTitle(mediaTitle: mediaTitle, mediaAlbum: mediaAlbum, mediaArtist: mediaArtist)
     } else if player.info.isNetworkResource {
-      window?.title = player.getMediaTitle()
+      title = player.getMediaTitle()
+      window.title = title
     } else {
-      window?.representedURL = player.info.currentURL
+      window.representedURL = player.info.currentURL
       // Workaround for issue #3543, IINA crashes reporting:
       // NSInvalidArgumentException [NSNextStepFrame _displayName]: unrecognized selector
       // When running on an M1 under Big Sur and using legacy full screen.
@@ -2414,12 +2419,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // This problem has been reported to Apple as:
       // "setTitleWithRepresentedFilename throws NSInvalidArgumentException: NSNextStepFrame _displayName"
       // Feedback number FB9789129
+      title = player.info.currentURL?.lastPathComponent ?? ""
       if Preference.bool(for: .useLegacyFullScreen), #available(macOS 11, *) {
-        window?.title = player.info.currentURL?.lastPathComponent ?? ""
+        window.title = title
       } else {
-        window?.setTitleWithRepresentedFilename(player.info.currentURL?.path ?? "")
+        window.setTitleWithRepresentedFilename(player.info.currentURL?.path ?? "")
       }
     }
+
+    /// This call is needed when using custom window style, otherwise the window won't get added to the Window menu or the Dock.
+    /// Oddly, there are 2 separate functions for adding and changing the item, but `addWindowsItem` has no effect if called more than once,
+    /// while `changeWindowsItem` needs to be called if `addWindowsItem` was already called. To be safe, just call both.
+    NSApplication.shared.addWindowsItem(window, title: title, filename: false)
+    NSApplication.shared.changeWindowsItem(window, title: title, filename: false)
   }
 
   // MARK: - UI: OSD
