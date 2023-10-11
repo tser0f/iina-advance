@@ -355,7 +355,7 @@
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="y2l-T9-GFV">
                     <rect key="frame" x="138" y="95" width="357" height="18"/>
-                    <buttonCell key="cell" type="check" title="Starting playback at end of file restarts from beginning" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="vDa-4g-6AP">
+                    <buttonCell key="cell" type="check" title="Resume at end of playback to restart last file from beginning" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="vDa-4g-6AP">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -448,7 +448,7 @@
                 <constraint firstAttribute="trailing" secondItem="aKH-Me-5XB" secondAttribute="trailing" id="7gW-uv-Fba"/>
                 <constraint firstItem="bV8-LP-cwH" firstAttribute="leading" secondItem="OXi-vL-mzp" secondAttribute="trailing" constant="8" id="8Kb-Fe-QIo"/>
                 <constraint firstItem="bV8-LP-cwH" firstAttribute="baseline" secondItem="OXi-vL-mzp" secondAttribute="baseline" id="9fY-Y6-onK"/>
-                <constraint firstItem="y2l-T9-GFV" firstAttribute="leading" secondItem="Xi9-i5-9V4" secondAttribute="leading" constant="20" id="BzC-bL-tYB"/>
+                <constraint firstItem="y2l-T9-GFV" firstAttribute="leading" secondItem="Xi9-i5-9V4" secondAttribute="leading" constant="0" id="BzC-bL-tYB"/>
                 <constraint firstItem="tUl-6f-ClP" firstAttribute="top" secondItem="ibu-Tq-kBr" secondAttribute="bottom" constant="8" id="DQg-F2-jP7"/>
                 <constraint firstItem="38y-2I-MGs" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="6zR-96-iKB" secondAttribute="leading" constant="120" id="Dd3-CV-21F"/>
                 <constraint firstItem="38y-2I-MGs" firstAttribute="top" secondItem="6zR-96-iKB" secondAttribute="top" constant="8" id="EkZ-1t-Li0"/>

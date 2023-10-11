@@ -1821,6 +1821,8 @@ class PlayerCore: NSObject {
   private var lastSaveTime = Date().timeIntervalSince1970
 
   @objc func syncUITime() {
+    guard didInitVideo && !isStopping && !isShuttingDown else { return }
+
     let isNetworkStream = info.isNetworkResource
     if isNetworkStream {
       info.videoDuration = VideoTime(mpv.getDouble(MPVProperty.duration))

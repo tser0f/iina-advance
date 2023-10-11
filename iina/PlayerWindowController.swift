@@ -1076,11 +1076,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if oldLayout.spec.isLegacyStyle != outputLayoutSpec.isLegacyStyle {
       DispatchQueue.main.async { [self] in
         log.verbose("User toggled legacy fullscreen option while in fullscreen - transitioning to windowed mode instead")
-        if oldLayout.isNativeFullScreen {
-          window?.toggleFullScreen(self)
-        } else {
-          exitFullScreen(legacy: true)
-        }
+        exitFullScreen(legacy: oldLayout.isLegacyFullScreen)
       }
     }
   }
@@ -1830,23 +1826,25 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func enterFullScreen(legacy: Bool? = nil) {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
     let isLegacy: Bool = legacy ?? Preference.bool(for: .useLegacyFullScreen)
-    log.verbose("EnterFullScreen called (legacy: \(isLegacy.yn))")
+    let isFullScreen = NSApp.presentationOptions.contains(.fullScreen)
+    log.verbose("EnterFullScreen called (legacy: \(isLegacy.yn), isNativeFullScreenNow: \(isFullScreen.yn))")
 
     if isLegacy {
       animateEntryIntoFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
-    } else {
+    } else if !isFullScreen {
       window.toggleFullScreen(self)
     }
   }
 
   func exitFullScreen(legacy: Bool) {
     guard let window = self.window else { fatalError("make sure the window exists before animating") }
-    log.verbose("ExitFullScreen called (legacy: \(legacy.yn))")
+    let isFullScreen = NSApp.presentationOptions.contains(.fullScreen)
+    log.verbose("ExitFullScreen called (legacy: \(legacy.yn), isNativeFullScreenNow: \(isFullScreen.yn))")
 
     // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
     if legacy {
       animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
-    } else {
+    } else if isFullScreen {
       window.toggleFullScreen(self)
     }
   }
