@@ -129,6 +129,14 @@ extension Preference {
       clearSavedState(forLaunchID: AppDelegate.launchID)
     }
 
+    static func clearSavedState(forLaunchName launchName: String) {
+      guard let launchID = Preference.UIState.launchID(fromLaunchName: launchName) else {
+        Logger.log("Failed to parse launchID from launchName: \(launchName.quoted)", level: .error)
+        return
+      }
+      clearSavedState(forLaunchID: launchID)
+    }
+
     static func clearSavedState(forLaunchID launchID: Int) {
       let launchName = Preference.UIState.launchName(forID: launchID)
 
@@ -144,22 +152,31 @@ extension Preference {
       Logger.log("Clearing saved list of open windows (pref key: \(windowListKey.quoted))")
       UserDefaults.standard.removeObject(forKey: windowListKey)
 
-      Logger.log("Clearing saved launch status (pref key: \(launchName.quoted))")
+      Logger.log("Clearing saved launch (pref key: \(launchName.quoted))")
       UserDefaults.standard.removeObject(forKey: launchName)
     }
 
-    static func clearAllSavedWindowsState() {
+    static func clearAllSavedWindowsState(extraClean: Bool = false) {
       guard isSaveEnabled else {
         Logger.log("Will not clear saved UI state; UI save is disabled")
         return
       }
-      Logger.log("Clearing all saved window states from prefs", level: .debug)
+      let launchCount = AppDelegate.launchID - 1
+      Logger.log("Clearing all saved window states from prefs (launchCount: \(launchCount), extraClean: \(extraClean.yn))", level: .debug)
 
-      let pastLaunchNames = Preference.UIState.collectPastLaunches()
-      for pastLaunchName in pastLaunchNames {
-        guard let pastLaunchID = Preference.UIState.launchID(fromLaunchName: pastLaunchName) else { continue }
-        clearSavedState(forLaunchID: pastLaunchID)
+      let launchIDs: [Int]
+      if extraClean {
+        // ExtraClean: May take a while, but should clean up any ophans
+        launchIDs = [Int](0..<launchCount)
+      } else {
+        /// `collectPastLaunches()` will give lingering launches a chance to deny being removed
+        launchIDs = Preference.UIState.collectPastLaunches().compactMap({Preference.UIState.launchID(fromLaunchName: $0)})
       }
+
+      for launchID in launchIDs {
+        clearSavedState(forLaunchID: launchID)
+      }
+
       clearSavedStateForThisLaunch()
     }
 
@@ -210,12 +227,13 @@ extension Preference {
         let launchStatus: Int = UserDefaults.standard.integer(forKey: launchName)
         // 0 === nil
         if launchStatus > 0 {
+          allPastLaunches[launchName] = launchStatus
+
           if !foundNextSmallestLaunchID {
             // Don't need to make this logic too smart. It's just an optimization for future launches
             newSmallestValidLaunchID = launchID
             foundNextSmallestLaunchID = true
           }
-          allPastLaunches[launchName] = launchStatus
         }
       }
 
@@ -291,11 +309,23 @@ extension Preference {
         }
       }
 
+      // First save under new window list:
       let finalWindowNameList = Array(deduplicatedReverseNameList.reversed())
       Logger.log("Consolidated open windows from past launches, saving under this launchID: \(finalWindowNameList)", level: .verbose)
       saveOpenWindowList(windowNamesBackToFront: finalWindowNameList, forLaunchID: AppDelegate.launchID)
+
+      // Now remove entries for old launches (keeping player state entries)
       for pastLaunchName in pastLaunchNames {
         Logger.log("Removing past launch from prefs: \(pastLaunchName.quoted)", level: .verbose)
+        guard let launchID = Preference.UIState.launchID(fromLaunchName: pastLaunchName) else {
+          Logger.log("Failed to parse launchID from launchName: \(pastLaunchName.quoted)", level: .error)
+          continue
+        }
+        let windowListKey = Preference.UIState.makeOpenWindowListKey(forLaunchID: launchID)
+        Logger.log("Clearing saved list of open windows (pref key: \(windowListKey.quoted))")
+        UserDefaults.standard.removeObject(forKey: windowListKey)
+
+        Logger.log("Clearing saved launch (pref key: \(pastLaunchName.quoted))")
         UserDefaults.standard.removeObject(forKey: pastLaunchName)
       }
 
