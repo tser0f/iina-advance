@@ -113,7 +113,9 @@ extension Preference {
 
     static func saveCurrentOpenWindowList(excludingWindowName nameToExclude: String? = nil) {
       let openWindowNames = self.getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
-      saveOpenWindowList(windowNamesBackToFront: openWindowNames, forLaunchID: AppDelegate.launchID)
+      let hiddenWindowNames = Array(AppDelegate.windowsHiddenOrMinimized)
+      Logger.log("Saving open windows (\(openWindowNames)) & hidden windows: (\(hiddenWindowNames))", level: .verbose)
+      saveOpenWindowList(windowNamesBackToFront: hiddenWindowNames + openWindowNames, forLaunchID: AppDelegate.launchID)
     }
 
     static private func saveOpenWindowList(windowNamesBackToFront: [String], forLaunchID launchID: Int) {
@@ -156,7 +158,7 @@ extension Preference {
       UserDefaults.standard.removeObject(forKey: launchName)
     }
 
-    static func clearAllSavedWindowsState(extraClean: Bool = false) {
+    static func clearAllSavedLaunchState(extraClean: Bool = false) {
       guard isSaveEnabled else {
         Logger.log("Will not clear saved UI state; UI save is disabled")
         return

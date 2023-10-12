@@ -1692,8 +1692,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     setInitialWindowLayout()
 
     // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
-    log.verbose("Showing Player Window")
-    window.setIsVisible(true)
+    if window.isMiniaturized {
+      log.verbose("De-miniturizing Player Window")
+      window.deminiaturize(self)
+    } else {
+      log.verbose("Showing Player Window")
+      window.setIsVisible(true)
+    }
     log.verbose("Hiding defaultAlbumArt for window open")
     defaultAlbumArtView.isHidden = true
 
@@ -2135,7 +2140,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         enterPIP()
       }
     }
-    updateCachedGeometry()
     player.events.emit(.windowMiniaturized)
   }
 
@@ -3310,6 +3314,8 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       case .hide:
         isWindowHidden = true
         window.orderOut(self)
+        log.verbose("PIP entered; adding player to hidden windows list: \(window.savedStateName.quoted)")
+        AppDelegate.windowsHiddenOrMinimized.insert(window.savedStateName)
         break
       case .minimize:
         isWindowMiniaturizedDueToPip = true
@@ -3321,6 +3327,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       }
     }
 
+    player.saveState()
     player.events.emit(.pipChanged, data: true)
   }
 
@@ -3373,6 +3380,10 @@ extension PlayerWindowController: PIPViewControllerDelegate {
   func pipDidClose(_ pip: PIPViewController) {
     if isWindowHidden {
       showWindow(self)
+      if let window {
+        log.verbose("PIP did close; removing player from hidden windows list: \(window.savedStateName.quoted)")
+        AppDelegate.windowsHiddenOrMinimized.remove(window.savedStateName)
+      }
     }
 
     pipStatus = .notInPIP
@@ -3391,6 +3402,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
 
     isWindowMiniaturizedDueToPip = false
     isWindowHidden = false
+    player.saveState()
   }
 
   func pipActionPlay(_ pip: PIPViewController) {

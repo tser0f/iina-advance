@@ -33,6 +33,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   static var launchName: String = Preference.UIState.launchName(forID: launchID)
   static var launchTime = Date().timeIntervalSince1970
 
+  static var windowsHiddenOrMinimized = Set<String>()
+
   /**
    Becomes true once `application(_:openFile:)` or `droppedText()` is called.
    Mainly used to distinguish normal launches from others triggered by drag-and-dropping files.
@@ -409,6 +411,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       // Save ordered list of open windows each time the order of windows changed.
       observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil,
                                                               queue: .main, using: self.keyWindowDidChange))
+
+      observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didMiniaturizeNotification, object: nil,
+                                                              queue: .main, using: self.windowDidMiniaturize))
+
+      observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didDeminiaturizeNotification, object: nil,
+                                                              queue: .main, using: self.windowDidDeminiaturize))
+
     } else {
       // TODO: remove existing state...somewhere
       Logger.log("Note: UI state saving is disabled")
@@ -442,6 +451,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
     // Query for the list of open windows and save it.
     // Don't do this too soon, or their orderIndexes may not yet be up to date.
+    DispatchQueue.main.async {
+      Preference.UIState.saveCurrentOpenWindowList()
+    }
+  }
+
+  private func windowDidMiniaturize(_ notification: Notification) {
+    guard !self.isTerminating else {
+      return
+    }
+    guard let window = notification.object as? NSWindow else { return }
+    let savedStateName = window.savedStateName
+    guard !savedStateName.isEmpty else { return }
+
+    Logger.log("Window did minimize; adding to hidden windows list: \(savedStateName.quoted)")
+    AppDelegate.windowsHiddenOrMinimized.insert(savedStateName)
+    DispatchQueue.main.async {
+      Preference.UIState.saveCurrentOpenWindowList()
+    }
+  }
+
+  private func windowDidDeminiaturize(_ notification: Notification) {
+    guard !self.isTerminating else {
+      return
+    }
+    guard let window = notification.object as? NSWindow else { return }
+    let savedStateName = window.savedStateName
+    guard !savedStateName.isEmpty else { return }
+
+    Logger.log("Window did unminimize; removing from hidden windows list: \(savedStateName.quoted)")
+    AppDelegate.windowsHiddenOrMinimized.remove(savedStateName)
     DispatchQueue.main.async {
       Preference.UIState.saveCurrentOpenWindowList()
     }
@@ -492,7 +531,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     if !isRestoreApproved {
       // Clear out old state. It may have been causing errors, or user wants to start new
-      Preference.UIState.clearAllSavedWindowsState()
+      Preference.UIState.clearAllSavedLaunchState()
       Preference.set(false, for: .isRestoreInProgress)
       return false
     }
@@ -610,22 +649,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     guard !isTerminating else { return }
 
-    /// Query for the list of open windows and save it (excluding the window which is about to close).
-    /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
-    /// the user closes a window which is not in the foreground.
+    let windowName = window.savedStateName
+    if !windowName.isEmpty {
+      AppDelegate.windowsHiddenOrMinimized.remove(windowName)
 
-    Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.savedStateName)
+      /// Query for the list of open windows and save it (excluding the window which is about to close).
+      /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
+      /// the user closes a window which is not in the foreground.
+      Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.savedStateName)
 
-    // Player window was closed? Need to remove some additional state
-    if let player = (window.windowController as? PlayerWindowController)?.player {
-      Preference.UIState.clearPlayerSaveState(forPlayerID: player.label)
+      // Player window was closed? Need to remove some additional state
+      if let player = (window.windowController as? PlayerWindowController)?.player {
+        Preference.UIState.clearPlayerSaveState(forPlayerID: player.label)
 
-      // Check whether this is the last player closed; show welcome or history window if configured.
-      // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
-      if player.isOnlyOpenPlayer {
-        player.log.verbose("Window was last player window open: \(window.savedStateName.quoted)")
-        doActionWhenLastWindowWillClose()
-        return
+        // Check whether this is the last player closed; show welcome or history window if configured.
+        // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
+        if player.isOnlyOpenPlayer {
+          player.log.verbose("Window was last player window open: \(window.savedStateName.quoted)")
+          doActionWhenLastWindowWillClose()
+          return
+        }
       }
     }
 

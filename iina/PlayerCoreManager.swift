@@ -96,20 +96,24 @@ class PlayerCoreManager {
   }
 
   func getIdleOrCreateNew() -> PlayerCore {
-    var core: PlayerCore? = nil
+    var core: PlayerCore!
     lock.withLock {
       core = _getIdleOrCreateNew()
     }
-    return core!
+    core.start()
+    return core
   }
 
   func getActive() -> PlayerCore {
     if let wc = NSApp.mainWindow?.windowController as? PlayerWindowController {
       return wc.player
     } else {
-      let player = _getOrCreateFirst()
-      player.start()
-      return player
+      var core: PlayerCore!
+      lock.withLock {
+        core = _getOrCreateFirst()
+      }
+      core.start()
+      return core
     }
   }
 
