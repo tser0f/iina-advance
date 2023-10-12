@@ -1076,14 +1076,14 @@ extension PlayerWindowController {
   }
 
   private func updatePanelBlendingModes(to outputLayout: LayoutState) {
-    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    // Full screen + "behindWindow" doesn't blend properly and looks ugly
     if outputLayout.topBarPlacement == .insideViewport || outputLayout.isFullScreen {
       topBarView.blendingMode = .withinWindow
     } else {
       topBarView.blendingMode = .behindWindow
     }
 
-    // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+    // Full screen + "behindWindow" doesn't blend properly and looks ugly
     if outputLayout.bottomBarPlacement == .insideViewport || outputLayout.isFullScreen {
       bottomBarView.blendingMode = .withinWindow
     } else {

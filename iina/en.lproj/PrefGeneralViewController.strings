@@ -68,8 +68,8 @@
 /* Class = "NSButtonCell"; title = "Always open media in new window"; ObjectID = "M0z-bI-88d"; */
 "M0z-bI-88d.title" = "Always open media in new window";
 
-/* Class = "NSButtonCell"; title = "Enter fullscreen"; ObjectID = "MlG-hl-goB"; */
-"MlG-hl-goB.title" = "Enter fullscreen";
+/* Class = "NSButtonCell"; title = "Enter full screen"; ObjectID = "MlG-hl-goB"; */
+"MlG-hl-goB.title" = "Enter full screen";
 
 /* Class = "NSMenuItem"; title = "JPEG (.jpeg)"; ObjectID = "NVh-C5-b9i"; */
 "NVh-C5-b9i.title" = "JPEG (.jpeg)";

@@ -123,12 +123,12 @@
                 </popUpButton>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="0Qc-Uz-odw">
                     <rect key="frame" x="227" y="49" width="237" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Toggle fullscreen" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="6F4-gm-oBg" id="ZmD-ZY-OrO">
+                    <popUpButtonCell key="cell" type="push" title="Toggle full screen" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="6F4-gm-oBg" id="ZmD-ZY-OrO">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="qI8-W1-aYW">
                             <items>
-                                <menuItem title="Toggle fullscreen" state="on" tag="1" id="6F4-gm-oBg">
+                                <menuItem title="Toggle full screen" state="on" tag="1" id="6F4-gm-oBg">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
                                 <menuItem title="Pause / Resume" tag="2" id="Dm7-JG-fLd"/>
@@ -433,7 +433,7 @@
                         <menu key="menu" id="B7Y-mP-CKn">
                             <items>
                                 <menuItem title="Adjust window size" state="on" id="Ols-Lr-fiH"/>
-                                <menuItem title="Fullscreen" tag="1" id="Hm3-dh-jgb"/>
+                                <menuItem title="Full screen" tag="1" id="Hm3-dh-jgb"/>
                                 <menuItem title="None" tag="2" id="chS-d2-TG1"/>
                             </items>
                         </menu>
@@ -487,7 +487,7 @@
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
                                 <menuItem title="Pause / Resume" tag="2" id="Ba4-eT-rTv"/>
-                                <menuItem title="Toggle fullscreen" tag="1" id="hDh-Lk-FJe">
+                                <menuItem title="Toggle full screen" tag="1" id="hDh-Lk-FJe">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
                                 <menuItem title="None" id="jnR-2I-4x4"/>

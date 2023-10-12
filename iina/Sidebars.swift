@@ -776,7 +776,7 @@ extension PlayerWindowController {
   func updateSidebarBlendingMode(_ sidebarID: Preference.SidebarLocation, layout: LayoutState) {
     switch sidebarID {
     case .leadingSidebar:
-      // Fullscreen + "behindWindow" doesn't blend properly and looks ugly
+      // Full screen + "behindWindow" doesn't blend properly and looks ugly
       if layout.leadingSidebarPlacement == .insideViewport || layout.isFullScreen {
         leadingSidebarView.blendingMode = .withinWindow
       } else {

@@ -117,8 +117,8 @@ struct Constants {
     static let videoTimePlaceholder = "D-:--:-D"
     static let trackNone = NSLocalizedString("track.none", comment: "<None>")
     static let chapter = "Chapter"
-    static let fullScreen = NSLocalizedString("menu.fullscreen", comment: "Fullscreen")
-    static let exitFullScreen = NSLocalizedString("menu.exit_fullscreen", comment: "Exit Fullscreen")
+    static let fullScreen = NSLocalizedString("menu.fullscreen", comment: "Full Screen")
+    static let exitFullScreen = NSLocalizedString("menu.exit_fullscreen", comment: "Exit Full Screen")
     static let pause = NSLocalizedString("menu.pause", comment: "Pause")
     static let resume = NSLocalizedString("menu.resume", comment: "Resume")
     static let `default` = NSLocalizedString("quicksetting.item_default", comment: "Default")

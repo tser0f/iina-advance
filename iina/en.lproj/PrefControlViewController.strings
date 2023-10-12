@@ -1,8 +1,8 @@
 /* Class = "NSTextFieldCell"; title = "Seek type:"; ObjectID = "1yb-m4-1sK"; */
 "1yb-m4-1sK.title" = "Seek type:";
 
-/* Class = "NSMenuItem"; title = "Toggle fullscreen"; ObjectID = "6F4-gm-oBg"; */
-"6F4-gm-oBg.title" = "Toggle fullscreen";
+/* Class = "NSMenuItem"; title = "Toggle full screen"; ObjectID = "6F4-gm-oBg"; */
+"6F4-gm-oBg.title" = "Toggle full screen";
 
 /* Class = "NSTextFieldCell"; title = "Exact seek is more precise but can cause lag and higher CPU usage."; ObjectID = "6FZ-Qm-0k0"; */
 "6FZ-Qm-0k0.title" = "Exact seek is more precise but can cause lag and higher CPU usage.";
@@ -10,8 +10,8 @@
 /* Class = "NSMenuItem"; title = "Exact seek"; ObjectID = "70P-6t-4jC"; */
 "70P-6t-4jC.title" = "Exact seek";
 
-/* Class = "NSMenuItem"; title = "Toggle fullscreen"; ObjectID = "7wy-xt-c8Z"; */
-"7wy-xt-c8Z.title" = "Toggle fullscreen";
+/* Class = "NSMenuItem"; title = "Toggle full screen"; ObjectID = "7wy-xt-c8Z"; */
+"7wy-xt-c8Z.title" = "Toggle full screen";
 
 /* Class = "NSMenuItem"; title = "Hide OSC"; ObjectID = "9qx-ao-oxE"; */
 "9qx-ao-oxE.title" = "Hide OSC";
@@ -37,8 +37,8 @@
 /* Class = "NSButtonCell"; title = "Acccepts first mouse"; ObjectID = "gZK-ry-lQs"; */
 "gZK-ry-lQs.title" = "Accepts first mouse click when not focused";
 
-/* Class = "NSMenuItem"; title = "Fullscreen"; ObjectID = "Hm3-dh-jgb"; */
-"Hm3-dh-jgb.title" = "Fullscreen";
+/* Class = "NSMenuItem"; title = "Full screen"; ObjectID = "Hm3-dh-jgb"; */
+"Hm3-dh-jgb.title" = "Full screen";
 
 /* Class = "NSTextFieldCell"; title = "Trackpad"; ObjectID = "I6k-ab-IwJ"; */
 "I6k-ab-IwJ.title" = "Trackpad";
@@ -47,13 +47,13 @@
 "K9H-w9-wmT.title" = "Auto";
 
 /* Class = "NSMenuItem"; title = "Hide OSC"; ObjectID = "M6K-ME-cve"; */
-"M6K-ME-cve.title" = "Hide OSC";
+"M6K-ME-cve.title" = "Hide Controller";
 
 /* Class = "NSMenuItem"; title = "None"; ObjectID = "NjV-fH-YgN"; */
 "NjV-fH-YgN.title" = "None";
 
 /* Class = "NSMenuItem"; title = "Hide OSC"; ObjectID = "OOM-jo-N4V"; */
-"OOM-jo-N4V.title" = "Hide OSC";
+"OOM-jo-N4V.title" = "Hide Controller";
 
 /* Class = "NSMenuItem"; title = "Adjust window size"; ObjectID = "Ols-Lr-fiH"; */
 "Ols-Lr-fiH.title" = "Adjust window size";
@@ -85,14 +85,14 @@
 /* Class = "NSMenuItem"; title = "None"; ObjectID = "guu-dK-YfL"; */
 "guu-dK-YfL.title" = "None";
 
-/* Class = "NSMenuItem"; title = "Toggle fullscreen"; ObjectID = "hDh-Lk-FJe"; */
-"hDh-Lk-FJe.title" = "Toggle fullscreen";
+/* Class = "NSMenuItem"; title = "Toggle full screen"; ObjectID = "hDh-Lk-FJe"; */
+"hDh-Lk-FJe.title" = "Toggle full screen";
 
 /* Class = "NSTextFieldCell"; title = "Scroll vertically to:"; ObjectID = "hNU-dJ-5Cj"; */
 "hNU-dJ-5Cj.title" = "Scroll vertically to:";
 
 /* Class = "NSMenuItem"; title = "Hide OSC"; ObjectID = "iFF-Gq-tVx"; */
-"iFF-Gq-tVx.title" = "Hide OSC";
+"iFF-Gq-tVx.title" = "Hide Controller";
 
 /* Class = "NSMenuItem"; title = "None"; ObjectID = "jnR-2I-4x4"; */
 "jnR-2I-4x4.title" = "None";

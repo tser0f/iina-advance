@@ -314,7 +314,7 @@ extension PlayerWindowController {
       openNewPanelsAndFinalizeOffsets(transition)
 
       if transition.isTogglingFullScreen {
-        // Fullscreen animations don't have much time. Combine fadeIn step in same animation:
+        // Full screen animations don't have much time. Combine fadeIn step in same animation:
         fadeInNewViews(transition)
       }
     }))
