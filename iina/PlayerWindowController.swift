@@ -3336,27 +3336,6 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     player.events.emit(.pipChanged, data: false)
   }
 
-  func doneExitingPIP() {
-    if isWindowHidden {
-      showWindow(self)
-    }
-
-    pipStatus = .notInPIP
-
-    addVideoViewToWindow()
-
-    // Similarly, we need to run a redraw here as well. We check to make sure we
-    // are paused, because this causes a janky animation in either case but as
-    // it's not necessary while the video is playing and significantly more
-    // noticeable, we only redraw if we are paused.
-    forceDraw()
-
-    resetFadeTimer()
-
-    isWindowMiniaturizedDueToPip = false
-    isWindowHidden = false
-  }
-
   func prepareForPIPClosure(_ pip: PIPViewController) {
     guard pipStatus == .inPIP else { return }
     guard let window = window else { return }
@@ -3392,7 +3371,26 @@ extension PlayerWindowController: PIPViewControllerDelegate {
   }
 
   func pipDidClose(_ pip: PIPViewController) {
-    doneExitingPIP()
+    if isWindowHidden {
+      showWindow(self)
+    }
+
+    pipStatus = .notInPIP
+
+    addVideoViewToWindow()
+    // If using legacy windowed mode, need to manually add title to Window menu & Dock
+    updateTitle()
+
+    // Similarly, we need to run a redraw here as well. We check to make sure we
+    // are paused, because this causes a janky animation in either case but as
+    // it's not necessary while the video is playing and significantly more
+    // noticeable, we only redraw if we are paused.
+    forceDraw()
+
+    resetFadeTimer()
+
+    isWindowMiniaturizedDueToPip = false
+    isWindowHidden = false
   }
 
   func pipActionPlay(_ pip: PIPViewController) {

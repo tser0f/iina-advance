@@ -414,6 +414,7 @@ struct Preference {
     /// These must match the identifier of their respective CollapseView's button, except replacing the "Trigger" prefix with
     /// "uiCollapseView": `true` == open;  `false` == folded
     static let uiCollapseViewMediaIsOpened = Key("uiCollapseViewMediaIsOpened")
+    static let uiCollapseViewMediaIsStarted = Key("uiCollapseViewMediaIsStarted")
     static let uiCollapseViewPauseResume = Key("uiCollapseViewPauseResume")
     static let uiCollapseViewSubAutoLoadAdvanced = Key("uiCollapseViewSubAutoLoadAdvanced")
     static let uiCollapseViewSubTextSubsAdvanced = Key("uiCollapseViewSubTextSubsAdvanced")
@@ -1120,6 +1121,7 @@ struct Preference {
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,
     .uiCollapseViewMediaIsOpened: true,
+    .uiCollapseViewMediaIsStarted: true,
     .uiCollapseViewPauseResume: true,
     .uiCollapseViewSubAutoLoadAdvanced: false,
     .uiCollapseViewSubTextSubsAdvanced: false,
