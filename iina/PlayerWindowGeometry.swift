@@ -223,8 +223,20 @@ struct PlayerWindowGeometry: Equatable {
   }
 
   var viewportFrameInScreenCoords: NSRect {
-    let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth, y: windowFrame.origin.y + outsideBottomBarHeight)
+    let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth, 
+                         y: windowFrame.origin.y + outsideBottomBarHeight)
     return NSRect(origin: origin, size: viewportSize)
+  }
+
+  var videoFrameInScreenCoords: NSRect {
+    let viewportSize = viewportSize
+    assert(viewportSize.width - videoSize.width >= 0)
+    assert(viewportSize.height - videoSize.height >= 0)
+    let leadingBlackSpace = (viewportSize.width - videoSize.width) * 0.5
+    let bottomBlackSpace = (viewportSize.height - videoSize.height) * 0.5
+    let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth + leadingBlackSpace,
+                         y: windowFrame.origin.y + outsideBottomBarHeight + bottomBlackSpace)
+    return NSRect(origin: origin, size: videoSize)
   }
 
   var outsideSidebarsTotalWidth: CGFloat {

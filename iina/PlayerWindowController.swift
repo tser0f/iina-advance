@@ -1028,6 +1028,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // add constraints
     videoView.translatesAutoresizingMaskIntoConstraints = false
     videoView.constrainForNormalLayout()
+    // Needed when exiting PiP:
+    videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
   }
 
   /** Set material for OSC and title bar */
@@ -1342,7 +1344,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
 
       guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else {
-        player.log.verbose("Click occurred in a disabled view; ignoring")
+        player.log.verbose("MouseUp: click occurred in a disabled view; ignoring")
         return
       }
       PluginInputManager.handle(
@@ -3298,6 +3300,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     showFadeableViews()
 
     pipVideo = NSViewController()
+    videoView.updateSizeConstraints(nil)
     pipVideo.view = videoView
     pip.playing = player.info.isPlaying
     pip.title = window?.title
@@ -3355,12 +3358,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     pipOverlayView.isHidden = true
 
     // Set frame to animate back to
-    if isFullScreen {
-      let newVideoSize = videoView.frame.size.shrink(toSize: window.frame.size)
-      pip.replacementRect = newVideoSize.centeredRect(in: .init(origin: .zero, size: window.frame.size))
-    } else {
-      pip.replacementRect = window.contentView?.frame ?? .zero
-    }
+    pip.replacementRect = NSRect(origin: CGPointZero, size: windowedModeGeometry.videoSize)
     pip.replacementWindow = window
 
     // Bring the window to the front and deminiaturize it
@@ -3386,23 +3384,25 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       }
     }
 
-    pipStatus = .notInPIP
+    animationQueue.runZeroDuration({ [self] in
+      pipStatus = .notInPIP
 
-    addVideoViewToWindow()
-    // If using legacy windowed mode, need to manually add title to Window menu & Dock
-    updateTitle()
+      addVideoViewToWindow()
+      // If using legacy windowed mode, need to manually add title to Window menu & Dock
+      updateTitle()
 
-    // Similarly, we need to run a redraw here as well. We check to make sure we
-    // are paused, because this causes a janky animation in either case but as
-    // it's not necessary while the video is playing and significantly more
-    // noticeable, we only redraw if we are paused.
-    forceDraw()
+      // Similarly, we need to run a redraw here as well. We check to make sure we
+      // are paused, because this causes a janky animation in either case but as
+      // it's not necessary while the video is playing and significantly more
+      // noticeable, we only redraw if we are paused.
+      forceDraw()
 
-    resetFadeTimer()
+      resetFadeTimer()
 
-    isWindowMiniaturizedDueToPip = false
-    isWindowHidden = false
-    player.saveState()
+      isWindowMiniaturizedDueToPip = false
+      isWindowHidden = false
+      player.saveState()
+    })
   }
 
   func pipActionPlay(_ pip: PIPViewController) {
