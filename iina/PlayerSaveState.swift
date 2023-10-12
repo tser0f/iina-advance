@@ -21,7 +21,7 @@ struct PlayerSaveState {
     case windowedModeGeometry = "windowedModeGeometry"
     case musicModeGeometry = "musicModeGeometry"
     case screens = "screens"
-    case isMinimized = "minimized"
+    case miscWindowBools = "miscWindowBools"
     case overrideAutoMusicMode = "overrideAutoMusicMode"
     case isOnTop = "onTop"
 
@@ -153,7 +153,8 @@ struct PlayerSaveState {
   static private func generatePropDict(from player: PlayerCore) -> [String: Any] {
     var props: [String: Any] = [:]
     let info = player.info
-    let layout = player.windowController.currentLayout
+    let wc = player.windowController!
+    let layout = wc.currentLayout
 
     props[PropName.launchID.rawValue] = AppDelegate.launchID
 
@@ -163,13 +164,13 @@ struct PlayerSaveState {
     props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
     /// `windowedModeGeometry`
-    let windowedModeGeometry = player.windowController.windowedModeGeometry
+    let windowedModeGeometry = wc.windowedModeGeometry
     props[PropName.windowedModeGeometry.rawValue] = toCSV(windowedModeGeometry)
 
     /// `musicModeGeometry`
-    props[PropName.musicModeGeometry.rawValue] = toCSV(player.windowController.musicModeGeometry)
+    props[PropName.musicModeGeometry.rawValue] = toCSV(wc.musicModeGeometry)
 
-    let screenMetaCSVList: [String] = player.windowController.cachedScreens.values.map{$0.toCSV()}
+    let screenMetaCSVList: [String] = wc.cachedScreens.values.map{$0.toCSV()}
     props[PropName.screens.rawValue] = screenMetaCSVList
 
     if let size = info.intendedViewportSizeWide {
@@ -194,7 +195,13 @@ struct PlayerSaveState {
       }
       props[PropName.overrideAutoMusicMode.rawValue] = overrideAutoMusicMode.yn
     }
-    /// TODO: `isMinimized`
+
+    props[PropName.miscWindowBools.rawValue] = [
+      (wc.window?.isMiniaturized ?? false).yn,
+      wc.isWindowHidden.yn,
+      (wc.pipStatus == .inPIP).yn,
+      wc.isWindowMiniaturizedDueToPip.yn
+    ].joined(separator: ",")
 
     // - Playback State
 
@@ -534,6 +541,40 @@ struct PlayerSaveState {
 
     let isOnTop = bool(for: .isOnTop) ?? false
     windowController.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
+
+    if let stateString = string(for: .miscWindowBools) {
+      let splitted: [String] = stateString.split(separator: ",").map{String($0)}
+      if splitted.count >= 4,
+         let isMiniaturized = Bool.yn(splitted[0]),
+         let isHidden = Bool.yn(splitted[1]),
+         let isInPip = Bool.yn(splitted[2]),
+         let isWindowMiniaturizedDueToPip = Bool.yn(splitted[3]) {
+
+        // Process PIP options first, to make sure it's not miniturized due to PIP
+        if isInPip {
+          let pipOption: Preference.WindowBehaviorWhenPip
+          if isHidden {  // currently this will only be true due to PIP
+            pipOption = .hide
+          } else if isWindowMiniaturizedDueToPip {
+            pipOption = .minimize
+          } else {
+            pipOption = .doNothing
+          }
+          // Run in queue to avert race condition with window load
+          windowController.animationQueue.runZeroDuration({
+            windowController.enterPIP(usePipBehavior: pipOption)
+          })
+        } else if isMiniaturized {
+          // Not in PIP, but miniturized
+          // Run in queue to avert race condition with window load
+          windowController.animationQueue.runZeroDuration({
+            windowController.window?.miniaturize(nil)
+          })
+        }
+      } else {
+        log.error("Failed to restore property \(PlayerSaveState.PropName.miscWindowBools.rawValue.quoted): could not parse \(stateString.quoted)")
+      }
+    }
 
     if let playlistPathList = properties[PlayerSaveState.PropName.playlistPaths.rawValue] as? [String] {
       if playlistPathList.count > 1 {

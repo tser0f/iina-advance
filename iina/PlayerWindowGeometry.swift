@@ -841,7 +841,9 @@ extension PlayerWindowController {
       } else {
         // Make sure this is up-to-date
         videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
-        player.window.setFrameImmediately(newGeometry.windowFrame, animate: animate)
+        if !isWindowHidden {
+          player.window.setFrameImmediately(newGeometry.windowFrame, animate: animate)
+        }
       }
       updateWindowParametersForMPV(withSize: newGeometry.videoSize)
     }))

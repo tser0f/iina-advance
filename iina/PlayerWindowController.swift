@@ -123,10 +123,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return false
     }
     guard let window = self.window else { return false }
-    // Also check if hidden due to PIP
-    return window.isVisible || isWindowHidden
+    // Also check if hidden due to PIP, or minimized
+    return window.isVisible || isWindowHidden || window.isMiniaturized
   }
-  private var isWindowHidden: Bool = false
+  private(set) var isWindowHidden: Bool = false
 
   var isClosing = false
   var shouldApplyInitialWindowSize = true
@@ -205,7 +205,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // - Window Layout State
 
-  // TODO: move to LayoutState
   var pipStatus = PIPStatus.notInPIP
   var isInInteractiveMode: Bool = false
 
@@ -3294,23 +3293,25 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 @available(macOS 10.12, *)
 extension PlayerWindowController: PIPViewControllerDelegate {
 
-  func enterPIP() {
+  func enterPIP(usePipBehavior: Preference.WindowBehaviorWhenPip? = nil) {
     guard pipStatus != .inPIP else { return }
+    guard let window else { return }
     pipStatus = .inPIP
     showFadeableViews()
 
     pipVideo = NSViewController()
+    // Remove these. They screw up PIP drag
     videoView.updateSizeConstraints(nil)
     pipVideo.view = videoView
     pip.playing = player.info.isPlaying
-    pip.title = window?.title
+    pip.title = window.title
 
     pip.presentAsPicture(inPicture: pipVideo)
     pipOverlayView.isHidden = false
 
-    if let window = self.window {
-      let windowShouldDoNothing = window.styleMask.contains(.fullScreen) || window.isMiniaturized
-      let pipBehavior = windowShouldDoNothing ? .doNothing : Preference.enum(for: .windowBehaviorWhenPip) as Preference.WindowBehaviorWhenPip
+    if !window.styleMask.contains(.fullScreen) && !window.isMiniaturized {
+      let pipBehavior = usePipBehavior ?? Preference.enum(for: .windowBehaviorWhenPip) as Preference.WindowBehaviorWhenPip
+      log.verbose("Entering PIP with behavior: \(pipBehavior)")
       switch pipBehavior {
       case .doNothing:
         break
