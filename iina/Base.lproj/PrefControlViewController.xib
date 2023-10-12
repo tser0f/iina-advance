@@ -104,16 +104,16 @@
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ltc-ek-XnI">
                     <rect key="frame" x="227" y="73" width="237" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Hide OSC" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="9qx-ao-oxE" id="kx4-ff-K5Z">
+                    <popUpButtonCell key="cell" type="push" title="Hide Controller" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="9qx-ao-oxE" id="kx4-ff-K5Z">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="nPO-ET-BZ0">
                             <items>
-                                <menuItem title="Hide OSC" state="on" tag="3" id="9qx-ao-oxE">
+                                <menuItem title="Hide Controller" state="on" tag="3" id="9qx-ao-oxE">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
-                                <menuItem title="Pause / Resume" tag="2" id="A8c-wa-IFR"/>
-                                <menuItem title="None" id="w54-7I-QfW"/>
+                                <menuItem title="Pause / resume" tag="2" id="A8c-wa-IFR"/>
+                                <menuItem title="Do nothing" id="w54-7I-QfW"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -131,9 +131,9 @@
                                 <menuItem title="Toggle full screen" state="on" tag="1" id="6F4-gm-oBg">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
-                                <menuItem title="Pause / Resume" tag="2" id="Dm7-JG-fLd"/>
+                                <menuItem title="Pause / resume" tag="2" id="Dm7-JG-fLd"/>
                                 <menuItem title="Toggle Picture-in-Picture" tag="4" id="rvS-xA-7bv"/>
-                                <menuItem title="None" id="wkV-Gq-B0T"/>
+                                <menuItem title="Do nothing" id="wkV-Gq-B0T"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -153,17 +153,17 @@
                 </slider>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="mdI-b4-54O">
                     <rect key="frame" x="227" y="25" width="237" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Hide OSC" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="OOM-jo-N4V" id="xO3-x1-Jqc">
+                    <popUpButtonCell key="cell" type="push" title="Hide Controller" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="OOM-jo-N4V" id="xO3-x1-Jqc">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="fcQ-e1-P2b">
                             <items>
-                                <menuItem title="Hide OSC" state="on" tag="3" id="OOM-jo-N4V">
+                                <menuItem title="Hide Controller" state="on" tag="3" id="OOM-jo-N4V">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
-                                <menuItem title="Pause / Resume" tag="2" id="mOX-Fi-oTv"/>
+                                <menuItem title="Pause / resume" tag="2" id="mOX-Fi-oTv"/>
                                 <menuItem title="Toggle Picture-in-Picture" tag="4" id="ibM-4r-SQA"/>
-                                <menuItem title="None" id="oOk-y6-lek"/>
+                                <menuItem title="Do nothing" id="oOk-y6-lek"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -191,7 +191,7 @@
                             <items>
                                 <menuItem title="Adjust volume" state="on" id="SYg-hW-b6r"/>
                                 <menuItem title="Seek" tag="1" id="RCe-3m-q9N"/>
-                                <menuItem title="None" tag="2" id="NjV-fH-YgN"/>
+                                <menuItem title="Do nothing" tag="2" id="NjV-fH-YgN"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -207,7 +207,7 @@
                         <menu key="menu" id="aEA-Qe-wDM">
                             <items>
                                 <menuItem title="Seek" state="on" tag="1" id="wcS-tP-wav"/>
-                                <menuItem title="None" tag="2" id="guu-dK-YfL"/>
+                                <menuItem title="Do nothing" tag="2" id="guu-dK-YfL"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -246,20 +246,20 @@
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="36e-IQ-z4e">
                     <rect key="frame" x="227" y="1" width="237" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Hide OSC" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="iFF-Gq-tVx" id="7SX-h1-81s">
+                    <popUpButtonCell key="cell" type="push" title="Hide Controller" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="iFF-Gq-tVx" id="7SX-h1-81s">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="0z9-rd-Jdo">
                             <items>
-                                <menuItem title="Hide OSC" state="on" tag="3" id="iFF-Gq-tVx">
+                                <menuItem title="Hide Controller" state="on" tag="3" id="iFF-Gq-tVx">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
-                                <menuItem title="Pause / Resume" tag="2" id="uqM-UM-Xvb"/>
+                                <menuItem title="Pause / resume" tag="2" id="uqM-UM-Xvb"/>
                                 <menuItem title="Toggle fullscreen" tag="1" id="7wy-xt-c8Z">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
                                 <menuItem title="Toggle Picture-in-Picture" tag="4" id="3Pm-nn-HpB"/>
-                                <menuItem title="None" id="unj-zt-RyU"/>
+                                <menuItem title="Do nothing" id="unj-zt-RyU"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -433,8 +433,8 @@
                         <menu key="menu" id="B7Y-mP-CKn">
                             <items>
                                 <menuItem title="Adjust window size" state="on" id="Ols-Lr-fiH"/>
-                                <menuItem title="Full screen" tag="1" id="Hm3-dh-jgb"/>
-                                <menuItem title="None" tag="2" id="chS-d2-TG1"/>
+                                <menuItem title="Enter / exit full screen" tag="1" id="Hm3-dh-jgb"/>
+                                <menuItem title="Do nothing" tag="2" id="chS-d2-TG1"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -460,7 +460,7 @@
                                 <menuItem title="Rotate video by multiples of 90°" state="on" tag="1" id="sAO-pq-4PJ">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
-                                <menuItem title="None" id="Y6r-fn-plB"/>
+                                <menuItem title="Do nothing" id="Y6r-fn-plB"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
@@ -478,19 +478,19 @@
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="V5B-tS-TPW">
                     <rect key="frame" x="231" y="1" width="237" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Hide OSC" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="M6K-ME-cve" id="Q6M-Qd-bxY">
+                    <popUpButtonCell key="cell" type="push" title="Hide Controller" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="M6K-ME-cve" id="Q6M-Qd-bxY">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="Viy-vg-Zdf">
                             <items>
-                                <menuItem title="Hide OSC" state="on" tag="3" id="M6K-ME-cve">
+                                <menuItem title="Hide Controller" state="on" tag="3" id="M6K-ME-cve">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
-                                <menuItem title="Pause / Resume" tag="2" id="Ba4-eT-rTv"/>
+                                <menuItem title="Pause / resume" tag="2" id="Ba4-eT-rTv"/>
                                 <menuItem title="Toggle full screen" tag="1" id="hDh-Lk-FJe">
                                     <modifierMask key="keyEquivalentModifierMask"/>
                                 </menuItem>
-                                <menuItem title="None" id="jnR-2I-4x4"/>
+                                <menuItem title="Do nothing" id="jnR-2I-4x4"/>
                             </items>
                         </menu>
                     </popUpButtonCell>
