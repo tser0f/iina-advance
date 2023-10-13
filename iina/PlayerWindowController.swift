@@ -131,6 +131,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var isClosing = false
   var shouldApplyInitialWindowSize = true
   var isWindowMiniaturizedDueToPip = false
+  var isWindowPipDueToInactiveSpace = false
 
   var denyNextWindowResize = false
   var modeToSetAfterExitingFullScreen: WindowMode? = nil
@@ -307,6 +308,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .playlistShowMetadata,
     .playlistShowMetadataInMusicMode,
     .autoSwitchToMusicMode,
+    .hideWindowsWhenInactive,
     .osdPosition,
     .enableOSC,
     .oscPosition,
@@ -414,6 +416,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         log.debug("Pref \(keyPath.quoted) changed to \(isAllowed): resizing window to remove any black space")
         resizeViewport()
       }
+    case PK.hideWindowsWhenInactive.rawValue:
+      animationQueue.runZeroDuration({ [self] in
+        refreshHidesOnDeactivateStatus()
+      })
+
     case PK.thumbnailLength.rawValue:
       if let newValue = change[.newKey] as? Int {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
@@ -2113,6 +2120,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if isFullScreen && Preference.bool(for: .blackOutMonitor) {
       blackOutOtherMonitors()
     }
+
+    if Preference.bool(for: .enterPipWhenSwitchingSpaces), window.isOnActiveSpace && isWindowPipDueToInactiveSpace && pipStatus == .inPIP {
+      animationQueue.runZeroDuration({ [self] in
+        log.debug("Window is in active space again; exiting PIP")
+        isWindowPipDueToInactiveSpace = false
+        exitPIP()
+      })
+    }
+
     player.events.emit(.windowMainStatusChanged, data: true)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: true)
   }
@@ -2124,6 +2140,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()
     }
+
+    if Preference.bool(for: .enterPipWhenSwitchingSpaces), !window.isOnActiveSpace, pipStatus == .notInPIP {
+      animationQueue.runZeroDuration({ [self] in
+        log.debug("Window is no longer in active space; entering PIP")
+        enterPIP()
+        isWindowPipDueToInactiveSpace = true
+      })
+    }
+
     player.events.emit(.windowMainStatusChanged, data: false)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: false)
   }
@@ -2864,6 +2889,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // MARK: - UI: Others
+
+  func refreshHidesOnDeactivateStatus() {
+    guard let window else { return }
+    window.hidesOnDeactivate = currentLayout.mode == .windowed && Preference.bool(for: .hideWindowsWhenInactive)
+  }
 
   @discardableResult
   func abLoop() -> Int32 {

@@ -710,6 +710,8 @@ extension PlayerWindowController {
       player.events.emit(.windowFullscreenChanged, data: false)
     }
 
+    refreshHidesOnDeactivateStatus()
+
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
 

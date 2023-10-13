@@ -69,6 +69,10 @@ struct Preference {
     /** Pause st first (pause) (bool) */
     static let pauseWhenOpen = Key("pauseWhenOpen")
 
+    /// If true, player windows will auto-hide when IINA is not the frontmost application, and show again when it
+    /// is brought back into focus. Only applies to player windows in windowed mode
+    static let hideWindowsWhenInactive = Key("hideWindowsWhenInactive")
+
     /** Enter fill screen when open (bool) */
     static let fullScreenWhenOpen = Key("fullScreenWhenOpen")
 
@@ -202,6 +206,7 @@ struct Preference {
     static let windowBehaviorWhenPip = Key("windowBehaviorWhenPip")
     static let pauseWhenPip = Key("pauseWhenPip")
     static let togglePipByMinimizingWindow = Key("togglePipByMinimizingWindow")
+    static let enterPipWhenSwitchingSpaces = Key("enterPipWhenSwitchingSpaces")
 
     // MARK: - Keys: Codec
 
@@ -990,6 +995,7 @@ struct Preference {
     .allowEmptySpaceAroundVideo: false,
     .allowVideoToOverlapCameraHousing: false,
     .pauseWhenOpen: false,
+    .hideWindowsWhenInactive: false,
     .fullScreenWhenOpen: false,
     .useLegacyFullScreen: false,
     .showChapterPos: false,
@@ -1031,6 +1037,8 @@ struct Preference {
       .windowBehaviorWhenPip: WindowBehaviorWhenPip.doNothing.rawValue,
     .pauseWhenPip: false,
     .togglePipByMinimizingWindow: false,
+    // FIXME: either get this working or delete it
+    .enterPipWhenSwitchingSpaces: false,
 
       .videoThreads: 0,
     .hardwareDecoder: HardwareDecoderOption.auto.rawValue,

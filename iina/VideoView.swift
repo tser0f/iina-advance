@@ -117,10 +117,10 @@ class VideoView: NSView {
   // MARK: - VideoView Constraints
 
   struct VideoViewConstraints {
-//    let eqOffsetTop: NSLayoutConstraint
-//    let eqOffsetRight: NSLayoutConstraint
-//    let eqOffsetBottom: NSLayoutConstraint
-//    let eqOffsetLeft: NSLayoutConstraint
+    let eqOffsetTop: NSLayoutConstraint
+    let eqOffsetRight: NSLayoutConstraint
+    let eqOffsetBottom: NSLayoutConstraint
+    let eqOffsetLeft: NSLayoutConstraint
 
 //    let gtOffsetTop: NSLayoutConstraint
 //    let gtOffsetRight: NSLayoutConstraint
@@ -131,10 +131,10 @@ class VideoView: NSView {
     let centerY: NSLayoutConstraint
 
     func setActive(eq: Bool = true, gt: Bool = true, center: Bool = true, aspect: Bool = true) {
-//      eqOffsetTop.isActive = eq
-//      eqOffsetRight.isActive = eq
-//      eqOffsetBottom.isActive = eq
-//      eqOffsetLeft.isActive = eq
+      eqOffsetTop.isActive = eq
+      eqOffsetRight.isActive = eq
+      eqOffsetBottom.isActive = eq
+      eqOffsetLeft.isActive = eq
 
 //      gtOffsetTop.isActive = gt
 //      gtOffsetRight.isActive = gt
@@ -168,10 +168,10 @@ class VideoView: NSView {
     var existing = self.videoViewConstraints
     self.videoViewConstraints = nil
     let newConstraints = VideoViewConstraints(
-//      eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
-//      eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
-//      eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
-//      eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
+      eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
+      eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
+      eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
+      eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
 
 //      gtOffsetTop: addOrUpdate(existing?.gtOffsetTop, .top, .greaterThanOrEqual, top, gtPriority),
 //      gtOffsetRight: addOrUpdate(existing?.gtOffsetRight, .right, .lessThanOrEqual, right, gtPriority),
@@ -213,13 +213,15 @@ class VideoView: NSView {
   }
 
   func updateSizeConstraints(_ size: CGSize?) {
-    if let size = size {
+    // Do not set constraints for PIP. It will be handled by the PIP window
+    if let size = size, player.windowController.pipStatus == .notInPIP {
       log.verbose("Updating videoView size constraints to \(size)")
       widthConstraint.isActive = true
       widthConstraint.animateToConstant(size.width)
       heightConstraint.isActive = true
       heightConstraint.animateToConstant(size.height)
     } else {
+      log.verbose("Removing videoView size constraints")
       widthConstraint.isActive = false
       heightConstraint.isActive = false
     }
