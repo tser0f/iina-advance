@@ -880,6 +880,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // add notification observers
 
+    NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: nil, using: { [unowned self] _ in
+      guard Preference.bool(for: .togglePipWhenSwitchingSpaces) else { return }
+      if !window.isOnActiveSpace && pipStatus == .notInPIP {
+        animationQueue.runZeroDuration({ [self] in
+          log.debug("Window is no longer in active space; entering PIP")
+          enterPIP()
+          isWindowPipDueToInactiveSpace = true
+        })
+      } else if window.isOnActiveSpace && isWindowPipDueToInactiveSpace && pipStatus == .inPIP {
+        animationQueue.runZeroDuration({ [self] in
+          log.debug("Window is in active space again; exiting PIP")
+          isWindowPipDueToInactiveSpace = false
+          exitPIP()
+        })
+      }
+    })
+
     addObserver(to: .default, forName: .iinaMediaTitleChanged, object: player) { [unowned self] _ in
       self.updateTitle()
     }
@@ -1767,6 +1784,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     animateEntryIntoFullScreen(withDuration: duration, isLegacy: false)
   }
 
+  func windowDidFailToEnterFullScreen(_ window: NSWindow) {
+    // FIXME: handle this
+    log.error("Window failed to enter full screen!")
+  }
+
+  func windowDidFailToExitFullScreen(_ window: NSWindow) {
+    // FIXME: handle this
+    log.error("Window failed to exit full screen!")
+  }
+
   // Animation: Enter FullScreen
   private func animateEntryIntoFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
     log.verbose("Animating entry into \(isLegacy ? "legacy " : "")full screen, duration: \(duration)")
@@ -2121,14 +2148,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       blackOutOtherMonitors()
     }
 
-    if Preference.bool(for: .enterPipWhenSwitchingSpaces), window.isOnActiveSpace && isWindowPipDueToInactiveSpace && pipStatus == .inPIP {
-      animationQueue.runZeroDuration({ [self] in
-        log.debug("Window is in active space again; exiting PIP")
-        isWindowPipDueToInactiveSpace = false
-        exitPIP()
-      })
-    }
-
     player.events.emit(.windowMainStatusChanged, data: true)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: true)
   }
@@ -2139,14 +2158,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()
-    }
-
-    if Preference.bool(for: .enterPipWhenSwitchingSpaces), !window.isOnActiveSpace, pipStatus == .notInPIP {
-      animationQueue.runZeroDuration({ [self] in
-        log.debug("Window is no longer in active space; entering PIP")
-        enterPIP()
-        isWindowPipDueToInactiveSpace = true
-      })
     }
 
     player.events.emit(.windowMainStatusChanged, data: false)
@@ -3416,6 +3427,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     }
 
     animationQueue.runZeroDuration({ [self] in
+      /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
       addVideoViewToWindow()

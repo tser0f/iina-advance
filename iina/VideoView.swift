@@ -162,9 +162,9 @@ class VideoView: NSView {
   }
 
   private func rebuildConstraints(top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0,
-                                   eqIsActive: Bool = true, eqPriority: NSLayoutConstraint.Priority = .required,
-                                   gtIsActive: Bool = true, gtPriority: NSLayoutConstraint.Priority = .required,
-                                  centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority = .defaultHigh) {
+                                  eqIsActive: Bool = true, eqPriority: NSLayoutConstraint.Priority,
+                                  gtIsActive: Bool = true, gtPriority: NSLayoutConstraint.Priority,
+                                  centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority) {
     var existing = self.videoViewConstraints
     self.videoViewConstraints = nil
     let newConstraints = VideoViewConstraints(
@@ -195,8 +195,8 @@ class VideoView: NSView {
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
                        eqIsActive: true, eqPriority: .required,
-                       gtIsActive: false,
-                       centerIsActive: false)
+                       gtIsActive: false, gtPriority: .required,
+                       centerIsActive: false, centerPriority: .required)
 
     window?.layoutIfNeeded()
   }

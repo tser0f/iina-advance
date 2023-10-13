@@ -662,6 +662,10 @@ extension PlayerWindowController {
         window.styleMask.remove(.fullScreen)
       }
 
+      if transition.inputLayout.isLegacyFullScreen {
+        window.styleMask.insert(.resizable)
+      }
+
       if player.info.isPaused {
         // When playback is paused the display link is stopped in order to avoid wasting energy on
         // needless processing. It must be running while transitioning from full screen mode. Now that
@@ -678,7 +682,6 @@ extension PlayerWindowController {
 
       if transition.outputLayout.spec.isLegacyStyle {  // legacy windowed
         setWindowStyleToLegacy()
-        window.styleMask.insert(.resizable)
       } else {  // native windowed
         setWindowStyleToNative()
         if !transition.outputLayout.isMusicMode {

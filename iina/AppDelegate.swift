@@ -52,6 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     .enableLogging,
     .enableAdvancedSettings,
     .enableCmdN,
+//    .hideWindowsWhenInactive, // TODO: #1, see below
   ]
 
   // Windows
@@ -130,6 +131,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     case PK.enableCmdN.rawValue:
       menuController.refreshBuiltInMenuItemBindings()
       break
+
+      // TODO: #1, see above
+//    case PK.hideWindowsWhenInactive.rawValue:
+//      if let newValue = change[.newKey] as? Bool {
+//        for window in NSApp.windows {
+//          guard window as? PlayerWindow == nil else { continue }
+//          window.hidesOnDeactivate = newValue
+//        }
+//      }
 
     default:
       break
@@ -440,7 +450,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     return false
   }
 
-  // MARK: Opening/restoring windows
+  func applicationDidBecomeActive(_ notfication: Notification) {
+  }
+
+  func applicationWillResignActive(_ notfication: Notification) {
+  }
+
+  // MARK: - Opening/restoring windows
 
   // Saves an ordered list of current open windows (if configured) each time *any* window becomes the key window.
   private func keyWindowDidChange(_ notification: Notification) {
