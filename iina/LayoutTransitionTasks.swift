@@ -608,8 +608,19 @@ extension PlayerWindowController {
         // Add fake traffic light buttons:
         let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
-        let leadingStackView = FauxTitleBarView(views: trafficLightButtons)
 
+        let leadingBarImage = NSImage(imageLiteralResourceName: "sidebar.leading")
+        let leadingSidebarToggleButton = NSButton(image: leadingBarImage, target: self, action: #selector(self.toggleLeadingSidebarVisibility(_:)))
+        leadingSidebarToggleButton.setButtonType(.momentaryPushIn)
+        leadingSidebarToggleButton.bezelStyle = .smallSquare
+        leadingSidebarToggleButton.isBordered = false
+        leadingSidebarToggleButton.imagePosition = .imageOnly
+        leadingSidebarToggleButton.refusesFirstResponder = true
+        leadingSidebarToggleButton.imageScaling = .scaleNone
+
+        leadingSidebarToggleButton.font = NSFont.systemFont(ofSize: 17)
+        leadingSidebarToggleButton.widthAnchor.constraint(equalTo: leadingSidebarToggleButton.heightAnchor, multiplier: 1).isActive = true
+        let leadingStackView = FauxTitleBarView(views: trafficLightButtons + [leadingSidebarToggleButton])
         leadingStackView.wantsLayer = true
         leadingStackView.layer?.backgroundColor = .clear
         leadingStackView.orientation = .horizontal
@@ -617,8 +628,8 @@ extension PlayerWindowController {
         leadingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
         /// Because of possible top OSC, `titleBarView` may have reduced height.
         /// So do not vertically center the buttons. Use offset from top instead:
-        leadingStackView.alignment = .top
-        leadingStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
+        leadingStackView.alignment = .centerY
+        leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
         for btn in trafficLightButtons {
           btn.alphaValue = 1
           btn.isEnabled = true

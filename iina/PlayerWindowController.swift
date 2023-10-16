@@ -95,6 +95,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // For legacy windowed mode
   var fakeLeadingTitleBarView: NSStackView? = nil
+//  var fakeCenterTitleBarView: NSStackView? = nil
+  var fakeTrailingTitleBarView: NSStackView? = nil
 
   // For Rotate gesture:
   let rotationHandler = VideoRotationHandler()
@@ -2240,6 +2242,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let currentLayout = self.currentLayout
 
     animationTasks.append(CocoaAnimation.Task(duration: duration, { [self] in
+      guard fadeableViewsAnimationState == .hidden || fadeableViewsAnimationState == .shown else { return }
       log.verbose("Showing fadeable views")
       fadeableViewsAnimationState = .willShow
       player.refreshSyncUITimer()
