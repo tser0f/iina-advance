@@ -881,6 +881,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // add notification observers
 
     NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: nil, using: { [unowned self] _ in
+      // FIXME: this is not ready for production yet! Need to fix issues with freezing video
       guard Preference.bool(for: .togglePipWhenSwitchingSpaces) else { return }
       if !window.isOnActiveSpace && pipStatus == .notInPIP {
         animationQueue.runZeroDuration({ [self] in

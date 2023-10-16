@@ -23,6 +23,11 @@ extension PlayerWindowController {
   /// and window mode can vary for each window.
   /// See also: `LayoutState.from()`, which contains the logic to compile a `LayoutState` from a `LayoutSpec`.
   struct LayoutSpec {
+    
+    /// WIP. Set this to `true` to continue working on recreating title bar in legacy windowed mode.
+    /// See `fakeLeadingTitleBarView`.
+    static let useFakeTitleForLegacyWindow = false
+
     let leadingSidebar: Sidebar
     let trailingSidebar: Sidebar
 
@@ -384,8 +389,7 @@ extension PlayerWindowController {
 
         outputLayout.topBarView = visibleState
 
-        // If legacy window mode, do not show title bar.
-        if !layoutSpec.isLegacyStyle {
+        if !layoutSpec.isLegacyStyle || LayoutSpec.useFakeTitleForLegacyWindow {
           outputLayout.titleBar = visibleState
 
           outputLayout.trafficLightButtons = visibleState

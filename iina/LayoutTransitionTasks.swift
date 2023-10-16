@@ -33,6 +33,39 @@ fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 900)
 }
 
+/// Fake title bar view. Manual reconstruction of title bar is needed when not using `titled` window style.
+class FauxTitleBarView: NSStackView {
+  var isMouseInside: Bool = false
+
+  // Needed to get highlight working properly for traffic light buttons.
+  // See: https://stackoverflow.com/a/30417372/1347529
+  @objc func _mouseInGroup(_ button: NSButton) -> Bool {
+    return isMouseInside
+  }
+
+  private func markButtonsDirty() {
+    guard let window = self.window, let winCon = window.windowController as? PlayerWindowController else { return }
+    for btn in winCon.trafficLightButtons {
+      btn.needsDisplay = true
+    }
+  }
+
+  override func mouseEntered(with event: NSEvent) {
+    isMouseInside = true
+    markButtonsDirty()
+  }
+
+  override func mouseExited(with event: NSEvent) {
+    isMouseInside = false
+    markButtonsDirty()
+  }
+
+  @objc override var mouseDownCanMoveWindow: Bool {
+    return true
+  }
+}
+
+
 /// This file contains tasks to run in the animation queue, which form a `LayoutTransition`.
 extension PlayerWindowController {
 
@@ -277,6 +310,11 @@ extension PlayerWindowController {
         /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
         hideBuiltInTitleBarViews()
       }
+    }
+    
+    if transition.isTopBarPlacementChanging, let leadingStackView = fakeLeadingTitleBarView {
+      leadingStackView.removeConstraints(leadingStackView.constraints)
+      leadingStackView.removeFromSuperview()
     }
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
@@ -554,33 +592,55 @@ extension PlayerWindowController {
       documentIconButton?.isHidden = false
       documentIconButton?.alphaValue = 1
 
-      // TODO: figure out whether to try to replicate title bar, or just leave it out
-      if false && outputLayout.spec.isLegacyStyle && fakeLeadingTitleBarView == nil {
-        // Add fake traffic light buttons. Needs a lot of work...
+      // TODO: figure out whether to finish replicating title bar, or just give up and leave it out
+      if outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow && fakeLeadingTitleBarView == nil {
+        // Add fake traffic light buttons:
         let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
-        let leadingStackView = NSStackView(views: trafficLightButtons)
+        let leadingStackView = FauxTitleBarView(views: trafficLightButtons)
+
         leadingStackView.wantsLayer = true
         leadingStackView.layer?.backgroundColor = .clear
         leadingStackView.orientation = .horizontal
-        window.contentView!.addSubview(leadingStackView)
-        leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
-        leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
-        leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
-        leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
         leadingStackView.detachesHiddenViews = false
-        leadingStackView.spacing = 6
+        leadingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
         /// Because of possible top OSC, `titleBarView` may have reduced height.
         /// So do not vertically center the buttons. Use offset from top instead:
         leadingStackView.alignment = .top
         leadingStackView.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 0, right: 6)
         for btn in trafficLightButtons {
           btn.alphaValue = 1
-          //            btn.isHighlighted = true
-          btn.display()
+          btn.isEnabled = true
+          btn.isHidden = false
+          btn.target = window
+        }
+        fakeLeadingTitleBarView = leadingStackView
+
+        if leadingStackView.trackingAreas.count <= 1 && trafficLightButtons.count == 3 {
+          for btn in trafficLightButtons {
+            /// This solution works better than using `window` as owner, because with that the green button would get stuck with highlight
+            /// when menu was shown.
+            /// FIXME: unfortunately this solution grays out the context menu items for the green button
+            /// FIXME: traffic light buttons are initially drawn as inactive until hovered over (usually - seems to be a race condition)
+            btn.addTrackingArea(NSTrackingArea(rect: btn.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: leadingStackView, userInfo: ["obj": 2]))
+          }
+        }
+      }
+
+      if let leadingStackView = fakeLeadingTitleBarView {
+        if transition.outputLayout.topBarPlacement == .outsideViewport {
+          titleBarView.addSubview(leadingStackView)
+        } else {
+          window.contentView?.addSubview(leadingStackView)
+        }
+
+        if leadingStackView.constraints.isEmpty {
+          leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
+          leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
+          leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
+          leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
         }
         leadingStackView.layout()
-        fakeLeadingTitleBarView = leadingStackView
       }
 
       /// Title bar accessories get removed by legacy fullscreen or if window `styleMask` did not include `.titled`.

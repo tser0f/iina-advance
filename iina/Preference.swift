@@ -1037,7 +1037,7 @@ struct Preference {
       .windowBehaviorWhenPip: WindowBehaviorWhenPip.doNothing.rawValue,
     .pauseWhenPip: false,
     .togglePipByMinimizingWindow: false,
-    .togglePipWhenSwitchingSpaces: true,
+    .togglePipWhenSwitchingSpaces: false,
 
       .videoThreads: 0,
     .hardwareDecoder: HardwareDecoderOption.auto.rawValue,
