@@ -179,10 +179,14 @@ extension PlayerWindowController {
     }
 
     if needToHideTopBar || outputLayout.trafficLightButtons == .hidden {
-      /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
-      /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
-      for button in trafficLightButtons {
-        button.isHidden = true
+      if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
+        // legacy windowed mode
+        fakeLeadingTitleBarView.alphaValue = 0
+      } else {
+        // native windowed or full screen
+        for button in trafficLightButtons {
+          button.alphaValue = 0
+        }
       }
     }
 
@@ -591,6 +595,11 @@ extension PlayerWindowController {
       titleTextField?.alphaValue = 1
       documentIconButton?.isHidden = false
       documentIconButton?.alphaValue = 1
+
+      if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
+        fakeLeadingTitleBarView.isHidden = false
+        fakeLeadingTitleBarView.alphaValue = 1
+      }
 
       // TODO: figure out whether to finish replicating title bar, or just give up and leave it out
       if outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow && fakeLeadingTitleBarView == nil {

@@ -94,7 +94,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var cropSettingsView: CropBoxViewController?
 
   // For legacy windowed mode
-  // TODO: not used. Decide whether to use this, or delete
   var fakeLeadingTitleBarView: NSStackView? = nil
 
   // For Rotate gesture:
@@ -1590,7 +1589,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // main window
       isMouseInWindow = false
       if controlBarFloating.isDragging { return }
-      if Preference.bool(for: .hideFadeableViewsWhenOutsideWindow) {
+      if !isAnimating && Preference.bool(for: .hideFadeableViewsWhenOutsideWindow) {
         hideFadeableViews()
       } else {
         // Closes loophole in case cursor hovered over OSC before exiting (in which case timer was destroyed)
