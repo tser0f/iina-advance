@@ -1862,10 +1862,6 @@ class PlayerCore: NSObject {
     }
 
     DispatchQueue.main.async { [self] in
-      guard !windowController.isAnimating else {
-        return
-      }
-
       syncUITicketCount += 1
       let syncUITicket = syncUITicketCount
 

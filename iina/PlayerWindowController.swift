@@ -1313,7 +1313,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func mouseDragged(with event: NSEvent) {
-    let didResizeSidebar = resizeSidebar(with: event) != nil
+    let didResizeSidebar = resizeSidebar(with: event)
     guard !didResizeSidebar else {
       return
     }
