@@ -190,6 +190,10 @@ extension PlayerWindowController {
       }
     }
 
+    if needToHideTopBar, let fakeTrailingTitleBarView = fakeTrailingTitleBarView {
+      fakeTrailingTitleBarView.alphaValue = 0
+    }
+
     if needToHideTopBar || outputLayout.titlebarAccessoryViewControllers == .hidden {
       // Hide all title bar accessories (if needed):
       leadingTitleBarAccessoryView.alphaValue = 0
@@ -317,11 +321,6 @@ extension PlayerWindowController {
         hideBuiltInTitleBarViews()
       }
     }
-    
-    if transition.isTopBarPlacementChanging, let leadingStackView = fakeLeadingTitleBarView {
-      leadingStackView.removeConstraints(leadingStackView.constraints)
-      leadingStackView.removeFromSuperview()
-    }
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
@@ -333,6 +332,17 @@ extension PlayerWindowController {
       /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
       /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
       hideBuiltInTitleBarViews()
+
+      if let stackView = fakeLeadingTitleBarView {
+        stackView.removeConstraints(stackView.constraints)
+        stackView.removeFromSuperview()
+      }
+
+      if let stackView = fakeTrailingTitleBarView {
+        stackView.removeConstraints(stackView.constraints)
+        stackView.removeFromSuperview()
+      }
+
     }
 
     /// These should all be either 0 height or unchanged from `transition.inputLayout`
@@ -603,6 +613,11 @@ extension PlayerWindowController {
         fakeLeadingTitleBarView.alphaValue = 1
       }
 
+      if let fakeTrailingTitleBarView = fakeTrailingTitleBarView {
+        fakeTrailingTitleBarView.isHidden = false
+        fakeTrailingTitleBarView.alphaValue = 1
+      }
+
       // TODO: figure out whether to finish replicating title bar, or just give up and leave it out
       if outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow && fakeLeadingTitleBarView == nil {
         // Add fake traffic light buttons:
@@ -617,17 +632,15 @@ extension PlayerWindowController {
         leadingSidebarToggleButton.imagePosition = .imageOnly
         leadingSidebarToggleButton.refusesFirstResponder = true
         leadingSidebarToggleButton.imageScaling = .scaleNone
-
         leadingSidebarToggleButton.font = NSFont.systemFont(ofSize: 17)
         leadingSidebarToggleButton.widthAnchor.constraint(equalTo: leadingSidebarToggleButton.heightAnchor, multiplier: 1).isActive = true
+
         let leadingStackView = FauxTitleBarView(views: trafficLightButtons + [leadingSidebarToggleButton])
         leadingStackView.wantsLayer = true
         leadingStackView.layer?.backgroundColor = .clear
         leadingStackView.orientation = .horizontal
         leadingStackView.detachesHiddenViews = false
         leadingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
-        /// Because of possible top OSC, `titleBarView` may have reduced height.
-        /// So do not vertically center the buttons. Use offset from top instead:
         leadingStackView.alignment = .centerY
         leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
         for btn in trafficLightButtons {
@@ -647,6 +660,28 @@ extension PlayerWindowController {
             btn.addTrackingArea(NSTrackingArea(rect: btn.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: leadingStackView, userInfo: ["obj": 2]))
           }
         }
+
+        let trailingBarImage = NSImage(imageLiteralResourceName: "sidebar.trailing")
+        let trailingSidebarToggleButton = NSButton(image: trailingBarImage, target: self, action: #selector(self.toggleTrailingSidebarVisibility(_:)))
+        trailingSidebarToggleButton.setButtonType(.momentaryPushIn)
+        trailingSidebarToggleButton.bezelStyle = .smallSquare
+        trailingSidebarToggleButton.isBordered = false
+        trailingSidebarToggleButton.imagePosition = .imageOnly
+        trailingSidebarToggleButton.refusesFirstResponder = true
+        trailingSidebarToggleButton.imageScaling = .scaleNone
+        trailingSidebarToggleButton.font = NSFont.systemFont(ofSize: 17)
+        trailingSidebarToggleButton.widthAnchor.constraint(equalTo: trailingSidebarToggleButton.heightAnchor, multiplier: 1).isActive = true
+
+        let trailingStackView = NSStackView(views: [trailingSidebarToggleButton])
+        trailingStackView.wantsLayer = true
+        trailingStackView.layer?.backgroundColor = .clear
+        trailingStackView.orientation = .horizontal
+        trailingStackView.detachesHiddenViews = false
+        trailingStackView.alignment = .centerY
+        trailingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
+        trailingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
+
+        fakeTrailingTitleBarView = trailingStackView
       }
 
       if let leadingStackView = fakeLeadingTitleBarView {
@@ -658,11 +693,25 @@ extension PlayerWindowController {
 
         if leadingStackView.constraints.isEmpty {
           leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
-          leadingStackView.trailingAnchor.constraint(equalTo: leadingStackView.superview!.trailingAnchor).isActive = true
           leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
           leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
         }
         leadingStackView.layout()
+      }
+
+      if let trailingStackView = fakeTrailingTitleBarView {
+        if transition.outputLayout.topBarPlacement == .outsideViewport {
+          titleBarView.addSubview(trailingStackView)
+        } else {
+          window.contentView?.addSubview(trailingStackView)
+        }
+
+        if trailingStackView.constraints.isEmpty {
+          trailingStackView.topAnchor.constraint(equalTo: trailingStackView.superview!.topAnchor).isActive = true
+          trailingStackView.trailingAnchor.constraint(equalTo: trailingStackView.superview!.trailingAnchor).isActive = true
+          trailingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
+        }
+        trailingStackView.layout()
       }
 
       /// Title bar accessories get removed by legacy fullscreen or if window `styleMask` did not include `.titled`.
@@ -1135,6 +1184,15 @@ extension PlayerWindowController {
       fakeLeadingTitleBarView.removeFromSuperview()
       self.fakeLeadingTitleBarView = nil
     }
+
+    if let fakeTrailingTitleBarView = fakeTrailingTitleBarView {
+      for subview in fakeTrailingTitleBarView.subviews {
+        subview.removeFromSuperview()
+      }
+      fakeTrailingTitleBarView.removeFromSuperview()
+      self.fakeTrailingTitleBarView = nil
+    }
+
   }
 
   private func hideBuiltInTitleBarViews() {
