@@ -1775,29 +1775,34 @@ class PlayerCore: NSObject {
     /// - if no longer needed
     /// - if still needed but need to change the `timeInterval`
     var wasTimerRunning = false
+    var timerRestartNeeded = false
     if let existingTimer = self.syncUITimer, existingTimer.isValid {
-      if useTimer && timerConfig.interval == existingTimer.timeInterval {
-        /// Don't restart the existing timer if not needed, because restarting will ignore any time it has
-        /// already spent waiting, and could in theory result in a small visual jump (more so for long intervals).
-        Logger.log("SyncUITimer already running, no change needed", level: .verbose, subsystem: subsystem)
-        return
-      } else {
-        wasTimerRunning = true
+      wasTimerRunning = true
+      if useTimer {
+        if timerConfig.interval == existingTimer.timeInterval {
+          /// Don't restart the existing timer if not needed, because restarting will ignore any time it has
+          /// already spent waiting, and could in theory result in a small visual jump (more so for long intervals).
+        } else {
+          timerRestartNeeded = true
+        }
+      }
+
+      if !useTimer || timerRestartNeeded {
         existingTimer.invalidate()
         self.syncUITimer = nil
       }
     }
 
     if Logger.isEnabled(.verbose) {
-      var summary = wasTimerRunning ? (useTimer ? "restarting" : "didStop") : (useTimer ? "starting" : "notNeeded")
+      var summary = wasTimerRunning ? (useTimer ? (timerRestartNeeded ? "restarting" : "running") : "didStop") : (useTimer ? "starting" : "notNeeded")
       if useTimer {
-        summary += ", timeInterval \(timerConfig.interval)"
+        summary += ", every \(timerConfig.interval)s"
       }
-      Logger.log("SyncUITimer \(summary). Player={paused:\(info.isPaused.yn) network:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stopping:\(isStopping.yn) quitting:\(isShuttingDown.yn)}",
+      Logger.log("SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn) quit:\(isShuttingDown.yn))",
                  level: .verbose, subsystem: subsystem)
     }
 
-    guard useTimer else { return }
+    guard useTimer && (!wasTimerRunning || timerRestartNeeded) else { return }
 
     // Timer will start
 

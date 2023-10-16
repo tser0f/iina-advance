@@ -2203,8 +2203,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - UI: Show / Hide Fadeable Views
 
   func isUITimerNeeded() -> Bool {
-    log.verbose("Checking if UITimer needed. hasPermanentOSC: \(currentLayout.hasPermanentOSC), fadeableViews: \(fadeableViewsAnimationState), topBar: \(fadeableTopBarAnimationState), OSD: \(osdAnimationState)")
-
+//    log.verbose("Checking if UITimer needed. hasPermanentOSC:\(currentLayout.hasPermanentOSC.yn) fadeableViews:\(fadeableViewsAnimationState) topBar: \(fadeableTopBarAnimationState) OSD:\(osdAnimationState)")
     if currentLayout.hasPermanentOSC {
       return true
     }
@@ -2247,7 +2246,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     animationTasks.append(CocoaAnimation.Task(duration: duration, { [self] in
       guard fadeableViewsAnimationState == .hidden || fadeableViewsAnimationState == .shown else { return }
-      log.verbose("Showing fadeable views")
+//      log.verbose("Showing fadeable views")
       fadeableViewsAnimationState = .willShow
       player.refreshSyncUITimer()
       destroyFadeTimer()
