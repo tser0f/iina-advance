@@ -792,11 +792,10 @@ extension PlayerWindowController {
   }
 
   /// Make sure this is called AFTER `windowController.setupTitleBarAndOSC()` has updated its variables
-  func updateSidebarVerticalConstraints(layout outputLayout: LayoutState? = nil) {
-    let layout = outputLayout ?? currentLayout
-    log.verbose("Sidebars downshift: \(layout.sidebarDownshift), tabHeight: \(layout.sidebarTabHeight)")
-    quickSettingView.setVerticalConstraints(downshift: layout.sidebarDownshift, tabHeight: layout.sidebarTabHeight)
-    playlistView.setVerticalConstraints(downshift: layout.sidebarDownshift, tabHeight: layout.sidebarTabHeight)
+  func updateSidebarVerticalConstraints(tabHeight: CGFloat, downshift: CGFloat) {
+    log.verbose("Updating sidebars, downshift: \(downshift), tabHeight: \(tabHeight)")
+    quickSettingView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
+    playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
   }
 
   // MARK: - Resize via mouse drag

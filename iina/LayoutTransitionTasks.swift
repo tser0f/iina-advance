@@ -265,7 +265,9 @@ extension PlayerWindowController {
 
       if !transition.isExitingMusicMode {  // don't do this too soon when exiting Music Mode
         // Update sidebar vertical alignments to match top bar:
-        updateSidebarVerticalConstraints(layout: outputLayout)
+        let downshift = min(transition.inputLayout.sidebarDownshift, outputLayout.sidebarDownshift)
+        let tabHeight = min(transition.inputLayout.sidebarTabHeight, outputLayout.sidebarTabHeight)
+        updateSidebarVerticalConstraints(tabHeight: tabHeight, downshift: downshift)
       }
 
       let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideViewport ? geo.insideBottomBarHeight : geo.outsideBottomBarHeight
@@ -490,7 +492,7 @@ extension PlayerWindowController {
                               setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
     updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
     // Update sidebar vertical alignments
-    updateSidebarVerticalConstraints(layout: outputLayout)
+    updateSidebarVerticalConstraints(tabHeight: outputLayout.sidebarTabHeight, downshift: outputLayout.sidebarDownshift)
 
     if !outputLayout.enableOSC {
       currentControlBar = nil
