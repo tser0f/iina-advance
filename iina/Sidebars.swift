@@ -848,10 +848,19 @@ extension PlayerWindowController {
   }
 
   /// Returns new or existing `PlayerWindowGeometry` if handled; `nil` if not
-  func resizeSidebar(with dragEvent: NSEvent) -> PlayerWindowGeometry? {
-    guard leadingSidebarIsResizing || trailingSidebarIsResizing else { return nil }
-    assert(currentLayout.mode == .windowed || currentLayout.mode == .fullScreen, "ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
-    let oldGeo = windowedModeGeometry
+  func resizeSidebar(with dragEvent: NSEvent) -> Bool {
+    guard leadingSidebarIsResizing || trailingSidebarIsResizing else { return false }
+    guard let window else { return false }
+
+    let oldGeo: PlayerWindowGeometry
+    switch currentLayout.mode {
+    case .windowed:
+      oldGeo = windowedModeGeometry
+    case .fullScreen:
+      oldGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: videoAspectRatio)
+    case .musicMode:
+      Logger.fatal("ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
+    }
 
     return CocoaAnimation.disableAnimation {
       let currentLocation = dragEvent.locationInWindow
@@ -869,7 +878,7 @@ extension PlayerWindowController {
           if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
             // should not happen in theory, because playlist shouldn't have been shown when resize started
             log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
-            return oldGeo
+            return true
           }
         } else {
           newPlaylistWidth = desiredPlaylistWidth
@@ -894,14 +903,14 @@ extension PlayerWindowController {
         }
 
       } else if trailingSidebarIsResizing {
-        let desiredPlaylistWidth = clampPlaylistWidth(window!.frame.width - currentLocation.x - 2)
+        let desiredPlaylistWidth = clampPlaylistWidth(window.frame.width - currentLocation.x - 2)
         if layout.trailingSidebar.placement == .insideViewport {
           let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
 
           newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
           if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
             log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
-            return oldGeo
+            return true
           }
         } else {
           newPlaylistWidth = desiredPlaylistWidth
@@ -921,32 +930,30 @@ extension PlayerWindowController {
         }
 
       } else {
-        return nil
+        return false
       }
 
       Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
       updateSpacingForTitleBarAccessories(windowWidth: oldGeo.windowFrame.width)
       applyWindowGeometryLivePreview(newGeo)
-      return newGeo
+      return true
     }
   }
 
   func finishResizingSidebar(with dragEvent: NSEvent) -> Bool {
-    guard let newGeometry = resizeSidebar(with: dragEvent) else { return false }
+    guard resizeSidebar(with: dragEvent) else { return false }
+
     if leadingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       leadingSidebarIsResizing = false
-      windowedModeGeometry = newGeometry
       log.verbose("New width of left sidebar playlist is \(currentLayout.leadingSidebar.currentWidth)")
-      return true
     } else if trailingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       trailingSidebarIsResizing = false
-      windowedModeGeometry = newGeometry
       log.verbose("New width of right sidebar playlist is \(currentLayout.trailingSidebar.currentWidth)")
-      return true
     }
-    return false
+
+    return true
   }
 
   // MARK: - Other mouse events
