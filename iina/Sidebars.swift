@@ -805,7 +805,7 @@ extension PlayerWindowController {
       let sf = leadingSidebarView.frame
       let dragRectCenterX: CGFloat = sf.origin.x + sf.width
 
-      // FIXME: need to find way to resize from inside of sidebar
+      // TODO: need to find way to resize from inside of sidebar
       let activationRect = NSRect(x: dragRectCenterX,
                                   y: sf.origin.y,
                                   width: Constants.Sidebar.resizeActivationRadius,
@@ -822,7 +822,7 @@ extension PlayerWindowController {
       let sf = trailingSidebarView.frame
       let dragRectCenterX: CGFloat = sf.origin.x
 
-      // FIXME: need to find way to resize from inside of sidebar
+      // TODO: need to find way to resize from inside of sidebar
       let activationRect = NSRect(x: dragRectCenterX - Constants.Sidebar.resizeActivationRadius,
                                   y: sf.origin.y,
                                   width: Constants.Sidebar.resizeActivationRadius,

@@ -789,6 +789,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     window.initialFirstResponder = nil
     window.titlebarAppearsTransparent = true
 
+    viewportView.clipsToBounds = true
+    topBarView.clipsToBounds = true
+    bottomBarView.clipsToBounds = true
+
     setMaterial(Preference.enum(for: .themeMaterial))
 
     leftLabel.mode = .current

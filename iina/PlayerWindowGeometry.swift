@@ -855,12 +855,12 @@ extension PlayerWindowController {
     // Update video aspect ratio
     videoAspectRatio = newGeometry.videoAspectRatio
 
-    if !isFullScreen {
-      CocoaAnimation.disableAnimation{
-        // Make sure this is up-to-date
-        videoView.updateSizeConstraints(newGeometry.videoSize)
-      }
+    CocoaAnimation.disableAnimation{
+      // Make sure this is up-to-date
+      videoView.updateSizeConstraints(newGeometry.videoSize)
+    }
 
+    if !isFullScreen {
       player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
     }
   }
