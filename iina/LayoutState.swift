@@ -14,8 +14,9 @@ extension PlayerWindowController {
     case windowed = 1
     case fullScreen
     case musicMode
-    //    TODO: case interactiveWindow
-    //    case interactiveFullScreen
+    // TODO: figure out what to do with this
+//    case windowedInteractive
+//    case fullScreenInteractive
   }
 
   /// `LayoutSpec`: data structure containing a window's layout configuration, and is the blueprint for building a `LayoutState`.
@@ -137,12 +138,16 @@ extension PlayerWindowController {
       return mode == .fullScreen
     }
 
+    var isWindowed: Bool {
+      return mode == .windowed
+    }
+
     var isNativeFullScreen: Bool {
-      return mode == .fullScreen && !isLegacyStyle
+      return isFullScreen && !isLegacyStyle
     }
 
     var isLegacyFullScreen: Bool {
-      return mode == .fullScreen && isLegacyStyle
+      return isFullScreen && isLegacyStyle
     }
 
     /// Returns `true` if `otherSpec` has the same values which are configured from IINA app-wide prefs
@@ -279,11 +284,15 @@ extension PlayerWindowController {
     // Derived properties & convenience accessors
 
     var isFullScreen: Bool {
-      return spec.mode == .fullScreen
+      return spec.isFullScreen
+    }
+
+    var isWindowed: Bool {
+      return spec.isWindowed
     }
 
     var canToggleFullScreen: Bool {
-      return spec.mode == .fullScreen || spec.mode == .windowed
+      return spec.isFullScreen || spec.mode == .windowed
     }
 
     var isNativeFullScreen: Bool {

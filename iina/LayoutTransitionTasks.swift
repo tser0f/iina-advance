@@ -43,9 +43,8 @@ class FauxTitleBarView: NSStackView {
     return isMouseInside
   }
 
-  private func markButtonsDirty() {
-    guard let window = self.window, let winCon = window.windowController as? PlayerWindowController else { return }
-    for btn in winCon.trafficLightButtons {
+  func markButtonsDirty() {
+    for btn in views {
       btn.needsDisplay = true
     }
   }

@@ -94,7 +94,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var cropSettingsView: CropBoxViewController?
 
   // For legacy windowed mode
-  var fakeLeadingTitleBarView: NSStackView? = nil
+  var fakeLeadingTitleBarView: FauxTitleBarView? = nil
 //  var fakeCenterTitleBarView: NSStackView? = nil
   var fakeTrailingTitleBarView: NSStackView? = nil
 
@@ -2076,7 +2076,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
         setWindowFrameForLegacyFullScreen(using: fsGeo)
       }))
-    } else if currentLayout.mode == .windowed {
+    } else if currentLayout.isWindowed {
       /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
       /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
       /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
@@ -2154,6 +2154,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       blackOutOtherMonitors()
     }
 
+    // The traffic light buttons should change to active
+    fakeLeadingTitleBarView?.markButtonsDirty()
+
     player.events.emit(.windowMainStatusChanged, data: true)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: true)
   }
@@ -2165,6 +2168,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if Preference.bool(for: .blackOutMonitor) {
       removeBlackWindows()
     }
+
+    // The traffic light buttons should change to inactive
+    fakeLeadingTitleBarView?.markButtonsDirty()
 
     player.events.emit(.windowMainStatusChanged, data: false)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: false)
@@ -2909,7 +2915,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func refreshHidesOnDeactivateStatus() {
     guard let window else { return }
-    window.hidesOnDeactivate = currentLayout.mode == .windowed && Preference.bool(for: .hideWindowsWhenInactive)
+    window.hidesOnDeactivate = currentLayout.isWindowed && Preference.bool(for: .hideWindowsWhenInactive)
   }
 
   @discardableResult
