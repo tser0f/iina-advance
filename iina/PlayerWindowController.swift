@@ -565,7 +565,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MiniPlayer buttons
   @IBOutlet weak var closeButtonView: NSView!
-  // Mini island containing window buttons which hover over album art / video:
+  // Mini island containing window buttons which hover over album art / video (when video is visible):
   @IBOutlet weak var closeButtonBackgroundViewVE: NSVisualEffectView!
   // Mini island containing window buttons which appear next to controls (when video not visible):
   @IBOutlet weak var closeButtonBackgroundViewBox: NSBox!
@@ -1580,6 +1580,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       isMouseInSlider = true
       timePreviewWhenSeek.isHidden = false
       thumbnailPeekView.isHidden = !player.info.thumbnailsReady
+    } else if obj == 2 {
+      fakeLeadingTitleBarView?.mouseEntered(with: event)
     }
     refreshSeekTimeAndThumnail(from: event)
   }
@@ -1607,6 +1609,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       refreshSeekTimeAndThumnail(from: event)
       timePreviewWhenSeek.isHidden = true
       thumbnailPeekView.isHidden = true
+    } else if obj == 2 {
+      fakeLeadingTitleBarView?.mouseExited(with: event)
     }
   }
 
@@ -3080,8 +3084,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateMusicModeButtonsVisibility() {
-    closeButtonBackgroundViewVE.isHidden = !player.isInMiniPlayer || !miniPlayer.isVideoVisible
-    closeButtonBackgroundViewBox.isHidden = !player.isInMiniPlayer || miniPlayer.isVideoVisible
+    // Hide this parent container to hide all the controls below
+    closeButtonView.isHidden = !player.isInMiniPlayer
+    closeButtonView.alphaValue = player.isInMiniPlayer ? 0 : 1
+
+    // Show only in music mode when video is visible
+    closeButtonBackgroundViewVE.isHidden = !miniPlayer.isVideoVisible
+
+    // Show only in music mode when video is hidden
+    closeButtonBackgroundViewBox.isHidden = miniPlayer.isVideoVisible
   }
 
   // MARK: - IBActions

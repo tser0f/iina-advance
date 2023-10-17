@@ -58,10 +58,6 @@ class FauxTitleBarView: NSStackView {
     isMouseInside = false
     markButtonsDirty()
   }
-
-  @objc override var mouseDownCanMoveWindow: Bool {
-    return true
-  }
 }
 
 
@@ -424,13 +420,14 @@ extension PlayerWindowController {
       // Update music mode UI
       updateTitle()
       setMaterial(Preference.enum(for: .themeMaterial))
-      updateMusicModeButtonsVisibility()
 
     } else if transition.isExitingMusicMode {
       _ = miniPlayer.view
       miniPlayer.cleanUpForMusicModeExit()
-      updateMusicModeButtonsVisibility()
     }
+
+    // Need to call this for initial layout also:
+    updateMusicModeButtonsVisibility()
 
     // Sidebars: if (re)opening
     if let tabToShow = transition.outputLayout.leadingSidebar.visibleTab {
@@ -624,7 +621,7 @@ extension PlayerWindowController {
         let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
 
         let leadingBarImage = NSImage(imageLiteralResourceName: "sidebar.leading")
-        let leadingSidebarToggleButton = NSButton(image: leadingBarImage, target: self, action: #selector(self.toggleLeadingSidebarVisibility(_:)))
+        let leadingSidebarToggleButton = NSButton(image: leadingBarImage, target: window, action: #selector(self.toggleLeadingSidebarVisibility(_:)))
         leadingSidebarToggleButton.setButtonType(.momentaryPushIn)
         leadingSidebarToggleButton.bezelStyle = .smallSquare
         leadingSidebarToggleButton.isBordered = false
@@ -644,9 +641,7 @@ extension PlayerWindowController {
         leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
         for btn in trafficLightButtons {
           btn.alphaValue = 1
-          btn.isEnabled = true
           btn.isHidden = false
-          btn.target = window
         }
         fakeLeadingTitleBarView = leadingStackView
 
