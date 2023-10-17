@@ -10,6 +10,10 @@ import Cocoa
 
 class VolumeSliderCell: NSSliderCell {
 
+  override var acceptsFirstResponder: Bool {
+    return false
+  }
+
   override func awakeFromNib() {
     minValue = 0
     maxValue = Double(Preference.integer(for: .maxVolume))

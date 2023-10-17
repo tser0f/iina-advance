@@ -2153,8 +2153,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       blackOutOtherMonitors()
     }
 
-    // The traffic light buttons should change to active
-    customTitleBar?.leadingTitleBarView.markButtonsDirty()
+    if let customTitleBar {
+      // The traffic light buttons should change to active
+      customTitleBar.leadingTitleBarView.markButtonsDirty()
+      customTitleBar.refreshTitle()
+    }
+
 
     player.events.emit(.windowMainStatusChanged, data: true)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: true)
@@ -2168,8 +2172,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       removeBlackWindows()
     }
 
-    // The traffic light buttons should change to inactive
-    customTitleBar?.leadingTitleBarView.markButtonsDirty()
+    if let customTitleBar {
+      // The traffic light buttons should change to inactive
+      customTitleBar.leadingTitleBarView.markButtonsDirty()
+      customTitleBar.refreshTitle()
+    }
 
     player.events.emit(.windowMainStatusChanged, data: false)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: false)
@@ -2484,6 +2491,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// while `changeWindowsItem` needs to be called if `addWindowsItem` was already called. To be safe, just call both.
     NSApplication.shared.addWindowsItem(window, title: title, filename: false)
     NSApplication.shared.changeWindowsItem(window, title: title, filename: false)
+
+    customTitleBar?.refreshTitle()
   }
 
   // MARK: - UI: OSD

@@ -56,7 +56,7 @@ class PlayerWindowPreviewImageBuilder {
   let appearance: NSAppearance
 
   lazy var hasTitleBar: Bool = {
-    return !isLegacyWindow || PlayerWindowController.LayoutSpec.useFakeTitleForLegacyWindow  // No title bar for legacy window
+    return !isLegacyWindow || PlayerWindowController.LayoutSpec.enableTitleBarForLegacyWindow  // No title bar for legacy window
   }()
 
   lazy var hasTopBar: Bool = {

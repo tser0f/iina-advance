@@ -27,7 +27,7 @@ extension PlayerWindowController {
     
     /// WIP. Set this to `true` to continue working on recreating title bar in legacy windowed mode.
     /// See `fakeLeadingTitleBarView`.
-    static let useFakeTitleForLegacyWindow = true
+    static let enableTitleBarForLegacyWindow = true
 
     let leadingSidebar: Sidebar
     let trailingSidebar: Sidebar
@@ -398,7 +398,7 @@ extension PlayerWindowController {
 
         outputLayout.topBarView = visibleState
 
-        if !layoutSpec.isLegacyStyle || LayoutSpec.useFakeTitleForLegacyWindow {
+        if !layoutSpec.isLegacyStyle || LayoutSpec.enableTitleBarForLegacyWindow {
           outputLayout.titleBar = visibleState
 
           outputLayout.trafficLightButtons = visibleState

@@ -9,6 +9,10 @@
 import Foundation
 
 fileprivate let iconSpacingH: CGFloat = 6  // matches spacing as of MacOS Sonoma (14.0)
+// try to roughly match Apple's title bar text:
+fileprivate let activeTitleTextOpacity: CGFloat = 0.75
+fileprivate let inactiveTitleTextOpacity: CGFloat = 0.35
+fileprivate let inactiveTitleControlOpacity: CGFloat = 0.50
 
 /// For legacy windowed mode. Manual reconstruction of title bar is needed when not using `titled` window style.
 class CustomTitleBarViewController: NSViewController {
@@ -23,6 +27,7 @@ class CustomTitleBarViewController: NSViewController {
   var centerTitleBarView: NSStackView!
   var documentIconButton: NSButton!
   var titleText: NSTextView!
+  var titleTextWidthConstraint: NSLayoutConstraint!
 
   // Trailing side
   var trailingTitleBarView: NSStackView!
@@ -49,6 +54,7 @@ class CustomTitleBarViewController: NSViewController {
     leadingStackView.detachesHiddenViews = true
     leadingStackView.spacing = iconSpacingH
     leadingStackView.alignment = .centerY
+    leadingStackView.setHuggingPriority(.required, for: .horizontal)
     leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: iconSpacingH, bottom: iconSpacingH, right: iconSpacingH)
     for btn in trafficLightButtons {
       btn.alphaValue = 1
@@ -71,9 +77,9 @@ class CustomTitleBarViewController: NSViewController {
 
     // - Center views
 
-    // TODO: see https://github.com/indragiek/INAppStoreWindow/blob/master/INAppStoreWindow/INAppStoreWindow.m
+    // See https://github.com/indragiek/INAppStoreWindow/blob/master/INAppStoreWindow/INAppStoreWindow.m
     documentIconButton = NSWindow.standardWindowButton(.documentIconButton, for: .titled)
-    titleText = NSTextView()
+    titleText = TitleTextView()
     titleText.isEditable = false
     titleText.isSelectable = false
     titleText.isFieldEditor = false
@@ -81,25 +87,26 @@ class CustomTitleBarViewController: NSViewController {
     let pStyle: NSMutableParagraphStyle = NSParagraphStyle.default.mutableCopy() as! NSMutableParagraphStyle
     pStyle.lineBreakMode = .byTruncatingMiddle
     titleText.defaultParagraphStyle = pStyle
-    // TODO: need to find width
-    let widthConstraint = titleText.widthAnchor.constraint(equalToConstant: 500)
-    widthConstraint.isActive = true
+    titleText.alignment = .center
     titleText.heightAnchor.constraint(equalToConstant: 16).isActive = true
+//    titleTextWidthConstraint = titleText.widthAnchor.constraint(equalToConstant: 0)
+//    titleTextWidthConstraint.isActive = true
 
-    centerTitleBarView = NSStackView(views: [documentIconButton, titleText])
+    centerTitleBarView = NSStackView(views: [titleText])
     centerTitleBarView.wantsLayer = true
     centerTitleBarView.layer?.backgroundColor = .clear
     centerTitleBarView.orientation = .horizontal
     centerTitleBarView.detachesHiddenViews = true
     centerTitleBarView.alignment = .centerY
     centerTitleBarView.spacing = 0
+
     titleText.centerYAnchor.constraint(equalTo: centerTitleBarView.centerYAnchor).isActive = true
-/*
+
     view.addSubview(centerTitleBarView)
     centerTitleBarView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
     centerTitleBarView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-    centerTitleBarView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-*/
+    titleText.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+
     // - Trailing views
 
     pinToTopButton = makeTitleBarButton(imgName: "ontop_off",
@@ -122,11 +129,18 @@ class CustomTitleBarViewController: NSViewController {
     trailingStackView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
     trailingStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
     trailingStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+    trailingStackView.setHuggingPriority(.required, for: .horizontal)
     trailingTitleBarView = trailingStackView
-/*
+
+    // make it expand to fill all available space
     centerTitleBarView.leadingAnchor.constraint(greaterThanOrEqualTo: leadingTitleBarView.trailingAnchor).isActive = true
-    centerTitleBarView.trailingAnchor.constraint(lessThanOrEqualTo: trailingTitleBarView.leadingAnchor).isActive = true
-*/
+    let c1 = centerTitleBarView.leadingAnchor.constraint(lessThanOrEqualTo: leadingTitleBarView.trailingAnchor)
+    c1.priority = .defaultHigh
+    c1.isActive = true
+    let c2 = centerTitleBarView.trailingAnchor.constraint(greaterThanOrEqualTo: trailingTitleBarView.leadingAnchor)
+    c2.priority = .defaultHigh
+    c2.isActive = true
+
     view.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
   }
 
@@ -148,13 +162,21 @@ class CustomTitleBarViewController: NSViewController {
   func addViewToSuperview(_ superview: NSView) {
     superview.addSubview(view)
     view.addConstraintsToFillSuperview(top: 0, leading: 0, trailing: 0)
-//    refreshTitle(drawsAsMainWindow: true)
+    refreshTitle()
   }
 
-  func refreshTitle(drawsAsMainWindow: Bool) {
-    titleText.textColor = drawsAsMainWindow ? NSColor.textColor : NSColor.textBackgroundColor
+  func refreshTitle() {
+    let drawAsMainWindow = titleText.window?.isMainWindow ?? false
+    titleText.alphaValue = drawAsMainWindow ? activeTitleTextOpacity : inactiveTitleTextOpacity
+    let controlAlpha = drawAsMainWindow ? 1 : inactiveTitleControlOpacity
+    for view in [leadingSidebarToggleButton, documentIconButton, trailingSidebarToggleButton, pinToTopButton] {
+      view?.alphaValue = controlAlpha
+    }
+
+    titleText.textColor = NSColor.windowFrameTextColor
     titleText.font = NSFont.titleBarFont(ofSize: NSFont.systemFontSize(for: .regular))
     titleText.string = windowController.player.info.currentURL?.lastPathComponent ?? ""
+    titleText.sizeToFit()
   }
 
   func removeAndCleanUp() {
@@ -193,5 +215,28 @@ class TitleBarButtonsContainerView: NSStackView {
   override func mouseExited(with event: NSEvent) {
     isMouseInside = false
     markButtonsDirty()
+  }
+}
+
+// Need to override to get mouse working properly for it
+class TitleTextView: NSTextView {
+  override var acceptsFirstResponder: Bool {
+    return false
+  }
+
+  override func mouseDown(with event: NSEvent) {
+    window?.mouseDown(with: event)
+  }
+
+  override func mouseUp(with event: NSEvent) {
+    window?.mouseUp(with: event)
+  }
+
+  override func rightMouseDown(with event: NSEvent) {
+    window?.rightMouseDown(with: event)
+  }
+
+  override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+    return Preference.bool(for: .videoViewAcceptsFirstMouse)
   }
 }

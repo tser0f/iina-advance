@@ -142,7 +142,7 @@ extension PlayerWindowController {
 
     // Hide all title bar items if top bar placement is changing
     if needToHideTopBar || outputLayout.titleIconAndText == .hidden {
-      apply(visibility: .hidden, documentIconButton, titleTextField)
+      apply(visibility: .hidden, documentIconButton, titleTextField, customTitleBar?.view)
     }
 
     if needToHideTopBar || outputLayout.trafficLightButtons == .hidden {
@@ -553,7 +553,7 @@ extension PlayerWindowController {
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       player.window.setFrameImmediately(newWindowFrame)
 
-      if outputLayout.isWindowed && outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow {
+      if outputLayout.isWindowed && outputLayout.spec.isLegacyStyle && LayoutSpec.enableTitleBarForLegacyWindow {
         if customTitleBar == nil {
           let titleBar = CustomTitleBarViewController()
           titleBar.windowController = self
@@ -606,7 +606,7 @@ extension PlayerWindowController {
       documentIconButton?.isHidden = false
       documentIconButton?.alphaValue = 1
 
-      if outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow {
+      if outputLayout.spec.isLegacyStyle && LayoutSpec.enableTitleBarForLegacyWindow {
         if let customTitleBar {
           customTitleBar.view.isHidden = false
           customTitleBar.view.alphaValue = 1
@@ -638,7 +638,7 @@ extension PlayerWindowController {
     // Update blending mode:
     updatePanelBlendingModes(to: transition.outputLayout)
     /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out
-    apply(visibility: transition.outputLayout.titleIconAndText, titleTextField, documentIconButton)
+    apply(visibility: transition.outputLayout.titleIconAndText, titleTextField, documentIconButton, customTitleBar?.view)
 
     fadeableViewsAnimationState = .shown
     fadeableTopBarAnimationState = .shown
@@ -1089,6 +1089,7 @@ extension PlayerWindowController {
 
     if let customTitleBar {
       customTitleBar.removeAndCleanUp()
+      fadeableViews.remove(customTitleBar.view)
       self.customTitleBar = nil
     }
   }
