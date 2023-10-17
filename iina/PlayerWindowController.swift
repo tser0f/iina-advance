@@ -697,16 +697,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var trafficLightButtons: [NSButton] {
     get {
-      if let window = window, window.styleMask.contains(.titled) {
+      if let window, window.styleMask.contains(.titled) {
         return ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).compactMap {
           window.standardWindowButton($0)
         }
-      } else {
-        if let customTitleBar {
-          return customTitleBar.leadingTitleBarView.subviews as! [NSButton]
-        }
       }
-      return []
+      return customTitleBar?.trafficLightButtons ?? []
     }
   }
 
@@ -1118,7 +1114,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
       let oldLayout = currentLayout
       let newLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: oldLayout.spec)
-      buildLayoutTransition(named: "UpdateTitleBar&OSC", from: oldLayout, to: newLayoutSpec, thenRun: true)
+      buildLayoutTransition(named: "UpdateTitleBarAndOSC", from: oldLayout, to: newLayoutSpec, thenRun: true)
     }
   }
 

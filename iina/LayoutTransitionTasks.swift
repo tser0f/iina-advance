@@ -171,16 +171,29 @@ extension PlayerWindowController {
       if outputLayout.leadingSidebarToggleButton == .hidden {
         leadingSidebarToggleButton.alphaValue = 0
         fadeableViewsTopBar.remove(leadingSidebarToggleButton)
+
+        // Match behavior for custom title bar's copy:
+        if let customTitleBar {
+          customTitleBar.leadingSidebarToggleButton.alphaValue = 0
+        }
       }
       if outputLayout.trailingSidebarToggleButton == .hidden {
         trailingSidebarToggleButton.alphaValue = 0
         fadeableViewsTopBar.remove(trailingSidebarToggleButton)
+
+        if let customTitleBar {
+          customTitleBar.trailingSidebarToggleButton.alphaValue = 0
+        }
       }
 
       let pinToTopButtonVisibility = transition.outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
       if pinToTopButtonVisibility == .hidden {
         pinToTopButton.alphaValue = 0
         fadeableViewsTopBar.remove(pinToTopButton)
+
+        if let customTitleBar {
+          customTitleBar.pinToTopButton.alphaValue = 0
+        }
       }
     }
 
@@ -290,6 +303,12 @@ extension PlayerWindowController {
     let pinToTopButtonVisibility = transition.outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
     applyHiddenOnly(visibility: pinToTopButtonVisibility, to: pinToTopButton)
 
+    if let customTitleBar {
+      applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: customTitleBar.leadingSidebarToggleButton)
+      applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: customTitleBar.trailingSidebarToggleButton)
+      applyHiddenOnly(visibility: pinToTopButtonVisibility, to: customTitleBar.pinToTopButton)
+    }
+
     if outputLayout.titleBar == .hidden || transition.isTopBarPlacementChanging {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
       /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
@@ -297,10 +316,9 @@ extension PlayerWindowController {
       hideBuiltInTitleBarViews()
 
       if let customTitleBar {
-        customTitleBar.view.removeConstraints(customTitleBar.view.constraints)
-        customTitleBar.view.removeFromSuperview()
+        customTitleBar.removeAndCleanUp()
+        self.customTitleBar = nil
       }
-
     }
 
     /// These should all be either 0 height or unchanged from `transition.inputLayout`
@@ -534,8 +552,29 @@ extension PlayerWindowController {
       log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
       player.window.setFrameImmediately(newWindowFrame)
+
+      if outputLayout.isWindowed && outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow {
+        if customTitleBar == nil {
+          let titleBar = CustomTitleBarViewController()
+          titleBar.windowController = self
+          titleBar.view.alphaValue = 0  // prep it to fade in in the next task
+          customTitleBar = titleBar
+        }
+
+        if let customTitleBar {
+          // Update superview based on placement. Cannot always add to contentView due to constraint issues
+          if transition.outputLayout.topBarPlacement == .outsideViewport {
+            customTitleBar.addViewToSuperview(titleBarView)
+          } else {
+            if let contentView = window.contentView {
+              customTitleBar.addViewToSuperview(contentView)
+            }
+          }
+        }
+      }
+
     }
-    
+
     if transition.isTogglingLegacyStyle {
       forceDraw()
     }
@@ -567,24 +606,10 @@ extension PlayerWindowController {
       documentIconButton?.isHidden = false
       documentIconButton?.alphaValue = 1
 
-      // TODO: figure out whether to finish replicating title bar, or just give up and leave it out
       if outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow {
-        if customTitleBar == nil {
-          customTitleBar = CustomTitleBarViewController()
-          customTitleBar?.windowController = self
-        }
-
         if let customTitleBar {
           customTitleBar.view.isHidden = false
           customTitleBar.view.alphaValue = 1
-
-          if transition.outputLayout.topBarPlacement == .outsideViewport {
-            customTitleBar.addViewToSuperview(titleBarView)
-          } else {
-            if let contentView = window.contentView {
-              customTitleBar.addViewToSuperview(contentView)
-            }
-          }
         }
       }
 
@@ -596,6 +621,12 @@ extension PlayerWindowController {
     applyShowableOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyShowableOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
     updatePinToTopButton()
+
+    if let customTitleBar {
+      apply(visibility: outputLayout.leadingSidebarToggleButton, to: customTitleBar.leadingSidebarToggleButton)
+      apply(visibility: outputLayout.trailingSidebarToggleButton, to: customTitleBar.trailingSidebarToggleButton)
+      /// pinToTop button is already handled by `updatePinToTopButton()`
+    }
 
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
@@ -958,10 +989,16 @@ extension PlayerWindowController {
   }
 
   func updatePinToTopButton() {
-    let buttonVisibility = currentLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
+    let pinToTopButtonVisibility = currentLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
     pinToTopButton.state = isOntop ? .on : .off
-    apply(visibility: buttonVisibility, to: pinToTopButton)
-    if buttonVisibility == .showFadeableTopBar {
+    apply(visibility: pinToTopButtonVisibility, to: pinToTopButton)
+
+    if let customTitleBar {
+      customTitleBar.pinToTopButton.state = isOntop ? .on : .off
+      apply(visibility: pinToTopButtonVisibility, to: customTitleBar.pinToTopButton)
+    }
+
+    if pinToTopButtonVisibility == .showFadeableTopBar {
       showFadeableViews()
     }
     if let window = window {

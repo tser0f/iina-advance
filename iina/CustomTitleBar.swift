@@ -12,26 +12,36 @@ import Foundation
 class CustomTitleBarViewController: NSViewController {
   var windowController: PlayerWindowController!
 
+  // Leading side
   var leadingTitleBarView: TitleBarButtonsContainerView!
+  var trafficLightButtons: [NSButton]!
+  var leadingSidebarToggleButton: NSButton!
+
   //  var fakeCenterTitleBarView: NSStackView? = nil
+
+  // Trailing side
   var trailingTitleBarView: NSStackView!
+  var trailingSidebarToggleButton: NSButton!
+  var pinToTopButton: NSButton!
 
   override func viewDidLoad() {
     super.viewDidLoad()
     view.translatesAutoresizingMaskIntoConstraints = false
 
+    // - Leading views
+
     // Add fake traffic light buttons:
     let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-    let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
+    trafficLightButtons = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
 
-    let leadingSidebarToggleButton = makeTitleBarButton(imgName: "sidebar.leading",
-                                                        action: #selector(windowController.toggleLeadingSidebarVisibility(_:)))
+    leadingSidebarToggleButton = makeTitleBarButton(imgName: "sidebar.leading",
+                                                    action: #selector(windowController.toggleLeadingSidebarVisibility(_:)))
 
     let leadingStackView = TitleBarButtonsContainerView(views: trafficLightButtons + [leadingSidebarToggleButton])
     leadingStackView.wantsLayer = true
     leadingStackView.layer?.backgroundColor = .clear
     leadingStackView.orientation = .horizontal
-    leadingStackView.detachesHiddenViews = false
+    leadingStackView.detachesHiddenViews = true
     leadingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
     leadingStackView.alignment = .centerY
     leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
@@ -54,13 +64,20 @@ class CustomTitleBarViewController: NSViewController {
       }
     }
 
-    let trailingSidebarToggleButton = makeTitleBarButton(imgName: "sidebar.trailing",
-                                                         action: #selector(windowController.toggleTrailingSidebarVisibility(_:)))
-    let trailingStackView = NSStackView(views: [trailingSidebarToggleButton])
+    // - Trailing views
+
+    pinToTopButton = makeTitleBarButton(imgName: "ontop_off",
+                                        action: #selector(windowController.toggleOnTop(_:)))
+    pinToTopButton.setButtonType(.toggle)
+    pinToTopButton.alternateImage = NSImage(imageLiteralResourceName: "ontop")
+
+    trailingSidebarToggleButton = makeTitleBarButton(imgName: "sidebar.trailing",
+                                                     action: #selector(windowController.toggleTrailingSidebarVisibility(_:)))
+    let trailingStackView = NSStackView(views: [trailingSidebarToggleButton, pinToTopButton])
     trailingStackView.wantsLayer = true
     trailingStackView.layer?.backgroundColor = .clear
     trailingStackView.orientation = .horizontal
-    trailingStackView.detachesHiddenViews = false
+    trailingStackView.detachesHiddenViews = true
     trailingStackView.alignment = .centerY
     trailingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
     trailingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
@@ -88,7 +105,7 @@ class CustomTitleBarViewController: NSViewController {
     return button
   }
 
-  // Add to different superview
+  // Add to [different] superview
   func addViewToSuperview(_ superview: NSView) {
     superview.addSubview(view)
     view.addConstraintsToFillSuperview(top: 0, leading: 0, trailing: 0)
