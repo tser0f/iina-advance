@@ -94,9 +94,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var cropSettingsView: CropBoxViewController?
 
   // For legacy windowed mode
-  var fakeLeadingTitleBarView: FauxTitleBarView? = nil
-//  var fakeCenterTitleBarView: NSStackView? = nil
-  var fakeTrailingTitleBarView: NSStackView? = nil
+  var customTitleBar: CustomTitleBarViewController? = nil
 
   // For Rotate gesture:
   let rotationHandler = VideoRotationHandler()
@@ -704,8 +702,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           window.standardWindowButton($0)
         }
       } else {
-        if let stackView = fakeLeadingTitleBarView {
-          return stackView.subviews as! [NSButton]
+        if let customTitleBar {
+          return customTitleBar.leadingTitleBarView.subviews as! [NSButton]
         }
       }
       return []
@@ -1581,7 +1579,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       timePreviewWhenSeek.isHidden = false
       thumbnailPeekView.isHidden = !player.info.thumbnailsReady
     } else if obj == 2 {
-      fakeLeadingTitleBarView?.mouseEntered(with: event)
+      customTitleBar?.leadingTitleBarView.mouseEntered(with: event)
     }
     refreshSeekTimeAndThumnail(from: event)
   }
@@ -1610,7 +1608,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       timePreviewWhenSeek.isHidden = true
       thumbnailPeekView.isHidden = true
     } else if obj == 2 {
-      fakeLeadingTitleBarView?.mouseExited(with: event)
+      customTitleBar?.leadingTitleBarView.mouseExited(with: event)
     }
   }
 
@@ -2159,7 +2157,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // The traffic light buttons should change to active
-    fakeLeadingTitleBarView?.markButtonsDirty()
+    customTitleBar?.leadingTitleBarView.markButtonsDirty()
 
     player.events.emit(.windowMainStatusChanged, data: true)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: true)
@@ -2174,7 +2172,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // The traffic light buttons should change to inactive
-    fakeLeadingTitleBarView?.markButtonsDirty()
+    customTitleBar?.leadingTitleBarView.markButtonsDirty()
 
     player.events.emit(.windowMainStatusChanged, data: false)
     NotificationCenter.default.post(name: .iinaPlayerWindowChanged, object: false)

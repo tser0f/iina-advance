@@ -33,34 +33,6 @@ fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 900)
 }
 
-/// Fake title bar view. Manual reconstruction of title bar is needed when not using `titled` window style.
-class FauxTitleBarView: NSStackView {
-  var isMouseInside: Bool = false
-
-  // Needed to get highlight working properly for traffic light buttons.
-  // See: https://stackoverflow.com/a/30417372/1347529
-  @objc func _mouseInGroup(_ button: NSButton) -> Bool {
-    return isMouseInside
-  }
-
-  func markButtonsDirty() {
-    for btn in views {
-      btn.needsDisplay = true
-    }
-  }
-
-  override func mouseEntered(with event: NSEvent) {
-    isMouseInside = true
-    markButtonsDirty()
-  }
-
-  override func mouseExited(with event: NSEvent) {
-    isMouseInside = false
-    markButtonsDirty()
-  }
-}
-
-
 /// This file contains tasks to run in the animation queue, which form a `LayoutTransition`.
 extension PlayerWindowController {
 
@@ -174,19 +146,15 @@ extension PlayerWindowController {
     }
 
     if needToHideTopBar || outputLayout.trafficLightButtons == .hidden {
-      if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
+      if let customTitleBar {
         // legacy windowed mode
-        fakeLeadingTitleBarView.alphaValue = 0
+        customTitleBar.view.alphaValue = 0
       } else {
         // native windowed or full screen
         for button in trafficLightButtons {
           button.alphaValue = 0
         }
       }
-    }
-
-    if needToHideTopBar, let fakeTrailingTitleBarView = fakeTrailingTitleBarView {
-      fakeTrailingTitleBarView.alphaValue = 0
     }
 
     if needToHideTopBar || outputLayout.titlebarAccessoryViewControllers == .hidden {
@@ -328,14 +296,9 @@ extension PlayerWindowController {
       /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
       hideBuiltInTitleBarViews()
 
-      if let stackView = fakeLeadingTitleBarView {
-        stackView.removeConstraints(stackView.constraints)
-        stackView.removeFromSuperview()
-      }
-
-      if let stackView = fakeTrailingTitleBarView {
-        stackView.removeConstraints(stackView.constraints)
-        stackView.removeFromSuperview()
+      if let customTitleBar {
+        customTitleBar.view.removeConstraints(customTitleBar.view.constraints)
+        customTitleBar.view.removeFromSuperview()
       }
 
     }
@@ -604,108 +567,25 @@ extension PlayerWindowController {
       documentIconButton?.isHidden = false
       documentIconButton?.alphaValue = 1
 
-      if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
-        fakeLeadingTitleBarView.isHidden = false
-        fakeLeadingTitleBarView.alphaValue = 1
-      }
-
-      if let fakeTrailingTitleBarView = fakeTrailingTitleBarView {
-        fakeTrailingTitleBarView.isHidden = false
-        fakeTrailingTitleBarView.alphaValue = 1
-      }
-
       // TODO: figure out whether to finish replicating title bar, or just give up and leave it out
-      if outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow && fakeLeadingTitleBarView == nil {
-        // Add fake traffic light buttons:
-        let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-        let trafficLightButtons: [NSButton] = btnTypes.compactMap{ NSWindow.standardWindowButton($0, for: .titled) }
-
-        let leadingBarImage = NSImage(imageLiteralResourceName: "sidebar.leading")
-        let leadingSidebarToggleButton = NSButton(image: leadingBarImage, target: window, action: #selector(self.toggleLeadingSidebarVisibility(_:)))
-        leadingSidebarToggleButton.setButtonType(.momentaryPushIn)
-        leadingSidebarToggleButton.bezelStyle = .smallSquare
-        leadingSidebarToggleButton.isBordered = false
-        leadingSidebarToggleButton.imagePosition = .imageOnly
-        leadingSidebarToggleButton.refusesFirstResponder = true
-        leadingSidebarToggleButton.imageScaling = .scaleNone
-        leadingSidebarToggleButton.font = NSFont.systemFont(ofSize: 17)
-        leadingSidebarToggleButton.widthAnchor.constraint(equalTo: leadingSidebarToggleButton.heightAnchor, multiplier: 1).isActive = true
-
-        let leadingStackView = FauxTitleBarView(views: trafficLightButtons + [leadingSidebarToggleButton])
-        leadingStackView.wantsLayer = true
-        leadingStackView.layer?.backgroundColor = .clear
-        leadingStackView.orientation = .horizontal
-        leadingStackView.detachesHiddenViews = false
-        leadingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
-        leadingStackView.alignment = .centerY
-        leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
-        for btn in trafficLightButtons {
-          btn.alphaValue = 1
-          btn.isHidden = false
+      if outputLayout.spec.isLegacyStyle && LayoutSpec.useFakeTitleForLegacyWindow {
+        if customTitleBar == nil {
+          customTitleBar = CustomTitleBarViewController()
+          customTitleBar?.windowController = self
         }
-        fakeLeadingTitleBarView = leadingStackView
 
-        if leadingStackView.trackingAreas.count <= 1 && trafficLightButtons.count == 3 {
-          for btn in trafficLightButtons {
-            /// This solution works better than using `window` as owner, because with that the green button would get stuck with highlight
-            /// when menu was shown.
-            /// FIXME: unfortunately this solution grays out the context menu items for the green button
-            /// FIXME: traffic light buttons are initially drawn as inactive until hovered over (usually - seems to be a race condition)
-            btn.addTrackingArea(NSTrackingArea(rect: btn.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: leadingStackView, userInfo: ["obj": 2]))
+        if let customTitleBar {
+          customTitleBar.view.isHidden = false
+          customTitleBar.view.alphaValue = 1
+
+          if transition.outputLayout.topBarPlacement == .outsideViewport {
+            customTitleBar.addViewToSuperview(titleBarView)
+          } else {
+            if let contentView = window.contentView {
+              customTitleBar.addViewToSuperview(contentView)
+            }
           }
         }
-
-        let trailingBarImage = NSImage(imageLiteralResourceName: "sidebar.trailing")
-        let trailingSidebarToggleButton = NSButton(image: trailingBarImage, target: self, action: #selector(self.toggleTrailingSidebarVisibility(_:)))
-        trailingSidebarToggleButton.setButtonType(.momentaryPushIn)
-        trailingSidebarToggleButton.bezelStyle = .smallSquare
-        trailingSidebarToggleButton.isBordered = false
-        trailingSidebarToggleButton.imagePosition = .imageOnly
-        trailingSidebarToggleButton.refusesFirstResponder = true
-        trailingSidebarToggleButton.imageScaling = .scaleNone
-        trailingSidebarToggleButton.font = NSFont.systemFont(ofSize: 17)
-        trailingSidebarToggleButton.widthAnchor.constraint(equalTo: trailingSidebarToggleButton.heightAnchor, multiplier: 1).isActive = true
-
-        let trailingStackView = NSStackView(views: [trailingSidebarToggleButton])
-        trailingStackView.wantsLayer = true
-        trailingStackView.layer?.backgroundColor = .clear
-        trailingStackView.orientation = .horizontal
-        trailingStackView.detachesHiddenViews = false
-        trailingStackView.alignment = .centerY
-        trailingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
-        trailingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
-
-        fakeTrailingTitleBarView = trailingStackView
-      }
-
-      if let leadingStackView = fakeLeadingTitleBarView {
-        if transition.outputLayout.topBarPlacement == .outsideViewport {
-          titleBarView.addSubview(leadingStackView)
-        } else {
-          window.contentView?.addSubview(leadingStackView)
-        }
-
-        if leadingStackView.constraints.isEmpty {
-          leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
-          leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
-          leadingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
-        }
-        leadingStackView.layout()
-      }
-
-      if let trailingStackView = fakeTrailingTitleBarView {
-        if transition.outputLayout.topBarPlacement == .outsideViewport {
-          titleBarView.addSubview(trailingStackView)
-        } else {
-          window.contentView?.addSubview(trailingStackView)
-        }
-
-        if trailingStackView.constraints.isEmpty {
-          trailingStackView.topAnchor.constraint(equalTo: trailingStackView.superview!.topAnchor).isActive = true
-          trailingStackView.trailingAnchor.constraint(equalTo: trailingStackView.superview!.trailingAnchor).isActive = true
-          trailingStackView.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
-        }
-        trailingStackView.layout()
       }
 
       /// Title bar accessories get removed by legacy fullscreen or if window `styleMask` did not include `.titled`.
@@ -1170,23 +1050,10 @@ extension PlayerWindowController {
     window.styleMask.insert(.titled)
     window.styleMask.remove(.borderless)
 
-    // Remove fake traffic light buttons (if any)
-    if let fakeLeadingTitleBarView = fakeLeadingTitleBarView {
-      for subview in fakeLeadingTitleBarView.subviews {
-        subview.removeFromSuperview()
-      }
-      fakeLeadingTitleBarView.removeFromSuperview()
-      self.fakeLeadingTitleBarView = nil
+    if let customTitleBar {
+      customTitleBar.removeAndCleanUp()
+      self.customTitleBar = nil
     }
-
-    if let fakeTrailingTitleBarView = fakeTrailingTitleBarView {
-      for subview in fakeTrailingTitleBarView.subviews {
-        subview.removeFromSuperview()
-      }
-      fakeTrailingTitleBarView.removeFromSuperview()
-      self.fakeTrailingTitleBarView = nil
-    }
-
   }
 
   private func hideBuiltInTitleBarViews() {
