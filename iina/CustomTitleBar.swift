@@ -8,6 +8,8 @@
 
 import Foundation
 
+fileprivate let iconSpacingH: CGFloat = 6  // matches spacing as of MacOS Sonoma (14.0)
+
 /// For legacy windowed mode. Manual reconstruction of title bar is needed when not using `titled` window style.
 class CustomTitleBarViewController: NSViewController {
   var windowController: PlayerWindowController!
@@ -17,7 +19,10 @@ class CustomTitleBarViewController: NSViewController {
   var trafficLightButtons: [NSButton]!
   var leadingSidebarToggleButton: NSButton!
 
-  //  var fakeCenterTitleBarView: NSStackView? = nil
+  // Center
+  var centerTitleBarView: NSStackView!
+  var documentIconButton: NSButton!
+  var titleText: NSTextView!
 
   // Trailing side
   var trailingTitleBarView: NSStackView!
@@ -42,28 +47,59 @@ class CustomTitleBarViewController: NSViewController {
     leadingStackView.layer?.backgroundColor = .clear
     leadingStackView.orientation = .horizontal
     leadingStackView.detachesHiddenViews = true
-    leadingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
+    leadingStackView.spacing = iconSpacingH
     leadingStackView.alignment = .centerY
-    leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
+    leadingStackView.edgeInsets = NSEdgeInsets(top: 0, left: iconSpacingH, bottom: iconSpacingH, right: iconSpacingH)
     for btn in trafficLightButtons {
       btn.alphaValue = 1
       btn.isHidden = false
     }
     view.addSubview(leadingStackView)
-    leadingStackView.leadingAnchor.constraint(equalTo: leadingStackView.superview!.leadingAnchor).isActive = true
-    leadingStackView.topAnchor.constraint(equalTo: leadingStackView.superview!.topAnchor).isActive = true
-    leadingStackView.bottomAnchor.constraint(equalTo: leadingStackView.superview!.bottomAnchor).isActive = true
+    leadingStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
+    leadingStackView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
+    leadingStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
     leadingTitleBarView = leadingStackView
 
     if leadingStackView.trackingAreas.count <= 1 && trafficLightButtons.count == 3 {
       for btn in trafficLightButtons {
         /// This solution works better than using `window` as owner, because with that the green button would get stuck with highlight
         /// when menu was shown.
-        /// FIXME: zoom button context menu items are grayed out
+        // FIXME: zoom button context menu items are grayed out
         btn.addTrackingArea(NSTrackingArea(rect: btn.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: leadingStackView, userInfo: ["obj": 2]))
       }
     }
 
+    // - Center views
+
+    // TODO: see https://github.com/indragiek/INAppStoreWindow/blob/master/INAppStoreWindow/INAppStoreWindow.m
+    documentIconButton = NSWindow.standardWindowButton(.documentIconButton, for: .titled)
+    titleText = NSTextView()
+    titleText.isEditable = false
+    titleText.isSelectable = false
+    titleText.isFieldEditor = false
+    titleText.backgroundColor = .clear
+    let pStyle: NSMutableParagraphStyle = NSParagraphStyle.default.mutableCopy() as! NSMutableParagraphStyle
+    pStyle.lineBreakMode = .byTruncatingMiddle
+    titleText.defaultParagraphStyle = pStyle
+    // TODO: need to find width
+    let widthConstraint = titleText.widthAnchor.constraint(equalToConstant: 500)
+    widthConstraint.isActive = true
+    titleText.heightAnchor.constraint(equalToConstant: 16).isActive = true
+
+    centerTitleBarView = NSStackView(views: [documentIconButton, titleText])
+    centerTitleBarView.wantsLayer = true
+    centerTitleBarView.layer?.backgroundColor = .clear
+    centerTitleBarView.orientation = .horizontal
+    centerTitleBarView.detachesHiddenViews = true
+    centerTitleBarView.alignment = .centerY
+    centerTitleBarView.spacing = 0
+    titleText.centerYAnchor.constraint(equalTo: centerTitleBarView.centerYAnchor).isActive = true
+/*
+    view.addSubview(centerTitleBarView)
+    centerTitleBarView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
+    centerTitleBarView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+    centerTitleBarView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+*/
     // - Trailing views
 
     pinToTopButton = makeTitleBarButton(imgName: "ontop_off",
@@ -79,15 +115,18 @@ class CustomTitleBarViewController: NSViewController {
     trailingStackView.orientation = .horizontal
     trailingStackView.detachesHiddenViews = true
     trailingStackView.alignment = .centerY
-    trailingStackView.spacing = 6  // matches spacing as of MacOS Sonoma (14.0)
-    trailingStackView.edgeInsets = NSEdgeInsets(top: 0, left: 6, bottom: 0, right: 6)
+    trailingStackView.spacing = iconSpacingH
+    trailingStackView.edgeInsets = NSEdgeInsets(top: 0, left: iconSpacingH, bottom: 0, right: iconSpacingH)
 
     view.addSubview(trailingStackView)
-    trailingStackView.topAnchor.constraint(equalTo: trailingStackView.superview!.topAnchor).isActive = true
-    trailingStackView.trailingAnchor.constraint(equalTo: trailingStackView.superview!.trailingAnchor).isActive = true
-    trailingStackView.bottomAnchor.constraint(equalTo: trailingStackView.superview!.bottomAnchor).isActive = true
+    trailingStackView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
+    trailingStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
+    trailingStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
     trailingTitleBarView = trailingStackView
-
+/*
+    centerTitleBarView.leadingAnchor.constraint(greaterThanOrEqualTo: leadingTitleBarView.trailingAnchor).isActive = true
+    centerTitleBarView.trailingAnchor.constraint(lessThanOrEqualTo: trailingTitleBarView.leadingAnchor).isActive = true
+*/
     view.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
   }
 
@@ -109,6 +148,13 @@ class CustomTitleBarViewController: NSViewController {
   func addViewToSuperview(_ superview: NSView) {
     superview.addSubview(view)
     view.addConstraintsToFillSuperview(top: 0, leading: 0, trailing: 0)
+//    refreshTitle(drawsAsMainWindow: true)
+  }
+
+  func refreshTitle(drawsAsMainWindow: Bool) {
+    titleText.textColor = drawsAsMainWindow ? NSColor.textColor : NSColor.textBackgroundColor
+    titleText.font = NSFont.titleBarFont(ofSize: NSFont.systemFontSize(for: .regular))
+    titleText.string = windowController.player.info.currentURL?.lastPathComponent ?? ""
   }
 
   func removeAndCleanUp() {

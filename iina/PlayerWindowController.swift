@@ -800,12 +800,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
 
-    // set background color to black
-    window.backgroundColor = .black
-//    window.backgroundColor = .clear
+    window.backgroundColor = .clear
 
-    /// Set `viewportView`'s background to black so that when `allowEmptySpaceAroundVideo`
-    /// pref is enabled, sidebars do not bleed through during their open/close animations.
+    /// Set this to `false` to get rid of the gray pixel border around the window
+//    window.isOpaque = false
+
+    /// Set `viewportView`'s background to black so that the windows behind this one don't bleed through
+    /// when `allowEmptySpaceAroundVideo` is enabled.
     viewportView.wantsLayer = true
     viewportView.layer?.backgroundColor = .black
 
