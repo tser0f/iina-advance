@@ -593,14 +593,6 @@ struct PlayerSaveState {
     /// `MPVOption.PlaybackControl.start` will skip any files in the playlist which have durations shorter than its start time).
     let mpv: MPVController = player.mpv
 
-    // This is actaully a decimal number but mpv expects a string
-    /// Note: mpv will not honor this if `--no-resume-playback` is specified.
-    /// There is logic in `player.fileLoaded()` to work around this.
-    if let startTime = string(for: .playPosition), Preference.bool(for: .resumeLastPosition) {
-      log.verbose("Restoring playback time: \(startTime.quoted)")
-      mpv.setString(MPVOption.PlaybackControl.start, startTime)
-    }
-
     if let wasPaused = bool(for: .paused) {
       mpv.setFlag(MPVOption.PlaybackControl.pause, wasPaused)
     }

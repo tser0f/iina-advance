@@ -1458,10 +1458,11 @@ class PlayerCore: NSObject {
     isStopped = false
     info.haveDownloadedSub = false
 
-    /// If `--no-resume-playback` is given to `mpv` (i.e., the `watch-later` feature is disabled, mpv will ignore
-    /// the `--start` param. For this case, fall back to an explicit seek.
-    if let priorState = info.priorState, !mpv.getFlag("resume-playback"),
-       let priorPlayPosition = priorState.double(for: .playPosition) {
+    /// The `--start` param, if set before mpv init, will be reused for every file in the playlist,
+    /// but if set after mpv init, it is ignored. Also, we want to override mpv's `watch-later` (if it is enabled),
+    /// because it is not reliable for certain cases (e.g. when restoring 2 windows which are both playing the
+    /// same file). So, resort to using an explicit seek after file loaded.
+    if let priorPlayPosition = info.priorState?.double(for: .playPosition) {
       log.verbose("Restoring playback time via seek: \(priorPlayPosition)")
       seek(absoluteSecond: priorPlayPosition)
     }
