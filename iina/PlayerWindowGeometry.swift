@@ -8,16 +8,67 @@
 
 import Foundation
 
+/**
+ `ScreenFitOption`
+  Describes how a given player window must fit inside its given screen.
+ */
 enum ScreenFitOption: Int {
+
   case noConstraints = 0
-  /// Constrains in `screen.visibleFrame`
+
+  /// Constrains inside `screen.visibleFrame`
   case insideVisibleFrame
-  /// Constrains and centers in `screen.visibleFrame`
+
+  /// Constrains and centers inside `screen.visibleFrame`
   case centerInsideVisibleFrame
-  /// Constrains in `screen.frame`
+
+  /// Constrains inside `screen.frame`
   case legacyFullScreen
-  /// Constrains in `screen.frameWithoutCameraHousing`. Provided here for completeness, but not used at present.
+
+  /// Constrains inside `screen.frameWithoutCameraHousing`. Provided here for completeness, but not used at present.
   case nativeFullScreen
+}
+
+/**
+ `InteractiveModeGeometry`
+ */
+struct InteractiveModeGeometry: Equatable {
+  let windowFrame: NSRect
+  let screenID: String
+  let fitOption: ScreenFitOption
+  let videoAspectRatio: CGFloat
+  
+  init(windowFrame: NSRect, screenID: String, fitOption: ScreenFitOption, videoAspectRatio: CGFloat) {
+    self.windowFrame = windowFrame
+    self.screenID = screenID
+    self.fitOption = fitOption
+    self.videoAspectRatio = videoAspectRatio
+  }
+
+  var videoSize: NSSize {
+    // TODO!
+    return NSSize(width: 100, height: 100)
+  }
+
+  func toPlayerWindowGeometry() -> PlayerWindowGeometry {
+    let interactiveModeBottomBarHeight: CGFloat = 60
+
+    // TODO!
+    return PlayerWindowGeometry(windowFrame: windowFrame,
+                                screenID: screenID,
+                                fitOption: .insideVisibleFrame,
+                                topMarginHeight: 0,
+                                outsideTopBarHeight: 0,
+                                outsideTrailingBarWidth: 0,
+                                outsideBottomBarHeight: interactiveModeBottomBarHeight,
+                                outsideLeadingBarWidth: 0,
+                                insideTopBarHeight: 0,
+                                insideTrailingBarWidth: 0,
+                                insideBottomBarHeight: 0,
+                                insideLeadingBarWidth: 0,
+                                videoAspectRatio: videoAspectRatio)
+  }
+
 }
 
 /**
@@ -141,6 +192,14 @@ struct PlayerWindowGeometry: Equatable {
     self.videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize)
   }
 
+  static func fullScreenWindowFrame(in screen: NSScreen, legacy: Bool) -> NSRect {
+    if legacy {
+      return screen.frame
+    } else {
+      return screen.frameWithoutCameraHousing
+    }
+  }
+
   /// See also `LayoutState.buildFullScreenGeometry()`.
   static func forFullScreen(in screen: NSScreen, legacy: Bool,
                             outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, 
@@ -149,20 +208,15 @@ struct PlayerWindowGeometry: Equatable {
                             insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
                             videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
 
-    let windowFrame: NSRect
+    let windowFrame = fullScreenWindowFrame(in: screen, legacy: legacy)
     let fitOption: ScreenFitOption
-    if legacy {
-      windowFrame = screen.frame
-      fitOption = .legacyFullScreen
-    } else {
-      windowFrame = screen.frameWithoutCameraHousing
-      fitOption = .nativeFullScreen
-    }
     let topMarginHeight: CGFloat
     if legacy {
       topMarginHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
+      fitOption = .legacyFullScreen
     } else {
       topMarginHeight = 0
+      fitOption = .nativeFullScreen
     }
 
     return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption, 
@@ -329,6 +383,14 @@ struct PlayerWindowGeometry: Equatable {
     let outsideBarsTotalSize = self.outsideBarsTotalSize
     return NSSize(width: min(desiredViewportSize.width, maxSize.width - outsideBarsTotalSize.width),
                   height: min(desiredViewportSize.height, maxSize.height - outsideBarsTotalSize.height))
+  }
+
+  // Convert windowed mode geometry to Interactive Mode geometry
+  func toInteractiveMode() -> InteractiveModeGeometry {
+    // TODO
+    let newWindowFrame = windowFrame
+
+    return InteractiveModeGeometry(windowFrame: newWindowFrame, screenID: screenID, fitOption: fitOption, videoAspectRatio: videoAspectRatio)
   }
 
   func refit(_ newFit: ScreenFitOption? = nil) -> PlayerWindowGeometry {
@@ -759,12 +821,14 @@ extension PlayerWindowController {
       windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
       player.info.setIntendedViewportSize(from: windowedModeGeometry)
       player.saveState()
+    case .windowedInteractive:
+      break
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame, 
                                                   screenID: bestScreen.screenID,
                                                   videoAspectRatio: videoAspectRatio)
       player.saveState()
-    case .fullScreen:
+    case .fullScreen, .fullScreenInteractive:
       break
     }
   }
@@ -842,7 +906,7 @@ extension PlayerWindowController {
         // Make sure this is up-to-date
         videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
         if !isWindowHidden {
-          player.window.setFrameImmediately(newGeometry.windowFrame, animate: animate)
+          player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
         }
       }
       updateWindowParametersForMPV(withSize: newGeometry.videoSize)
@@ -899,7 +963,7 @@ extension PlayerWindowController {
 
   /// Called from `windowWillResize()` if in `windowed` mode.
   func resizeWindowedModeGeometry(to requestedSize: NSSize) -> PlayerWindowGeometry {
-    assert(currentLayout.mode == .windowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
+    assert(currentLayout.isWindowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
     guard let window = window else { return windowedModeGeometry }
     let currentGeo = windowedModeGeometry
 
@@ -945,7 +1009,7 @@ extension PlayerWindowController {
       // No need to resize window to match video aspect ratio.
       let intendedGeo = currentGeo.scaleWindow(to: requestedSize, fitOption: .noConstraints)
 
-      if !isFullScreen && window.inLiveResize {
+      if currentLayout.mode == .windowed && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
         player.info.setIntendedViewportSize(from: intendedGeo)
       }
@@ -987,7 +1051,7 @@ extension PlayerWindowController {
         chosenGeometry = resizeFromWidthGeo
       }
  
-      if !isFullScreen {
+      if currentLayout.mode == .windowed {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise.
         player.info.setIntendedViewportSize(from: chosenGeometry)
       }

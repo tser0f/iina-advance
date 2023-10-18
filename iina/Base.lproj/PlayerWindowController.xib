@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22154" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21507" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22154"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21507"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -17,12 +17,10 @@
                 <outlet property="additionalInfoView" destination="Qbi-jx-9pO" id="bdV-ZH-SkC"/>
                 <outlet property="backButtonBox" destination="6vJ-s6-gdD" id="CK1-B8-Kga"/>
                 <outlet property="backButtonVE" destination="NWr-qI-ocU" id="qqc-Fd-kAb"/>
-                <outlet property="bottomBarBottomConstraint" destination="vP1-IE-sbB" id="G77-vL-Wf8"/>
                 <outlet property="bottomBarLeadingSpaceConstraint" destination="Wkx-hm-sJ4" id="EyE-ox-wzo"/>
                 <outlet property="bottomBarTopBorder" destination="EJf-SX-YpP" id="uSo-fv-Kdy"/>
                 <outlet property="bottomBarTrailingSpaceConstraint" destination="3qV-vK-qlg" id="Gpt-6V-BMV"/>
                 <outlet property="bottomBarView" destination="DFb-1L-U9o" id="U9w-bH-8zM"/>
-                <outlet property="bottomView" destination="Tdb-EA-alw" id="5Xv-Ja-j4G"/>
                 <outlet property="bufferDetailLabel" destination="hlZ-5D-Wag" id="3Ld-2C-wGO"/>
                 <outlet property="bufferIndicatorView" destination="oX4-0N-but" id="fXY-gn-jfQ"/>
                 <outlet property="bufferProgressLabel" destination="2gH-wF-EpI" id="23t-nJ-ksf"/>
@@ -109,7 +107,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" texturedBackground="YES" fullSizeContentView="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2056" height="1285"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1025"/>
             <value key="minSize" type="size" width="285" height="120"/>
             <view key="contentView" identifier="PlayerWindow-ContentView" autoresizesSubviews="NO" wantsLayer="YES" id="se5-gp-TjO" userLabel="Window-Content View">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
@@ -121,7 +119,7 @@
                     <visualEffectView identifier="Additional-Info-View" hidden="YES" wantsLayer="YES" horizontalCompressionResistancePriority="250" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Qbi-jx-9pO" userLabel="Additional-Info View">
                         <rect key="frame" x="477" y="297" width="155" height="67"/>
                         <subviews>
-                            <textField identifier="Additional-Info-Title" focusRingType="none" horizontalHuggingPriority="200" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="3uh-OF-zy6">
+                            <textField identifier="Additional-Info-Title" horizontalHuggingPriority="200" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="3uh-OF-zy6">
                                 <rect key="frame" x="14" y="38" width="127" height="21"/>
                                 <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Title" id="DVg-p3-w5Q">
                                     <font key="font" metaFont="system" size="18"/>
@@ -135,7 +133,7 @@
                                     <customView identifier="Additional-Info-Label-Container" translatesAutoresizingMaskIntoConstraints="NO" id="P1S-9b-Nzw" userLabel="Additional-Info-Label-Container View">
                                         <rect key="frame" x="0.0" y="0.0" width="56" height="30"/>
                                         <subviews>
-                                            <textField identifier="Additional-Info-Label" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4mb-jy-Y1w">
+                                            <textField identifier="Additional-Info-Label" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4mb-jy-Y1w">
                                                 <rect key="frame" x="4" y="6" width="54" height="21"/>
                                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="99:99" id="IyU-0H-hyV">
                                                     <font key="font" metaFont="system" size="18"/>
@@ -160,7 +158,7 @@
                                     <customView identifier="Additional-Info-Battery-View" translatesAutoresizingMaskIntoConstraints="NO" id="Ybl-06-ksj" userLabel="Additional-Info-Battery View">
                                         <rect key="frame" x="73" y="0.0" width="50" height="30"/>
                                         <subviews>
-                                            <textField identifier="Additional-Info-Battery-Text" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1XY-X2-FcE">
+                                            <textField identifier="Additional-Info-Battery-Text" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1XY-X2-FcE">
                                                 <rect key="frame" x="-2" y="8" width="46" height="16"/>
                                                 <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="100%" id="va1-P5-3b0">
                                                     <font key="font" metaFont="systemBold"/>
@@ -217,7 +215,7 @@
                                     <constraint firstAttribute="width" constant="32" id="7BK-Wc-K9S"/>
                                 </constraints>
                             </progressIndicator>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="2gH-wF-EpI">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="2gH-wF-EpI">
                                 <rect key="frame" x="24" y="20" width="113" height="16"/>
                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="Buffering... 100%" id="3fe-fP-yMB">
                                     <font key="font" metaFont="system"/>
@@ -225,7 +223,7 @@
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hlZ-5D-Wag" userLabel="Buffer-Detail Label">
+                            <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hlZ-5D-Wag" userLabel="Buffer-Detail Label">
                                 <rect key="frame" x="64" y="8" width="32" height="11"/>
                                 <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="Label" id="WOE-SX-krh">
                                     <font key="font" metaFont="menu" size="9"/>
@@ -253,7 +251,7 @@
                             <stackView identifier="OSC-Floating-TopHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Unr-Y6-JoM" userLabel="OSC-Floating-UpperHalf View">
                                 <rect key="frame" x="10" y="26" width="420" height="37"/>
                                 <middleViews>
-                                    <textField identifier="Left-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Speed Label">
+                                    <textField identifier="Left-Speed-Label" hidden="YES" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Speed Label">
                                         <rect key="frame" x="-2" y="12" width="26" height="13"/>
                                         <constraints>
                                             <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="OjQ-BT-Oar"/>
@@ -267,7 +265,7 @@
                                     <stackView identifier="OSC-Fragment-Control-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" horizontalClippingResistancePriority="500" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hDm-KI-3o4" userLabel="OSC-Floating-PlayButtons-Container Stack View">
                                         <rect key="frame" x="0.0" y="0.0" width="420" height="37"/>
                                     </stackView>
-                                    <textField identifier="Right-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Speed Label">
+                                    <textField identifier="Right-Speed-Label" hidden="YES" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Speed Label">
                                         <rect key="frame" x="400" y="12" width="26" height="13"/>
                                         <constraints>
                                             <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="GMD-Cv-N6X"/>
@@ -451,7 +449,7 @@
                             <stackView identifier="OSD-Vertical-Stack-View" orientation="vertical" alignment="leading" spacing="2" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="g0j-zS-jKv" userLabel="OSD Vertical Stack View">
                                 <rect key="frame" x="16" y="8" width="161" height="54"/>
                                 <beginningViews>
-                                    <textField identifier="OSD-Label" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="499" fixedFrame="YES" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ofw-1d-N4T" userLabel="OSD">
+                                    <textField identifier="OSD-Label" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="499" fixedFrame="YES" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ofw-1d-N4T" userLabel="OSD">
                                         <rect key="frame" x="-2" y="30" width="165" height="24"/>
                                         <textFieldCell key="cell" lineBreakMode="truncatingMiddle" sendsActionOnEndEditing="YES" alignment="left" title="On Screen Display" usesSingleLineMode="YES" id="JAn-Yu-XA2">
                                             <font key="font" metaFont="system" size="20"/>
@@ -459,7 +457,7 @@
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                         </textFieldCell>
                                     </textField>
-                                    <textField identifier="OSD-Accessory-Text" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="499" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lb1-5R-hR3">
+                                    <textField identifier="OSD-Accessory-Text" wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="499" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lb1-5R-hR3">
                                         <rect key="frame" x="-2" y="14" width="33" height="14"/>
                                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Label" id="7aL-lH-m8i">
                                             <font key="font" metaFont="message" size="11"/>
@@ -498,7 +496,7 @@
                                 <rect key="frame" x="277" y="166" width="87" height="68"/>
                                 <imageCell key="cell" refusesFirstResponder="YES" alignment="left" animates="YES" imageScaling="proportionallyDown" image="playing-in-pip" id="0QW-Vy-zmW"/>
                             </imageView>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="pxV-jX-kfL">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="pxV-jX-kfL">
                                 <rect key="frame" x="196" y="142" width="248" height="16"/>
                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="This video is playing in picture in picture" id="gdE-b5-kod">
                                     <font key="font" metaFont="system"/>
@@ -522,25 +520,25 @@
                                 <subviews>
                                     <button toolTip="Close Mini Player" translatesAutoresizingMaskIntoConstraints="NO" id="4bB-aE-jrk" userLabel="CloseBtnVE Button">
                                         <rect key="frame" x="4" y="16" width="11" height="17"/>
-                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="jWV-ER-ajr">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                            <font key="font" metaFont="system"/>
-                                        </buttonCell>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="11" id="WCL-Uq-dJ3"/>
                                             <constraint firstAttribute="width" secondItem="4bB-aE-jrk" secondAttribute="height" multiplier="1:1" id="swe-mb-sR2"/>
                                         </constraints>
-                                    </button>
-                                    <button toolTip="Back to video mode" translatesAutoresizingMaskIntoConstraints="NO" id="NWr-qI-ocU" userLabel="BackBtnVE Button">
-                                        <rect key="frame" x="4" y="4" width="11" height="11"/>
-                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="back" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="vv6-gY-HJk">
+                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="jWV-ER-ajr">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
+                                    </button>
+                                    <button toolTip="Back to video mode" translatesAutoresizingMaskIntoConstraints="NO" id="NWr-qI-ocU" userLabel="BackBtnVE Button">
+                                        <rect key="frame" x="4" y="4" width="11" height="11"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="11" id="J3k-cT-r8o"/>
                                             <constraint firstAttribute="width" secondItem="NWr-qI-ocU" secondAttribute="height" multiplier="1:1" id="vNA-lA-y6R"/>
                                         </constraints>
+                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="back" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="vv6-gY-HJk">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                        </buttonCell>
                                         <connections>
                                             <action selector="backBtnAction:" target="-2" id="dqf-l0-h8s"/>
                                         </connections>
@@ -564,28 +562,28 @@
                                     <subviews>
                                         <button toolTip="Close Mini Player" translatesAutoresizingMaskIntoConstraints="NO" id="jjM-U1-8eB" userLabel="CloseBtnBox Button">
                                             <rect key="frame" x="2" y="12" width="11" height="17"/>
-                                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="cJ2-qd-Sd1">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
                                             <constraints>
                                                 <constraint firstAttribute="width" secondItem="jjM-U1-8eB" secondAttribute="height" multiplier="1:1" id="aIo-zy-x2P"/>
                                                 <constraint firstAttribute="height" constant="11" id="hzE-jO-hxj"/>
                                             </constraints>
+                                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="cJ2-qd-Sd1">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
                                             <connections>
                                                 <action selector="backBtnAction:" target="-2" id="k3G-bI-0hB"/>
                                             </connections>
                                         </button>
                                         <button toolTip="Back to video mode" translatesAutoresizingMaskIntoConstraints="NO" id="6vJ-s6-gdD" userLabel="BackBtnBox Button">
                                             <rect key="frame" x="2" y="2" width="11" height="11"/>
-                                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="back" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="MXE-RM-ach">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
                                             <constraints>
                                                 <constraint firstAttribute="width" secondItem="6vJ-s6-gdD" secondAttribute="height" multiplier="1:1" id="dmZ-75-pa7"/>
                                                 <constraint firstAttribute="height" constant="11" id="rmp-OQ-GUF"/>
                                             </constraints>
+                                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="back" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="MXE-RM-ach">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
                                             <connections>
                                                 <action selector="backBtnAction:" target="-2" id="peS-ja-J2d"/>
                                             </connections>
@@ -614,12 +612,6 @@
                             <constraint firstItem="DSj-5w-Wrw" firstAttribute="top" secondItem="88M-Ln-4mc" secondAttribute="top" constant="2" id="vKq-ur-Mlf"/>
                         </constraints>
                     </customView>
-                    <customView identifier="Interactive-Mode-Bottom-View" hidden="YES" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Tdb-EA-alw" userLabel="Interactive-Mode-Bottom View">
-                        <rect key="frame" x="0.0" y="-60" width="640" height="60"/>
-                        <constraints>
-                            <constraint firstAttribute="height" constant="60" id="sUc-WO-8kQ"/>
-                        </constraints>
-                    </customView>
                 </subviews>
                 <constraints>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="viewportTrailingOffsetFromTrailingSidebarLeadingConstraint" id="0m3-Bq-3N0"/>
@@ -636,7 +628,6 @@
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="10" identifier="oscFloatingLeading_GE_leadingSidebarTrailing_Constraint" id="HfB-0k-fyF"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Qbi-jx-9pO" secondAttribute="trailing" constant="8" id="Ja8-8A-W6L"/>
                     <constraint firstItem="XBs-34-TIm" firstAttribute="trailing" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="-8" identifier="leadingSidebarToOSDSpaceConstraint" id="LBY-By-mfi"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Tdb-EA-alw" secondAttribute="trailing" id="Mqd-Wb-vqq"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="trailing" constant="-360" identifier="viewportTrailingOffsetFromTrailingSidebarTrailingConstraint" id="PAj-s6-32e"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="leading" constant="360" identifier="viewportLeadingOffsetFromLeadingSidebarLeadingConstraint" id="PMP-ks-GY2"/>
                     <constraint firstItem="Nrz-jZ-Luf" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" id="RFd-ZJ-29u"/>
@@ -663,10 +654,8 @@
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="XBs-34-TIm" secondAttribute="top" id="tWp-dA-I4y"/>
                     <constraint firstItem="TRx-2V-Gr3" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="topBarTrailingSpaceConstraint" id="te1-wi-BbH"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="se5-gp-TjO" secondAttribute="trailing" identifier="viewportlViewTrailing-ContentViewTrailing-Constraint" id="v5S-lZ-agU"/>
-                    <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="Tdb-EA-alw" secondAttribute="bottom" constant="-60" identifier="interactiveModeBottomToViewportViewBottomConstraint" id="vP1-IE-sbB"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" identifier="viewportlViewLeading-ContentViewLeading-Constraint" id="vZs-ut-z4j"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="viewportLeadingToLeadingSidebarCropTrailingConstraint" id="wAv-zI-fJc"/>
-                    <constraint firstItem="Tdb-EA-alw" firstAttribute="leading" secondItem="3nL-Ky-Hfa" secondAttribute="leading" identifier="vidContainerBtmToTrailingSidebarBtmConstraint" id="wYH-h6-46f"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="epo-S6-QVB" secondAttribute="bottom" identifier="vidContainerBtmToTrailingSidebarBtmConstraint" id="zBx-AY-VlK"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" secondItem="Qbi-jx-9pO" secondAttribute="trailing" constant="8" identifier="trailingSidebarToOSDSpaceConstraint" id="zbm-D9-epN"/>
                 </constraints>
@@ -682,14 +671,14 @@
             <subviews>
                 <button identifier="Volume-Mute-Button" translatesAutoresizingMaskIntoConstraints="NO" id="2py-h1-0km">
                     <rect key="frame" x="0.0" y="0.0" width="24" height="24"/>
-                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="volume" imagePosition="only" alignment="center" alternateImage="mute" refusesFirstResponder="YES" imageScaling="proportionallyDown" inset="2" id="XXj-HK-hXa">
-                        <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="2py-h1-0km" secondAttribute="height" multiplier="1:1" id="8xW-mi-Khh"/>
                         <constraint firstAttribute="width" priority="900" constant="24" identifier="VolumeIconSizeConstraint" id="vBo-ma-Dnu"/>
                     </constraints>
+                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="volume" imagePosition="only" alignment="center" alternateImage="mute" refusesFirstResponder="YES" imageScaling="proportionallyDown" inset="2" id="XXj-HK-hXa">
+                        <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
                     <connections>
                         <action selector="muteButtonAction:" target="-2" id="wUf-9f-uHT"/>
                     </connections>
@@ -725,7 +714,7 @@
                         <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>
                     </connections>
                 </slider>
-                <textField identifier="Playback-Position-LeftLabel" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NBD-MV-OuG" userLabel="Left Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
+                <textField identifier="Playback-Position-LeftLabel" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NBD-MV-OuG" userLabel="Left Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
                     <rect key="frame" x="-2" y="16" width="50" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="11" id="BzO-eZ-2m8"/>
@@ -740,7 +729,7 @@
                         <binding destination="-2" name="font" keyPath="monospacedFont" id="uHM-ya-PZy"/>
                     </connections>
                 </textField>
-                <textField identifier="Playback-Position-RightLabel" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GgV-Cc-sk0" userLabel="Right Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
+                <textField identifier="Playback-Position-RightLabel" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GgV-Cc-sk0" userLabel="Right Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
                     <rect key="frame" x="452" y="16" width="50" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="11" id="elM-ER-FAc"/>
@@ -755,7 +744,7 @@
                         <binding destination="-2" name="font" keyPath="monospacedFont" id="6lX-sn-136"/>
                     </connections>
                 </textField>
-                <textField identifier="Playback-Seek-Time-Label" hidden="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
+                <textField identifier="Playback-Seek-Time-Label" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
                     <rect key="frame" x="229" y="31" width="39" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" priority="900" constant="11" id="Eis-nn-SIU"/>
@@ -791,13 +780,13 @@
                 </customView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="10x-bg-xlj" userLabel="Left Arrow Button">
                     <rect key="frame" x="12" y="0.0" width="24" height="24"/>
+                    <constraints>
+                        <constraint firstAttribute="width" secondItem="10x-bg-xlj" secondAttribute="height" multiplier="1:1" id="h3a-98-udy"/>
+                    </constraints>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="speedl" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="ijT-3Y-AK2">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
-                    <constraints>
-                        <constraint firstAttribute="width" secondItem="10x-bg-xlj" secondAttribute="height" multiplier="1:1" id="h3a-98-udy"/>
-                    </constraints>
                     <connections>
                         <action selector="leftArrowButtonAction:" target="-2" id="WRV-J4-Hq8"/>
                     </connections>
@@ -810,14 +799,14 @@
                 </customView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="gxw-pJ-Lcg" userLabel="Play/Pause Button">
                     <rect key="frame" x="60" y="0.0" width="24" height="24"/>
-                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="play" imagePosition="only" alignment="center" alternateImage="pause" refusesFirstResponder="YES" state="on" imageScaling="proportionallyUpOrDown" inset="2" id="mWQ-R0-GGr">
-                        <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
-                        <font key="font" metaFont="system"/>
-                    </buttonCell>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="gxw-pJ-Lcg" secondAttribute="height" multiplier="1:1" id="7Xg-CL-HXe"/>
                         <constraint firstAttribute="width" priority="850" constant="24" identifier="playbackButtonsSquareWidthConstraint" id="7xv-qQ-n43"/>
                     </constraints>
+                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="play" imagePosition="only" alignment="center" alternateImage="pause" refusesFirstResponder="YES" state="on" imageScaling="proportionallyUpOrDown" inset="2" id="mWQ-R0-GGr">
+                        <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
                     <connections>
                         <action selector="playButtonAction:" target="-2" id="JbM-wO-FAa"/>
                     </connections>
@@ -827,13 +816,13 @@
                 </customView>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="EIi-qd-glM" userLabel="Right Arrow Button">
                     <rect key="frame" x="108" y="0.0" width="24" height="24"/>
+                    <constraints>
+                        <constraint firstAttribute="width" secondItem="EIi-qd-glM" secondAttribute="height" multiplier="1:1" id="3Wl-xU-eqe"/>
+                    </constraints>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="speed" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="Aiu-eh-hd9">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
-                    <constraints>
-                        <constraint firstAttribute="width" secondItem="EIi-qd-glM" secondAttribute="height" multiplier="1:1" id="3Wl-xU-eqe"/>
-                    </constraints>
                     <connections>
                         <action selector="rightArrowButtonAction:" target="-2" id="mQT-3l-E7s"/>
                     </connections>
@@ -900,14 +889,14 @@
                         </customView>
                         <button identifier="LeadingSidebarToggleButton" translatesAutoresizingMaskIntoConstraints="NO" id="zkB-jk-l3c" userLabel="ToggleLeadingSidebar Square Button">
                             <rect key="frame" x="0.0" y="11" width="28" height="28"/>
+                            <constraints>
+                                <constraint firstAttribute="width" secondItem="zkB-jk-l3c" secondAttribute="height" multiplier="1:1" id="8CN-7h-GtN"/>
+                            </constraints>
                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" imagePosition="only" alignment="center" refusesFirstResponder="YES" state="on" inset="2" id="htR-nK-U9W">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="system" size="17"/>
                                 <imageReference key="image" image="sidebar.leading" symbolScale="large"/>
                             </buttonCell>
-                            <constraints>
-                                <constraint firstAttribute="width" secondItem="zkB-jk-l3c" secondAttribute="height" multiplier="1:1" id="8CN-7h-GtN"/>
-                            </constraints>
                             <connections>
                                 <action selector="toggleLeadingSidebarVisibility:" target="-2" id="TeX-P0-1v4"/>
                             </connections>
@@ -953,27 +942,27 @@
                         </customView>
                         <button identifier="TrailoingSidebarToggleButton" translatesAutoresizingMaskIntoConstraints="NO" id="VTu-Ac-dgn" userLabel="ToggleTrailingSidebar Square Button">
                             <rect key="frame" x="0.0" y="11" width="28" height="28"/>
+                            <constraints>
+                                <constraint firstAttribute="width" secondItem="VTu-Ac-dgn" secondAttribute="height" multiplier="1:1" id="4KR-kO-iO1"/>
+                            </constraints>
                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" imagePosition="only" alignment="center" refusesFirstResponder="YES" state="on" inset="2" id="WJX-cV-vij">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="system" size="17"/>
                                 <imageReference key="image" image="sidebar.trailing" symbolScale="large"/>
                             </buttonCell>
-                            <constraints>
-                                <constraint firstAttribute="width" secondItem="VTu-Ac-dgn" secondAttribute="height" multiplier="1:1" id="4KR-kO-iO1"/>
-                            </constraints>
                             <connections>
                                 <action selector="toggleTrailingSidebarVisibility:" target="-2" id="npz-Db-uzI"/>
                             </connections>
                         </button>
                         <button identifier="PinToTop-Square-Button" hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI" userLabel="PinToTop Square Button">
                             <rect key="frame" x="0.0" y="22" width="28" height="28"/>
+                            <constraints>
+                                <constraint firstAttribute="width" secondItem="Ztc-Kn-fxI" secondAttribute="height" multiplier="1:1" id="aKF-M3-oax"/>
+                            </constraints>
                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="ontop_off" imagePosition="only" alignment="center" alternateImage="ontop" refusesFirstResponder="YES" state="on" inset="2" id="jAf-Be-kY3">
                                 <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
-                            <constraints>
-                                <constraint firstAttribute="width" secondItem="Ztc-Kn-fxI" secondAttribute="height" multiplier="1:1" id="aKF-M3-oax"/>
-                            </constraints>
                             <connections>
                                 <action selector="toggleOnTop:" target="-2" id="4pa-eu-aT5"/>
                             </connections>

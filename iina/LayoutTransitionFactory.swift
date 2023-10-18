@@ -79,27 +79,29 @@ extension PlayerWindowController {
 
     log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")
 
-    // Position the window frame before showing it to create the smoothest effect
+    let transitionName = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
+    let initialTransition = buildLayoutTransition(named: transitionName,
+                                                  from: currentLayout, to: initialLayoutSpec, isInitialLayout: true)
+
+
+    /// Although the animations in the `LayoutTransition` below will set the window layout, they
+    /// mostly assume they are incrementally changing a previous layout, which can result in brief visual
+    /// artifacts in the process if we start with an undefined layout.
+    /// To smooth out the process, restore window position & size before laying out its internals.
     switch initialLayoutSpec.mode {
-    case .windowed:
-      player.window.setFrameImmediately(windowedModeGeometry.windowFrame)
-      videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
-    case .musicMode:
-      player.window.setFrameImmediately(musicModeGeometry.windowFrame)
-      videoView.updateSizeConstraints(musicModeGeometry.videoSize)
-    case .fullScreen:
+    case .fullScreen, .fullScreenInteractive:
       /// Don't need to set window frame here because it will be set by `LayoutTransition` to full screen (below).
       /// Similarly, when window exits full screen, the windowed mode position will be restored from `windowedModeGeometry`.
       break
+    case .windowed, .windowedInteractive, .musicMode:
+      player.window.setFrameImmediately(initialTransition.outputGeometry.windowFrame)
+      videoView.updateSizeConstraints(initialTransition.outputGeometry.videoSize)
     }
-
-    let name = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
-    let transition = buildLayoutTransition(named: name, from: currentLayout, to: initialLayoutSpec, isInitialLayout: true)
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
     CocoaAnimation.disableAnimation{
-      for task in transition.animationTasks {
+      for task in initialTransition.animationTasks {
         task.runFunc()
       }
       log.verbose("Done with transition to initial layout")
@@ -128,7 +130,8 @@ extension PlayerWindowController {
       // Not consistent. But we already have the correct spec, so just build a layout from it and transition to correct layout
       log.warn("Player's saved layout does not match IINA app prefs. Will build and apply a corrected layout")
       log.debug("SavedSpec: \(currentLayout.spec). PrefsSpec: \(prefsSpec)")
-      buildLayoutTransition(named: "FixInvalidInitialLayout", from: transition.outputLayout, to: prefsSpec, thenRun: true)
+      buildLayoutTransition(named: "FixInvalidInitialLayout",
+                            from: initialTransition.outputLayout, to: prefsSpec, thenRun: true)
     }
   }
 
@@ -354,9 +357,17 @@ extension PlayerWindowController {
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: videoAspectRatio).refit()
       return musicModeGeometryCorrected.toPlayerWindowGeometry()
-    case .fullScreen:
+    case .fullScreen, .fullScreenInteractive:
       // Full screen always uses same screen as windowed mode
       return outputLayout.buildFullScreenGeometry(inScreenID: inputGeometry.screenID, videoAspectRatio: videoAspectRatio)
+    case .windowedInteractive:
+      if let cachedInteractiveModeGeometry = interactiveModeGeometry {
+        log.verbose("Using cached interactiveModeGeometry: \(cachedInteractiveModeGeometry)")
+        return cachedInteractiveModeGeometry.toPlayerWindowGeometry()
+      }
+      let imGeo = windowedModeGeometry.toInteractiveMode()
+      log.verbose("Converted windowed mode geometry to interactiveModeGeometry: \(imGeo)")
+      return imGeo.toPlayerWindowGeometry()
     case .windowed:
       break  // see below
     }

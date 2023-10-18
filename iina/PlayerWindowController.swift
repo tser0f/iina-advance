@@ -206,7 +206,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // - Window Layout State
 
   var pipStatus = PIPStatus.notInPIP
-  var isInInteractiveMode: Bool = false
 
   lazy var currentLayout: LayoutState = {
     return LayoutState(spec: LayoutSpec.defaultLayout())
@@ -239,6 +238,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.verbose("Updated musicModeGeometry to \(musicModeGeometry)")
     }
   }
+
+  // Only used when in interactive mode. Discarded after exiting interactive mode.
+  var interactiveModeGeometry: InteractiveModeGeometry? = nil
 
   // MARK: - Enums
 
@@ -605,8 +607,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var leadingSidebarTrailingBorder: NSBox!  // shown if leading sidebar is "outside"
   @IBOutlet weak var trailingSidebarView: NSVisualEffectView!
   @IBOutlet weak var trailingSidebarLeadingBorder: NSBox!  // shown if trailing sidebar is "outside"
-  /** For interactive mode */
-  @IBOutlet weak var bottomView: NSView!
   @IBOutlet weak var bufferIndicatorView: NSVisualEffectView!
   @IBOutlet weak var bufferProgressLabel: NSTextField!
   @IBOutlet weak var bufferSpin: NSProgressIndicator!
@@ -679,6 +679,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var isFullScreen: Bool {
     return currentLayout.isFullScreen
+  }
+
+  var isInInteractiveMode: Bool {
+    return currentLayout.isInteractiveMode
   }
 
   var standardWindowButtons: [NSButton] {
@@ -1019,6 +1023,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .fullScreen:
       // TODO: legacy FS?
       break
+    case .fullScreenInteractive, .windowedInteractive:
+      break
     }
   }
 
@@ -1110,10 +1116,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updateTitleBarAndOSC() {
     animationQueue.runZeroDuration { [self] in
-      guard !isInInteractiveMode else {
-        log.verbose("Skipping layout refresh due to interactive mode")
-        return
-      }
       let oldLayout = currentLayout
       let newLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: oldLayout.spec)
       buildLayoutTransition(named: "UpdateTitleBarAndOSC", from: oldLayout, to: newLayoutSpec, thenRun: true)
@@ -1860,9 +1862,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let layout = currentLayout
 
     switch layout.mode {
-    case .windowed:
+    case .windowed, .windowedInteractive:
       enterFullScreen()
-    case .fullScreen:
+    case .fullScreen, .fullScreenInteractive:
       exitFullScreen(legacy: layout.spec.isLegacyStyle)
     case .musicMode:
       enterFullScreen()
@@ -1911,7 +1913,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     switch currentMode {
     case .musicMode:
       return miniPlayer.windowWillResize(window, to: requestedSize)
-    case .fullScreen:
+    case .fullScreen, .fullScreenInteractive:
       if currentLayout.isLegacyFullScreen {
         let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: videoAspectRatio)
         return fsGeo.windowFrame.size
@@ -1919,7 +1921,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // This method can be called as a side effect of the animation. If so, ignore.
         return requestedSize
       }
-    case .windowed:
+    case .windowed, .windowedInteractive:
       let newGeometry = resizeWindowedModeGeometry(to: requestedSize)
       CocoaAnimation.disableAnimation{
         videoView.updateSizeConstraints(newGeometry.videoSize)
@@ -1945,7 +1947,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     CocoaAnimation.disableAnimation {
       log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
 
-      if !isFullScreen {
+      if !currentLayout.isFullScreen && !currentLayout.isInteractiveMode {
         // Do this also for music mode
         let viewportSize = viewportView.frame.size
         let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize)
@@ -1953,14 +1955,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         videoView.updateSizeConstraints(videoSize)
       }
 
-      if player.isInMiniPlayer {
+      if currentLayout.isMusicMode {
         // Re-evaluate space requirements for labels. May need to start scrolling.
         // Will also update saved state
         miniPlayer.windowDidResize()
         return
       }
 
-      if isInInteractiveMode {
+      if currentLayout.isInteractiveMode {
         // interactive mode
         cropSettingsView?.cropBoxView.resized(with: videoView.frame)
       } else if currentLayout.oscPosition == .floating {
@@ -1970,7 +1972,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
     }
 
-    player.saveState()
     player.events.emit(.windowResized, data: window.frame)
   }
 
@@ -2660,12 +2661,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     guard let window = self.window else { return }
 
-    if #available(macOS 10.14, *) {
-      viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
-    } else {
-      viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
-    }
-
     // TODO: use key interceptor to support ESC and ENTER keys for interactive mode
 
     /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
@@ -2682,6 +2677,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Now animate into Interactive Mode:
     animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.CropAnimationDuration, timing: .easeIn, { [self] in
 
+      if #available(macOS 10.14, *) {
+        viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+      } else {
+        viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
+      }
+
       hideFadeableViews()
       hideOSD()
 
@@ -2690,8 +2691,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       let cropController = mode.viewController()
       cropController.windowController = self
-      bottomView.isHidden = false
-      bottomView.addSubview(cropController.view)
+      bottomBarView.addSubview(cropController.view)
       cropController.view.addConstraintsToFillSuperview()
 
       let windowFrame: NSRect
@@ -2701,7 +2701,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         windowFrame = window.frame
       }
 
-      isInInteractiveMode = true
       let titleBarHeight = PlayerWindowController.standardTitleBarHeight
       // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
       // the max region that the video view can occupy
@@ -2764,15 +2763,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
       cropController.cropBoxView.removeFromSuperview()
-      self.bottomView.subviews.removeAll()
-      self.bottomView.isHidden = true
+      bottomBarView.subviews.removeAll()
       self.showFadeableViews(duration: 0)
       viewportView.layer?.backgroundColor = .black
 
       if !isPausedPriorToInteractiveMode {
         player.resume()
       }
-      isInInteractiveMode = false
       self.cropSettingsView = nil
     })
 

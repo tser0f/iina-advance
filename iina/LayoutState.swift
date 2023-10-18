@@ -14,9 +14,8 @@ extension PlayerWindowController {
     case windowed = 1
     case fullScreen
     case musicMode
-    // TODO: figure out what to do with this
-//    case windowedInteractive
-//    case fullScreenInteractive
+    case windowedInteractive
+    case fullScreenInteractive
   }
 
   /// `LayoutSpec`: data structure containing a window's layout configuration, and is the blueprint for building a `LayoutState`.
@@ -134,12 +133,16 @@ extension PlayerWindowController {
                         oscPosition: self.oscPosition)
     }
 
+    var isInteractiveMode: Bool {
+      return mode == .windowedInteractive || mode == .fullScreenInteractive
+    }
+
     var isFullScreen: Bool {
-      return mode == .fullScreen
+      return mode == .fullScreen || mode == .fullScreenInteractive
     }
 
     var isWindowed: Bool {
-      return mode == .windowed
+      return mode == .windowed || mode == .windowedInteractive
     }
 
     var isNativeFullScreen: Bool {
@@ -283,16 +286,16 @@ extension PlayerWindowController {
 
     // Derived properties & convenience accessors
 
+    var isInteractiveMode: Bool {
+      return spec.isInteractiveMode
+    }
+
     var isFullScreen: Bool {
       return spec.isFullScreen
     }
 
     var isWindowed: Bool {
       return spec.isWindowed
-    }
-
-    var canToggleFullScreen: Bool {
-      return spec.isFullScreen || spec.mode == .windowed
     }
 
     var isNativeFullScreen: Bool {
@@ -481,6 +484,14 @@ extension PlayerWindowController {
 
     func buildFullScreenGeometry(inside screen: NSScreen, videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
       assert(isFullScreen)
+
+      if isInteractiveMode {
+        let windowFrame = PlayerWindowGeometry.fullScreenWindowFrame(in: screen, legacy: spec.isLegacyStyle)
+        let fitOption: ScreenFitOption = spec.isLegacyStyle ? .legacyFullScreen : .nativeFullScreen
+        let imGeo = InteractiveModeGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption, videoAspectRatio: videoAspectRatio)
+        return imGeo.toPlayerWindowGeometry()
+      }
+      
       let bottomBarHeight: CGFloat
       if enableOSC && oscPosition == .bottom {
         bottomBarHeight = OSCToolbarButton.oscBarHeight

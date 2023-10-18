@@ -50,7 +50,9 @@ extension PlayerWindowController {
       windowedModeGeometry = transition.outputGeometry
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspectRatio: transition.outputGeometry.videoAspectRatio)
-    case .fullScreen:
+    case .windowedInteractive:
+      interactiveModeGeometry = transition.outputGeometry
+    case .fullScreen, .fullScreenInteractive:
       // Not applicable when entering full screen
       break
     }
