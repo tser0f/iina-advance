@@ -2259,9 +2259,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     animationTasks.append(CocoaAnimation.Task(duration: duration, { [self] in
       guard fadeableViewsAnimationState == .hidden || fadeableViewsAnimationState == .shown else { return }
-//      log.verbose("Showing fadeable views")
       fadeableViewsAnimationState = .willShow
-      player.refreshSyncUITimer()
+      player.refreshSyncUITimer(log: "Showing fadeable views ")
       destroyFadeTimer()
 
       for v in fadeableViews {
@@ -2324,12 +2323,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     animationTasks.append(CocoaAnimation.Task{ [self] in
       // Don't hide overlays when in PIP or when they are not actually shown
-      log.verbose("Hiding fadeable views")
-
       destroyFadeTimer()
       fadeableViewsAnimationState = .willHide
       fadeableTopBarAnimationState = .willHide
-      player.refreshSyncUITimer()
+      player.refreshSyncUITimer(log: "Hiding fadeable views ")
 
       for v in fadeableViews {
         v.animator().alphaValue = 0
@@ -3416,7 +3413,6 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       // is chosen in this case. See https://bugs.swift.org/browse/SR-8956.
       pip.dismiss(pipVideo!)
     }
-    forceDraw()
     player.events.emit(.pipChanged, data: false)
   }
 

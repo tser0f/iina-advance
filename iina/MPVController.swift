@@ -605,7 +605,12 @@ not applying FFmpeg 9599 workaround
   /// Send arbitrary mpv command. Returns mpv return code.
   @discardableResult
   func command(_ command: MPVCommand, args: [String?] = [], checkError: Bool = true) -> Int32 {
-    Logger.log("Sending mpv cmd: \(command.rawValue.quoted), args: \(args.compactMap{$0})", level: .verbose, subsystem: player.subsystem)
+    if Logger.isEnabled(.verbose) {
+      if command == .loadfile, let filename = args[0] {
+        _ = Logger.getOrCreatePII(for: filename)
+      }
+      player.log.verbose("Sending mpv cmd: \(command.rawValue.quoted), args: \(args.compactMap{$0})")
+    }
     var cargs = makeCArgs(command, args).map { $0.flatMap { UnsafePointer<CChar>(strdup($0)) } }
     defer {
       for ptr in cargs {

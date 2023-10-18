@@ -1736,10 +1736,11 @@ class PlayerCore: NSObject {
 
   // MARK: - Sync with UI in PlayerWindow
 
+  var lastTimerSummary = ""  // for reducing log volume
   /// Call this when `syncUITimer` may need to be started, stopped, or needs its interval changed. It will figure out the correct action.
   /// Just need to make sure that any state variables (e.g., `info.isPaused`, `isInMiniPlayer`, the vars checked by `windowController.isUITimerNeeded()`,
   /// etc.) are set *before* calling this method, not after, so that it makes the correct decisions.
-  func refreshSyncUITimer() {
+  func refreshSyncUITimer(log: String = "") {
     // Check if timer should start/restart
 
     let useTimer: Bool
@@ -1796,11 +1797,14 @@ class PlayerCore: NSObject {
 
     if Logger.isEnabled(.verbose) {
       var summary = wasTimerRunning ? (useTimer ? (timerRestartNeeded ? "restarting" : "running") : "didStop") : (useTimer ? "starting" : "notNeeded")
-      if useTimer {
-        summary += ", every \(timerConfig.interval)s"
+      if summary != lastTimerSummary {
+        lastTimerSummary = summary
+        if useTimer {
+          summary += ", every \(timerConfig.interval)s"
+        }
+        Logger.log("\(log)- SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn) quit:\(isShuttingDown.yn))",
+                   level: .verbose, subsystem: subsystem)
       }
-      Logger.log("SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn) quit:\(isShuttingDown.yn))",
-                 level: .verbose, subsystem: subsystem)
     }
 
     guard useTimer && (!wasTimerRunning || timerRestartNeeded) else { return }

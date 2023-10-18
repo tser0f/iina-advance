@@ -39,6 +39,10 @@ class Logger: NSObject {
   /// which can be used to look up the PII tokens from the log; if it is false, then the values are not logged.
   static let writeUnmaskedPiiToFile = true
 
+  // Try to prevent false positives duing search & replace by not allowing matches which are too short to
+  // be meaningful
+  static let minMatchLength = 3
+
   fileprivate static let piiFormat: String = "{pii%@}"
   fileprivate static let piiFileVersion: Int = 0
   fileprivate static let piiFirstLineFormat = "# IINA_PII \(piiFileVersion) \(sessionDirName)\n"
@@ -137,7 +141,7 @@ class Logger: NSObject {
   fileprivate static var piiDict: [String: Int] = [:]
 
   static func getOrCreatePII(for privateString: String) -> String {
-    guard enabled && enablePiiMasking && !privateString.isEmpty else {
+    guard enabled && enablePiiMasking && !privateString.isEmpty && privateString.count >= minMatchLength else {
       return privateString
     }
 

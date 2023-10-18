@@ -208,7 +208,7 @@ class AutoFileMatcher {
               nameMatched = vn == sn
             }
             if nameMatched {
-              Logger.log("Matched \(video.filename.pii)(\(vn.pii)) and \(sub.filename.pii)(\(sn.pii)) ...", level: .verbose, subsystem: subsystem)
+              Logger.log("Matched \(video.filename.pii) (\(vn)) and \(sub.filename.pii) (\(sn)) ...", level: .verbose, subsystem: subsystem)
               video.relatedSubs.append(sub)
               if sub.prefix == matchedSubPrefix {
                 try checkTicket()
