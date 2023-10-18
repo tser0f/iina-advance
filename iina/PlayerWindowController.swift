@@ -783,9 +783,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     window.initialFirstResponder = nil
     window.titlebarAppearsTransparent = true
 
-    viewportView.clipsToBounds = true
-    topBarView.clipsToBounds = true
-    bottomBarView.clipsToBounds = true
+//  TODO: Re-enable for Sonoma
+//    viewportView.clipsToBounds = true
+//    topBarView.clipsToBounds = true
+//    bottomBarView.clipsToBounds = true
 
     setMaterial(Preference.enum(for: .themeMaterial))
 
@@ -3401,6 +3402,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       }
     }
 
+    forceDraw()
     player.saveState()
     player.events.emit(.pipChanged, data: true)
   }
@@ -3414,6 +3416,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       // is chosen in this case. See https://bugs.swift.org/browse/SR-8956.
       pip.dismiss(pipVideo!)
     }
+    forceDraw()
     player.events.emit(.pipChanged, data: false)
   }
 

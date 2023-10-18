@@ -206,7 +206,7 @@
                                 <constraint firstAttribute="bottom" secondItem="f24-lZ-4m7" secondAttribute="bottom" id="xbb-Er-3wp"/>
                             </constraints>
                         </customView>
-                        <box identifier="Content0" verticalHuggingPriority="1000" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Aks-lf-F2l" userLabel="WhenMediaIsStarted Box">
+                        <box identifier="Content1" verticalHuggingPriority="1000" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Aks-lf-F2l" userLabel="WhenMediaIsStarted Box">
                             <rect key="frame" x="-3" y="-4" width="416" height="70"/>
                             <view key="contentView" horizontalHuggingPriority="251" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ezj-tQ-LSK" userLabel="WhenMediaIsStarted Content View">
                                 <rect key="frame" x="4" y="4" width="408" height="64"/>
@@ -363,7 +363,7 @@
                                 <constraint firstAttribute="bottom" secondItem="WSg-Sb-Mqv" secondAttribute="bottom" id="xta-fI-hJr"/>
                             </constraints>
                         </customView>
-                        <box identifier="Content1" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="5RN-PV-pOZ">
+                        <box identifier="Content2" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="5RN-PV-pOZ">
                             <rect key="frame" x="-3" y="-4" width="416" height="132"/>
                             <view key="contentView" id="gWB-X2-AzC">
                                 <rect key="frame" x="4" y="5" width="408" height="124"/>

@@ -34,8 +34,9 @@ class CustomTitleBarViewController: NSViewController {
   var trailingSidebarToggleButton: NSButton!
   var pinToTopButton: NSButton!
 
-  override func viewDidLoad() {
-    super.viewDidLoad()
+  /// Use `loadView` instead of `viewDidLoad` because controller is not using storyboard
+  override func loadView() {
+    view = NSView()
     view.translatesAutoresizingMaskIntoConstraints = false
 
     // - Leading views
