@@ -2900,6 +2900,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // See comments in resetViewsForFullScreenTransition for details.
     guard !isClosing else { return }
 
+    log.verbose("UpdateWindowParametersForMPV called, videoSizeIsNil: \((videoSize == nil).yn)")
+
     guard let videoWidth = player.videoBaseDisplaySize?.width, videoWidth > 0 else {
       log.debug("Skipping send to mpv windowScale; could not get width from videoBaseDisplaySize")
       return

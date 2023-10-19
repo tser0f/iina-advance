@@ -443,6 +443,7 @@ extension PlayerWindowController {
   @objc func menuChangeWindowSize(_ sender: NSMenuItem) {
     let size = sender.tag
 
+    log.verbose("ChangeWindowSize requested from menu, option: \(size)")
     switch size {
     case 0:  //  0: half
       setWindowScale(0.5)

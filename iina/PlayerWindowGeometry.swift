@@ -478,7 +478,7 @@ struct PlayerWindowGeometry: Equatable {
   func scaleVideo(to desiredVideoSize: NSSize,
                   screenID: String? = nil,
                   fitOption: ScreenFitOption? = nil) -> PlayerWindowGeometry {
-    Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio)", level: .debug)
+    Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), allowEmptySpace: \(allowEmptySpaceAroundVideo)", level: .debug)
     var newVideoSize = desiredVideoSize
 
     let newWidth = max(minVideoWidth, desiredVideoSize.width)
@@ -489,8 +489,16 @@ struct PlayerWindowGeometry: Equatable {
       Logger.log("While scaling: applied aspectRatio (\(videoAspectRatio)): changed newVideoSize.height by \(newVideoSize.height - desiredVideoSize.height)", level: .debug)
     }
 
-    /// Use `videoSize` for `desiredViewportSize`:
-    return scaleViewport(to: newVideoSize, screenID: screenID, fitOption: fitOption)
+    let newViewportSize: NSSize
+    if allowEmptySpaceAroundVideo {
+      let scaleRatio = newWidth / videoSize.width
+      newViewportSize = viewportSize.multiply(scaleRatio)
+    } else {
+      /// Use `videoSize` for `desiredViewportSize`:
+      newViewportSize = newVideoSize
+    }
+
+    return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption)
   }
 
   // Resizes the window appropriately
@@ -769,14 +777,14 @@ extension PlayerWindowController {
   }
 
   func setWindowScale(_ scale: CGFloat) {
-    guard !isFullScreen else { return }
+    guard currentLayout.mode == .windowed else { return }
     guard let window = window else { return }
 
     guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
       log.error("SetWindowScale failed: could not get videoBaseDisplaySize")
       return
     }
-    var videoDesiredSize = CGSize(width: videoBaseDisplaySize.width * scale, height: videoBaseDisplaySize.height * scale)
+    var videoDesiredSize = videoBaseDisplaySize.multiply(scale)
 
     log.verbose("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) → videoDesiredSize=\(videoDesiredSize)")
 
@@ -789,6 +797,14 @@ extension PlayerWindowController {
     /// This will fit the viewport to the video size, even if `allowEmptySpaceAroundVideo` is enabled.
     /// May revisit this in the future...
     resizeViewport(to: videoDesiredSize)
+
+    let newGeoUnconstrained = windowedModeGeometry.scaleVideo(to: videoDesiredSize, fitOption: .noConstraints)
+    // User has actively resized the video. Assume this is the new preferred resolution
+    player.info.setIntendedViewportSize(from: newGeoUnconstrained)
+
+    let newGeometry = newGeoUnconstrained.refit(.insideVisibleFrame)
+    log.verbose("Calling apply() from setWindowScale, to: \(newGeometry.windowFrame)")
+    applyWindowGeometry(newGeometry)
   }
 
   /**
@@ -798,7 +814,7 @@ extension PlayerWindowController {
    ensure it is placed entirely inside `screen.visibleFrame`.
    */
   func resizeViewport(to desiredViewportSize: CGSize? = nil, centerOnScreen: Bool = false) {
-    guard !isInInteractiveMode, currentLayout.mode == .windowed else { return }
+    guard currentLayout.mode == .windowed else { return }
 
     let newGeoUnconstrained = windowedModeGeometry.scaleViewport(to: desiredViewportSize, fitOption: .noConstraints)
     // User has actively resized the video. Assume this is the new preferred resolution
@@ -806,7 +822,7 @@ extension PlayerWindowController {
 
     let fitOption: ScreenFitOption = centerOnScreen ? .centerInsideVisibleFrame : .insideVisibleFrame
     let newGeometry = newGeoUnconstrained.refit(fitOption)
-    log.verbose("\(isFullScreen ? "Updating priorWindowedGeometry" : "Calling setFrame()") from resizeViewport (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
+    log.verbose("Calling setFrame() from resizeViewport (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
     applyWindowGeometry(newGeometry)
   }
 
@@ -909,6 +925,7 @@ extension PlayerWindowController {
           player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
         }
       }
+      log.verbose("Calling updateWinParamsForMPV from apply() with videoSize: \(newGeometry.videoSize)")
       updateWindowParametersForMPV(withSize: newGeometry.videoSize)
     }))
   }
@@ -1019,12 +1036,12 @@ extension PlayerWindowController {
 
     let outsideBarsTotalSize = currentGeo.outsideBarsTotalSize
 
-    // resize height based on requested width
+    // Option A: resize height based on requested width
     let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth, height: requestedVideoWidth / currentGeo.videoAspectRatio)
     let resizeFromWidthGeo = currentGeo.scaleVideo(to: resizeFromWidthRequestedVideoSize)
 
-    // resize width based on requested height
+    // Option B: resize width based on requested height
     let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeo.videoAspectRatio, height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeo.scaleVideo(to: resizeFromHeightRequestedVideoSize)
