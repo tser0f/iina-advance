@@ -30,48 +30,6 @@ enum ScreenFitOption: Int {
 }
 
 /**
- `InteractiveModeGeometry`
- */
-struct InteractiveModeGeometry: Equatable {
-  let windowFrame: NSRect
-  let screenID: String
-  let fitOption: ScreenFitOption
-  let videoAspectRatio: CGFloat
-  
-  init(windowFrame: NSRect, screenID: String, fitOption: ScreenFitOption, videoAspectRatio: CGFloat) {
-    self.windowFrame = windowFrame
-    self.screenID = screenID
-    self.fitOption = fitOption
-    self.videoAspectRatio = videoAspectRatio
-  }
-
-  var videoSize: NSSize {
-    // TODO!
-    return NSSize(width: 100, height: 100)
-  }
-
-  func toPlayerWindowGeometry() -> PlayerWindowGeometry {
-    let interactiveModeBottomBarHeight: CGFloat = 60
-
-    // TODO!
-    return PlayerWindowGeometry(windowFrame: windowFrame,
-                                screenID: screenID,
-                                fitOption: .insideVisibleFrame,
-                                topMarginHeight: 0,
-                                outsideTopBarHeight: 0,
-                                outsideTrailingBarWidth: 0,
-                                outsideBottomBarHeight: interactiveModeBottomBarHeight,
-                                outsideLeadingBarWidth: 0,
-                                insideTopBarHeight: 0,
-                                insideTrailingBarWidth: 0,
-                                insideBottomBarHeight: 0,
-                                insideLeadingBarWidth: 0,
-                                videoAspectRatio: videoAspectRatio)
-  }
-
-}
-
-/**
 `PlayerWindowGeometry`
  Data structure which describes the basic layout configuration of a player window (`PlayerWindowController`).
 
@@ -159,7 +117,7 @@ struct PlayerWindowGeometry: Equatable {
   init(windowFrame: NSRect, screenID: String, fitOption: ScreenFitOption, topMarginHeight: CGFloat,
        outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
        insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
-       videoAspectRatio: CGFloat) {
+       videoAspectRatio: CGFloat, videoSize: NSSize? = nil) {
 
     self.windowFrame = windowFrame
     self.screenID = screenID
@@ -189,7 +147,7 @@ struct PlayerWindowGeometry: Equatable {
     self.videoAspectRatio = videoAspectRatio
 
     let viewportSize = PlayerWindowGeometry.computeViewportSize(from: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
-    self.videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize)
+    self.videoSize = videoSize ?? PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize)
   }
 
   static func fullScreenWindowFrame(in screen: NSScreen, legacy: Bool) -> NSRect {
@@ -283,13 +241,20 @@ struct PlayerWindowGeometry: Equatable {
   }
 
   var videoFrameInScreenCoords: NSRect {
+    let videoFrameInWindowCoords = videoFrameInWindowCoords
+    let origin = CGPoint(x: windowFrame.origin.x + videoFrameInWindowCoords.origin.x,
+                         y: windowFrame.origin.y + videoFrameInWindowCoords.origin.y)
+    return NSRect(origin: origin, size: videoSize)
+  }
+
+  var videoFrameInWindowCoords: NSRect {
     let viewportSize = viewportSize
     assert(viewportSize.width - videoSize.width >= 0)
     assert(viewportSize.height - videoSize.height >= 0)
     let leadingBlackSpace = (viewportSize.width - videoSize.width) * 0.5
     let bottomBlackSpace = (viewportSize.height - videoSize.height) * 0.5
-    let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth + leadingBlackSpace,
-                         y: windowFrame.origin.y + outsideBottomBarHeight + bottomBlackSpace)
+    let origin = CGPoint(x: outsideLeadingBarWidth + leadingBlackSpace,
+                         y: outsideBottomBarHeight + bottomBlackSpace)
     return NSRect(origin: origin, size: videoSize)
   }
 
@@ -340,10 +305,10 @@ struct PlayerWindowGeometry: Equatable {
   private func getContainerFrame(fitOption: ScreenFitOption? = nil) -> NSRect? {
     return PlayerWindowGeometry.getContainerFrame(forScreenID: screenID, fitOption: fitOption ?? self.fitOption)
   }
-
-  static private func computeViewportSize(from windowFrame: NSRect, topMarginHeight: CGFloat,
-                                          outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat,
-                                          outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat) -> NSSize {
+  
+  static func computeViewportSize(from windowFrame: NSRect, topMarginHeight: CGFloat,
+                                  outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat,
+                                  outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat) -> NSSize {
     return NSSize(width: windowFrame.width - outsideTrailingBarWidth - outsideLeadingBarWidth,
                   height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight - topMarginHeight)
   }
@@ -387,10 +352,7 @@ struct PlayerWindowGeometry: Equatable {
 
   // Convert windowed mode geometry to Interactive Mode geometry
   func toInteractiveMode() -> InteractiveModeGeometry {
-    // TODO
-    let newWindowFrame = windowFrame
-
-    return InteractiveModeGeometry(windowFrame: newWindowFrame, screenID: screenID, fitOption: fitOption, videoAspectRatio: videoAspectRatio)
+    return InteractiveModeGeometry.from(self)
   }
 
   func refit(_ newFit: ScreenFitOption? = nil) -> PlayerWindowGeometry {

@@ -12,8 +12,6 @@ import WebKit
 
 // MARK: - Constants
 
-fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
-
 // MARK: - Constants
 
 class PlayerWindowController: NSWindowController, NSWindowDelegate {
@@ -252,8 +250,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case intermediate
   }
 
-  enum InteractiveMode {
-    case crop
+  enum InteractiveMode: Int {
+    case crop = 1
     case freeSelecting
 
     func viewController() -> CropBoxViewController {
@@ -2663,87 +2661,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // TODO: use key interceptor to support ESC and ENTER keys for interactive mode
 
-    /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
-    /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
-    let oldLayout = currentLayout
-    let interactiveModeLayout = oldLayout.spec.clone(leadingSidebar: oldLayout.leadingSidebar.clone(visibility: .hide),
-                                                     trailingSidebar: oldLayout.trailingSidebar.clone(visibility: .hide),
-                                                     mode: oldLayout.mode,
-                                                     topBarPlacement: .insideViewport,
-                                                     enableOSC: false)
-    let transition = buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout, totalEndingDuration: 0)
-    var animationTasks: [CocoaAnimation.Task] = transition.animationTasks
-
-    // Now animate into Interactive Mode:
-    animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.CropAnimationDuration, timing: .easeIn, { [self] in
-
-      if #available(macOS 10.14, *) {
-        viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
-      } else {
-        viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
-      }
-
-      hideFadeableViews()
-      hideOSD()
-
-      isPausedPriorToInteractiveMode = player.info.isPaused
-      player.pause()
-
-      let cropController = mode.viewController()
-      cropController.windowController = self
-      bottomBarView.addSubview(cropController.view)
-      cropController.view.addConstraintsToFillSuperview()
-
-      let windowFrame: NSRect
-      if isFullScreen {
-        windowFrame = bestScreen.visibleFrame
-      } else {
-        windowFrame = window.frame
-      }
-
-      let titleBarHeight = PlayerWindowController.standardTitleBarHeight
-      // VideoView's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
-      // the max region that the video view can occupy
-      let newVideoViewBounds = NSRect(x: titleBarHeight,
-                                      y: InteractiveModeBottomViewHeight + titleBarHeight,
-                                      width: windowFrame.width - titleBarHeight - titleBarHeight,
-                                      height: windowFrame.height - InteractiveModeBottomViewHeight - titleBarHeight - titleBarHeight)
-      let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
-      let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
-
-      bottomBarBottomConstraint.animateToConstant(0)
-      videoView.constrainLayoutToEqualsOffsetOnly(
-        top: windowFrame.height - newVideoViewFrame.maxY,
-        right: newVideoViewFrame.maxX - windowFrame.width,
-        bottom: -newVideoViewFrame.minY,
-        left: newVideoViewFrame.minX
-      )
-
-      // add crop setting view
-      viewportView.addSubview(cropController.cropBoxView)
-      cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-      cropController.cropBoxView.actualSize = origVideoSize
-      cropController.cropBoxView.resized(with: newVideoViewFrame)
-      cropController.cropBoxView.isHidden = true
-      cropController.cropBoxView.addConstraintsToFillSuperview()
-      self.cropSettingsView = cropController
-    }))
-
-    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
-      guard let cropController = cropSettingsView else { return }
-      // show crop settings view
-      cropController.cropBoxView.isHidden = false
-      viewportView.layer?.shadowColor = .black
-      viewportView.layer?.shadowOpacity = 1
-      viewportView.layer?.shadowOffset = .zero
-      viewportView.layer?.shadowRadius = 3
-
-      cropController.cropBoxView.resized(with: videoView.frame)
-      cropController.cropBoxView.layoutSubtreeIfNeeded()
-    })
-
     log.verbose("Entering interactive mode")
-    animationQueue.run(animationTasks)
+    let oldLayout = currentLayout
+    let newMode: WindowMode = oldLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
+    let interactiveModeLayout = oldLayout.spec.clone(mode: newMode, interactiveMode: mode)
+    buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout, thenRun: true)
   }
 
   func exitInteractiveMode(immediately: Bool = false, then doAfter: @escaping () -> Void = {}) {
@@ -2751,36 +2673,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let oldLayout = currentLayout
     // if exit without animation
     let duration: CGFloat = immediately ? 0 : CocoaAnimation.CropAnimationDuration
-    cropController.cropBoxView.isHidden = true
-
-    var animationTasks: [CocoaAnimation.Task] = []
-
-    animationTasks.append(CocoaAnimation.Task(duration: duration, timing: .easeIn, { [self] in
-      // Restore prev constraints:
-      bottomBarBottomConstraint.animateToConstant(-InteractiveModeBottomViewHeight)
-      videoView.constrainForNormalLayout()
-    }))
-
-    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
-      cropController.cropBoxView.removeFromSuperview()
-      bottomBarView.subviews.removeAll()
-      self.showFadeableViews(duration: 0)
-      viewportView.layer?.backgroundColor = .black
-
-      if !isPausedPriorToInteractiveMode {
-        player.resume()
-      }
-      self.cropSettingsView = nil
-    })
-
-    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: oldLayout.mode, fillingInFrom: oldLayout.spec)
-    let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
-                                           totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
-
-    animationTasks.append(contentsOf: transition.animationTasks)
 
     log.verbose("Exiting interactive mode")
-    animationQueue.run(animationTasks, then: doAfter)
+    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: oldLayout.mode, fillingInFrom: oldLayout.spec)
+    buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
+                          totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5, thenRun: true)
   }
 
   private func refreshSeekTimeAndThumnail(from event: NSEvent) {

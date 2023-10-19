@@ -51,7 +51,7 @@ extension PlayerWindowController {
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspectRatio: transition.outputGeometry.videoAspectRatio)
     case .windowedInteractive:
-      interactiveModeGeometry = transition.outputGeometry
+      interactiveModeGeometry = transition.outputGeometry.toInteractiveMode()
     case .fullScreen, .fullScreenInteractive:
       // Not applicable when entering full screen
       break
@@ -129,6 +129,14 @@ extension PlayerWindowController {
         player.mpv.setFlag(MPVOption.Window.keepaspect, false)
       }
     }
+
+    if transition.isEnteringInteractiveMode {
+      isPausedPriorToInteractiveMode = player.info.isPaused
+      player.pause()
+    } else if transition.isExitingInteractiveMode, let cropController = cropSettingsView {
+      cropController.cropBoxView.isHidden = true
+    }
+    
     if transition.isTogglingLegacyStyle {
       forceDraw()
     }
@@ -384,8 +392,8 @@ extension PlayerWindowController {
       viewController.view.removeFromSuperview()
     }
 
-    // Music mode
     if transition.isEnteringMusicMode {
+      // Entering music mode
       oscBottomMainView.removeFromSuperview()
       bottomBarView.addSubview(miniPlayer.view, positioned: .below, relativeTo: bottomBarTopBorder)
       miniPlayer.view.addConstraintsToFillSuperview(top: 0, leading: 0, trailing: 0)
@@ -405,8 +413,57 @@ extension PlayerWindowController {
       setMaterial(Preference.enum(for: .themeMaterial))
 
     } else if transition.isExitingMusicMode {
+      // Exiting music mode
       _ = miniPlayer.view
       miniPlayer.cleanUpForMusicModeExit()
+
+    } else if transition.isEnteringInteractiveMode {
+      // Entering interactive mode
+      if #available(macOS 10.14, *) {
+        viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+      } else {
+        viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
+      }
+
+      let cropController = transition.outputLayout.spec.interactiveMode!.viewController()
+      cropController.windowController = self
+      bottomBarView.addSubview(cropController.view)
+      cropController.view.addConstraintsToFillSuperview()
+
+      let newWindowFrame = transition.outputGeometry.windowFrame
+      let newViewportSize = transition.outputGeometry.viewportSize
+      let newVideoViewFrame = transition.outputGeometry.videoFrameInWindowCoords
+      videoView.constrainLayoutToEqualsOffsetOnly(
+        top: newWindowFrame.height - newVideoViewFrame.maxY,
+        right: newVideoViewFrame.maxX - newWindowFrame.width,
+        bottom: -newVideoViewFrame.minY,
+        left: newVideoViewFrame.minX
+      )
+
+      let origVideoSize: NSSize
+      if let videoBaseDisplaySize = player.videoBaseDisplaySize, videoBaseDisplaySize.width != 0 && videoBaseDisplaySize.height != 0 {
+        origVideoSize = videoBaseDisplaySize
+      } else {
+        Utility.showAlert("no_video_track")
+        origVideoSize = AppData.minVideoSize
+      }
+
+      // add crop setting view
+      viewportView.addSubview(cropController.cropBoxView)
+      let selectWholeVideoByDefault = transition.outputLayout.spec.interactiveMode == .crop
+      cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
+      cropController.cropBoxView.actualSize = origVideoSize
+      cropController.cropBoxView.resized(with: newVideoViewFrame)
+      cropController.cropBoxView.isHidden = true
+      cropController.cropBoxView.addConstraintsToFillSuperview()
+      self.cropSettingsView = cropController
+
+    } else if transition.isExitingInteractiveMode {
+      // Exiting interactive mode
+      viewportView.layer?.backgroundColor = .black
+
+      // Restore prev constraints:
+      videoView.constrainForNormalLayout()
     }
 
     // Need to call this for initial layout also:
@@ -517,7 +574,7 @@ extension PlayerWindowController {
     }
 
     switch transition.outputLayout.mode {
-    case .fullScreen:
+    case .fullScreen, .fullScreenInteractive:
       if transition.outputLayout.isNativeFullScreen {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
         log.verbose("Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
@@ -549,7 +606,7 @@ extension PlayerWindowController {
     case .musicMode:
       // Especially needed when applying initial layout:
       applyMusicModeGeometry(musicModeGeometry)
-    case .windowed:
+    case .windowed, .windowedInteractive:
       let newWindowFrame = transition.outputGeometry.windowFrame
       log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
@@ -633,6 +690,27 @@ extension PlayerWindowController {
     // Add back title bar accessories (if needed):
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
     applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
+
+    if let cropController = cropSettingsView {
+      if transition.isEnteringInteractiveMode {
+        // show crop settings view
+        cropController.cropBoxView.isHidden = false
+        viewportView.layer?.shadowColor = .black
+        viewportView.layer?.shadowOpacity = 1
+        viewportView.layer?.shadowOffset = .zero
+        viewportView.layer?.shadowRadius = 3
+
+        cropController.cropBoxView.resized(with: videoView.frame)
+        cropController.cropBoxView.layoutSubtreeIfNeeded()
+      } else if transition.isExitingInteractiveMode {
+        cropController.cropBoxView.removeFromSuperview()
+        self.cropSettingsView = nil
+
+        if !isPausedPriorToInteractiveMode {
+          player.resume()
+        }
+      }
+    }
   }
 
   func doPostTransitionWork(_ transition: LayoutTransition) {

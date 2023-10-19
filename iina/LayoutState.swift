@@ -21,7 +21,7 @@ extension PlayerWindowController {
   /// `LayoutSpec`: data structure containing a window's layout configuration, and is the blueprint for building a `LayoutState`.
   /// Most of the fields in this struct can be derived from IINA's application settings, although some state like active sidebar tab
   /// and window mode can vary for each window.
-  /// See also: `LayoutState.from()`, which contains the logic to compile a `LayoutState` from a `LayoutSpec`.
+  /// See also: `LayoutState.buildFrom()`, which contains the logic to compile a `LayoutState` from a `LayoutSpec`.
   struct LayoutSpec {
     
     /// WIP. Set this to `true` to continue working on recreating title bar in legacy windowed mode.
@@ -42,26 +42,40 @@ extension PlayerWindowController {
     let enableOSC: Bool
     let oscPosition: Preference.OSCPosition
 
+    /// The mode of the interactive mode. ONLY used if `mode==.windowedInteractive || mode==.fullScreenInteractive`
+    let interactiveMode: InteractiveMode?
+
     init(leadingSidebar: Sidebar, trailingSidebar: Sidebar, mode: WindowMode, isLegacyStyle: Bool,
          topBarPlacement: Preference.PanelPlacement, bottomBarPlacement: Preference.PanelPlacement,
-         enableOSC: Bool,
-         oscPosition: Preference.OSCPosition) {
+         enableOSC: Bool, oscPosition: Preference.OSCPosition, interactiveMode: InteractiveMode?) {
+
+      var mode = mode
+      if (mode == .windowedInteractive || mode == .fullScreenInteractive) && interactiveMode == nil {
+        Logger.log("Cannot enter interactive mode (\(mode)) because its mode field is nil! Falling back to windowed mode")
+        // Prevent invalid mode from crashing IINA. Just go to windowed instead
+        mode = .windowed
+      }
       self.mode = mode
-      self.isLegacyStyle = isLegacyStyle
-      if mode == .musicMode {
-        // Override most properties for music mode
+
+      switch mode {
+      case .musicMode, .windowedInteractive, .fullScreenInteractive:
+        // Override most properties for music mode & interactive mode
         self.leadingSidebar = leadingSidebar.clone(visibility: .hide)
         self.trailingSidebar = trailingSidebar.clone(visibility: .hide)
         self.topBarPlacement = .insideViewport
         self.bottomBarPlacement = .outsideViewport
         self.enableOSC = false
-      } else {
+        self.interactiveMode = interactiveMode
+      case .windowed, .fullScreen:
         self.leadingSidebar = leadingSidebar
         self.trailingSidebar = trailingSidebar
         self.topBarPlacement = topBarPlacement
         self.bottomBarPlacement = bottomBarPlacement
         self.enableOSC = enableOSC
+        self.interactiveMode = nil
       }
+
+      self.isLegacyStyle = isLegacyStyle
       self.oscPosition = oscPosition
     }
 
@@ -80,11 +94,13 @@ extension PlayerWindowController {
                         topBarPlacement:.insideViewport,
                         bottomBarPlacement: .insideViewport,
                         enableOSC: false,
-                        oscPosition: .floating)
+                        oscPosition: .floating,
+                        interactiveMode: nil)
     }
 
     /// Factory method. Init from preferences, except for `mode` and tab params
     static func fromPreferences(andMode newMode: WindowMode? = nil,
+                                interactiveMode: InteractiveMode? = nil,
                                 isLegacyStyle: Bool? = nil,
                                 fillingInFrom oldSpec: LayoutSpec) -> LayoutSpec {
 
@@ -104,6 +120,7 @@ extension PlayerWindowController {
                                     visibility: trailingSidebarVisibility,
                                     lastVisibleTab: trailingSidebarLastVisibleTab)
       let mode = newMode ?? oldSpec.mode
+      let interactiveMode = interactiveMode ?? oldSpec.interactiveMode
       let isLegacyStyle = isLegacyStyle ?? (mode == .fullScreen ? Preference.bool(for: .useLegacyFullScreen) : Preference.bool(for: .useLegacyWindowedMode))
       return LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar,
                         mode: mode,
@@ -111,7 +128,8 @@ extension PlayerWindowController {
                         topBarPlacement: Preference.enum(for: .topBarPlacement),
                         bottomBarPlacement: Preference.enum(for: .bottomBarPlacement),
                         enableOSC: Preference.bool(for: .enableOSC),
-                        oscPosition: Preference.enum(for: .oscPosition))
+                        oscPosition: Preference.enum(for: .oscPosition),
+                        interactiveMode: interactiveMode)
     }
 
     // Specify any properties to override; if nil, will use self's property values.
@@ -122,7 +140,8 @@ extension PlayerWindowController {
                bottomBarPlacement: Preference.PanelPlacement? = nil,
                enableOSC: Bool? = nil,
                oscPosition: Preference.OSCPosition? = nil,
-               isLegacyStyle: Bool? = nil) -> LayoutSpec {
+               isLegacyStyle: Bool? = nil,
+               interactiveMode: InteractiveMode? = nil) -> LayoutSpec {
       return LayoutSpec(leadingSidebar: leadingSidebar ?? self.leadingSidebar,
                         trailingSidebar: trailingSidebar ?? self.trailingSidebar,
                         mode: mode ?? self.mode,
@@ -130,7 +149,8 @@ extension PlayerWindowController {
                         topBarPlacement: topBarPlacement ?? self.topBarPlacement,
                         bottomBarPlacement: bottomBarPlacement ?? self.bottomBarPlacement,
                         enableOSC: enableOSC ?? self.enableOSC,
-                        oscPosition: self.oscPosition)
+                        oscPosition: self.oscPosition,
+                        interactiveMode: interactiveMode ?? self.interactiveMode)
     }
 
     var isInteractiveMode: Bool {
@@ -387,7 +407,7 @@ extension PlayerWindowController {
 
     // MARK: - Build LayoutState from LayoutSpec
 
-    static func from(_ layoutSpec: LayoutSpec) -> LayoutState {
+    static func buildFrom(_ layoutSpec: LayoutSpec) -> LayoutState {
       let outputLayout = LayoutState(spec: layoutSpec)
 
       // Title bar & title bar accessories:

@@ -717,7 +717,7 @@ extension PlayerWindowController {
       }
       // Need to update current layout, but no need for animation
       let newLayoutSpec = layout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
-      let outputLayout = LayoutState.from(newLayoutSpec)
+      let outputLayout = LayoutState.buildFrom(newLayoutSpec)
       currentLayout = outputLayout
     }
   }

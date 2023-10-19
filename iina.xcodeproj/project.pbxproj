@@ -191,6 +191,7 @@
 		D1B492E62AA0BB9A00212E9C /* MagnificationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */; };
 		D1B787DB29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1B787DA29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift */; };
 		D1D29A282ADE2E8000D8660F /* CustomTitleBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D29A272ADE2E8000D8660F /* CustomTitleBar.swift */; };
+		D1D3DB342AE0FBE800997C9E /* InteractiveModeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D3DB332AE0FBE800997C9E /* InteractiveModeGeometry.swift */; };
 		D1D87DFC2923A4E500737886 /* BindingTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */; };
 		D1D87E002924F92100737886 /* ConfTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */; };
 		D1D87E02292B2AEE00737886 /* BiDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87E01292B2AEE00737886 /* BiDictionary.swift */; };
@@ -1572,6 +1573,7 @@
 		D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagnificationHandler.swift; sourceTree = "<group>"; };
 		D1B787DA29AF883800DABC9C /* PlayerWindowPreviewImageBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerWindowPreviewImageBuilder.swift; sourceTree = "<group>"; };
 		D1D29A272ADE2E8000D8660F /* CustomTitleBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTitleBar.swift; sourceTree = "<group>"; };
+		D1D3DB332AE0FBE800997C9E /* InteractiveModeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveModeGeometry.swift; sourceTree = "<group>"; };
 		D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingTableStateManager.swift; sourceTree = "<group>"; };
 		D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfTableStateManager.swift; sourceTree = "<group>"; };
 		D1D87E01292B2AEE00737886 /* BiDictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiDictionary.swift; sourceTree = "<group>"; };
@@ -2577,6 +2579,7 @@
 				845FB0C61D39462E00C011E0 /* ControlBarView.swift */,
 				846352571EEEE11A0043F0CC /* ThumbnailPeekView.swift */,
 				D1D29A272ADE2E8000D8660F /* CustomTitleBar.swift */,
+				D1D3DB332AE0FBE800997C9E /* InteractiveModeGeometry.swift */,
 			);
 			name = PlayerWindow;
 			sourceTree = "<group>";
@@ -3092,6 +3095,7 @@
 				8450403D1E0A9EE20079C194 /* InspectorWindowController.swift in Sources */,
 				E38BA1C0253E54F2000B551D /* JavascriptAPIGlobal.swift in Sources */,
 				E39A11FD240F176E00A67F9F /* StringEncodingName.swift in Sources */,
+				D1D3DB342AE0FBE800997C9E /* InteractiveModeGeometry.swift in Sources */,
 				D1FF15792A7FA6A300C0CE86 /* PlayerSaveState.swift in Sources */,
 				E33FEEB52229A44F00B59711 /* JavascriptAPIUtils.swift in Sources */,
 				84C6D3671EB2A427009BF721 /* HistoryWindowController.swift in Sources */,

@@ -131,6 +131,14 @@ extension PlayerWindowController {
       return inputLayout.isMusicMode != outputLayout.isMusicMode
     }
 
+    var isEnteringInteractiveMode: Bool {
+      return !inputLayout.isInteractiveMode && outputLayout.isInteractiveMode
+    }
+
+    var isExitingInteractiveMode: Bool {
+      return inputLayout.isInteractiveMode && !outputLayout.isInteractiveMode
+    }
+
     var isTopBarPlacementChanging: Bool {
       return inputLayout.topBarPlacement != outputLayout.topBarPlacement
     }

@@ -154,7 +154,7 @@ extension PlayerWindowController {
 
     // - Build outputLayout
 
-    let outputLayout = LayoutState.from(outputSpec)
+    let outputLayout = LayoutState.buildFrom(outputSpec)
 
     // - Build geometries
 
@@ -164,8 +164,15 @@ extension PlayerWindowController {
     switch inputLayout.mode {
     case .windowed:
       inputGeometry = windowedModeGeometry
-    case .fullScreen:
+    case .fullScreen, .fullScreenInteractive:
       inputGeometry = inputLayout.buildFullScreenGeometry(inside: windowedModeScreen, videoAspectRatio: videoAspectRatio)
+    case .windowedInteractive:
+      if let interactiveModeGeometry {
+        inputGeometry = interactiveModeGeometry.toPlayerWindowGeometry()
+      } else {
+        log.warn("[\(transitionName)] Failed to find interactiveModeGeometry! Will use windowedModeGeometry (may be wrong)")
+        inputGeometry = windowedModeGeometry
+      }
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
       /// But make sure we correct any size problems

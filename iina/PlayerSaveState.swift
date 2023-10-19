@@ -145,7 +145,8 @@ struct PlayerSaveState {
             String(spec.bottomBarPlacement.rawValue),
             String(spec.leadingSidebarPlacement.rawValue),
             spec.enableOSC.yn,
-            String(spec.oscPosition.rawValue)
+            String(spec.oscPosition.rawValue),
+            String(spec.interactiveMode?.rawValue ?? 0)
     ].joined(separator: ",")
   }
 
@@ -381,7 +382,7 @@ struct PlayerSaveState {
   /// String -> `LayoutSpec`
   static private func deserializeLayoutSpec(from properties: [String: Any]) -> PlayerWindowController.LayoutSpec? {
     return deserializeCSV(.layoutSpec, fromProperties: properties,
-                          expectedTokenCount: 11,
+                          expectedTokenCount: 12,
                           expectedVersion: PlayerSaveState.specPrefStringVersion,
                           errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
 
@@ -409,6 +410,9 @@ struct PlayerSaveState {
         return nil
       }
 
+      let interactModeInt = Int(iter.next()!)
+      let interactiveMode = PlayerWindowController.InteractiveMode(rawValue: interactModeInt ?? 0) ?? nil  /// `0` === `nil` value
+
       var leadingTabGroups = PlayerWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
       let leadVis: PlayerWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
       // If the tab groups prefs changed somehow since the last run, just add it for now so that the geometry can be restored.
@@ -428,7 +432,7 @@ struct PlayerSaveState {
       }
       let trailingSidebar = PlayerWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
 
-      return PlayerWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition)
+      return PlayerWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition, interactiveMode: interactiveMode)
     })
   }
 
