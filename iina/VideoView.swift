@@ -167,6 +167,7 @@ class VideoView: NSView {
                                   centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority) {
     var existing = self.videoViewConstraints
     self.videoViewConstraints = nil
+
     let newConstraints = VideoViewConstraints(
       eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
       eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
@@ -191,7 +192,7 @@ class VideoView: NSView {
 
   // TODO: figure out why this 2px adjustment is necessary
   func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
-    log.verbose("Contraining videoView for fixed offsets only")
+    log.verbose("Constraining videoView for fixed offsets only: \(top) \(right) \(bottom) \(left)")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
                        eqIsActive: true, eqPriority: .required,
@@ -202,7 +203,7 @@ class VideoView: NSView {
   }
 
   func constrainForNormalLayout() {
-    log.verbose("Contraining videoView for normal layout")
+    log.verbose("Constraining videoView for normal layout")
     /// GT + center constraints are main priority, but include EQ as hint for ideal placement
     /// Set center priority to `.defaultHigh` instead of `.required` to avoid constraint error when toggling music mode with no video...
     rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,

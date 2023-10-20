@@ -139,6 +139,10 @@ extension PlayerWindowController {
       return inputLayout.isInteractiveMode && !outputLayout.isInteractiveMode
     }
 
+    var isTogglingInteractiveMode: Bool {
+      return isEnteringInteractiveMode || isExitingInteractiveMode
+    }
+
     var isTopBarPlacementChanging: Bool {
       return inputLayout.topBarPlacement != outputLayout.topBarPlacement
     }

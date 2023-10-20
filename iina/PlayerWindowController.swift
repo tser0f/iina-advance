@@ -1961,8 +1961,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
 
       if currentLayout.isInteractiveMode {
-        // interactive mode
-        cropSettingsView?.cropBoxView.resized(with: videoView.frame)
+        // Update interactive mode selectable box size. Origin is relative to viewport origin
+        let selectableRect = NSRect(origin: CGPoint(x: InteractiveModeGeometry.paddingLeading, y: InteractiveModeGeometry.paddingBottom),
+                                    size: videoView.frame.size)
+        cropSettingsView?.cropBoxView.resized(with: selectableRect)
       } else if currentLayout.oscPosition == .floating {
         // Update floating control bar position
         updateFloatingOSCAfterWindowDidResize()
@@ -2653,31 +2655,41 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
 
   func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
-    guard let origVideoSize = player.videoBaseDisplaySize, origVideoSize.width != 0 && origVideoSize.height != 0 else {
+    guard player.videoBaseDisplaySize != nil else {
       Utility.showAlert("no_video_track")
       return
     }
-    guard let window = self.window else { return }
 
     // TODO: use key interceptor to support ESC and ENTER keys for interactive mode
 
-    log.verbose("Entering interactive mode")
     let oldLayout = currentLayout
     let newMode: WindowMode = oldLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
+    log.verbose("Entering interactive mode, newMode: \(newMode)")
     let interactiveModeLayout = oldLayout.spec.clone(mode: newMode, interactiveMode: mode)
-    buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout, thenRun: true)
+    let duration = 4.0 // CocoaAnimation.CropAnimationDuration
+    buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout,
+                          totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5,
+                          thenRun: true)
   }
 
-  func exitInteractiveMode(immediately: Bool = false, then doAfter: @escaping () -> Void = {}) {
-    guard let cropController = cropSettingsView else { return }
+  /// Use `immediately: true` to exit without animation
+  func exitInteractiveMode(immediately: Bool = false, then doAfter: (() -> Void)? = nil) {
     let oldLayout = currentLayout
-    // if exit without animation
     let duration: CGFloat = immediately ? 0 : CocoaAnimation.CropAnimationDuration
 
-    log.verbose("Exiting interactive mode")
-    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: oldLayout.mode, fillingInFrom: oldLayout.spec)
-    buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
-                          totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5, thenRun: true)
+    let newMode: WindowMode = oldLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
+    log.verbose("Exiting interactive mode, newMode: \(newMode)")
+    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
+    let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
+                                           totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
+
+    var animationTasks = transition.animationTasks
+    if let doAfter {
+      animationTasks.append(CocoaAnimation.Task({
+        doAfter()
+      }))
+    }
+    animationQueue.run(animationTasks)
   }
 
   private func refreshSeekTimeAndThumnail(from event: NSEvent) {
@@ -2799,7 +2811,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     log.verbose("UpdateWindowParametersForMPV called, videoSizeIsNil: \((videoSize == nil).yn)")
 
-    guard let videoWidth = player.videoBaseDisplaySize?.width, videoWidth > 0 else {
+    guard let videoWidth = player.videoBaseDisplaySize?.width else {
       log.debug("Skipping send to mpv windowScale; could not get width from videoBaseDisplaySize")
       return
     }

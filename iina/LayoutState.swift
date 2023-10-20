@@ -413,10 +413,12 @@ extension PlayerWindowController {
       // Title bar & title bar accessories:
 
       if outputLayout.isFullScreen {
-        outputLayout.titleIconAndText = .showAlways
-        outputLayout.trafficLightButtons = .showAlways
+        if !layoutSpec.isLegacyStyle {
+          outputLayout.titleIconAndText = .showAlways
+          outputLayout.trafficLightButtons = .showAlways
+        }
 
-      } else if !outputLayout.isMusicMode {
+      } else if !outputLayout.isMusicMode && !outputLayout.isInteractiveMode {
         let visibleState: Visibility = outputLayout.topBarPlacement == .insideViewport ? .showFadeableTopBar : .showAlways
 
         outputLayout.topBarView = visibleState
@@ -470,7 +472,7 @@ extension PlayerWindowController {
           outputLayout.bottomBarView = (outputLayout.bottomBarPlacement == .insideViewport) ? .showFadeableNonTopBar : .showAlways
         }
       } else {  // No OSC
-        if layoutSpec.mode == .musicMode {
+        if layoutSpec.mode == .musicMode || layoutSpec.isInteractiveMode {
           assert(outputLayout.bottomBarPlacement == .outsideViewport)
           outputLayout.bottomBarView = .showAlways
         }

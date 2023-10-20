@@ -51,7 +51,7 @@ extension PlayerWindowController {
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspectRatio: transition.outputGeometry.videoAspectRatio)
     case .windowedInteractive:
-      interactiveModeGeometry = transition.outputGeometry.toInteractiveMode()
+      interactiveModeGeometry = InteractiveModeGeometry.from(transition.outputGeometry)
     case .fullScreen, .fullScreenInteractive:
       // Not applicable when entering full screen
       break
@@ -223,6 +223,12 @@ extension PlayerWindowController {
 
     if transition.isEnteringMusicMode {
       hideOSD()
+    }
+
+    if transition.isExitingInteractiveMode, let cropController = self.cropSettingsView {
+      // Exiting interactive mode
+      cropController.cropBoxView.alphaValue = 0
+      cropController.view.alphaValue = 0
     }
   }
 
@@ -425,38 +431,40 @@ extension PlayerWindowController {
         viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
       }
 
+      videoView.updateSizeConstraints(nil)
+
+      // Add crop settings at bottom
       let cropController = transition.outputLayout.spec.interactiveMode!.viewController()
       cropController.windowController = self
       bottomBarView.addSubview(cropController.view)
       cropController.view.addConstraintsToFillSuperview()
+      cropController.view.alphaValue = 0
+      self.cropSettingsView = cropController
 
-      let newWindowFrame = transition.outputGeometry.windowFrame
-      let newViewportSize = transition.outputGeometry.viewportSize
-      let newVideoViewFrame = transition.outputGeometry.videoFrameInWindowCoords
       videoView.constrainLayoutToEqualsOffsetOnly(
-        top: newWindowFrame.height - newVideoViewFrame.maxY,
-        right: newVideoViewFrame.maxX - newWindowFrame.width,
-        bottom: -newVideoViewFrame.minY,
-        left: newVideoViewFrame.minX
+        top: InteractiveModeGeometry.paddingTop,
+        right: -InteractiveModeGeometry.paddingTrailing,
+        bottom: -InteractiveModeGeometry.paddingBottom,
+        left: InteractiveModeGeometry.paddingLeading
       )
 
-      let origVideoSize: NSSize
-      if let videoBaseDisplaySize = player.videoBaseDisplaySize, videoBaseDisplaySize.width != 0 && videoBaseDisplaySize.height != 0 {
-        origVideoSize = videoBaseDisplaySize
+      if let videoBaseDisplaySize = player.videoBaseDisplaySize {
+        let origVideoSize = videoBaseDisplaySize
+
+        // Add selection box
+        viewportView.addSubview(cropController.cropBoxView)
+        let selectWholeVideoByDefault = transition.outputLayout.spec.interactiveMode == .crop
+        cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
+        cropController.cropBoxView.actualSize = origVideoSize
+        let selectableRect = NSRect(origin: CGPoint(x: InteractiveModeGeometry.paddingLeading, y: InteractiveModeGeometry.paddingBottom),
+                                    size: transition.outputGeometry.videoSize)
+        cropController.cropBoxView.resized(with: selectableRect)
+        cropController.cropBoxView.isHidden = true
+        cropController.cropBoxView.alphaValue = 0
+        cropController.cropBoxView.addConstraintsToFillSuperview()
       } else {
         Utility.showAlert("no_video_track")
-        origVideoSize = AppData.minVideoSize
       }
-
-      // add crop setting view
-      viewportView.addSubview(cropController.cropBoxView)
-      let selectWholeVideoByDefault = transition.outputLayout.spec.interactiveMode == .crop
-      cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-      cropController.cropBoxView.actualSize = origVideoSize
-      cropController.cropBoxView.resized(with: newVideoViewFrame)
-      cropController.cropBoxView.isHidden = true
-      cropController.cropBoxView.addConstraintsToFillSuperview()
-      self.cropSettingsView = cropController
 
     } else if transition.isExitingInteractiveMode {
       // Exiting interactive mode
@@ -464,6 +472,14 @@ extension PlayerWindowController {
 
       // Restore prev constraints:
       videoView.constrainForNormalLayout()
+
+      if let cropController = self.cropSettingsView {
+        cropController.cropBoxView.removeFromSuperview()
+        cropController.view.removeFromSuperview()
+        self.cropSettingsView = nil
+      }
+
+      videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
     }
 
     // Need to call this for initial layout also:
@@ -694,7 +710,9 @@ extension PlayerWindowController {
     if let cropController = cropSettingsView {
       if transition.isEnteringInteractiveMode {
         // show crop settings view
+        cropController.view.alphaValue = 1
         cropController.cropBoxView.isHidden = false
+        cropController.cropBoxView.alphaValue = 1
         viewportView.layer?.shadowColor = .black
         viewportView.layer?.shadowOpacity = 1
         viewportView.layer?.shadowOffset = .zero
@@ -702,10 +720,8 @@ extension PlayerWindowController {
 
         cropController.cropBoxView.resized(with: videoView.frame)
         cropController.cropBoxView.layoutSubtreeIfNeeded()
-      } else if transition.isExitingInteractiveMode {
-        cropController.cropBoxView.removeFromSuperview()
-        self.cropSettingsView = nil
 
+      } else if transition.isExitingInteractiveMode {
         if !isPausedPriorToInteractiveMode {
           player.resume()
         }
@@ -827,6 +843,10 @@ extension PlayerWindowController {
       }
 
       player.events.emit(.windowFullscreenChanged, data: false)
+    }
+
+    if transition.isExitingInteractiveMode {
+      interactiveModeGeometry = nil
     }
 
     refreshHidesOnDeactivateStatus()

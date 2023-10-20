@@ -2196,6 +2196,10 @@ class PlayerCore: NSObject {
         log.error("Failed to generate videoBaseDisplaySize: dwidth or dheight not present!")
         return nil
       }
+      guard w != 0, h != 0 else {
+        log.debug("Failed to generate videoBaseDisplaySize: dwidth or dheight is 0")
+        return nil
+      }
       var width: Int = w
       var height: Int = h
 

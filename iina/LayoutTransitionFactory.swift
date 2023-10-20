@@ -170,8 +170,8 @@ extension PlayerWindowController {
       if let interactiveModeGeometry {
         inputGeometry = interactiveModeGeometry.toPlayerWindowGeometry()
       } else {
-        log.warn("[\(transitionName)] Failed to find interactiveModeGeometry! Will use windowedModeGeometry (may be wrong)")
-        inputGeometry = windowedModeGeometry
+        log.warn("[\(transitionName)] Failed to find interactiveModeGeometry! Will change from windowedModeGeometry (may be wrong)")
+        inputGeometry = InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry).toPlayerWindowGeometry()
       }
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
@@ -303,7 +303,7 @@ extension PlayerWindowController {
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: true)
         }
 
-        player.window.setFrameImmediately(transition.outputGeometry.viewportFrameInScreenCoords)
+        player.window.setFrameImmediately(transition.outputGeometry.videoFrameInScreenCoords)
       }))
     }
 
@@ -372,7 +372,7 @@ extension PlayerWindowController {
         log.verbose("Using cached interactiveModeGeometry: \(cachedInteractiveModeGeometry)")
         return cachedInteractiveModeGeometry.toPlayerWindowGeometry()
       }
-      let imGeo = windowedModeGeometry.toInteractiveMode()
+      let imGeo = InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
       log.verbose("Converted windowed mode geometry to interactiveModeGeometry: \(imGeo)")
       return imGeo.toPlayerWindowGeometry()
     case .windowed:
@@ -429,6 +429,16 @@ extension PlayerWindowController {
     } else if transition.isExitingMusicMode {
       // Only bottom bar needs to be closed. No need to constrain in screen
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
+    } else if transition.isTogglingInteractiveMode {
+      let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
+                                                                outsideTrailingBarWidth: 0,
+                                                                outsideBottomBarHeight: 0,
+                                                                outsideLeadingBarWidth: 0,
+                                                                insideTopBarHeight: 0,
+                                                                insideTrailingBarWidth: 0,
+                                                                insideBottomBarHeight: 0,
+                                                                insideLeadingBarWidth: 0)
+      return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
     }
     // TOP
     let topBarHeight: CGFloat

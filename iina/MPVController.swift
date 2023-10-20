@@ -1452,7 +1452,7 @@ not applying FFmpeg 9599 workaround
 
     case MPVOption.Window.ontop:
       let ontop = getFlag(MPVOption.Window.ontop)
-      Logger.log("Got mpv prop: \(MPVOption.Window.ontop.quoted) = \(ontop)", level: .verbose, subsystem: player.subsystem)
+      Logger.log("Got mpv prop: \(MPVOption.Window.ontop.quoted) = \(ontop.yesno)", level: .verbose, subsystem: player.subsystem)
       guard player.windowController.loaded else { break }
       if ontop != player.windowController.isOntop {
         DispatchQueue.main.async {
@@ -1461,11 +1461,10 @@ not applying FFmpeg 9599 workaround
       }
 
     case MPVOption.Window.windowScale:
-      let windowScale = getDouble(MPVOption.Window.windowScale)
-      player.log.verbose("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale)")
       guard player.windowController.loaded else { break }
+      let windowScale = getDouble(MPVOption.Window.windowScale)
       let needsUpdate = fabs(windowScale - player.info.cachedWindowScale) > 10e-10
-      player.log.verbose("Scale(IINA): \(player.info.cachedWindowScale), Scale(mpv): \(windowScale) → changed=\(needsUpdate.yn)")
+      player.log.verbose("Got mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale). Cached scale = \(player.info.cachedWindowScale) → changed=\(needsUpdate.yn)")
       if needsUpdate {
         DispatchQueue.main.async {
           self.player.windowController.setWindowScale(CGFloat(windowScale))
