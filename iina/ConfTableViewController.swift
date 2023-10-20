@@ -26,7 +26,6 @@ class ConfTableViewController: NSObject {
     return ConfTableState.current
   }
   private unowned var bindingTableViewController: BindingTableViewController
-  private var distObservers: [NSObjectProtocol] = []  // For DistributedNotificationCenter
   private var observers: [NSObjectProtocol] = []      // For regular NotificationCenter
 
   // Convenience var. Pref lookup is super fast; should be fine to check on each access. Try to reduce need for restart
@@ -34,18 +33,11 @@ class ConfTableViewController: NSObject {
     Preference.bool(for: .useInlineEditorInsteadOfDialogForNewInputConf)
   }
 
-  // FIXME: this doesn't update when dark mode is toggled
-  fileprivate let blendFraction: CGFloat = 0.2
-  fileprivate var builtinConfTextColor: NSColor {
-    if #available(macOS 10.14, *) {
-      return .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
-    } else {
-      return .textColor
-    }
-  }
+  fileprivate var builtinConfTextColor: NSColor = .textColor
 
-  @available(macOS 10.14, *)
-  func recomputeCustomColors() {
+  // FIXME: this doesn't update when dark mode is toggled
+  func setCustomColors(builtInItemTextColor: NSColor) {
+    builtinConfTextColor = builtInItemTextColor
   }
 
   init(_ inputConfTableView: EditableTableView, _ bindingTableViewController: BindingTableViewController) {
@@ -64,11 +56,6 @@ class ConfTableViewController: NSObject {
     tableView.editableTextColumnIndexes = [nameColumnIndex]
     tableView.registerTableUIChangeObserver(forName: .iinaPendingUIChangeForConfTable)
 
-    if #available(macOS 10.14, *) {
-      recomputeCustomColors()
-      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleColorPreferencesChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
-    }
-
     if #available(macOS 10.13, *) {
       // Enable drag & drop for MacOS 10.13+
       var acceptableDraggedTypes: [NSPasteboard.PasteboardType] = [.fileURL, .iinaKeyMapping]
@@ -84,21 +71,10 @@ class ConfTableViewController: NSObject {
   }
 
   deinit {
-    for observer in distObservers {
-      DistributedNotificationCenter.default().removeObserver(observer)
-    }
-    distObservers = []
     for observer in observers {
       NotificationCenter.default.removeObserver(observer)
     }
     observers = []
-  }
-
-  @available(macOS 10.14, *)
-  private func systemColorSettingsDidChange(notification: Notification) {
-    Logger.log("Detected change to system color prefs; reloading Conf table", level: .verbose)
-    recomputeCustomColors()
-    self.tableView.reloadExistingRows(reselectRowsAfter: true)
   }
 
   func selectCurrentConfRow() {

@@ -69,6 +69,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
     let bindingTableController = BindingTableViewController(bindingTableView, selectionDidChangeHandler: updateRemoveButtonEnablement)
     self.bindingTableController = bindingTableController
     confTableController = ConfTableViewController(confTableView, bindingTableController)
+    setCustomTableColors()
 
     bindingSearchField.stringValue = bindingTableState.filterString
 
@@ -113,13 +114,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
 
     switch keyPath {
     case #keyPath(view.effectiveAppearance):
-      if #available(macOS 10.14, *) {
-        confTableController?.recomputeCustomColors()
-        confTableView.reloadExistingRows(reselectRowsAfter: true)
-        bindingTableController?.customColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
-        bindingTableController?.recomputeCustomColors()
-        bindingTableView.reloadExistingRows(reselectRowsAfter: true)
-      }
+      setCustomTableColors()
     default:
       return
     }
@@ -186,5 +181,16 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
   private func updateRemoveButtonEnablement() {
     // re-evaluate this each time either table changed selection:
     removeBindingBtn.isEnabled = !confTableState.isSelectedConfReadOnly && bindingTableView.selectedRow != -1
+  }
+
+  private func setCustomTableColors() {
+    if #available(macOS 10.14, *) {
+      let builtInItemTextColor: NSColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
+      confTableController?.setCustomColors(builtInItemTextColor: builtInItemTextColor)
+      confTableView.reloadExistingRows(reselectRowsAfter: true)
+
+      bindingTableController?.setCustomColors(builtInItemTextColor: builtInItemTextColor)
+      bindingTableView.reloadExistingRows(reselectRowsAfter: true)
+    }
   }
 }

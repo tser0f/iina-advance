@@ -23,7 +23,6 @@ class BindingTableViewController: NSObject {
   }
 
   private var selectionDidChangeHandler: () -> Void
-  private var distObservers: [NSObjectProtocol] = []
   private var observers: [NSObjectProtocol] = []
 
   private var draggedRowInfo: (Int, IndexSet)? = nil
@@ -34,8 +33,6 @@ class BindingTableViewController: NSObject {
   fileprivate var libmpvIconColor: NSColor = .textColor
   fileprivate var filterIconColor: NSColor = .textColor
   fileprivate var builtinMenuItemIconColor: NSColor = .textColor
-
-  var customColor: NSColor = .textColor
 
   init(_ bindingTableView: EditableTableView, selectionDidChangeHandler: @escaping () -> Void) {
     Logger.log("BindingTableViewController init", level: .verbose)
@@ -53,10 +50,6 @@ class BindingTableViewController: NSObject {
     tableView.allowsMultipleSelection = true
     tableView.editableTextColumnIndexes = [keyColumnIndex, actionColumnIndex]
     tableView.registerTableUIChangeObserver(forName: .iinaPendingUIChangeForBindingTable)
-    if #available(macOS 10.14, *) {
-      recomputeCustomColors()
-      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleColorPreferencesChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
-    }
     observers.append(NotificationCenter.default.addObserver(forName: .iinaKeyBindingErrorOccurred, object: nil, queue: .main, using: errorDidOccur))
     if #available(macOS 10.13, *) {
       var acceptableDraggedTypes: [NSPasteboard.PasteboardType] = [.iinaKeyMapping]
@@ -75,10 +68,6 @@ class BindingTableViewController: NSObject {
   }
 
   deinit {
-    for observer in distObservers {
-      DistributedNotificationCenter.default().removeObserver(observer)
-    }
-    distObservers = []
     for observer in observers {
       NotificationCenter.default.removeObserver(observer)
     }
@@ -88,7 +77,6 @@ class BindingTableViewController: NSObject {
   @available(macOS 10.14, *)
   private func systemColorSettingsDidChange(notification: Notification) {
     Logger.log("Detected change to system color prefs; reloading Binding table", level: .verbose)
-    recomputeCustomColors()
     self.tableView.reloadExistingRows(reselectRowsAfter: true)
   }
 
@@ -101,14 +89,17 @@ class BindingTableViewController: NSObject {
     Utility.showAlert(alertInfo.key, arguments: alertInfo.args, sheetWindow: self.tableView.window)
   }
 
+  fileprivate var builtinConfTextColor: NSColor = .textColor
+
   // FIXME: this doesn't update when dark mode is toggled
-  @available(macOS 10.14, *)
-  func recomputeCustomColors() {
-    nonConfTextColor = customColor
-    pluginIconColor = customColor
-    libmpvIconColor = customColor
-    filterIconColor = customColor
-    builtinMenuItemIconColor = customColor
+  func setCustomColors(builtInItemTextColor: NSColor) {
+    if #available(macOS 10.14, *) {
+      nonConfTextColor = builtInItemTextColor
+      pluginIconColor = builtInItemTextColor
+      libmpvIconColor = builtInItemTextColor
+      filterIconColor = builtInItemTextColor
+      builtinMenuItemIconColor = builtInItemTextColor
+    }
   }
 }
 
