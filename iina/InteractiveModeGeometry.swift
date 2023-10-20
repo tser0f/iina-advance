@@ -65,17 +65,23 @@ struct InteractiveModeGeometry: Equatable {
 
   // Transition windowed mode geometry to Interactive Mode geometry. Note that this is not the same
   static func enterInteractiveMode(from windowedModeGeometry: PlayerWindowGeometry) -> InteractiveModeGeometry {
+    assert(windowedModeGeometry.fitOption != .legacyFullScreen && windowedModeGeometry.fitOption != .nativeFullScreen)
+    // Close all outside bars except bottom
     var newGeo = windowedModeGeometry.withResizedOutsideBars(newOutsideTopBarHeight: 0,
                                                              newOutsideTrailingBarWidth: 0,
                                                              newOutsideBottomBarHeight: InteractiveModeGeometry.interactiveModeBottomBarHeight,
                                                              newOutsideLeadingBarWidth: 0)
 
-    let newVideoSize = NSSize(width: newGeo.videoSize.width - paddingLeading - paddingTrailing,
-                              height: newGeo.videoSize.height - paddingBottom - paddingTop)
-
-    newGeo = newGeo.scaleViewport(to: newGeo.videoSize).clone(insideTopBarHeight: 0, insideTrailingBarWidth: 0,
-                                                              insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
-                                                              videoSize: newVideoSize)
+    // Desired viewport is current one but shrunk with fixed margin around video
+    let maxViewportSize = NSSize(width: newGeo.viewportSize.width - paddingLeading - paddingTrailing,
+                                 height: newGeo.viewportSize.height - paddingBottom - paddingTop)
+    let newVideoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: windowedModeGeometry.videoAspectRatio, toFillIn: maxViewportSize)
+    let desiredViewportSize = NSSize(width: newVideoSize.width + paddingLeading + paddingTrailing,
+                                     height: newVideoSize.height + paddingBottom + paddingTop)
+    // This will constrain in screen
+    newGeo = newGeo.scaleViewport(to: desiredViewportSize).clone(insideTopBarHeight: 0, insideTrailingBarWidth: 0,
+                                                                 insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
+                                                                 videoSize: newVideoSize)
 
     return InteractiveModeGeometry.from(newGeo)
   }

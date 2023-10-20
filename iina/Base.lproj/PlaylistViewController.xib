@@ -92,7 +92,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="241" height="259"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
-                                                <tableView focusRingType="none" verticalHuggingPriority="750" misplaced="YES" allowsExpansionToolTips="YES" tableStyle="fullWidth" columnResizing="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="28" viewBased="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xIa-sI-0Xn">
+                                                <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" tableStyle="fullWidth" columnResizing="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="28" viewBased="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xIa-sI-0Xn">
                                                     <rect key="frame" x="0.0" y="0.0" width="241" height="259"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <size key="intercellSpacing" width="3" height="0.0"/>
@@ -111,12 +111,12 @@
                                                                 <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
                                                             <prototypeCellViews>
-                                                                <tableCellView translatesAutoresizingMaskIntoConstraints="NO" id="o4q-SO-fgb">
+                                                                <tableCellView translatesAutoresizingMaskIntoConstraints="NO" id="o4q-SO-fgb" userLabel="IsChosen Table Cell View">
                                                                     <rect key="frame" x="1" y="0.0" width="21" height="17"/>
                                                                     <subviews>
-                                                                        <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="eZG-xB-blk">
+                                                                        <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="eZG-xB-blk" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
                                                                             <rect key="frame" x="0.0" y="1" width="23" height="16"/>
-                                                                            <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" alignment="center" title="▶︎" id="4yj-cg-fli">
+                                                                            <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" alignment="center" title="▶︎" id="4yj-cg-fli" customClass="EditableTextFieldCell" customModule="IINA" customModuleProvider="target">
                                                                                 <font key="font" metaFont="system"/>
                                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -165,9 +165,9 @@
                                                                                 <action selector="prefixBtnAction:" target="-2" id="wWr-Uf-zah"/>
                                                                             </connections>
                                                                         </button>
-                                                                        <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="mzW-2W-iPg">
-                                                                            <rect key="frame" x="13" y="2" width="84" height="14"/>
-                                                                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" sendsActionOnEndEditing="YES" title="Table View Cell" id="M5s-Bm-l3O">
+                                                                        <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="mzW-2W-iPg" userLabel="Track Name Label" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
+                                                                            <rect key="frame" x="13" y="2" width="67" height="14"/>
+                                                                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" sendsActionOnEndEditing="YES" title="Track Name" id="M5s-Bm-l3O" customClass="EditableTextFieldCell" customModule="IINA" customModuleProvider="target">
                                                                                 <font key="font" metaFont="smallSystem"/>
                                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -176,16 +176,16 @@
                                                                                 <binding destination="yTp-yO-UE2" name="value" keyPath="objectValue" id="tKP-cf-7LC"/>
                                                                             </connections>
                                                                         </textField>
-                                                                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="rsK-ba-ojP">
-                                                                            <rect key="frame" x="137" y="2" width="26" height="14"/>
-                                                                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Info" id="XWP-pU-mZg">
+                                                                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="rsK-ba-ojP" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
+                                                                            <rect key="frame" x="121" y="2" width="26" height="14"/>
+                                                                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Info" id="XWP-pU-mZg" customClass="EditableTextFieldCell" customModule="IINA" customModuleProvider="target">
                                                                                 <font key="font" metaFont="smallSystemBold"/>
                                                                                 <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                             </textFieldCell>
                                                                         </textField>
                                                                         <button translatesAutoresizingMaskIntoConstraints="NO" id="MbV-7g-8Gm">
-                                                                            <rect key="frame" x="165" y="3" width="12" height="12"/>
+                                                                            <rect key="frame" x="149" y="3" width="12" height="12"/>
                                                                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="sub-track" imagePosition="only" alignment="center" imageScaling="proportionallyUpOrDown" inset="2" id="Hae-Zb-lOE">
                                                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                                                 <font key="font" metaFont="system"/>
@@ -198,9 +198,9 @@
                                                                                 <action selector="subBtnAction:" target="-2" id="Ke0-30-MCC"/>
                                                                             </connections>
                                                                         </button>
-                                                                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="yEn-uv-K8Z">
-                                                                            <rect key="frame" x="179" y="2" width="33" height="14"/>
-                                                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Label" id="zbw-ad-lgl">
+                                                                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="yEn-uv-K8Z" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
+                                                                            <rect key="frame" x="163" y="2" width="49" height="14"/>
+                                                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Duration" id="zbw-ad-lgl" customClass="EditableTextFieldCell" customModule="IINA" customModuleProvider="target">
                                                                                 <font key="font" metaFont="controlContent" size="11"/>
                                                                                 <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -397,7 +397,7 @@
                                         <rect key="frame" x="0.0" y="0.0" width="241" height="283"/>
                                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="6tr-hz-bdD">
                                             <rect key="frame" x="0.0" y="0.0" width="241" height="283"/>
-                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" tableStyle="fullWidth" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" rowHeight="31" rowSizeStyle="automatic" viewBased="YES" id="BvG-MR-6LX">
                                                     <rect key="frame" x="0.0" y="0.0" width="241" height="283"/>

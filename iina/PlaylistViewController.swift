@@ -16,6 +16,17 @@ fileprivate let MenuItemTagCopy = 602
 fileprivate let MenuItemTagPaste = 603
 fileprivate let MenuItemTagDelete = 604
 
+fileprivate let blendFraction: CGFloat = 0.4
+fileprivate var isPlayingColor: NSColor!
+
+private func recomputeCustomColors() {
+  if #available(macOS 10.14, *) {
+    isPlayingColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
+  } else {
+    isPlayingColor = .textColor
+  }
+}
+
 class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, SidebarTabGroupViewController, NSMenuItemValidation {
 
   override var nibName: NSNib.Name {
@@ -85,6 +96,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   private var playlistTotalLengthIsReady = false
   private var playlistTotalLength: Double? = nil
 
+  private var distObservers: [NSObjectProtocol] = []  // For DistributedNotificationCenter
   internal var observedPrefKeys: [Preference.Key] = [
   ]
 
@@ -157,6 +169,12 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
 
+    if #available(macOS 10.14, *) {
+      recomputeCustomColors()
+      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleColorPreferencesChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
+      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleInterfaceThemeChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
+    }
+
     // notifications
     playlistChangeObserver = NotificationCenter.default.addObserver(forName: .iinaPlaylistChanged, object: player, queue: OperationQueue.main) { [self] _ in
       self.playlistTotalLengthIsReady = false
@@ -183,6 +201,12 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     view.layoutSubtreeIfNeeded()
   }
 
+  @objc func systemColorSettingsDidChange(notification: Notification) {
+    Logger.log("Detected change system color prefs; reloading tabls", level: .verbose)
+    recomputeCustomColors()
+    reloadData(playlist: true, chapters: true)
+  }
+
   override func viewDidAppear() {
     reloadData(playlist: true, chapters: true)
     scrollPlaylistToCurrentItem()
@@ -192,6 +216,10 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   }
 
   deinit {
+    for observer in distObservers {
+      DistributedNotificationCenter.default().removeObserver(observer)
+    }
+    distObservers = []
     NotificationCenter.default.removeObserver(self.playlistChangeObserver!)
   }
 
@@ -551,19 +579,15 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       let item = info.playlist[row]
 
       if identifier == .isChosen {
+        // ▶︎ Is Playing icon
         if let textField = v.textField {
           let text = item.isPlaying ? Constants.String.play : ""
-          if #available(macOS 10.14, *) {
-            textField.setFormattedText(stringValue: text, textColor: .controlAccentColor)
-          } else {
-            textField.stringValue = text
-          }
+          textField.setFormattedText(stringValue: text, textColor: isPlayingColor)
         }
       } else if identifier == .trackName {
+        // Track title
         let cellView = v as! PlaylistTrackCellView
-        // file name
-        let filename = item.filenameForDisplay
-        let displayStr: String = NSString(string: filename).deletingPathExtension
+        let trackTitleString: String = NSString(string: item.filenameForDisplay).deletingPathExtension
 
         func getCachedMetadata() -> (artist: String, title: String)? {
           guard Preference.bool(for: .playlistShowMetadata) else { return nil }
@@ -574,7 +598,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
           guard let artist = metadata.artist, let title = metadata.title else { return nil }
           return (artist, title)
         }
-        cellView.setTitle(displayStr, isPlaying: item.isPlaying)
+        cellView.setTitle(trackTitleString, isPlaying: item.isPlaying)
         // playback progress and duration
         cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         cellView.durationLabel.stringValue = ""
@@ -582,7 +606,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
           if let (artist, title) = getCachedMetadata() {
             DispatchQueue.main.async {
               cellView.setTitle(title, isPlaying: item.isPlaying)
-              cellView.setAdditionalInfo(artist)
+              cellView.setAdditionalInfo(artist, isPlaying: item.isPlaying)
             }
           }
           if let cached = self.player.info.getCachedVideoDurationAndProgress(item.filename),
@@ -591,7 +615,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
             if duration > 0 {
               // if FFmpeg got the duration successfully
               DispatchQueue.main.async {
-                cellView.durationLabel.stringValue = VideoTime(duration).stringRepresentation
+                let durationString = VideoTime(duration).stringRepresentation
+                cellView.durationLabel.setFormattedText(stringValue: durationString, textColor: item.isPlaying ? isPlayingColor : .textColor)
                 if let progress = cached.progress {
                   cellView.playbackProgressView.percentage = progress / duration
                   cellView.playbackProgressView.needsDisplay = true
@@ -898,9 +923,9 @@ class PlaylistTrackCellView: NSTableCellView {
   @IBOutlet weak var subBtnWidthConstraint: NSLayoutConstraint!
   @IBOutlet weak var subBtnTrailingConstraint: NSLayoutConstraint!
   @IBOutlet weak var prefixBtn: PlaylistPrefixButton!
-  @IBOutlet weak var infoLabel: NSTextField!
+  @IBOutlet weak var infoLabel: EditableTextField!  /// use `EditableTextField` class for proper highlight color
   @IBOutlet weak var infoLabelTrailingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var durationLabel: NSTextField!
+  @IBOutlet weak var durationLabel: EditableTextField!
   @IBOutlet weak var playbackProgressView: PlaylistPlaybackProgressView!
 
   func setPrefix(_ prefix: String?) {
@@ -924,10 +949,11 @@ class PlaylistTrackCellView: NSTableCellView {
     }
   }
 
-  func setAdditionalInfo(_ string: String?) {
+  func setAdditionalInfo(_ string: String?, isPlaying: Bool = false) {
     if let string = string {
       infoLabel.isHidden = false
       infoLabelTrailingConstraint.constant = 4
+      infoLabel.setFormattedText(stringValue: string, textColor: isPlaying ? isPlayingColor : .controlTextColor)
       infoLabel.stringValue = string
       infoLabel.toolTip = string
     } else {
@@ -939,12 +965,7 @@ class PlaylistTrackCellView: NSTableCellView {
 
   func setTitle(_ title: String, isPlaying: Bool) {
     guard let textField = textField else { return }
-//    if #available(macOS 10.14, *) {
-//      // TODO: pick colors which work for this. Fix font wrapping
-//      textField.setFormattedText(stringValue: title, textColor: isPlaying ? .controlTextColor : .controlTextColor)
-//    } else {
-//      textField.stringValue = title
-//    }
+    textField.setFormattedText(stringValue: title, textColor: isPlaying ? isPlayingColor : .controlTextColor)
     textField.stringValue = title
     textField.toolTip = title
   }

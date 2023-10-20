@@ -441,12 +441,8 @@ extension PlayerWindowController {
       cropController.view.alphaValue = 0
       self.cropSettingsView = cropController
 
-      videoView.constrainLayoutToEqualsOffsetOnly(
-        top: InteractiveModeGeometry.paddingTop,
-        right: -InteractiveModeGeometry.paddingTrailing,
-        bottom: -InteractiveModeGeometry.paddingBottom,
-        left: InteractiveModeGeometry.paddingLeading
-      )
+      // Need to hug the walls of viewport because it is already doing that. Will animate with updated constraints in next stage
+      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
 
       if let videoBaseDisplaySize = player.videoBaseDisplaySize {
         let origVideoSize = videoBaseDisplaySize
@@ -594,7 +590,9 @@ extension PlayerWindowController {
       if transition.outputLayout.isNativeFullScreen {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
         log.verbose("Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
-        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+        if transition.outputLayout.mode != .fullScreenInteractive {
+          videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+        }
         player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
       } else if transition.outputLayout.isLegacyFullScreen {
         let screen = NSScreen.getScreenOrDefault(screenID: transition.outputGeometry.screenID)
@@ -625,7 +623,10 @@ extension PlayerWindowController {
     case .windowed, .windowedInteractive:
       let newWindowFrame = transition.outputGeometry.windowFrame
       log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
-      videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+      if !transition.outputLayout.isInteractiveMode {
+        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+      }
+
       player.window.setFrameImmediately(newWindowFrame)
 
       if outputLayout.isWindowed && outputLayout.spec.isLegacyStyle && LayoutSpec.enableTitleBarForLegacyWindow {
@@ -647,7 +648,16 @@ extension PlayerWindowController {
           }
         }
       }
+    }
 
+    if transition.isEnteringInteractiveMode {
+      // Finish this now
+      videoView.constrainLayoutToEqualsOffsetOnly(
+        top: InteractiveModeGeometry.paddingTop,
+        right: -InteractiveModeGeometry.paddingTrailing,
+        bottom: -InteractiveModeGeometry.paddingBottom,
+        left: InteractiveModeGeometry.paddingLeading
+      )
     }
 
     if transition.isTogglingLegacyStyle {

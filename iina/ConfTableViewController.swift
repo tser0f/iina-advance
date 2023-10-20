@@ -16,9 +16,11 @@ fileprivate let COPY_COUNT_REGEX = try! NSRegularExpression(
 
 fileprivate let nameColumnIndex = 0
 fileprivate let draggingFormation: NSDraggingFormation = .default
-fileprivate let useSeparateColorForBuiltinConfs = false
 
-fileprivate let blendFraction: CGFloat = 0.05
+/// Change to `true` to use `builtinConfTextColor` for built-in configs
+fileprivate let useSeparateColorForBuiltinConfs = true
+
+fileprivate let blendFraction: CGFloat = 0.2
 @available(macOS 10.14, *)
 fileprivate var builtinConfTextColor: NSColor!
 
@@ -59,7 +61,8 @@ class ConfTableViewController: NSObject {
 
     if #available(macOS 10.14, *) {
       recomputeCustomColors()
-      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleColorPreferencesChangedNotification, object: nil, queue: .main, using: self.uiSettingsDidChange))
+      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleColorPreferencesChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
+      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleInterfaceThemeChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
     }
 
     if #available(macOS 10.13, *) {
@@ -88,7 +91,7 @@ class ConfTableViewController: NSObject {
   }
 
   @available(macOS 10.14, *)
-  private func uiSettingsDidChange(notification: Notification) {
+  private func systemColorSettingsDidChange(notification: Notification) {
     Logger.log("Detected change system color prefs; reloading Conf table", level: .verbose)
     recomputeCustomColors()
     self.tableView.reloadExistingRows(reselectRowsAfter: true)
