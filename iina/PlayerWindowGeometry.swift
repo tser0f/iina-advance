@@ -743,6 +743,7 @@ extension PlayerWindowController {
       log.error("SetWindowScale failed: could not get videoBaseDisplaySize")
       return
     }
+
     var videoDesiredSize = videoBaseDisplaySize.multiply(scale)
 
     log.verbose("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) → videoDesiredSize=\(videoDesiredSize)")
@@ -752,10 +753,6 @@ extension PlayerWindowController {
       videoDesiredSize = window.convertFromBacking(NSRect(origin: window.frame.origin, size: videoDesiredSize)).size
       log.verbose("SetWindowScale: converted videoDesiredSize to physical resolution: \(videoDesiredSize)")
     }
-
-    /// This will fit the viewport to the video size, even if `allowEmptySpaceAroundVideo` is enabled.
-    /// May revisit this in the future...
-    resizeViewport(to: videoDesiredSize)
 
     let newGeoUnconstrained = windowedModeGeometry.scaleVideo(to: videoDesiredSize, fitOption: .noConstraints)
     // User has actively resized the video. Assume this is the new preferred resolution
@@ -833,7 +830,7 @@ extension PlayerWindowController {
 
   /// Set the window frame and if needed the content view frame to appropriately use the full screen.
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
-  func setWindowFrameForLegacyFullScreen(using geometry: PlayerWindowGeometry) {
+  func applyLegacyFullScreenGeometry(_ geometry: PlayerWindowGeometry) {
     guard let window = window else { return }
     let currentVideoSize = NSSize(width: videoView.widthConstraint.constant, height: videoView.heightConstraint.constant)
     guard !geometry.hasEqual(windowFrame: window.frame, videoSize: currentVideoSize) else {
@@ -845,7 +842,9 @@ extension PlayerWindowController {
     let layout = currentLayout
     let topBarHeight = layout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
     updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
-    videoView.updateSizeConstraints(geometry.videoSize)
+    if !layout.isInteractiveMode {
+      videoView.updateSizeConstraints(geometry.videoSize)
+    }
     player.window.setFrameImmediately(geometry.windowFrame)
   }
 
@@ -866,9 +865,6 @@ extension PlayerWindowController {
       }
       log.verbose("Running geoUpdate \(geoUpdateRequestID)")
 
-      // Update this, even if not currently in windowed mode
-      windowedModeGeometry = newGeometry
-
       switch currentLayout.spec.mode {
       case .musicMode:
         log.error("applyWindowGeometry cannot be used in music mode!")
@@ -880,16 +876,19 @@ extension PlayerWindowController {
 
       case .windowed:
         // Make sure this is up-to-date
-        videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
-
-        if !isWindowHidden {
-          player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
-        }
+        videoView.updateSizeConstraints(newGeometry.videoSize)
 
       case .windowedInteractive, .fullScreenInteractive:
+        // VideoView size constraints not used
         break
       }
 
+      if currentLayout.mode == .windowed && !isWindowHidden {
+        player.window.setFrameImmediately(newGeometry.windowFrame)
+      }
+
+      // Update this, even if not currently in windowed mode
+      windowedModeGeometry = newGeometry
       player.saveState()
 
       log.verbose("Calling updateWinParamsForMPV from apply() with videoSize: \(newGeometry.videoSize)")

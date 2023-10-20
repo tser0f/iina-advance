@@ -18,10 +18,12 @@ extension PlayerWindowController {
     case fullScreenInteractive
   }
 
-  /// `LayoutSpec`: data structure containing a window's layout configuration, and is the blueprint for building a `LayoutState`.
-  /// Most of the fields in this struct can be derived from IINA's application settings, although some state like active sidebar tab
-  /// and window mode can vary for each window.
-  /// See also: `LayoutState.buildFrom()`, which contains the logic to compile a `LayoutState` from a `LayoutSpec`.
+  /// `LayoutSpec`: data structure containing a player window's layout configuration, and contains all the info needed to build a `LayoutState`.
+  /// (`LayoutSpec` is more compact & convenient for state storage, but `LayoutState` contains extra derived data which is more useful for
+  /// window operations).
+  /// The values for most fields in this struct can be derived from IINA's application settings, although some state like active sidebar tab
+  /// and window mode can vary for each player window.
+  /// See also: `LayoutState.buildFrom()`, which compiles a `LayoutSpec` into a `LayoutState`.
   struct LayoutSpec {
     
     /// WIP. Set this to `true` to continue working on recreating title bar in legacy windowed mode.
@@ -407,6 +409,7 @@ extension PlayerWindowController {
 
     // MARK: - Build LayoutState from LayoutSpec
 
+    /// Compiles the given `LayoutSpec` into a `LayoutState`. This is an idempotent operation.
     static func buildFrom(_ layoutSpec: LayoutSpec) -> LayoutState {
       let outputLayout = LayoutState(spec: layoutSpec)
 

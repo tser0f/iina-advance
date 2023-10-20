@@ -2033,7 +2033,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
           let screenID = bestScreen.screenID
           let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspectRatio: videoAspectRatio)
-          setWindowFrameForLegacyFullScreen(using: fsGeo)
+          applyLegacyFullScreenGeometry(fsGeo)
           windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
           player.saveState()
         }))
@@ -2075,7 +2075,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
         log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
         let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
-        setWindowFrameForLegacyFullScreen(using: fsGeo)
+        applyLegacyFullScreenGeometry(fsGeo)
       }))
     } else if currentLayout.isWindowed {
       /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
@@ -2105,7 +2105,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // window management app such as Amethyst. If this happens, move the window back to its proper place:
       log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
       let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
-      setWindowFrameForLegacyFullScreen(using: fsGeo)
+      applyLegacyFullScreenGeometry(fsGeo)
     } else {
       updateCachedGeometry(updatePreferredSizeAlso: false)
       player.events.emit(.windowMoved, data: window.frame)
@@ -2666,7 +2666,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let newMode: WindowMode = oldLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
     log.verbose("Entering interactive mode, newMode: \(newMode)")
     let interactiveModeLayout = oldLayout.spec.clone(mode: newMode, interactiveMode: mode)
-    let duration = 4.0 // CocoaAnimation.CropAnimationDuration
+    let duration = CocoaAnimation.CropAnimationDuration
     buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout,
                           totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5,
                           thenRun: true)

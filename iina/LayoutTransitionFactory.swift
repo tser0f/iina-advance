@@ -152,32 +152,13 @@ extension PlayerWindowController {
     // Does not apply to music mode, which can be a different screen.
     let windowedModeScreen = NSScreen.getScreenOrDefault(screenID: windowedModeGeometry.screenID)
 
-    // - Build outputLayout
-
+    // Compile outputLayout
     let outputLayout = LayoutState.buildFrom(outputSpec)
 
     // - Build geometries
 
     // Build InputGeometry
-    let inputGeometry: PlayerWindowGeometry
-    // Restore window size & position
-    switch inputLayout.mode {
-    case .windowed:
-      inputGeometry = windowedModeGeometry
-    case .fullScreen, .fullScreenInteractive:
-      inputGeometry = inputLayout.buildFullScreenGeometry(inside: windowedModeScreen, videoAspectRatio: videoAspectRatio)
-    case .windowedInteractive:
-      if let interactiveModeGeometry {
-        inputGeometry = interactiveModeGeometry.toPlayerWindowGeometry()
-      } else {
-        log.warn("[\(transitionName)] Failed to find interactiveModeGeometry! Will change from windowedModeGeometry (may be wrong)")
-        inputGeometry = InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry).toPlayerWindowGeometry()
-      }
-    case .musicMode:
-      /// `musicModeGeometry` should have already been deserialized and set.
-      /// But make sure we correct any size problems
-      inputGeometry = musicModeGeometry.refit().toPlayerWindowGeometry()
-    }
+    let inputGeometry: PlayerWindowGeometry = buildInputGeometry(from: inputLayout, transitionName: transitionName, windowedModeScreen: windowedModeScreen)
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
     // Build OutputGeometry
@@ -188,8 +169,8 @@ extension PlayerWindowController {
                                       to: outputLayout, to: outputGeometry,
                                       isInitialLayout: isInitialLayout)
 
+    // Build MiddleGeometry if needed (is applied after ClosePanels step)
     if !isInitialLayout {
-      // Build MiddleGeometry (after closed panels step)
       transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
       log.verbose("[\(transitionName)] Built middleGeometry: \(transition.middleGeometry!)")
     }
@@ -260,7 +241,7 @@ extension PlayerWindowController {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let newGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("Updating legacy full screen window to show camera housing prior to entering native windowed mode")
-        setWindowFrameForLegacyFullScreen(using: newGeo)
+        applyLegacyFullScreenGeometry(newGeo)
       }))
     }
 
@@ -314,7 +295,7 @@ extension PlayerWindowController {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let extraGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
-        setWindowFrameForLegacyFullScreen(using: extraGeo)
+        applyLegacyFullScreenGeometry(extraGeo)
       }))
     }
 
@@ -342,7 +323,7 @@ extension PlayerWindowController {
         let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : windowedModeScreen.cameraHousingHeight ?? 0
         let newGeo = transition.outputGeometry.clone(windowFrame: windowedModeScreen.frame, topMarginHeight: topBlackBarHeight)
         log.verbose("Updating legacy full screen window to cover camera housing / menu bar / dock")
-        setWindowFrameForLegacyFullScreen(using: newGeo)
+        applyLegacyFullScreenGeometry(newGeo)
       }))
     }
 
@@ -355,6 +336,27 @@ extension PlayerWindowController {
       animationQueue.run(transition.animationTasks)
     }
     return transition
+  }
+
+  private func buildInputGeometry(from inputLayout: LayoutState, transitionName: String, windowedModeScreen: NSScreen) -> PlayerWindowGeometry {
+    // Restore window size & position
+    switch inputLayout.mode {
+    case .windowed:
+      return windowedModeGeometry
+    case .fullScreen, .fullScreenInteractive:
+      return inputLayout.buildFullScreenGeometry(inside: windowedModeScreen, videoAspectRatio: videoAspectRatio)
+    case .windowedInteractive:
+      if let interactiveModeGeometry {
+        return interactiveModeGeometry.toPlayerWindowGeometry()
+      } else {
+        log.warn("[\(transitionName)] Failed to find interactiveModeGeometry! Will change from windowedModeGeometry (may be wrong)")
+        return InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry).toPlayerWindowGeometry()
+      }
+    case .musicMode:
+      /// `musicModeGeometry` should have already been deserialized and set.
+      /// But make sure we correct any size problems
+      return musicModeGeometry.refit().toPlayerWindowGeometry()
+    }
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
@@ -418,27 +420,29 @@ extension PlayerWindowController {
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
   func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry {
     if transition.isEnteringMusicMode {
-      return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
-                                                      outsideTrailingBarWidth: 0,
-                                                      outsideBottomBarHeight: 0,
-                                                      outsideLeadingBarWidth: 0,
-                                                      insideTopBarHeight: 0,
-                                                      insideTrailingBarWidth: 0,
-                                                      insideBottomBarHeight: 0,
-                                                      insideLeadingBarWidth: 0)
+      return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
+                                                      outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
+                                                      insideTopBarHeight: 0, insideTrailingBarWidth: 0,
+                                                      insideBottomBarHeight: 0, insideLeadingBarWidth: 0)
     } else if transition.isExitingMusicMode {
       // Only bottom bar needs to be closed. No need to constrain in screen
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
     } else if transition.isTogglingInteractiveMode {
-      let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0,
-                                                                outsideTrailingBarWidth: 0,
-                                                                outsideBottomBarHeight: 0,
-                                                                outsideLeadingBarWidth: 0,
-                                                                insideTopBarHeight: 0,
-                                                                insideTrailingBarWidth: 0,
-                                                                insideBottomBarHeight: 0,
-                                                                insideLeadingBarWidth: 0)
-      return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
+      if transition.inputLayout.isFullScreen {
+        let screen = NSScreen.getScreenOrDefault(screenID: transition.inputGeometry.screenID)
+        return PlayerWindowGeometry.forFullScreen(in: screen, legacy: transition.inputLayout.isLegacyFullScreen,
+                                                  outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
+                                                  outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
+                                                  insideTopBarHeight: 0, insideTrailingBarWidth: 0,
+                                                  insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
+                                                  videoAspectRatio: transition.inputGeometry.videoAspectRatio)
+      } else {
+        let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
+                                                                  outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
+                                                                  insideTopBarHeight: 0, insideTrailingBarWidth: 0,
+                                                                  insideBottomBarHeight: 0, insideLeadingBarWidth: 0)
+        return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
+      }
     }
     // TOP
     let topBarHeight: CGFloat

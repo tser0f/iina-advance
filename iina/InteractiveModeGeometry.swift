@@ -38,17 +38,11 @@ struct InteractiveModeGeometry: Equatable {
                   height: windowFrame.height - InteractiveModeGeometry.paddingTop - InteractiveModeGeometry.paddingBottom - InteractiveModeGeometry.interactiveModeBottomBarHeight)
   }
 
-  var viewportSize: NSSize {
-    let videoSize = videoSize
-    return NSSize(width: videoSize.width + InteractiveModeGeometry.paddingLeading + InteractiveModeGeometry.paddingTrailing,
-                  height: videoSize.height + InteractiveModeGeometry.paddingTop + InteractiveModeGeometry.paddingBottom)
-  }
-
   /// Converts to equivalent `PlayerWindowGeometry`.
   func toPlayerWindowGeometry() -> PlayerWindowGeometry {
     return PlayerWindowGeometry(windowFrame: windowFrame,
                                 screenID: screenID,
-                                fitOption: .insideVisibleFrame,
+                                fitOption: fitOption,
                                 topMarginHeight: 0,
                                 outsideTopBarHeight: 0,
                                 outsideTrailingBarWidth: 0,

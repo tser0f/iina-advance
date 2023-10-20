@@ -617,7 +617,7 @@ extension PlayerWindowController {
           newGeo = transition.outputGeometry
         }
         log.verbose("Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
-        setWindowFrameForLegacyFullScreen(using: newGeo)
+        applyLegacyFullScreenGeometry(newGeo)
       }
     case .musicMode:
       // Especially needed when applying initial layout:
@@ -670,8 +670,8 @@ extension PlayerWindowController {
       if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
         apply(visibility: .showFadeableNonTopBar, to: additionalInfoView)
       }
-    } else if !outputLayout.isMusicMode {
-      /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. ALways set `alphaValue = 1`.
+    } else if outputLayout.titleBar.isShowable {
+      /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. Always set `alphaValue = 1`.
       for button in trafficLightButtons {
         button.alphaValue = 1
         button.isHidden = false
@@ -691,21 +691,21 @@ extension PlayerWindowController {
       /// Title bar accessories get removed by legacy fullscreen or if window `styleMask` did not include `.titled`.
       /// Add them back:
       addTitleBarAccessoryViews()
+
+      applyShowableOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
+      applyShowableOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
+      updatePinToTopButton()
+
+      if let customTitleBar {
+        apply(visibility: outputLayout.leadingSidebarToggleButton, to: customTitleBar.leadingSidebarToggleButton)
+        apply(visibility: outputLayout.trailingSidebarToggleButton, to: customTitleBar.trailingSidebarToggleButton)
+        /// pinToTop button is already handled by `updatePinToTopButton()`
+      }
+
+      // Add back title bar accessories (if needed):
+      applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
+      applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
     }
-
-    applyShowableOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
-    applyShowableOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-    updatePinToTopButton()
-
-    if let customTitleBar {
-      apply(visibility: outputLayout.leadingSidebarToggleButton, to: customTitleBar.leadingSidebarToggleButton)
-      apply(visibility: outputLayout.trailingSidebarToggleButton, to: customTitleBar.trailingSidebarToggleButton)
-      /// pinToTop button is already handled by `updatePinToTopButton()`
-    }
-
-    // Add back title bar accessories (if needed):
-    applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: leadingTitleBarAccessoryView)
-    applyShowableOnly(visibility: outputLayout.titlebarAccessoryViewControllers, to: trailingTitleBarAccessoryView)
 
     if let cropController = cropSettingsView {
       if transition.isEnteringInteractiveMode {
@@ -717,14 +717,17 @@ extension PlayerWindowController {
         viewportView.layer?.shadowOpacity = 1
         viewportView.layer?.shadowOffset = .zero
         viewportView.layer?.shadowRadius = 3
+      }
 
-        cropController.cropBoxView.resized(with: videoView.frame)
-        cropController.cropBoxView.layoutSubtreeIfNeeded()
+      let selectableRect = NSRect(origin: CGPoint(x: InteractiveModeGeometry.paddingLeading, y: InteractiveModeGeometry.paddingBottom),
+                                  size: transition.outputGeometry.videoSize)
+      cropController.cropBoxView.resized(with: selectableRect)
+      cropController.cropBoxView.layoutSubtreeIfNeeded()
+    }
 
-      } else if transition.isExitingInteractiveMode {
-        if !isPausedPriorToInteractiveMode {
-          player.resume()
-        }
+    if transition.isExitingInteractiveMode {
+      if !isPausedPriorToInteractiveMode {
+        player.resume()
       }
     }
   }
@@ -745,7 +748,7 @@ extension PlayerWindowController {
     if transition.isEnteringFullScreen {
       // Entered FullScreen
 
-      if !transition.outputLayout.isLegacyFullScreen {
+      if transition.outputLayout.isNativeFullScreen {
         /// Special case: need to wait until now to call `trafficLightButtons.isHidden = false` due to their quirks
         for button in trafficLightButtons {
           button.isHidden = false
