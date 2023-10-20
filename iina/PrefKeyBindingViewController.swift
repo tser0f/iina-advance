@@ -59,6 +59,8 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
       NotificationCenter.default.removeObserver(observer)
     }
     observers = []
+
+    UserDefaults.standard.removeObserver(self, forKeyPath: #keyPath(view.effectiveAppearance))
   }
 
   override func viewDidLoad() {
@@ -77,6 +79,8 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
     observers.append(NotificationCenter.default.addObserver(forName: .iinaPendingUIChangeForConfTable, object: nil, queue: .main) { _ in
       self.updateEditEnabledStatus()
     })
+
+    addObserver(self, forKeyPath: #keyPath(view.effectiveAppearance), options: [.old, .new], context: nil)
 
     observers.append(NotificationCenter.default.addObserver(forName: .iinaKeyBindingSearchFieldShouldUpdate, object: nil, queue: .main) { notification in
       guard let newStringValue = notification.object as? String else {
@@ -100,6 +104,24 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
       })
       // Change vertical scroll elastisticity of tables in Key Bindings prefs from "yes" to "allowed"
       observers.append(observer)
+    }
+  }
+
+  fileprivate let blendFraction: CGFloat = 0.2
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    guard let keyPath = keyPath else { return }
+
+    switch keyPath {
+    case #keyPath(view.effectiveAppearance):
+      if #available(macOS 10.14, *) {
+        confTableController?.recomputeCustomColors()
+        confTableView.reloadExistingRows(reselectRowsAfter: true)
+        bindingTableController?.customColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
+        bindingTableController?.recomputeCustomColors()
+        bindingTableView.reloadExistingRows(reselectRowsAfter: true)
+      }
+    default:
+      return
     }
   }
 

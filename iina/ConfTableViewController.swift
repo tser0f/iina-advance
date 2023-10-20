@@ -20,15 +20,6 @@ fileprivate let draggingFormation: NSDraggingFormation = .default
 /// Change to `true` to use `builtinConfTextColor` for built-in configs
 fileprivate let useSeparateColorForBuiltinConfs = true
 
-fileprivate let blendFraction: CGFloat = 0.2
-@available(macOS 10.14, *)
-fileprivate var builtinConfTextColor: NSColor!
-
-@available(macOS 10.14, *)
-private func recomputeCustomColors() {
-  builtinConfTextColor = .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
-}
-
 class ConfTableViewController: NSObject {
   private unowned var tableView: EditableTableView!
   private var confTableState: ConfTableState {
@@ -41,6 +32,20 @@ class ConfTableViewController: NSObject {
   // Convenience var. Pref lookup is super fast; should be fine to check on each access. Try to reduce need for restart
   fileprivate var enableInlineCreate: Bool {
     Preference.bool(for: .useInlineEditorInsteadOfDialogForNewInputConf)
+  }
+
+  // FIXME: this doesn't update when dark mode is toggled
+  fileprivate let blendFraction: CGFloat = 0.2
+  fileprivate var builtinConfTextColor: NSColor {
+    if #available(macOS 10.14, *) {
+      return .controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
+    } else {
+      return .textColor
+    }
+  }
+
+  @available(macOS 10.14, *)
+  func recomputeCustomColors() {
   }
 
   init(_ inputConfTableView: EditableTableView, _ bindingTableViewController: BindingTableViewController) {
@@ -62,7 +67,6 @@ class ConfTableViewController: NSObject {
     if #available(macOS 10.14, *) {
       recomputeCustomColors()
       distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleColorPreferencesChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
-      distObservers.append(DistributedNotificationCenter.default().addObserver(forName: .appleInterfaceThemeChangedNotification, object: nil, queue: .main, using: self.systemColorSettingsDidChange))
     }
 
     if #available(macOS 10.13, *) {
@@ -92,7 +96,7 @@ class ConfTableViewController: NSObject {
 
   @available(macOS 10.14, *)
   private func systemColorSettingsDidChange(notification: Notification) {
-    Logger.log("Detected change system color prefs; reloading Conf table", level: .verbose)
+    Logger.log("Detected change to system color prefs; reloading Conf table", level: .verbose)
     recomputeCustomColors()
     self.tableView.reloadExistingRows(reselectRowsAfter: true)
   }
