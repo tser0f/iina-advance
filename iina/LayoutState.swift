@@ -64,7 +64,7 @@ extension PlayerWindowController {
         // Override most properties for music mode & interactive mode
         self.leadingSidebar = leadingSidebar.clone(visibility: .hide)
         self.trailingSidebar = trailingSidebar.clone(visibility: .hide)
-        self.topBarPlacement = .insideViewport
+        self.topBarPlacement = mode == .windowedInteractive ? .outsideViewport : .insideViewport
         self.bottomBarPlacement = .outsideViewport
         self.enableOSC = false
         self.interactiveMode = interactiveMode
@@ -421,7 +421,7 @@ extension PlayerWindowController {
           outputLayout.trafficLightButtons = .showAlways
         }
 
-      } else if !outputLayout.isMusicMode && !outputLayout.isInteractiveMode {
+      } else if !outputLayout.isMusicMode {
         let visibleState: Visibility = outputLayout.topBarPlacement == .insideViewport ? .showFadeableTopBar : .showAlways
 
         outputLayout.topBarView = visibleState
@@ -437,12 +437,12 @@ extension PlayerWindowController {
           outputLayout.titlebarAccessoryViewControllers = visibleState
 
           // LeadingSidebar toggle button
-          let hasLeadingSidebar = !layoutSpec.leadingSidebar.tabGroups.isEmpty
+          let hasLeadingSidebar = !outputLayout.isInteractiveMode && !layoutSpec.leadingSidebar.tabGroups.isEmpty
           if hasLeadingSidebar && Preference.bool(for: .showLeadingSidebarToggleButton) {
             outputLayout.leadingSidebarToggleButton = visibleState
           }
           // TrailingSidebar toggle button
-          let hasTrailingSidebar = !layoutSpec.trailingSidebar.tabGroups.isEmpty
+          let hasTrailingSidebar = !outputLayout.isInteractiveMode && !layoutSpec.trailingSidebar.tabGroups.isEmpty
           if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
             outputLayout.trailingSidebarToggleButton = visibleState
           }

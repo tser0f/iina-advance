@@ -1921,9 +1921,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case .windowed, .windowedInteractive:
       let newGeometry = resizeWindowedModeGeometry(to: requestedSize)
-      CocoaAnimation.disableAnimation{
-        videoView.updateSizeConstraints(newGeometry.videoSize)
+
+      if currentMode == .windowed {
+        CocoaAnimation.disableAnimation{
+          videoView.updateSizeConstraints(newGeometry.videoSize)
+        }
       }
+
+      updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
 
       // We know the size, but don't yet know where AppKit is actually going to put the resized window.
       // Enqueue task which will run after this method returns, so we can check once the window is in its new location.
@@ -1931,7 +1936,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         updateCachedGeometry()
       }
 
-      updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
       return newGeometry.windowFrame.size
     }
   }
@@ -1962,8 +1966,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       if currentLayout.isInteractiveMode {
         // Update interactive mode selectable box size. Origin is relative to viewport origin
-        let selectableRect = NSRect(origin: CGPoint(x: InteractiveModeGeometry.paddingLeading, y: InteractiveModeGeometry.paddingBottom),
-                                    size: videoView.frame.size)
+        let selectableRect = NSRect(origin: CGPointZero, size: videoView.frame.size)
         cropSettingsView?.cropBoxView.resized(with: selectableRect)
       } else if currentLayout.oscPosition == .floating {
         // Update floating control bar position

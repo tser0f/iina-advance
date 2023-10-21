@@ -448,16 +448,16 @@ extension PlayerWindowController {
         let origVideoSize = videoBaseDisplaySize
 
         // Add selection box
-        viewportView.addSubview(cropController.cropBoxView)
+        videoView.addSubview(cropController.cropBoxView)
+        cropController.cropBoxView.addConstraintsToFillSuperview()
+        cropController.cropBoxView.isHidden = true
+        cropController.cropBoxView.alphaValue = 0
+
         let selectWholeVideoByDefault = transition.outputLayout.spec.interactiveMode == .crop
         cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
         cropController.cropBoxView.actualSize = origVideoSize
-        let selectableRect = NSRect(origin: CGPoint(x: InteractiveModeGeometry.paddingLeading, y: InteractiveModeGeometry.paddingBottom),
-                                    size: transition.outputGeometry.videoSize)
+        let selectableRect = NSRect(origin: CGPointZero, size: transition.outputGeometry.videoSize)
         cropController.cropBoxView.resized(with: selectableRect)
-        cropController.cropBoxView.isHidden = true
-        cropController.cropBoxView.alphaValue = 0
-        cropController.cropBoxView.addConstraintsToFillSuperview()
       } else {
         Utility.showAlert("no_video_track")
       }
@@ -651,12 +651,13 @@ extension PlayerWindowController {
     }
 
     if transition.isEnteringInteractiveMode {
-      // Finish this now
+      // Already set fixed constraints. Now set new values to animate into place
+      let videobox = InteractiveModeGeometry.videobox
       videoView.constrainLayoutToEqualsOffsetOnly(
-        top: InteractiveModeGeometry.paddingTop,
-        right: -InteractiveModeGeometry.paddingTrailing,
-        bottom: -InteractiveModeGeometry.paddingBottom,
-        left: InteractiveModeGeometry.paddingLeading
+        top: videobox.top,
+        right: -videobox.trailing,
+        bottom: -videobox.bottom,
+        left: videobox.leading
       )
     }
 
@@ -729,8 +730,7 @@ extension PlayerWindowController {
         viewportView.layer?.shadowRadius = 3
       }
 
-      let selectableRect = NSRect(origin: CGPoint(x: InteractiveModeGeometry.paddingLeading, y: InteractiveModeGeometry.paddingBottom),
-                                  size: transition.outputGeometry.videoSize)
+      let selectableRect = NSRect(origin: CGPointZero, size: transition.outputGeometry.videoSize)
       cropController.cropBoxView.resized(with: selectableRect)
       cropController.cropBoxView.layoutSubtreeIfNeeded()
     }

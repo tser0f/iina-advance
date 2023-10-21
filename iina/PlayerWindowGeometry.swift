@@ -791,10 +791,12 @@ extension PlayerWindowController {
     switch currentLayout.mode {
     case .windowed:
       windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
-      player.info.setIntendedViewportSize(from: windowedModeGeometry)
+      if updatePreferredSizeAlso {
+        player.info.setIntendedViewportSize(from: windowedModeGeometry)
+      }
       player.saveState()
     case .windowedInteractive:
-      break
+      interactiveModeGeometry = InteractiveModeGeometry.from(buildWindowGeometryFromCurrentFrame(using: currentLayout))
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame, 
                                                   screenID: bestScreen.screenID,
@@ -807,7 +809,8 @@ extension PlayerWindowController {
 
   // For windowed mode
   func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> PlayerWindowGeometry {
-    assert(layout.mode == .windowed, "buildWindowGeometryFromCurrentFrame(): unexpected mode: \(layout.mode)")
+    assert(layout.mode == .windowed || layout.mode == .windowedInteractive,
+           "buildWindowGeometryFromCurrentFrame(): unexpected mode: \(layout.mode)")
     // TODO: find a better solution than just replicating this logic here
     let insideBottomBarHeight = (layout.bottomBarPlacement == .insideViewport && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
     let outsideBottomBarHeight = (layout.bottomBarPlacement == .outsideViewport && layout.enableOSC && layout.oscPosition == .bottom) ? OSCToolbarButton.oscBarHeight : 0
@@ -824,7 +827,8 @@ extension PlayerWindowController {
                                    insideTrailingBarWidth: layout.insideTrailingBarWidth,
                                    insideBottomBarHeight: insideBottomBarHeight,
                                    insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                                   videoAspectRatio: videoAspectRatio)
+                                   videoAspectRatio: videoAspectRatio,
+                                   videoSize: videoView.frame.size)
     return geo.scaleViewport()
   }
 
@@ -947,8 +951,22 @@ extension PlayerWindowController {
   /// Called from `windowWillResize()` if in `windowed` mode.
   func resizeWindowedModeGeometry(to requestedSize: NSSize) -> PlayerWindowGeometry {
     assert(currentLayout.isWindowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
-    guard let window = window else { return windowedModeGeometry }
-    let currentGeo = windowedModeGeometry
+    let currentGeo: PlayerWindowGeometry
+    switch currentLayout.spec.mode {
+    case .windowed:
+      currentGeo = windowedModeGeometry
+    case .windowedInteractive:
+      if let interactiveModeGeometry {
+        currentGeo = interactiveModeGeometry.toPlayerWindowGeometry()
+      } else {
+        log.error("WindowWillResize: could not find interactiveModeGeometry; will substitute windowedModeGeometry")
+        currentGeo = windowedModeGeometry
+      }
+    default:
+      log.error("WindowWillResize: requested mode is invalid: \(currentLayout.spec.mode). Will fall back to windowedModeGeometry")
+      return windowedModeGeometry
+    }
+    guard let window = window else { return currentGeo }
 
     if denyNextWindowResize {
       let currentSize = window.frame.size
