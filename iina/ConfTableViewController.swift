@@ -17,7 +17,7 @@ fileprivate let COPY_COUNT_REGEX = try! NSRegularExpression(
 fileprivate let nameColumnIndex = 0
 fileprivate let draggingFormation: NSDraggingFormation = .default
 
-/// Change to `true` to use `builtinConfTextColor` for built-in configs
+/// Change to `true` to use `builtInConfTextColor` for built-in configs
 fileprivate let useSeparateColorForBuiltinConfs = true
 
 class ConfTableViewController: NSObject {
@@ -33,11 +33,11 @@ class ConfTableViewController: NSObject {
     Preference.bool(for: .useInlineEditorInsteadOfDialogForNewInputConf)
   }
 
-  fileprivate var builtinConfTextColor: NSColor = .textColor
+  fileprivate var builtInConfTextColor: NSColor = .textColor
 
   // FIXME: this doesn't update when dark mode is toggled
   func setCustomColors(builtInItemTextColor: NSColor) {
-    builtinConfTextColor = builtInItemTextColor
+    builtInConfTextColor = builtInItemTextColor
   }
 
   init(_ inputConfTableView: EditableTableView, _ bindingTableViewController: BindingTableViewController) {
@@ -121,7 +121,7 @@ extension ConfTableViewController: NSTableViewDelegate {
     case "nameColumn":
       let textColor: NSColor?
       if #available(macOS 10.14, *), useSeparateColorForBuiltinConfs {
-        textColor = isBuiltinConf ? builtinConfTextColor : .controlTextColor
+        textColor = isBuiltinConf ? builtInConfTextColor : .controlTextColor
       } else {
         textColor = nil
       }
@@ -129,7 +129,7 @@ extension ConfTableViewController: NSTableViewDelegate {
       return cell
     case "isDefaultColumn":
       if #available(macOS 10.14, *), useSeparateColorForBuiltinConfs {
-        cell.imageView?.contentTintColor = builtinConfTextColor
+        cell.imageView?.contentTintColor = builtInConfTextColor
       }
       cell.imageView?.isHidden = !isBuiltinConf
       return cell

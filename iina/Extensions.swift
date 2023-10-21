@@ -813,6 +813,16 @@ extension NSAppearance {
       return name == .vibrantDark
     }
   }
+
+  // Performs the given closure with this appearance by temporarily making this the current appearance.
+  func applyAppearanceFor<T>(_ closure: () throws -> T) rethrows -> T {
+    let previousAppearance = NSAppearance.current
+    NSAppearance.current = self
+    defer {
+      NSAppearance.current = previousAppearance
+    }
+    return try closure()
+  }
 }
 
 extension NSScreen {

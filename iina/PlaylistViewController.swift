@@ -67,14 +67,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   var currentTab: TabViewType = .playlist
 
-  fileprivate func isPlayingColor() -> NSColor {
-    if #available(macOS 10.14, *) {
-      return NSColor.controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
-    } else {
-      return .textColor
-    }
-  }
-
   @IBOutlet weak var playlistTableView: NSTableView!
   @IBOutlet weak var chapterTableView: NSTableView!
   @IBOutlet weak var playlistBtn: NSButton!
@@ -99,14 +91,26 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   internal var observedPrefKeys: [Preference.Key] = [
   ]
 
+  fileprivate var isPlayingTextColor: NSColor = .textColor
+
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath else { return }
 
     switch keyPath {
     case #keyPath(view.effectiveAppearance):
+      // Need to use this closure for dark/light mode toggling to get picked up while running (not sure why...)
+      view.effectiveAppearance.applyAppearanceFor {
+        setCustomColors()
+      }
       reloadData(playlist: true, chapters: true)
     default:
       return
+    }
+  }
+
+  fileprivate func setCustomColors() {
+    if #available(macOS 10.14, *) {
+      isPlayingTextColor = NSColor.controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
     }
   }
 
@@ -582,7 +586,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         // ▶︎ Is Playing icon
         if let textField = v.textField {
           let text = item.isPlaying ? Constants.String.play : ""
-          textField.setFormattedText(stringValue: text, textColor: isPlayingColor())
+          textField.setFormattedText(stringValue: text, textColor: isPlayingTextColor)
         }
       } else if identifier == .trackName {
         // Track title
@@ -598,11 +602,11 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
           guard let artist = metadata.artist, let title = metadata.title else { return nil }
           return (artist, title)
         }
-        let textColor = item.isPlaying ? isPlayingColor() : .controlTextColor
+        let textColor = item.isPlaying ? isPlayingTextColor : .controlTextColor
         cellView.setTitle(trackTitleString, textColor: textColor)
         // playback progress and duration
         cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
-        cellView.durationLabel.setFormattedText(stringValue: "", textColor: item.isPlaying ? isPlayingColor() : .textColor)
+        cellView.durationLabel.setFormattedText(stringValue: "", textColor: item.isPlaying ? isPlayingTextColor : .textColor)
         player.playlistQueue.async {
           if let (artist, title) = getCachedMetadata() {
             DispatchQueue.main.async {
@@ -618,7 +622,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
               DispatchQueue.main.async { [self] in
                 let durationString = VideoTime(duration).stringRepresentation
                 // FIXME: this field doesn't update when dark mode is toggled
-                cellView.durationLabel.setFormattedText(stringValue: durationString, textColor: item.isPlaying ? isPlayingColor() : .textColor)
+                cellView.durationLabel.setFormattedText(stringValue: durationString, textColor: item.isPlaying ? isPlayingTextColor : .textColor)
                 if let progress = cached.progress {
                   cellView.playbackProgressView.percentage = progress / duration
                   cellView.playbackProgressView.needsDisplay = true

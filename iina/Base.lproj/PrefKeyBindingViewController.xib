@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22154" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21701"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22154"/>
         <capability name="System colors introduced in macOS 10.14" minToolsVersion="10.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -30,13 +30,13 @@
             <subviews>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="LU9-QU-BFL">
                     <rect key="frame" x="-1" y="279" width="121" height="18"/>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="16" id="lOm-I3-MpB"/>
-                    </constraints>
                     <buttonCell key="cell" type="check" title="Use media keys" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="2WY-CR-baD">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="16" id="lOm-I3-MpB"/>
+                    </constraints>
                     <connections>
                         <binding destination="XM5-Sj-lhw" name="value" keyPath="values.useMediaKeys" id="C7t-pc-JuC"/>
                     </connections>
@@ -54,7 +54,7 @@
                 <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="ER0-iU-7fy">
                     <rect key="frame" x="0.0" y="261" width="530" height="5"/>
                 </box>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ZWR-gT-S2p">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ZWR-gT-S2p">
                     <rect key="frame" x="-2" y="231" width="91" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" sendsActionOnEndEditing="YES" title="Configuration:" id="au5-6f-s55">
                         <font key="font" metaFont="system"/>
@@ -62,7 +62,7 @@
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="tP6-Ua-acA" userLabel="ConfHint Label">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="tP6-Ua-acA" userLabel="ConfHint Label">
                     <rect key="frame" x="-2" y="213" width="534" height="14"/>
                     <textFieldCell key="cell" controlSize="small" refusesFirstResponder="YES" title="Label" id="M4N-eg-JA8">
                         <font key="font" metaFont="message" size="11"/>
@@ -98,7 +98,7 @@
                                             <tableCellView translatesAutoresizingMaskIntoConstraints="NO" id="8QN-S3-Agb" userLabel="Name TableCellView">
                                                 <rect key="frame" x="1" y="1" width="165" height="18"/>
                                                 <subviews>
-                                                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Zmv-VF-02E" userLabel="Name TextField" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Zmv-VF-02E" userLabel="Name TextField" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
                                                         <rect key="frame" x="0.0" y="0.0" width="165" height="18"/>
                                                         <constraints>
                                                             <constraint firstAttribute="height" constant="18" id="GN5-eh-pGI"/>
@@ -178,26 +178,26 @@
                         <subviews>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="iCp-ho-SlQ" userLabel="AddConf Square Button">
                                 <rect key="frame" x="0.0" y="-1.5" width="20.5" height="24"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" secondItem="iCp-ho-SlQ" secondAttribute="height" multiplier="1:1" id="VuG-8t-3rb"/>
-                                </constraints>
                                 <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSAddTemplate" imagePosition="only" alignment="center" inset="2" id="sxT-LD-iKe">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="iCp-ho-SlQ" secondAttribute="height" multiplier="1:1" id="VuG-8t-3rb"/>
+                                </constraints>
                                 <connections>
                                     <action selector="newConfFileAction:" target="-2" id="zyI-2f-FHa"/>
                                 </connections>
                             </button>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="EpF-t6-PtC" userLabel="RemoveConf Square Button">
                                 <rect key="frame" x="20" y="3" width="20.5" height="15"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" secondItem="EpF-t6-PtC" secondAttribute="height" multiplier="1:1" id="BI6-fZ-9GC"/>
-                                </constraints>
                                 <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSRemoveTemplate" imagePosition="only" alignment="center" inset="2" id="mZx-Q0-d48">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="EpF-t6-PtC" secondAttribute="height" multiplier="1:1" id="BI6-fZ-9GC"/>
+                                </constraints>
                                 <connections>
                                     <action selector="deleteConfFileAction:" target="-2" id="v3N-VV-gc0"/>
                                 </connections>
@@ -238,7 +238,7 @@
                     <color key="borderColor" name="separatorColor" catalog="System" colorSpace="catalog"/>
                     <color key="fillColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                 </box>
-                <searchField wantsLayer="YES" verticalHuggingPriority="750" textCompletion="NO" translatesAutoresizingMaskIntoConstraints="NO" id="x6N-6q-HiV">
+                <searchField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" textCompletion="NO" translatesAutoresizingMaskIntoConstraints="NO" id="x6N-6q-HiV">
                     <rect key="frame" x="198" y="183" width="332" height="22"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="22" id="aql-K3-x6M"/>
@@ -259,7 +259,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" tableStyle="fullWidth" columnReordering="NO" autosaveName="PrefBindingTable" rowHeight="18" rowSizeStyle="automatic" headerView="OOd-BT-w3p" viewBased="YES" id="1Z4-NL-6P3" userLabel="BindingTable Table View" customClass="EditableTableView" customModule="IINA" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="0.0" width="330" height="88"/>
+                                <rect key="frame" x="0.0" y="0.0" width="350" height="88"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <size key="intercellSpacing" width="3" height="2"/>
                                 <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -278,9 +278,9 @@
                                         <tableColumnResizingMask key="resizingMask" userResizable="YES"/>
                                         <prototypeCellViews>
                                             <tableCellView translatesAutoresizingMaskIntoConstraints="NO" id="nMC-X0-DpK" userLabel="Key TableCellView">
-                                                <rect key="frame" x="1" y="1" width="121" height="18"/>
+                                                <rect key="frame" x="11" y="1" width="121" height="18"/>
                                                 <subviews>
-                                                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="wdS-kV-koV" userLabel="Key TextField" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="wdS-kV-koV" userLabel="Key TextField" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
                                                         <rect key="frame" x="0.0" y="0.0" width="121" height="18"/>
                                                         <constraints>
                                                             <constraint firstAttribute="height" constant="18" id="FcW-hn-lT4"/>
@@ -315,7 +315,7 @@
                                         </textFieldCell>
                                         <prototypeCellViews>
                                             <tableCellView id="oiC-ty-779" userLabel="Status TableCellView">
-                                                <rect key="frame" x="125" y="1" width="18" height="18"/>
+                                                <rect key="frame" x="135" y="1" width="18" height="18"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                 <subviews>
                                                     <imageView identifier="status" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="caJ-NG-b5Y" userLabel="Status Image">
@@ -351,9 +351,9 @@
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES"/>
                                         <prototypeCellViews>
                                             <tableCellView translatesAutoresizingMaskIntoConstraints="NO" id="Fx4-cZ-KSl" userLabel="Action Table Cell View">
-                                                <rect key="frame" x="146" y="1" width="182" height="18"/>
+                                                <rect key="frame" x="156" y="1" width="153" height="18"/>
                                                 <subviews>
-                                                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="90m-qq-SPn" userLabel="Action TextField" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="90m-qq-SPn" userLabel="Action TextField" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
                                                         <rect key="frame" x="0.0" y="0.0" width="182" height="18"/>
                                                         <constraints>
                                                             <constraint firstAttribute="height" constant="18" id="1JE-NY-Qb1"/>
@@ -383,8 +383,8 @@
                     <constraints>
                         <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="100" id="5me-gl-Ien"/>
                     </constraints>
-                    <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="1PH-Mk-JzT">
-                        <rect key="frame" x="-100" y="-100" width="465" height="16"/>
+                    <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="1PH-Mk-JzT">
+                        <rect key="frame" x="1" y="96" width="330" height="16"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="YwQ-kF-wlj">
@@ -392,7 +392,7 @@
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <tableHeaderView key="headerView" wantsLayer="YES" id="OOd-BT-w3p" userLabel="BindingTable Table Header View">
-                        <rect key="frame" x="0.0" y="0.0" width="330" height="23"/>
+                        <rect key="frame" x="0.0" y="0.0" width="350" height="23"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </tableHeaderView>
                 </scrollView>
@@ -404,32 +404,32 @@
                         <subviews>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="f5l-5w-zmm" userLabel="AddBinding Square Button">
                                 <rect key="frame" x="0.0" y="-1.5" width="20.5" height="24"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" secondItem="f5l-5w-zmm" secondAttribute="height" multiplier="1:1" id="t7I-vx-VZI"/>
-                                </constraints>
                                 <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSAddTemplate" imagePosition="only" alignment="center" inset="2" id="De2-o3-Acv">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="f5l-5w-zmm" secondAttribute="height" multiplier="1:1" id="t7I-vx-VZI"/>
+                                </constraints>
                                 <connections>
                                     <action selector="addBindingBtnAction:" target="-2" id="oNc-c8-i9c"/>
                                 </connections>
                             </button>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="uFG-OF-DJ5" userLabel="RemoveBinding Square Button">
                                 <rect key="frame" x="20" y="3" width="20.5" height="15"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" secondItem="uFG-OF-DJ5" secondAttribute="height" multiplier="1:1" id="KP5-c5-VcL"/>
-                                </constraints>
                                 <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSRemoveTemplate" imagePosition="only" alignment="center" inset="2" id="nAC-n9-1YJ">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="uFG-OF-DJ5" secondAttribute="height" multiplier="1:1" id="KP5-c5-VcL"/>
+                                </constraints>
                                 <connections>
                                     <action selector="removeBindingBtnAction:" target="-2" id="aeN-fq-0zS"/>
                                 </connections>
                             </button>
                             <button toolTip="Also show key bindings which are currently active but cannot be configured here" translatesAutoresizingMaskIntoConstraints="NO" id="ogR-hg-OWq" userLabel="Show bindings from all sources Button">
-                                <rect key="frame" x="6" y="5" width="203" height="11"/>
+                                <rect key="frame" x="53" y="5" width="156" height="11"/>
                                 <buttonCell key="cell" type="check" title="Show bindings from all sources" bezelStyle="regularSquare" imagePosition="left" controlSize="mini" state="on" inset="2" id="ofM-Fl-e5N">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="label" size="9"/>
@@ -497,7 +497,7 @@
                         <action selector="importConfBtnAction:" target="-2" id="m3a-yn-NIE"/>
                     </connections>
                 </button>
-                <textField identifier="SectionTitleSettings" hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="8ym-fj-1VT">
+                <textField identifier="SectionTitleSettings" hidden="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="8ym-fj-1VT">
                     <rect key="frame" x="477" y="0.0" width="55" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" sendsActionOnEndEditing="YES" title="Settings" id="jPl-gf-pVX">
                         <font key="font" metaFont="system"/>

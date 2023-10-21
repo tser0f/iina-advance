@@ -91,7 +91,6 @@ class BindingTableViewController: NSObject {
 
   fileprivate var builtinConfTextColor: NSColor = .textColor
 
-  // FIXME: this doesn't update when dark mode is toggled
   func setCustomColors(builtInItemTextColor: NSColor) {
     if #available(macOS 10.14, *) {
       nonConfTextColor = builtInItemTextColor

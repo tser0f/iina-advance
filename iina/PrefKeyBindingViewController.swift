@@ -114,7 +114,10 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
 
     switch keyPath {
     case #keyPath(view.effectiveAppearance):
-      setCustomTableColors()
+      // Need to use this closure for dark/light mode toggling to get picked up while running (not sure why...)
+      view.effectiveAppearance.applyAppearanceFor {
+        setCustomTableColors()
+      }
     default:
       return
     }

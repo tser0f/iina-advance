@@ -80,15 +80,6 @@ class PlayerWindowPreviewImageBuilder {
 //    NSColor(red: 0x68 / 255, green: 0x67 / 255, blue: 0xAF / 255, alpha: 1.0)  // "blue violet"
   }()
 
-  func withIINAAppearance<T>(_ closure: () throws -> T) rethrows -> T {
-    let previousAppearance = NSAppearance.current
-    NSAppearance.current = appearance
-    defer {
-      NSAppearance.current = previousAppearance
-    }
-    return try closure()
-  }
-
   func updateWindowPreviewImage() -> NSImage? {
     guard let videoViewImg = loadCGImage(named: "preview-videoview"),
           let titleBarButtonsImg = loadCGImage(named: "preview-titlebar-buttons") else {
@@ -417,7 +408,7 @@ class PlayerWindowPreviewImageBuilder {
     NSGraphicsContext.current = context
     let cgContext = context.cgContext
 
-    withIINAAppearance {
+    appearance.applyAppearanceFor {
       drawingCalls(cgContext)
     }
 
