@@ -375,13 +375,16 @@ struct PlayerWindowGeometry: Equatable {
   /// be resized to fit in the new `viewportSize` based on `videoAspectRatio`.
   /// • If `allowEmptySpaceAroundVideo` is enabled, `viewportSize` will be shrunk to the same size as `videoSize`, and
   /// `windowFrame` will be resized accordingly.
-  /// • If `screenID` is provided, it will be associated with the resulting `PlayerWindowGeometry`; otherwise `self.screenID` will
-  /// be used.
-  /// • If `fitOption` is provided, it will be applied to the resulting `PlayerWindowGeometry`; otherwise `self.fitOption` will
-  /// be applied.
+  /// • If `screenID` is provided, it will be associated with the resulting `PlayerWindowGeometry`; otherwise `self.screenID` will be used.
+  /// • If `fitOption` is provided, it will be applied to the resulting `PlayerWindowGeometry`; otherwise `self.fitOption` will be used.
+  /// • If `allowEmptySpaceAroundVideo` is provided, it will be applied to the resulting `PlayerWindowGeometry`;
+  /// otherwise `self.allowEmptySpaceAroundVideo` will be used.
   func scaleViewport(to desiredSize: NSSize? = nil,
                      screenID: String? = nil,
-                     fitOption: ScreenFitOption? = nil) -> PlayerWindowGeometry {
+                     fitOption: ScreenFitOption? = nil,
+                     allowEmptySpaceAroundVideo: Bool? = nil) -> PlayerWindowGeometry {
+
+    let allowEmptySpaceAroundVideo = allowEmptySpaceAroundVideo ?? self.allowEmptySpaceAroundVideo
 
     var newViewportSize = desiredSize ?? viewportSize
     Logger.log("Scaling PlayerWindowGeometry newViewportSize: \(newViewportSize), allowEmptySpace: \(allowEmptySpaceAroundVideo.yn)", level: .verbose)

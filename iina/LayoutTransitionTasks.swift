@@ -247,6 +247,11 @@ extension PlayerWindowController {
     if transition.inputLayout.osdMinOffsetFromTop > 0 && outputLayout.osdMinOffsetFromTop == 0 {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
+    
+    if transition.isExitingInteractiveMode {
+      // Animate closed:
+      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
+    }
 
     // Update heights of top & bottom bars
     if let geo = transition.middleGeometry {
@@ -260,7 +265,7 @@ extension PlayerWindowController {
       }
       updateTopBarHeight(to: topBarHeight, topBarPlacement: transition.inputLayout.topBarPlacement, cameraHousingOffset: cameraOffset)
 
-      if !transition.isExitingMusicMode {  // don't do this too soon when exiting Music Mode
+      if !transition.isExitingMusicMode && !transition.isExitingInteractiveMode {  // don't do this too soon when exiting Music Mode
         // Update sidebar vertical alignments to match top bar:
         let downshift = min(transition.inputLayout.sidebarDownshift, outputLayout.sidebarDownshift)
         let tabHeight = min(transition.inputLayout.sidebarTabHeight, outputLayout.sidebarTabHeight)
@@ -283,7 +288,9 @@ extension PlayerWindowController {
       if !transition.isInitialLayout && !transition.isTogglingFullScreen {
         log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
         player.window.setFrameImmediately(geo.windowFrame)
-        videoView.updateSizeConstraints(geo.videoSize)
+        if !transition.isExitingInteractiveMode {
+          videoView.updateSizeConstraints(geo.videoSize)
+        }
       }
     }
 
@@ -469,7 +476,9 @@ extension PlayerWindowController {
         self.cropSettingsView = nil
       }
 
-      videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+      if let middleGeometry = transition.middleGeometry {
+        videoView.updateSizeConstraints(middleGeometry.videoSize)
+      }
     }
 
     // Need to call this for initial layout also:
@@ -513,22 +522,6 @@ extension PlayerWindowController {
     if transition.isTogglingLegacyStyle {
       forceDraw()
     }
-  }
-
-  /// Call this when `origVideoSize` is known.
-  func addOrReplaceCropBoxSelection(origVideoSize: NSSize, selectableRect: NSRect) {
-    guard let cropController = self.cropSettingsView else { return }
-
-    if !videoView.subviews.contains(cropController.cropBoxView) {
-      videoView.addSubview(cropController.cropBoxView)
-      cropController.cropBoxView.addConstraintsToFillSuperview()
-    }
-
-    // Add selection box
-    let selectWholeVideoByDefault = currentLayout.spec.interactiveMode == .crop
-    cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-    cropController.cropBoxView.actualSize = origVideoSize
-    cropController.cropBoxView.resized(with: selectableRect)
   }
 
   func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
@@ -1192,6 +1185,22 @@ extension PlayerWindowController {
   }
 
   // MARK: - Misc support functions
+
+  /// Call this when `origVideoSize` is known.
+  func addOrReplaceCropBoxSelection(origVideoSize: NSSize, selectableRect: NSRect) {
+    guard let cropController = self.cropSettingsView else { return }
+
+    if !videoView.subviews.contains(cropController.cropBoxView) {
+      videoView.addSubview(cropController.cropBoxView)
+      cropController.cropBoxView.addConstraintsToFillSuperview()
+    }
+
+    // Add selection box
+    let selectWholeVideoByDefault = currentLayout.spec.interactiveMode == .crop
+    cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
+    cropController.cropBoxView.actualSize = origVideoSize
+    cropController.cropBoxView.resized(with: selectableRect)
+  }
 
   // Either legacy FS or windowed
   private func setWindowStyleToLegacy() {
