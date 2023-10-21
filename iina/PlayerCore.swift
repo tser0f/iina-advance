@@ -1101,7 +1101,11 @@ class PlayerCore: NSObject {
   /// This method will prompt the user to change IINA's video preferences if hardware decoding is set to `auto`.
   /// - Parameter filter: The filter to add.
   /// - Returns: `true` if the filter was successfully added, `false` otherwise.
-  func addVideoFilter(_ filter: MPVFilter) -> Bool { addVideoFilter(filter.stringFormat) }
+  func addVideoFilter(_ filter: MPVFilter) -> Bool {
+    let success = addVideoFilter(filter.stringFormat)
+    log.verbose("Video filter \(filter) \(success ? "added successfully" : "was not added")")
+    return success
+  }
 
   /// Add a video filter given as a string.
   ///
@@ -1109,7 +1113,7 @@ class PlayerCore: NSObject {
   /// - Parameter filter: The filter to add.
   /// - Returns: `true` if the filter was successfully added, `false` otherwise.
   func addVideoFilter(_ filter: String) -> Bool {
-    Logger.log("Adding video filter \(filter)...", subsystem: subsystem)
+    Logger.log("Adding video filter \(filter.quoted)...", subsystem: subsystem)
     // check hwdec
     let askHwdec: (() -> Bool) = {
       let panel = NSAlert()

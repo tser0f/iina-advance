@@ -407,9 +407,10 @@ struct PlayerWindowGeometry: Equatable {
       newViewportSize = constrainBelowMax(desiredViewportSize: newViewportSize, maxSize: containerFrame.size)
     }
 
+    /// Compute `videoSize` to fit within `viewportSize` while maintaining `videoAspectRatio`:
+    let newVideoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newViewportSize)
     if !allowEmptySpaceAroundVideo {
-      /// Compute `videoSize` to fit within `viewportSize` while maintaining `videoAspectRatio`:
-      newViewportSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newViewportSize)
+      newViewportSize = newVideoSize
     }
 
     let outsideBarsSize = self.outsideBarsTotalSize
@@ -433,12 +434,15 @@ struct PlayerWindowGeometry: Equatable {
     }
 
     Logger.log("Done scaling PlayerWindowGeometry to windowFrame: \(newWindowFrame)", level: .verbose)
-    return self.clone(windowFrame: newWindowFrame, screenID: newScreenID, fitOption: newFitOption)
+    return self.clone(windowFrame: newWindowFrame, screenID: newScreenID, fitOption: newFitOption, videoSize: newVideoSize)
   }
 
   func scaleVideo(to desiredVideoSize: NSSize,
                   screenID: String? = nil,
-                  fitOption: ScreenFitOption? = nil) -> PlayerWindowGeometry {
+                  fitOption: ScreenFitOption? = nil,
+                  allowEmptySpaceAroundVideo: Bool? = nil) -> PlayerWindowGeometry {
+
+    let allowEmptySpaceAroundVideo = allowEmptySpaceAroundVideo ?? self.allowEmptySpaceAroundVideo
     Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), allowEmptySpace: \(allowEmptySpaceAroundVideo)", level: .debug)
     var newVideoSize = desiredVideoSize
 
@@ -459,7 +463,7 @@ struct PlayerWindowGeometry: Equatable {
       newViewportSize = newVideoSize
     }
 
-    return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption)
+    return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption, allowEmptySpaceAroundVideo: allowEmptySpaceAroundVideo)
   }
 
   // Resizes the window appropriately
@@ -982,10 +986,10 @@ extension PlayerWindowController {
     guard let window = window else { return currentGeo }
 
     if denyNextWindowResize {
-      let currentSize = window.frame.size
-      log.verbose("WindowWillResize: denying this resize; will stay at \(currentSize)")
+      let currentFrame = window.frame
+      log.verbose("WindowWillResize: denying this resize; will stay at \(currentFrame.size)")
       denyNextWindowResize = false
-      return currentGeo.clone(windowFrame: window.frame)
+      return currentGeo.clone(windowFrame: currentFrame)
     }
 
     if player.info.isRestoring {
@@ -1016,10 +1020,9 @@ extension PlayerWindowController {
       return currentGeo.clone(windowFrame: window.frame)
     }
 
-    // Need to resize window to match video aspect ratio, while
-    // taking into account any outside panels
-
-    if Preference.bool(for: .allowEmptySpaceAroundVideo) {
+    // Need to resize window to match video aspect ratio, while taking into account any outside panels.
+    let allowEmptySpaceAroundVideo = Preference.bool(for: .allowEmptySpaceAroundVideo) && !currentLayout.isInteractiveMode
+    if allowEmptySpaceAroundVideo {
       // No need to resize window to match video aspect ratio.
       let intendedGeo = currentGeo.scaleWindow(to: requestedSize, fitOption: .noConstraints)
 
@@ -1036,12 +1039,12 @@ extension PlayerWindowController {
     // Option A: resize height based on requested width
     let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth, height: requestedVideoWidth / currentGeo.videoAspectRatio)
-    let resizeFromWidthGeo = currentGeo.scaleVideo(to: resizeFromWidthRequestedVideoSize)
+    let resizeFromWidthGeo = currentGeo.scaleVideo(to: resizeFromWidthRequestedVideoSize, allowEmptySpaceAroundVideo: allowEmptySpaceAroundVideo)
 
     // Option B: resize width based on requested height
     let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeo.videoAspectRatio, height: requestedVideoHeight)
-    let resizeFromHeightGeo = currentGeo.scaleVideo(to: resizeFromHeightRequestedVideoSize)
+    let resizeFromHeightGeo = currentGeo.scaleVideo(to: resizeFromHeightRequestedVideoSize, allowEmptySpaceAroundVideo: allowEmptySpaceAroundVideo)
 
     let chosenGeometry: PlayerWindowGeometry
     if window.inLiveResize {

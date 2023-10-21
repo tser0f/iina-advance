@@ -2567,6 +2567,7 @@
 				D1AD325B2ACC07E500F86EE8 /* LayoutTransition.swift */,
 				D1A44D892A5E18D00089B283 /* PlayerWindowGeometry.swift */,
 				D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */,
+				D1D3DB332AE0FBE800997C9E /* InteractiveModeGeometry.swift */,
 				D1B492E52AA0BB9A00212E9C /* MagnificationHandler.swift */,
 				D1A8878B29D16452000D1AE4 /* RotationHandler.swift */,
 				D1A8878D29D1696C000D1AE4 /* Sidebars.swift */,
@@ -2579,7 +2580,6 @@
 				845FB0C61D39462E00C011E0 /* ControlBarView.swift */,
 				846352571EEEE11A0043F0CC /* ThumbnailPeekView.swift */,
 				D1D29A272ADE2E8000D8660F /* CustomTitleBar.swift */,
-				D1D3DB332AE0FBE800997C9E /* InteractiveModeGeometry.swift */,
 			);
 			name = PlayerWindow;
 			sourceTree = "<group>";
