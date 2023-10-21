@@ -29,7 +29,7 @@ struct BoxQuad {
  Unlike `MusicModeGeometry`, instances of this class can be converted both to and from an instance of `PlayerWindowGeometry`.
  */
 struct InteractiveModeGeometry: Equatable {
-  static let interactiveModeBottomBarHeight: CGFloat = 68
+  static let outsideBottomBarHeight: CGFloat = 68
   static let outsideTopBarHeight = PlayerWindowController.standardTitleBarHeight
 
   // Window's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
@@ -53,7 +53,7 @@ struct InteractiveModeGeometry: Equatable {
   }
 
   var outsideBottomBarHeight: CGFloat {
-    return InteractiveModeGeometry.interactiveModeBottomBarHeight
+    return InteractiveModeGeometry.outsideBottomBarHeight
   }
 
   var videoSize: NSSize {
@@ -94,7 +94,7 @@ struct InteractiveModeGeometry: Equatable {
     // Close sidebars. Top and bottom bars are resized for interactive mode controls
     var newGeo = windowedModeGeometry.withResizedOutsideBars(newOutsideTopBarHeight: InteractiveModeGeometry.outsideTopBarHeight,
                                                              newOutsideTrailingBarWidth: 0,
-                                                             newOutsideBottomBarHeight: InteractiveModeGeometry.interactiveModeBottomBarHeight,
+                                                             newOutsideBottomBarHeight: InteractiveModeGeometry.outsideBottomBarHeight,
                                                              newOutsideLeadingBarWidth: 0)
 
     let videobox = InteractiveModeGeometry.videobox

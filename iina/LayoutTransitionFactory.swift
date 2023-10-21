@@ -157,11 +157,11 @@ extension PlayerWindowController {
 
     // - Build geometries
 
-    // Build InputGeometry
+    // InputGeometry
     let inputGeometry: PlayerWindowGeometry = buildInputGeometry(from: inputLayout, transitionName: transitionName, windowedModeScreen: windowedModeScreen)
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
-    // Build OutputGeometry
+    // OutputGeometry
     let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputGeometry: inputGeometry, outputLayout: outputLayout)
 
     let transition = LayoutTransition(name: transitionName,
@@ -169,7 +169,7 @@ extension PlayerWindowController {
                                       to: outputLayout, to: outputGeometry,
                                       isInitialLayout: isInitialLayout)
 
-    // Build MiddleGeometry if needed (is applied after ClosePanels step)
+    // MiddleGeometry if needed (is applied after ClosePanels step)
     if !isInitialLayout {
       transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
       log.verbose("[\(transitionName)] Built middleGeometry: \(transition.middleGeometry!)")
@@ -300,7 +300,7 @@ extension PlayerWindowController {
     }
 
     // EndingAnimation: Open new panels and fade in new views
-    transition.animationTasks.append(CocoaAnimation.Task(duration: openFinalPanelsDuration, timing: .linear, { [self] in
+    transition.animationTasks.append(CocoaAnimation.Task(duration: openFinalPanelsDuration, timing: panelTimingName, { [self] in
       // If toggling fullscreen, this also changes the window frame:
       openNewPanelsAndFinalizeOffsets(transition)
 
@@ -437,7 +437,8 @@ extension PlayerWindowController {
                                                   insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
                                                   videoAspectRatio: transition.inputGeometry.videoAspectRatio)
       } else {
-        let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
+        let outsideTopBarHeight = transition.inputLayout.outsideTopBarHeight >= transition.outputLayout.topBarHeight ? transition.outputLayout.outsideTopBarHeight : 0
+        let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: 0,
                                                                   outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
                                                                   insideTopBarHeight: 0, insideTrailingBarWidth: 0,
                                                                   insideBottomBarHeight: 0, insideLeadingBarWidth: 0)

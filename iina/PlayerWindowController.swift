@@ -1992,6 +1992,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       updateCachedGeometry()
       // resize framebuffer in videoView after resizing.
       updateWindowParametersForMPV()
+    case .windowedInteractive:
+      updateCachedGeometry()
     case .musicMode:
       miniPlayer.windowDidEndLiveResize()
     default:
@@ -2095,6 +2097,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowWillMove(_ notification: Notification) {
     guard let window = window else { return }
     log.verbose("WindowWillMove frame: \(window.frame)")
+    /// Sometimes there is a `windowWillMove` notification without a `windowDidMove`. So do the update here too:
+    updateCachedGeometry(updatePreferredSizeAlso: false)
   }
 
   func windowDidMove(_ notification: Notification) {

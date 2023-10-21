@@ -602,7 +602,7 @@ struct PlayerWindowGeometry: Equatable {
 
 extension PlayerWindowController {
 
-  /** Set window size when info available, or video size changed. Called in response to receiving 'video-reconfig' msg  */
+  /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
   func mpvVideoDidReconfig() {
     log.verbose("[AdjustFrameAfterVideoReconfig] Start")
 
@@ -616,13 +616,20 @@ extension PlayerWindowController {
       pip.aspectRatio = videoBaseDisplaySize
     }
 
+    if isInInteractiveMode {
+      /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
+      let selectableRect = NSRect(origin: CGPointZero, size: interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize)
+      log.debug("[AdjustFrameAfterVideoReconfig] Replacing crop box videoSize=\(videoBaseDisplaySize), selectableRect=\(selectableRect)")
+      addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, selectableRect: selectableRect)
+    }
+
     if player.isInMiniPlayer {
       log.debug("[AdjustFrameAfterVideoReconfig] Player is in music mode, will update its contraints")
       miniPlayer.adjustLayoutForVideoChange(newVideoAspectRatio: newVideoAspectRatio)
 
     } else if player.info.isRestoring {
-      // To account for imprecision(s) due to floats coming from multiple sources,
-      // just compare the first 6 digits after the decimal (strings make it easier)
+      // Confirm aspect ratio is consistent. To account for imprecision(s) due to floats coming from multiple sources,
+      // just compare the first 6 digits after the decimal.
       let oldAspect = videoAspectRatio.string6f
       let newAspect = newVideoAspectRatio.string6f
       if oldAspect == newAspect {
@@ -785,7 +792,10 @@ extension PlayerWindowController {
   /// Updates the appropriate in-memory cached geometry (based on the current window mode) using the current window & view frames.
   /// Param `updatePreferredSizeAlso` only applies to `.windowed` mode.
   func updateCachedGeometry(updatePreferredSizeAlso: Bool = true) {
-    guard !isAnimating, !currentLayout.isFullScreen else { return }
+    guard !isAnimating, !currentLayout.isFullScreen else {
+      log.verbose("Not updating cached geometry: isAnimating=\(isAnimating.yn) isFS=\(currentLayout.isFullScreen.yn)")
+      return
+    }
     log.verbose("Updating cached \(currentLayout.mode) geometry from current window")
 
     switch currentLayout.mode {

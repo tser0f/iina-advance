@@ -130,6 +130,7 @@ extension PlayerWindowController {
       }
     }
 
+    // Interactive mode
     if transition.isEnteringInteractiveMode {
       isPausedPriorToInteractiveMode = player.info.isPaused
       player.pause()
@@ -446,19 +447,12 @@ extension PlayerWindowController {
 
       if let videoBaseDisplaySize = player.videoBaseDisplaySize {
         let origVideoSize = videoBaseDisplaySize
+        let selectableRect = NSRect(origin: CGPointZero, size: transition.outputGeometry.videoSize)
 
-        // Add selection box
-        videoView.addSubview(cropController.cropBoxView)
-        cropController.cropBoxView.addConstraintsToFillSuperview()
+        addOrReplaceCropBoxSelection(origVideoSize: origVideoSize, selectableRect: selectableRect)
         cropController.cropBoxView.isHidden = true
         cropController.cropBoxView.alphaValue = 0
-
-        let selectWholeVideoByDefault = transition.outputLayout.spec.interactiveMode == .crop
-        cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-        cropController.cropBoxView.actualSize = origVideoSize
-        let selectableRect = NSRect(origin: CGPointZero, size: transition.outputGeometry.videoSize)
-        cropController.cropBoxView.resized(with: selectableRect)
-      } else {
+      } else if !player.info.isRestoring {  // if restoring, there will be a brief delay before getting player info, which is ok
         Utility.showAlert("no_video_track")
       }
 
@@ -519,6 +513,22 @@ extension PlayerWindowController {
     if transition.isTogglingLegacyStyle {
       forceDraw()
     }
+  }
+
+  /// Call this when `origVideoSize` is known.
+  func addOrReplaceCropBoxSelection(origVideoSize: NSSize, selectableRect: NSRect) {
+    guard let cropController = self.cropSettingsView else { return }
+
+    if !videoView.subviews.contains(cropController.cropBoxView) {
+      videoView.addSubview(cropController.cropBoxView)
+      cropController.cropBoxView.addConstraintsToFillSuperview()
+    }
+
+    // Add selection box
+    let selectWholeVideoByDefault = currentLayout.spec.interactiveMode == .crop
+    cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
+    cropController.cropBoxView.actualSize = origVideoSize
+    cropController.cropBoxView.resized(with: selectableRect)
   }
 
   func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
