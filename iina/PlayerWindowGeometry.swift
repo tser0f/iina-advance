@@ -108,8 +108,8 @@ struct PlayerWindowGeometry: Equatable {
   let videoAspectRatio: CGFloat
   let videoSize: NSSize
 
-  var allowEmptySpaceAroundVideo: Bool {
-    return Preference.bool(for: .allowEmptySpaceAroundVideo)
+  var lockViewportToVideoSize: Bool {
+    return Preference.bool(for: .lockViewportToVideoSize)
   }
 
   // MARK: - Initializers
@@ -373,21 +373,20 @@ struct PlayerWindowGeometry: Equatable {
   /// Computes a new `PlayerWindowGeometry` from this one:
   /// • If `desiredSize` is given, the `windowFrame` will be shrunk or grown as needed, as will the `videoSize` which will
   /// be resized to fit in the new `viewportSize` based on `videoAspectRatio`.
-  /// • If `allowEmptySpaceAroundVideo` is enabled, `viewportSize` will be shrunk to the same size as `videoSize`, and
-  /// `windowFrame` will be resized accordingly.
+  /// • If `lockViewportToVideoSize` is provided, it will be applied to the resulting `PlayerWindowGeometry`;
+  /// otherwise `self.lockViewportToVideoSize` will be used. If `true`, `viewportSize` will be shrunk to the same size as `videoSize`, 
+  /// and `windowFrame` will be resized accordingly.
   /// • If `screenID` is provided, it will be associated with the resulting `PlayerWindowGeometry`; otherwise `self.screenID` will be used.
   /// • If `fitOption` is provided, it will be applied to the resulting `PlayerWindowGeometry`; otherwise `self.fitOption` will be used.
-  /// • If `allowEmptySpaceAroundVideo` is provided, it will be applied to the resulting `PlayerWindowGeometry`;
-  /// otherwise `self.allowEmptySpaceAroundVideo` will be used.
   func scaleViewport(to desiredSize: NSSize? = nil,
                      screenID: String? = nil,
                      fitOption: ScreenFitOption? = nil,
-                     allowEmptySpaceAroundVideo: Bool? = nil) -> PlayerWindowGeometry {
+                     lockViewportToVideoSize: Bool? = nil) -> PlayerWindowGeometry {
 
-    let allowEmptySpaceAroundVideo = allowEmptySpaceAroundVideo ?? self.allowEmptySpaceAroundVideo
+    let lockViewportToVideoSize = lockViewportToVideoSize ?? self.lockViewportToVideoSize
 
     var newViewportSize = desiredSize ?? viewportSize
-    Logger.log("Scaling PlayerWindowGeometry newViewportSize: \(newViewportSize), allowEmptySpace: \(allowEmptySpaceAroundVideo.yn)", level: .verbose)
+    Logger.log("Scaling PlayerWindowGeometry newViewportSize: \(newViewportSize), lockViewportToVideoSize: \(lockViewportToVideoSize.yn)", level: .verbose)
 
     /// Make sure `viewportSize` is at least as large as `minVideoSize`:
     newViewportSize = constrainAboveMin(desiredViewportSize: newViewportSize)
@@ -409,7 +408,7 @@ struct PlayerWindowGeometry: Equatable {
 
     /// Compute `videoSize` to fit within `viewportSize` while maintaining `videoAspectRatio`:
     let newVideoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newViewportSize)
-    if !allowEmptySpaceAroundVideo {
+    if lockViewportToVideoSize {
       newViewportSize = newVideoSize
     }
 
@@ -440,10 +439,10 @@ struct PlayerWindowGeometry: Equatable {
   func scaleVideo(to desiredVideoSize: NSSize,
                   screenID: String? = nil,
                   fitOption: ScreenFitOption? = nil,
-                  allowEmptySpaceAroundVideo: Bool? = nil) -> PlayerWindowGeometry {
+                  lockViewportToVideoSize: Bool? = nil) -> PlayerWindowGeometry {
 
-    let allowEmptySpaceAroundVideo = allowEmptySpaceAroundVideo ?? self.allowEmptySpaceAroundVideo
-    Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), allowEmptySpace: \(allowEmptySpaceAroundVideo)", level: .debug)
+    let lockViewportToVideoSize = lockViewportToVideoSize ?? self.lockViewportToVideoSize
+    Logger.log("Scaling PlayerWindowGeometry desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), lockViewportToVideoSize: \(lockViewportToVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
     let newWidth = max(minVideoWidth, desiredVideoSize.width)
@@ -455,15 +454,15 @@ struct PlayerWindowGeometry: Equatable {
     }
 
     let newViewportSize: NSSize
-    if allowEmptySpaceAroundVideo {
-      let scaleRatio = newWidth / videoSize.width
-      newViewportSize = viewportSize.multiply(scaleRatio)
-    } else {
+    if lockViewportToVideoSize {
       /// Use `videoSize` for `desiredViewportSize`:
       newViewportSize = newVideoSize
+    } else {
+      let scaleRatio = newWidth / videoSize.width
+      newViewportSize = viewportSize.multiply(scaleRatio)
     }
 
-    return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption, allowEmptySpaceAroundVideo: allowEmptySpaceAroundVideo)
+    return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption, lockViewportToVideoSize: lockViewportToVideoSize)
   }
 
   // Resizes the window appropriately
@@ -701,7 +700,7 @@ extension PlayerWindowController {
       // So try to remember the preferred width so it can be restored when possible
       var desiredViewportSize = windowGeo.viewportSize
 
-      if !Preference.bool(for: .allowEmptySpaceAroundVideo) {
+      if Preference.bool(for: .lockViewportToVideoSize) {
         if let prefVidConSize = player.info.getIntendedViewportSize(forAspectRatio: videoBaseDisplaySize.aspect)  {
           // Just use existing size in this case:
           desiredViewportSize = prefVidConSize
@@ -1021,8 +1020,8 @@ extension PlayerWindowController {
     }
 
     // Need to resize window to match video aspect ratio, while taking into account any outside panels.
-    let allowEmptySpaceAroundVideo = Preference.bool(for: .allowEmptySpaceAroundVideo) && !currentLayout.isInteractiveMode
-    if allowEmptySpaceAroundVideo {
+    let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || currentLayout.isInteractiveMode
+    if !lockViewportToVideoSize {
       // No need to resize window to match video aspect ratio.
       let intendedGeo = currentGeo.scaleWindow(to: requestedSize, fitOption: .noConstraints)
 
@@ -1039,12 +1038,12 @@ extension PlayerWindowController {
     // Option A: resize height based on requested width
     let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth, height: requestedVideoWidth / currentGeo.videoAspectRatio)
-    let resizeFromWidthGeo = currentGeo.scaleVideo(to: resizeFromWidthRequestedVideoSize, allowEmptySpaceAroundVideo: allowEmptySpaceAroundVideo)
+    let resizeFromWidthGeo = currentGeo.scaleVideo(to: resizeFromWidthRequestedVideoSize, lockViewportToVideoSize: lockViewportToVideoSize)
 
     // Option B: resize width based on requested height
     let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeo.videoAspectRatio, height: requestedVideoHeight)
-    let resizeFromHeightGeo = currentGeo.scaleVideo(to: resizeFromHeightRequestedVideoSize, allowEmptySpaceAroundVideo: allowEmptySpaceAroundVideo)
+    let resizeFromHeightGeo = currentGeo.scaleVideo(to: resizeFromHeightRequestedVideoSize, lockViewportToVideoSize: lockViewportToVideoSize)
 
     let chosenGeometry: PlayerWindowGeometry
     if window.inLiveResize {

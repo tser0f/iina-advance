@@ -105,7 +105,7 @@ class PlaybackInfo {
   /// Need to reconcile these requirements...
   func setIntendedViewportSize(from windowGeometry: PlayerWindowGeometry) {
     let newSize = windowGeometry.viewportSize
-    if Preference.bool(for: .allowEmptySpaceAroundVideo) || windowGeometry.videoAspectRatio >= 1 {
+    if !Preference.bool(for: .lockViewportToVideoSize) || windowGeometry.videoAspectRatio >= 1 {
       // Video is wide or square
       log.verbose("Updating intendedViewportSize-Wide to \(newSize)")
       intendedViewportSizeWide = newSize
@@ -117,7 +117,7 @@ class PlaybackInfo {
   }
 
   func getIntendedViewportSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
-    if Preference.bool(for: .allowEmptySpaceAroundVideo) || aspectRatio >= 1 {
+    if !Preference.bool(for: .lockViewportToVideoSize) || aspectRatio >= 1 {
       return intendedViewportSizeWide
     } else {
       return intendedViewportSizeTall

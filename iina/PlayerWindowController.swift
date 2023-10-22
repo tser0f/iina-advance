@@ -335,7 +335,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .showLeadingSidebarToggleButton,
     .showTrailingSidebarToggleButton,
     .useLegacyWindowedMode,
-    .allowEmptySpaceAroundVideo,
+    .lockViewportToVideoSize,
     .allowVideoToOverlapCameraHousing,
   ]
 
@@ -410,9 +410,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       PK.useLegacyWindowedMode.rawValue:
 
       updateTitleBarAndOSC()
-    case PK.allowEmptySpaceAroundVideo.rawValue:
-      if let isAllowed = change[.newKey] as? Bool, !isAllowed {
-        log.debug("Pref \(keyPath.quoted) changed to \(isAllowed): resizing window to remove any black space")
+    case PK.lockViewportToVideoSize.rawValue:
+      if let isLocked = change[.newKey] as? Bool, isLocked {
+        log.debug("Pref \(keyPath.quoted) changed to \(isLocked): resizing viewport to remove any excess space")
         resizeViewport()
       }
     case PK.hideWindowsWhenInactive.rawValue:
@@ -809,7 +809,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 //    window.isOpaque = false
 
     /// Set `viewportView`'s background to black so that the windows behind this one don't bleed through
-    /// when `allowEmptySpaceAroundVideo` is enabled.
+    /// when `lockViewportToVideoSize` is disabled.
     viewportView.wantsLayer = true
     viewportView.layer?.backgroundColor = .black
 

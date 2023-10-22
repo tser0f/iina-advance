@@ -85,9 +85,9 @@ struct Preference {
     static let blackOutMonitor = Key("blackOutMonitor")
 
     /// For windowed mode only.
-    /// `false`: restrict window size to conform to video aspect ratio.
-    /// `true`: allow user to resize window and show black bars.
-    static let allowEmptySpaceAroundVideo = Key("allowEmptySpaceAroundVideo")
+    /// `true`: restrict viewport size (i.e. the window size minus any outside bars) to conform to video aspect ratio.
+    /// `false`: allow user to resize window and show black bars.
+    static let lockViewportToVideoSize = Key("lockViewportToVideoSize")
 
     /// If enabled, in legacy full screen, video will fill entire screen including camera housing, showing a
     /// visible notch in the middle top
@@ -995,7 +995,7 @@ struct Preference {
     .softVolume: 100,
     .arrowButtonAction: ArrowButtonAction.speed.rawValue,
     .useLegacyWindowedMode: false,
-    .allowEmptySpaceAroundVideo: false,
+    .lockViewportToVideoSize: true,
     .allowVideoToOverlapCameraHousing: false,
     .pauseWhenOpen: false,
     .hideWindowsWhenInactive: false,

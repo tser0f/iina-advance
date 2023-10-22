@@ -887,7 +887,7 @@ extension PlayerWindowController {
 
         /// Updating the sidebar width when it is in "outside" mode will cause the video width to
         /// grow or shrink, which will require its height to change according to its aspectRatio.
-        /// If `allowEmptySpaceAroundVideo` is `false`, it is necessary to resize the window to
+        /// If `lockViewportToVideoSize` is `true`, it is necessary to resize the window to
         /// accomodate the change in height to avoid black bars. But even if it is `true`, it
         /// seems more useful to scale the whole viewport, which will avoid creating
         /// new horizontal black bars where they don't exist.

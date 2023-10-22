@@ -446,7 +446,7 @@ extension PlayerWindowController {
           return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
         } else if transition.isExitingInteractiveMode {
           // This will scale video up to viewport size (or close enough - we are removing videobox which won't 100% match the video aspect)
-          return resizedGeo.scaleViewport(allowEmptySpaceAroundVideo: false)
+          return resizedGeo.scaleViewport(lockViewportToVideoSize: true)
         }
       }
     }
