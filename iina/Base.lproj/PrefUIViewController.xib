@@ -643,7 +643,7 @@
                         <subviews>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UhD-Lf-aPQ">
                                 <rect key="frame" x="15" y="29.5" width="58" height="15"/>
-                                <buttonCell key="cell" type="radio" title="Always" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="yIN-jg-MxS">
+                                <buttonCell key="cell" type="radio" title="When media is loaded" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="yIN-jg-MxS">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
                                 </buttonCell>
@@ -736,11 +736,7 @@
                                 <constraint firstAttribute="height" constant="16" id="gbR-AC-3j9"/>
                             </constraints>
                             <connections>
-                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.lockViewportToVideoSize" id="30d-RO-gHp">
-                                    <dictionary key="options">
-                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                    </dictionary>
-                                </binding>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.lockViewportToVideoSize" id="30d-RO-gHp"/>
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="9CF-7V-xlB" userLabel="8pt Spacer">
