@@ -701,7 +701,7 @@ extension PlayerWindowController {
       var desiredViewportSize = windowGeo.viewportSize
 
       if Preference.bool(for: .lockViewportToVideoSize) {
-        if let prefVidConSize = player.info.getIntendedViewportSize(forAspectRatio: videoBaseDisplaySize.aspect)  {
+        if let prefVidConSize = player.info.getIntendedViewportSize(forVideoAspectRatio: videoBaseDisplaySize.aspect)  {
           // Just use existing size in this case:
           desiredViewportSize = prefVidConSize
         }

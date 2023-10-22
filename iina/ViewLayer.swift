@@ -19,7 +19,6 @@ class ViewLayer: CAOpenGLLayer {
 
   private var fbo: GLint = 1
 
-  private var needsMPVRender = false
   private var forceRender = false
 
 #if DEBUG
@@ -27,17 +26,36 @@ class ViewLayer: CAOpenGLLayer {
   var lastPrintTime = Date().timeIntervalSince1970
   var drawCountTotal: Int = 0
   var drawCountLastPrint: Int = 0
+  var displayCountTotal: Int = 0
+  var displayCountLastPrint: Int = 0
+  var lastWidth: Int32 = 0
+  var lastHeight: Int32 = 0
+
+  func printStats() {
+    let now = Date().timeIntervalSince1970
+    let secsSinceLastPrint = now - lastPrintTime
+    if secsSinceLastPrint >= 1.0 {  // print at most once per sec
+      let drawsSinceLastPrint = drawCountTotal - drawCountLastPrint
+      let displaysSinceLastPrint = displayCountTotal - displayCountLastPrint
+
+      let fpsDraws = CGFloat(drawsSinceLastPrint) / secsSinceLastPrint
+      let fpsDisplays = CGFloat(displaysSinceLastPrint) / secsSinceLastPrint
+      let wastedDisplays = displaysSinceLastPrint - drawsSinceLastPrint
+      lastPrintTime = now
+      drawCountLastPrint = drawCountTotal
+      displayCountLastPrint = displayCountTotal
+      NSLog("FPS: \(fpsDraws.string2f) draws, \(fpsDisplays.string2f) disps (wasted: \(wastedDisplays)), ContentsScale: \(contentsScale), LayerFrame: \(frame), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)")
+    }
+  }
+
 #endif
 
   override init() {
     super.init()
-
-    isOpaque = true
     isAsynchronous = false
-
-    autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
   }
 
+  // This is sometimes called by AppKit via layout
   override convenience init(layer: Any) {
     self.init()
 
@@ -102,7 +120,6 @@ class ViewLayer: CAOpenGLLayer {
 
   override func draw(inCGLContext ctx: CGLContextObj, pixelFormat pf: CGLPixelFormatObj, forLayerTime t: CFTimeInterval, displayTime ts: UnsafePointer<CVTimeStamp>?) {
     let mpv = videoView.player.mpv!
-    needsMPVRender = false
 
     glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
 
@@ -116,6 +133,11 @@ class ViewLayer: CAOpenGLLayer {
     withUnsafeMutablePointer(to: &flip) { flip in
       if let context = mpv.mpvRenderContext {
         fbo = i != 0 ? i : fbo
+
+#if DEBUG
+        lastWidth = Int32(dims[2])
+        lastHeight = Int32(dims[3])
+#endif
 
         var data = mpv_opengl_fbo(fbo: Int32(fbo),
                                   w: Int32(dims[2]),
@@ -135,7 +157,8 @@ class ViewLayer: CAOpenGLLayer {
         glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
       }
     }
-    glFlush()
+    // Call super to flush, per the documentation
+    super.draw(inCGLContext: ctx, pixelFormat: pf, forLayerTime: t, displayTime: ts)
   }
 
   func suspend() {
@@ -145,7 +168,6 @@ class ViewLayer: CAOpenGLLayer {
 
   func resume() {
 #if DEBUG
-    drawCountTotal = 0
     lastPrintTime = Date().timeIntervalSince1970
     drawCountLastPrint = drawCountTotal
 #endif
@@ -165,24 +187,15 @@ class ViewLayer: CAOpenGLLayer {
 
   func drawSync(forced: Bool = false) {
     videoView.$isUninited.withLock() { isUninited in
-      // The properties forceRender and needsMPVRender are always accessed while holding isUninited's
-      // lock. This avoids the need for separate locks to avoid data races with these flags. No need
+      // The property forceRender is always accessed while holding isUninited's lock.
+      // This avoids the need for separate locks to avoid data races with these flags. No need
       // to check isUninited at this point.
-      needsMPVRender = true
       if forced { forceRender = true }
     }
 
 #if DEBUG
     drawCountTotal += 1
-    let now = Date().timeIntervalSince1970
-    let secsSinceLastPrint = now - lastPrintTime
-    if secsSinceLastPrint >= 1.0 {  // print at most once per sec
-      let drawsSinceLastPrint = drawCountTotal - drawCountLastPrint
-      let fps = CGFloat(drawsSinceLastPrint) / secsSinceLastPrint
-      lastPrintTime = now
-      drawCountLastPrint = drawCountTotal
-      NSLog("FPS: \(fps.string2f), ContentsScale: \(contentsScale), ViewFrame: \(frame)")
-    }
+    printStats()
 #endif
 
     // Must not call display while holding isUninited's lock as that method will attempt to acquire
@@ -195,7 +208,6 @@ class ViewLayer: CAOpenGLLayer {
         forceRender = false
         return
       }
-      guard needsMPVRender else { return }
 
       videoView.player.mpv.lockAndSetOpenGLContext()
       defer { videoView.player.mpv.unlockOpenGLContext() }
@@ -210,11 +222,14 @@ class ViewLayer: CAOpenGLLayer {
           mpv_render_context_render(renderContext, &params);
         }
       }
-      needsMPVRender = false
     }
   }
 
   override func display() {
+#if DEBUG
+    displayCountTotal += 1
+#endif
+
     let needsFlush: Bool = videoView.$isUninited.withLock() { isUninited in
       guard !isUninited else { return false }
 
@@ -227,6 +242,7 @@ class ViewLayer: CAOpenGLLayer {
     // locks do not support recursion.
     CATransaction.flush()
   }
+
 
   // MARK: Utils
 

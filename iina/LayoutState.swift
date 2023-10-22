@@ -268,16 +268,6 @@ extension PlayerWindowController {
       self.titleBarHeight + self.topOSCHeight
     }
 
-    /// NOTE: Is mutable!
-    var trailingBarWidth: CGFloat {
-      return spec.trailingSidebar.currentWidth
-    }
-
-    /// NOTE: Is mutable!
-    var leadingBarWidth: CGFloat {
-      return spec.leadingSidebar.currentWidth
-    }
-
     /// Bar widths/heights IF `outsideViewport`
 
     var outsideTopBarHeight: CGFloat {

@@ -1014,7 +1014,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
       applyMusicModeGeometry(newGeo)
     case .windowed:
-      let viewportSize = player.info.getIntendedViewportSize(forAspectRatio: newAspectRatio) ?? windowedModeGeometry.viewportSize
+      let viewportSize: NSSize
+      if Preference.bool(for: .lockViewportToVideoSize),
+         let intendedViewportSize = player.info.getIntendedViewportSize(forVideoAspectRatio: newAspectRatio) {
+        viewportSize = intendedViewportSize
+      } else {
+        viewportSize = windowedModeGeometry.viewportSize
+      }
       let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize)
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
@@ -2957,8 +2963,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Sync UI with playback
 
   func forceDraw() {
-    guard player.info.isPaused || player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    guard loaded, player.info.isPaused || player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
+    log.verbose("Forcing redraw")
+    player.videoView.displayActive()
+    videoView.videoLayer.setNeedsLayout()
+    videoView.videoLayer.setNeedsDisplay()
     videoView.videoLayer.drawSync(forced: true)
+    if player.info.isPaused {
+      player.videoView.displayIdle()
+    }
   }
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {

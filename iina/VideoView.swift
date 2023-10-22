@@ -18,11 +18,9 @@ class VideoView: NSView {
     return player.log
   }
 
-  lazy var videoLayer: ViewLayer = {
-    let layer = ViewLayer()
-    layer.videoView = self
-    return layer
-  }()
+  var videoLayer: ViewLayer {
+    return layer as! ViewLayer
+  }
 
   @Atomic var isUninited = false
 
@@ -45,12 +43,9 @@ class VideoView: NSView {
 
   override init(frame: CGRect) {
     super.init(frame: frame)
-
-    // set up layer
-    layer = videoLayer
-    videoLayer.colorspace = VideoView.SRGB
     wantsLayer = true
 
+    translatesAutoresizingMaskIntoConstraints = false
     widthConstraint = widthAnchor.constraint(equalToConstant: CGFloat(AppData.widthWhenNoVideo))
     // Keep low, or else can't resize window
     widthConstraint.priority = .required
@@ -60,7 +55,6 @@ class VideoView: NSView {
     heightConstraint.isActive = true
 
     // other settings
-    autoresizingMask = [.width, .height]
     wantsBestResolutionOpenGLSurface = true
     wantsExtendedDynamicRangeOpenGLSurface = true
 
@@ -83,17 +77,23 @@ class VideoView: NSView {
   /// - Important: Once mpv has been instructed to quit accessing the mpv core can result in a crash, therefore locks must be
   ///     used to coordinate uninitializing the view so that other threads do not attempt to use the mpv core while it is shutting down.
   func uninit() {
-    $isUninited.withLock() { isUninited in
-      guard !isUninited else { return }
-      isUninited = true
+    guard !isUninited else { return }
+    isUninited = true
 
-      videoLayer.suspend()
-      player.mpv.mpvUninitRendering()
-    }
+    videoLayer.suspend()
+    player.mpv.mpvUninitRendering()
   }
 
   deinit {
     uninit()
+  }
+
+  override func makeBackingLayer() -> CALayer {
+    let layer = ViewLayer()
+    layer.videoView = self
+    layer.colorspace = VideoView.SRGB
+    layer.needsDisplayOnBoundsChange = true
+    return layer
   }
 
   override func draw(_ dirtyRect: NSRect) {
@@ -622,9 +622,7 @@ fileprivate func displayLinkCallback(
   _ flagsOut: UnsafeMutablePointer<CVOptionFlags>,
   _ context: UnsafeMutableRawPointer?) -> CVReturn {
   let videoView = unsafeBitCast(context, to: VideoView.self)
-  videoView.$isUninited.withLock() { isUninited in
-    guard !isUninited else { return }
-    videoView.player.mpv.mpvReportSwap()
-  }
+  guard !videoView.isUninited else { return kCVReturnSuccess }
+  videoView.player.mpv.mpvReportSwap()
   return kCVReturnSuccess
 }

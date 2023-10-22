@@ -408,7 +408,8 @@ extension PlayerWindowController {
     if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
       // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
-      if let prevIntendedViewportSize = player.info.getIntendedViewportSize(forAspectRatio: inputGeometry.videoAspectRatio) {
+      if Preference.bool(for: .lockViewportToVideoSize),
+         let prevIntendedViewportSize = player.info.getIntendedViewportSize(forVideoAspectRatio: inputGeometry.videoAspectRatio) {
         log.verbose("Before opening outer sidebar(s): restoring prev intendedViewportSize (\(prevIntendedViewportSize))")
 
         return outputGeo.scaleViewport(to: prevIntendedViewportSize)

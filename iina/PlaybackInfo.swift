@@ -104,20 +104,20 @@ class PlaybackInfo {
   /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`viewportSize`.
   /// Need to reconcile these requirements...
   func setIntendedViewportSize(from windowGeometry: PlayerWindowGeometry) {
-    let newSize = windowGeometry.viewportSize
-    if !Preference.bool(for: .lockViewportToVideoSize) || windowGeometry.videoAspectRatio >= 1 {
-      // Video is wide or square
-      log.verbose("Updating intendedViewportSize-Wide to \(newSize)")
-      intendedViewportSizeWide = newSize
+    let viewportSize = windowGeometry.viewportSize
+    if viewportSize.aspect >= 1 {
+      // Video is wide or square, or default
+      log.verbose("Updating intendedViewportSize-Wide to \(viewportSize)")
+      intendedViewportSizeWide = viewportSize
     } else {
       // Video is vertical: save to separate tall window pref
-      log.verbose("Updating intendedViewportSize-Tall to \(newSize)")
-      intendedViewportSizeTall = newSize
+      log.verbose("Updating intendedViewportSize-Tall to \(viewportSize)")
+      intendedViewportSizeTall = viewportSize
     }
   }
 
-  func getIntendedViewportSize(forAspectRatio aspectRatio: CGFloat) -> NSSize? {
-    if !Preference.bool(for: .lockViewportToVideoSize) || aspectRatio >= 1 {
+  func getIntendedViewportSize(forVideoAspectRatio aspectRatio: CGFloat) -> NSSize? {
+    if aspectRatio >= 1 {
       return intendedViewportSizeWide
     } else {
       return intendedViewportSizeTall

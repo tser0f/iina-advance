@@ -1562,7 +1562,6 @@ class PlayerCore: NSObject {
   func playbackRestarted() {
     Logger.log("Playback restarted", subsystem: subsystem)
     reloadSavedIINAfilters()
-    videoView.displayActive()
     windowController.forceDraw()
     syncUITime()
 
