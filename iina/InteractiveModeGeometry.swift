@@ -112,4 +112,30 @@ struct InteractiveModeGeometry: Equatable {
     return InteractiveModeGeometry.from(newGeo)
   }
 
+  /// Here, `videoSizeUnscaled` and `cropbox` must be the same scale, which may be different than `self.videoSize`.
+  /// The cropbox is the section of the video rect which remains after the crop. Its origin is the lower left of the video.
+  func cropVideo(from videoSizeUnscaled: NSSize, to cropbox: NSRect) -> InteractiveModeGeometry {
+    // First scale the cropbox to the current window scale
+    let scaleRatio = videoSizeUnscaled.width / self.videoSize.width
+    let cropboxScaled = NSRect(x: cropbox.origin.x * scaleRatio,
+                               y: cropbox.origin.y * scaleRatio,
+                               width: cropbox.width * scaleRatio,
+                               height: cropbox.height * scaleRatio)
+
+    let videoSize = videoSize
+    if cropboxScaled.origin.x > videoSize.width || cropboxScaled.origin.y > videoSize.height {
+      Logger.log("Cannot crop video: the cropbox completely outside the video! CropboxScaled: \(cropboxScaled), videoSize: \(videoSize)", level: .error)
+      return self
+    }
+
+    let widthRemoved = videoSize.width - cropboxScaled.width
+    let heightRemoved = videoSize.height - cropboxScaled.height
+    let newWindowFrame = NSRect(x: windowFrame.origin.x + cropboxScaled.origin.x,
+                                y: windowFrame.origin.y + cropboxScaled.origin.y,
+                                width: windowFrame.width - widthRemoved,
+                                height: windowFrame.height - heightRemoved)
+
+    let newVideoAspectRatio = cropbox.size.aspect
+    return InteractiveModeGeometry(windowFrame: newWindowFrame, screenID: screenID, fitOption: fitOption, videoAspectRatio: newVideoAspectRatio)
+  }
 }

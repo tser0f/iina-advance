@@ -578,7 +578,6 @@ extension PlayerWindowController {
   private func prepareRemainingLayoutForOpening(sidebar: Sidebar, sidebarView: NSView, tabContainerView: NSView, tab: Sidebar.Tab) {
     log.verbose("ChangeVisibility pre-animation, show \(sidebar.locationID), \(tab.name.quoted) tab")
 
-
     let viewController = (tab.group == .playlist) ? playlistView : quickSettingView
     let tabGroupView = viewController.view
 

@@ -450,7 +450,7 @@ extension PlayerWindowController {
       self.cropSettingsView = cropController
 
       // Need to hug the walls of viewport because it is already doing that. Will animate with updated constraints in next stage
-      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
+      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0, eqPriority: .defaultHigh)
 
       if let videoBaseDisplaySize = player.videoBaseDisplaySize {
         let origVideoSize = videoBaseDisplaySize
@@ -480,8 +480,7 @@ extension PlayerWindowController {
         videoView.updateSizeConstraints(middleGeometry.videoSize)
       }
     }
-
-    // Need to call this for initial layout also:
+     // Need to call this for initial layout also:
     updateMusicModeButtonsVisibility()
 
     // Sidebars: if (re)opening

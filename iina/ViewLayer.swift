@@ -39,15 +39,13 @@ class ViewLayer: CAOpenGLLayer {
       let displaysSinceLastPrint = displayCountTotal - displayCountLastPrint
 
       let fpsDraws = CGFloat(drawsSinceLastPrint) / secsSinceLastPrint
-      let fpsDisplays = CGFloat(displaysSinceLastPrint) / secsSinceLastPrint
-      let wastedDisplays = displaysSinceLastPrint - drawsSinceLastPrint
+      let excessDisplays = displaysSinceLastPrint - drawsSinceLastPrint
       lastPrintTime = now
       drawCountLastPrint = drawCountTotal
       displayCountLastPrint = displayCountTotal
-      NSLog("FPS: \(fpsDraws.string2f) draws, \(fpsDisplays.string2f) disps (wasted: \(wastedDisplays)), ContentsScale: \(contentsScale), LayerFrame: \(frame), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)")
+      NSLog("FPS: \(fpsDraws.string2f), \(excessDisplays) no-op displays, ContentsScale: \(contentsScale), LayerFrame: \(frame), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)")
     }
   }
-
 #endif
 
   override init() {

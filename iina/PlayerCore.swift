@@ -804,16 +804,13 @@ class PlayerCore: NSObject {
       }
       let vf = MPVFilter.flip()
       vf.label = Constants.FilterName.flip
-      if addVideoFilter(vf) {
-        info.flipFilter = vf
-      }
+      let _ = addVideoFilter(vf)
     } else {
       guard let vf = info.flipFilter else {
         Logger.log("Cannot disable flip: no filter is present", level: .error, subsystem: subsystem)
         return
       }
       let _ = removeVideoFilter(vf)
-      info.flipFilter = nil
     }
   }
 
@@ -826,16 +823,13 @@ class PlayerCore: NSObject {
       }
       let vf = MPVFilter.mirror()
       vf.label = Constants.FilterName.mirror
-      if addVideoFilter(vf) {
-        info.mirrorFilter = vf
-      }
+      let _ = addVideoFilter(vf)
     } else {
       guard let vf = info.mirrorFilter else {
         Logger.log("Cannot disable mirror: no mirror filter is present", level: .error, subsystem: subsystem)
         return
       }
       let _ = removeVideoFilter(vf)
-      info.mirrorFilter = nil
     }
   }
 
@@ -1058,13 +1052,15 @@ class PlayerCore: NSObject {
     let vheight = info.videoRawHeight!
     if let aspect = Aspect(string: str) {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
-      Logger.log("Setting crop to: \(cropped.width)x\(cropped.width) (orig videoSize: \(vwidth)x\(vheight), requested string: \(str.quoted))", level: .verbose, subsystem: subsystem)
+      log.verbose("Setting crop from requested string \(str.quoted) to: \(cropped.width)x\(cropped.height) (origSize: \(vwidth)x\(vheight))")
       let vf = MPVFilter.crop(w: Int(cropped.width), h: Int(cropped.height), x: nil, y: nil)
       vf.label = Constants.FilterName.crop
-      setCrop(fromFilter: vf)
-      info.unsureCrop = str
+      if setCrop(fromFilter: vf) {
+        info.unsureCrop = str
+        return
+      }
     } else {
-      Logger.log("Requested crop is invalid: \(str.quoted)", level: .error, subsystem: subsystem)
+      Logger.log("Requested crop string is invalid: \(str.quoted)", level: .error, subsystem: subsystem)
       if let filter = info.cropFilter {
         Logger.log("Setting crop to \("None".quoted) and removing crop filter", level: .verbose, subsystem: subsystem)
         let _ = removeVideoFilter(filter)
@@ -1073,11 +1069,10 @@ class PlayerCore: NSObject {
     }
   }
 
-  func setCrop(fromFilter filter: MPVFilter) {
+  @discardableResult
+  func setCrop(fromFilter filter: MPVFilter) -> Bool {
     filter.label = Constants.FilterName.crop
-    if addVideoFilter(filter) {
-      info.cropFilter = filter
-    }
+    return addVideoFilter(filter)
   }
 
   func setAudioEq(fromGains gains: [Double]) {
@@ -1103,7 +1098,9 @@ class PlayerCore: NSObject {
   /// - Returns: `true` if the filter was successfully added, `false` otherwise.
   func addVideoFilter(_ filter: MPVFilter) -> Bool {
     let success = addVideoFilter(filter.stringFormat)
-    log.verbose("Video filter \(filter) \(success ? "added successfully" : "was not added")")
+    if !success {
+      log.verbose("Video filter \(filter.stringFormat) was not added")
+    }
     return success
   }
 
@@ -1149,10 +1146,15 @@ class PlayerCore: NSObject {
       }
     }
     // try apply filter
-    var result = true
-    result = mpv.command(.vf, args: ["add", filter], checkError: false) >= 0
-    Logger.log(result ? "Succeeded" : "Failed", subsystem: self.subsystem)
-    return result
+    var didSucceed = true
+    didSucceed = mpv.command(.vf, args: ["add", filter], checkError: false) >= 0
+    log.debug("Add filter: \(didSucceed ? "Succeeded" : "Failed")")
+
+    if didSucceed, let vf = MPVFilter(rawString: filter) {
+      setPlaybackInfoFilter(vf)
+    }
+
+    return didSucceed
   }
 
   /// Remove a video filter based on its position in the list of filters.
@@ -1205,11 +1207,26 @@ class PlayerCore: NSObject {
   /// - Parameter filter: The filter to remove.
   /// - Returns: `true` if the filter was successfully removed, `false` otherwise.
   func removeVideoFilter(_ filter: String) -> Bool {
-    Logger.log("Removing video filter \(filter)...", subsystem: subsystem)
-    var result = true
-    result = mpv.command(.vf, args: ["remove", filter], checkError: false) >= 0
-    Logger.log(result ? "Succeeded" : "Failed", subsystem: self.subsystem)
-    return result
+    log.debug("Removing video filter \(filter)...")
+    var didSucceed = true
+    didSucceed = mpv.command(.vf, args: ["remove", filter], checkError: false) >= 0
+    log.debug(didSucceed ? "Succeeded" : "Failed")
+    if didSucceed, let filterInfo = MPVFilter(rawString: filter) {
+      switch filterInfo.label {
+      case Constants.FilterName.crop:
+        info.cropFilter = nil
+        info.unsureCrop = "None"
+      case Constants.FilterName.flip:
+        info.flipFilter = nil
+      case Constants.FilterName.delogo:
+        info.delogoFilter = nil
+      case Constants.FilterName.mirror:
+        info.mirrorFilter = nil
+      default:
+        break
+      }
+    }
+    return didSucceed
   }
 
   /// Add an audio filter given as a `MPVFilter` object.
@@ -1648,7 +1665,8 @@ class PlayerCore: NSObject {
     let drH = vParams.videoDisplayRotatedHeight
     log.verbose("Got mpv `video-reconfig`. mpv = \(vParams); PlayerInfo = {W: \(info.videoDisplayWidth!) H: \(info.videoDisplayHeight!) (rawSize: \(info.videoRawWidth ?? 0) x \(info.videoRawHeight ?? 0)) Rot: \(info.userRotation)°}")
 
-    if drW != info.videoDisplayWidth! || drH != info.videoDisplayHeight! {
+    let newAspect = (CGFloat(drW) / CGFloat(drH)).string6f
+    if drW != info.videoDisplayWidth! || drH != info.videoDisplayHeight! || newAspect != windowController.videoAspectRatio.string6f {
       // filter the last video-reconfig event before quit
       if drW == 0 && drH == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
       // video size changed
@@ -2246,6 +2264,26 @@ class PlayerCore: NSObject {
     }
   }
 
+  func setPlaybackInfoFilter(_ filter: MPVFilter) {
+    switch filter.label {
+    case Constants.FilterName.crop:
+      // FIXME: should call setCrop()? Also need to update selection in the Quick Settings `cropSegment` control.
+      info.cropFilter = filter
+      info.unsureCrop = ""
+      if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
+        sendOSD(.crop("(\(x), \(y)) (\(w)\u{d7}\(h))"))
+      }
+    case Constants.FilterName.flip:
+      info.flipFilter = filter
+    case Constants.FilterName.mirror:
+      info.mirrorFilter = filter
+    case Constants.FilterName.delogo:
+      info.delogoFilter = filter
+    default:
+      break
+    }
+  }
+
   /** Check if there are IINA filters saved in watch_later file. */
   func reloadSavedIINAfilters() {
     // vf
@@ -2253,21 +2291,7 @@ class PlayerCore: NSObject {
     for filter in videoFilters {
       Logger.log("Got mpv vf, name: \(filter.name.quoted), label: \(filter.label?.quoted ?? "nil"), params: \(filter.params ?? [:])",
                  level: .verbose, subsystem: subsystem)
-      guard let label = filter.label else { continue }
-      switch label {
-      case Constants.FilterName.crop:
-        // FIXME: should call setCrop()? Also need to update selection in the Quick Settings `cropSegment` control.
-        info.cropFilter = filter
-        info.unsureCrop = ""
-      case Constants.FilterName.flip:
-        info.flipFilter = filter
-      case Constants.FilterName.mirror:
-        info.mirrorFilter = filter
-      case Constants.FilterName.delogo:
-        info.delogoFilter = filter
-      default:
-        break
-      }
+      setPlaybackInfoFilter(filter)
     }
     // af
     let audioFilters = mpv.getFilters(MPVProperty.af)

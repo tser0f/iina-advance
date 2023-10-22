@@ -601,6 +601,31 @@ struct PlayerWindowGeometry: Equatable {
     return self.clone(windowFrame: newWindowFrame)
   }
 
+  /// Here, `videoSizeUnscaled` and `cropbox` must be the same scale, which may be different than `self.videoSize`.
+  /// The cropbox is the section of the video rect which remains after the crop. Its origin is the lower left of the video.
+  func cropVideo(from videoSizeUnscaled: NSSize, to cropbox: NSRect) -> PlayerWindowGeometry {
+    // First scale the cropbox to the current window scale
+    let scaleRatio = videoSizeUnscaled.width / self.videoSize.width
+    let cropboxScaled = NSRect(x: cropbox.origin.x * scaleRatio,
+                               y: cropbox.origin.y * scaleRatio,
+                               width: cropbox.width * scaleRatio,
+                               height: cropbox.height * scaleRatio)
+
+    if cropboxScaled.origin.x > videoSize.width || cropboxScaled.origin.y > videoSize.height {
+      Logger.log("Cannot crop video: the cropbox completely outside the video! CropboxScaled: \(cropboxScaled), videoSize: \(videoSize)", level: .error)
+      return self
+    }
+
+    let widthRemoved = videoSize.width - cropboxScaled.width
+    let heightRemoved = videoSize.height - cropboxScaled.height
+    let newWindowFrame = NSRect(x: windowFrame.origin.x + cropboxScaled.origin.x,
+                                y: windowFrame.origin.y + cropboxScaled.origin.y,
+                                width: windowFrame.width - widthRemoved,
+                                height: windowFrame.height - heightRemoved)
+
+    let newVideoAspectRatio = cropbox.size.aspect
+    return self.clone(windowFrame: newWindowFrame, videoAspectRatio: newVideoAspectRatio)
+  }
 }
 
 
@@ -622,7 +647,32 @@ extension PlayerWindowController {
       pip.aspectRatio = videoBaseDisplaySize
     }
 
-    if isInInteractiveMode {
+    if isInInteractiveMode, let cropController = self.cropSettingsView {
+      if cropController.cropBoxView.didSubmit {
+        // Finish crop submission
+        cropController.cropBoxView.didSubmit = false
+        let originalVideoSize = cropController.cropBoxView.actualSize
+        let cropy = Int(originalVideoSize.height) - cropController.cropy  // flipped for MacOS
+        let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropy, width: cropController.cropw, height: cropController.croph)
+
+        // FIXME: something's wrong in the animations here
+        animationQueue.run(CocoaAnimation.Task({ [self] in
+          interactiveModeGeometry = (interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)).cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+          windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+
+          cropController.view.removeFromSuperview()
+          cropController.cropBoxView.removeFromSuperview()
+          player.window.setFrameImmediately(interactiveModeGeometry!.windowFrame)
+          viewportView.layout()
+          forceDraw()
+
+          animationQueue.runZeroDuration({ [self] in
+            exitInteractiveMode()
+          })
+        }))
+        return
+      }
+
       /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
       let selectableRect = NSRect(origin: CGPointZero, size: interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize)
       log.debug("[AdjustFrameAfterVideoReconfig] Replacing crop box videoSize=\(videoBaseDisplaySize), selectableRect=\(selectableRect)")
@@ -642,6 +692,9 @@ extension PlayerWindowController {
         log.verbose("[AdjustFrameAfterVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       } else {
         log.error("[AdjustFrameAfterVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect). Will attempt to correct by resizing window.")
+        /// Set variables and resize viewport to fit properly
+        videoAspectRatio = newVideoAspectRatio
+        windowedModeGeometry = windowedModeGeometry.clone(videoAspectRatio: videoAspectRatio)
         resizeViewport()
       }
 
@@ -670,13 +723,13 @@ extension PlayerWindowController {
     if shouldResizeWindowAfterVideoReconfig() {
       // get videoSize on screen
       var newVideoSize: NSSize = videoBaseDisplaySize
-      log.verbose("[AdjustFrameAfterVideoReconfig C step1]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
+      log.verbose("[AdjustFrameAfterVideoReconfig C-1]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
 
       let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
       if let strategy = resizeWindowStrategy, strategy != .fitScreen {
         let resizeRatio = strategy.ratio
         newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-        log.verbose("[AdjustFrameAfterVideoReconfig C step3] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
+        log.verbose("[AdjustFrameAfterVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
       }
 
       let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
@@ -684,13 +737,18 @@ extension PlayerWindowController {
 
       // check if have geometry set (initial window position/size)
       if shouldApplyInitialWindowSize, let mpvGeometry = player.getGeometry() {
-        log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionA] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
+        log.verbose("[AdjustFrameAfterVideoReconfig C-3] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
         newWindowGeo = windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
       } else if let strategy = resizeWindowStrategy, strategy == .fitScreen {
-        log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionB] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
+        log.verbose("[AdjustFrameAfterVideoReconfig C-4] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
         newWindowGeo = windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInsideVisibleFrame)
+      } else if !player.info.justStartedFile {
+        // Try to match previous scale
+        newVideoSize = newVideoSize.multiply(player.info.cachedWindowScale)
+        log.verbose("[AdjustFrameAfterVideoReconfig C-5] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
+        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInsideVisibleFrame)
       } else {
-        log.verbose("[AdjustFrameAfterVideoReconfig C step4 optionC] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → windowFrame")
+        log.verbose("[AdjustFrameAfterVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → windowFrame")
         newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInsideVisibleFrame)
       }
 

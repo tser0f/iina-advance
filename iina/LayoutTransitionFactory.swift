@@ -162,7 +162,7 @@ extension PlayerWindowController {
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
     // OutputGeometry
-    let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputGeometry: inputGeometry, outputLayout: outputLayout)
+    let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry, outputLayout: outputLayout)
 
     let transition = LayoutTransition(name: transitionName,
                                       from: inputLayout, from: inputGeometry,
@@ -360,7 +360,7 @@ extension PlayerWindowController {
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildOutputGeometry(inputGeometry: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
+  private func buildOutputGeometry(inputLayout: LayoutState, inputGeometry: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
     switch outputLayout.mode {
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
@@ -408,10 +408,13 @@ extension PlayerWindowController {
     if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
       // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
+      // Add check for aspect ratio & interactive mode so that we don't enable this when cropping or other things:
       if Preference.bool(for: .lockViewportToVideoSize),
-         let prevIntendedViewportSize = player.info.getIntendedViewportSize(forVideoAspectRatio: inputGeometry.videoAspectRatio) {
-        log.verbose("Before opening outer sidebar(s): restoring prev intendedViewportSize (\(prevIntendedViewportSize))")
-
+         let prevIntendedViewportSize = player.info.getIntendedViewportSize(forVideoAspectRatio: inputGeometry.videoAspectRatio),
+         !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
+         windowedModeGeometry.videoAspectRatio.string6f == inputGeometry.videoAspectRatio.string6f
+      {
+        log.verbose("Instead of shrinking window by \(ΔOutsideWidth) W & \(ΔOutsideHeight) H, will restore prev intendedViewportSize (\(prevIntendedViewportSize))")
         return outputGeo.scaleViewport(to: prevIntendedViewportSize)
       }
     }

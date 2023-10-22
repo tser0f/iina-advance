@@ -191,11 +191,12 @@ class VideoView: NSView {
   }
 
   // TODO: figure out why this 2px adjustment is necessary
-  func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2) {
+  func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2,
+                                         eqPriority: NSLayoutConstraint.Priority = .required) {
     log.verbose("Constraining videoView for fixed offsets only: \(top) \(right) \(bottom) \(left)")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
-                       eqIsActive: true, eqPriority: .required,
+                       eqIsActive: true, eqPriority: eqPriority,
                        gtIsActive: false, gtPriority: .required,
                        centerIsActive: false, centerPriority: .required)
 
