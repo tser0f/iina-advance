@@ -548,10 +548,12 @@ not applying FFmpeg 9599 workaround
 
   func mpvUninitRendering() {
     guard let mpvRenderContext = mpvRenderContext else { return }
+    player.log.verbose("Uninit mpv rendering")
     lockAndSetOpenGLContext()
     defer { unlockOpenGLContext() }
     mpv_render_context_set_update_callback(mpvRenderContext, nil, nil)
     mpv_render_context_free(mpvRenderContext)
+    player.log.verbose("Uninit mpv rendering: done")
   }
 
   func mpvReportSwap() {
@@ -561,6 +563,8 @@ not applying FFmpeg 9599 workaround
 
   func shouldRenderUpdateFrame() -> Bool {
     guard let mpvRenderContext = mpvRenderContext else { return false }
+    guard !player.isStopping && !player.isShuttingDown else { return false }
+    // TODO: research this more as possible solution to lowering effective frame rate to video
     let flags: UInt64 = mpv_render_context_update(mpvRenderContext)
     return flags & UInt64(MPV_RENDER_UPDATE_FRAME.rawValue) > 0
   }

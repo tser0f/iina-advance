@@ -91,7 +91,6 @@ class VideoView: NSView {
     let layer = ViewLayer()
     layer.videoView = self
     layer.colorspace = VideoView.SRGB
-    layer.needsDisplayOnBoundsChange = true
     return layer
   }
 

@@ -50,7 +50,7 @@ class ViewLayer: CAOpenGLLayer {
 
   override init() {
     super.init()
-    isAsynchronous = false
+    isAsynchronous = true
   }
 
   // This is sometimes called by AppKit via layout
@@ -135,11 +135,13 @@ class ViewLayer: CAOpenGLLayer {
 #if DEBUG
         lastWidth = Int32(dims[2])
         lastHeight = Int32(dims[3])
+        drawCountTotal += 1
+        printStats()
 #endif
 
         var data = mpv_opengl_fbo(fbo: Int32(fbo),
-                                  w: Int32(dims[2]),
-                                  h: Int32(dims[3]),
+                                  w: lastWidth,
+                                  h: lastHeight,
                                   internal_format: 0)
         withUnsafeMutablePointer(to: &data) { data in
           var params: [mpv_render_param] = [
@@ -152,6 +154,7 @@ class ViewLayer: CAOpenGLLayer {
         }
       }
     }
+
     // Call super to flush, per the documentation
     super.draw(inCGLContext: ctx, pixelFormat: pf, forLayerTime: t, displayTime: ts)
   }
@@ -187,11 +190,6 @@ class ViewLayer: CAOpenGLLayer {
       // to check isUninited at this point.
       if forced { forceRender = true }
     }
-
-#if DEBUG
-    drawCountTotal += 1
-    printStats()
-#endif
 
     // Must not call display while holding isUninited's lock as that method will attempt to acquire
     // the lock and our locks do not support recursion.

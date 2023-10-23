@@ -1585,7 +1585,7 @@ class PlayerCore: NSObject {
     syncUITime()
 
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-      DispatchQueue.main.sync {
+      DispatchQueue.main.async {
         NowPlayingInfoManager.updateInfo()
       }
     }
