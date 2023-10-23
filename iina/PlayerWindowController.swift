@@ -1058,6 +1058,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     player.log.verbose("Adding videoView to viewportView, screenScaleFactor: \(window.screenScaleFactor)")
     /// Make sure `defaultAlbumArtView` stays above `videoView`
     viewportView.addSubview(videoView, positioned: .below, relativeTo: defaultAlbumArtView)
+    videoView.videoLayer.autoresizingMask = CAAutoresizingMask(rawValue: 0)
     // Screen may have changed. Refresh contentsScale
     videoView.refreshContentsScale()
     // add constraints
@@ -3295,6 +3296,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     // Remove these. They screw up PIP drag
     videoView.updateSizeConstraints(nil)
     pipVideo.view = videoView
+    videoView.videoLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
     pip.playing = player.info.isPlaying
     pip.title = window.title
 
@@ -3360,7 +3362,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     }
 
     // Set frame to animate back to
-    pip.replacementRect = NSRect(origin: CGPointZero, size: windowedModeGeometry.videoSize)
+    pip.replacementRect = windowedModeGeometry.videoFrameInWindowCoords
     pip.replacementWindow = window
 
     // Bring the window to the front and deminiaturize it
@@ -3379,22 +3381,30 @@ extension PlayerWindowController: PIPViewControllerDelegate {
 
   func pipDidClose(_ pip: PIPViewController) {
     guard !(NSApp.delegate as! AppDelegate).isTerminating else { return }
+
+    // seems to require separate animation blocks to work properly
+    var animationTasks: [CocoaAnimation.Task] = []
+
     if isWindowHidden {
-      showWindow(self)
-      if let window {
-        log.verbose("PIP did close; removing player from hidden windows list: \(window.savedStateName.quoted)")
-        AppDelegate.windowsHidden.remove(window.savedStateName)
-      }
+      animationTasks.append(CocoaAnimation.Task({ [self] in
+        showWindow(self)
+        if let window {
+          log.verbose("PIP did close; removing player from hidden windows list: \(window.savedStateName.quoted)")
+          AppDelegate.windowsHidden.remove(window.savedStateName)
+        }
+      }))
     }
 
-    animationQueue.runZeroDuration({ [self] in
+    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
       addVideoViewToWindow()
       // If using legacy windowed mode, need to manually add title to Window menu & Dock
       updateTitle()
+    })
 
+    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
       // Similarly, we need to run a redraw here as well. We check to make sure we
       // are paused, because this causes a janky animation in either case but as
       // it's not necessary while the video is playing and significantly more
@@ -3407,6 +3417,8 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       isWindowHidden = false
       player.saveState()
     })
+
+    animationQueue.run(animationTasks)
   }
 
   func pipActionPlay(_ pip: PIPViewController) {

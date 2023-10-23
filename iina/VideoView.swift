@@ -47,7 +47,6 @@ class VideoView: NSView {
 
     translatesAutoresizingMaskIntoConstraints = false
     widthConstraint = widthAnchor.constraint(equalToConstant: CGFloat(AppData.widthWhenNoVideo))
-    // Keep low, or else can't resize window
     widthConstraint.priority = .required
     widthConstraint.isActive = true
     heightConstraint = heightAnchor.constraint(equalToConstant: CGFloat(AppData.heightWhenNoVideo))
