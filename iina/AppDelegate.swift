@@ -451,6 +451,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func applicationDidBecomeActive(_ notfication: Notification) {
+    // When using custom window style, sometimes AppKit will remove their entries from the Window menu (e.g. when hiding the app).
+    // Make sure to add them again if they are missing:
+    for player in PlayerCoreManager.playerCores {
+      if player.windowController.loaded && !player.isShutdown {
+        player.windowController.updateTitle()
+      }
+    }
   }
 
   func applicationWillResignActive(_ notfication: Notification) {
