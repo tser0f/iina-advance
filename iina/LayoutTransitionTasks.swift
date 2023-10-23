@@ -831,9 +831,6 @@ extension PlayerWindowController {
         setWindowStyleToLegacy()
       } else {  // native windowed
         setWindowStyleToNative()
-        if !transition.outputLayout.isMusicMode {
-          window.titleVisibility = .visible
-        }
       }
 
       if transition.isExitingLegacyFullScreen {

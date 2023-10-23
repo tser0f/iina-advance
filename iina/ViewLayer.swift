@@ -150,9 +150,6 @@ class ViewLayer: CAOpenGLLayer {
           mpv_render_context_render(context, &params);
           ignoreGLError()
         }
-      } else {
-        glClearColor(0, 0, 0, 1)
-        glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
       }
     }
     // Call super to flush, per the documentation
