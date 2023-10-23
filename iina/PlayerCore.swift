@@ -376,7 +376,9 @@ class PlayerCore: NSObject {
     isStopping = false
     isStopped = false
 
-    (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
+    if !info.isRestoring {
+      (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
+    }
     windowController.openWindow()
 
     mpv.command(.loadfile, args: [path])

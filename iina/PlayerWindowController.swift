@@ -1686,12 +1686,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // rather disturbing this works as a workaround, but it does.
     window.title = "Window"
 
-    let currentScreen = window.selectDefaultScreen()
-    NSScreen.screens.enumerated().forEach { (screenIndex, screen) in
-      let currentString = (screen == currentScreen) ? "✅" : " "
-      screen.log("\(currentString)Screen\(screenIndex): ")
-    }
-
     // start tracking mouse event
     if cv.trackingAreas.isEmpty {
       cv.addTrackingArea(NSTrackingArea(rect: cv.bounds,
@@ -1728,6 +1722,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Restore layout from last launch or configure from prefs. Do not animate.
     setInitialWindowLayout()
 
+    // Unfortunately, seems that window must be visible for mpv init, or it will crash...
     // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
     if window.isMiniaturized {
       log.verbose("De-miniturizing Player Window")
@@ -3316,10 +3311,11 @@ extension PlayerWindowController: PIPViewControllerDelegate {
         isWindowHidden = true
         window.orderOut(self)
         log.verbose("PIP entered; adding player to hidden windows list: \(window.savedStateName.quoted)")
-        AppDelegate.windowsHiddenOrMinimized.insert(window.savedStateName)
+        AppDelegate.windowsHidden.insert(window.savedStateName)
         break
       case .minimize:
         isWindowMiniaturizedDueToPip = true
+        /// No need to add to `AppDelegate.windowsMinimized` - it will be handled by app-wide listener
         window.miniaturize(self)
         break
       }
@@ -3335,6 +3331,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
 
   func exitPIP() {
     guard pipStatus == .inPIP else { return }
+    log.verbose("Exiting PIP")
     if pipShouldClose(pip) {
       // Prod Swift to pick the dismiss(_ viewController: NSViewController)
       // overload over dismiss(_ sender: Any?). A change in the way implicitly
@@ -3348,6 +3345,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
   func prepareForPIPClosure(_ pip: PIPViewController) {
     guard pipStatus == .inPIP else { return }
     guard let window = window else { return }
+    log.verbose("Preparing for PIP closure")
     // This is called right before we're about to close the PIP
     pipStatus = .intermediate
 
@@ -3355,6 +3353,11 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     // not hide in time and ends up covering the video view (which will be added
     // to the window under everything else, including the overlay).
     pipOverlayView.isHidden = true
+
+    if (NSApp.delegate as! AppDelegate).isTerminating {
+      // Don't bother restoring window state past this point
+      return
+    }
 
     // Set frame to animate back to
     pip.replacementRect = NSRect(origin: CGPointZero, size: windowedModeGeometry.videoSize)
@@ -3375,11 +3378,12 @@ extension PlayerWindowController: PIPViewControllerDelegate {
   }
 
   func pipDidClose(_ pip: PIPViewController) {
+    guard !(NSApp.delegate as! AppDelegate).isTerminating else { return }
     if isWindowHidden {
       showWindow(self)
       if let window {
         log.verbose("PIP did close; removing player from hidden windows list: \(window.savedStateName.quoted)")
-        AppDelegate.windowsHiddenOrMinimized.remove(window.savedStateName)
+        AppDelegate.windowsHidden.remove(window.savedStateName)
       }
     }
 

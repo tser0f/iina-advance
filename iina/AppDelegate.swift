@@ -33,7 +33,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   static var launchName: String = Preference.UIState.launchName(forID: launchID)
   static var launchTime = Date().timeIntervalSince1970
 
-  static var windowsHiddenOrMinimized = Set<String>()
+  static var windowsHidden = Set<String>()
+  static var windowsMinimized = Set<String>()
 
   /**
    Becomes true once `application(_:openFile:)` or `droppedText()` is called.
@@ -487,8 +488,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let savedStateName = window.savedStateName
     guard !savedStateName.isEmpty else { return }
 
-    Logger.log("Window did minimize; adding to hidden windows list: \(savedStateName.quoted)")
-    AppDelegate.windowsHiddenOrMinimized.insert(savedStateName)
+    Logger.log("Window did minimize; adding to minimized windows list: \(savedStateName.quoted)")
+    AppDelegate.windowsMinimized.insert(savedStateName)
     DispatchQueue.main.async {
       Preference.UIState.saveCurrentOpenWindowList()
     }
@@ -502,8 +503,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let savedStateName = window.savedStateName
     guard !savedStateName.isEmpty else { return }
 
-    Logger.log("Window did unminimize; removing from hidden windows list: \(savedStateName.quoted)")
-    AppDelegate.windowsHiddenOrMinimized.remove(savedStateName)
+    Logger.log("Window did unminimize; removing from minimized windows list: \(savedStateName.quoted)")
+    AppDelegate.windowsMinimized.remove(savedStateName)
     DispatchQueue.main.async {
       Preference.UIState.saveCurrentOpenWindowList()
     }
@@ -563,15 +564,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Due to 1s delay in chosen strategy for verifying whether other instances are running, try not to repeat it twice.
     // Users who are quick with their user interface device probably know what they are doing and will be impatient.
     let pastLaunchesCache = stopwatch.msElapsed > 1000 ? nil : pastLaunches
-    let windowNamesBackToFront = Preference.UIState.consolidateOpenWindowsFromPastLaunches(pastLaunches: pastLaunchesCache)
+    let savedWindowsBackToFront = Preference.UIState.consolidateOpenWindowsFromPastLaunches(pastLaunches: pastLaunchesCache)
 
-    guard !windowNamesBackToFront.isEmpty else {
+    guard !savedWindowsBackToFront.isEmpty else {
       Logger.log("Not restoring windows: stored window list empty")
       return false
     }
 
-    if windowNamesBackToFront.count == 1 {
-      let onlyWindow = windowNamesBackToFront[0]
+    if savedWindowsBackToFront.count == 1 {
+      let onlyWindow = savedWindowsBackToFront[0].saveName
 
       if onlyWindow == WindowAutosaveName.inspector {
         // Do not restore this on its own
@@ -590,34 +591,47 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    Logger.log("Starting restore of \(windowNamesBackToFront.count) windows", level: .verbose)
+    Logger.log("Starting restore of \(savedWindowsBackToFront.count) windows", level: .verbose)
     Preference.set(true, for: .isRestoreInProgress)
 
     // Show windows one by one, starting at back and iterating to front:
-    for autosaveName in windowNamesBackToFront {
-      switch autosaveName {
+    for savedWindow in savedWindowsBackToFront {
+      var wc: NSWindowController? = nil
+      switch savedWindow.saveName {
       case .playbackHistory:
         showHistoryWindow(self)
+        wc = historyWindow
       case .welcome:
         showWelcomeWindow()
+        wc = initialWindow
       case .preference:
         showPreferences(self)
+        wc = preferenceWindowController
       case .about:
         showAboutWindow(self)
+        wc = aboutWindow
       case .openURL:
         // TODO: persist isAlternativeAction too
         showOpenURLWindow(isAlternativeAction: true)
+        wc = openURLWindow
       case .inspector:
         showInspectorWindow()
+        wc = inspector
       case .videoFilter:
         showVideoFilterWindow(self)
+        wc = vfWindow
       case .audioFilter:
         showAudioFilterWindow(self)
+        wc = afWindow
       case .playWindow(let id):
-        PlayerCoreManager.restoreFromPriorLaunch(playerID: id)
+        let player = PlayerCoreManager.restoreFromPriorLaunch(playerID: id)
+        wc = player.windowController
       default:
-        Logger.log("Cannot restore unrecognized autosave enum: \(autosaveName)", level: .error)
+        Logger.log("Cannot restore unrecognized autosave enum: \(savedWindow.saveName)", level: .error)
         break
+      }
+      if savedWindow.isMinimized, let wc {
+        wc.window?.miniaturize(self)
       }
     }
 
@@ -674,7 +688,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     let windowName = window.savedStateName
     if !windowName.isEmpty {
-      AppDelegate.windowsHiddenOrMinimized.remove(windowName)
+      AppDelegate.windowsHidden.remove(windowName)
+      AppDelegate.windowsMinimized.remove(windowName)
 
       /// Query for the list of open windows and save it (excluding the window which is about to close).
       /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where

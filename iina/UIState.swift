@@ -82,7 +82,7 @@ extension Preference {
     }
 
     // Returns the autosave names of windows which have been saved in the set of open windows
-    static func getSavedOpenWindowsBackToFront(forLaunchID launchID: Int) -> [String] {
+    static private func getSavedOpenWindowsBackToFront(forLaunchID launchID: Int) -> [String] {
       guard isRestoreEnabled else {
         Logger.log("UI restore disabled. Returning empty open window list")
         return []
@@ -101,6 +101,7 @@ extension Preference {
       var orderNamePairs: [(Int, String)] = []
       for window in NSApp.windows {
         let name = window.savedStateName
+        /// `isVisible` here includes windows which are obscured or off-screen, but excludes ordered out or minimized
         if !name.isEmpty && window.isVisible {
           if let nameToExclude = nameToExclude, nameToExclude == name {
             continue
@@ -108,14 +109,17 @@ extension Preference {
           orderNamePairs.append((window.orderedIndex, name))
         }
       }
+      /// Sort windows in increasing `orderedIndex` (from back to front):
       return orderNamePairs.sorted(by: { (left, right) in left.0 > right.0}).map{ $0.1 }
     }
 
     static func saveCurrentOpenWindowList(excludingWindowName nameToExclude: String? = nil) {
       let openWindowNames = self.getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
-      let hiddenWindowNames = Array(AppDelegate.windowsHiddenOrMinimized)
-      Logger.log("Saving open windows (\(openWindowNames)) & hidden windows: (\(hiddenWindowNames))", level: .verbose)
-      saveOpenWindowList(windowNamesBackToFront: hiddenWindowNames + openWindowNames, forLaunchID: AppDelegate.launchID)
+      let minimizedWindowNames = Array(AppDelegate.windowsMinimized)
+      let hiddenWindowNames = Array(AppDelegate.windowsHidden)
+      Logger.log("Saving open windows (\(openWindowNames)), hidden (\(hiddenWindowNames)), & minimized (\(minimizedWindowNames))", level: .verbose)
+      let minimizedStrings = minimizedWindowNames.map({ "\(SavedWindow.minimizedPrefix)\($0)" })
+      saveOpenWindowList(windowNamesBackToFront: minimizedStrings + hiddenWindowNames + openWindowNames, forLaunchID: AppDelegate.launchID)
     }
 
     static private func saveOpenWindowList(windowNamesBackToFront: [String], forLaunchID launchID: Int) {
@@ -282,7 +286,7 @@ extension Preference {
     /// Consolidates all player windows (& others) from any past launches which are no longer running into the windows for this instance.
     /// Updates prefs to reflect new conslidated state.
     /// Returns all window names for this launch instance, back to front.
-    static func consolidateOpenWindowsFromPastLaunches(pastLaunches cachedLaunches: [String]? = nil) -> [WindowAutosaveName] {
+    static func consolidateOpenWindowsFromPastLaunches(pastLaunches cachedLaunches: [String]? = nil) -> [SavedWindow] {
       // Could have been a long time since data was last collected. Get a fresh set of data:
       let pastLaunchNames = cachedLaunches ?? Preference.UIState.collectPastLaunches()
 
@@ -296,16 +300,25 @@ extension Preference {
         let savedWindowNameStrings = getSavedOpenWindowsBackToFront(forLaunchID: launchID)
         for nameString in savedWindowNameStrings {
           completeNameList.append(nameString)
-          nameSet.insert(nameString)
+
+          var name = nameString
+          if name.hasPrefix(SavedWindow.minimizedPrefix) {
+            name.removeFirst(SavedWindow.minimizedPrefix.count)
+          }
+          nameSet.insert(name)
         }
       }
 
       // Remove duplicates, favoring front-most copies
       var deduplicatedReverseNameList: [String] = []
       for nameString in completeNameList.reversed() {
-        if nameSet.contains(nameString) {
+        var name = nameString
+        if name.hasPrefix(SavedWindow.minimizedPrefix) {
+          name.removeFirst(SavedWindow.minimizedPrefix.count)
+        }
+        if nameSet.contains(name) {
           deduplicatedReverseNameList.append(nameString)
-          nameSet.remove(nameString)
+          nameSet.remove(name)
         } else {
           Logger.log("Skipping duplicate open window: \(nameString.quoted)", level: .verbose)
         }
@@ -331,7 +344,7 @@ extension Preference {
         UserDefaults.standard.removeObject(forKey: pastLaunchName)
       }
 
-      return finalWindowNameList.compactMap{WindowAutosaveName($0)}
+      return finalWindowNameList.compactMap{SavedWindow($0)}
     }
   }
 }

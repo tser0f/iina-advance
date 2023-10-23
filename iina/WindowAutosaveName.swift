@@ -8,6 +8,34 @@
 
 import Foundation
 
+struct SavedWindow {
+  static let minimizedPrefix = "M:"
+  let saveName: WindowAutosaveName
+  let isMinimized: Bool
+
+  init(saveName: WindowAutosaveName, isMinimized: Bool) {
+    self.saveName = saveName
+    self.isMinimized = isMinimized
+  }
+
+  init?(_ string: String) {
+    let saveNameString: String
+    var isMinimized = false
+    if string.starts(with: SavedWindow.minimizedPrefix) {
+      saveNameString = String(string.dropFirst(SavedWindow.minimizedPrefix.count))
+      isMinimized = true
+    } else {
+      saveNameString = string
+    }
+    
+    if let saveName = WindowAutosaveName(saveNameString) {
+      self = SavedWindow(saveName: saveName, isMinimized: isMinimized)
+    } else {
+      return nil
+    }
+  }
+}
+
 enum WindowAutosaveName: Equatable {
   static let playWindowPrefix = "PlayerWindow-"
   static let playWindowFmt = "\(playWindowPrefix)%@"
