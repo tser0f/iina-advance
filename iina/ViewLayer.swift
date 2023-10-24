@@ -140,8 +140,8 @@ class ViewLayer: CAOpenGLLayer {
 #endif
 
         var data = mpv_opengl_fbo(fbo: Int32(fbo),
-                                  w: lastWidth,
-                                  h: lastHeight,
+                                  w: Int32(dims[2]),
+                                  h: Int32(dims[3]),
                                   internal_format: 0)
         withUnsafeMutablePointer(to: &data) { data in
           var params: [mpv_render_param] = [

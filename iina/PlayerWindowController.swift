@@ -2054,8 +2054,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// • Dock visiblity was toggled
   /// • Menu bar visibility toggled
   /// • Adding or removing window style mask `.titled`
-  /// • Possibly more...
+  /// • Sometimes called hundreds(!) of times while window is closing
   private func windowDidChangeScreenParameters(_ notification: Notification) {
+    // FIXME: add checks for duplicates
+    guard !isClosing else { return }
     let screens = PlayerWindowController.buildScreenMap()
     let screenIDs = screens.keys.sorted()
     let cachedScreenIDs = cachedScreens.keys.sorted()
