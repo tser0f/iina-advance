@@ -1985,10 +1985,10 @@ class PlayerCore: NSObject {
     }
     DispatchQueue.main.async {
       self.windowController.displayOSD(osd,
-                                 autoHide: autoHide,
-                                 forcedTimeout: forcedTimeout,
-                                 accessoryView: accessoryView,
-                                 context: context)
+                                       autoHide: autoHide,
+                                       forcedTimeout: forcedTimeout,
+                                       accessoryView: accessoryView,
+                                       context: context)
     }
   }
 

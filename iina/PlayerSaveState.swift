@@ -15,6 +15,10 @@ struct PlayerSaveState {
 
     case playlistPaths = "playlistPaths"
 
+    case playlistVideos = "playlistVideos"
+    case playlistSubtitles = "playlistSubtitles"
+    case matchedSubtitles = "matchedSubtitles"
+
     case intendedViewportSizeWide = "intendedViewportSize_Wide"
     case intendedViewportSizeTall = "intendedViewportSize_Tall"
     case layoutSpec = "layoutSpec"
@@ -221,6 +225,12 @@ struct PlayerSaveState {
     props[PropName.paused.rawValue] = info.isPaused.yn
 
     // - Video, Audio, Subtitles Settings
+
+    props[PropName.playlistVideos.rawValue] = Array(info.currentVideosInfo.map({$0.url.absoluteString}))
+    props[PropName.playlistSubtitles.rawValue] = Array(info.currentSubsInfo.map({$0.url.absoluteString}))
+    let matchedSubsArray = info.matchedSubs.map({key, value in (key, Array(value.map({$0.absoluteString})))})
+    let matchedSubs: [String: [String]] = Dictionary(uniqueKeysWithValues: matchedSubsArray)
+    props[PropName.matchedSubtitles.rawValue] = matchedSubs
 
     props[PropName.deinterlace.rawValue] = info.deinterlace.yn
     props[PropName.hwdec.rawValue] = info.hwdec
@@ -549,6 +559,22 @@ struct PlayerSaveState {
       info.intendedViewportSizeTall = size
     }
 
+    if let videoURLList = properties[PlayerSaveState.PropName.playlistVideos.rawValue] as? [String] {
+      info.currentVideosInfo = videoURLList.compactMap({URL(string: $0)}).compactMap({FileInfo($0)})
+    }
+
+    if let videoURLList = properties[PlayerSaveState.PropName.playlistSubtitles.rawValue] as? [String] {
+      info.currentSubsInfo = videoURLList.compactMap({URL(string: $0)}).compactMap({FileInfo($0)})
+    }
+
+    if let matchedSubs = properties[PlayerSaveState.PropName.matchedSubtitles.rawValue] as? [String: [String]] {
+      info.$matchedSubs.withLock {
+        for (videoPath, subs) in matchedSubs {
+          $0[videoPath] = subs.compactMap{urlString in URL(string: urlString)}
+        }
+      }
+    }
+
     // Open the window!
     player.openURLs([url], shouldAutoLoad: false)
 
@@ -589,8 +615,8 @@ struct PlayerSaveState {
       }
     }
 
-    // playlist
-    
+    // Playlist
+
     if let playlistPathList = properties[PlayerSaveState.PropName.playlistPaths.rawValue] as? [String] {
       if playlistPathList.count > 1 {
         player.addFilesToPlaylist(pathList: playlistPathList)
