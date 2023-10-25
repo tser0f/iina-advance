@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22154" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22155" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22154"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22155"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -166,9 +166,9 @@
                                                                             </connections>
                                                                         </button>
                                                                         <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="mzW-2W-iPg" userLabel="Track Name Label" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
-                                                                            <rect key="frame" x="13" y="2" width="67" height="14"/>
+                                                                            <rect key="frame" x="13" y="1" width="77" height="16"/>
                                                                             <textFieldCell key="cell" lineBreakMode="truncatingMiddle" sendsActionOnEndEditing="YES" title="Track Name" id="M5s-Bm-l3O" customClass="EditableTextFieldCell" customModule="IINA" customModuleProvider="target">
-                                                                                <font key="font" metaFont="smallSystem"/>
+                                                                                <font key="font" metaFont="system"/>
                                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                             </textFieldCell>
@@ -177,7 +177,7 @@
                                                                             </connections>
                                                                         </textField>
                                                                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="rsK-ba-ojP" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
-                                                                            <rect key="frame" x="121" y="2" width="26" height="14"/>
+                                                                            <rect key="frame" x="121" y="1" width="26" height="14"/>
                                                                             <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Info" id="XWP-pU-mZg" customClass="EditableTextFieldCell" customModule="IINA" customModuleProvider="target">
                                                                                 <font key="font" metaFont="smallSystemBold"/>
                                                                                 <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
@@ -199,7 +199,7 @@
                                                                             </connections>
                                                                         </button>
                                                                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="yEn-uv-K8Z" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
-                                                                            <rect key="frame" x="163" y="2" width="49" height="14"/>
+                                                                            <rect key="frame" x="163" y="1" width="49" height="14"/>
                                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Duration" id="zbw-ad-lgl" customClass="EditableTextFieldCell" customModule="IINA" customModuleProvider="target">
                                                                                 <font key="font" metaFont="controlContent" size="11"/>
                                                                                 <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>

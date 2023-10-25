@@ -267,6 +267,7 @@ class PlaybackInfo {
 
   var haveDownloadedSub: Bool = false
 
+  /// Map: { video `path` for each `info` of `currentVideosInfo` -> `url` for each of `info.relatedSubs` }
   @Atomic var matchedSubs: [String: [URL]] = [:]
 
   func getMatchedSubs(_ file: String) -> [URL]? { $matchedSubs.withLock { $0[file] } }

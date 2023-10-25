@@ -513,8 +513,22 @@ struct PlayerSaveState {
   /// Restore player state from prior launch
   func restoreTo(_ player: PlayerCore) {
     let log = player.log
-    // log properties but not playlist paths (not very useful, takes up space, is private info)
-    log.verbose("Restoring player state from prior launch for \(player.label.quoted), props: \(properties.filter{ $0.key != PropName.playlistPaths.rawValue}))")
+
+    guard let urlString = string(for: .url), let url = URL(string: urlString) else {
+      log.error("Could not restore player window: no value for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
+      return
+    }
+
+    if Logger.isEnabled(.verbose) {
+      let urlPath: String
+      if #available(macOS 13.0, *) {
+        urlPath = url.path(percentEncoded: false)
+      } else {
+        urlPath = url.path
+      }
+      // log properties but not playlist paths (not very useful, takes up space, is private info)
+      log.verbose("Restoring player state from prior launch. URL: \(urlPath.pii.quoted) Properties: \(properties.filter{ $0.key != PropName.playlistPaths.rawValue && $0.key != PropName.url.rawValue }))")
+    }
     let info = player.info
     info.priorState = self
 
@@ -533,11 +547,6 @@ struct PlayerSaveState {
     }
     if let size = nsSize(for: .intendedViewportSizeTall) {
       info.intendedViewportSizeTall = size
-    }
-
-    guard let urlString = string(for: .url), let url = URL(string: urlString) else {
-      log.error("Could not restore player window: no value for property \(PlayerSaveState.PropName.url.rawValue.quoted)")
-      return
     }
 
     // Open the window!
@@ -580,6 +589,8 @@ struct PlayerSaveState {
       }
     }
 
+    // playlist
+    
     if let playlistPathList = properties[PlayerSaveState.PropName.playlistPaths.rawValue] as? [String] {
       if playlistPathList.count > 1 {
         player.addFilesToPlaylist(pathList: playlistPathList)

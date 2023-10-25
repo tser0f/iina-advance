@@ -313,6 +313,9 @@ struct Preference {
     static let enablePlaylistLoop = Key("enablePlaylistLoop")
     static let enableFileLoop = Key("enableFileLoop")
 
+    /// If true, scan playlist for files with identical starting strings, and replace them with `...` button
+    static let shortenFileGroupsInPlaylist = Key("shortenFileGroupsInPlaylist")
+
     // Input
 
     /** Whether catch media keys event (bool) */
@@ -1062,6 +1065,7 @@ struct Preference {
     .initialVolume: 100,
     .enablePlaylistLoop: false,
     .enableFileLoop: false,
+    .shortenFileGroupsInPlaylist: true,
 
       .subAutoLoadIINA: IINAAutoLoadAction.iina.rawValue,
     .subAutoLoadPriorityString: "",

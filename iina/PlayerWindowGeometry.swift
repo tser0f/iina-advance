@@ -709,6 +709,7 @@ extension PlayerWindowController {
     if player.info.priorState != nil {
       player.info.priorState = nil
       log.debug("[AdjustFrameAfterVideoReconfig] Done with restore")
+      videoView.stopDisplayLink()
     } else {
       log.debug("[AdjustFrameAfterVideoReconfig] Done")
     }

@@ -142,7 +142,7 @@ class CocoaAnimation {
     }
   }
 
-  /// Convenience wrapper for chaining multiple tasks together via `NSAnimationContext.runAnimationGroup()`. Does not use serial queue.
+  /// Convenience wrapper for chaining multiple tasks together via `NSAnimationContext.runAnimationGroup()`. Does not use pipeline.
   static func runAsync(_ task: Task, then doAfter: TaskFunc? = nil) {
     // Fail if not running on main thread:
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))

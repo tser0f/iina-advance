@@ -591,7 +591,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       } else if identifier == .trackName {
         // Track title
         let cellView = v as! PlaylistTrackCellView
-        let trackTitleString: String = NSString(string: item.filenameForDisplay).deletingPathExtension
+        let filename = item.filenameForDisplay
+        let displayStr: String = NSString(string: filename).deletingPathExtension
 
         func getCachedMetadata() -> (artist: String, title: String)? {
           guard Preference.bool(for: .playlistShowMetadata) else { return nil }
@@ -602,8 +603,18 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
           guard let artist = metadata.artist, let title = metadata.title else { return nil }
           return (artist, title)
         }
+
         let textColor = item.isPlaying ? isPlayingTextColor : .controlTextColor
-        cellView.setTitle(trackTitleString, textColor: textColor)
+        if Preference.bool(for: .shortenFileGroupsInPlaylist), let prefix = player.info.currentVideosInfo.first(where: { $0.path == item.filename })?.prefix,
+           !prefix.isEmpty,
+           prefix.count <= displayStr.count,  // check whether prefix length > filename length
+           prefix.count >= PrefixMinLength,
+           filename.count > FilenameMinLength {
+          cellView.setPrefix(prefix)
+          cellView.setTitle(String(filename[filename.index(filename.startIndex, offsetBy: prefix.count)...]), textColor: textColor)
+        } else {
+          cellView.setTitle(filename, textColor: textColor)
+        }
         // playback progress and duration
         cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         cellView.durationLabel.setFormattedText(stringValue: "", textColor: item.isPlaying ? isPlayingTextColor : .textColor)
