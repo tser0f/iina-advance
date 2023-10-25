@@ -565,13 +565,13 @@ struct PlayerSaveState {
             pipOption = .doNothing
           }
           // Run in queue to avert race condition with window load
-          windowController.animationQueue.runZeroDuration({
+          windowController.animationPipeline.runZeroDuration({
             windowController.enterPIP(usePipBehavior: pipOption)
           })
         } else if isMiniaturized {
           // Not in PIP, but miniturized
           // Run in queue to avert race condition with window load
-          windowController.animationQueue.runZeroDuration({
+          windowController.animationPipeline.runZeroDuration({
             windowController.window?.miniaturize(nil)
           })
         }

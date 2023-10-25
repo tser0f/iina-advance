@@ -143,7 +143,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   // MARK: - UI: Show / Hide
 
   private func showControl() {
-    windowController.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+    windowController.animationPipeline.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       windowController.closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
@@ -151,7 +151,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   private func hideControl() {
-    windowController.animationQueue.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+    windowController.animationPipeline.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       windowController.closeButtonView.animator().alphaValue = 0
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1
@@ -316,7 +316,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // Constrain window so that it doesn't expand below bottom of screen, or fall offscreen
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
 
-    windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    windowController.animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showPlaylist, for: .musicModeShowPlaylist)
       windowController.applyMusicModeGeometry(newGeometry)
     }))
@@ -338,12 +338,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     /// If needing to reactivate this constraint, do it before the toggle animation, so that window doesn't jump.
     /// (See note in `applyMusicModeGeometry` for why this constraint needed to be disabled in the first place)
     if showVideo {
-      windowController.animationQueue.runZeroDuration({ [self] in
+      windowController.animationPipeline.runZeroDuration({ [self] in
         windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
       })
     }
 
-    windowController.animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    windowController.animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
       log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
@@ -432,7 +432,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
     resetScrollingLabels()
 
-    windowController.animationQueue.run(CocoaAnimation.Task{ [self] in
+    windowController.animationPipeline.run(CocoaAnimation.Task{ [self] in
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)

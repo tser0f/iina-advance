@@ -77,7 +77,10 @@ class ViewLayer: CAOpenGLLayer {
     ]
 
     if (!Preference.bool(for: .forceDedicatedGPU)) {
+      Logger.log("Omitting auto graphics switching because 'forceDedicatedGPU' is false", level: .debug)
       attributeList.append(kCGLPFASupportsAutomaticGraphicsSwitching)
+    } else {
+      Logger.log("Allowing auto graphics switching because 'forceDedicatedGPU' is true", level: .debug)
     }
 
     var pix: CGLPixelFormatObj?

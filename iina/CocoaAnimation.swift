@@ -68,9 +68,10 @@ class CocoaAnimation {
     return Task(duration: 0, timing: nil, runFunc)
   }
 
-  // MARK: - CocoaAnimation.SerialQueue
+  // MARK: - CocoaAnimation.Pipeline
 
-  class SerialQueue {
+  /// Serial queue which executes `Task`s one after another.
+  class Pipeline {
 
     private(set) var isRunning = false
     private var taskQueue = LinkedList<Task>()

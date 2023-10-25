@@ -656,7 +656,7 @@ extension PlayerWindowController {
         let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropy, width: cropController.cropw, height: cropController.croph)
 
         // FIXME: something's wrong in the animations here
-        animationQueue.run(CocoaAnimation.Task({ [self] in
+        animationPipeline.run(CocoaAnimation.Task({ [self] in
           interactiveModeGeometry = (interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)).cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
           windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
 
@@ -666,7 +666,7 @@ extension PlayerWindowController {
           viewportView.layout()
           forceDraw()
 
-          animationQueue.runZeroDuration({ [self] in
+          animationPipeline.runZeroDuration({ [self] in
             exitInteractiveMode()
           })
         }))
@@ -936,7 +936,7 @@ extension PlayerWindowController {
     geoUpdateTicketCount += 1
     let geoUpdateRequestID = geoUpdateTicketCount
 
-    animationQueue.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       if geoUpdateRequestID < geoUpdateTicketCount {
         log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateTicketCount)")
         return
@@ -1016,7 +1016,7 @@ extension PlayerWindowController {
       /// unless we remove this constraint from the the window's `contentView`. For all other situations this constraint should be active.
       /// Need to execute this in its own task so that other animations are not affected.
       let shouldDisableConstraint = !geometry.isVideoVisible && geometry.isPlaylistVisible
-      animationQueue.runZeroDuration({ [self] in
+      animationPipeline.runZeroDuration({ [self] in
         viewportBottomOffsetFromContentViewBottomConstraint.isActive = !shouldDisableConstraint
       })
     }
