@@ -45,7 +45,7 @@ class ViewLayer: CAOpenGLLayer {
       drawCountLastPrint = drawCountTotal
       displayCountLastPrint = displayCountTotal
       let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)" : "NA"
-      NSLog("FPS: \(fpsDraws.string2f) (\(excessDisplays) dropped in \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale) SIZES: Layer: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDraw: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
+      NSLog("FPS: \(fpsDraws.string2f) (over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
     }
   }
 #endif

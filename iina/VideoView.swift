@@ -209,6 +209,7 @@ class VideoView: NSView {
       widthConstraint.isActive = false
       heightConstraint.isActive = false
     }
+    layoutSubtreeIfNeeded()
   }
 
   // MARK: - Mouse events

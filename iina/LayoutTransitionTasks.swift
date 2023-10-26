@@ -66,7 +66,8 @@ extension PlayerWindowController {
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
-      hideBuiltInTitleBarItems()
+      window.titleVisibility = .hidden
+      hideBuiltInTitleBarViews(setAlpha: true)
 
       if #unavailable(macOS 10.14) {
         // Set the appearance to match the theme so the title bar matches the theme
@@ -121,8 +122,10 @@ extension PlayerWindowController {
       if transition.isTogglingLegacyStyle {
         videoView.videoLayer.suspend()
       }
-      // Hide traffic light buttons & title during the animation:
-      hideBuiltInTitleBarItems()
+      if transition.inputLayout.isNativeFullScreen {
+        // Hide traffic light buttons & title during the animation:
+        hideBuiltInTitleBarViews(setAlpha: true)
+      }
 
       if !isClosing {
         player.mpv.setFlag(MPVOption.Window.fullscreen, false)
@@ -318,9 +321,12 @@ extension PlayerWindowController {
 
       if transition.isExitingFullScreen {
         /// Setting `.titled` style will show buttons & title by default, but we don't want to show them until after panel open animation:
-        hideBuiltInTitleBarViews()
+        window.titleVisibility = .hidden
+        hideBuiltInTitleBarViews(setAlpha: true)
       }
     }
+
+    // Allow for showing/hiding each button individually
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
@@ -337,7 +343,8 @@ extension PlayerWindowController {
       /// Note: MUST use `titleVisibility` to guarantee that `documentIcon` & `titleTextField` are shown/hidden consistently.
       /// Setting `isHidden=true` on `titleTextField` and `documentIcon` do not animate and do not always work.
       /// We can use `alphaValue=0` to fade out in `fadeOutOldViews()`, but `titleVisibility` is needed to remove them.
-      hideBuiltInTitleBarViews()
+      window.titleVisibility = .hidden
+      hideBuiltInTitleBarViews(setAlpha: true)
 
       if let customTitleBar {
         customTitleBar.removeAndCleanUp()
@@ -502,7 +509,29 @@ extension PlayerWindowController {
     }
 
     if transition.outputLayout.isMusicMode {
+      window.titleVisibility = .hidden
       hideBuiltInTitleBarViews()
+    } else if transition.outputLayout.isWindowed && transition.outputLayout.spec.isLegacyStyle && LayoutSpec.enableTitleBarForLegacyWindow {
+      if customTitleBar == nil {
+        let titleBar = CustomTitleBarViewController()
+        titleBar.windowController = self
+        customTitleBar = titleBar
+        titleBar.view.alphaValue = 0  // prep it to fade in later
+      }
+
+      if let customTitleBar {
+        // Update superview based on placement. Cannot always add to contentView due to constraint issues
+        if transition.outputLayout.topBarPlacement == .outsideViewport {
+          customTitleBar.addViewToSuperview(titleBarView)
+        } else {
+          if let contentView = window.contentView {
+            customTitleBar.addViewToSuperview(contentView)
+          }
+        }
+        if !transition.inputLayout.titleBar.isShowable {
+          customTitleBar.view.alphaValue = 0  // prep it to fade in later
+        }
+      }
     }
 
     updateDepthOrderOfBars(topBar: outputLayout.topBarPlacement, bottomBar: outputLayout.bottomBarPlacement,
@@ -630,26 +659,6 @@ extension PlayerWindowController {
       }
 
       player.window.setFrameImmediately(newWindowFrame)
-
-      if outputLayout.isWindowed && outputLayout.spec.isLegacyStyle && LayoutSpec.enableTitleBarForLegacyWindow {
-        if customTitleBar == nil {
-          let titleBar = CustomTitleBarViewController()
-          titleBar.windowController = self
-          titleBar.view.alphaValue = 0  // prep it to fade in in the next task
-          customTitleBar = titleBar
-        }
-
-        if let customTitleBar {
-          // Update superview based on placement. Cannot always add to contentView due to constraint issues
-          if transition.outputLayout.topBarPlacement == .outsideViewport {
-            customTitleBar.addViewToSuperview(titleBarView)
-          } else {
-            if let contentView = window.contentView {
-              customTitleBar.addViewToSuperview(contentView)
-            }
-          }
-        }
-      }
     }
 
     if transition.isEnteringInteractiveMode {
@@ -673,10 +682,6 @@ extension PlayerWindowController {
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] FadeInNewViews")
 
-    if outputLayout.titleIconAndText.isShowable {
-      window.titleVisibility = .visible
-    }
-
     applyShowableOnly(visibility: outputLayout.controlBarFloating, to: controlBarFloating)
 
     if outputLayout.isFullScreen {
@@ -684,26 +689,20 @@ extension PlayerWindowController {
         apply(visibility: .showFadeableNonTopBar, to: additionalInfoView)
       }
     } else if outputLayout.titleBar.isShowable {
-      /// Special case for `trafficLightButtons` due to quirks. Do not use `fadeableViews`. Always set `alphaValue = 1`.
-      for button in trafficLightButtons {
-        button.alphaValue = 1
-        button.isHidden = false
-      }
-      titleTextField?.isHidden = false
-      titleTextField?.alphaValue = 1
-      documentIconButton?.isHidden = false
-      documentIconButton?.alphaValue = 1
+      if !transition.isExitingFullScreen {  // If exiting FS, the openPanels and fadInNewViews steps are combined. Wait till later
+        if outputLayout.spec.isLegacyStyle {
+          if let customTitleBar {
+            customTitleBar.view.alphaValue = 1
+          }
+        } else {
+          window.titleVisibility = .visible
+          showBuiltInTitleBarViews()
 
-      if outputLayout.spec.isLegacyStyle && LayoutSpec.enableTitleBarForLegacyWindow {
-        if let customTitleBar {
-          customTitleBar.view.isHidden = false
-          customTitleBar.view.alphaValue = 1
+          /// Title bar accessories get removed by fullscreen or if window `styleMask` did not include `.titled`.
+          /// Add them back:
+          addTitleBarAccessoryViews()
         }
       }
-
-      /// Title bar accessories get removed by legacy fullscreen or if window `styleMask` did not include `.titled`.
-      /// Add them back:
-      addTitleBarAccessoryViews()
 
       applyShowableOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
       applyShowableOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
@@ -748,8 +747,6 @@ extension PlayerWindowController {
     log.verbose("[\(transition.name)] DoPostTransitionWork")
     // Update blending mode:
     updatePanelBlendingModes(to: transition.outputLayout)
-    /// This should go in `fadeInNewViews()`, but for some reason putting it here fixes a bug where the document icon won't fade out
-    apply(visibility: transition.outputLayout.titleIconAndText, titleTextField, documentIconButton, customTitleBar?.view)
 
     fadeableViewsAnimationState = .shown
     fadeableTopBarAnimationState = .shown
@@ -829,8 +826,17 @@ extension PlayerWindowController {
 
       if transition.outputLayout.spec.isLegacyStyle {  // legacy windowed
         setWindowStyleToLegacy()
+        if let customTitleBar {
+          customTitleBar.view.alphaValue = 1
+        }
       } else {  // native windowed
+        /// Same logic as in `fadeInNewViews()`
         setWindowStyleToNative()
+        if transition.outputLayout.titleBar.isShowable {
+          window.titleVisibility = .visible
+          showBuiltInTitleBarViews()  /// do this again after adding `titled` style
+          addTitleBarAccessoryViews()
+        }
       }
 
       if transition.isExitingLegacyFullScreen {
@@ -1088,16 +1094,37 @@ extension PlayerWindowController {
     trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
-  private func hideBuiltInTitleBarItems() {
-    apply(visibility: .hidden, documentIconButton, titleTextField)
+  func hideBuiltInTitleBarViews(setAlpha: Bool = false) {
+    /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
+    /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1`
+    /// (except for temporary animations).
+    if setAlpha {
+      documentIconButton?.alphaValue = 0
+      titleTextField?.alphaValue = 0
+    }
+    documentIconButton?.isHidden = true
+    titleTextField?.isHidden = true
     for button in trafficLightButtons {
       /// Special case for fullscreen transition due to quirks of `trafficLightButtons`.
       /// In most cases it's best to avoid setting `alphaValue = 0` for these because doing so will disable their menu items,
       /// but should be ok for brief animations
-      button.alphaValue = 0
+      if setAlpha {
+        button.alphaValue = 0
+      }
       button.isHidden = false
     }
-    window?.titleVisibility = .hidden
+  }
+
+  /// Special case for these because their instances may change. Do not use `fadeableViews`. Always set `alphaValue = 1`.
+  func showBuiltInTitleBarViews() {
+    for button in trafficLightButtons {
+      button.alphaValue = 1
+      button.isHidden = false
+    }
+    titleTextField?.isHidden = false
+    titleTextField?.alphaValue = 1
+    documentIconButton?.isHidden = false
+    documentIconButton?.alphaValue = 1
   }
 
   func updatePinToTopButton() {
@@ -1219,17 +1246,6 @@ extension PlayerWindowController {
       customTitleBar.removeAndCleanUp()
       fadeableViews.remove(customTitleBar.view)
       self.customTitleBar = nil
-    }
-  }
-
-  private func hideBuiltInTitleBarViews() {
-    guard let window = window else { return }
-    window.titleVisibility = .hidden
-
-    /// Workaround for Apple bug (as of MacOS 13.3.1) where setting `alphaValue=0` on the "minimize" button will
-    /// cause `window.performMiniaturize()` to be ignored. So to hide these, use `isHidden=true` + `alphaValue=1` instead.
-    for button in trafficLightButtons {
-      button.isHidden = true
     }
   }
 

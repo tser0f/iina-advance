@@ -2289,12 +2289,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         for v in fadeableViewsTopBar {
           v.animator().alphaValue = 1
         }
-      }
 
-//      if currentLayout.titleIconAndText == .showFadeableTopBar {
-//        documentIconButton?.animator().alphaValue = 1
-//        titleTextField?.animator().alphaValue = 1
-//      }
+        if currentLayout.titleBar == .showFadeableTopBar {
+          if currentLayout.spec.isLegacyStyle {
+            customTitleBar?.view.animator().alphaValue = 1
+          } else {
+            for button in trafficLightButtons {
+              button.alphaValue = 1
+            }
+            titleTextField?.alphaValue = 1
+            documentIconButton?.alphaValue = 1
+          }
+        }
+      }
     }))
 
     // Not animated, but needs to wait until after fade is done
@@ -2316,16 +2323,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         for v in fadeableViewsTopBar {
           v.isHidden = false
         }
-        /// Special case for `trafficLightButtons` due to AppKit quirk
-        if currentLayout.trafficLightButtons == .showFadeableTopBar {
-          for button in trafficLightButtons {
-            button.isHidden = false
+
+        if currentLayout.titleBar == .showFadeableTopBar {
+          if currentLayout.spec.isLegacyStyle {
+            customTitleBar?.view.isHidden = false
+          } else {
+            for button in trafficLightButtons {
+              button.isHidden = false
+            }
+            titleTextField?.isHidden = false
+            documentIconButton?.isHidden = false
           }
         }
-//        if currentLayout.titleIconAndText == .showFadeableTopBar {
-//          documentIconButton?.isHidden = false
-//          titleTextField?.isHidden = false
-//        }
       }
     })
     return animationTasks
@@ -2361,15 +2370,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         v.animator().alphaValue = 0
       }
       /// Quirk 1: special handling for `trafficLightButtons`
-      if currentLayout.trafficLightButtons == .showFadeableTopBar {
-        for button in trafficLightButtons {
-          button.alphaValue = 0
+      if currentLayout.titleBar == .showFadeableTopBar {
+        if currentLayout.spec.isLegacyStyle {
+          customTitleBar?.view.alphaValue = 0
+        } else {
+          documentIconButton?.alphaValue = 0
+          titleTextField?.alphaValue = 0
+          for button in trafficLightButtons {
+            button.alphaValue = 0
+          }
         }
       }
-//      if currentLayout.titleIconAndText == .showFadeableTopBar {
-//        documentIconButton?.animator().alphaValue = 0
-//        titleTextField?.animator().alphaValue = 0
-//      }
     })
 
     animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
@@ -2385,16 +2396,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         v.isHidden = true
       }
       /// Quirk 1: need to set `alphaValue` back to `1` so that each button's corresponding menu items still work
-      if currentLayout.trafficLightButtons == .showFadeableTopBar {
-        for button in trafficLightButtons {
-          button.isHidden = true
-          button.alphaValue = 1
+      if currentLayout.titleBar == .showFadeableTopBar {
+        if currentLayout.spec.isLegacyStyle {
+          customTitleBar?.view.isHidden = true
+        } else {
+          hideBuiltInTitleBarViews(setAlpha: false)
         }
       }
-//      if currentLayout.titleIconAndText == .showFadeableTopBar {
-//        documentIconButton?.isHidden = true
-//        titleTextField?.isHidden = true
-//      }
     })
 
     animationPipeline.run(animationTasks)
@@ -2987,12 +2995,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard loaded, player.info.isPaused || player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
     log.verbose("Forcing redraw")
     player.videoView.displayActive()
-    videoView.videoLayer.setNeedsLayout()
-    videoView.videoLayer.setNeedsDisplay()
-    if player.info.isPaused {
-      videoView.videoLayer.draw(forced: true)
-      player.videoView.displayIdle()
-    }
+    videoView.videoLayer.draw(forced: true)
+    player.videoView.displayIdle()
   }
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
