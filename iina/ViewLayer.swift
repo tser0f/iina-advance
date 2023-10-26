@@ -15,10 +15,11 @@ class ViewLayer: CAOpenGLLayer {
   weak var videoView: VideoView!
 
   let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
-  @Atomic private var blocked = false
+  @Atomic var blocked = false
 
   private var fbo: GLint = 1
 
+  private var needsMPVRender = false
   private var forceRender = false
 
 #if DEBUG
@@ -43,7 +44,8 @@ class ViewLayer: CAOpenGLLayer {
       lastPrintTime = now
       drawCountLastPrint = drawCountTotal
       displayCountLastPrint = displayCountTotal
-      NSLog("FPS: \(fpsDraws.string2f), \(excessDisplays) no-op displays, ContentsScale: \(contentsScale), LayerFrame: \(frame), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)")
+      let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)" : "NA"
+      NSLog("FPS: \(fpsDraws.string2f) (\(excessDisplays) dropped in \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale) SIZES: Layer: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDraw: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
     }
   }
 #endif
@@ -53,7 +55,6 @@ class ViewLayer: CAOpenGLLayer {
     isAsynchronous = true
   }
 
-  // This is sometimes called by AppKit via layout
   override convenience init(layer: Any) {
     self.init()
 
@@ -77,10 +78,7 @@ class ViewLayer: CAOpenGLLayer {
     ]
 
     if (!Preference.bool(for: .forceDedicatedGPU)) {
-      Logger.log("Omitting auto graphics switching because 'forceDedicatedGPU' is false", level: .debug)
       attributeList.append(kCGLPFASupportsAutomaticGraphicsSwitching)
-    } else {
-      Logger.log("Allowing auto graphics switching because 'forceDedicatedGPU' is true", level: .debug)
     }
 
     var pix: CGLPixelFormatObj?
@@ -121,6 +119,7 @@ class ViewLayer: CAOpenGLLayer {
 
   override func draw(inCGLContext ctx: CGLContextObj, pixelFormat pf: CGLPixelFormatObj, forLayerTime t: CFTimeInterval, displayTime ts: UnsafePointer<CVTimeStamp>?) {
     let mpv = videoView.player.mpv!
+    needsMPVRender = false
 
     glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
 
@@ -157,9 +156,7 @@ class ViewLayer: CAOpenGLLayer {
         }
       }
     }
-
-    // Call super to flush, per the documentation
-    super.draw(inCGLContext: ctx, pixelFormat: pf, forLayerTime: t, displayTime: ts)
+    glFlush()
   }
 
   func suspend() {
@@ -174,23 +171,24 @@ class ViewLayer: CAOpenGLLayer {
 #endif
 
     blocked = false
-    drawSync(forced: true)
+    draw(forced: true)
     mpvGLQueue.resume()
   }
 
-  func drawAsync(forced: Bool = false) {
+  func drawAsync() {
     guard !blocked else { return }
 
     mpvGLQueue.async { [self] in
-      drawSync(forced: forced)
+      draw()
     }
   }
 
-  func drawSync(forced: Bool = false) {
+  func draw(forced: Bool = false) {
     videoView.$isUninited.withLock() { isUninited in
-      // The property forceRender is always accessed while holding isUninited's lock.
-      // This avoids the need for separate locks to avoid data races with these flags. No need
+      // The properties forceRender and needsMPVRender are always accessed while holding isUninited's
+      // lock. This avoids the need for separate locks to avoid data races with these flags. No need
       // to check isUninited at this point.
+      needsMPVRender = true
       if forced { forceRender = true }
     }
 
@@ -204,6 +202,7 @@ class ViewLayer: CAOpenGLLayer {
         forceRender = false
         return
       }
+      guard needsMPVRender else { return }
 
       videoView.player.mpv.lockAndSetOpenGLContext()
       defer { videoView.player.mpv.unlockOpenGLContext() }
@@ -218,27 +217,28 @@ class ViewLayer: CAOpenGLLayer {
           mpv_render_context_render(renderContext, &params);
         }
       }
+      needsMPVRender = false
     }
   }
 
   override func display() {
-#if DEBUG
-    displayCountTotal += 1
-#endif
-
     let needsFlush: Bool = videoView.$isUninited.withLock() { isUninited in
       guard !isUninited else { return false }
 
       super.display()
       return true
     }
+
     guard needsFlush else { return }
+
+#if DEBUG
+    displayCountTotal += 1
+#endif
 
     // Must not call flush while holding isUninited's lock as that method may call display and our
     // locks do not support recursion.
     CATransaction.flush()
   }
-
 
   // MARK: Utils
 

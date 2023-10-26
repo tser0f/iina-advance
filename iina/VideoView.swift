@@ -76,11 +76,13 @@ class VideoView: NSView {
   /// - Important: Once mpv has been instructed to quit accessing the mpv core can result in a crash, therefore locks must be
   ///     used to coordinate uninitializing the view so that other threads do not attempt to use the mpv core while it is shutting down.
   func uninit() {
-    guard !isUninited else { return }
-    isUninited = true
+    $isUninited.withLock() { isUninited in
+      guard !isUninited else { return }
+      isUninited = true
 
-    videoLayer.suspend()
-    player.mpv.mpvUninitRendering()
+      videoLayer.suspend()
+      player.mpv.mpvUninitRendering()
+    }
   }
 
   deinit {
@@ -120,24 +122,14 @@ class VideoView: NSView {
     let eqOffsetBottom: NSLayoutConstraint
     let eqOffsetLeft: NSLayoutConstraint
 
-//    let gtOffsetTop: NSLayoutConstraint
-//    let gtOffsetRight: NSLayoutConstraint
-//    let gtOffsetBottom: NSLayoutConstraint
-//    let gtOffsetLeft: NSLayoutConstraint
-
     let centerX: NSLayoutConstraint
     let centerY: NSLayoutConstraint
 
-    func setActive(eq: Bool = true, gt: Bool = true, center: Bool = true, aspect: Bool = true) {
+    func setActive(eq: Bool = true, center: Bool = true, aspect: Bool = true) {
       eqOffsetTop.isActive = eq
       eqOffsetRight.isActive = eq
       eqOffsetBottom.isActive = eq
       eqOffsetLeft.isActive = eq
-
-//      gtOffsetTop.isActive = gt
-//      gtOffsetRight.isActive = gt
-//      gtOffsetBottom.isActive = gt
-//      gtOffsetLeft.isActive = gt
 
       centerX.isActive = center
       centerY.isActive = center
@@ -161,7 +153,6 @@ class VideoView: NSView {
 
   private func rebuildConstraints(top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0,
                                   eqIsActive: Bool = true, eqPriority: NSLayoutConstraint.Priority,
-                                  gtIsActive: Bool = true, gtPriority: NSLayoutConstraint.Priority,
                                   centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority) {
     var existing = self.videoViewConstraints
     self.videoViewConstraints = nil
@@ -172,11 +163,6 @@ class VideoView: NSView {
       eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
       eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
 
-//      gtOffsetTop: addOrUpdate(existing?.gtOffsetTop, .top, .greaterThanOrEqual, top, gtPriority),
-//      gtOffsetRight: addOrUpdate(existing?.gtOffsetRight, .right, .lessThanOrEqual, right, gtPriority),
-//      gtOffsetBottom: addOrUpdate(existing?.gtOffsetBottom, .bottom, .lessThanOrEqual, bottom, gtPriority),
-//      gtOffsetLeft: addOrUpdate(existing?.gtOffsetLeft, .left, .greaterThanOrEqual, left, gtPriority),
-
       centerX: existing?.centerX ?? centerXAnchor.constraint(equalTo: superview!.centerXAnchor),
       centerY: existing?.centerY ?? centerYAnchor.constraint(equalTo: superview!.centerYAnchor)
     )
@@ -185,7 +171,7 @@ class VideoView: NSView {
     existing = nil
     videoViewConstraints = newConstraints
 
-    newConstraints.setActive(eq: eqIsActive, gt: gtIsActive, center: centerIsActive)
+    newConstraints.setActive(eq: eqIsActive, center: centerIsActive)
   }
 
   // TODO: figure out why this 2px adjustment is necessary
@@ -195,7 +181,6 @@ class VideoView: NSView {
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
                        eqIsActive: true, eqPriority: eqPriority,
-                       gtIsActive: false, gtPriority: .required,
                        centerIsActive: false, centerPriority: .required)
 
     window?.layoutIfNeeded()
@@ -206,7 +191,6 @@ class VideoView: NSView {
     /// GT + center constraints are main priority, but include EQ as hint for ideal placement
     /// Set center priority to `.defaultHigh` instead of `.required` to avoid constraint error when toggling music mode with no video...
     rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,
-                       gtIsActive: true, gtPriority: .required,
                        centerIsActive: true, centerPriority: .required)
 
     window?.layoutIfNeeded()

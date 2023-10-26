@@ -2989,8 +2989,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     player.videoView.displayActive()
     videoView.videoLayer.setNeedsLayout()
     videoView.videoLayer.setNeedsDisplay()
-    videoView.videoLayer.drawSync(forced: true)
     if player.info.isPaused {
+      videoView.videoLayer.draw(forced: true)
       player.videoView.displayIdle()
     }
   }

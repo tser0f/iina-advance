@@ -355,6 +355,10 @@ extension Double {
       return "\(rounded)"
     }
   }
+
+  var twoDecimalPlaces: String {
+    return String(format: "%.2f", self)
+  }
 }
 
 extension Comparable {

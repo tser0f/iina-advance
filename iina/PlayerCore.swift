@@ -1407,6 +1407,8 @@ class PlayerCore: NSObject {
   // MARK: - Listeners
 
   func fileStarted(path: String) {
+    guard !isStopping, !isShuttingDown else { return }
+    
     log.debug("File started")
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
@@ -1473,6 +1475,8 @@ class PlayerCore: NSObject {
 
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
+    guard !isStopping, !isShuttingDown else { return }
+
     log.debug("File loaded: \(info.currentURL?.absoluteString.quoted ?? "nil")")
     triedUsingExactSeekForCurrentFile = false
     info.fileLoading = false
