@@ -1099,7 +1099,7 @@ not applying FFmpeg 9599 workaround
     case MPV_EVENT_PLAYBACK_RESTART:
       player.info.isIdle = false
       player.info.isSeeking = false
-      DispatchQueue.main.sync {
+      DispatchQueue.main.async { [self] in
         // When playback is paused the display link may be shutdown in order to not waste energy.
         // The display link will be restarted while seeking. If playback is paused shut it down
         // again.

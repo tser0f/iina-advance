@@ -83,7 +83,6 @@ extension PlayerWindowController {
     let initialTransition = buildLayoutTransition(named: transitionName,
                                                   from: currentLayout, to: initialLayoutSpec, isInitialLayout: true)
 
-
     /// Although the animations in the `LayoutTransition` below will set the window layout, they
     /// mostly assume they are incrementally changing a previous layout, which can result in brief visual
     /// artifacts in the process if we start with an undefined layout.

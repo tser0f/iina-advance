@@ -157,10 +157,14 @@ class OnlineSubtitle: NSObject {
     log("Search subtitle from \(provider.name)...")
     player.sendOSD(.startFindingSub(provider.name), autoHide: false)
 
-    provider.fetchSubtitles(url: url, player: player).done {
-      callback($0)
+    provider.fetchSubtitles(url: url, player: player).done { result in
+      DispatchQueue.main.async {
+        callback(result)
+      }
     }.ensure {
-      player.hideOSD()
+      DispatchQueue.main.async {
+        player.hideOSD()
+      }
     }.catch { err in
       let osdMessage: OSDMessage
       let prefix = "Failed to obtain subtitles for \(url) from \(provider.name). "

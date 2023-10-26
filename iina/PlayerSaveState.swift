@@ -16,14 +16,14 @@ struct PlayerSaveState {
     case playlistPaths = "playlistPaths"
 
     case playlistVideos = "playlistVideos"
-    case playlistSubtitles = "playlistSubtitles"
-    case matchedSubtitles = "matchedSubtitles"
+    case playlistSubtitles = "playlistSubs"
+    case matchedSubtitles = "matchedSubs"
 
     case intendedViewportSizeWide = "intendedViewportSize_Wide"
     case intendedViewportSizeTall = "intendedViewportSize_Tall"
     case layoutSpec = "layoutSpec"
-    case windowedModeGeometry = "windowedModeGeometry"
-    case musicModeGeometry = "musicModeGeometry"
+    case windowedModeGeometry = "windowedModeGeo"
+    case musicModeGeometry = "musicModeGeo"
     case screens = "screens"
     case miscWindowBools = "miscWindowBools"
     case overrideAutoMusicMode = "overrideAutoMusicMode"
@@ -158,6 +158,7 @@ struct PlayerSaveState {
   static private func generatePropDict(from player: PlayerCore) -> [String: Any] {
     var props: [String: Any] = [:]
     let info = player.info
+    /// Must *not* access `window`: this is not the main thread
     let wc = player.windowController!
     let layout = wc.currentLayout
 
@@ -202,7 +203,7 @@ struct PlayerSaveState {
     }
 
     props[PropName.miscWindowBools.rawValue] = [
-      (wc.window?.isMiniaturized ?? false).yn,
+      wc.isWindowMiniturized.yn,
       wc.isWindowHidden.yn,
       (wc.pipStatus == .inPIP).yn,
       wc.isWindowMiniaturizedDueToPip.yn
@@ -292,7 +293,16 @@ struct PlayerSaveState {
 
   static func save(_ player: PlayerCore) {
     guard Preference.UIState.isSaveEnabled else { return }
-    DispatchQueue.main.async {
+
+    player.saveTicketCount += 1
+    let saveTicket = player.saveTicketCount
+
+    // Run in background queue to avoid blocking UI. Cut down on duplicate work via delay and ticket check
+    PlayerCore.backgroundQueue.asyncAfter(deadline: DispatchTime.now() + 0.5) {
+      guard saveTicket == player.saveTicketCount else {
+        return
+      }
+
       guard player.windowController.loaded else {
 //        player.log.debug("Skipping player state save: player window is not loaded")
         return
@@ -306,6 +316,7 @@ struct PlayerSaveState {
         return
       }
       let properties = generatePropDict(from: player)
+      player.log.verbose("Saving player state, saveTicket \(saveTicket)")
 //      player.log.verbose("Saving player state: \(properties)")
       Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
     }

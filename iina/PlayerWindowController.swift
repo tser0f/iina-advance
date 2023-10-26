@@ -127,6 +127,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var isClosing = false
   var shouldApplyInitialWindowSize = true
+  var isWindowMiniturized = false
   var isWindowMiniaturizedDueToPip = false
   var isWindowPipDueToInactiveSpace = false
 
@@ -1765,6 +1766,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Reset state flags
     shouldApplyInitialWindowSize = true
+    isWindowMiniturized = false
     player.overrideAutoMusicMode = false
 
     player.events.emit(.windowWillClose)
@@ -2203,6 +2205,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidMiniaturize(_ notification: Notification) {
+    log.verbose("Window did miniaturize")
+    isWindowMiniturized = true
     if Preference.bool(for: .togglePipByMinimizingWindow) && !isWindowMiniaturizedDueToPip {
       if #available(macOS 10.12, *) {
         enterPIP()
@@ -2213,6 +2217,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowDidDeminiaturize(_ notification: Notification) {
     log.verbose("Window did deminiaturize")
+    isWindowMiniturized = false
     if Preference.bool(for: .pauseWhenMinimized) && isPausedDueToMiniaturization {
       player.resume()
       isPausedDueToMiniaturization = false

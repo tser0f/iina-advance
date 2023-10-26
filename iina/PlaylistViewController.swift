@@ -618,7 +618,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         // playback progress and duration
         cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         cellView.durationLabel.setFormattedText(stringValue: "", textColor: item.isPlaying ? isPlayingTextColor : .textColor)
-        player.playlistQueue.async {
+        PlayerCore.playlistQueue.async {
           if let (artist, title) = getCachedMetadata() {
             DispatchQueue.main.async {
               cellView.setTitle(title, textColor: textColor)

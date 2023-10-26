@@ -55,6 +55,8 @@ class PlayerCore: NSObject {
   unowned var log: Logger.Subsystem { self.subsystem }
   var label: String
 
+  var saveTicketCount: Int = 0
+
   // Plugins
   var isManagedByPlugin = false
   var userLabel: String?
@@ -80,9 +82,9 @@ class PlayerCore: NSObject {
   var needsTouchBar = false
 
   /// A dispatch queue for auto load feature.
-  let backgroundQueue = DispatchQueue(label: "IINAPlayerCoreTask", qos: .background)
-  let playlistQueue = DispatchQueue(label: "IINAPlaylistTask", qos: .utility)
-  let thumbnailQueue = DispatchQueue(label: "IINAPlayerCoreThumbnailTask", qos: .utility)
+  static let backgroundQueue = DispatchQueue(label: "IINAPlayerCoreTask", qos: .background)
+  static let playlistQueue = DispatchQueue(label: "IINAPlaylistTask", qos: .utility)
+  static let thumbnailQueue = DispatchQueue(label: "IINAPlayerCoreThumbnailTask", qos: .utility)
 
   /**
    This ticket will be increased each time before a new task being submitted to `backgroundQueue`.
@@ -1441,7 +1443,7 @@ class PlayerCore: NSObject {
     $backgroundQueueTicket.withLock { $0 += 1 }
     let shouldAutoLoadFiles = info.shouldAutoLoadFiles
     let currentTicket = backgroundQueueTicket
-    backgroundQueue.async { [self] in
+    PlayerCore.backgroundQueue.async { [self] in
       // add files in same folder
       if shouldAutoLoadFiles {
         Logger.log("Started auto load", subsystem: self.subsystem)
@@ -1458,7 +1460,7 @@ class PlayerCore: NSObject {
         guard currentTicket == self.backgroundQueueTicket, self.mpv.mpv != nil else { return }
         self.setTrack(1, forType: .sub)
       }
-      backgroundQueue.asyncAfter(deadline: .now() + 0.5) { [self] in
+      PlayerCore.backgroundQueue.asyncAfter(deadline: .now() + 0.5) { [self] in
         autoSearchOnlineSub()
       }
     }
@@ -1705,9 +1707,7 @@ class PlayerCore: NSObject {
     if Preference.bool(for: .autoSearchOnlineSub) &&
       !info.isNetworkResource && info.subTracks.isEmpty &&
       (info.videoDuration?.second ?? 0.0) >= Preference.double(for: .autoSearchThreshold) * 60 {
-      DispatchQueue.main.async {
-        self.windowController.menuFindOnlineSub(.dummy)
-      }
+      windowController.menuFindOnlineSub(.dummy)
     }
   }
   /**
@@ -2039,7 +2039,7 @@ class PlayerCore: NSObject {
       }
 
       // Run the following in the background at lower priority, so the UI is not slowed down
-      thumbnailQueue.async { [self] in
+      PlayerCore.thumbnailQueue.async { [self] in
         let requestedLength = Preference.integer(for: .thumbnailLength)
         guard let thumbWidth = determineWidthOfThumbnail(from: requestedLength) else { return }
         info.thumbnailLength = requestedLength
@@ -2403,7 +2403,7 @@ extension PlayerCore: FFmpegControllerDelegate {
       info.thumbnailsProgress = 1
       refreshTouchBarSlider()
       if let cacheName = info.mpvMd5 {
-        backgroundQueue.async {
+        PlayerCore.backgroundQueue.async {
           ThumbnailCache.write(self.info.thumbnails, forName: cacheName, forVideo: self.info.currentURL, forWidth: Int(width))
         }
       }
