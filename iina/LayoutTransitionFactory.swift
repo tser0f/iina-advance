@@ -175,9 +175,9 @@ extension PlayerWindowController {
       log.verbose("[\(transitionName)] Built middleGeometry: \(transition.middleGeometry!)")
     }
 
-    let panelTimingName: CAMediaTimingFunctionName?
+    let panelTimingName: CAMediaTimingFunctionName
     if transition.isTogglingFullScreen {
-      panelTimingName = nil
+      panelTimingName = .easeInEaseOut
     } else if transition.isTogglingVisibilityOfAnySidebar {
       panelTimingName = .easeIn
     } else {
@@ -402,8 +402,8 @@ extension PlayerWindowController {
                                                          insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
                                                          videoAspectRatio: inputGeometry.videoAspectRatio)
 
-    let ΔOutsideWidth = outputGeo.outsideSidebarsTotalWidth - inputGeometry.outsideSidebarsTotalWidth
-    let ΔOutsideHeight = outputGeo.outsideSidebarsTotalHeight - inputGeometry.outsideSidebarsTotalHeight
+    let ΔOutsideWidth = outputGeo.outsideBarsTotalWidth - inputGeometry.outsideBarsTotalWidth
+    let ΔOutsideHeight = outputGeo.outsideBarsTotalHeight - inputGeometry.outsideBarsTotalHeight
     // Shrinking window width, or keeping width the same but shrinking height?
     if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
       // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore

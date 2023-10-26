@@ -25,7 +25,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     self.screenID = screenID
     if isPlaylistVisible {
       /// Ignore given `playlistHeight` and calculate it from the other params
-      let videoHeight = isVideoVisible ? windowFrame.width / videoAspectRatio : 0
+      let videoHeight = isVideoVisible ? round(windowFrame.width / videoAspectRatio) : 0
       let controlViewHeight = MiniPlayerController.controlViewHeight
       self.playlistHeight = windowFrame.height - controlViewHeight - videoHeight
     } else {

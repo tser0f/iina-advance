@@ -113,8 +113,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     if keyPath == AppDelegate.launchName {
       if let newLaunchStatus = change[.newKey] as? Int {
         guard newLaunchStatus != 0 else { return }
-        Logger.log("Detected status update to launch status pref (\(keyPath.quoted)) but we are still running.")
-        Logger.log("Will assume a newer instance of IINA has started and is trying to restore. Will reset its value to 'stillRunning' so it will skip this instance.")
+        Logger.log("Detected change to this instance's status pref (\(keyPath.quoted)). Probably a newer instance of IINA has started and is attempting to restore")
+        Logger.log("Changing launch status back to 'stillRunning' so the other launch will skip this instance.")
         UserDefaults.standard.setValue(Preference.UIState.LaunchStatus.stillRunning, forKey: keyPath)
       }
       return

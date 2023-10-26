@@ -259,16 +259,16 @@ struct PlayerWindowGeometry: Equatable {
     return NSRect(origin: origin, size: videoSize)
   }
 
-  var outsideSidebarsTotalWidth: CGFloat {
+  var outsideBarsTotalWidth: CGFloat {
     return outsideTrailingBarWidth + outsideLeadingBarWidth
   }
 
-  var outsideSidebarsTotalHeight: CGFloat {
+  var outsideBarsTotalHeight: CGFloat {
     return outsideTopBarHeight + outsideBottomBarHeight
   }
 
   var outsideBarsTotalSize: NSSize {
-    return NSSize(width: outsideSidebarsTotalWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
+    return NSSize(width: outsideBarsTotalWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
   }
 
   var minVideoHeight: CGFloat {
@@ -320,9 +320,19 @@ struct PlayerWindowGeometry: Equatable {
     }
     /// Compute `videoSize` to fit within `viewportSize` while maintaining `videoAspectRatio`:
     if videoAspectRatio < viewportSize.aspect {  // video is taller, shrink to meet height
-      return NSSize(width: viewportSize.height * videoAspectRatio, height: viewportSize.height)
+      var videoWidth = viewportSize.height * videoAspectRatio
+      // Snap to viewport if within 1 px to smooth out division imprecision
+      if abs(videoWidth - viewportSize.width) < 1 {
+        videoWidth = viewportSize.width
+      }
+      return NSSize(width: videoWidth, height: viewportSize.height)
     } else {  // video is wider, shrink to meet width
-      return NSSize(width: viewportSize.width, height: viewportSize.width / videoAspectRatio)
+      // Snap to viewport if within 1 px to smooth out division imprecision
+      var videoHeight = viewportSize.width / videoAspectRatio
+      if abs(videoHeight - viewportSize.height) < 1 {
+        videoHeight = viewportSize.height
+      }
+      return NSSize(width: viewportSize.width, height: videoHeight)
     }
   }
 
