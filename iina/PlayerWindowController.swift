@@ -2079,25 +2079,30 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // is moved to a new screen such as when the window is on an external display and that display
     // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
     // frame.
-    if currentLayout.isLegacyFullScreen {
-      // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
-      animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+    // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
+    animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+      if currentLayout.isLegacyFullScreen {
         let layout = currentLayout
         guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
         log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
         let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
         applyLegacyFullScreenGeometry(fsGeo)
-      }))
-    } else if currentLayout.isWindowed {
-      /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
-      /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
-      /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
-      let newGeo = windowedModeGeometry.refit()
-      let newWindowFrame = newGeo.windowFrame
-      log.verbose("Calling setFrame() in response to NSApplicationDidChangeScreenParametersNotification with newWindowFrame \(newWindowFrame)")
-      videoView.updateSizeConstraints(newGeo.videoSize)
-      player.window.setFrameImmediately(newWindowFrame)
-    }
+      } else if currentLayout.isWindowed {
+        /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
+        /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
+        /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
+        let oldGeo = windowedModeGeometry
+        let newGeo = oldGeo.refit()
+        guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
+          log.verbose("No need to update windowFrame in response to NSApplicationDidChangeScreenParametersNotification - no change")
+          return
+        }
+        let newWindowFrame = newGeo.windowFrame
+        log.verbose("Calling setFrame() in response to NSApplicationDidChangeScreenParametersNotification with newWindowFrame \(newWindowFrame)")
+        videoView.updateSizeConstraints(newGeo.videoSize)
+        player.window.setFrameImmediately(newWindowFrame)
+      }
+    }))
   }
 
   func windowWillMove(_ notification: Notification) {
