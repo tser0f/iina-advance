@@ -196,9 +196,10 @@ class VideoView: NSView {
     window?.layoutIfNeeded()
   }
 
-  func updateSizeConstraints(_ size: CGSize?) {
+  func apply(_ geometry: PlayerWindowGeometry?) {
     // Do not set constraints for PIP. It will be handled by the PIP window
-    if let size = size, player.windowController.pipStatus == .notInPIP {
+    if let geometry = geometry, player.windowController.pipStatus == .notInPIP {
+      let size = geometry.videoSize
       log.verbose("Updating videoView size constraints to \(size)")
       widthConstraint.isActive = true
       widthConstraint.animateToConstant(size.width)

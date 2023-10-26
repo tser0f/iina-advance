@@ -292,7 +292,7 @@ extension PlayerWindowController {
         log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
         player.window.setFrameImmediately(geo.windowFrame)
         if !transition.isExitingInteractiveMode {
-          videoView.updateSizeConstraints(geo.videoSize)
+          videoView.apply(geo)
         }
       }
     }
@@ -446,7 +446,7 @@ extension PlayerWindowController {
         viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
       }
 
-      videoView.updateSizeConstraints(nil)
+      videoView.apply(nil)
 
       // Add crop settings at bottom
       let cropController = transition.outputLayout.spec.interactiveMode!.viewController()
@@ -484,7 +484,7 @@ extension PlayerWindowController {
       }
 
       if let middleGeometry = transition.middleGeometry {
-        videoView.updateSizeConstraints(middleGeometry.videoSize)
+        videoView.apply(middleGeometry)
       }
     }
      // Need to call this for initial layout also:
@@ -622,7 +622,7 @@ extension PlayerWindowController {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
         log.verbose("Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
         if transition.outputLayout.mode != .fullScreenInteractive {
-          videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+          videoView.apply(transition.outputGeometry)
         }
         player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
       } else if transition.outputLayout.isLegacyFullScreen {
@@ -655,7 +655,7 @@ extension PlayerWindowController {
       let newWindowFrame = transition.outputGeometry.windowFrame
       log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       if !transition.outputLayout.isInteractiveMode {
-        videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+        videoView.apply(transition.outputGeometry)
       }
 
       player.window.setFrameImmediately(newWindowFrame)

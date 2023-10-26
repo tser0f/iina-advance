@@ -32,6 +32,7 @@ extension PlayerWindowController {
         if priorLayoutSpec.mode != .musicMode {
           log.verbose("Setting videoAspectRatio from prior windowedModeGeometry (\(windowedModeGeometry.videoAspectRatio))")
           videoAspectRatio = windowedModeGeometry.videoAspectRatio
+          videoView.apply(windowedModeGeometry)
         }
       } else {
         log.error("Failed to get player window geometry from prefs")
@@ -94,7 +95,7 @@ extension PlayerWindowController {
       break
     case .windowed, .windowedInteractive, .musicMode:
       player.window.setFrameImmediately(initialTransition.outputGeometry.windowFrame)
-      videoView.updateSizeConstraints(initialTransition.outputGeometry.videoSize)
+      videoView.apply(initialTransition.outputGeometry)
     }
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
@@ -268,7 +269,7 @@ extension PlayerWindowController {
         if transition.isEnteringMusicMode {
           if musicModeGeometry.isVideoVisible {
             // Entering music mode when album art is visible
-            videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+            videoView.apply(transition.outputGeometry)
           } else {
             // Entering music mode when album art is hidden
             let heightConstraint = viewportView.heightAnchor.constraint(equalToConstant: 0)
@@ -277,7 +278,7 @@ extension PlayerWindowController {
           }
         } else if transition.isExitingMusicMode {
           // Exiting music mode
-          videoView.updateSizeConstraints(transition.outputGeometry.videoSize)
+          videoView.apply(transition.outputGeometry)
 
           // Set videoView to visible
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: true)

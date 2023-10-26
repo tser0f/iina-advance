@@ -1066,7 +1066,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     videoView.translatesAutoresizingMaskIntoConstraints = false
     videoView.constrainForNormalLayout()
     // Needed when exiting PiP:
-    videoView.updateSizeConstraints(windowedModeGeometry.videoSize)
+//    videoView.apply(windowedModeGeometry)
   }
 
   /** Set material for OSC and title bar */
@@ -1812,8 +1812,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // May be in interactive mode, with some panels hidden. Honor existing layout but change value of isFullScreen
     let fullscreenLayout = LayoutSpec.fromPreferences(andMode: .fullScreen, isLegacyStyle: isLegacy, fillingInFrom: oldLayout.spec)
 
-    let transition = buildLayoutTransition(named: "Enter\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration)
-    animationPipeline.run(transition.animationTasks)
+    buildLayoutTransition(named: "Enter\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: fullscreenLayout, totalStartingDuration: 0, totalEndingDuration: duration, thenRun: true)
   }
 
   func window(_ window: NSWindow, startCustomAnimationToExitFullScreenWithDuration duration: TimeInterval) {
@@ -1928,7 +1927,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       if currentMode == .windowed {
         CocoaAnimation.disableAnimation{
-          videoView.updateSizeConstraints(newGeometry.videoSize)
+          videoView.apply(newGeometry)
         }
       }
 
@@ -1956,9 +1955,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if !currentLayout.isFullScreen && !currentLayout.isInteractiveMode {
         // Do this also for music mode
         let viewportSize = viewportView.frame.size
-        let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize)
+        let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
         // Need to update this always when resizing window, even when resizing non-interactively:
-        videoView.updateSizeConstraints(videoSize)
+        videoView.apply(resizedGeo)
       }
 
       if currentLayout.isMusicMode {
@@ -2058,7 +2057,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// • Adding or removing window style mask `.titled`
   /// • Sometimes called hundreds(!) of times while window is closing
   private func windowDidChangeScreenParameters(_ notification: Notification) {
-    // FIXME: add checks for duplicates
     guard !isClosing else { return }
     let screens = PlayerWindowController.buildScreenMap()
     let screenIDs = screens.keys.sorted()
@@ -2075,12 +2073,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     self.videoView.updateDisplayLink()
 
     guard !player.info.isRestoring else { return }
+
     // In normal full screen mode AppKit will automatically adjust the window frame if the window
     // is moved to a new screen such as when the window is on an external display and that display
     // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
     // frame.
     // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
     animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+      // FIXME: add checks for duplicates
       if currentLayout.isLegacyFullScreen {
         let layout = currentLayout
         guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
@@ -2099,7 +2099,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
         let newWindowFrame = newGeo.windowFrame
         log.verbose("Calling setFrame() in response to NSApplicationDidChangeScreenParametersNotification with newWindowFrame \(newWindowFrame)")
-        videoView.updateSizeConstraints(newGeo.videoSize)
+        videoView.apply(newGeo)
         player.window.setFrameImmediately(newWindowFrame)
       }
     }))
@@ -3327,7 +3327,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
 
     pipVideo = NSViewController()
     // Remove these. They screw up PIP drag
-    videoView.updateSizeConstraints(nil)
+    videoView.apply(nil)
     pipVideo.view = videoView
     videoView.videoLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
     pip.playing = player.info.isPlaying

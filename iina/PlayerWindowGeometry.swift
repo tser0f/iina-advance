@@ -911,8 +911,8 @@ extension PlayerWindowController {
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
   func applyLegacyFullScreenGeometry(_ geometry: PlayerWindowGeometry) {
     guard let window = window else { return }
-    let currentVideoSize = NSSize(width: videoView.widthConstraint.constant, height: videoView.heightConstraint.constant)
-    guard !geometry.hasEqual(windowFrame: window.frame, videoSize: currentVideoSize) else {
+//    let currentVideoSize = NSSize(width: videoView.widthConstraint.constant, height: videoView.heightConstraint.constant)
+    guard !geometry.hasEqual(windowFrame: window.frame) else {
       log.verbose("No need to update windowFrame for legacyFullScreen - no change")
       return
     }
@@ -922,7 +922,7 @@ extension PlayerWindowController {
     let topBarHeight = layout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
     updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
     if !layout.isInteractiveMode {
-      videoView.updateSizeConstraints(geometry.videoSize)
+      videoView.apply(geometry)
     }
     player.window.setFrameImmediately(geometry.windowFrame)
   }
@@ -951,11 +951,11 @@ extension PlayerWindowController {
       case .fullScreen:
         // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
         let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID, videoAspectRatio: newGeometry.videoAspectRatio)
-        videoView.updateSizeConstraints(fsGeo.videoSize)
+        videoView.apply(fsGeo)
 
       case .windowed:
         // Make sure this is up-to-date
-        videoView.updateSizeConstraints(newGeometry.videoSize)
+        videoView.apply(newGeometry)
 
       case .windowedInteractive, .fullScreenInteractive:
         // VideoView size constraints not used
@@ -983,7 +983,7 @@ extension PlayerWindowController {
 
     CocoaAnimation.disableAnimation{
       // Make sure this is up-to-date
-      videoView.updateSizeConstraints(newGeometry.videoSize)
+      videoView.apply(newGeometry)
     }
 
     if !isFullScreen {
@@ -1000,11 +1000,9 @@ extension PlayerWindowController {
 
     videoAspectRatio = geometry.videoAspectRatio
 
-    /// Make sure to call `updateSizeConstraints` AFTER `applyVideoViewVisibilityConstraints`:
+    /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:
     miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
-    if let videoSize = geometry.videoSize {
-      videoView.updateSizeConstraints(videoSize)
-    }
+    videoView.apply(geometry.toPlayerWindowGeometry())
     updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideViewport)
     if setFrame {
       player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
