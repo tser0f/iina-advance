@@ -1022,7 +1022,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       } else {
         viewportSize = windowedModeGeometry.viewportSize
       }
-      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize, fitOption: .insideVisibleFrame)
+      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
     case .fullScreen:
@@ -2115,7 +2115,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidMove(_ notification: Notification) {
     guard !isAnimating else { return }
     guard let window = window else { return }
-    log.verbose("WindowDidMove frame: \(window.frame)")
+    log.verbose("WindowDidMove to frame: \(window.frame)")
     let layout = currentLayout
     if layout.isLegacyFullScreen && !player.info.isRestoring {
       // MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens

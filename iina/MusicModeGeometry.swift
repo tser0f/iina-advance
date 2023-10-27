@@ -53,7 +53,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     let outsideBottomBarHeight = MiniPlayerController.controlViewHeight + (isPlaylistVisible ? playlistHeight : 0)
     return PlayerWindowGeometry(windowFrame: windowFrame,
                                 screenID: screenID,
-                                fitOption: .insideVisibleFrame,
+                                fitOption: .keepInVisibleScreen,
                                 topMarginHeight: 0,
                                 outsideTopBarHeight: 0,
                                 outsideTrailingBarWidth: 0,
@@ -91,7 +91,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
   /// Must also ensure that window stays within the bounds of the screen it is in. Almost all of the time the window  will be
   /// height-bounded instead of width-bounded.
   func refit() -> MusicModeGeometry {
-    let containerFrame = PlayerWindowGeometry.getContainerFrame(forScreenID: screenID, fitOption: .insideVisibleFrame)!
+    let containerFrame = PlayerWindowGeometry.getContainerFrame(forScreenID: screenID, fitOption: .keepInVisibleScreen)!
 
     /// When the window's width changes, the video scales to match while keeping its aspect ratio,
     /// and the control bar (`backgroundView`) and playlist are pushed down.

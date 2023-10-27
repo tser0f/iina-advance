@@ -17,10 +17,10 @@ enum ScreenFitOption: Int {
   case noConstraints = 0
 
   /// Constrains inside `screen.visibleFrame`
-  case insideVisibleFrame
+  case keepInVisibleScreen
 
   /// Constrains and centers inside `screen.visibleFrame`
-  case centerInsideVisibleFrame
+  case centerInVisibleScreen
 
   /// Constrains inside `screen.frame`
   case legacyFullScreen
@@ -294,7 +294,7 @@ struct PlayerWindowGeometry: Equatable {
     switch fitOption {
     case .noConstraints:
       return nil
-    case .insideVisibleFrame, .centerInsideVisibleFrame:
+    case .keepInVisibleScreen, .centerInVisibleScreen:
       return screen.visibleFrame
     case .legacyFullScreen:
       return screen.frame
@@ -403,7 +403,7 @@ struct PlayerWindowGeometry: Equatable {
 
     let newScreenID = screenID ?? self.screenID
     // do not center in screen again unless explicitly requested
-    var newFitOption = fitOption ?? (self.fitOption == .centerInsideVisibleFrame ? .insideVisibleFrame : self.fitOption)
+    var newFitOption = fitOption ?? (self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption)
     if newFitOption == .legacyFullScreen || newFitOption == .nativeFullScreen {
       // Programmer screwed up
       Logger.log("scaleViewport(): invalid fit option: \(newFitOption). Defaulting to 'none'", level: .error)
@@ -438,7 +438,7 @@ struct PlayerWindowGeometry: Equatable {
     if let containerFrame = containerFrame {
       Logger.log("Constraining PlayerWindowGeometry in containerFrame: \(containerFrame)", level: .verbose)
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
-      if newFitOption == .centerInsideVisibleFrame {
+      if newFitOption == .centerInVisibleScreen {
         newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)
       }
     }
@@ -638,7 +638,7 @@ struct PlayerWindowGeometry: Equatable {
 
     let newVideoAspectRatio = cropbox.size.aspect
     
-    var newFitOption = self.fitOption == .centerInsideVisibleFrame ? .insideVisibleFrame : self.fitOption
+    var newFitOption = self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption
     Logger.log("Cropped WindowedModeGeometry to new windowFrame: \(newWindowFrame), videoAspectRatio: \(newVideoAspectRatio), screenID: \(screenID), fitOption: \(newFitOption)")
     return self.clone(windowFrame: newWindowFrame, fitOption: newFitOption, videoAspectRatio: newVideoAspectRatio)
   }
@@ -757,15 +757,15 @@ extension PlayerWindowController {
         newWindowGeo = windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
       } else if let strategy = resizeWindowStrategy, strategy == .fitScreen {
         log.verbose("[AdjustFrameAfterVideoReconfig C-4] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
-        newWindowGeo = windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInsideVisibleFrame)
+        newWindowGeo = windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
       } else if !player.info.justStartedFile {
         // Try to match previous scale
         newVideoSize = newVideoSize.multiply(player.info.cachedWindowScale)
         log.verbose("[AdjustFrameAfterVideoReconfig C-5] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
-        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInsideVisibleFrame)
-      } else {
-        log.verbose("[AdjustFrameAfterVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → windowFrame")
-        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInsideVisibleFrame)
+        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
+      } else {  // started file
+        log.verbose("[AdjustFrameAfterVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → center windowFrame")
+        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
       }
 
     } else {  /// `!shouldResizeWindowAfterVideoReconfig()`
@@ -845,7 +845,7 @@ extension PlayerWindowController {
     // User has actively resized the video. Assume this is the new preferred resolution
     player.info.setIntendedViewportSize(from: newGeoUnconstrained)
 
-    let newGeometry = newGeoUnconstrained.refit(.insideVisibleFrame)
+    let newGeometry = newGeoUnconstrained.refit(.keepInVisibleScreen)
     log.verbose("Calling apply() from setWindowScale, to: \(newGeometry.windowFrame)")
     applyWindowGeometry(newGeometry)
   }
@@ -863,7 +863,7 @@ extension PlayerWindowController {
     // User has actively resized the video. Assume this is the new preferred resolution
     player.info.setIntendedViewportSize(from: newGeoUnconstrained)
 
-    let fitOption: ScreenFitOption = centerOnScreen ? .centerInsideVisibleFrame : .insideVisibleFrame
+    let fitOption: ScreenFitOption = centerOnScreen ? .centerInVisibleScreen : .keepInVisibleScreen
     let newGeometry = newGeoUnconstrained.refit(fitOption)
     log.verbose("Calling setFrame() from resizeViewport (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
     applyWindowGeometry(newGeometry)
@@ -907,7 +907,7 @@ extension PlayerWindowController {
 
     let geo = PlayerWindowGeometry(windowFrame: window!.frame,
                                    screenID: bestScreen.screenID,
-                                   fitOption: .insideVisibleFrame,
+                                   fitOption: .keepInVisibleScreen,
                                    topMarginHeight: 0,  // is only nonzero when in legacy FS
                                    outsideTopBarHeight: layout.outsideTopBarHeight,
                                    outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
@@ -1101,7 +1101,7 @@ extension PlayerWindowController {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
         player.info.setIntendedViewportSize(from: intendedGeo)
       }
-      let requestedGeoConstrained = intendedGeo.refit(.insideVisibleFrame)
+      let requestedGeoConstrained = intendedGeo.refit(.keepInVisibleScreen)
       return requestedGeoConstrained
     }
 

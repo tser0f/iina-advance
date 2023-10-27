@@ -316,7 +316,7 @@ struct PlayerSaveState {
         return
       }
       let properties = generatePropDict(from: player)
-      player.log.verbose("Saving player state (ticket \(saveTicket))")
+      player.log.verbose("Saving player state (tkt# \(saveTicket))")
 //      player.log.verbose("Saving player state: \(properties)")
       Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
     }
@@ -547,8 +547,20 @@ struct PlayerSaveState {
       } else {
         urlPath = url.path
       }
+
+      let filteredProps = properties.filter({
+        switch $0.key {
+        case PropName.url.rawValue, PropName.playlistPaths.rawValue,
+          PropName.playlistVideos.rawValue, PropName.playlistSubtitles.rawValue:
+          // these are too long and contain PII
+          return false
+        default:
+          return true
+        }
+      })
+
       // log properties but not playlist paths (not very useful, takes up space, is private info)
-      log.verbose("Restoring player state from prior launch. URL: \(urlPath.pii.quoted) Properties: \(properties.filter{ $0.key != PropName.playlistPaths.rawValue && $0.key != PropName.url.rawValue }))")
+      log.verbose("Restoring player state from prior launch. URL: \(urlPath.pii.quoted) Properties: \(filteredProps)")
     }
     let info = player.info
     info.priorState = self
@@ -557,7 +569,7 @@ struct PlayerSaveState {
 
     log.verbose("Screens from prior launch: \(self.screens)")
 
-    // FIXME: map current geometry to prior screen. Deal with mismatch
+    // TODO: map current geometry to prior screen. Deal with mismatch
 
     if let hdrEnabled = bool(for: .hdrEnabled) {
       info.hdrEnabled = hdrEnabled
