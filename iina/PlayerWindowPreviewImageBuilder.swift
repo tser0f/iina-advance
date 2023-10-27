@@ -15,7 +15,7 @@ fileprivate let scaleFactor: Int = 4
 fileprivate let outputImgWidth: Int = 340 * scaleFactor
 fileprivate let outputImgHeight: Int = outputImgWidth * 3 / 4  // Output image expected to be 4:3
 
-fileprivate let titleBarHeight: Int = 24 * scaleFactor
+fileprivate let titleBarHeight: Int = 28 * scaleFactor
 fileprivate let menuBarHeight: Int = titleBarHeight
 fileprivate let videoWidth: Int = 240 * scaleFactor
 fileprivate let videoHeight: Int = videoWidth * 9 / 16
@@ -23,6 +23,9 @@ fileprivate let oscFullWidthHeight: Int = 35 * scaleFactor
 fileprivate let oscFloatingHeight: Int = 37 * scaleFactor
 fileprivate let oscFloatingWidth: Int = 140 * scaleFactor
 
+fileprivate let screenRoundedCornerRadius: CGFloat = 10.0 * CGFloat(scaleFactor)
+fileprivate let nativeWindowRoundedCornerRadius = CGFloat(10.0) * CGFloat(scaleFactor)
+fileprivate let desktopInset: Int = 1 * scaleFactor
 
 fileprivate extension CGContext {
   // Decorator for state
@@ -87,7 +90,7 @@ class PlayerWindowPreviewImageBuilder {
       return nil
     }
     let titleBarHeight = hasTitleBar ? titleBarHeight : 0
-    let roundedCornerRadius = isLegacyWindow ? 0 : CGFloat(10.0) * CGFloat(scaleFactor)
+    let windowRoundedCornerRadius = isLegacyWindow ? 0 : nativeWindowRoundedCornerRadius
 
     var videoViewOffsetY: Int = 0
     if oscEnabled && oscPosition == .bottom && bottomBarPlacement == .outsideViewport {
@@ -157,30 +160,43 @@ class PlayerWindowPreviewImageBuilder {
     let winRect = NSRect(x: winOriginX, y: winOriginY, width: videoWidth, height: winHeight)
 
     let drawingCalls: (CGContext) -> Void = { [self] cgContext in
-      // Draw desktop background color
+      let outputImgRect = CGRect(x: 0, y: 0, width: outputImgWidth, height: outputImgHeight)
+
+      // Round the image corners by clipping out all drawing which is not in roundedRect (like using a stencil)
+      cgContext.addPath(CGPath(roundedRect: outputImgRect, cornerWidth: screenRoundedCornerRadius, cornerHeight: screenRoundedCornerRadius, transform: nil))
+      cgContext.closePath()
+      cgContext.clip()
+
+      // Fill whole image with desktop background color
       let bgColor = desktopWallpaperColor.cgColor
       cgContext.setFillColor(bgColor)
-      cgContext.fill([CGRect(x: 0, y: 0, width: outputImgWidth, height: outputImgHeight)])
+      cgContext.fill([outputImgRect])
+
+      /// Now create an outline effect by setting the clipping region to a slightly smaller roundedRect than before
+      let desktopRect = outputImgRect.insetBy(dx: CGFloat(desktopInset), dy: CGFloat(desktopInset))
+      cgContext.addPath(CGPath(roundedRect: desktopRect, cornerWidth: screenRoundedCornerRadius, cornerHeight: screenRoundedCornerRadius, transform: nil))
+      cgContext.closePath()
+      cgContext.clip()
 
       // Draw menu bar
       let menuBarColor: CGColor = addAlpha(opaqueControlAlpha, to: NSColor.windowBackgroundColor)
       cgContext.setFillColor(menuBarColor)
-      cgContext.fill([CGRect(x: 0, y: outputImgHeight - menuBarHeight, width: outputImgWidth, height: menuBarHeight)])
+      cgContext.fill([CGRect(x: desktopInset, y: outputImgHeight - desktopInset - menuBarHeight, width: outputImgWidth - desktopInset - desktopInset, height: menuBarHeight)])
 
+      // Apple icon
       if #available(macOS 11.0, *), let appleLogo = NSImage(systemSymbolName: "apple.logo", accessibilityDescription: nil) {
         let totalHeight = CGFloat(menuBarHeight)
-        let padTotalV = totalHeight * 0.2
-        let padTotalH = padTotalV * 3
-        _ = drawPaddedIcon(appleLogo, in: cgContext, x: 0, y: CGFloat(outputImgHeight - menuBarHeight),
+        let padTotalV = totalHeight * 0.36
+        let padTotalH = padTotalV * 2
+        _ = drawPaddedIcon(appleLogo, in: cgContext, x: CGFloat(desktopInset), y: CGFloat(outputImgHeight - menuBarHeight),
                            totalHeight: totalHeight, padTotalH: padTotalH, padTotalV: padTotalV)
       } else {
-        // Fallback on earlier versions
+        // Sorry older versions
       }
-
 
       // Start drawing window. Clip the corners to round it:
       cgContext.beginPath()
-      cgContext.addPath(CGPath(roundedRect: winRect, cornerWidth: roundedCornerRadius, cornerHeight: roundedCornerRadius, transform: nil))
+      cgContext.addPath(CGPath(roundedRect: winRect, cornerWidth: windowRoundedCornerRadius, cornerHeight: windowRoundedCornerRadius, transform: nil))
       cgContext.closePath()
       cgContext.clip()
 
@@ -214,7 +230,7 @@ class PlayerWindowPreviewImageBuilder {
         if oscPosition == .floating {
           // Draw floating OSC panel
           cgContext.withNewCGState {
-            cgContext.drawRoundedRect(oscRect, cornerRadius: roundedCornerRadius / 2, fillColor: oscPanelColor)
+            cgContext.drawRoundedRect(oscRect, cornerRadius: windowRoundedCornerRadius * 0.5, fillColor: oscPanelColor)
           }
 
           // Draw play controls
@@ -279,7 +295,7 @@ class PlayerWindowPreviewImageBuilder {
             let pillOriginY = iconGroupCenterY - (pillHeight / 2)
             let pillRect = NSRect(x: Int(nextIconMinX), y: Int(pillOriginY), width: Int(pillWidth), height: Int(pillHeight))
             cgContext.withNewCGState {
-              cgContext.drawRoundedRect(pillRect, cornerRadius: min(pillHeight * 0.5, roundedCornerRadius / 2), fillColor: iconColor.cgColor)
+              cgContext.drawRoundedRect(pillRect, cornerRadius: min(pillHeight * 0.5, windowRoundedCornerRadius * 0.5), fillColor: iconColor.cgColor)
             }
           }
         }
@@ -318,8 +334,7 @@ class PlayerWindowPreviewImageBuilder {
       }
     }  // drawingCalls
 
-    let previewImage = drawImageInBitmapImageContext(width: outputImgWidth, height: outputImgHeight, drawingCalls: drawingCalls)?
-      .roundCorners(withRadius: roundedCornerRadius)
+    let previewImage = drawImageInBitmapImageContext(width: outputImgWidth, height: outputImgHeight, drawingCalls: drawingCalls)
 
     return previewImage
   }

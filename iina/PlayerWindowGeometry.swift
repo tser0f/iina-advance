@@ -327,8 +327,8 @@ struct PlayerWindowGeometry: Equatable {
       }
       return NSSize(width: videoWidth, height: viewportSize.height)
     } else {  // video is wider, shrink to meet width
-      // Snap to viewport if within 1 px to smooth out division imprecision
       var videoHeight = viewportSize.width / videoAspectRatio
+      // Snap to viewport if within 1 px to smooth out division imprecision
       if abs(videoHeight - viewportSize.height) < 1 {
         videoHeight = viewportSize.height
       }
