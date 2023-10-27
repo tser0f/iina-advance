@@ -42,11 +42,7 @@ class CropBoxView: NSView {
   /** Crop box's frame. */
   var boxRect: NSRect = NSRect()
 
-  var selectedRect: NSRect = NSRect() {
-    didSet {
-      settingsViewController.selectedRectUpdated()
-    }
-  }
+  var selectedRect: NSRect = NSRect()
 
   private var isDragging = false
   private var dragSide: DragSide = .top
@@ -74,7 +70,7 @@ class CropBoxView: NSView {
   }
 
   // set boxRect, and update selectedRect
-  func boxRectchanged(to rect: NSRect) {
+  func boxRectChanged(to rect: NSRect) {
     boxRect = rect
     updateSelectedRect()
   }
@@ -86,6 +82,11 @@ class CropBoxView: NSView {
     updateCursorRects()
     needsDisplay = true
   }
+
+  // FIXME: these 2 functions below can result in major imprecisions!
+  // The biggest problem shows up when un-flipping the y value.
+  // To see this, start with a full selectedRect and drag the bottom up until only
+  // the top 10% of the video is selected. The y value in the UI will be in double digits.
 
   // update selectedRect from (boxRect in videoRect)
   private func updateSelectedRect() {
@@ -103,6 +104,8 @@ class CropBoxView: NSView {
     if abs(ih + iy - actualSize.height) <= 4 { ih = actualSize.height - iy }
 
     selectedRect = NSMakeRect(ix, iy, iw, ih)
+    settingsViewController.selectedRectUpdated()
+//    Logger.log("actualSize: \(actualSize), boxRect: \(boxRect) -> selectedRect: \(selectedRect) <-")
   }
 
   // update boxRect from (videoRect * selectedRect)
@@ -116,6 +119,8 @@ class CropBoxView: NSView {
     let ih = selectedRect.height * yScale
 
     boxRect = NSMakeRect(ix, iy, iw, ih)
+    settingsViewController.selectedRectUpdated()
+//    Logger.log("actualSize: \(actualSize) -> boxRect: \(boxRect) <- selectedRect: \(selectedRect)")
   }
 
   // MARK: - Mouse event to change boxRect
@@ -171,14 +176,14 @@ class CropBoxView: NSView {
         newBoxRect.size.width -= diff
       }
 
-      boxRectchanged(to: newBoxRect)
+      boxRectChanged(to: newBoxRect)
       needsDisplay = true
       updateCursorRects()
       lastMousePos = mousePos
     } else if isFreeSelecting {
       // free selecting
       let newBoxRect = NSRect(vertexPoint: lastMousePos!, and: mousePos)
-      boxRectchanged(to: newBoxRect)
+      boxRectChanged(to: newBoxRect)
       needsDisplay = true
     } else {
       super.mouseDragged(with: event)

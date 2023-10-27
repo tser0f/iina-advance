@@ -1022,7 +1022,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       } else {
         viewportSize = windowedModeGeometry.viewportSize
       }
-      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize)
+      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize, fitOption: .insideVisibleFrame)
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
     case .fullScreen:

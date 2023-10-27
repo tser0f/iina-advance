@@ -1220,8 +1220,8 @@ extension PlayerWindowController {
 
     // Add selection box
     let selectWholeVideoByDefault = currentLayout.spec.interactiveMode == .crop
+    cropController.cropBoxView.actualSize = origVideoSize  /// must set this BEFORE `selectedRect`
     cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-    cropController.cropBoxView.actualSize = origVideoSize
     cropController.cropBoxView.resized(with: selectableRect)
   }
 

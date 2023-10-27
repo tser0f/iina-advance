@@ -14,9 +14,10 @@ class CropBoxViewController: NSViewController {
   weak var windowController: PlayerWindowController!
 
   var cropx: Int = 0
-  var cropy: Int = 0  // in flipped coord
+  var cropy: Int = 0  // in flipped coord (mpv)
   var cropw: Int = 0
   var croph: Int = 0
+  var cropy_unflipped: Int = 0  // MacOS
 
   var readableCropString: String {
     return "(\(cropx), \(cropy)) (\(cropw)\u{d7}\(croph))"
@@ -31,14 +32,20 @@ class CropBoxViewController: NSViewController {
 
   func selectedRectUpdated() {
     guard windowController.isInInteractiveMode else { return }
-    let rect = cropBoxView.selectedRect
-    updateCropValues(from: rect)
+    updateCropValues(from: cropBoxView.selectedRect)
   }
 
-  private func updateCropValues(from rect: NSRect) {
-    cropx = Int(rect.minX)
-    cropy = Int(CGFloat(windowController.player.info.videoRawHeight!) - rect.height - rect.minY)
-    cropw = Int(rect.width)
-    croph = Int(rect.height)
+  private func updateCropValues(from selectedRect: NSRect) {
+    var maxHeight = cropBoxView.actualSize.height
+    if !maxHeight.isNormal {
+      maxHeight = 0
+    }
+    let yFlipped = maxHeight - (selectedRect.origin.y + selectedRect.height)
+
+    cropx = Int(selectedRect.minX)
+    cropy = Int(yFlipped)
+    cropw = Int(selectedRect.width)
+    croph = Int(selectedRect.height)
+    cropy_unflipped = Int(selectedRect.minY)
   }
 }

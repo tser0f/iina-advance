@@ -402,7 +402,8 @@ struct PlayerWindowGeometry: Equatable {
     newViewportSize = constrainAboveMin(desiredViewportSize: newViewportSize)
 
     let newScreenID = screenID ?? self.screenID
-    var newFitOption = fitOption ?? self.fitOption
+    // do not center in screen again unless explicitly requested
+    var newFitOption = fitOption ?? (self.fitOption == .centerInsideVisibleFrame ? .insideVisibleFrame : self.fitOption)
     if newFitOption == .legacyFullScreen || newFitOption == .nativeFullScreen {
       // Programmer screwed up
       Logger.log("scaleViewport(): invalid fit option: \(newFitOption). Defaulting to 'none'", level: .error)
@@ -615,7 +616,7 @@ struct PlayerWindowGeometry: Equatable {
   /// The cropbox is the section of the video rect which remains after the crop. Its origin is the lower left of the video.
   func cropVideo(from videoSizeUnscaled: NSSize, to cropbox: NSRect) -> PlayerWindowGeometry {
     // First scale the cropbox to the current window scale
-    let scaleRatio = videoSizeUnscaled.width / self.videoSize.width
+    let scaleRatio = self.videoSize.width / videoSizeUnscaled.width
     let cropboxScaled = NSRect(x: cropbox.origin.x * scaleRatio,
                                y: cropbox.origin.y * scaleRatio,
                                width: cropbox.width * scaleRatio,
@@ -626,6 +627,8 @@ struct PlayerWindowGeometry: Equatable {
       return self
     }
 
+    Logger.log("Cropping WindowedModeGeometry from cropbox: \(cropbox), scaled: \(scaleRatio)x -> \(cropboxScaled)")
+
     let widthRemoved = videoSize.width - cropboxScaled.width
     let heightRemoved = videoSize.height - cropboxScaled.height
     let newWindowFrame = NSRect(x: windowFrame.origin.x + cropboxScaled.origin.x,
@@ -634,7 +637,10 @@ struct PlayerWindowGeometry: Equatable {
                                 height: windowFrame.height - heightRemoved)
 
     let newVideoAspectRatio = cropbox.size.aspect
-    return self.clone(windowFrame: newWindowFrame, videoAspectRatio: newVideoAspectRatio)
+    
+    var newFitOption = self.fitOption == .centerInsideVisibleFrame ? .insideVisibleFrame : self.fitOption
+    Logger.log("Cropped WindowedModeGeometry to new windowFrame: \(newWindowFrame), videoAspectRatio: \(newVideoAspectRatio), screenID: \(screenID), fitOption: \(newFitOption)")
+    return self.clone(windowFrame: newWindowFrame, fitOption: newFitOption, videoAspectRatio: newVideoAspectRatio)
   }
 }
 
@@ -662,18 +668,17 @@ extension PlayerWindowController {
         // Finish crop submission
         cropController.cropBoxView.didSubmit = false
         let originalVideoSize = cropController.cropBoxView.actualSize
-        let cropy = Int(originalVideoSize.height) - cropController.cropy  // flipped for MacOS
-        let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropy, width: cropController.cropw, height: cropController.croph)
-
-        // FIXME: something's wrong in the animations here
+        let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropy_unflipped,
+                                           width: cropController.cropw, height: cropController.croph)
+        log.verbose("Cropping video from nativeVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
         animationPipeline.run(CocoaAnimation.Task({ [self] in
-          interactiveModeGeometry = (interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)).cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+          let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)
+          interactiveModeGeometry = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
           windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
 
           cropController.view.removeFromSuperview()
           cropController.cropBoxView.removeFromSuperview()
           player.window.setFrameImmediately(interactiveModeGeometry!.windowFrame)
-          viewportView.layout()
           forceDraw()
 
           animationPipeline.runZeroDuration({ [self] in
@@ -1096,7 +1101,7 @@ extension PlayerWindowController {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
         player.info.setIntendedViewportSize(from: intendedGeo)
       }
-      let requestedGeoConstrained = intendedGeo.refit(.centerInsideVisibleFrame)
+      let requestedGeoConstrained = intendedGeo.refit(.insideVisibleFrame)
       return requestedGeoConstrained
     }
 
