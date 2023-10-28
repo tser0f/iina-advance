@@ -2714,7 +2714,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.error("Crop mode requested, but found an existing crop filter (\(vf.stringFormat.quoted)). Will remove it before entering")
       // A crop is already set. Need to temporarily remove it so that the whole video can be seen again,
       // so that a new crop can be chosen. But keep info from the old filter in case the user cancels.
-      assert(vf.label == Constants.FilterName.crop, "Unexpected label for crop filter: \(vf.name.quoted)")
+      assert(vf.label == Constants.FilterLabel.crop, "Unexpected label for crop filter: \(vf.name.quoted)")
       player.info.videoFiltersDisabled[filterLabel] = vf
       if player.removeVideoFilter(vf) {
         // We can expect to receive a new video-params from mpv asynchronously. Pick it up there.

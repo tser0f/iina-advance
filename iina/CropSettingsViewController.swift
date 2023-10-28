@@ -30,7 +30,7 @@ class CropSettingsViewController: CropBoxViewController {
     let player = windowController.player
 
     // Remove saved crop (if any)
-    player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterName.crop)
+    player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
 
     if self.cropx == 0 && self.cropy == 0 &&
         self.cropw == player.info.videoRawWidth &&
@@ -54,12 +54,12 @@ class CropSettingsViewController: CropBoxViewController {
 
   @IBAction func cancelBtnAction(_ sender: AnyObject) {
     let player = windowController.player
-    if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterName.crop] {
+    if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       /// Prev filter exists
       player.log.verbose("User chose Cancel button from interactive mode: restoring prev crop")
       cropBoxView.didSubmit = true
       // Remove saved crop (if any)
-      player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterName.crop)
+      player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
 
       if let params = prevCropFilter.params, let wStr = params["w"], let hStr = params["h"], let xStr = params["x"], let yStr = params["y"],
          let w = Int(wStr), let h = Int(hStr), let x = Int(xStr), let y = Int(yStr) {

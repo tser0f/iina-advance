@@ -15,7 +15,7 @@ class FreeSelectingViewController: CropBoxViewController {
     let player = windowController.player
 
     windowController.exitInteractiveMode {
-      let filter = MPVFilter.init(lavfiName: "delogo", label: Constants.FilterName.delogo, paramDict: [
+      let filter = MPVFilter.init(lavfiName: "delogo", label: Constants.FilterLabel.delogo, paramDict: [
         "x": String(self.cropx),
         "y": String(self.cropy),
         "w": String(self.cropw),

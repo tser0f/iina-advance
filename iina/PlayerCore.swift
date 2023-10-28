@@ -807,7 +807,7 @@ class PlayerCore: NSObject {
         return
       }
       let vf = MPVFilter.flip()
-      vf.label = Constants.FilterName.flip
+      vf.label = Constants.FilterLabel.flip
       let _ = addVideoFilter(vf)
     } else {
       guard let vf = info.flipFilter else {
@@ -826,7 +826,7 @@ class PlayerCore: NSObject {
         return
       }
       let vf = MPVFilter.mirror()
-      vf.label = Constants.FilterName.mirror
+      vf.label = Constants.FilterLabel.mirror
       let _ = addVideoFilter(vf)
     } else {
       guard let vf = info.mirrorFilter else {
@@ -1058,7 +1058,7 @@ class PlayerCore: NSObject {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
       log.verbose("Setting crop from requested string \(str.quoted) to: \(cropped.width)x\(cropped.height) (origSize: \(vwidth)x\(vheight))")
       let vf = MPVFilter.crop(w: Int(cropped.width), h: Int(cropped.height), x: nil, y: nil)
-      vf.label = Constants.FilterName.crop
+      vf.label = Constants.FilterLabel.crop
       if setCrop(fromFilter: vf) {
         info.unsureCrop = str
         return
@@ -1075,7 +1075,7 @@ class PlayerCore: NSObject {
 
   @discardableResult
   func setCrop(fromFilter filter: MPVFilter) -> Bool {
-    filter.label = Constants.FilterName.crop
+    filter.label = Constants.FilterLabel.crop
     return addVideoFilter(filter)
   }
 
@@ -1084,7 +1084,7 @@ class PlayerCore: NSObject {
     let freqList = [31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
     let filters = freqList.enumerated().map { (index, freq) -> MPVFilter in
       let string = [Int](0..<channelCount).map { "c\($0) f=\(freq) w=\(freq / 1.224744871) g=\(gains[index])" }.joined(separator: "|")
-      return MPVFilter(name: "lavfi", label: "\(Constants.FilterName.audioEq)\(index)", paramString: "[anequalizer=\(string)]")
+      return MPVFilter(name: "lavfi", label: "\(Constants.FilterLabel.audioEq)\(index)", paramString: "[anequalizer=\(string)]")
     }
     filters.forEach { _ = addAudioFilter($0) }
     info.audioEqFilters = filters
@@ -1217,14 +1217,14 @@ class PlayerCore: NSObject {
 
       log.debug("Success: removed video filter \(label.quoted)")
       switch filter.label {
-      case Constants.FilterName.crop:
+      case Constants.FilterLabel.crop:
         info.cropFilter = nil
         info.unsureCrop = "None"
-      case Constants.FilterName.flip:
+      case Constants.FilterLabel.flip:
         info.flipFilter = nil
-      case Constants.FilterName.delogo:
+      case Constants.FilterLabel.delogo:
         info.delogoFilter = nil
-      case Constants.FilterName.mirror:
+      case Constants.FilterLabel.mirror:
         info.mirrorFilter = nil
       default:
         break
@@ -2290,18 +2290,18 @@ class PlayerCore: NSObject {
 
   func setPlaybackInfoFilter(_ filter: MPVFilter) {
     switch filter.label {
-    case Constants.FilterName.crop:
+    case Constants.FilterLabel.crop:
       // FIXME: should call setCrop()? Also need to update selection in the Quick Settings `cropSegment` control.
       info.cropFilter = filter
       info.unsureCrop = ""
       if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
         sendOSD(.crop("(\(x), \(y)) (\(w)\u{d7}\(h))"))
       }
-    case Constants.FilterName.flip:
+    case Constants.FilterLabel.flip:
       info.flipFilter = filter
-    case Constants.FilterName.mirror:
+    case Constants.FilterLabel.mirror:
       info.mirrorFilter = filter
-    case Constants.FilterName.delogo:
+    case Constants.FilterLabel.delogo:
       info.delogoFilter = filter
     default:
       break
@@ -2331,7 +2331,7 @@ class PlayerCore: NSObject {
       Logger.log("Got mpv af, name: \(filter.name.quoted), label: \(filter.label?.quoted ?? "nil"), params: \(filter.params ?? [:])",
                  level: .verbose, subsystem: subsystem)
       guard let label = filter.label else { continue }
-      if label.hasPrefix(Constants.FilterName.audioEq) {
+      if label.hasPrefix(Constants.FilterLabel.audioEq) {
         if info.audioEqFilters == nil {
           info.audioEqFilters = Array(repeating: nil, count: 10)
         }

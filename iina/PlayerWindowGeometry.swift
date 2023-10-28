@@ -657,11 +657,14 @@ struct PlayerWindowGeometry: Equatable {
                                y: cropbox.origin.y * videoScale,
                                width: cropbox.width * videoScale,
                                height: cropbox.height * videoScale)
+    // Figure out part which wasn't cropped:
+    let antiCropboxSizeScaled = NSSize(width: (videoBaseDisplaySize.width - cropbox.width) * videoScale,
+                                       height: (videoBaseDisplaySize.height - cropbox.height) * videoScale)
     let newVideoAspectRatio = videoBaseDisplaySize.aspect
     let newWindowFrame = NSRect(x: windowFrame.origin.x - cropboxScaled.origin.x,
                                 y: windowFrame.origin.y - cropboxScaled.origin.y,
-                                width: windowFrame.width + cropboxScaled.width,
-                                height: windowFrame.height + cropboxScaled.height)
+                                width: windowFrame.width + antiCropboxSizeScaled.width,
+                                height: windowFrame.height + antiCropboxSizeScaled.height)
     return self.clone(windowFrame: newWindowFrame, videoAspectRatio: newVideoAspectRatio).refit()
   }
 }
@@ -716,7 +719,7 @@ extension PlayerWindowController {
       let selectableRect = NSRect(origin: CGPointZero, size: interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize)
       log.debug("[AdjustFrameAfterVideoReconfig] Replacing crop box videoSize=\(videoBaseDisplaySize), selectableRect=\(selectableRect)")
       addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, selectableRect: selectableRect)
-    } else if let prevCrop = player.info.videoFiltersDisabled[Constants.FilterName.crop] {
+    } else if let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       // Not in interactive mode, but looks like user wants to enter it to change active crop
       log.verbose("[AdjustFrameAfterVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
       if let params = prevCrop.params, let wStr = params["w"], let hStr = params["h"], let xStr = params["x"], let yStr = params["y"],
@@ -728,6 +731,7 @@ extension PlayerWindowController {
                                                       cropbox: prevCropRect,
                                                       videoScale: player.info.cachedWindowScale)
         applyWindowGeometry(newGeo)
+        forceDraw()
       }
       animationPipeline.runZeroDuration({ [self] in
         enterInteractiveMode(.crop)
