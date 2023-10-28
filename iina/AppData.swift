@@ -149,6 +149,7 @@ struct Constants {
   struct Time {
     static let infinite = VideoTime(999, 0, 0)
   }
+  // TODO: this is actually filter label, not name
   struct FilterName {
     static let crop = "iina_crop"
     static let flip = "iina_flip"

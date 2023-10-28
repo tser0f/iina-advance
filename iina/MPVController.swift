@@ -850,8 +850,8 @@ not applying FFmpeg 9599 workaround
     newNode.u.list = newListPtr
 
     // Set the list of filters using the new node that leaves out the filter to be removed.
-    mpv_set_property(mpv, name, MPV_FORMAT_NODE, &newNode)
-    return true
+    let returnValue = mpv_set_property(mpv, name, MPV_FORMAT_NODE, &newNode)
+    return returnValue == 0
   }
 
   /** Set filter. only "af" or "vf" is supported for name */

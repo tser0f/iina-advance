@@ -1168,7 +1168,7 @@ class PlayerCore: NSObject {
   /// - Parameter index: The index of the filter to be removed.
   /// - Returns: `true` if the filter was successfully removed, `false` otherwise.
   func removeVideoFilter(_ filter: MPVFilter, _ index: Int) -> Bool {
-    removeVideoFilter(filter.stringFormat, index)
+    return removeVideoFilter(filter.stringFormat, index)
   }
 
   /// Remove a video filter based on its position in the list of filters.
@@ -1196,27 +1196,27 @@ class PlayerCore: NSObject {
   /// - Returns: `true` if the filter was successfully removed, `false` otherwise.
   func removeVideoFilter(_ filter: MPVFilter) -> Bool {
     if let label = filter.label {
-      return removeVideoFilter("@" + label)
-    }
-    return removeVideoFilter(filter.stringFormat)
-  }
+      // Has label: we care most about these
+      log.debug("Removing video filter \(label.quoted) (\(filter.stringFormat.quoted))...")
+      // The vf remove command will return 0 even if the filter didn't exist in mpv. So need to do this check ourselves.
+      let filterExists = mpv.getFilters(MPVProperty.vf).compactMap({$0.label}).contains(label)
+      guard filterExists else {
+        log.error("Cannot remove video filter: could not find filter with label \(label.quoted) in mpv list")
+        return false
+      }
 
-  /// Remove a video filter given as a string.
-  ///
-  /// If the filter is not labeled then removing using a string can be problematic if the filter has multiple parameters. Filters that support
-  /// multiple parameters have more than one valid string representation due to there being no requirement on the order in which those
-  /// parameters are given in a filter. If the order of parameters in the string representation of the filter IINA uses in the command sent to
-  /// mpv does not match the order mpv expects the remove command will not find the filter to be removed. For this reason the remove
-  /// methods that identify the filter to be removed based on its position in the filter list are the preferred way to remove a filter.
-  /// - Parameter filter: The filter to remove.
-  /// - Returns: `true` if the filter was successfully removed, `false` otherwise.
-  func removeVideoFilter(_ filter: String) -> Bool {
-    log.debug("Removing video filter \(filter)...")
-    var didSucceed = true
-    didSucceed = mpv.command(.vf, args: ["remove", filter], checkError: false) >= 0
-    log.debug(didSucceed ? "Succeeded" : "Failed")
-    if didSucceed, let filterInfo = MPVFilter(rawString: filter) {
-      switch filterInfo.label {
+      guard removeVideoFilter("@" + label) else {
+        return false
+      }
+
+      let didRemoveSuccessfully = !mpv.getFilters(MPVProperty.vf).compactMap({$0.label}).contains(label)
+      guard didRemoveSuccessfully else {
+        log.error("Failed to remove video filter \(label.quoted): filter still present after vf remove!")
+        return false
+      }
+
+      log.debug("Success: removed video filter \(label.quoted)")
+      switch filter.label {
       case Constants.FilterName.crop:
         info.cropFilter = nil
         info.unsureCrop = "None"
@@ -1229,8 +1229,26 @@ class PlayerCore: NSObject {
       default:
         break
       }
+      return true
+    } else {
+      return removeVideoFilter("@" + label)
     }
-    return didSucceed
+  }
+
+  /// Remove a video filter given as a string.
+  ///
+  /// If the filter is not labeled then removing using a string can be problematic if the filter has multiple parameters. Filters that support
+  /// multiple parameters have more than one valid string representation due to there being no requirement on the order in which those
+  /// parameters are given in a filter. If the order of parameters in the string representation of the filter IINA uses in the command sent to
+  /// mpv does not match the order mpv expects the remove command will not find the filter to be removed. For this reason the remove
+  /// methods that identify the filter to be removed based on its position in the filter list are the preferred way to remove a filter.
+  /// - Parameter filter: The filter to remove.
+  /// - Returns: `true` if the filter was successfully removed, `false` otherwise.
+  func removeVideoFilter(_ filterString: String) -> Bool {
+    // Just pretend it succeeded if no error
+    let didError = mpv.command(.vf, args: ["remove", filterString], checkError: false) != 0
+    log.debug(didError ? "Error executing vf-remove" : "No error returned by vf-remove")
+    return !didError
   }
 
   /// Add an audio filter given as a `MPVFilter` object.
@@ -1408,7 +1426,7 @@ class PlayerCore: NSObject {
 
   func fileStarted(path: String) {
     guard !isStopping, !isShuttingDown else { return }
-    
+
     log.debug("File started")
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
@@ -2293,13 +2311,21 @@ class PlayerCore: NSObject {
   /** Check if there are IINA filters saved in watch_later file. */
   func reloadSavedIINAfilters() {
     // vf
+    // Clear cached filters first:
+    info.cropFilter = nil
+    info.flipFilter = nil
+    info.mirrorFilter = nil
+    info.delogoFilter = nil
     let videoFilters = mpv.getFilters(MPVProperty.vf)
     for filter in videoFilters {
       Logger.log("Got mpv vf, name: \(filter.name.quoted), label: \(filter.label?.quoted ?? "nil"), params: \(filter.params ?? [:])",
                  level: .verbose, subsystem: subsystem)
       setPlaybackInfoFilter(filter)
     }
+
     // af
+    // Clear cached filters first:
+    info.audioEqFilters = nil
     let audioFilters = mpv.getFilters(MPVProperty.af)
     for filter in audioFilters {
       Logger.log("Got mpv af, name: \(filter.name.quoted), label: \(filter.label?.quoted ?? "nil"), params: \(filter.params ?? [:])",

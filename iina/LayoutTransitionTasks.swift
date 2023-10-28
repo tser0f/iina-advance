@@ -464,6 +464,7 @@ extension PlayerWindowController {
         let selectableRect = NSRect(origin: CGPointZero, size: transition.outputGeometry.videoSize)
 
         addOrReplaceCropBoxSelection(origVideoSize: origVideoSize, selectableRect: selectableRect)
+        // Hide for now, to prepare for a nice fade-in animation
         cropController.cropBoxView.isHidden = true
         cropController.cropBoxView.alphaValue = 0
       } else if !player.info.isRestoring {  // if restoring, there will be a brief delay before getting player info, which is ok
@@ -1220,7 +1221,7 @@ extension PlayerWindowController {
 
     // Add selection box
     let selectWholeVideoByDefault = currentLayout.spec.interactiveMode == .crop
-    cropController.cropBoxView.actualSize = origVideoSize  /// must set this BEFORE `selectedRect`
+    cropController.cropBoxView.actualSize = origVideoSize
     cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
     cropController.cropBoxView.resized(with: selectableRect)
   }

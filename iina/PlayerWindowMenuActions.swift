@@ -182,7 +182,7 @@ extension PlayerWindowController {
   @objc func menuChangeCrop(_ sender: NSMenuItem) {
     if let cropStr = sender.representedObject as? String {
       if cropStr == "Custom" {
-        player.windowController.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
+        player.windowController.enterInteractiveMode(.crop)
         return
       }
       player.setCrop(fromString: cropStr)

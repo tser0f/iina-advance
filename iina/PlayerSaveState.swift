@@ -50,6 +50,7 @@ struct PlayerSaveState {
 
     case videoFilters = "vf"          /// `MPVProperty.vf`
     case audioFilters = "af"          /// `MPVProperty.af`
+    case videoFiltersDisabled = "vfDisabled"/// IINA-only
 
     case playSpeed = "playSpeed"      /// `MPVOption.PlaybackControl.speed`
     case volume = "volume"            /// `MPVOption.Audio.volume`
@@ -282,6 +283,8 @@ struct PlayerSaveState {
 
     props[PropName.videoFilters.rawValue] = player.mpv.getString(MPVProperty.vf)
     props[PropName.audioFilters.rawValue] = player.mpv.getString(MPVProperty.af)
+
+    props[PropName.videoFiltersDisabled.rawValue] = player.info.videoFiltersDisabled.values.map({$0.stringFormat}).joined(separator: ",")
 
     props[PropName.subScale.rawValue] = player.mpv.getDouble(MPVOption.Subtitles.subScale).string2f
     props[PropName.subPos.rawValue] = String(player.mpv.getInt(MPVOption.Subtitles.subPos))
@@ -551,7 +554,8 @@ struct PlayerSaveState {
       let filteredProps = properties.filter({
         switch $0.key {
         case PropName.url.rawValue, PropName.playlistPaths.rawValue,
-          PropName.playlistVideos.rawValue, PropName.playlistSubtitles.rawValue:
+          PropName.playlistVideos.rawValue, PropName.playlistSubtitles.rawValue,
+          PropName.matchedSubtitles.rawValue:
           // these are too long and contain PII
           return false
         default:
@@ -594,6 +598,17 @@ struct PlayerSaveState {
       info.$matchedSubs.withLock {
         for (videoPath, subs) in matchedSubs {
           $0[videoPath] = subs.compactMap{urlString in URL(string: urlString)}
+        }
+      }
+    }
+
+    if let videoFiltersDisabledCSV = string(for: .videoFiltersDisabled) {
+      let filters = videoFiltersDisabledCSV.split(separator: ",").compactMap({MPVFilter(rawString: String($0))})
+      for filter in filters {
+        if let label = filter.label {
+          info.videoFiltersDisabled[label] = filter
+        } else {
+          player.log.error("Could not restore disabled video filter: missing label (\(filter.stringFormat.quoted))")
         }
       }
     }

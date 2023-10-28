@@ -27,6 +27,15 @@ enum ScreenFitOption: Int {
 
   /// Constrains inside `screen.frameWithoutCameraHousing`. Provided here for completeness, but not used at present.
   case nativeFullScreen
+
+  var isFullScreen: Bool {
+    switch self {
+    case .legacyFullScreen, .nativeFullScreen:
+      return true
+    default:
+      return false
+    }
+  }
 }
 
 /**
@@ -637,10 +646,23 @@ struct PlayerWindowGeometry: Equatable {
                                 height: windowFrame.height - heightRemoved)
 
     let newVideoAspectRatio = cropbox.size.aspect
-    
-    var newFitOption = self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption
+
+    let newFitOption = self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption
     Logger.log("Cropped WindowedModeGeometry to new windowFrame: \(newWindowFrame), videoAspectRatio: \(newVideoAspectRatio), screenID: \(screenID), fitOption: \(newFitOption)")
     return self.clone(windowFrame: newWindowFrame, fitOption: newFitOption, videoAspectRatio: newVideoAspectRatio)
+  }
+
+  func uncropVideo(videoBaseDisplaySize: NSSize, cropbox: NSRect, videoScale: CGFloat) -> PlayerWindowGeometry {
+    let cropboxScaled = NSRect(x: cropbox.origin.x * videoScale,
+                               y: cropbox.origin.y * videoScale,
+                               width: cropbox.width * videoScale,
+                               height: cropbox.height * videoScale)
+    let newVideoAspectRatio = videoBaseDisplaySize.aspect
+    let newWindowFrame = NSRect(x: windowFrame.origin.x - cropboxScaled.origin.x,
+                                y: windowFrame.origin.y - cropboxScaled.origin.y,
+                                width: windowFrame.width + cropboxScaled.width,
+                                height: windowFrame.height + cropboxScaled.height)
+    return self.clone(windowFrame: newWindowFrame, videoAspectRatio: newVideoAspectRatio).refit()
   }
 }
 
@@ -663,15 +685,17 @@ extension PlayerWindowController {
       pip.aspectRatio = videoBaseDisplaySize
     }
 
+    // Interactive mode
     if isInInteractiveMode, let cropController = self.cropSettingsView {
       if cropController.cropBoxView.didSubmit {
-        // Finish crop submission
+        /// Finish crop submission.
         cropController.cropBoxView.didSubmit = false
         let originalVideoSize = cropController.cropBoxView.actualSize
         let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropy_unflipped,
                                            width: cropController.cropw, height: cropController.croph)
-        log.verbose("Cropping video from nativeVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
+
         animationPipeline.run(CocoaAnimation.Task({ [self] in
+          log.verbose("Cropping video from nativeVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
           let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)
           interactiveModeGeometry = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
           windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
@@ -692,10 +716,27 @@ extension PlayerWindowController {
       let selectableRect = NSRect(origin: CGPointZero, size: interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize)
       log.debug("[AdjustFrameAfterVideoReconfig] Replacing crop box videoSize=\(videoBaseDisplaySize), selectableRect=\(selectableRect)")
       addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, selectableRect: selectableRect)
+    } else if let prevCrop = player.info.videoFiltersDisabled[Constants.FilterName.crop] {
+      // Not in interactive mode, but looks like user wants to enter it to change active crop
+      log.verbose("[AdjustFrameAfterVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
+      if let params = prevCrop.params, let wStr = params["w"], let hStr = params["h"], let xStr = params["x"], let yStr = params["y"],
+        let w = Double(wStr), let h = Double(hStr), let x = Double(xStr), let y = Double(yStr) {
+        let yUnflipped = videoBaseDisplaySize.height - h - y
+        let prevCropRect = NSRect(x: x, y: yUnflipped, width: w, height: h)
+        log.verbose("[AdjustFrameAfterVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
+        let newGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize,
+                                                      cropbox: prevCropRect,
+                                                      videoScale: player.info.cachedWindowScale)
+        applyWindowGeometry(newGeo)
+      }
+      animationPipeline.runZeroDuration({ [self] in
+        enterInteractiveMode(.crop)
+      })
+      return
     }
 
     if player.isInMiniPlayer {
-      log.debug("[AdjustFrameAfterVideoReconfig] Player is in music mode, will update its contraints")
+      log.debug("[AdjustFrameAfterVideoReconfig] Player is in music mode. Will update its contraints")
       miniPlayer.adjustLayoutForVideoChange(newVideoAspectRatio: newVideoAspectRatio)
 
     } else if player.info.isRestoring {
@@ -944,7 +985,7 @@ extension PlayerWindowController {
 
   /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
   /// Also updates cached `windowedModeGeometry` and saves updated state.
-  func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry, animate: Bool = true) {
+  func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry) {
     log.verbose("applyWindowGeometry: \(newGeometry.windowFrame)")
     // Update video aspect ratio always
     videoAspectRatio = newGeometry.videoAspectRatio

@@ -576,7 +576,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func cropChangedAction(_ sender: NSSegmentedControl) {
     if sender.selectedSegment == sender.segmentCount - 1 {
       // User clicked on "Custom...": show custom crop UI
-      windowController.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
+      windowController.enterInteractiveMode(.crop)
     } else {
       let cropStr = AppData.cropsInPanel[sender.selectedSegment]
       player.setCrop(fromString: cropStr)

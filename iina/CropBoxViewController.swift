@@ -8,7 +8,7 @@
 
 import Cocoa
 
-/** The generic view controller of `CropBoxView`. */
+/** The base class view controller of `CropBoxView`. */
 class CropBoxViewController: NSViewController {
 
   weak var windowController: PlayerWindowController!

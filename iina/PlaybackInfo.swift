@@ -167,6 +167,9 @@ class PlaybackInfo {
   var audioEqFilters: [MPVFilter?]?
   var delogoFilter: MPVFilter?
 
+  // [filter.name ->  filter]
+  var videoFiltersDisabled: [String: MPVFilter] = [:]
+
   var deinterlace: Bool = false
   var hwdec: String = "no"
   var hwdecEnabled: Bool {

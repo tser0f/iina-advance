@@ -227,6 +227,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }() {
     didSet {
       log.verbose("Updated windowedModeGeometry to \(windowedModeGeometry)")
+      assert(!windowedModeGeometry.fitOption.isFullScreen, "windowedModeGeometry has invalid fitOption: \(windowedModeGeometry.fitOption)")
     }
   }
 
@@ -2700,17 +2701,31 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - UI: Interactive mode
 
 
-  func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
+  func enterInteractiveMode(_ mode: InteractiveMode) {
     guard player.videoBaseDisplaySize != nil else {
       Utility.showAlert("no_video_track")
       return
     }
+    log.verbose("Entering interactive mode: \(mode)")
 
     // TODO: use key interceptor to support ESC and ENTER keys for interactive mode
 
+    if mode == .crop, let vf = player.info.cropFilter, let filterLabel = vf.label {
+      log.error("Crop mode requested, but found an existing crop filter (\(vf.stringFormat.quoted)). Will remove it before entering")
+      // A crop is already set. Need to temporarily remove it so that the whole video can be seen again,
+      // so that a new crop can be chosen. But keep info from the old filter in case the user cancels.
+      assert(vf.label == Constants.FilterName.crop, "Unexpected label for crop filter: \(vf.name.quoted)")
+      player.info.videoFiltersDisabled[filterLabel] = vf
+      if player.removeVideoFilter(vf) {
+        // We can expect to receive a new video-params from mpv asynchronously. Pick it up there.
+        // Will check whether there is a disabled crop filter there
+        return
+      } else {
+        log.error("Failed to remove prev crop filter: (\(vf.stringFormat.quoted)) for some reason. Will ignore and try to proceed anyway")
+      }
+    }
     let oldLayout = currentLayout
     let newMode: WindowMode = oldLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
-    log.verbose("Entering interactive mode, newMode: \(newMode)")
     let interactiveModeLayout = oldLayout.spec.clone(mode: newMode, interactiveMode: mode)
     let duration = CocoaAnimation.CropAnimationDuration
     buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout,
