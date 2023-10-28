@@ -716,9 +716,9 @@ extension PlayerWindowController {
       }
 
       /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
-      let selectableRect = NSRect(origin: CGPointZero, size: interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize)
-      log.debug("[AdjustFrameAfterVideoReconfig] Replacing crop box videoSize=\(videoBaseDisplaySize), selectableRect=\(selectableRect)")
-      addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, selectableRect: selectableRect)
+      let videoSize = interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize
+      log.debug("[AdjustFrameAfterVideoReconfig] Replacing crop box origVideoSize=\(videoBaseDisplaySize), videoSize=\(videoSize)")
+      addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: videoSize)
     } else if let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       // Not in interactive mode, but looks like user wants to enter it to change active crop
       log.verbose("[AdjustFrameAfterVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")

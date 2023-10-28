@@ -31,11 +31,11 @@ class CropSettingsViewController: CropBoxViewController {
 
     // Remove saved crop (if any)
     player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
+    let isAllSelected = cropx == 0 && cropy == 0 && cropw == player.info.videoRawWidth && croph == player.info.videoRawHeight
+    let isNoSelection = cropw == 0 || croph == 0
 
-    if self.cropx == 0 && self.cropy == 0 &&
-        self.cropw == player.info.videoRawWidth &&
-        self.croph == player.info.videoRawHeight {
-      player.log.verbose("User chose Done button from interactive mode, no selection")
+    if isAllSelected || isNoSelection {
+      player.log.verbose("User chose Done button from interactive mode, but isAllSelected=\(isAllSelected.yn) isNoSelection=\(isNoSelection.yn). Setting crop to none")
       // if no crop, remove the crop filter
       if let vf = player.info.cropFilter {
         // Untested - not sure how well this will animate...

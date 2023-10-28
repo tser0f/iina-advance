@@ -460,10 +460,7 @@ extension PlayerWindowController {
       videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0, eqPriority: .defaultHigh)
 
       if let videoBaseDisplaySize = player.videoBaseDisplaySize {
-        let origVideoSize = videoBaseDisplaySize
-        let selectableRect = NSRect(origin: CGPointZero, size: transition.outputGeometry.videoSize)
-
-        addOrReplaceCropBoxSelection(origVideoSize: origVideoSize, selectableRect: selectableRect)
+        addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: transition.outputGeometry.videoSize)
         // Hide for now, to prepare for a nice fade-in animation
         cropController.cropBoxView.isHidden = true
         cropController.cropBoxView.alphaValue = 0
@@ -1211,7 +1208,8 @@ extension PlayerWindowController {
   // MARK: - Misc support functions
 
   /// Call this when `origVideoSize` is known.
-  func addOrReplaceCropBoxSelection(origVideoSize: NSSize, selectableRect: NSRect) {
+  /// `videoRect` should be `videoView.frame`
+  func addOrReplaceCropBoxSelection(origVideoSize: NSSize, videoSize: NSSize) {
     guard let cropController = self.cropSettingsView else { return }
 
     if !videoView.subviews.contains(cropController.cropBoxView) {
@@ -1219,11 +1217,24 @@ extension PlayerWindowController {
       cropController.cropBoxView.addConstraintsToFillSuperview()
     }
 
-    // Add selection box
-    let selectWholeVideoByDefault = currentLayout.spec.interactiveMode == .crop
+    /// `selectedRect` should be subrect of`actualSize`
+    let selectedRect: NSRect
+    switch currentLayout.spec.interactiveMode {
+    case .crop:
+      if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop], let params = prevCropFilter.params, let wStr = params["w"], let hStr = params["h"], let xStr = params["x"], let yStr = params["y"],
+           let w = Double(wStr), let h = Double(hStr), let x = Double(xStr), let y = Double(yStr) {
+        let yUnflipped = origVideoSize.height - y - h
+        selectedRect = NSRect(x: x, y: yUnflipped, width: w, height: h)
+      } else {
+        selectedRect = NSRect(origin: .zero, size: origVideoSize)
+      }
+    case .freeSelecting, .none:
+      selectedRect = .zero
+    }
+
     cropController.cropBoxView.actualSize = origVideoSize
-    cropController.cropBoxView.selectedRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-    cropController.cropBoxView.resized(with: selectableRect)
+    cropController.cropBoxView.selectedRect = selectedRect
+    cropController.cropBoxView.resized(with: NSRect(origin: .zero, size: videoSize))
   }
 
   // Either legacy FS or windowed
