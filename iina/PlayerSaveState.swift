@@ -73,6 +73,7 @@ struct PlayerSaveState {
   static private let specPrefStringVersion = "1"
   static private let windowGeometryPrefStringVersion = "1"
   static private let musicModeGeometryPrefStringVersion = "1"
+  static private let playlistVideosCSVVersion = "1"
   static private let specErrPre = "Failed to parse LayoutSpec from string:"
   static private let geoErrPre = "Failed to parse WindowGeometry from string:"
 
@@ -228,7 +229,10 @@ struct PlayerSaveState {
 
     // - Video, Audio, Subtitles Settings
 
-    props[PropName.playlistVideos.rawValue] = Array(info.currentVideosInfo.map({$0.url.absoluteString}))
+    props[PropName.playlistVideos.rawValue] = Array(info.currentVideosInfo.map({
+      // Need to store the group prefix length (if any) to allow collapsing it in the playlist. Not easy to recompute
+      "\(playlistVideosCSVVersion),\($0.prefix.count),\($0.url.absoluteString)"
+    }))
     props[PropName.playlistSubtitles.rawValue] = Array(info.currentSubsInfo.map({$0.url.absoluteString}))
     let matchedSubsArray = info.matchedSubs.map({key, value in (key, Array(value.map({$0.absoluteString})))})
     let matchedSubs: [String: [String]] = Dictionary(uniqueKeysWithValues: matchedSubsArray)
@@ -389,7 +393,7 @@ struct PlayerSaveState {
     Logger.log("PlayerSaveState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
     let tokens = csvString.split(separator: ",").map{String($0)}
     guard tokens.count == expectedTokenCount else {
-      Logger.log("\(errPreamble) not enough tokens (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
+      Logger.log("\(errPreamble) wrong token count (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
       return nil
     }
     var iter = tokens.makeIterator()
@@ -534,6 +538,35 @@ struct PlayerSaveState {
     })
   }
 
+  static private func deserializePlaylistVideoInfo(from csvString: String) -> FileInfo? {
+    // Do not parse more than the first 2 tokens. The URL can contain commas
+    let tokens = csvString.split(separator: ",", maxSplits: 2).map{String($0)}
+    guard tokens.count == 3 else {
+      Logger.log("Could not parse PlaylistVideoInfo: not enough tokens (expected 3 but found \(tokens.count))", level: .error)
+      return nil
+    }
+    guard tokens[0] == playlistVideosCSVVersion else {
+      Logger.log("Could not parse PlaylistVideoInfo: wrong version (expected \(playlistVideosCSVVersion) but found \(tokens[0].quoted))", level: .error)
+      return nil
+    }
+
+    guard let prefixLength = Int(tokens[1]),
+          let url = URL(string: tokens[2])
+    else {
+      Logger.log("Could not parse PlaylistVideoInfo url or prefixLength!", level: .error)
+      return nil
+    }
+
+    let fileInfo = FileInfo(url)
+    if prefixLength > 0 {
+      var string = url.deletingPathExtension().lastPathComponent
+      let suffixRange = string.index(string.startIndex, offsetBy: prefixLength)..<string.endIndex
+      string.removeSubrange(suffixRange)
+      fileInfo.prefix = string
+    }
+    return fileInfo
+  }
+
   /// Restore player state from prior launch
   func restoreTo(_ player: PlayerCore) {
     let log = player.log
@@ -553,10 +586,12 @@ struct PlayerSaveState {
 
       let filteredProps = properties.filter({
         switch $0.key {
-        case PropName.url.rawValue, PropName.playlistPaths.rawValue,
-          PropName.playlistVideos.rawValue, PropName.playlistSubtitles.rawValue,
-          PropName.matchedSubtitles.rawValue:
+        case PropName.url.rawValue,
           // these are too long and contain PII
+          PropName.playlistPaths.rawValue,
+          PropName.playlistVideos.rawValue,
+          PropName.playlistSubtitles.rawValue,
+          PropName.matchedSubtitles.rawValue:
           return false
         default:
           return true
@@ -587,7 +622,9 @@ struct PlayerSaveState {
     }
 
     if let videoURLList = properties[PlayerSaveState.PropName.playlistVideos.rawValue] as? [String] {
-      info.currentVideosInfo = videoURLList.compactMap({URL(string: $0)}).compactMap({FileInfo($0)})
+      let currentVideosInfo = videoURLList.compactMap{PlayerSaveState.deserializePlaylistVideoInfo(from: $0)}
+      player.log.verbose("Restored info for \(currentVideosInfo.count) videos")
+      info.currentVideosInfo = currentVideosInfo
     }
 
     if let videoURLList = properties[PlayerSaveState.PropName.playlistSubtitles.rawValue] as? [String] {
@@ -766,8 +803,7 @@ struct PlayerSaveState {
       mpv.setString(MPVProperty.vf, videoFilters)
     }
   }
-
-}
+}  /// end `struct PlayerSaveState`
 
 struct ScreenMeta {
   static private let expectedCSVTokenCount = 14
@@ -805,7 +841,7 @@ struct ScreenMeta {
   static func from(_ csv: String) -> ScreenMeta? {
     let tokens = csv.split(separator: ",").map{String($0)}
     guard tokens.count == expectedCSVTokenCount else {
-      Logger.log("While parsing ScreenMeta from CSV: not enough tokens (expected \(expectedCSVTokenCount) but found \(tokens.count))", level: .error)
+      Logger.log("While parsing ScreenMeta from CSV: wrong token count (expected \(expectedCSVTokenCount) but found \(tokens.count))", level: .error)
       return nil
     }
     var iter = tokens.makeIterator()
