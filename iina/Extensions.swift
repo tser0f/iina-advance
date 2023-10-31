@@ -30,12 +30,13 @@ extension NSSlider {
 
 extension NSSegmentedControl {
   func selectSegment(withLabel label: String) {
-    self.selectedSegment = -1
     for i in 0..<segmentCount {
       if self.label(forSegment: i) == label {
         self.selectedSegment = i
+        return
       }
     }
+    self.selectedSegment = -1
   }
 }
 

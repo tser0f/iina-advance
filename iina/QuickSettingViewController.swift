@@ -594,9 +594,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func customAspectEditFinishedAction(_ sender: AnyObject?) {
     let value = customAspectTextField.stringValue
     if value != "" {
-      aspectSegment.setSelected(false, forSegment: aspectSegment.selectedSegment)
       player.setVideoAspect(value)
-      player.sendOSD(.aspect(value))
     }
   }
 

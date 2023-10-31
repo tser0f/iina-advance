@@ -777,15 +777,60 @@ class PlayerCore: NSObject {
   }
 
   func setVideoAspect(_ aspect: String) {
-    if Regex.aspect.matches(aspect) {
-      Logger.log("Setting aspectRatio to: \(aspect.quoted)", level: .verbose, subsystem: subsystem)
-      mpv.setString(MPVProperty.videoAspect, aspect)
-      info.unsureAspect = aspect
+    log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
+    guard let videoRawWidth = info.videoRawWidth, let videoRawHeight = info.videoRawHeight else {
+      return
+    }
+    let videoDefaultAspectDouble6f = (Double(videoRawWidth) / Double(videoRawHeight)).string6f
+    if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.string6f != videoDefaultAspectDouble6f {
+      // Aspect is in colon notation (X:Y)
+      setAspectString(aspect)
+    } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.string6f != videoDefaultAspectDouble6f {
+      // Aspect is a number, up to 6 decimal places
+      if let selectedAspect = Aspect(string: info.unsureAspect), selectedAspect.value.string6f == aspectDouble.string6f {
+        return
+      }
+      // Try to match to known aspect by comparing their decimal values to the new aspect
+      let newAspectDouble6f = aspectDouble.string6f
+      for knownAspectRatio in AppData.aspects {
+        if let parsedAspect = Aspect(string: knownAspectRatio), newAspectDouble6f == parsedAspect.value.string6f {
+          // Matches known aspect: use its colon notation (X:Y)
+          setAspectString(knownAspectRatio)
+          return
+        }
+      }
+      // No match with known aspect, but still a valid number. Just use the number:
+      setAspectString(newAspectDouble6f)
     } else {
-      Logger.log("Setting aspectRatio to \("Default".quoted) (did not recognize value: \(aspect.quoted))", level: .verbose, subsystem: subsystem)
-      mpv.setString(MPVProperty.videoAspect, "-1")
       // if not a aspect string, set aspect to default, and also the info string.
-      info.unsureAspect = "Default"
+      let defaultAspect = AppData.aspectsInPanel[0]
+      guard info.unsureAspect != defaultAspect else {
+        DispatchQueue.main.async { [self] in
+          // make sure to reset this stuff in case there is overlap between them and default
+          if windowController.loaded {
+            windowController.quickSettingView.aspectSegment.selectedSegment = 0
+            windowController.quickSettingView.customAspectTextField.stringValue = ""
+          }
+        }
+        return
+      }
+      log.verbose("Setting aspectRatio to \(defaultAspect.quoted): value \(aspect.quoted) is unrecognized or matches default (\(videoDefaultAspectDouble6f.quoted))")
+      setAspectString(defaultAspect, mpvString: "-1")
+    }
+  }
+
+  private func setAspectString(_ aspectString: String, mpvString: String? = nil) {
+    guard info.unsureAspect != aspectString else { return }
+    Logger.log("Setting aspectRatio to: \(aspectString.quoted)", level: .verbose, subsystem: subsystem)
+    info.unsureAspect = aspectString
+    mpv.setString(MPVProperty.videoAspect, mpvString ?? aspectString)
+    sendOSD(.aspect(aspectString))
+    DispatchQueue.main.async { [self] in
+      if windowController.loaded {
+        windowController.quickSettingView.aspectSegment.selectSegment(withLabel: aspectString)
+        let isAspectInPanel = windowController.quickSettingView.aspectSegment.selectedSegment >= 0
+        windowController.quickSettingView.customAspectTextField.stringValue = isAspectInPanel ? "" : aspectString
+      }
     }
   }
 
@@ -1115,29 +1160,31 @@ class PlayerCore: NSObject {
   /// - Returns: `true` if the filter was successfully added, `false` otherwise.
   func addVideoFilter(_ filter: String) -> Bool {
     Logger.log("Adding video filter \(filter.quoted)...", subsystem: subsystem)
+
     // check hwdec
-    let askHwdec: (() -> Bool) = {
-      let panel = NSAlert()
-      panel.messageText = NSLocalizedString("alert.title_warning", comment: "Warning")
-      panel.informativeText = NSLocalizedString("alert.filter_hwdec.message", comment: "")
-      panel.addButton(withTitle: NSLocalizedString("alert.filter_hwdec.turn_off", comment: "Turn off hardware decoding"))
-      panel.addButton(withTitle: NSLocalizedString("alert.filter_hwdec.use_copy", comment: "Switch to Auto(Copy)"))
-      panel.addButton(withTitle: NSLocalizedString("alert.filter_hwdec.abort", comment: "Abort"))
-      switch panel.runModal() {
-      case .alertFirstButtonReturn:  // turn off
-        self.mpv.setString(MPVProperty.hwdec, "no")
-        Preference.set(Preference.HardwareDecoderOption.disabled.rawValue, for: .hardwareDecoder)
-        return true
-      case .alertSecondButtonReturn:
-        self.mpv.setString(MPVProperty.hwdec, "auto-copy")
-        Preference.set(Preference.HardwareDecoderOption.autoCopy.rawValue, for: .hardwareDecoder)
-        return true
-      default:
-        return false
-      }
-    }
     let hwdec = mpv.getString(MPVProperty.hwdec)
     if hwdec == "auto" {
+      let askHwdec: (() -> Bool) = {
+        let panel = NSAlert()
+        panel.messageText = NSLocalizedString("alert.title_warning", comment: "Warning")
+        panel.informativeText = NSLocalizedString("alert.filter_hwdec.message", comment: "")
+        panel.addButton(withTitle: NSLocalizedString("alert.filter_hwdec.turn_off", comment: "Turn off hardware decoding"))
+        panel.addButton(withTitle: NSLocalizedString("alert.filter_hwdec.use_copy", comment: "Switch to Auto(Copy)"))
+        panel.addButton(withTitle: NSLocalizedString("alert.filter_hwdec.abort", comment: "Abort"))
+        switch panel.runModal() {
+        case .alertFirstButtonReturn:  // turn off
+          self.mpv.setString(MPVProperty.hwdec, "no")
+          Preference.set(Preference.HardwareDecoderOption.disabled.rawValue, for: .hardwareDecoder)
+          return true
+        case .alertSecondButtonReturn:
+          self.mpv.setString(MPVProperty.hwdec, "auto-copy")
+          Preference.set(Preference.HardwareDecoderOption.autoCopy.rawValue, for: .hardwareDecoder)
+          return true
+        default:
+          return false
+        }
+      }
+
       // if not on main thread, post the alert in main thread
       if Thread.isMainThread {
         if !askHwdec() { return false }
@@ -1149,6 +1196,7 @@ class PlayerCore: NSObject {
         if !result { return false }
       }
     }
+
     // try apply filter
     var didSucceed = true
     didSucceed = mpv.command(.vf, args: ["add", filter], checkError: false) >= 0
@@ -2291,6 +2339,7 @@ class PlayerCore: NSObject {
   func setPlaybackInfoFilter(_ filter: MPVFilter) {
     switch filter.label {
     case Constants.FilterLabel.crop:
+      // CROP
       info.cropFilter = filter
       info.unsureCrop = ""  // default to "Custom" crop in Quick Settings panel
       if let p = filter.params, let wStr = p["w"], let hStr = p["h"], p["x"] == nil && p["y"] == nil, let w = Double(wStr), let h = Double(hStr) {

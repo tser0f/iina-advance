@@ -60,6 +60,7 @@ struct PlayerSaveState {
     case subDelay = "subDelay"        /// `MPVOption.Subtitles.subDelay`
     case abLoopA = "abLoopA"          /// `MPVOption.PlaybackControl.abLoopA`
     case abLoopB = "abLoopB"          /// `MPVOption.PlaybackControl.abLoopB`
+    case videoAspect = "aspect"       /// `MPVProperty.videoAspect`
     case videoRotation = "videoRotate"/// `MPVOption.Video.videoRotate`
 
     case isSubVisible = "subVisible"  /// `MPVOption.Subtitles.subVisibility`
@@ -280,6 +281,8 @@ struct PlayerSaveState {
     }
 
     props[PropName.videoRotation.rawValue] = String(info.userRotation)
+
+    props[PropName.videoAspect.rawValue] = info.unsureAspect
 
     let maxVolume = player.mpv.getInt(MPVOption.Audio.volumeMax)
     if maxVolume != 100 {
@@ -799,6 +802,10 @@ struct PlayerSaveState {
     }
     if let videoRotation = int(for: .videoRotation) {
       mpv.setInt(MPVOption.Video.videoRotate, videoRotation)
+    }
+
+    if let videoAspect = string(for: .videoAspect) {
+      player.setVideoAspect(videoAspect)
     }
 
     if let audioFilters = string(for: .audioFilters) {

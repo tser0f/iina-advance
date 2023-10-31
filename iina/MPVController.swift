@@ -128,6 +128,7 @@ class MPVController: NSObject {
     MPVProperty.trackList: MPV_FORMAT_NONE,
     MPVProperty.vf: MPV_FORMAT_NONE,
     MPVProperty.af: MPV_FORMAT_NONE,
+    MPVProperty.videoAspect: MPV_FORMAT_NONE,
 //    MPVProperty.videoOutParams: MPV_FORMAT_INT64,
     MPVOption.TrackSelection.vid: MPV_FORMAT_INT64,
     MPVOption.TrackSelection.aid: MPV_FORMAT_INT64,
@@ -1442,6 +1443,12 @@ not applying FFmpeg 9599 workaround
 
     case MPVProperty.af:
       player.afChanged()
+
+    case MPVProperty.videoAspect:
+      guard player.windowController.loaded, !player.isShuttingDown else { break }
+      guard let aspect = getString(MPVProperty.videoAspect) else { break }
+      Logger.log("Got mpv prop: video-aspect = \(aspect.quoted)")
+      player.setVideoAspect(aspect)
 
     case MPVOption.Window.fullscreen:
       let fs = getFlag(MPVOption.Window.fullscreen)

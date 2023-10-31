@@ -173,7 +173,6 @@ extension PlayerWindowController {
   @objc func menuChangeAspect(_ sender: NSMenuItem) {
     if let aspectStr = sender.representedObject as? String {
       player.setVideoAspect(aspectStr)
-      player.sendOSD(.aspect(aspectStr))
     } else {
       Logger.log("Unknown aspect in menuChangeAspect(): \(sender.representedObject.debugDescription)", level: .error)
     }
