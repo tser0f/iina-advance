@@ -691,10 +691,10 @@ extension PlayerWindowController {
     // Interactive mode
     if isInInteractiveMode, let cropController = self.cropSettingsView {
       if cropController.cropBoxView.didSubmit {
-        /// Finish crop submission.
+        /// Finish crop submission to exit interactive mode
         cropController.cropBoxView.didSubmit = false
         let originalVideoSize = cropController.cropBoxView.actualSize
-        let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropy_unflipped,
+        let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
                                            width: cropController.cropw, height: cropController.croph)
 
         animationPipeline.run(CocoaAnimation.Task({ [self] in
@@ -722,17 +722,12 @@ extension PlayerWindowController {
     } else if let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       // Not in interactive mode, but looks like user wants to enter it to change active crop
       log.verbose("[AdjustFrameAfterVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
-      if let params = prevCrop.params, let wStr = params["w"], let hStr = params["h"], let xStr = params["x"], let yStr = params["y"],
-        let w = Double(wStr), let h = Double(hStr), let x = Double(xStr), let y = Double(yStr) {
-        let yUnflipped = videoBaseDisplaySize.height - h - y
-        let prevCropRect = NSRect(x: x, y: yUnflipped, width: w, height: h)
-        log.verbose("[AdjustFrameAfterVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
-        let newGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize,
-                                                      cropbox: prevCropRect,
-                                                      videoScale: player.info.cachedWindowScale)
-        applyWindowGeometry(newGeo)
-        forceDraw()
-      }
+      let prevCropRect = prevCrop.cropRect(origVideoSize: videoBaseDisplaySize, flipYForMac: true)
+      log.verbose("[AdjustFrameAfterVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
+      let newGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize, cropbox: prevCropRect,
+                                                    videoScale: player.info.cachedWindowScale)
+      applyWindowGeometry(newGeo)
+      forceDraw()
       animationPipeline.runZeroDuration({ [self] in
         enterInteractiveMode(.crop)
       })
@@ -989,7 +984,7 @@ extension PlayerWindowController {
   /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
   /// Also updates cached `windowedModeGeometry` and saves updated state.
   func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry) {
-    log.verbose("applyWindowGeometry: \(newGeometry.windowFrame)")
+    log.verbose("ApplyWindowGeometry windowFrame: \(newGeometry.windowFrame), videoAspectRatio: \(newGeometry.videoAspectRatio)")
     // Update video aspect ratio always
     videoAspectRatio = newGeometry.videoAspectRatio
 

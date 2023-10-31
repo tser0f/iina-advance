@@ -24,6 +24,7 @@ class CropSettingsViewController: CropBoxViewController {
   override func selectedRectUpdated() {
     super.selectedRectUpdated()
     cropRectLabel.stringValue = readableCropString
+    // FIXME: update predefinedAspectSegment selection
   }
 
   @IBAction func doneBtnAction(_ sender: AnyObject) {
@@ -61,13 +62,11 @@ class CropSettingsViewController: CropBoxViewController {
       // Remove saved crop (if any)
       player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
 
-      if let params = prevCropFilter.params, let wStr = params["w"], let hStr = params["h"], let xStr = params["x"], let yStr = params["y"],
-         let w = Int(wStr), let h = Int(hStr), let x = Int(xStr), let y = Int(yStr) {
-        cropw = w
-        croph = h
-        cropx = x
-        cropy = y
-      }
+      let cropboxRect = prevCropFilter.cropRect(origVideoSize: cropBoxView.actualSize)
+      cropw = Int(cropboxRect.width)
+      croph = Int(cropboxRect.height)
+      cropx = Int(cropboxRect.origin.x)
+      cropy = Int(cropboxRect.origin.y)
       // Re-activate filter and wait for mpv to respond with a `video-reconfig` before exiting interactive mode
       player.setCrop(fromFilter: prevCropFilter)
       return

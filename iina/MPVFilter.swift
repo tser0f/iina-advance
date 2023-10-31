@@ -208,7 +208,33 @@ class MPVFilter: NSObject {
   /// - Parameter rawParamString: String to be parsed.
   /// - Returns: A `Dictionary` containing the filter parameters or `nil` if the parameters were not parsed.
   private static func parseRawParamString(_ name: String, _ rawParamString: String?) -> [String: String]? {
-    guard let rawParamString = rawParamString, !doNotParse.contains(name) else { return nil }
+    guard let rawParamString = rawParamString  else { return nil }
+    if doNotParse.contains(name) {
+      if name == FilterType.crop.rawValue {
+        let pairs = rawParamString.split(separator: ":", omittingEmptySubsequences: false)
+        if pairs.count == 4 {
+          var paramDict: [String: String] = [:]
+          let w = String(pairs[0])
+          let h = String(pairs[1])
+          let x = String(pairs[2])
+          let y = String(pairs[3])
+          if !w.isEmpty {
+            paramDict["w"] = w
+          }
+          if !h.isEmpty {
+            paramDict["h"] = h
+          }
+          if !x.isEmpty {
+            paramDict["x"] = x
+          }
+          if !y.isEmpty {
+            paramDict["y"] = y
+          }
+          return paramDict
+        }
+      }
+      return nil
+    }
     let pairs = rawParamString.split(separator: ":")
     // If there is only one parameter then parameter order is not an issue.
     guard pairs.count > 1 else { return nil }
@@ -231,27 +257,32 @@ class MPVFilter: NSObject {
 
   // MARK: - Param getter
 
-  func cropParams(videoSize: NSSize) -> [String: Double] {
-    guard type == .crop else {
-      Logger.fatal("Trying to get crop params from a non-crop filter!")
+  // Returns in mpv coords!
+  func cropRect(origVideoSize: NSSize, flipYForMac: Bool = false) -> NSRect {
+    guard label == Constants.FilterLabel.crop else {
+      Logger.fatal("Trying to get crop params from a non-crop filter! (\(label.debugDescription))")
     }
-    guard let params = params else { return [:] }
+    guard let params = params, let wStr = params["w"], let hStr = params["h"], let w = Double(wStr), let h = Double(hStr) else {
+      Logger.log("Could not find valid 'w' or 'h' in crop filter (will default to entire video rect): \(self)", level: .warning)
+      return NSRect(origin: CGPointZero, size: origVideoSize)
+    }
     // w and h should always valid
-    let w = Double(params["w"]!)!
-    let h = Double(params["h"]!)!
-    let x: Double, y: Double
+    let x: Double
+    var y: Double
     // check x and y
     if let testx = Double(params["x"] ?? ""), let testy = Double(params["y"] ?? "") {
       x = testx
       y = testy
     } else {
-      let cx = Double(videoSize.width) / 2
-      let cy = Double(videoSize.height) / 2
-      x = cx - w / 2
-      y = cy - h / 2
+      // If no x or y, infer them by centering the crop box
+      x = (origVideoSize.width - w) * 0.5
+      y = (origVideoSize.height - h) * 0.5
     }
 
-    return ["x": x, "y": y, "w": w, "h": h]
+    if flipYForMac {
+      y = origVideoSize.height - (y + h)
+    }
+    return NSRect(x: x, y: y, width: w, height: h)
   }
 
   /// Returns `true` if this filter is equal to the given filter `false` otherwise.

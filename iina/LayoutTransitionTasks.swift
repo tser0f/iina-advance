@@ -1235,12 +1235,12 @@ extension PlayerWindowController {
     let selectedRect: NSRect
     switch currentLayout.spec.interactiveMode {
     case .crop:
-      if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop], let params = prevCropFilter.params, let wStr = params["w"], let hStr = params["h"], let xStr = params["x"], let yStr = params["y"],
-           let w = Double(wStr), let h = Double(hStr), let x = Double(xStr), let y = Double(yStr) {
-        let yUnflipped = origVideoSize.height - y - h
-        selectedRect = NSRect(x: x, y: yUnflipped, width: w, height: h)
+      if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
+        selectedRect = prevCropFilter.cropRect(origVideoSize: origVideoSize, flipYForMac: true)
+        log.verbose("Setting crop box selection from prevFilter: \(selectedRect)")
       } else {
         selectedRect = NSRect(origin: .zero, size: origVideoSize)
+        log.verbose("Setting crop box selection to default entire video size: \(selectedRect)")
       }
     case .freeSelecting, .none:
       selectedRect = .zero

@@ -17,7 +17,7 @@ class CropBoxViewController: NSViewController {
   var cropy: Int = 0  // in flipped coord (mpv)
   var cropw: Int = 0
   var croph: Int = 0
-  var cropy_unflipped: Int = 0  // MacOS
+  var cropyFlippedForMac: Int = 0
 
   var readableCropString: String {
     return "(\(cropx), \(cropy)) (\(cropw)\u{d7}\(croph))"
@@ -40,12 +40,12 @@ class CropBoxViewController: NSViewController {
     if !maxHeight.isNormal {
       maxHeight = 0
     }
-    let yFlipped = maxHeight - (selectedRect.origin.y + selectedRect.height)
+    let mpvY = maxHeight - (selectedRect.origin.y + selectedRect.height)
 
     cropx = Int(selectedRect.minX)
-    cropy = Int(yFlipped)
+    cropy = Int(mpvY)
     cropw = Int(selectedRect.width)
     croph = Int(selectedRect.height)
-    cropy_unflipped = Int(selectedRect.minY)
+    cropyFlippedForMac = Int(selectedRect.minY)
   }
 }
