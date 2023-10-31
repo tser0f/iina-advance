@@ -18,7 +18,21 @@ class Switch: NSView {
   /// For some panels (such as Video Settings sidebar) it is desirable to refuse first responder status, so that tab
   /// navigation will skip over it and not highlight it. Defaults to `false`, but can be configured for each `Switch`
   /// in the XIB via Interface Builder's Attributes Inspector.
-  @IBInspectable var refusesFirstResponder: Bool = false
+  @IBInspectable var refusesFirstResponder: Bool = false {
+    didSet {
+      /// As of MacOS Sonoma (14.0), property `refusesFirstResponder` is not set until after `init()`
+      /// (it was not a good idea to assume it would be). Instead, make sure to update these child views
+      /// whenever the property is updated.
+      if #available(macOS 10.15, *) {
+        if let nsSwitch = self.nsSwitch as? FirstResponderOptionalSwitch {
+          nsSwitch._acceptsFirstResponder = !refusesFirstResponder
+        }
+        if let checkbox = self.checkbox as? FirstResponderOptionalButton {
+          checkbox._acceptsFirstResponder = !refusesFirstResponder
+        }
+      }
+    }
+  }
 
   @IBInspectable var title: String {
     get {
@@ -121,6 +135,10 @@ class Switch: NSView {
   private var nsSwitch: Any?
   private var label: NSTextField?
   private var checkbox: NSButton?
+
+  override var acceptsFirstResponder: Bool {
+    return !refusesFirstResponder
+  }
 
   private func setupSubViews() {
     if #available(macOS 10.15, *) {

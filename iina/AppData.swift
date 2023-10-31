@@ -43,7 +43,8 @@ struct AppData {
   static let minLoopPointTime = 0.000001
 
   /** generate aspect and crop options in menu */
-  static let aspects: [String] = ["4:3", "5:4", "16:9", "16:10", "1:1", "3:2", "2.21:1", "2.35:1", "2.39:1"]
+  static let aspects: [String] = ["4:3", "5:4", "16:9", "16:10", "1:1", "3:2", "2.21:1", "2.35:1", "2.39:1",
+                                  "3:4", "4:5", "9:16", "10:16", "2:3", "1:2.35", "1:2.39"]
 
   static let aspectsInPanel: [String] = ["Default", "4:3", "16:9", "16:10", "21:9", "5:4"]
   static let cropsInPanel: [String] = ["None", "4:3", "16:9", "16:10", "21:9", "5:4"]
