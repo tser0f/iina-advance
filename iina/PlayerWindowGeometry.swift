@@ -971,19 +971,18 @@ extension PlayerWindowController {
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
   func applyLegacyFullScreenGeometry(_ geometry: PlayerWindowGeometry) {
     guard let window = window else { return }
-//    let currentVideoSize = NSSize(width: videoView.widthConstraint.constant, height: videoView.heightConstraint.constant)
+    let layout = currentLayout
+    if !layout.isInteractiveMode {
+      videoView.apply(geometry)
+    }
     guard !geometry.hasEqual(windowFrame: window.frame) else {
       log.verbose("No need to update windowFrame for legacyFullScreen - no change")
       return
     }
 
     log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")
-    let layout = currentLayout
     let topBarHeight = layout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
     updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
-    if !layout.isInteractiveMode {
-      videoView.apply(geometry)
-    }
     player.window.setFrameImmediately(geometry.windowFrame)
   }
 

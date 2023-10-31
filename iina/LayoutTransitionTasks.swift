@@ -36,6 +36,8 @@ fileprivate extension NSStackView.VisibilityPriority {
 /// This file contains tasks to run in the animation queue, which form a `LayoutTransition`.
 extension PlayerWindowController {
 
+  /// -------------------------------------------------
+  /// PRE TRANSITION
   func doPreTransitionWork(_ transition: LayoutTransition) {
     log.verbose("[\(transition.name)] DoPreTransitionWork")
     controlBarFloating.isDragging = false
@@ -146,6 +148,8 @@ extension PlayerWindowController {
     }
   }
 
+  /// -------------------------------------------------
+  /// FADE OUT OLD VIEWS
   func fadeOutOldViews(_ transition: LayoutTransition) {
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] FadeOutOldViews")
@@ -236,6 +240,8 @@ extension PlayerWindowController {
     }
   }
 
+  /// -------------------------------------------------
+  /// CLOSE OLD PANELS
   func closeOldPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
@@ -303,6 +309,8 @@ extension PlayerWindowController {
     window.contentView?.layoutSubtreeIfNeeded()
   }
 
+  /// -------------------------------------------------
+  /// MIDPOINT: UPDATE INVISIBLES
   func updateHiddenViewsAndConstraints(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
@@ -550,6 +558,8 @@ extension PlayerWindowController {
     }
   }
 
+  /// -------------------------------------------------
+  /// OPEN PANELS & FINALIZE OFFSETS
   func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
@@ -618,7 +628,7 @@ extension PlayerWindowController {
     case .fullScreen, .fullScreenInteractive:
       if transition.outputLayout.isNativeFullScreen {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
-        log.verbose("Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
+        log.verbose("[\(transition.name)] Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
         if transition.outputLayout.mode != .fullScreenInteractive {
           videoView.apply(transition.outputGeometry)
         }
@@ -643,7 +653,7 @@ extension PlayerWindowController {
           /// Either already in legacy FS, or entering legacy FS. Apply final geometry.
           newGeo = transition.outputGeometry
         }
-        log.verbose("Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
+        log.verbose("[\(transition.name)] Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
         applyLegacyFullScreenGeometry(newGeo)
       }
     case .musicMode:
@@ -651,7 +661,7 @@ extension PlayerWindowController {
       applyMusicModeGeometry(musicModeGeometry)
     case .windowed, .windowedInteractive:
       let newWindowFrame = transition.outputGeometry.windowFrame
-      log.verbose("Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
+      log.verbose("[\(transition.name)] Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       if !transition.outputLayout.isInteractiveMode {
         videoView.apply(transition.outputGeometry)
       }
@@ -675,6 +685,8 @@ extension PlayerWindowController {
     }
   }
 
+  /// -------------------------------------------------
+  /// FADE IN NEW VIEWS
   func fadeInNewViews(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
@@ -741,6 +753,8 @@ extension PlayerWindowController {
     }
   }
 
+  /// -------------------------------------------------
+  /// POST TRANSITION: UPDATE INVISIBLES
   func doPostTransitionWork(_ transition: LayoutTransition) {
     log.verbose("[\(transition.name)] DoPostTransitionWork")
     // Update blending mode:
