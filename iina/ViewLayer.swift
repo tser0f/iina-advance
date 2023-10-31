@@ -25,10 +25,14 @@ class ViewLayer: CAOpenGLLayer {
 #if DEBUG
   // For measuring frames per second
   var lastPrintTime = Date().timeIntervalSince1970
-  var drawCountTotal: Int = 0
-  var drawCountLastPrint: Int = 0
   var displayCountTotal: Int = 0
   var displayCountLastPrint: Int = 0
+  var drawCountTotal: Int = 0
+  var drawCountLastPrint: Int = 0
+  var canDrawCountTotal: Int = 0
+  var canDrawCountLastPrint: Int = 0
+  var forcedCountTotal: Int = 0
+  var forcedCountLastPrint: Int = 0
   var lastWidth: Int32 = 0
   var lastHeight: Int32 = 0
 
@@ -36,23 +40,25 @@ class ViewLayer: CAOpenGLLayer {
     let now = Date().timeIntervalSince1970
     let secsSinceLastPrint = now - lastPrintTime
     if secsSinceLastPrint >= 1.0 {  // print at most once per sec
-      let drawsSinceLastPrint = drawCountTotal - drawCountLastPrint
       let displaysSinceLastPrint = displayCountTotal - displayCountLastPrint
+      let drawsSinceLastPrint = drawCountTotal - drawCountLastPrint
+      let canDrawCallsSinceLastPrint = canDrawCountTotal - canDrawCountLastPrint
+      let forcedSinceLastPrint = forcedCountTotal - forcedCountLastPrint
 
       let fpsDraws = CGFloat(drawsSinceLastPrint) / secsSinceLastPrint
-      let excessDisplays = displaysSinceLastPrint - drawsSinceLastPrint
       lastPrintTime = now
-      drawCountLastPrint = drawCountTotal
       displayCountLastPrint = displayCountTotal
+      drawCountLastPrint = drawCountTotal
+      canDrawCountLastPrint = canDrawCountTotal
+      forcedCountLastPrint = forcedCountTotal
       let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)" : "NA"
-      NSLog("FPS: \(fpsDraws.string2f) (over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
+      NSLog("FPS: \(fpsDraws.string2f) (\(drawsSinceLastPrint)/\(canDrawCallsSinceLastPrint) requests drawn, \(forcedSinceLastPrint) forced, \(displaysSinceLastPrint) displays over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale.string6f), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
     }
   }
 #endif
 
   override init() {
     super.init()
-    isAsynchronous = true
   }
 
   override convenience init(layer: Any) {
@@ -113,7 +119,20 @@ class ViewLayer: CAOpenGLLayer {
   // MARK: Draw
 
   override func canDraw(inCGLContext ctx: CGLContextObj, pixelFormat pf: CGLPixelFormatObj, forLayerTime t: CFTimeInterval, displayTime ts: UnsafePointer<CVTimeStamp>?) -> Bool {
-    if forceRender { return true }
+#if DEBUG
+    canDrawCountTotal += 1
+
+//    if let ts = ts?.pointee {
+//      NSLog("CAN_DRAW vidTS: \(ts.videoTime), hostTS: \(ts.hostTime) layerTime: \(t)")
+//    }
+//    printStats()
+#endif
+    if forceRender {
+#if DEBUG
+      forcedCountTotal += 1
+#endif
+      return true
+    }
     return videoView.player.mpv.shouldRenderUpdateFrame()
   }
 
@@ -129,7 +148,11 @@ class ViewLayer: CAOpenGLLayer {
     glGetIntegerv(GLenum(GL_VIEWPORT), &dims);
 
     var flip: CInt = 1
-
+//#if DEBUG
+//    if let ts = ts?.pointee {
+//      NSLog("DRAW vidTS: \(ts.videoTime), hostTS: \(ts.hostTime) layerTime: \(t)")
+//    }
+//#endif
     withUnsafeMutablePointer(to: &flip) { flip in
       if let context = mpv.mpvRenderContext {
         fbo = i != 0 ? i : fbo
@@ -137,8 +160,6 @@ class ViewLayer: CAOpenGLLayer {
 #if DEBUG
         lastWidth = Int32(dims[2])
         lastHeight = Int32(dims[3])
-        drawCountTotal += 1
-        printStats()
 #endif
 
         var data = mpv_opengl_fbo(fbo: Int32(fbo),
@@ -157,6 +178,11 @@ class ViewLayer: CAOpenGLLayer {
       }
     }
     glFlush()
+
+#if DEBUG
+    drawCountTotal += 1
+    printStats()
+#endif
   }
 
   func suspend() {
@@ -166,8 +192,12 @@ class ViewLayer: CAOpenGLLayer {
 
   func resume() {
 #if DEBUG
+    // Reset counters so that the first second isn't garbage
     lastPrintTime = Date().timeIntervalSince1970
     drawCountLastPrint = drawCountTotal
+    displayCountLastPrint = displayCountTotal
+    canDrawCountLastPrint = canDrawCountTotal
+    forcedCountLastPrint = forcedCountTotal
 #endif
 
     blocked = false
@@ -225,15 +255,15 @@ class ViewLayer: CAOpenGLLayer {
     let needsFlush: Bool = videoView.$isUninited.withLock() { isUninited in
       guard !isUninited else { return false }
 
+#if DEBUG
+      displayCountTotal += 1
+#endif
+
       super.display()
       return true
     }
 
     guard needsFlush else { return }
-
-#if DEBUG
-    displayCountTotal += 1
-#endif
 
     // Must not call flush while holding isUninited's lock as that method may call display and our
     // locks do not support recursion.
