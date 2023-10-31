@@ -735,10 +735,10 @@ extension PlayerWindowController {
         cropController.view.alphaValue = 1
         cropController.cropBoxView.isHidden = false
         cropController.cropBoxView.alphaValue = 1
-        viewportView.layer?.shadowColor = .black
-        viewportView.layer?.shadowOpacity = 1
-        viewportView.layer?.shadowOffset = .zero
-        viewportView.layer?.shadowRadius = 3
+        videoView.layer?.shadowColor = .black
+        videoView.layer?.shadowOpacity = 1
+        videoView.layer?.shadowOffset = .zero
+        videoView.layer?.shadowRadius = 3
       }
 
       let selectableRect = NSRect(origin: CGPointZero, size: transition.outputGeometry.videoSize)
