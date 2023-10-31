@@ -2026,6 +2026,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
+    if isFullScreen && Preference.bool(for: .blackOutMonitor) && self.blackWindows.compactMap({$0.screen?.displayId}).contains(displayId) {
+      // Window changed screen: adjust black windows accordingly
+      removeBlackWindows()
+      blackOutOtherMonitors()
+    }
+
     log.verbose("WindowDidChangeScreen: screenFrame=\(screen.frame)")
     videoView.updateDisplayLink()
     player.events.emit(.windowScreenChanged)
@@ -2975,7 +2981,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func blackOutOtherMonitors() {
     let screens = NSScreen.screens.filter { $0 != window?.screen }
 
-    blackWindows = []
+    var blackWindows: [NSWindow] = []
 
     for screen in screens {
       var screenRect = screen.frame
@@ -2987,14 +2993,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       blackWindows.append(blackWindow)
       blackWindow.orderFront(nil)
     }
+    self.blackWindows = blackWindows
     log.verbose("Added black windows for \(screens.count); total is now: \(blackWindows.count)")
   }
 
   func removeBlackWindows() {
+    log.verbose("Removing black windows for screens \(blackWindows.compactMap({$0.screen?.displayId}).map{String($0)}.joined(separator: ","))")
+    let blackWindows = self.blackWindows
+    self.blackWindows = []
     for window in blackWindows {
       window.orderOut(self)
     }
-    blackWindows = []
     log.verbose("Removed all black windows")
   }
 
