@@ -2291,10 +2291,25 @@ class PlayerCore: NSObject {
   func setPlaybackInfoFilter(_ filter: MPVFilter) {
     switch filter.label {
     case Constants.FilterLabel.crop:
-      // FIXME: should call setCrop()? Also need to update selection in the Quick Settings `cropSegment` control.
       info.cropFilter = filter
-      info.unsureCrop = ""
-      if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
+      info.unsureCrop = ""  // default to "Custom" crop in Quick Settings panel
+      if let p = filter.params, let wStr = p["w"], let hStr = p["h"], p["x"] == nil && p["y"] == nil, let w = Double(wStr), let h = Double(hStr) {
+        // Probably a selection from the Quick Settings panel. See if there are any matches.
+        // Truncate to 2 decimal places precision for comparison.
+        let selectedAspect = Int((w / h) * 100)
+        for cropLabel in AppData.cropsInPanel {
+          let tokens = cropLabel.split(separator: ":")
+          if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
+            let aspectRatio = Int((width / height) * 100)
+            if aspectRatio == selectedAspect {
+              sendOSD(.crop(cropLabel))
+              info.unsureCrop = cropLabel
+              break
+            }
+          }
+        }
+      } else if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
+        // Probably a custom crop
         sendOSD(.crop("(\(x), \(y)) (\(w)\u{d7}\(h))"))
       }
     case Constants.FilterLabel.flip:

@@ -623,7 +623,6 @@ struct PlayerSaveState {
 
     if let videoURLList = properties[PlayerSaveState.PropName.playlistVideos.rawValue] as? [String] {
       let currentVideosInfo = videoURLList.compactMap{PlayerSaveState.deserializePlaylistVideoInfo(from: $0)}
-      player.log.verbose("Restored info for \(currentVideosInfo.count) videos")
       info.currentVideosInfo = currentVideosInfo
     }
 
@@ -638,6 +637,7 @@ struct PlayerSaveState {
         }
       }
     }
+    player.log.verbose("Restored info for \(info.currentVideosInfo.count) videos, \(info.currentSubsInfo.count) subs")
 
     if let videoFiltersDisabledCSV = string(for: .videoFiltersDisabled) {
       let filters = videoFiltersDisabledCSV.split(separator: ",").compactMap({MPVFilter(rawString: String($0))})
