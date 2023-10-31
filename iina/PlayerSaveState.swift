@@ -208,7 +208,8 @@ struct PlayerSaveState {
       wc.isWindowMiniturized.yn,
       wc.isWindowHidden.yn,
       (wc.pipStatus == .inPIP).yn,
-      wc.isWindowMiniaturizedDueToPip.yn
+      wc.isWindowMiniaturizedDueToPip.yn,
+      wc.isPausedPriorToInteractiveMode.yn
     ].joined(separator: ",")
 
     // - Playback State
@@ -658,11 +659,12 @@ struct PlayerSaveState {
 
     if let stateString = string(for: .miscWindowBools) {
       let splitted: [String] = stateString.split(separator: ",").map{String($0)}
-      if splitted.count >= 4,
+      if splitted.count >= 5,
          let isMiniaturized = Bool.yn(splitted[0]),
          let isHidden = Bool.yn(splitted[1]),
          let isInPip = Bool.yn(splitted[2]),
-         let isWindowMiniaturizedDueToPip = Bool.yn(splitted[3]) {
+         let isWindowMiniaturizedDueToPip = Bool.yn(splitted[3]),
+         let isPausedPriorToInteractiveMode = Bool.yn(splitted[4]) {
 
         // Process PIP options first, to make sure it's not miniturized due to PIP
         if isInPip {
@@ -684,6 +686,9 @@ struct PlayerSaveState {
           windowController.animationPipeline.runZeroDuration({
             windowController.window?.miniaturize(nil)
           })
+        }
+        if isPausedPriorToInteractiveMode {
+          windowController.isPausedPriorToInteractiveMode = isPausedPriorToInteractiveMode
         }
       } else {
         log.error("Failed to restore property \(PlayerSaveState.PropName.miscWindowBools.rawValue.quoted): could not parse \(stateString.quoted)")
