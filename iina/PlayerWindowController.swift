@@ -2018,6 +2018,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Note: this gets triggered by many unnecessary situations, e.g. several times each time full screen is toggled.
   func windowDidChangeScreen(_ notification: Notification) {
     guard let window = window, let screen = window.screen else { return }
+    let blackWindows = self.blackWindows
 
     let displayId = screen.displayId
     // Legacy FS work below can be very slow. Try to avoid if possible
@@ -2026,7 +2027,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
-    if isFullScreen && Preference.bool(for: .blackOutMonitor) && self.blackWindows.compactMap({$0.screen?.displayId}).contains(displayId) {
+    if isFullScreen && Preference.bool(for: .blackOutMonitor) && blackWindows.compactMap({$0.screen?.displayId}).contains(displayId) {
+      log.verbose("WindowDidChangeScreen: black windows contains window's displayId \(displayId); removing & regenerating black windows")
       // Window changed screen: adjust black windows accordingly
       removeBlackWindows()
       blackOutOtherMonitors()
@@ -2070,10 +2072,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let cachedScreenIDs = cachedScreens.keys.sorted()
     log.verbose("WindowDidChangeScreenParameters: screenIDs was \(cachedScreenIDs), is now \(screenIDs)")
 
-    if isFullScreen && Preference.bool(for: .blackOutMonitor) && !screenIDs.elementsEqual(cachedScreenIDs) {
-      self.removeBlackWindows()
-      self.blackOutOtherMonitors()
-    }
     // Update the cached value
     self.cachedScreens = screens
 
@@ -2979,8 +2977,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func blackOutOtherMonitors() {
-    let screens = NSScreen.screens.filter { $0 != window?.screen }
+    removeBlackWindows()
 
+    let screens = NSScreen.screens.filter { $0 != window?.screen }
     var blackWindows: [NSWindow] = []
 
     for screen in screens {
@@ -2994,13 +2993,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       blackWindow.orderFront(nil)
     }
     self.blackWindows = blackWindows
-    log.verbose("Added black windows for \(screens.count); total is now: \(blackWindows.count)")
+    log.verbose("Added black windows for screens \((blackWindows.compactMap({$0.screen?.displayId}).map{String($0)}))")
   }
 
   func removeBlackWindows() {
-    log.verbose("Removing black windows for screens \(blackWindows.compactMap({$0.screen?.displayId}).map{String($0)}.joined(separator: ","))")
     let blackWindows = self.blackWindows
     self.blackWindows = []
+    guard !blackWindows.isEmpty else { return }
+    log.verbose("Removing black windows for screens \(blackWindows.compactMap({$0.screen?.displayId}).map{String($0)})")
     for window in blackWindows {
       window.orderOut(self)
     }
