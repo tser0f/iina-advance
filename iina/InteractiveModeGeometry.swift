@@ -30,6 +30,7 @@ struct BoxQuad {
  */
 struct InteractiveModeGeometry: Equatable {
   static let outsideBottomBarHeight: CGFloat = 68
+  // Show title bar only in windowed mode
   static let outsideTopBarHeight = PlayerWindowController.standardTitleBarHeight
 
   // Window's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
@@ -49,7 +50,12 @@ struct InteractiveModeGeometry: Equatable {
   }
 
   var outsideTopBarHeight: CGFloat {
-    return InteractiveModeGeometry.outsideTopBarHeight
+    switch fitOption {
+    case .noConstraints, .keepInVisibleScreen, .centerInVisibleScreen:
+      return InteractiveModeGeometry.outsideTopBarHeight
+    case .legacyFullScreen, .nativeFullScreen:
+      return 0
+    }
   }
 
   var outsideBottomBarHeight: CGFloat {
@@ -58,13 +64,18 @@ struct InteractiveModeGeometry: Equatable {
 
   var videoSize: NSSize {
     let videobox = InteractiveModeGeometry.videobox
-    return NSSize(width: windowFrame.width - videobox.totalWidth,
-                  height: windowFrame.height - videobox.totalHeight - outsideBottomBarHeight - outsideTopBarHeight)
+    let maxVideoSize =  NSSize(width: windowFrame.width - videobox.totalWidth,
+                               height: windowFrame.height - videobox.totalHeight - outsideBottomBarHeight - outsideTopBarHeight)
+    switch fitOption {
+    case .noConstraints, .keepInVisibleScreen, .centerInVisibleScreen:
+      return maxVideoSize
+    case .legacyFullScreen, .nativeFullScreen:
+      return PlayerWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: maxVideoSize)
+    }
   }
 
   /// Converts to equivalent `PlayerWindowGeometry`.
   func toPlayerWindowGeometry() -> PlayerWindowGeometry {
-    assert(fitOption != .legacyFullScreen && fitOption != .nativeFullScreen, "toPlayerWindowGeometry(): do not use for full screen!")
     return PlayerWindowGeometry(windowFrame: windowFrame,
                                 screenID: screenID,
                                 fitOption: fitOption,
@@ -88,7 +99,7 @@ struct InteractiveModeGeometry: Equatable {
                                    fitOption: pwGeo.fitOption, videoAspectRatio: pwGeo.videoAspectRatio)
   }
 
-  // Transition windowed mode geometry to Interactive Mode geometry. Note that this is not the same
+  // Transition windowed mode geometry to Interactive Mode geometry. Note that this is not a direct conversion; it will modify the view sizes
   static func enterInteractiveMode(from windowedModeGeometry: PlayerWindowGeometry) -> InteractiveModeGeometry {
     assert(windowedModeGeometry.fitOption != .legacyFullScreen && windowedModeGeometry.fitOption != .nativeFullScreen)
     // Close sidebars. Top and bottom bars are resized for interactive mode controls
