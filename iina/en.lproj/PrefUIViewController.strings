@@ -55,8 +55,8 @@
 /* Class = "NSTextFieldCell"; title = "Picture-in-\nPicture:"; ObjectID = "G8w-J7-1q1"; */
 "G8w-J7-1q1.title" = "Picture-in-\nPicture:";
 
-/* Class = "NSTextFieldCell"; title = "Window Geometry:"; ObjectID = "GKy-3g-4MB"; */
-"GKy-3g-4MB.title" = "Window Geometry:";
+/* Class = "NSTextFieldCell"; title = "Window:"; ObjectID = "GKy-3g-4MB"; */
+"GKy-3g-4MB.title" = "Window:";
 
 /* Class = "NSTextFieldCell"; title = "side of the screen"; ObjectID = "GXO-iT-BIr"; */
 "GXO-iT-BIr.title" = "side of the screen";
