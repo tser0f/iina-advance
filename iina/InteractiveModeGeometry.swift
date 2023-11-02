@@ -65,9 +65,9 @@ struct InteractiveModeGeometry: Equatable {
   /// Returns `0` unless in legacy full screen mode in a screen with camera housing
   var topMarginHeight: CGFloat {
     switch fitOption {
-    case .noConstraints, .keepInVisibleScreen, .centerInVisibleScreen, .legacyFullScreen:
+    case .noConstraints, .keepInVisibleScreen, .centerInVisibleScreen, .nativeFullScreen:
       return 0
-    case .nativeFullScreen:
+    case .legacyFullScreen:
       let screen = NSScreen.getScreenOrDefault(screenID: screenID)
       return screen.cameraHousingHeight ?? 0
     }

@@ -133,7 +133,7 @@ class PlayerCore: NSObject {
   var enableOSD: Bool = true
 
   /// Whether shutdown of this player has been initiated.
-  var isShuttingDown = false
+  @Atomic var isShuttingDown = false
 
   /// Whether shutdown of this player has completed (mpv has shutdown).
   var isShutdown = false
@@ -449,7 +449,10 @@ class PlayerCore: NSObject {
   private func savePlayerStateForShutdown() {
     log.verbose("Cleaning up player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))")
 
-    isShuttingDown = true
+    $isShuttingDown.withLock() { isShuttingDown in
+      guard !isShuttingDown else { return }
+      isShuttingDown = true
+    }
     saveState()            // Save state to IINA prefs (if enabled)
     savePlaybackPosition() // Save state to mpv watch-later (if enabled)
     refreshSyncUITimer()   // Shut down timer
@@ -1603,6 +1606,7 @@ class PlayerCore: NSObject {
 
   func afChanged() {
     guard !isShuttingDown, !isShutdown else { return }
+    saveState()
     postNotification(.iinaAFChanged)
   }
 
@@ -1719,6 +1723,7 @@ class PlayerCore: NSObject {
         }
       }
     }
+    saveState()
     log.verbose("Posting iinaTracklistChanged, vid=\(optString(info.vid)), aid=\(optString(info.aid)), sid=\(optString(info.sid))")
     postNotification(.iinaTracklistChanged)
   }
@@ -1756,6 +1761,7 @@ class PlayerCore: NSObject {
 
   func vfChanged() {
     guard !isShuttingDown, !isShutdown else { return }
+    saveState()
     postNotification(.iinaVFChanged)
   }
 

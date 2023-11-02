@@ -172,7 +172,9 @@ extension PlayerWindowController {
     // MiddleGeometry if needed (is applied after ClosePanels step)
     if !isInitialLayout {
       transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
-      log.verbose("[\(transitionName)] Built middleGeometry: \(transition.middleGeometry!)")
+      if let middleGeometry = transition.middleGeometry {
+        log.verbose("[\(transitionName)] Built middleGeometry: \(middleGeometry)")
+      }
     }
 
     let panelTimingName: CAMediaTimingFunctionName
@@ -422,7 +424,7 @@ extension PlayerWindowController {
   }
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
-  func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry {
+  func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry? {
     if transition.isEnteringMusicMode {
       return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
                                                       outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
@@ -433,13 +435,7 @@ extension PlayerWindowController {
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
     } else if transition.isTogglingInteractiveMode {
       if transition.inputLayout.isFullScreen {
-        let screen = NSScreen.getScreenOrDefault(screenID: transition.inputGeometry.screenID)
-        return PlayerWindowGeometry.forFullScreen(in: screen, legacy: transition.inputLayout.isLegacyFullScreen,
-                                                  outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
-                                                  outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
-                                                  insideTopBarHeight: 0, insideTrailingBarWidth: 0,
-                                                  insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
-                                                  videoAspectRatio: transition.inputGeometry.videoAspectRatio)
+        return transition.outputGeometry
       } else {
         let outsideTopBarHeight = transition.inputLayout.outsideTopBarHeight >= transition.outputLayout.topBarHeight ? transition.outputLayout.outsideTopBarHeight : 0
         let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: 0,

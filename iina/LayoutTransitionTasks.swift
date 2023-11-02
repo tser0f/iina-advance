@@ -257,17 +257,11 @@ extension PlayerWindowController {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
     
-    if transition.isExitingInteractiveMode {
+    if transition.isEnteringInteractiveMode && transition.outputLayout.isFullScreen {
+      videoView.apply(transition.outputGeometry)
+    } else if transition.isExitingInteractiveMode && !transition.outputLayout.isFullScreen {
       // Animate closed:
-      if transition.outputLayout.isFullScreen {
-        let viewportSize = transition.outputGeometry.viewportSize
-        let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: viewportSize)
-        let xInset = (viewportSize.width - videoSize.width) * 0.5
-        let yInset = (viewportSize.height - videoSize.height) * 0.5
-        videoView.constrainLayoutToEqualsOffsetOnly(top: CGFloat(-yInset), right: CGFloat(-xInset), bottom: yInset, left: xInset, eqPriority: .defaultHigh)
-      } else {
-        videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
-      }
+      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
     }
 
     // Update heights of top & bottom bars
@@ -470,17 +464,11 @@ extension PlayerWindowController {
       cropController.view.alphaValue = 0
       self.cropSettingsView = cropController
 
-      // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
-      if transition.outputLayout.isFullScreen {
-        let viewportSize = transition.outputGeometry.viewportSize
-        let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: viewportSize)
-        let xInset = (viewportSize.width - videoSize.width) * 0.5
-        let yInset = (viewportSize.height - videoSize.height) * 0.5
-        videoView.constrainLayoutToEqualsOffsetOnly(top: CGFloat(yInset), right: CGFloat(-xInset), bottom: -yInset, left: xInset, eqPriority: .defaultHigh)
-      } else {
+      if !transition.outputLayout.isFullScreen {
+        // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
         videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0, eqPriority: .defaultHigh)
+        videoView.apply(nil)
       }
-      videoView.apply(nil)
       viewportView.layoutSubtreeIfNeeded()
 
       if let videoBaseDisplaySize = player.videoBaseDisplaySize {
@@ -689,25 +677,17 @@ extension PlayerWindowController {
       player.window.setFrameImmediately(newWindowFrame)
     }
 
-    if transition.isEnteringInteractiveMode {
+    if transition.isEnteringInteractiveMode && !transition.outputLayout.isFullScreen {
       // Already set fixed constraints. Now set new values to animate into place
-      if transition.outputLayout.isFullScreen {
-        let videobox = InteractiveModeGeometry.videobox
-        let viewportSize = transition.outputGeometry.viewportSize
-        let insetViewportSize = NSSize(width: viewportSize.width - videobox.leading - videobox.trailing, height: viewportSize.height - videobox.top - videobox.bottom)
-        let videoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: transition.outputGeometry.videoAspectRatio, toFillIn: insetViewportSize)
-        let xInset = (viewportSize.width - videoSize.width) * 0.5
-        let yInset = (viewportSize.height - videoSize.height) * 0.5
-        videoView.constrainLayoutToEqualsOffsetOnly(top: CGFloat(yInset), right: CGFloat(-xInset), bottom: -yInset, left: xInset, eqPriority: .defaultHigh)
-      } else {
-        let videobox = InteractiveModeGeometry.videobox
-        videoView.constrainLayoutToEqualsOffsetOnly(
-          top: videobox.top,
-          right: -videobox.trailing,
-          bottom: -videobox.bottom,
-          left: videobox.leading
-        )
-      }
+      let videobox = InteractiveModeGeometry.videobox
+      videoView.constrainLayoutToEqualsOffsetOnly(
+        top: videobox.top,
+        right: -videobox.trailing,
+        bottom: -videobox.bottom,
+        left: videobox.leading
+      )
+    } else if transition.isExitingInteractiveMode {
+      videoView.apply(transition.outputGeometry)
     }
 
     if transition.isTogglingLegacyStyle {
