@@ -608,7 +608,10 @@ extension PlayerWindowController {
     updateSidebarVerticalConstraints(tabHeight: outputLayout.sidebarTabHeight, downshift: outputLayout.sidebarDownshift)
 
     if !outputLayout.enableOSC {
+      // No OSC. Clean up its subviews
       fragToolbarView?.removeFromSuperview()
+      fragPositionSliderView.removeFromSuperview()
+      fragVolumeView.removeFromSuperview()
       currentControlBar = nil
     } else if transition.isOSCChanging && outputLayout.hasFloatingOSC {
       // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
@@ -726,7 +729,7 @@ extension PlayerWindowController {
         apply(visibility: .showFadeableNonTopBar, to: additionalInfoView)
       }
     } else if outputLayout.titleBar.isShowable {
-      if !transition.isExitingFullScreen {  // If exiting FS, the openPanels and fadInNewViews steps are combined. Wait till later
+      if !transition.isExitingFullScreen {  // If exiting FS, the openNewPanels and fadInNewViews steps are combined. Wait till later
         if outputLayout.spec.isLegacyStyle {
           if let customTitleBar {
             customTitleBar.view.alphaValue = 1

@@ -1089,6 +1089,10 @@ extension PlayerWindowController {
         log.error("WindowWillResize: could not find interactiveModeGeometry; will substitute windowedModeGeometry")
         currentGeo = windowedModeGeometry
       }
+      if requestedSize.width < InteractiveModeGeometry.minWindowWidth {
+        log.verbose("WindowWillResize: requested width (\(requestedSize.width)) is less than min width for interactive mode (\(InteractiveModeGeometry.minWindowWidth)). Denying resize")
+        return currentGeo
+      }
     default:
       log.error("WindowWillResize: requested mode is invalid: \(currentLayout.spec.mode). Will fall back to windowedModeGeometry")
       return windowedModeGeometry

@@ -29,6 +29,8 @@ struct BoxQuad {
  Unlike `MusicModeGeometry`, instances of this class can be converted both to and from an instance of `PlayerWindowGeometry`.
  */
 struct InteractiveModeGeometry: Equatable {
+  // Need enough space to display all the buttons at the bottom:
+  static let minWindowWidth: CGFloat = 450
   static let outsideBottomBarHeight: CGFloat = 68
   // Show title bar only in windowed mode
   static let outsideTopBarHeight = PlayerWindowController.standardTitleBarHeight
@@ -49,12 +51,25 @@ struct InteractiveModeGeometry: Equatable {
     self.videoAspectRatio = videoAspectRatio
   }
 
+  // In windowed mode, the top bar is used to hold the title bar.
+  // In full screen, it is 0.
   var outsideTopBarHeight: CGFloat {
     switch fitOption {
     case .noConstraints, .keepInVisibleScreen, .centerInVisibleScreen:
       return InteractiveModeGeometry.outsideTopBarHeight
     case .legacyFullScreen, .nativeFullScreen:
       return 0
+    }
+  }
+
+  /// Returns `0` unless in legacy full screen mode in a screen with camera housing
+  var topMarginHeight: CGFloat {
+    switch fitOption {
+    case .noConstraints, .keepInVisibleScreen, .centerInVisibleScreen, .legacyFullScreen:
+      return 0
+    case .nativeFullScreen:
+      let screen = NSScreen.getScreenOrDefault(screenID: screenID)
+      return screen.cameraHousingHeight ?? 0
     }
   }
 
@@ -65,7 +80,7 @@ struct InteractiveModeGeometry: Equatable {
   var videoSize: NSSize {
     let videobox = InteractiveModeGeometry.videobox
     let maxVideoSize =  NSSize(width: windowFrame.width - videobox.totalWidth,
-                               height: windowFrame.height - videobox.totalHeight - outsideBottomBarHeight - outsideTopBarHeight)
+                               height: windowFrame.height - videobox.totalHeight - outsideBottomBarHeight - outsideTopBarHeight - topMarginHeight)
     switch fitOption {
     case .noConstraints, .keepInVisibleScreen, .centerInVisibleScreen:
       return maxVideoSize
@@ -79,7 +94,7 @@ struct InteractiveModeGeometry: Equatable {
     return PlayerWindowGeometry(windowFrame: windowFrame,
                                 screenID: screenID,
                                 fitOption: fitOption,
-                                topMarginHeight: 0,
+                                topMarginHeight: topMarginHeight,
                                 outsideTopBarHeight: outsideTopBarHeight,
                                 outsideTrailingBarWidth: 0,
                                 outsideBottomBarHeight: outsideBottomBarHeight,
@@ -112,7 +127,14 @@ struct InteractiveModeGeometry: Equatable {
     // Desired viewport is current one but shrunk with fixed margin around video
     let maxViewportSize = NSSize(width: newGeo.viewportSize.width - videobox.totalWidth,
                                  height: newGeo.viewportSize.height - videobox.totalHeight)
-    let newVideoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: windowedModeGeometry.videoAspectRatio, toFillIn: maxViewportSize)
+    var newVideoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: windowedModeGeometry.videoAspectRatio, toFillIn: maxViewportSize)
+
+    // Enforce min width
+    let minVideoWidth = InteractiveModeGeometry.minWindowWidth - videobox.totalWidth
+    if newVideoSize.width < minVideoWidth {
+      newVideoSize = NSSize(width: minVideoWidth, height: minVideoWidth / windowedModeGeometry.videoAspectRatio)
+    }
+
     let desiredViewportSize = NSSize(width: newVideoSize.width + videobox.totalWidth,
                                      height: newVideoSize.height + videobox.totalHeight)
     // This will constrain in screen
