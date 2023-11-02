@@ -90,6 +90,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var pipMinimizeWindow: NSButton!
 
   private let observedPrefKeys: [Preference.Key] = [
+    .enableAdvancedSettings,
     .showTopBarTrigger,
     .topBarPlacement,
     .bottomBarPlacement,
@@ -101,7 +102,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .controlBarToolbarButtons,
     .oscBarToolbarIconSize,
     .oscBarToolbarIconSpacing,
-    .useLegacyWindowedMode
+    .useLegacyWindowedMode,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -163,7 +164,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       PK.bottomBarPlacement.rawValue,
       PK.oscPosition.rawValue,
       PK.useLegacyWindowedMode.rawValue,
-      PK.themeMaterial.rawValue:
+      PK.themeMaterial.rawValue,
+      PK.enableAdvancedSettings.rawValue:
       refreshTitleBarAndOSCSection()
     case PK.settingsTabGroupLocation.rawValue, PK.playlistTabGroupLocation.rawValue:
       refreshSidebarSection()
@@ -228,7 +230,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         viewHidePairs.append((topBarPositionContainerView, !hasTopBar))
       }
 
-      let showTopBarTrigger = hasTopBar && ib.topBarPlacement == .insideViewport
+      let showTopBarTrigger = hasTopBar && ib.topBarPlacement == .insideViewport && Preference.isAdvancedEnabled
       if showTopBarTriggerContainerView.isHidden != !showTopBarTrigger {
         viewHidePairs.append((showTopBarTriggerContainerView, !showTopBarTrigger))
       }

@@ -1640,8 +1640,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     refreshSeekTimeAndThumnail(from: event)
 
     if isMouseInWindow {
-      let isPrefEnabled = Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.topBarHover
-      let forceShowTopBar = isPrefEnabled && isMouseInTopBarArea(event) && fadeableTopBarAnimationState == .hidden
+      let isTopBarHoverEnabled = Preference.isAdvancedEnabled && Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.topBarHover
+      let forceShowTopBar = isTopBarHoverEnabled && isMouseInTopBarArea(event) && fadeableTopBarAnimationState == .hidden
       // Check whether mouse is in OSC
       let shouldRestartFadeTimer = !isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView])
       showFadeableViews(thenRestartFadeTimer: shouldRestartFadeTimer, duration: 0, forceShowTopBar: forceShowTopBar)
@@ -2268,7 +2268,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
                                          forceShowTopBar: Bool = false) -> [CocoaAnimation.Task] {
     var animationTasks: [CocoaAnimation.Task] = []
 
-    let showTopBar = forceShowTopBar || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover
+    /// Default `showTopBarTrigger` setting to `.windowHover` if advanced settings not enabled
+    let showTopBar = forceShowTopBar || (!Preference.isAdvancedEnabled || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover)
 
     guard !player.disableUI && !isInInteractiveMode else {
       return animationTasks

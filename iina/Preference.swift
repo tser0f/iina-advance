@@ -1281,6 +1281,10 @@ struct Preference {
     return T.init(key: key) ?? T.defaultValue
   }
 
+  static var isAdvancedEnabled: Bool {
+    return Preference.bool(for: .enableAdvancedSettings)
+  }
+
   /**
    Older versions of IINA converted mpv color data into NSObject binary using the now-deprecated `NSUnarchiver` class.
    This method will transition to the new format which consists of the color components written to a `String`.
