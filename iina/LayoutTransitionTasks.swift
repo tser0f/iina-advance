@@ -447,8 +447,11 @@ extension PlayerWindowController {
       // Exiting music mode
       _ = miniPlayer.view
       miniPlayer.cleanUpForMusicModeExit()
+    }
+    // Need to call this for initial layout also:
+    updateMusicModeButtonsVisibility()
 
-    } else if transition.isEnteringInteractiveMode {
+    if transition.isEnteringInteractiveMode {
       // Entering interactive mode
       if #available(macOS 10.14, *) {
         viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
@@ -469,17 +472,6 @@ extension PlayerWindowController {
         videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0, eqPriority: .defaultHigh)
         videoView.apply(nil)
       }
-      viewportView.layoutSubtreeIfNeeded()
-
-      if let videoBaseDisplaySize = player.videoBaseDisplaySize {
-        addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: transition.outputGeometry.videoSize)
-        // Hide for now, to prepare for a nice fade-in animation
-        cropController.cropBoxView.isHidden = true
-        cropController.cropBoxView.alphaValue = 0
-      } else if !player.info.isRestoring {  // if restoring, there will be a brief delay before getting player info, which is ok
-        Utility.showAlert("no_video_track")
-      }
-
     } else if transition.isExitingInteractiveMode {
       // Exiting interactive mode
       viewportView.layer?.backgroundColor = .black
@@ -493,12 +485,10 @@ extension PlayerWindowController {
         self.cropSettingsView = nil
       }
 
-      if let middleGeometry = transition.middleGeometry {
+      if transition.outputLayout.isWindowed, let middleGeometry = transition.middleGeometry {
         videoView.apply(middleGeometry)
       }
     }
-     // Need to call this for initial layout also:
-    updateMusicModeButtonsVisibility()
 
     // Sidebars: if (re)opening
     if let tabToShow = transition.outputLayout.leadingSidebar.visibleTab {
@@ -677,16 +667,28 @@ extension PlayerWindowController {
       player.window.setFrameImmediately(newWindowFrame)
     }
 
-    if transition.isEnteringInteractiveMode && !transition.outputLayout.isFullScreen {
-      // Already set fixed constraints. Now set new values to animate into place
-      let videobox = InteractiveModeGeometry.videobox
-      videoView.constrainLayoutToEqualsOffsetOnly(
-        top: videobox.top,
-        right: -videobox.trailing,
-        bottom: -videobox.bottom,
-        left: videobox.leading
-      )
-    } else if transition.isExitingInteractiveMode {
+    if transition.isEnteringInteractiveMode {
+      if !transition.outputLayout.isFullScreen {
+        // Already set fixed constraints. Now set new values to animate into place
+        let videobox = InteractiveModeGeometry.videobox
+        videoView.constrainLayoutToEqualsOffsetOnly(
+          top: videobox.top,
+          right: -videobox.trailing,
+          bottom: -videobox.bottom,
+          left: videobox.leading
+        )
+      }
+
+      if let videoBaseDisplaySize = player.videoBaseDisplaySize, let cropController = cropSettingsView {
+        addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: transition.outputGeometry.videoSize)
+        // Hide for now, to prepare for a nice fade-in animation
+        cropController.cropBoxView.isHidden = true
+        cropController.cropBoxView.alphaValue = 0
+        cropController.cropBoxView.layoutSubtreeIfNeeded()
+      } else if !player.info.isRestoring {  // if restoring, there will be a brief delay before getting player info, which is ok
+        Utility.showAlert("no_video_track")
+      }
+    } else if transition.isExitingInteractiveMode && transition.outputLayout.isFullScreen {
       videoView.apply(transition.outputGeometry)
     }
 
@@ -1289,10 +1291,6 @@ extension PlayerWindowController {
     // When playback is paused the display link is stopped in order to avoid wasting energy on
     // needless processing. It must be running while transitioning to/from full screen mode.
     videoView.displayActive()
-
-    if isInInteractiveMode {
-      exitInteractiveMode(immediately: true)
-    }
 
     thumbnailPeekView.isHidden = true
     timePreviewWhenSeek.isHidden = true

@@ -42,10 +42,11 @@ class CropBoxViewController: NSViewController {
     }
     let mpvY = maxHeight - (selectedRect.origin.y + selectedRect.height)
 
-    cropx = Int(selectedRect.minX)
-    cropy = Int(mpvY)
-    cropw = Int(selectedRect.width)
-    croph = Int(selectedRect.height)
-    cropyFlippedForMac = Int(selectedRect.minY)
+    // ffmpeg will error if these are outside the video's dimension. Put on some guard rails
+    cropx = min(max(0, Int(selectedRect.minX)), Int(cropBoxView.actualSize.width))
+    cropy = min(max(0, Int(mpvY)), Int(cropBoxView.actualSize.height))
+    cropw = min(max(0, Int(selectedRect.width)), Int(cropBoxView.actualSize.width))
+    croph = min(max(0, Int(selectedRect.height)), Int(cropBoxView.actualSize.height))
+    cropyFlippedForMac = min(max(0, Int(selectedRect.minY)), Int(cropBoxView.actualSize.height))
   }
 }

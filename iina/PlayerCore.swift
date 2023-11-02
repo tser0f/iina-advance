@@ -1742,10 +1742,9 @@ class PlayerCore: NSObject {
     let vParams = mpv.queryForVideoParams()
     let drW = vParams.videoDisplayRotatedWidth
     let drH = vParams.videoDisplayRotatedHeight
-    log.verbose("Got mpv `video-reconfig`. mpv = \(vParams); PlayerInfo = {W: \(info.videoDisplayWidth!) H: \(info.videoDisplayHeight!) (rawSize: \(info.videoRawWidth ?? 0) x \(info.videoRawHeight ?? 0)) Rot: \(info.userRotation)°}")
 
-    let newAspect = (CGFloat(drW) / CGFloat(drH)).string6f
-    if drW != info.videoDisplayWidth! || drH != info.videoDisplayHeight! || newAspect != windowController.videoAspectRatio.string6f {
+    log.verbose("Got mpv `video-reconfig`. mpv = \(vParams); PlayerInfo = {W: \(info.videoDisplayWidth!) H: \(info.videoDisplayHeight!) (rawSize: \(info.videoRawWidth ?? 0) x \(info.videoRawHeight ?? 0)) Rot: \(info.userRotation)°}")
+    if drW != info.videoDisplayWidth! || drH != info.videoDisplayHeight! {
       // filter the last video-reconfig event before quit
       if drW == 0 && drH == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
       // video size changed

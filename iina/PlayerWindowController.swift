@@ -2257,6 +2257,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true,
                          duration: CGFloat = CocoaAnimation.DefaultDuration,
                          forceShowTopBar: Bool = false) {
+    guard !player.disableUI && !isInInteractiveMode else { return }
     let animationTasks: [CocoaAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: duration,
                                                                                forceShowTopBar: forceShowTopBar)
     animationPipeline.run(animationTasks)

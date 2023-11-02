@@ -226,9 +226,11 @@ extension PlayerWindowController {
       doPreTransitionWork(transition)
     })
 
-    // StartingAnimation 1: Show fadeable views from current layout
-    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: showFadeableViewsDuration, forceShowTopBar: true) {
-      transition.animationTasks.append(fadeAnimation)
+    if !outputLayout.isInteractiveMode {
+      // StartingAnimation 1: Show fadeable views from current layout
+      for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: showFadeableViewsDuration, forceShowTopBar: true) {
+        transition.animationTasks.append(fadeAnimation)
+      }
     }
 
     // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.

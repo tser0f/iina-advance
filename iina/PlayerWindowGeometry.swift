@@ -687,10 +687,11 @@ extension PlayerWindowController {
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoBaseDisplaySize
     }
+    guard let screen = window?.screen else { return }
 
     // Interactive mode
-    if isInInteractiveMode, let cropController = self.cropSettingsView {
-      if cropController.cropBoxView.didSubmit {
+    if isInInteractiveMode {
+      if let cropController = self.cropSettingsView, cropController.cropBoxView.didSubmit {
         /// Finish crop submission to exit interactive mode
         cropController.cropBoxView.didSubmit = false
         let originalVideoSize = cropController.cropBoxView.actualSize
@@ -698,39 +699,74 @@ extension PlayerWindowController {
                                            width: cropController.cropw, height: cropController.croph)
 
         animationPipeline.run(CocoaAnimation.Task({ [self] in
-          log.verbose("Cropping video from nativeVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
-          let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)
-          interactiveModeGeometry = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+          log.verbose("Cropping video from origVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
           windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+          videoAspectRatio = windowedModeGeometry.videoAspectRatio
 
+          // fade out all this stuff before crop
+          cropController.view.alphaValue = 0
+          cropController.view.isHidden = true
+          cropController.cropBoxView.isHidden = true
+          cropController.cropBoxView.alphaValue = 0
           cropController.view.removeFromSuperview()
           cropController.cropBoxView.removeFromSuperview()
-          player.window.setFrameImmediately(interactiveModeGeometry!.windowFrame)
+
+          if currentLayout.isFullScreen {
+            let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
+            videoView.apply(newInteractiveModeGeo)
+          } else {
+            let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)
+            interactiveModeGeometry = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+            player.window.setFrameImmediately(interactiveModeGeometry!.windowFrame)
+          }
+
           forceDraw()
 
           animationPipeline.runZeroDuration({ [self] in
+            forceDraw()
             exitInteractiveMode()
           })
         }))
         return
+      } else if player.info.isRestoring {
+        /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
+        animationPipeline.runZeroDuration({ [self] in
+          let videoSize: NSSize
+          if currentLayout.isFullScreen {
+            let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoBaseDisplaySize.aspect)
+            videoSize = newInteractiveModeGeo.videoSize
+          } else { // windowed
+            videoSize = interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize
+          }
+          log.debug("[AdjustFrameAfterVideoReconfig] Restoring crop box origVideoSize=\(videoBaseDisplaySize), videoSize=\(videoSize)")
+          addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: videoSize)
+        })
       }
+      // else fall through and apply new parameters
 
-      /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
-      let videoSize = interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize
-      log.debug("[AdjustFrameAfterVideoReconfig] Replacing crop box origVideoSize=\(videoBaseDisplaySize), videoSize=\(videoSize)")
-      addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: videoSize)
     } else if let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
-      // Not in interactive mode, but looks like user wants to enter it to change active crop
+      // Not in interactive mode, but just un-applied an active crop so that full video can be seen during interactive mode
       log.verbose("[AdjustFrameAfterVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
       let prevCropRect = prevCrop.cropRect(origVideoSize: videoBaseDisplaySize, flipYForMac: true)
       log.verbose("[AdjustFrameAfterVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
-      let newGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize, cropbox: prevCropRect,
-                                                    videoScale: player.info.cachedWindowScale)
-      applyWindowGeometry(newGeo)
-      forceDraw()
-      animationPipeline.runZeroDuration({ [self] in
+
+      animationPipeline.run(CocoaAnimation.Task({ [self] in
+        let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize, cropbox: prevCropRect,
+                                                      videoScale: player.info.cachedWindowScale)
+        // Update the cached objects
+        videoAspectRatio = uncroppedWindowedGeo.videoAspectRatio
+        windowedModeGeometry = uncroppedWindowedGeo
+
+        if currentLayout.isFullScreen {
+          let fsGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: uncroppedWindowedGeo.videoAspectRatio)
+          videoView.apply(fsGeo)
+          forceDraw()
+        } else {
+          applyWindowGeometry(uncroppedWindowedGeo)
+        }
         enterInteractiveMode(.crop)
-      })
+      }))
+
       return
     }
 

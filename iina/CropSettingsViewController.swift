@@ -61,18 +61,19 @@ class CropSettingsViewController: CropBoxViewController {
   @IBAction func cancelBtnAction(_ sender: AnyObject) {
     let player = windowController.player
     if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
-      /// Prev filter exists
+      /// Prev filter exists. Re-apply it
       player.log.verbose("User chose Cancel button from interactive mode: restoring prev crop")
-      cropBoxView.didSubmit = true
-      // Remove saved crop (if any)
-      player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
-
       let cropboxRect = prevCropFilter.cropRect(origVideoSize: cropBoxView.actualSize)
       cropw = Int(cropboxRect.width)
       croph = Int(cropboxRect.height)
       cropx = Int(cropboxRect.origin.x)
       cropy = Int(cropboxRect.origin.y)
+
+      // Remove saved crop (if any)
+      player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
+
       // Re-activate filter and wait for mpv to respond with a `video-reconfig` before exiting interactive mode
+      cropBoxView.didSubmit = true
       player.setCrop(fromFilter: prevCropFilter)
       return
     } else {
