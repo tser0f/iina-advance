@@ -14,12 +14,8 @@ class ViewLayer: CAOpenGLLayer {
 
   weak var videoView: VideoView!
 
-  let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
-  @Atomic var blocked = false
-
   private var fbo: GLint = 1
 
-  private var needsMPVRender = false
   private var forceRender = false
 
 #if DEBUG
@@ -123,7 +119,9 @@ class ViewLayer: CAOpenGLLayer {
     canDrawCountTotal += 1
 
 //    if let ts = ts?.pointee {
-//      NSLog("CAN_DRAW vidTS: \(ts.videoTime), hostTS: \(ts.hostTime) layerTime: \(t)")
+//      NSLog("CAN_DRAW vidTS: \(ts.videoTime), hostTS: \(ts.hostTime), layerTime: \(t), queue: \(DispatchQueue.currentQueueLabel ?? "nil")")
+//    } else {
+//      NSLog("CAN_DRAW")
 //    }
 //    printStats()
 #endif
@@ -138,7 +136,6 @@ class ViewLayer: CAOpenGLLayer {
 
   override func draw(inCGLContext ctx: CGLContextObj, pixelFormat pf: CGLPixelFormatObj, forLayerTime t: CFTimeInterval, displayTime ts: UnsafePointer<CVTimeStamp>?) {
     let mpv = videoView.player.mpv!
-    needsMPVRender = false
     forceRender = false
 
     glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
@@ -149,11 +146,6 @@ class ViewLayer: CAOpenGLLayer {
     glGetIntegerv(GLenum(GL_VIEWPORT), &dims);
 
     var flip: CInt = 1
-//#if DEBUG
-//    if let ts = ts?.pointee {
-//      NSLog("DRAW vidTS: \(ts.videoTime), hostTS: \(ts.hostTime) layerTime: \(t)")
-//    }
-//#endif
     withUnsafeMutablePointer(to: &flip) { flip in
       if let context = mpv.mpvRenderContext {
         fbo = i != 0 ? i : fbo
@@ -163,6 +155,13 @@ class ViewLayer: CAOpenGLLayer {
         lastHeight = Int32(dims[3])
 #endif
 
+//#if DEBUG
+//        if let ts = ts?.pointee {
+//          NSLog("DRAW fbo: \(fbo) vidTS: \(ts.videoTime), hostTS: \(ts.hostTime) layerTime: \(t)")
+//        } else {
+//          NSLog("DRAW fbo: \(fbo)")
+//        }
+//#endif
         var data = mpv_opengl_fbo(fbo: Int32(fbo),
                                   w: Int32(dims[2]),
                                   h: Int32(dims[3]),
@@ -187,8 +186,6 @@ class ViewLayer: CAOpenGLLayer {
   }
 
   func suspend() {
-    blocked = true
-    mpvGLQueue.suspend()
   }
 
   func resume() {
@@ -200,18 +197,6 @@ class ViewLayer: CAOpenGLLayer {
     canDrawCountLastPrint = canDrawCountTotal
     forcedCountLastPrint = forcedCountTotal
 #endif
-
-    blocked = false
-    draw(forced: true)
-    mpvGLQueue.resume()
-  }
-
-  func drawAsync() {
-    guard !blocked else { return }
-
-    mpvGLQueue.async { [self] in
-      draw()
-    }
   }
 
   func draw(forced: Bool = false) {
@@ -219,13 +204,8 @@ class ViewLayer: CAOpenGLLayer {
       // The properties forceRender and needsMPVRender are always accessed while holding isUninited's
       // lock. This avoids the need for separate locks to avoid data races with these flags. No need
       // to check isUninited at this point.
-      needsMPVRender = true
       if forced { forceRender = true }
     }
-
-    // Must not call display while holding isUninited's lock as that method will attempt to acquire
-    // the lock and our locks do not support recursion.
-    display()
   }
 
   override func display() {
