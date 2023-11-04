@@ -82,12 +82,6 @@ extension PlayerWindowController {
 
       setWindowFloatingOnTop(false, updateOnTopStatus: false)
 
-      if transition.isTogglingLegacyStyle {
-        // Legacy fullscreen cannot handle transition while playing and will result in a black flash or jittering.
-        // This will briefly freeze the video output, which is slightly better
-        videoView.videoLayer.suspend()
-      }
-
       if transition.outputLayout.isLegacyFullScreen {
         // stylemask
         log.verbose("Removing window styleMask.titled")
@@ -121,9 +115,6 @@ extension PlayerWindowController {
 
       apply(visibility: .hidden, to: additionalInfoView)
 
-      if transition.isTogglingLegacyStyle {
-        videoView.videoLayer.suspend()
-      }
       if transition.inputLayout.isNativeFullScreen {
         // Hide traffic light buttons & title during the animation:
         hideBuiltInTitleBarViews(setAlpha: true)
@@ -788,10 +779,6 @@ extension PlayerWindowController {
         }
       }
 
-      if transition.isTogglingLegacyStyle {
-        videoView.videoLayer.resume()
-      }
-
       if Preference.bool(for: .blackOutMonitor) {
         blackOutOtherMonitors()
       }
@@ -874,10 +861,6 @@ extension PlayerWindowController {
       // restore ontop status
       if player.info.isPlaying {
         setWindowFloatingOnTop(isOntop, updateOnTopStatus: false)
-      }
-
-      if transition.isTogglingLegacyStyle {
-        videoView.videoLayer.resume()
       }
 
       if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {

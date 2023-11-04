@@ -136,6 +136,11 @@ class ViewLayer: CAOpenGLLayer {
 
   override func draw(inCGLContext ctx: CGLContextObj, pixelFormat pf: CGLPixelFormatObj, forLayerTime t: CFTimeInterval, displayTime ts: UnsafePointer<CVTimeStamp>?) {
     let mpv = videoView.player.mpv!
+
+    CGLLockContext(ctx)
+    defer {
+      CGLUnlockContext(ctx)
+    }
     forceRender = false
 
     glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
@@ -182,20 +187,6 @@ class ViewLayer: CAOpenGLLayer {
 #if DEBUG
     drawCountTotal += 1
     printStats()
-#endif
-  }
-
-  func suspend() {
-  }
-
-  func resume() {
-#if DEBUG
-    // Reset counters so that the first second isn't garbage
-    lastPrintTime = Date().timeIntervalSince1970
-    drawCountLastPrint = drawCountTotal
-    displayCountLastPrint = displayCountTotal
-    canDrawCountLastPrint = canDrawCountTotal
-    forcedCountLastPrint = forcedCountTotal
 #endif
   }
 
