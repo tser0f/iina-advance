@@ -40,13 +40,16 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       // adjust window size
       switch recognizer.state {
       case .began:
+        windowController.isMagnifying = true
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .ended:
         newWindowGeometry = scaleVideoFromPinchGesture(to: recognizer.magnification)
+        windowController.isMagnifying = false
       case .cancelled, .failed:
         newWindowGeometry = scaleVideoFromPinchGesture(to: 1.0)
+        windowController.isMagnifying = false
         break
       default:
         return

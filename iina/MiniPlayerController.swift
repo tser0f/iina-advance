@@ -425,7 +425,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       }
     }
 
-    windowController.viewportView.layoutSubtreeIfNeeded()
     windowController.forceDraw()
   }
 

@@ -276,15 +276,11 @@ extension PlayerWindowController {
             videoView.apply(transition.outputGeometry)
           } else {
             // Entering music mode when album art is hidden
-            let heightConstraint = viewportView.heightAnchor.constraint(equalToConstant: 0)
-            heightConstraint.isActive = true
-            viewportViewHeightContraint = heightConstraint
+            miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
           }
         } else if transition.isExitingMusicMode {
-          // Exiting music mode
+          // Exiting music mode: always make videoView visible
           videoView.apply(transition.outputGeometry)
-
-          // Set videoView to visible
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: true)
         }
 

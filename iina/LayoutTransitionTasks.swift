@@ -460,7 +460,7 @@ extension PlayerWindowController {
 
       if !transition.outputLayout.isFullScreen {
         // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
-        videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0, eqPriority: .defaultHigh)
+        videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
         videoView.apply(nil)
       }
     } else if transition.isExitingInteractiveMode {

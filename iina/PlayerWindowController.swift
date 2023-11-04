@@ -131,6 +131,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var isWindowMiniaturizedDueToPip = false
   var isWindowPipDueToInactiveSpace = false
 
+  var isMagnifying = false
   var denyNextWindowResize = false
   var modeToSetAfterExitingFullScreen: WindowMode? = nil
 
@@ -1066,8 +1067,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // add constraints
     videoView.translatesAutoresizingMaskIntoConstraints = false
     videoView.constrainForNormalLayout()
-    // Needed when exiting PiP:
-//    videoView.apply(windowedModeGeometry)
   }
 
   /** Set material for OSC and title bar */
@@ -1463,9 +1462,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if #available(macOS 10.12, *) {
         menuTogglePIP(.dummy)
       }
+    case .contextMenu:
+      showContextMenu()
     default:
       break
     }
+  }
+
+  private func showContextMenu() {
+    // TODO
   }
 
   override func scrollWheel(with event: NSEvent) {
@@ -1903,7 +1908,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowWillStartLiveResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
-    guard !isAnimating else { return }
+    guard !isAnimating, !isMagnifying else { return }
     log.verbose("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)")
     isLiveResizingWidth = false
   }
@@ -1948,35 +1953,38 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
 
-    guard !isAnimating else { return }
+    guard !isAnimating, !isMagnifying else { return }
 
     CocoaAnimation.disableAnimation {
       log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
 
-      if !currentLayout.isFullScreen && !currentLayout.isInteractiveMode {
-        // Do this also for music mode
-        let viewportSize = viewportView.frame.size
-        let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
-        // Need to update this always when resizing window, even when resizing non-interactively:
-        videoView.apply(resizedGeo)
-      }
-
-      if currentLayout.isMusicMode {
+      switch currentLayout.mode {
+      case .musicMode:
         // Re-evaluate space requirements for labels. May need to start scrolling.
         // Will also update saved state
         miniPlayer.windowDidResize()
         return
-      }
+      case .windowed:
+        let viewportSize = viewportView.frame.size
+        let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
+        // Need to update this always when resizing window:
+        videoView.apply(resizedGeo)
 
-      if currentLayout.isInteractiveMode {
+        if currentLayout.oscPosition == .floating {
+          // Update floating control bar position
+          updateFloatingOSCAfterWindowDidResize()
+        }
+      case .windowedInteractive, .fullScreenInteractive:
         // Update interactive mode selectable box size. Origin is relative to viewport origin
         let selectableRect = NSRect(origin: CGPointZero, size: videoView.frame.size)
         cropSettingsView?.cropBoxView.resized(with: selectableRect)
-      } else if currentLayout.oscPosition == .floating {
-        // Update floating control bar position
-        updateFloatingOSCAfterWindowDidResize()
+      case .fullScreen:
+        return
       }
-      updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
+
+      if currentLayout.isWindowed {
+        updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
+      }
     }
 
     player.events.emit(.windowResized, data: window.frame)
@@ -1987,7 +1995,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidEndLiveResize(_ notification: Notification) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in windowWillExitFullScreen for details.
-    guard !isClosing, !isAnimating else { return }
+    guard !isClosing, !isAnimating, !isMagnifying else { return }
 
     log.verbose("WindowDidEndLiveResize mode: \(currentLayout.mode)")
 
@@ -2041,7 +2049,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// Need to recompute legacy FS's window size so it exactly fills the new screen.
     /// But looks like the OS will try to reposition the window on its own and can't be stopped...
     /// Just wait until after it does its thing before calling `setFrame()`.
-    // TODO: in the future, keep strict track of window size & position, and call `setFrame()` in `windowDidMove()` to preserve correctness
     if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
         animationPipeline.run(CocoaAnimation.Task({ [self] in
@@ -3025,9 +3032,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded, player.info.isPaused || player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
     log.verbose("Forcing redraw")
-    player.videoView.displayActive()
+    player.videoView.displayActive()  // does nothing if already active
     videoView.videoLayer.draw(forced: true)
-    player.videoView.displayIdle()
+    if player.info.isPaused {
+      player.videoView.displayIdle()  // restarts idle timer
+    }
   }
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {

@@ -591,6 +591,7 @@ struct Preference {
     case pause
     case hideOSC
     case togglePIP
+    case contextMenu
 
     static var defaultValue = MouseClickAction.none
 

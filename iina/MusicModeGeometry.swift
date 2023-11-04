@@ -63,11 +63,19 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
                                 insideTrailingBarWidth: 0,
                                 insideBottomBarHeight: 0,
                                 insideLeadingBarWidth: 0,
-                                videoAspectRatio: videoAspectRatio)
+                                videoAspectRatio: videoAspectRatio,
+                                videoSize: videoSize)
   }
 
   var videoHeightIfVisible: CGFloat {
-    return windowFrame.width / videoAspectRatio
+    let videoHeightByDivision = windowFrame.width / videoAspectRatio
+    let otherControlsHeight = MiniPlayerController.controlViewHeight + playlistHeight
+    let videoHeightBySubtraction = windowFrame.height - otherControlsHeight
+    // Align to other controls if within 1 px to smooth out division imprecision
+    if abs(videoHeightByDivision - videoHeightBySubtraction) < 1 {
+      return videoHeightBySubtraction
+    }
+    return videoHeightByDivision
   }
 
   var videoSize: NSSize? {
