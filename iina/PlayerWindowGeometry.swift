@@ -1088,6 +1088,8 @@ extension PlayerWindowController {
 
     videoAspectRatio = geometry.videoAspectRatio
 
+    updateMusicModeButtonsVisibility()
+
     /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:
     miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
     videoView.apply(geometry.toPlayerWindowGeometry())

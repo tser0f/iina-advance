@@ -3084,10 +3084,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateMusicModeButtonsVisibility() {
-    // Hide this parent container to hide all the controls below
-    closeButtonView.isHidden = !player.isInMiniPlayer
-    closeButtonView.alphaValue = player.isInMiniPlayer ? 0 : 1
-
     // Show only in music mode when video is visible
     closeButtonBackgroundViewVE.isHidden = !miniPlayer.isVideoVisible
 

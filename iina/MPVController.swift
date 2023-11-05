@@ -265,6 +265,7 @@ not applying FFmpeg 9599 workaround
     } else {
       // FIXME: need to keep this synced with useMpvOsd during run
       player.enableOSD = false
+      player.hideOSD()
     }
 
     // log

@@ -513,7 +513,7 @@
                             <constraint firstItem="YkI-ii-zaW" firstAttribute="centerY" secondItem="Nrz-jZ-Luf" secondAttribute="centerY" id="hhc-1u-xpc"/>
                         </constraints>
                     </visualEffectView>
-                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="88M-Ln-4mc" userLabel="MiniPlayerButtons View">
+                    <customView hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="88M-Ln-4mc" userLabel="MiniPlayerButtons View">
                         <rect key="frame" x="4" y="362" width="19" height="34"/>
                         <subviews>
                             <visualEffectView hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="wK7-3m-Uo2" userLabel="CloseButtonBackgroundVE View">

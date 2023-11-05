@@ -147,6 +147,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   private func showControl() {
     windowController.animationPipeline.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .required
+      windowController.closeButtonView.isHidden = false
       windowController.closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
@@ -340,21 +341,40 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
 
-    /// If needing to reactivate this constraint, do it before the toggle animation, so that window doesn't jump.
-    /// (See note in `applyMusicModeGeometry` for why this constraint needed to be disabled in the first place)
-    if showVideo {
-      windowController.animationPipeline.runZeroDuration({ [self] in
-        windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
-      })
-    }
+    var tasks: [CocoaAnimation.Task] = []
+    tasks.append(CocoaAnimation.zeroDurationTask{ [self] in
+      // Hide OSD during animation
+      player.enableOSD = false
+      player.hideOSD()
 
-    windowController.animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      /// Temporarily hide window buttons. Using `isHidden` will conveniently override its alpha value
+      windowController.closeButtonView.isHidden = true
+
+      /// If needing to reactivate this constraint, do it before the toggle animation, so that window doesn't jump.
+      /// (See note in `applyMusicModeGeometry` for why this constraint needed to be disabled in the first place)
+      if showVideo {
+        windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
+      }
+    })
+
+    tasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
       log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
       windowController.applyMusicModeGeometry(newGeometry)
     }))
 
+    tasks.append(CocoaAnimation.Task{ [self] in
+      player.enableOSD = true
+      // Swap window buttons
+      windowController.updateMusicModeButtonsVisibility()
+
+      /// Allow it to show again
+      windowController.closeButtonView.isHidden = false
+      windowController.forceDraw()
+    })
+
+    windowController.animationPipeline.run(tasks)
   }
 
   // MARK: - Window size & layout
@@ -407,6 +427,9 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
     /// Remove `playlistView` from wrapper. It will be added elsewhere if/when it is needed there
     windowController.playlistView.view.removeFromSuperview()
+
+    /// Hide this until `showControl` is called again
+    windowController.closeButtonView.isHidden = true
 
     // make sure this is enabled
     windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
