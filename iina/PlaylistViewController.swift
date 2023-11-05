@@ -16,7 +16,7 @@ fileprivate let MenuItemTagCopy = 602
 fileprivate let MenuItemTagPaste = 603
 fileprivate let MenuItemTagDelete = 604
 
-fileprivate let blendFraction: CGFloat = 0.4
+fileprivate let isPlayingTextBlendFraction: CGFloat = 0.4
 
 class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, SidebarTabGroupViewController, NSMenuItemValidation {
 
@@ -110,7 +110,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   fileprivate func setCustomColors() {
     if #available(macOS 10.14, *) {
-      isPlayingTextColor = NSColor.controlAccentColor.blended(withFraction: blendFraction, of: .textColor)!
+      isPlayingTextColor = NSColor.controlAccentColor.blended(withFraction: isPlayingTextBlendFraction, of: .textColor)!
     }
   }
 
@@ -613,6 +613,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
           cellView.setPrefix(prefix)
           cellView.setTitle(String(filename[filename.index(filename.startIndex, offsetBy: prefix.count)...]), textColor: textColor)
         } else {
+          cellView.setPrefix(nil)
+          cellView.setAdditionalInfo(nil)
           cellView.setTitle(filename, textColor: textColor)
         }
         // playback progress and duration
