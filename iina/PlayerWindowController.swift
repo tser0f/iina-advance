@@ -2893,9 +2893,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let videoScale = Double((videoSize ?? windowedModeGeometry.videoSize).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
     if videoScale != prevVideoScale {
-      log.verbose("Sending mpv windowScale: \(player.info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : " (given videoSize \(videoSize!))")")
-      player.info.cachedWindowScale = videoScale
-      player.mpv.setDouble(MPVProperty.windowScale, videoScale)
+      // Setting the window-scale property seems to result in a small hiccup during playback.
+      // Not sure if this is an mpv limitation
+      player.mpv.queue.async { [self] in
+        log.verbose("Sending mpv windowScale: \(player.info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : " (given videoSize \(videoSize!))")")
+        player.info.cachedWindowScale = videoScale
+        player.mpv.setDouble(MPVProperty.windowScale, videoScale)
+      }
     }
   }
 

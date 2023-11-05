@@ -371,11 +371,14 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     resetScrollingLabels()
 
-    if !window.inLiveResize && requestedSize.width <= MiniPlayerController.minWindowWidth {
+    if requestedSize.width < MiniPlayerController.minWindowWidth {
       // Responding with the current size seems to work much better with certain window management tools
       // (e.g. BetterTouchTool's window snapping) than trying to respond with the min size,
       // which seems to result in the window manager retrying with different sizes, which results in flickering.
       player.log.verbose("WindowWillResize: requestedSize smaller than min \(MiniPlayerController.minWindowWidth); returning existing size")
+      return window.frame.size
+    } else if requestedSize.width > MiniPlayerController.maxWindowWidth {
+      player.log.verbose("WindowWillResize: requestedSize larger than max \(MiniPlayerController.maxWindowWidth); returning existing size")
       return window.frame.size
     }
 
