@@ -1086,8 +1086,6 @@ extension PlayerWindowController {
     let geometry = geometry.refit()  // constrain to screen
     log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
 
-    updateMusicModeButtonsVisibility()
-
     videoAspectRatio = geometry.videoAspectRatio
 
     /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:

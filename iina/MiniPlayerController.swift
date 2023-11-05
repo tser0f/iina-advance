@@ -125,11 +125,13 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   // MARK: - Mouse / Trackpad events
 
   override func mouseEntered(with event: NSEvent) {
+    guard player.isInMiniPlayer else { return }
     showControl()
   }
 
   override func mouseExited(with event: NSEvent) {
-    guard !volumePopover.isShown else { return }
+    guard player.isInMiniPlayer else { return }
+
     /// The goal is to always show the control when the cursor is hovering over either of the 2 tracking areas.
     /// Although they are adjacent to each other, `mouseExited` can still be called when moving from one to the other.
     /// Detect and ignore this case.
@@ -144,6 +146,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   private func showControl() {
     windowController.animationPipeline.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+      windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .required
       windowController.closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
@@ -152,6 +155,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   private func hideControl() {
     windowController.animationPipeline.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+      windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .defaultLow
+
       windowController.closeButtonView.animator().alphaValue = 0
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1

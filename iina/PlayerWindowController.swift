@@ -550,8 +550,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // The OSD should always be below the top bar + 8. But if top bar/title bar is transparent, we need this constraint
   @IBOutlet weak var osdMinOffsetFromTopConstraint: NSLayoutConstraint!
+  @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var bottomBarBottomConstraint: NSLayoutConstraint!
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
   /// Size of each side of the 3 square playback buttons ⏪⏯️⏩ (`leftArrowButton`, Play/Pause, `rightArrowButton`):
@@ -2572,6 +2572,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       trailingSidebarToOSDSpaceConstraint = trailingSidebarView.leadingAnchor.constraint(equalTo: osdVisualEffectView.trailingAnchor, constant: 8.0)
     }
 
+    leadingSidebarToOSDSpaceConstraint.priority = .defaultHigh
     leadingSidebarToOSDSpaceConstraint.isActive = true
     trailingSidebarToOSDSpaceConstraint.isActive = true
     contentView.layoutSubtreeIfNeeded()
