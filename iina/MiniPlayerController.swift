@@ -312,7 +312,10 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     } else { // hide playlist
       // Save playlist height first
       saveDefaultPlaylistHeight()
-      newWindowFrame.size.height -= currentDisplayedPlaylistHeight
+
+      // If video is also hidden, do not try to shrink smaller than the control view, which would cause
+      // a constraint violation. This is possible due to small imprecisions in various layout calculations.
+      newWindowFrame.size.height = max(MiniPlayerController.controlViewHeight, newWindowFrame.size.height - currentDisplayedPlaylistHeight)
     }
 
     let heightDifference = newWindowFrame.height - window.frame.height
@@ -337,7 +340,9 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     if showVideo {
       newWindowFrame.size.height += oldGeometry.videoHeightIfVisible
     } else {
-      newWindowFrame.size.height -= oldGeometry.videoHeightIfVisible
+      // If playlist is also hidden, do not try to shrink smaller than the control view, which would cause
+      // a constraint violation. This is possible due to small imprecisions in various layout calculations.
+      newWindowFrame.size.height = max(MiniPlayerController.controlViewHeight, newWindowFrame.size.height - oldGeometry.videoHeightIfVisible)
     }
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
 
