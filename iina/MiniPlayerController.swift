@@ -371,7 +371,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
       /// Allow it to show again
       windowController.closeButtonView.isHidden = false
-      windowController.forceDraw()
+      windowController.videoView.display()
     })
 
     windowController.animationPipeline.run(tasks)
@@ -431,13 +431,13 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     /// Hide this until `showControl` is called again
     windowController.closeButtonView.isHidden = true
 
-    // make sure this is enabled
+    // Make sure to restore video
+    applyVideoViewVisibilityConstraints(isVideoVisible: true)
     windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
   }
 
   func applyVideoViewVisibilityConstraints(isVideoVisible: Bool) {
     log.verbose("Applying videoView visibility=\(isVideoVisible.yesno)")
-    player.disableUI = !isVideoVisible
 
     if isVideoVisible {
       // Remove zero-height constraint
