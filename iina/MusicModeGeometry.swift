@@ -68,7 +68,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
   }
 
   var videoHeightIfVisible: CGFloat {
-    let videoHeightByDivision = windowFrame.width / videoAspectRatio
+    let videoHeightByDivision = round(windowFrame.width / videoAspectRatio)
     let otherControlsHeight = MiniPlayerController.controlViewHeight + playlistHeight
     let videoHeightBySubtraction = windowFrame.height - otherControlsHeight
     // Align to other controls if within 1 px to smooth out division imprecision
@@ -110,7 +110,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     if isVideoVisible {
       var maxVideoHeight = containerFrame.height - MiniPlayerController.controlViewHeight - minPlaylistHeight
       /// `maxVideoHeight` can be negative if very short screen! Fall back to height based on `MiniPlayerMinWidth` if needed
-      maxVideoHeight = max(maxVideoHeight, MiniPlayerController.minWindowWidth / videoAspectRatio)
+      maxVideoHeight = max(maxVideoHeight, round(MiniPlayerController.minWindowWidth / videoAspectRatio))
       maxWindowWidth = maxVideoHeight * videoAspectRatio
     } else {
       maxWindowWidth = MiniPlayerController.maxWindowWidth
@@ -128,7 +128,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
       // Requested size is valid
       newWidth = requestedSize.width
     }
-    let videoHeight = isVideoVisible ? newWidth / videoAspectRatio : 0
+    let videoHeight = isVideoVisible ? round(newWidth / videoAspectRatio) : 0
     let minWindowHeight = videoHeight + MiniPlayerController.controlViewHeight + minPlaylistHeight
     // Make sure height is within acceptable values
     var newHeight = max(requestedSize.height, minWindowHeight)

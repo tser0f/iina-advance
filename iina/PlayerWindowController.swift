@@ -1743,7 +1743,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     defaultAlbumArtView.isHidden = true
 
     player.initVideo()
-    forceDraw()
     videoView.startDisplayLink()
 
     log.verbose("PlayerWindow openWindow done")

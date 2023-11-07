@@ -523,6 +523,7 @@ not applying FFmpeg 9599 workaround
       ]
       mpv_render_context_create(&mpvRenderContext, mpv, &params)
       openGLContext = CGLGetCurrentContext()
+      mpv_render_context_set_update_callback(mpvRenderContext!, mpvUpdateCallback, mutableRawPointerOf(obj: player.videoView.videoLayer))
     }
   }
 
@@ -552,6 +553,7 @@ not applying FFmpeg 9599 workaround
     player.log.verbose("Uninit mpv rendering")
     lockAndSetOpenGLContext()
     defer { unlockOpenGLContext() }
+    mpv_render_context_set_update_callback(mpvRenderContext, nil, nil)
     mpv_render_context_free(mpvRenderContext)
     player.log.verbose("Uninit mpv rendering: done")
   }
@@ -1695,4 +1697,13 @@ fileprivate func mpvGetOpenGLFunc(_ ctx: UnsafeMutableRawPointer?, _ name: Unsaf
     Logger.fatal("Cannot get OpenGL function pointer!")
   }
   return addr
+}
+
+fileprivate func mpvUpdateCallback(_ ctx: UnsafeMutableRawPointer?) {
+  let layer = bridge(ptr: ctx!) as ViewLayer
+  guard !layer.blocked else { return }
+
+  layer.mpvGLQueue.async {
+    layer.draw()
+  }
 }

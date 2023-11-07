@@ -550,6 +550,8 @@ class PlayerCore: NSObject {
 
     videoView.stopDisplayLink()
 
+    refreshSyncUITimer()
+
     info.currentFolder = nil
     info.$matchedSubs.withLock { $0.removeAll() }
 
@@ -558,7 +560,6 @@ class PlayerCore: NSObject {
     guard !isStopped else { return }
     Logger.log("Stopping playback", subsystem: subsystem)
     isStopping = true
-    refreshSyncUITimer()
     mpv.command(.stop)
   }
 
@@ -1842,7 +1843,7 @@ class PlayerCore: NSObject {
     // Check if timer should start/restart
 
     let useTimer: Bool
-    if isStopping || isShuttingDown {
+    if isStopping || isStopped || isShuttingDown || isShutdown {
       useTimer = false
     } else if info.isPaused {
       // Follow energy efficiency best practices and ensure IINA is absolutely idle when the
@@ -1900,7 +1901,7 @@ class PlayerCore: NSObject {
         if useTimer {
           summary += ", every \(timerConfig.interval)s"
         }
-        Logger.log("\(log)- SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn) quit:\(isShuttingDown.yn))",
+        Logger.log("\(log)- SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn)\(isStopped.yn) quit:\(isShuttingDown.yn)\(isShutdown.yn))",
                    level: .verbose, subsystem: subsystem)
       }
     }

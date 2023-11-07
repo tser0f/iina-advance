@@ -375,7 +375,7 @@ extension PlayerWindowController {
     }
 
     /// Show dividing line only for `.outsideViewport` bottom bar. Don't show in music mode as it doesn't look good
-    let showBottomBarTopBorder = outputLayout.bottomBarPlacement == .outsideViewport && !outputLayout.isMusicMode
+    let showBottomBarTopBorder = transition.outputGeometry.outsideBottomBarHeight > 0 && outputLayout.bottomBarPlacement == .outsideViewport && !outputLayout.isMusicMode
     bottomBarTopBorder.isHidden = !showBottomBarTopBorder
 
     if transition.isOSCChanging && outputLayout.enableOSC {
@@ -417,7 +417,7 @@ extension PlayerWindowController {
     if transition.isEnteringMusicMode {
       // Entering music mode
       oscBottomMainView.removeFromSuperview()
-      bottomBarView.addSubview(miniPlayer.view, positioned: .below, relativeTo: bottomBarTopBorder)
+      bottomBarView.addSubview(miniPlayer.view, positioned: .above, relativeTo: bottomBarTopBorder)
       miniPlayer.view.addConstraintsToFillSuperview(top: 0, leading: 0, trailing: 0)
 
       let bottomConstraint = miniPlayer.view.superview!.bottomAnchor.constraint(equalTo: miniPlayer.view.bottomAnchor, constant: 0)

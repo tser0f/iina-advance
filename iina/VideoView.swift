@@ -80,7 +80,7 @@ class VideoView: NSView {
       guard !isUninited else { return }
       isUninited = true
 
-      videoLayer.isAsynchronous = false
+      stopDisplayLink()
       player.mpv.mpvUninitRendering()
     }
   }
@@ -283,12 +283,8 @@ class VideoView: NSView {
       Logger.fatal("Cannot create DisplayLink!")
     }
     guard !CVDisplayLinkIsRunning(link) else { return }
-
-    /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
-    /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
-    /// which would cause noticable clipping or wobbling during animations.
-    videoLayer.isAsynchronous = true
-
+    
+    videoLayer.resume()
     updateDisplayLink()
 
     checkResult(CVDisplayLinkSetOutputCallback(link, displayLinkCallback, mutableRawPointerOf(obj: self)),
@@ -299,10 +295,7 @@ class VideoView: NSView {
   @objc func stopDisplayLink() {
     guard let link = link, CVDisplayLinkIsRunning(link) else { return }
 
-    /// If this is set to `true` while the video is paused, there is some degree of busy-waiting as the
-    /// layer is polled at a high rate about whether it needs to draw. Disable this to save CPU while idle.
-    videoLayer.isAsynchronous = false
-
+    videoLayer.suspend()
     checkResult(CVDisplayLinkStop(link), "CVDisplayLinkStop")
   }
 
@@ -604,7 +597,7 @@ extension VideoView {
         }
       }
       let algorithm = Preference.ToneMappingAlgorithmOption(rawValue: Preference.integer(for: .toneMappingAlgorithm))?.mpvString
-        ?? Preference.ToneMappingAlgorithmOption.defaultValue.mpvString
+      ?? Preference.ToneMappingAlgorithmOption.defaultValue.mpvString
 
       hdrSubsystem.debug("Will enable tone mapping target-peak=\(targetPeak) algorithm=\(algorithm)")
       mpv.setInt(MPVOption.GPURendererOptions.targetPeak, targetPeak)
@@ -623,8 +616,8 @@ fileprivate func displayLinkCallback(
   _ flagsIn: CVOptionFlags,
   _ flagsOut: UnsafeMutablePointer<CVOptionFlags>,
   _ context: UnsafeMutableRawPointer?) -> CVReturn {
-  let videoView = unsafeBitCast(context, to: VideoView.self)
-  guard !videoView.isUninited else { return kCVReturnSuccess }
-  videoView.player.mpv.mpvReportSwap()
-  return kCVReturnSuccess
-}
+    let videoView = unsafeBitCast(context, to: VideoView.self)
+    guard !videoView.isUninited else { return kCVReturnSuccess }
+    videoView.player.mpv.mpvReportSwap()
+    return kCVReturnSuccess
+  }
