@@ -654,6 +654,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal var singleClickTimer: Timer?
   internal var mouseExitEnterCount = 0
 
+  internal var hideCursorTimer: Timer?
+
   // Scroll direction
 
   /** The direction of current scrolling event. */
@@ -1281,17 +1283,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  /// Workaround for issue #4183, Cursor remains visible after resuming playback with the touchpad using secondary click
-  ///
-  /// When IINA hides the OSC it also calls the macOS AppKit method `NSCursor.setHiddenUntilMouseMoves` to hide the
-  /// cursor. In macOS Catalina that method works as documented and keeps the cursor hidden until the mouse moves. Starting with
-  /// macOS Big Sur the cursor becomes visible if mouse buttons are clicked without moving the mouse. To workaround this defect
-  /// call this method again to keep the cursor hidden when the OSC is not visible.
-  ///
-  /// This erroneous behavior has been reported to Apple as: "Regression in NSCursor.setHiddenUntilMouseMoves"
-  /// Feedback number FB11963121
-  private func workaroundCursorDefect() {
-    guard #available(macOS 11, *) else { return }
+  func restartHideCursorTimer() {
+    if let timer = hideCursorTimer {
+      timer.invalidate()
+    }
+    hideCursorTimer = Timer.scheduledTimer(timeInterval: max(0, Preference.double(for: .cursorAutoHideTimeout)), target: self, selector: #selector(hideCursor), userInfo: nil, repeats: false)
+  }
+
+  @objc private func hideCursor() {
+    guard !currentLayout.isInteractiveMode, !currentLayout.isMusicMode else { return }
+    log.verbose("Hiding cursor")
+    hideCursorTimer = nil
     NSCursor.setHiddenUntilMouseMoves(true)
   }
 
@@ -1299,24 +1301,26 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
       log.verbose("PlayerWindow mouseDown @ \(event.locationInWindow)")
     }
-    workaroundCursorDefect()
     // do nothing if it's related to floating OSC
     guard !controlBarFloating.isDragging else { return }
     // record current mouse pos
     mousePosRelatedToWindow = event.locationInWindow
     // Start resize if applicable
     let wasHandled = startResizingSidebar(with: event)
-    if !wasHandled {
-      PluginInputManager.handle(
-        input: PluginInputManager.Input.mouse, event: .mouseDown,
-        player: player, arguments: mouseEventArgs(event)
-      )
-      // we don't call super here because before adding the plugin system,
-      // PlayerWindowController didn't call super at all
-    }
+    guard !wasHandled else { return }
+
+    restartHideCursorTimer()
+
+    PluginInputManager.handle(
+      input: PluginInputManager.Input.mouse, event: .mouseDown,
+      player: player, arguments: mouseEventArgs(event)
+    )
+    // we don't call super here because before adding the plugin system,
+    // PlayerWindowController didn't call super at all
   }
 
   override func mouseDragged(with event: NSEvent) {
+    hideCursorTimer?.invalidate()
     let didResizeSidebar = resizeSidebar(with: event)
     guard !didResizeSidebar else {
       return
@@ -1347,7 +1351,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
       log.verbose("PlayerWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
     }
-    workaroundCursorDefect()
+    restartHideCursorTimer()
     mousePosRelatedToWindow = nil
     if isDragging {
       // if it's a mouseup after dragging window
@@ -1403,13 +1407,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func otherMouseDown(with event: NSEvent) {
-    workaroundCursorDefect()
+    restartHideCursorTimer()
     super.otherMouseDown(with: event)
   }
 
   override func otherMouseUp(with event: NSEvent) {
-    workaroundCursorDefect()
     Logger.log("PlayerWindow otherMouseUp!", level: .verbose, subsystem: player.subsystem)
+    restartHideCursorTimer()
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
 
     PluginInputManager.handle(
@@ -1430,7 +1434,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// window controller. We are having to catch the event in the view. Because of that we do not call the super method and instead
   /// return to the view.`
   override func rightMouseDown(with event: NSEvent) {
-    workaroundCursorDefect()
+    restartHideCursorTimer()
     PluginInputManager.handle(
       input: PluginInputManager.Input.rightMouse, event: .mouseDown,
       player: player, arguments: mouseEventArgs(event)
@@ -1439,7 +1443,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   override func rightMouseUp(with event: NSEvent) {
     log.verbose("PlayerWindow rightMouseUp!")
-    workaroundCursorDefect()
+    restartHideCursorTimer()
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
 
     PluginInputManager.handle(
@@ -1581,7 +1585,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     mouseExitEnterCount += 1
     if obj == 0 {
-      // main window
+      // player window
       isMouseInWindow = true
       showFadeableViews(duration: 0)
     } else if obj == 1 {
@@ -1604,7 +1608,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     mouseExitEnterCount += 1
     if obj == 0 {
-      // main window
+      // player window
       isMouseInWindow = false
       if controlBarFloating.isDragging { return }
       if !isAnimating && Preference.bool(for: .hideFadeableViewsWhenOutsideWindow) {
@@ -1650,6 +1654,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // Check whether mouse is in OSC
       let shouldRestartFadeTimer = !isMouseEvent(event, inAnyOf: [currentControlBar, titleBarView])
       showFadeableViews(thenRestartFadeTimer: shouldRestartFadeTimer, duration: 0, forceShowTopBar: forceShowTopBar)
+    }
+
+    if isMouseInWindow || isFullScreen {
+      // Always hide after timeout even if OSD fade time is longer
+      restartHideCursorTimer()
+    } else {
+      hideCursorTimer?.invalidate()
+      hideCursorTimer = nil
     }
   }
 

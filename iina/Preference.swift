@@ -131,6 +131,8 @@ struct Preference {
 
     // MARK: - Keys: UI
 
+    static let cursorAutoHideTimeout = Key("cursorAutoHideTimeout")
+
     /// Title bar and OSC
     static let showTopBarTrigger = Key("showTopBarTrigger")
     static let topBarPlacement = Key("topBarPlacement")
@@ -964,6 +966,7 @@ struct Preference {
     .recordPlaybackHistory: true,
     .recordRecentFiles: true,
     .trackAllFilesInRecentOpenMenu: true,
+    .cursorAutoHideTimeout: Float(2.0),
     .controlBarPositionHorizontal: Float(0.5),
     .controlBarPositionVertical: Float(0.1),
     .controlBarStickToCenter: true,
