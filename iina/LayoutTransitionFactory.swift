@@ -244,7 +244,7 @@ extension PlayerWindowController {
     if useExtraAnimationForExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let newGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
-        log.verbose("Updating legacy full screen window to show camera housing prior to entering native windowed mode")
+        log.verbose("[\(transition.name)] Updating legacy full screen window to show camera housing prior to entering native windowed mode")
         applyLegacyFullScreenGeometry(newGeo)
       }))
     }
@@ -265,25 +265,19 @@ extension PlayerWindowController {
       updateHiddenViewsAndConstraints(transition)
     })
 
-    // Extra task when toggling music mode: move & resize window
-    if transition.isTogglingMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
+    // Extra task when entering music mode: move & resize window
+    if transition.isEnteringMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
       transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         // TODO: develop a nice sliding animation if possible
+        log.verbose("[\(transition.name)] Moving & resizing window")
 
-        if transition.isEnteringMusicMode {
-          if musicModeGeometry.isVideoVisible {
-            // Entering music mode when album art is visible
-            videoView.apply(transition.outputGeometry)
-          } else {
-            // Entering music mode when album art is hidden
-            miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
-          }
-        } else if transition.isExitingMusicMode {
-          // Exiting music mode: always make videoView visible
+        if musicModeGeometry.isVideoVisible {
+          // Entering music mode when album art is visible
           videoView.apply(transition.outputGeometry)
-          miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: true)
+        } else {
+          // Entering music mode when album art is hidden
+          miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
         }
-
         player.window.setFrameImmediately(transition.outputGeometry.videoFrameInScreenCoords)
       }))
     }
@@ -294,7 +288,7 @@ extension PlayerWindowController {
     if useExtraAnimationForExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let extraGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
-        log.verbose("Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
+        log.verbose("[\(transition.name)] Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
         applyLegacyFullScreenGeometry(extraGeo)
       }))
     }
@@ -322,7 +316,7 @@ extension PlayerWindowController {
       transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : windowedModeScreen.cameraHousingHeight ?? 0
         let newGeo = transition.outputGeometry.clone(windowFrame: windowedModeScreen.frame, topMarginHeight: topBlackBarHeight)
-        log.verbose("Updating legacy full screen window to cover camera housing / menu bar / dock")
+        log.verbose("[\(transition.name)] Updating legacy full screen window to cover camera housing / menu bar / dock")
         applyLegacyFullScreenGeometry(newGeo)
       }))
     }

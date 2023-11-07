@@ -381,13 +381,13 @@ extension PlayerWindowController {
     if transition.isOSCChanging && outputLayout.enableOSC {
       switch outputLayout.oscPosition {
       case .top:
-        log.verbose("Setting up control bar: \(outputLayout.oscPosition)")
+        log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = controlBarTop
         addControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
       case .bottom:
-        log.verbose("Setting up control bar: \(outputLayout.oscPosition)")
+        log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = bottomBarView
         if !bottomBarView.subviews.contains(oscBottomMainView) {
           bottomBarView.addSubview(oscBottomMainView)
