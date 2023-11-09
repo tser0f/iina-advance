@@ -295,7 +295,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal lazy var horizontalScrollAction: Preference.ScrollAction = Preference.enum(for: .horizontalScrollAction)
   internal lazy var verticalScrollAction: Preference.ScrollAction = Preference.enum(for: .verticalScrollAction)
 
-  static let playWindowPrefKeys: [Preference.Key] = [
+  static let playerWindowPrefKeys: [Preference.Key] = [
     .themeMaterial,
     .showRemainingTime,
     .alwaysFloatOnTop,
@@ -964,7 +964,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    PlayerWindowController.playWindowPrefKeys.forEach { key in
+    PlayerWindowController.playerWindowPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
 
@@ -974,7 +974,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   deinit {
     ObjcUtils.silenced {
-      for key in PlayerWindowController.playWindowPrefKeys {
+      for key in PlayerWindowController.playerWindowPrefKeys {
         UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
       }
     }
@@ -1966,8 +1966,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     guard !isAnimating, !isMagnifying else { return }
 
+    defer {
+      updateCachedGeometry()
+    }
+
     CocoaAnimation.disableAnimation {
-      log.verbose("WindowDidResize live=\(window.inLiveResize.yn), frame=\(window.frame)")
+      log.verbose("WindowDidResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
 
       switch currentLayout.mode {
       case .musicMode:

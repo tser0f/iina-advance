@@ -1666,8 +1666,8 @@ class PlayerCore: NSObject {
         NowPlayingInfoManager.updateInfo()
       }
     }
-    DispatchQueue.main.async {
-      PlayerSaveState.save(self)
+    DispatchQueue.main.async { [self] in
+      saveState()
       Timer.scheduledTimer(timeInterval: TimeInterval(0.2), target: self, selector: #selector(self.reEnableOSDAfterFileLoading), userInfo: nil, repeats: false)
     }
   }

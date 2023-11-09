@@ -34,11 +34,16 @@ struct SavedWindow {
       return nil
     }
   }
+
+  // Includes minimized state
+  var saveString: String {
+    return isMinimized ? "\(SavedWindow.minimizedPrefix)\(saveName.string)" : saveName.string
+  }
 }
 
 enum WindowAutosaveName: Equatable {
-  static let playWindowPrefix = "PlayerWindow-"
-  static let playWindowFmt = "\(playWindowPrefix)%@"
+  static let playerWindowPrefix = "Player-"
+  static let playerWindowFmt = "\(playerWindowPrefix)%@"
 
   case preference
   case welcome
@@ -50,7 +55,7 @@ enum WindowAutosaveName: Equatable {
   case videoFilter
   case audioFilter
   case fontPicker
-  case playWindow(id: String)
+  case playerWindow(id: String)
 
   var string: String {
     switch self {
@@ -72,8 +77,8 @@ enum WindowAutosaveName: Equatable {
       return "AudioFilterWindow"
     case .fontPicker:
       return "IINAFontPickerWindow"
-    case .playWindow(let id):
-      return String(format: WindowAutosaveName.playWindowFmt, id)
+    case .playerWindow(let id):
+      return String(format: WindowAutosaveName.playerWindowFmt, id)
     }
   }
 
@@ -98,21 +103,31 @@ enum WindowAutosaveName: Equatable {
     case WindowAutosaveName.fontPicker.string:
       self = .fontPicker
     default:
-      if let id = WindowAutosaveName.parseID(from: string, mustStartWith: WindowAutosaveName.playWindowPrefix) {
-        self = .playWindow(id: id)
+      if let id = WindowAutosaveName.parseID(from: string, mustStartWith: WindowAutosaveName.playerWindowPrefix) {
+        self = .playerWindow(id: id)
       } else {
         return nil
       }
     }
   }
 
-  /// Returns `id` if `self` is type `.playWindow`; otherwise `nil`
-  var playWindowID: String? {
+  /// Returns `id` if `self` is type `.playerWindow`; otherwise `nil`
+  var playerWindowID: String? {
     switch self {
-    case .playWindow(let id):
+    case .playerWindow(let id):
       return id
     default:
       break
+    }
+    return nil
+  }
+
+  var playerWindowLaunchID: Int? {
+    if let playerWindowID {
+      let splitted = playerWindowID.split(separator: "-")
+      if !splitted.isEmpty {
+        return Int(splitted[0])
+      }
     }
     return nil
   }

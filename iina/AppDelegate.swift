@@ -23,8 +23,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1, which becomes its launchID.
   static let launchID: Int = {
-    let nextID = Preference.integer(for: .iinaLaunchCount) + 1
-    Preference.set(nextID, for: .iinaLaunchCount)
+    let nextID = Preference.integer(for: .launchCount) + 1
+    Preference.set(nextID, for: .launchCount)
     Logger.log("LaunchID: \(nextID)", level: .verbose)
     return nextID
   }()
@@ -112,6 +112,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     if keyPath == AppDelegate.launchName {
       if let newLaunchStatus = change[.newKey] as? Int {
+        guard !isTerminating else { return }
         guard newLaunchStatus != 0 else { return }
         Logger.log("Detected change to this instance's status pref (\(keyPath.quoted)). Probably a newer instance of IINA has started and is attempting to restore")
         Logger.log("Changing launch status back to 'stillRunning' so the other launch will skip this instance.")
@@ -623,7 +624,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       case .audioFilter:
         showAudioFilterWindow(self)
         wc = afWindow
-      case .playWindow(let id):
+      case .playerWindow(let id):
         let player = PlayerCoreManager.restoreFromPriorLaunch(playerID: id)
         wc = player.windowController
       default:

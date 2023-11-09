@@ -234,7 +234,7 @@ struct PlayerSaveState {
     props[PropName.playlistVideos.rawValue] = Array(info.currentVideosInfo.map({
       // Need to store the group prefix length (if any) to allow collapsing it in the playlist. Not easy to recompute
       "\(playlistVideosCSVVersion),\($0.prefix.count),\($0.url.absoluteString)"
-    }))
+    })).joined(separator: " ")
     props[PropName.playlistSubtitles.rawValue] = Array(info.currentSubsInfo.map({$0.url.absoluteString}))
     let matchedSubsArray = info.matchedSubs.map({key, value in (key, Array(value.map({$0.absoluteString})))})
     let matchedSubs: [String: [String]] = Dictionary(uniqueKeysWithValues: matchedSubsArray)
@@ -326,12 +326,18 @@ struct PlayerSaveState {
         player.log.warn("Skipping player state save: is shutting down")
         return
       }
+      guard !player.windowController.isClosing else {
+        // mpv core is often still active even after closing, and will send events which
+        // can trigger save. Need to make sure we check for this so that we don't un-delete state
+        player.log.verbose("Skipping player state save: window.isClosing is true")
+        return
+      }
 
       player.$isShuttingDown.withLock() { isShuttingDown in
         guard !isShuttingDown else { return }
         let properties = generatePropDict(from: player)
-        player.log.verbose("Saving player state (tkt# \(saveTicket))")
-        //      player.log.verbose("Saving player state: \(properties)")
+        player.log.verbose("Saving player state, tkt#\(saveTicket)")
+//        player.log.verbose("Saving player state: \(properties)")
         Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
       }
     }
@@ -546,33 +552,39 @@ struct PlayerSaveState {
     })
   }
 
-  static private func deserializePlaylistVideoInfo(from csvString: String) -> FileInfo? {
-    // Do not parse more than the first 2 tokens. The URL can contain commas
-    let tokens = csvString.split(separator: ",", maxSplits: 2).map{String($0)}
-    guard tokens.count == 3 else {
-      Logger.log("Could not parse PlaylistVideoInfo: not enough tokens (expected 3 but found \(tokens.count))", level: .error)
-      return nil
-    }
-    guard tokens[0] == playlistVideosCSVVersion else {
-      Logger.log("Could not parse PlaylistVideoInfo: wrong version (expected \(playlistVideosCSVVersion) but found \(tokens[0].quoted))", level: .error)
-      return nil
-    }
+  static private func deserializePlaylistVideoInfo(from entryString: String) -> [FileInfo] {
+    var videos: [FileInfo] = []
 
-    guard let prefixLength = Int(tokens[1]),
-          let url = URL(string: tokens[2])
-    else {
-      Logger.log("Could not parse PlaylistVideoInfo url or prefixLength!", level: .error)
-      return nil
-    }
+    // Each entry cannot contain spaces, so use that for the first delimiter:
+    for csvString in entryString.split(separator: " ") {
+      // Do not parse more than the first 2 tokens. The URL can contain commas
+      let tokens = csvString.split(separator: ",", maxSplits: 2).map{String($0)}
+      guard tokens.count == 3 else {
+        Logger.log("Could not parse PlaylistVideoInfo: not enough tokens (expected 3 but found \(tokens.count))", level: .error)
+        continue
+      }
+      guard tokens[0] == playlistVideosCSVVersion else {
+        Logger.log("Could not parse PlaylistVideoInfo: wrong version (expected \(playlistVideosCSVVersion) but found \(tokens[0].quoted))", level: .error)
+        continue
+      }
 
-    let fileInfo = FileInfo(url)
-    if prefixLength > 0 {
-      var string = url.deletingPathExtension().lastPathComponent
-      let suffixRange = string.index(string.startIndex, offsetBy: prefixLength)..<string.endIndex
-      string.removeSubrange(suffixRange)
-      fileInfo.prefix = string
+      guard let prefixLength = Int(tokens[1]),
+            let url = URL(string: tokens[2])
+      else {
+        Logger.log("Could not parse PlaylistVideoInfo url or prefixLength!", level: .error)
+        continue
+      }
+
+      let fileInfo = FileInfo(url)
+      if prefixLength > 0 {
+        var string = url.deletingPathExtension().lastPathComponent
+        let suffixRange = string.index(string.startIndex, offsetBy: prefixLength)..<string.endIndex
+        string.removeSubrange(suffixRange)
+        fileInfo.prefix = string
+      }
+      videos.append(fileInfo)
     }
-    return fileInfo
+    return videos
   }
 
   /// Restore player state from prior launch
@@ -629,8 +641,8 @@ struct PlayerSaveState {
       info.intendedViewportSizeTall = size
     }
 
-    if let videoURLList = properties[PlayerSaveState.PropName.playlistVideos.rawValue] as? [String] {
-      let currentVideosInfo = videoURLList.compactMap{PlayerSaveState.deserializePlaylistVideoInfo(from: $0)}
+    if let videoURLListString = string(for: .playlistVideos) {
+      let currentVideosInfo = PlayerSaveState.deserializePlaylistVideoInfo(from: videoURLListString)
       info.currentVideosInfo = currentVideosInfo
     }
 

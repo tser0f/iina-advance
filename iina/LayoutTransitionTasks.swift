@@ -1152,7 +1152,7 @@ extension PlayerWindowController {
     if let window = window {
       updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
     }
-    PlayerSaveState.save(player)
+    player.saveState()
   }
 
   // MARK: - Controller content layout
