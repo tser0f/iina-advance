@@ -512,10 +512,10 @@ struct Preference {
   }
 
   enum OSDPosition: Int, InitializingFromKey {
-    case topLeft = 1
-    case topRight
+    case topLeading = 1
+    case topTrailing
 
-    static var defaultValue = OSDPosition.topRight
+    static var defaultValue = OSDPosition.topTrailing
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -995,7 +995,7 @@ struct Preference {
     .roundedCornerRadius: 10.0,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
-    .osdPosition: OSDPosition.topLeft.rawValue,
+    .osdPosition: OSDPosition.topLeading.rawValue,
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(20),
     .softVolume: 100,

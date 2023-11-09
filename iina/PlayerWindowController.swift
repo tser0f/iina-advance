@@ -2577,11 +2577,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     contentView.removeConstraint(trailingSidebarToOSDSpaceConstraint)
     let osdPosition: Preference.OSDPosition = Preference.enum(for: .osdPosition)
     switch osdPosition {
-    case .topLeft:
+    case .topLeading:
       // OSD on left, AdditionalInfo on right
       leadingSidebarToOSDSpaceConstraint = leadingSidebarView.trailingAnchor.constraint(equalTo: osdVisualEffectView.leadingAnchor, constant: -8.0)
       trailingSidebarToOSDSpaceConstraint = trailingSidebarView.leadingAnchor.constraint(equalTo: additionalInfoView.trailingAnchor, constant: 8.0)
-    case .topRight:
+    case .topTrailing:
       // AdditionalInfo on left, OSD on right
       leadingSidebarToOSDSpaceConstraint = leadingSidebarView.trailingAnchor.constraint(equalTo: additionalInfoView.leadingAnchor, constant: -8.0)
       trailingSidebarToOSDSpaceConstraint = trailingSidebarView.leadingAnchor.constraint(equalTo: osdVisualEffectView.trailingAnchor, constant: 8.0)

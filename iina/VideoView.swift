@@ -118,18 +118,18 @@ class VideoView: NSView {
 
   struct VideoViewConstraints {
     let eqOffsetTop: NSLayoutConstraint
-    let eqOffsetRight: NSLayoutConstraint
+    let eqOffsetTrailing: NSLayoutConstraint
     let eqOffsetBottom: NSLayoutConstraint
-    let eqOffsetLeft: NSLayoutConstraint
+    let eqOffsetLeading: NSLayoutConstraint
 
     let centerX: NSLayoutConstraint
     let centerY: NSLayoutConstraint
 
     func setActive(eq: Bool = true, center: Bool = true, aspect: Bool = true) {
       eqOffsetTop.isActive = eq
-      eqOffsetRight.isActive = eq
+      eqOffsetTrailing.isActive = eq
       eqOffsetBottom.isActive = eq
-      eqOffsetLeft.isActive = eq
+      eqOffsetLeading.isActive = eq
 
       centerX.isActive = center
       centerY.isActive = center
@@ -151,7 +151,7 @@ class VideoView: NSView {
     return constraint
   }
 
-  private func rebuildConstraints(top: CGFloat = 0, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0,
+  private func rebuildConstraints(top: CGFloat = 0, trailing: CGFloat = 0, bottom: CGFloat = 0, leading: CGFloat = 0,
                                   eqIsActive: Bool = true, eqPriority: NSLayoutConstraint.Priority,
                                   centerIsActive: Bool = true, centerPriority: NSLayoutConstraint.Priority) {
     var existing = self.videoViewConstraints
@@ -159,9 +159,9 @@ class VideoView: NSView {
 
     let newConstraints = VideoViewConstraints(
       eqOffsetTop: addOrUpdate(existing?.eqOffsetTop, .top, .equal, top, eqPriority),
-      eqOffsetRight: addOrUpdate(existing?.eqOffsetRight, .right, .equal, right, eqPriority),
+      eqOffsetTrailing: addOrUpdate(existing?.eqOffsetTrailing, .trailing, .equal, trailing, eqPriority),
       eqOffsetBottom: addOrUpdate(existing?.eqOffsetBottom, .bottom, .equal, bottom, eqPriority),
-      eqOffsetLeft: addOrUpdate(existing?.eqOffsetLeft, .left, .equal, left, eqPriority),
+      eqOffsetLeading: addOrUpdate(existing?.eqOffsetLeading, .leading, .equal, leading, eqPriority),
 
       centerX: existing?.centerX ?? centerXAnchor.constraint(equalTo: superview!.centerXAnchor),
       centerY: existing?.centerY ?? centerYAnchor.constraint(equalTo: superview!.centerYAnchor)
@@ -174,14 +174,14 @@ class VideoView: NSView {
     newConstraints.setActive(eq: eqIsActive, center: centerIsActive)
   }
 
-  func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, right: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = -2,
+  func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, trailing: CGFloat = 0, bottom: CGFloat = 0, leading: CGFloat = -2,
                                          eqPriority: NSLayoutConstraint.Priority = .required) {
 //    let isTitled = window?.styleMask.contains(.titled) ?? false
 //    let top = isTitled ? top - 2 : top
-//    let left = isTitled ? left - 2 : left
-    log.verbose("Constraining videoView for fixed offsets only: \(top) \(right) \(bottom) \(left)")
+//    let leading = isTitled ? leading - 2 : leading
+    log.verbose("Constraining videoView for fixed offsets only: \(top) \(trailing) \(bottom) \(leading)")
     // Use only EQ. Remove all other constraints
-    rebuildConstraints(top: top, right: right, bottom: bottom, left: left,
+    rebuildConstraints(top: top, trailing: trailing, bottom: bottom, leading: leading,
                        eqIsActive: true, eqPriority: eqPriority,
                        centerIsActive: false, centerPriority: .required)
 

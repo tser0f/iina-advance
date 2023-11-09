@@ -252,7 +252,7 @@ extension PlayerWindowController {
       videoView.apply(transition.outputGeometry)
     } else if transition.isExitingInteractiveMode && !transition.outputLayout.isFullScreen {
       // Animate closed:
-      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
+      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, trailing: 0, bottom: 0, leading: 0)
     }
 
     // Update heights of top & bottom bars
@@ -460,7 +460,7 @@ extension PlayerWindowController {
 
       if !transition.outputLayout.isFullScreen {
         // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
-        videoView.constrainLayoutToEqualsOffsetOnly(top: 0, right: 0, bottom: 0, left: 0)
+        videoView.constrainLayoutToEqualsOffsetOnly(top: 0, trailing: 0, bottom: 0, leading: 0)
         videoView.apply(nil)
       }
     } else if transition.isExitingInteractiveMode {
@@ -664,9 +664,9 @@ extension PlayerWindowController {
         let videobox = InteractiveModeGeometry.videobox
         videoView.constrainLayoutToEqualsOffsetOnly(
           top: videobox.top,
-          right: -videobox.trailing,
+          trailing: -videobox.trailing,
           bottom: -videobox.bottom,
-          left: videobox.leading
+          leading: videobox.leading
         )
       }
 
