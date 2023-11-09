@@ -556,7 +556,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     guard let vc = subPopover.contentViewController as? SubPopoverViewController else { return }
     vc.filePath = player.info.playlist[row].filename
     vc.tableView.reloadData()
-    vc.heightConstraint.constant = (vc.tableView.rowHeight + vc.tableView.intercellSpacing.height) * CGFloat(vc.tableView.numberOfRows)
     subPopover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .maxY)
   }
 
@@ -1048,7 +1047,6 @@ class SubPopoverViewController: NSViewController, NSTableViewDelegate, NSTableVi
 
   @IBOutlet weak var tableView: NSTableView!
   @IBOutlet weak var playlistTableView: NSTableView!
-  @IBOutlet weak var heightConstraint: NSLayoutConstraint!
 
   weak var player: PlayerCore!
 

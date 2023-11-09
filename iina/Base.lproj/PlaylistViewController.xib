@@ -90,9 +90,9 @@
                                         <rect key="frame" x="0.0" y="24" width="241" height="256"/>
                                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2M9-8L-veI">
                                             <rect key="frame" x="0.0" y="0.0" width="241" height="256"/>
-                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <tableView focusRingType="none" verticalHuggingPriority="750" misplaced="YES" allowsExpansionToolTips="YES" tableStyle="fullWidth" columnResizing="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="28" viewBased="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xIa-sI-0Xn">
+                                                <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" tableStyle="fullWidth" columnResizing="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="28" viewBased="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xIa-sI-0Xn">
                                                     <rect key="frame" x="0.0" y="0.0" width="241" height="256"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <size key="intercellSpacing" width="3" height="0.0"/>
@@ -112,7 +112,7 @@
                                                             </textFieldCell>
                                                             <prototypeCellViews>
                                                                 <tableCellView translatesAutoresizingMaskIntoConstraints="NO" id="o4q-SO-fgb" userLabel="IsChosen Table Cell View">
-                                                                    <rect key="frame" x="1" y="0.0" width="21" height="17"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="21" height="17"/>
                                                                     <subviews>
                                                                         <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="eZG-xB-blk" customClass="EditableTextField" customModule="IINA" customModuleProvider="target">
                                                                             <rect key="frame" x="0.0" y="1" width="23" height="16"/>
@@ -150,7 +150,7 @@
                                                             <tableColumnResizingMask key="resizingMask" resizeWithTable="YES"/>
                                                             <prototypeCellViews>
                                                                 <tableCellView translatesAutoresizingMaskIntoConstraints="NO" id="yTp-yO-UE2" customClass="PlaylistTrackCellView" customModule="IINA" customModuleProvider="target">
-                                                                    <rect key="frame" x="25" y="0.0" width="214" height="17"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="214" height="17"/>
                                                                     <subviews>
                                                                         <button toolTip="Folded common prefix" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="U4W-Xv-hkh" customClass="PlaylistPrefixButton" customModule="IINA" customModuleProvider="target">
                                                                             <rect key="frame" x="0.0" y="0.0" width="15" height="17"/>
@@ -397,7 +397,7 @@
                                         <rect key="frame" x="0.0" y="0.0" width="241" height="280"/>
                                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="6tr-hz-bdD">
                                             <rect key="frame" x="0.0" y="0.0" width="241" height="280"/>
-                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" tableStyle="fullWidth" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" rowHeight="31" rowSizeStyle="automatic" viewBased="YES" id="BvG-MR-6LX">
                                                     <rect key="frame" x="0.0" y="0.0" width="241" height="280"/>
@@ -539,7 +539,6 @@
         </menu>
         <viewController id="Eqp-Cu-P2E" userLabel="Popover View Controller" customClass="SubPopoverViewController" customModule="IINA" customModuleProvider="target">
             <connections>
-                <outlet property="heightConstraint" destination="m6T-24-BAu" id="tMH-lb-fgO"/>
                 <outlet property="playlistTableView" destination="xIa-sI-0Xn" id="oWV-LD-2Mc"/>
                 <outlet property="tableView" destination="puj-Kl-qOI" id="arp-qx-T18"/>
                 <outlet property="view" destination="3YN-KY-vJP" id="mUs-lU-VoR"/>
@@ -551,12 +550,12 @@
             </connections>
         </popover>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="3YN-KY-vJP">
-            <rect key="frame" x="0.0" y="0.0" width="240" height="96"/>
+            <rect key="frame" x="0.0" y="0.0" width="400" height="96"/>
             <subviews>
                 <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="18" horizontalPageScroll="10" verticalLineScroll="18" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" horizontalScrollElasticity="allowed" translatesAutoresizingMaskIntoConstraints="NO" id="hPw-DF-M14">
-                    <rect key="frame" x="8" y="28" width="224" height="42"/>
+                    <rect key="frame" x="8" y="28" width="384" height="42"/>
                     <clipView key="contentView" drawsBackground="NO" id="6rI-3b-JZo">
-                        <rect key="frame" x="0.0" y="0.0" width="224" height="42"/>
+                        <rect key="frame" x="0.0" y="0.0" width="384" height="42"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="16" id="puj-Kl-qOI">
@@ -571,7 +570,7 @@
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
                                         </tableHeaderCell>
-                                        <textFieldCell key="dataCell" controlSize="small" lineBreakMode="truncatingTail" allowsUndo="NO" title="Text Cell" id="uF1-y1-iGv">
+                                        <textFieldCell key="dataCell" controlSize="small" lineBreakMode="charWrapping" allowsUndo="NO" title="Text Cell" id="uF1-y1-iGv">
                                             <font key="font" metaFont="controlContent" size="11"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -586,9 +585,6 @@
                             </tableView>
                         </subviews>
                     </clipView>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="42" id="m6T-24-BAu"/>
-                    </constraints>
                     <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="UfV-aK-DSE">
                         <rect key="frame" x="-100" y="-100" width="224" height="16"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -599,7 +595,7 @@
                     </scroller>
                 </scrollView>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KT6-lD-Wq7">
-                    <rect key="frame" x="6" y="74" width="228" height="14"/>
+                    <rect key="frame" x="6" y="74" width="388" height="14"/>
                     <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Matched subtitles" id="j2t-mO-cpo">
                         <font key="font" metaFont="smallSystemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -607,7 +603,7 @@
                     </textFieldCell>
                 </textField>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="caG-VQ-czp">
-                    <rect key="frame" x="136" y="7" width="96" height="17"/>
+                    <rect key="frame" x="296" y="7" width="96" height="17"/>
                     <buttonCell key="cell" type="roundRect" title="Wrong Subtitle!" bezelStyle="roundedRect" alignment="center" controlSize="small" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="zod-Ch-cOH">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="controlContent" size="11"/>
