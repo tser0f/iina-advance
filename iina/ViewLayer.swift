@@ -14,7 +14,9 @@ class ViewLayer: CAOpenGLLayer {
 
   weak var videoView: VideoView!
 
-  let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
+  // Use semaphore to prevent more than 2 frames enqueued at any given time. Any more is wasted resources
+  private let mpvGLSemaphore = DispatchSemaphore(value: 2)
+  private let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
   @Atomic var blocked = false
 
   private var fbo: GLint = 1
@@ -193,12 +195,7 @@ class ViewLayer: CAOpenGLLayer {
     /// layer is polled at a high rate about whether it needs to draw. Disable this to save CPU while idle.
     isAsynchronous = false
 
-    $blocked.withLock() { blocked in
-      guard !blocked else { return }
-      blocked = true
-
-      mpvGLQueue.suspend()
-    }
+    blocked = true
   }
 
   func resume() {
@@ -207,12 +204,7 @@ class ViewLayer: CAOpenGLLayer {
     /// which would cause noticable clipping or wobbling during animations.
     isAsynchronous = true
 
-    $blocked.withLock() { blocked in
-      guard blocked else { return }
-      blocked = false
-
-      mpvGLQueue.resume()
-    }
+    blocked = false
 
     draw(forced: true)
   }
@@ -220,7 +212,12 @@ class ViewLayer: CAOpenGLLayer {
   func drawAsync() {
     guard !blocked else { return }
 
+    // Do not draw if queue is already at capacity
+    if mpvGLSemaphore.wait(timeout: .now()) == .timedOut { return }
+
     mpvGLQueue.async { [self] in
+      mpvGLSemaphore.signal()
+      guard !blocked else { return }
       draw()
     }
   }
