@@ -627,7 +627,10 @@ extension PlayerWindowController {
         let newGeo: PlayerWindowGeometry
         if transition.isEnteringLegacyFullScreen {
           // Deal with possible top margin needed to hide camera housing
-          if transition.outputGeometry.hasTopPaddingForCameraHousing {
+          if transition.isInitialLayout {
+            /// No animation after this
+            newGeo = transition.outputGeometry
+          } else if transition.outputGeometry.hasTopPaddingForCameraHousing {
             /// Entering legacy FS on a screen with camera housing.
             /// Prevent an unwanted bouncing near the top by using this animation to expand to visibleFrame.
             /// (will expand window to cover `cameraHousingHeight` in next animation)
