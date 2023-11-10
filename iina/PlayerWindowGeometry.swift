@@ -698,7 +698,7 @@ extension PlayerWindowController {
         let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
                                            width: cropController.cropw, height: cropController.croph)
 
-        animationPipeline.run(CocoaAnimation.Task({ [self] in
+        animationPipeline.submit(CocoaAnimation.Task({ [self] in
           log.verbose("Cropping video from origVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
           windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
           videoAspectRatio = windowedModeGeometry.videoAspectRatio
@@ -720,9 +720,7 @@ extension PlayerWindowController {
             player.window.setFrameImmediately(interactiveModeGeometry!.windowFrame)
           }
 
-          forceDraw()
-
-          animationPipeline.runZeroDuration({ [self] in
+          animationPipeline.submitZeroDuration({ [self] in
             forceDraw()
             exitInteractiveMode()
           })
@@ -730,7 +728,7 @@ extension PlayerWindowController {
         return
       } else if player.info.isRestoring {
         /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
-        animationPipeline.runZeroDuration({ [self] in
+        animationPipeline.submitZeroDuration({ [self] in
           let videoSize: NSSize
           if currentLayout.isFullScreen {
             let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoBaseDisplaySize.aspect)
@@ -750,7 +748,7 @@ extension PlayerWindowController {
       let prevCropRect = prevCrop.cropRect(origVideoSize: videoBaseDisplaySize, flipYForMac: true)
       log.verbose("[AdjustFrameAfterVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
 
-      animationPipeline.run(CocoaAnimation.Task({ [self] in
+      animationPipeline.submit(CocoaAnimation.Task({ [self] in
         let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize, cropbox: prevCropRect,
                                                       videoScale: player.info.cachedWindowScale)
         // Update the cached objects
@@ -1027,7 +1025,7 @@ extension PlayerWindowController {
     geoUpdateTicketCount += 1
     let geoUpdateRequestID = geoUpdateTicketCount
 
-    animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    animationPipeline.submit(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       if geoUpdateRequestID < geoUpdateTicketCount {
         log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateTicketCount)")
         return
@@ -1105,7 +1103,7 @@ extension PlayerWindowController {
       /// unless we remove this constraint from the the window's `contentView`. For all other situations this constraint should be active.
       /// Need to execute this in its own task so that other animations are not affected.
       let shouldDisableConstraint = !geometry.isVideoVisible && geometry.isPlaylistVisible
-      animationPipeline.runZeroDuration({ [self] in
+      animationPipeline.submitZeroDuration({ [self] in
         viewportBottomOffsetFromContentViewBottomConstraint.isActive = !shouldDisableConstraint
       })
     }

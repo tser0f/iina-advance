@@ -1969,7 +1969,7 @@ class PlayerCore: NSObject {
       syncUITicketCount += 1
       let syncUITicket = syncUITicketCount
 
-      windowController.animationPipeline.runZeroDuration { [self] in
+      windowController.animationPipeline.submitZeroDuration { [self] in
         guard syncUITicket == syncUITicketCount else {
           return
         }

@@ -76,21 +76,21 @@ class CocoaAnimation {
     private(set) var isRunning = false
     private var taskQueue = LinkedList<Task>()
 
-    /// Convenience function. Same as `run([Task])`, but for a single animation.
-    func run(_ task: Task, then doAfter: TaskFunc? = nil) {
-      run([task], then: doAfter)
+    /// Convenience function. Same as `submit([Task])`, but for a single animation.
+    func submit(_ task: Task, then doAfter: TaskFunc? = nil) {
+      submit([task], then: doAfter)
     }
 
     // Convenience function. Run the task with no animation / zero duration.
     // Useful for updating constraints, etc., which cannot be animated or do not look good animated.
-    func runZeroDuration(_ runFunc: @escaping TaskFunc, then doAfter: TaskFunc? = nil) {
-      run(CocoaAnimation.zeroDurationTask(runFunc), then: doAfter)
+    func submitZeroDuration(_ runFunc: @escaping TaskFunc, then doAfter: TaskFunc? = nil) {
+      submit(CocoaAnimation.zeroDurationTask(runFunc), then: doAfter)
     }
 
     /// Recursive function which enqueues each of the given `AnimationTask`s for execution, one after another.
     /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `CocoaAnimation.disableAnimation()`.
     /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `CocoaAnimation.DefaultDuration`.
-    func run(_ tasks: [Task], then doAfter: TaskFunc? = nil) {
+    func submit(_ tasks: [Task], then doAfter: TaskFunc? = nil) {
       // Fail if not running on main thread:
       dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
 

@@ -145,7 +145,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   // MARK: - UI: Show / Hide
 
   private func showControl() {
-    windowController.animationPipeline.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+    windowController.animationPipeline.submit(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .required
       windowController.closeButtonView.isHidden = false
       windowController.closeButtonView.animator().alphaValue = 1
@@ -155,7 +155,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   private func hideControl() {
-    windowController.animationPipeline.run(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+    windowController.animationPipeline.submit(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .defaultLow
 
       windowController.closeButtonView.animator().alphaValue = 0
@@ -325,7 +325,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // Constrain window so that it doesn't expand below bottom of screen, or fall offscreen
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
 
-    windowController.animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    windowController.animationPipeline.submit(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showPlaylist, for: .musicModeShowPlaylist)
       windowController.applyMusicModeGeometry(newGeometry)
     }))
@@ -379,7 +379,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       windowController.videoView.display()
     })
 
-    windowController.animationPipeline.run(tasks)
+    windowController.animationPipeline.submit(tasks)
   }
 
   // MARK: - Window size & layout
@@ -467,7 +467,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
     resetScrollingLabels()
 
-    windowController.animationPipeline.run(CocoaAnimation.Task{ [self] in
+    windowController.animationPipeline.submit(CocoaAnimation.Task{ [self] in
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)

@@ -113,7 +113,7 @@ extension PlayerWindowController {
     }
 
     if needsNativeFullScreen {
-      animationPipeline.runZeroDuration({ [self] in
+      animationPipeline.submitZeroDuration({ [self] in
         enterFullScreen()
       })
       return
@@ -327,7 +327,7 @@ extension PlayerWindowController {
     })
 
     if thenRun {
-      animationPipeline.run(transition.animationTasks)
+      animationPipeline.submit(transition.animationTasks)
     }
     return transition
   }

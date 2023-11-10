@@ -419,7 +419,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         resizeViewport()
       }
     case PK.hideWindowsWhenInactive.rawValue:
-      animationPipeline.runZeroDuration({ [self] in
+      animationPipeline.submitZeroDuration({ [self] in
         refreshHidesOnDeactivateStatus()
       })
 
@@ -482,7 +482,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
-      animationPipeline.run(CocoaAnimation.zeroDurationTask {
+      animationPipeline.submit(CocoaAnimation.zeroDurationTask {
         self.updateOSDPosition()
       })
     default:
@@ -892,13 +892,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // FIXME: this is not ready for production yet! Need to fix issues with freezing video
       guard Preference.bool(for: .togglePipWhenSwitchingSpaces) else { return }
       if !window.isOnActiveSpace && pipStatus == .notInPIP {
-        animationPipeline.runZeroDuration({ [self] in
+        animationPipeline.submitZeroDuration({ [self] in
           log.debug("Window is no longer in active space; entering PIP")
           enterPIP()
           isWindowPipDueToInactiveSpace = true
         })
       } else if window.isOnActiveSpace && isWindowPipDueToInactiveSpace && pipStatus == .inPIP {
-        animationPipeline.runZeroDuration({ [self] in
+        animationPipeline.submitZeroDuration({ [self] in
           log.debug("Window is in active space again; exiting PIP")
           isWindowPipDueToInactiveSpace = false
           exitPIP()
@@ -1123,7 +1123,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateTitleBarAndOSC() {
-    animationPipeline.runZeroDuration { [self] in
+    animationPipeline.submitZeroDuration { [self] in
       let oldLayout = currentLayout
       let newLayoutSpec = LayoutSpec.fromPreferences(fillingInFrom: oldLayout.spec)
       buildLayoutTransition(named: "UpdateTitleBarAndOSC", from: oldLayout, to: newLayoutSpec, thenRun: true)
@@ -1872,7 +1872,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// Split the duration between `openNewPanels` animation and `fadeInNewViews` animation
     let transition = buildLayoutTransition(named: "Exit\(isLegacy ? "Legacy" : "")FullScreen", from: oldLayout, to: windowedLayout, totalStartingDuration: 0, totalEndingDuration: duration)
 
-    animationPipeline.run(transition.animationTasks)
+    animationPipeline.submit(transition.animationTasks)
   }
 
   func toggleWindowFullScreen() {
@@ -2066,7 +2066,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// Just wait until after it does its thing before calling `setFrame()`.
     if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
-        animationPipeline.run(CocoaAnimation.Task({ [self] in
+        animationPipeline.submit(CocoaAnimation.Task({ [self] in
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
@@ -2106,7 +2106,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
     // frame.
     // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
-    animationPipeline.run(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+    animationPipeline.submit(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
       // FIXME: add checks for duplicates
       if currentLayout.isLegacyFullScreen {
         let layout = currentLayout
@@ -2280,9 +2280,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
                          duration: CGFloat = CocoaAnimation.DefaultDuration,
                          forceShowTopBar: Bool = false) {
     guard !player.disableUI && !isInInteractiveMode else { return }
-    let animationTasks: [CocoaAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer, duration: duration,
-                                                                               forceShowTopBar: forceShowTopBar)
-    animationPipeline.run(animationTasks)
+    let animationTasks: [CocoaAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer,
+                                                                                  duration: duration,
+                                                                                  forceShowTopBar: forceShowTopBar)
+    animationPipeline.submit(animationTasks)
   }
 
   func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true,
@@ -2439,7 +2440,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     })
 
-    animationPipeline.run(animationTasks)
+    animationPipeline.submit(animationTasks)
     return true
   }
 
@@ -2765,13 +2766,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Use `immediately: true` to exit without animation
   func exitInteractiveMode(immediately: Bool = false, then doAfter: (() -> Void)? = nil) {
     let oldLayout = currentLayout
-    let duration: CGFloat = immediately ? 0 : CocoaAnimation.CropAnimationDuration
 
     let newMode: WindowMode = oldLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
     log.verbose("Exiting interactive mode, newMode: \(newMode)")
     let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
+    let halfDuration = CocoaAnimation.CropAnimationDuration * 0.5
     let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
-                                           totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5)
+                                           totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
 
     var animationTasks = transition.animationTasks
     if let doAfter {
@@ -2779,7 +2780,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         doAfter()
       }))
     }
-    animationPipeline.run(animationTasks)
+    animationPipeline.submit(animationTasks)
   }
 
   private func refreshSeekTimeAndThumnail(from event: NSEvent) {
@@ -2980,7 +2981,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func enterMusicMode() {
-    animationPipeline.runZeroDuration { [self] in
+    animationPipeline.submitZeroDuration { [self] in
       /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
       let oldLayout = currentLayout
@@ -2996,7 +2997,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func exitMusicMode() {
-    animationPipeline.runZeroDuration { [self] in
+    animationPipeline.submitZeroDuration { [self] in
       /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
       let oldLayout = currentLayout
@@ -3502,7 +3503,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       player.saveState()
     })
 
-    animationPipeline.run(animationTasks)
+    animationPipeline.submit(animationTasks)
   }
 
   func pipActionPlay(_ pip: PIPViewController) {
