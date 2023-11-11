@@ -1495,7 +1495,7 @@ class PlayerCore: NSObject {
       let time = Date().timeIntervalSince1970
       ts.tv_sec = Int(time)
       ts.tv_nsec = Int(time.truncatingRemainder(dividingBy: 1) * 1_000_000_000)
-      let data = Data(bytesOf: ts)
+      let data = Data.from(bytesOf: ts)
       // set the attribute; the key is undocumented
       let name = "com.apple.lastuseddate#PS"
       url.withUnsafeFileSystemRepresentation { fileSystemPath in

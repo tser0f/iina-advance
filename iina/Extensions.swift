@@ -475,6 +475,13 @@ extension NSData {
 }
 
 extension Data {
+  static func from<T>(bytesOf thing: T) -> Data {
+    withUnsafePointer(to: thing) { thing in
+      var copyOfThing = thing // Hopefully CoW?
+      return Data(bytes: &copyOfThing, count: MemoryLayout.size(ofValue: thing))
+    }
+  }
+
   var md5: String {
     get {
       return (self as NSData).md5() as String
@@ -487,11 +494,6 @@ extension Data {
     }
   }
 
-  init<T>(bytesOf thing: T) {
-    var copyOfThing = thing // Hopefully CoW?
-    self.init(bytes: &copyOfThing, count: MemoryLayout.size(ofValue: thing))
-  }
-  
   func saveToFolder(_ url: URL, filename: String) -> URL? {
     let fileUrl = url.appendingPathComponent(filename)
     do {
