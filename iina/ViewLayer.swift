@@ -17,7 +17,7 @@ class ViewLayer: CAOpenGLLayer {
   // Use semaphore to prevent more than 2 frames enqueued at any given time. Any more is wasted resources
   private let mpvGLSemaphore = DispatchSemaphore(value: 2)
   private let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
-  @Atomic var blocked = false
+  private var blocked = false
 
   private var fbo: GLint = 1
 

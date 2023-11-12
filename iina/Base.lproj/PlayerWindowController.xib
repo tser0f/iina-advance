@@ -440,6 +440,9 @@
                             <constraint firstAttribute="bottom" secondItem="HHm-A9-jIP" secondAttribute="bottom" id="nLX-0l-gEv"/>
                             <constraint firstItem="HHm-A9-jIP" firstAttribute="leading" secondItem="vej-bg-g6C" secondAttribute="leading" id="tSq-Pp-P0C"/>
                         </constraints>
+                        <shadow key="shadow">
+                            <color key="color" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        </shadow>
                         <connections>
                             <outlet property="imageView" destination="HHm-A9-jIP" id="KtN-I3-vJb"/>
                         </connections>
