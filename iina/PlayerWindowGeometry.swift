@@ -698,7 +698,7 @@ extension PlayerWindowController {
         let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
                                            width: cropController.cropw, height: cropController.croph)
 
-        animationPipeline.submit(CocoaAnimation.Task({ [self] in
+        animationPipeline.submit(IINAAnimation.Task({ [self] in
           log.verbose("Cropping video from origVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
           windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
           videoAspectRatio = windowedModeGeometry.videoAspectRatio
@@ -748,7 +748,7 @@ extension PlayerWindowController {
       let prevCropRect = prevCrop.cropRect(origVideoSize: videoBaseDisplaySize, flipYForMac: true)
       log.verbose("[AdjustFrameAfterVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
 
-      animationPipeline.submit(CocoaAnimation.Task({ [self] in
+      animationPipeline.submit(IINAAnimation.Task({ [self] in
         let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize, cropbox: prevCropRect,
                                                       videoScale: player.info.cachedWindowScale)
         // Update the cached objects
@@ -1025,7 +1025,7 @@ extension PlayerWindowController {
     geoUpdateTicketCount += 1
     let geoUpdateRequestID = geoUpdateTicketCount
 
-    animationPipeline.submit(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       if geoUpdateRequestID < geoUpdateTicketCount {
         log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateTicketCount)")
         return
@@ -1069,7 +1069,7 @@ extension PlayerWindowController {
     // Update video aspect ratio
     videoAspectRatio = newGeometry.videoAspectRatio
 
-    CocoaAnimation.disableAnimation{
+    IINAAnimation.disableAnimation{
       // Make sure this is up-to-date
       videoView.apply(newGeometry)
     }

@@ -24,7 +24,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return NSNib.Name("PlayerWindowController")
   }
 
-  var videoView: VideoView {
+  @objc var videoView: VideoView {
     return player.videoView
   }
 
@@ -100,7 +100,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // For Pinch To Magnify gesture:
   let magnificationHandler = VideoMagnificationHandler()
 
-  let animationPipeline = CocoaAnimation.Pipeline()
+  let animationPipeline = IINAAnimation.Pipeline()
 
   // MARK: - Status
 
@@ -482,7 +482,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
-      animationPipeline.submit(CocoaAnimation.zeroDurationTask {
+      animationPipeline.submit(IINAAnimation.zeroDurationTask {
         self.updateOSDPosition()
       })
     default:
@@ -1844,7 +1844,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// There does not appear to be any similar problem when entering fullscreen.
   func windowDidExitFullScreen(_ notification: Notification) {
     if AccessibilityPreferences.motionReductionEnabled {
-      animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: false)
+      animateExitFromFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: false)
     }
   }
 
@@ -1896,7 +1896,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("EnterFullScreen called (legacy: \(isLegacy.yn), isNativeFullScreenNow: \(isFullScreen.yn))")
 
     if isLegacy {
-      animateEntryIntoFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
+      animateEntryIntoFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
     } else if !isFullScreen {
       window.toggleFullScreen(self)
     }
@@ -1909,7 +1909,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
     if legacy {
-      animateExitFromFullScreen(withDuration: CocoaAnimation.FullScreenTransitionDuration, isLegacy: true)
+      animateExitFromFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
     } else if isFullScreen {
       window.toggleFullScreen(self)
     }
@@ -1943,7 +1943,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeometry = resizeWindowedModeGeometry(to: requestedSize)
 
       if currentMode == .windowed {
-        CocoaAnimation.disableAnimation{
+        IINAAnimation.disableAnimation{
           videoView.apply(newGeometry)
         }
       }
@@ -1970,7 +1970,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       updateCachedGeometry()
     }
 
-    CocoaAnimation.disableAnimation {
+    IINAAnimation.disableAnimation {
       log.verbose("WindowDidResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
 
       switch currentLayout.mode {
@@ -2066,7 +2066,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// Just wait until after it does its thing before calling `setFrame()`.
     if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
-        animationPipeline.submit(CocoaAnimation.Task({ [self] in
+        animationPipeline.submit(IINAAnimation.Task({ [self] in
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
@@ -2106,7 +2106,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
     // frame.
     // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
-    animationPipeline.submit(CocoaAnimation.Task(duration: CocoaAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+    animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.FullScreenTransitionDuration * 0.2, { [self] in
       // FIXME: add checks for duplicates
       if currentLayout.isLegacyFullScreen {
         let layout = currentLayout
@@ -2277,19 +2277,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Shows fadeableViews and titlebar via fade
   func showFadeableViews(thenRestartFadeTimer restartFadeTimer: Bool = true,
-                         duration: CGFloat = CocoaAnimation.DefaultDuration,
+                         duration: CGFloat = IINAAnimation.DefaultDuration,
                          forceShowTopBar: Bool = false) {
     guard !player.disableUI && !isInInteractiveMode else { return }
-    let animationTasks: [CocoaAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer,
+    let animationTasks: [IINAAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer,
                                                                                   duration: duration,
                                                                                   forceShowTopBar: forceShowTopBar)
     animationPipeline.submit(animationTasks)
   }
 
   func buildAnimationToShowFadeableViews(restartFadeTimer: Bool = true,
-                                         duration: CGFloat = CocoaAnimation.DefaultDuration,
-                                         forceShowTopBar: Bool = false) -> [CocoaAnimation.Task] {
-    var animationTasks: [CocoaAnimation.Task] = []
+                                         duration: CGFloat = IINAAnimation.DefaultDuration,
+                                         forceShowTopBar: Bool = false) -> [IINAAnimation.Task] {
+    var animationTasks: [IINAAnimation.Task] = []
 
     /// Default `showTopBarTrigger` setting to `.windowHover` if advanced settings not enabled
     let showTopBar = forceShowTopBar || (!Preference.isAdvancedEnabled || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover)
@@ -2309,7 +2309,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let currentLayout = self.currentLayout
 
-    animationTasks.append(CocoaAnimation.Task(duration: duration, { [self] in
+    animationTasks.append(IINAAnimation.Task(duration: duration, { [self] in
       guard fadeableViewsAnimationState == .hidden || fadeableViewsAnimationState == .shown else { return }
       fadeableViewsAnimationState = .willShow
       player.refreshSyncUITimer(log: "Showing fadeable views ")
@@ -2340,7 +2340,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }))
 
     // Not animated, but needs to wait until after fade is done
-    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
+    animationTasks.append(IINAAnimation.zeroDurationTask { [self] in
       // if no interrupt then hide animation
       if fadeableViewsAnimationState == .willShow {
         fadeableViewsAnimationState = .shown
@@ -2389,9 +2389,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return false
     }
 
-    var animationTasks: [CocoaAnimation.Task] = []
+    var animationTasks: [IINAAnimation.Task] = []
 
-    animationTasks.append(CocoaAnimation.Task{ [self] in
+    animationTasks.append(IINAAnimation.Task{ [self] in
       // Don't hide overlays when in PIP or when they are not actually shown
       destroyFadeTimer()
       fadeableViewsAnimationState = .willHide
@@ -2418,7 +2418,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     })
 
-    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
+    animationTasks.append(IINAAnimation.zeroDurationTask { [self] in
       // if no interrupt then hide animation
       guard fadeableViewsAnimationState == .willHide else { return }
 
@@ -2453,8 +2453,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Create new timer.
     // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
     var timeout = Double(Preference.float(for: .controlBarAutoHideTimeout))
-    if timeout < CocoaAnimation.DefaultDuration {
-      timeout = CocoaAnimation.DefaultDuration
+    if timeout < IINAAnimation.DefaultDuration {
+      timeout = IINAAnimation.DefaultDuration
     }
     hideFadeableViewsTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideFadeableViewsAndCursor), userInfo: nil, repeats: false)
     hideFadeableViewsTimer?.tolerance = 0.1
@@ -2655,7 +2655,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       } else {
         // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
         let configuredTimeout = Double(Preference.float(for: .osdAutoHideTimeout))
-        timeout = configuredTimeout <= CocoaAnimation.OSDAnimationDuration ? CocoaAnimation.OSDAnimationDuration : configuredTimeout
+        timeout = configuredTimeout <= IINAAnimation.OSDAnimationDuration ? IINAAnimation.OSDAnimationDuration : configuredTimeout
       }
       hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
     }
@@ -2681,7 +2681,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0
 
-      CocoaAnimation.runAsync(CocoaAnimation.Task(duration: CocoaAnimation.OSDAnimationDuration, { [self] in
+      IINAAnimation.runAsync(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration, { [self] in
         osdVisualEffectView.layoutSubtreeIfNeeded()
       }), then: {
         accessoryView.layer?.opacity = 1
@@ -2702,7 +2702,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     player.refreshSyncUITimer()
 
-    CocoaAnimation.runAsync(CocoaAnimation.Task(duration: CocoaAnimation.OSDAnimationDuration, { [self] in
+    IINAAnimation.runAsync(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration, { [self] in
       osdVisualEffectView.alphaValue = 0
     }), then: {
       if self.osdAnimationState == .willHide {
@@ -2757,7 +2757,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let oldLayout = currentLayout
     let newMode: WindowMode = oldLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
     let interactiveModeLayout = oldLayout.spec.clone(mode: newMode, interactiveMode: mode)
-    let duration = CocoaAnimation.CropAnimationDuration
+    let duration = IINAAnimation.CropAnimationDuration
     buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout,
                           totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5,
                           thenRun: true)
@@ -2770,13 +2770,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let newMode: WindowMode = oldLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
     log.verbose("Exiting interactive mode, newMode: \(newMode)")
     let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
-    let halfDuration = CocoaAnimation.CropAnimationDuration * 0.5
+    let halfDuration = IINAAnimation.CropAnimationDuration * 0.5
     let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
                                            totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
 
     var animationTasks = transition.animationTasks
     if let doAfter {
-      animationTasks.append(CocoaAnimation.Task({
+      animationTasks.append(IINAAnimation.Task({
         doAfter()
       }))
     }
@@ -3468,10 +3468,10 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     guard !(NSApp.delegate as! AppDelegate).isTerminating else { return }
 
     // seems to require separate animation blocks to work properly
-    var animationTasks: [CocoaAnimation.Task] = []
+    var animationTasks: [IINAAnimation.Task] = []
 
     if isWindowHidden {
-      animationTasks.append(CocoaAnimation.Task({ [self] in
+      animationTasks.append(IINAAnimation.Task({ [self] in
         showWindow(self)
         if let window {
           log.verbose("PIP did close; removing player from hidden windows list: \(window.savedStateName.quoted)")
@@ -3480,7 +3480,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       }))
     }
 
-    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
+    animationTasks.append(IINAAnimation.zeroDurationTask { [self] in
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
@@ -3489,7 +3489,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       updateTitle()
     })
 
-    animationTasks.append(CocoaAnimation.zeroDurationTask { [self] in
+    animationTasks.append(IINAAnimation.zeroDurationTask { [self] in
       // Similarly, we need to run a redraw here as well. We check to make sure we
       // are paused, because this causes a janky animation in either case but as
       // it's not necessary while the video is playing and significantly more

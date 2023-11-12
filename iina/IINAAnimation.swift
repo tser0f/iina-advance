@@ -1,5 +1,5 @@
 //
-//  CocoaAnimation.swift
+//  IINAAnimation.swift
 //  iina
 //
 //  Created by Matt Svoboda on 2023-04-09.
@@ -11,7 +11,7 @@ import Foundation
 typealias TaskFunc = (() -> Void)
 typealias AnimationBlock = (NSAnimationContext) -> Void
 
-class CocoaAnimation {
+class IINAAnimation {
 
   // MARK: Durations
 
@@ -36,7 +36,9 @@ class CocoaAnimation {
   static func disableAnimation<T>(_ closure: () throws -> T) rethrows -> T {
     let prevDisableState = disableAllAnimation
     disableAllAnimation = true
+    CATransaction.begin()
     defer {
+      CATransaction.commit()
       disableAllAnimation = prevDisableState
     }
     return try closure()
@@ -48,14 +50,14 @@ class CocoaAnimation {
     }
   }
 
-  // MARK: - CocoaAnimation.Task
+  // MARK: - IINAAnimation.Task
 
   struct Task {
     let duration: CGFloat
     let timingName: CAMediaTimingFunctionName?
     let runFunc: TaskFunc
 
-    init(duration: CGFloat = CocoaAnimation.DefaultDuration,
+    init(duration: CGFloat = IINAAnimation.DefaultDuration,
          timing timingName: CAMediaTimingFunctionName? = nil,
          _ runFunc: @escaping TaskFunc) {
       self.duration = duration
@@ -68,7 +70,7 @@ class CocoaAnimation {
     return Task(duration: 0, timing: nil, runFunc)
   }
 
-  // MARK: - CocoaAnimation.Pipeline
+  // MARK: - IINAAnimation.Pipeline
 
   /// Serial queue which executes `Task`s one after another.
   class Pipeline {
@@ -84,12 +86,12 @@ class CocoaAnimation {
     // Convenience function. Run the task with no animation / zero duration.
     // Useful for updating constraints, etc., which cannot be animated or do not look good animated.
     func submitZeroDuration(_ runFunc: @escaping TaskFunc, then doAfter: TaskFunc? = nil) {
-      submit(CocoaAnimation.zeroDurationTask(runFunc), then: doAfter)
+      submit(IINAAnimation.zeroDurationTask(runFunc), then: doAfter)
     }
 
     /// Recursive function which enqueues each of the given `AnimationTask`s for execution, one after another.
-    /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `CocoaAnimation.disableAnimation()`.
-    /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `CocoaAnimation.DefaultDuration`.
+    /// Will execute without animation if motion reduction is enabled, or if wrapped in a call to `IINAAnimation.disableAnimation()`.
+    /// If animating, it uses either the supplied `duration` for duration, or if that is not provided, uses `IINAAnimation.DefaultDuration`.
     func submit(_ tasks: [Task], then doAfter: TaskFunc? = nil) {
       // Fail if not running on main thread:
       dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
@@ -113,7 +115,7 @@ class CocoaAnimation {
     }
 
     private func runTasks() {
-      var nextTask: CocoaAnimation.Task? = nil
+      var nextTask: IINAAnimation.Task? = nil
 
       if let poppedTask = taskQueue.removeFirst() {
         nextTask = poppedTask
@@ -124,6 +126,10 @@ class CocoaAnimation {
       guard let nextTask = nextTask else { return }
 
       NSAnimationContext.runAnimationGroup({ context in
+        CATransaction.begin()
+        defer {
+          CATransaction.commit()
+        }
         let disableAnimation = !isAnimationEnabled || AccessibilityPreferences.motionReductionEnabled
         if disableAnimation {
           context.duration = 0
@@ -148,6 +154,10 @@ class CocoaAnimation {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     
     NSAnimationContext.runAnimationGroup({ context in
+      CATransaction.begin()
+      defer {
+        CATransaction.commit()
+      }
       let disableAnimation = !isAnimationEnabled || AccessibilityPreferences.motionReductionEnabled
       if disableAnimation {
         context.duration = 0
@@ -175,7 +185,7 @@ extension NSLayoutConstraint {
   /// Using an explicit call to `animator()` seems to be required to guarantee it, but we do not always want it to animate.
   /// This function will automatically disable animations in case they are disabled.
   func animateToConstant(_ newConstantValue: CGFloat) {
-    if CocoaAnimation.isAnimationEnabled {
+    if IINAAnimation.isAnimationEnabled {
       self.animator().constant = newConstantValue
     } else {
       self.constant = newConstantValue

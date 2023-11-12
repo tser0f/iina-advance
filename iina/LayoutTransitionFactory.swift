@@ -100,7 +100,7 @@ extension PlayerWindowController {
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
-    CocoaAnimation.disableAnimation{
+    IINAAnimation.disableAnimation{
       for task in initialTransition.animationTasks {
         task.runFunc()
       }
@@ -188,11 +188,11 @@ extension PlayerWindowController {
 
     // - Determine durations
 
-    var startingAnimationDuration = CocoaAnimation.DefaultDuration
+    var startingAnimationDuration = IINAAnimation.DefaultDuration
     if transition.isTogglingFullScreen {
       startingAnimationDuration = 0
     } else if transition.isEnteringMusicMode {
-      startingAnimationDuration = CocoaAnimation.DefaultDuration * 0.3
+      startingAnimationDuration = IINAAnimation.DefaultDuration * 0.3
     } else if let totalStartingDuration = totalStartingDuration {
       startingAnimationDuration = totalStartingDuration * 0.3
     }
@@ -204,7 +204,7 @@ extension PlayerWindowController {
       fadeOutOldViewsDuration = 0
     }
 
-    let endingAnimationDuration: CGFloat = totalEndingDuration ?? CocoaAnimation.DefaultDuration
+    let endingAnimationDuration: CGFloat = totalEndingDuration ?? IINAAnimation.DefaultDuration
 
     // Extra animation for exiting legacy full screen: remove camera housing with black bar
     let closeOldPanelsDuration = startingAnimationDuration
@@ -222,7 +222,7 @@ extension PlayerWindowController {
     // - Starting animations:
 
     // 0: Set initial var or other tasks which happen before main animations
-    transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
+    transition.animationTasks.append(IINAAnimation.zeroDurationTask{ [self] in
       doPreTransitionWork(transition)
     })
 
@@ -235,14 +235,14 @@ extension PlayerWindowController {
 
     // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.
     if transition.needsFadeOutOldViews {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: fadeOutOldViewsDuration, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: fadeOutOldViewsDuration, { [self] in
         fadeOutOldViews(transition)
       }))
     }
 
     // Extra animation for exiting legacy full screen (to Native Windowed Mode)
     if useExtraAnimationForExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let newGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("[\(transition.name)] Updating legacy full screen window to show camera housing prior to entering native windowed mode")
         applyLegacyFullScreenGeometry(newGeo)
@@ -252,7 +252,7 @@ extension PlayerWindowController {
     // StartingAnimation 3: Close/Minimize panels which are no longer needed. Not used for fullScreen transitions.
     // Applies middleGeometry if it exists.
     if transition.needsCloseOldPanels {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: closeOldPanelsDuration, timing: panelTimingName, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: closeOldPanelsDuration, timing: panelTimingName, { [self] in
         closeOldPanels(transition)
       }))
     }
@@ -260,14 +260,14 @@ extension PlayerWindowController {
     // - Middle animations:
 
     // 0: Middle point: update style & constraints. Should have minimal visual changes
-    transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
+    transition.animationTasks.append(IINAAnimation.zeroDurationTask{ [self] in
       // This also can change window styleMask
       updateHiddenViewsAndConstraints(transition)
     })
 
     // Extra task when entering music mode: move & resize window
     if transition.isEnteringMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         // TODO: develop a nice sliding animation if possible
         log.verbose("[\(transition.name)] Moving & resizing window")
 
@@ -286,7 +286,7 @@ extension PlayerWindowController {
 
     // Extra animation for exiting legacy full screen to legacy windowed mode, if black space around camera housing
     if useExtraAnimationForExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let extraGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
         log.verbose("[\(transition.name)] Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
         applyLegacyFullScreenGeometry(extraGeo)
@@ -294,7 +294,7 @@ extension PlayerWindowController {
     }
 
     // EndingAnimation: Open new panels and fade in new views
-    transition.animationTasks.append(CocoaAnimation.Task(duration: openFinalPanelsDuration, timing: panelTimingName, { [self] in
+    transition.animationTasks.append(IINAAnimation.Task(duration: openFinalPanelsDuration, timing: panelTimingName, { [self] in
       // If toggling fullscreen, this also changes the window frame:
       openNewPanelsAndFinalizeOffsets(transition)
 
@@ -306,14 +306,14 @@ extension PlayerWindowController {
 
     // EndingAnimation: Fade in new views
     if !transition.isTogglingFullScreen && transition.needsFadeInNewViews {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
         fadeInNewViews(transition)
       }))
     }
 
     // If entering legacy full screen, will add an extra animation to hiding camera housing / menu bar / dock
     if useExtraAnimationForEnteringLegacyFullScreen {
-      transition.animationTasks.append(CocoaAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : windowedModeScreen.cameraHousingHeight ?? 0
         let newGeo = transition.outputGeometry.clone(windowFrame: windowedModeScreen.frame, topMarginHeight: topBlackBarHeight)
         log.verbose("[\(transition.name)] Updating legacy full screen window to cover camera housing / menu bar / dock")
@@ -322,7 +322,7 @@ extension PlayerWindowController {
     }
 
     // After animations all finish
-    transition.animationTasks.append(CocoaAnimation.zeroDurationTask{ [self] in
+    transition.animationTasks.append(IINAAnimation.zeroDurationTask{ [self] in
       doPostTransitionWork(transition)
     })
 

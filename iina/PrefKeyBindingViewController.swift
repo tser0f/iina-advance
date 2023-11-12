@@ -81,7 +81,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
       self.updateEditEnabledStatus()
     })
 
-    addObserver(self, forKeyPath: #keyPath(view.effectiveAppearance), options: [.old, .new], context: nil)
+    addObserver(self, forKeyPath: #keyPath(view.effectiveAppearance), options: [], context: nil)
 
     observers.append(NotificationCenter.default.addObserver(forName: .iinaKeyBindingSearchFieldShouldUpdate, object: nil, queue: .main) { notification in
       guard let newStringValue = notification.object as? String else {

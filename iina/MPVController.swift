@@ -1323,7 +1323,7 @@ not applying FFmpeg 9599 workaround
         DispatchQueue.main.async {
           // FIXME: this isn't perfect - a bad frame briefly appears during transition
           Logger.log("Resetting videoView")
-          CocoaAnimation.disableAnimation {
+          IINAAnimation.disableAnimation {
             self.player.windowController.rotationHandler.rotateVideoView(toDegrees: 0)
           }
         }

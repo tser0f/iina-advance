@@ -334,7 +334,7 @@ extension PlayerWindowController {
       if animate {
         animationPipeline.submit(transition.animationTasks)
       } else {
-        CocoaAnimation.disableAnimation{
+        IINAAnimation.disableAnimation{
           animationPipeline.submit(transition.animationTasks)
         }
       }
@@ -861,7 +861,7 @@ extension PlayerWindowController {
       Logger.fatal("ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
     }
 
-    return CocoaAnimation.disableAnimation {
+    return IINAAnimation.disableAnimation {
       let currentLocation = dragEvent.locationInWindow
       let layout = currentLayout
 

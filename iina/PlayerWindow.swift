@@ -18,7 +18,7 @@ class PlayerWindow: NSWindow {
   /**
    By default, `setFrame()` has its own implicit animation, and this can create an undesirable effect when combined with other animations.
    This function uses a `0` duration animation to effectively remove the implicit default animation.
-   It will still animate if used inside an `NSAnimationContext` or `CocoaAnimation.Task` with non-zero duration.
+   It will still animate if used inside an `NSAnimationContext` or `IINAAnimation.Task` with non-zero duration.
 
    Note: if `animate` is `true`, a `windowDidEndLiveResize` event will be triggered, which is often not desirable!
    */

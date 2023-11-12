@@ -145,7 +145,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   // MARK: - UI: Show / Hide
 
   private func showControl() {
-    windowController.animationPipeline.submit(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+    windowController.animationPipeline.submit(IINAAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .required
       windowController.closeButtonView.isHidden = false
       windowController.closeButtonView.animator().alphaValue = 1
@@ -155,7 +155,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   private func hideControl() {
-    windowController.animationPipeline.submit(CocoaAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
+    windowController.animationPipeline.submit(IINAAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
       windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .defaultLow
 
       windowController.closeButtonView.animator().alphaValue = 0
@@ -325,7 +325,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // Constrain window so that it doesn't expand below bottom of screen, or fall offscreen
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
 
-    windowController.animationPipeline.submit(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    windowController.animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showPlaylist, for: .musicModeShowPlaylist)
       windowController.applyMusicModeGeometry(newGeometry)
     }))
@@ -346,8 +346,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
 
-    var tasks: [CocoaAnimation.Task] = []
-    tasks.append(CocoaAnimation.zeroDurationTask{ [self] in
+    var tasks: [IINAAnimation.Task] = []
+    tasks.append(IINAAnimation.zeroDurationTask{ [self] in
       // Hide OSD during animation
       player.enableOSD = false
       player.hideOSD()
@@ -362,14 +362,14 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       }
     })
 
-    tasks.append(CocoaAnimation.Task(duration: CocoaAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    tasks.append(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       Preference.set(showVideo, for: .musicModeShowAlbumArt)
 
       log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
       windowController.applyMusicModeGeometry(newGeometry)
     }))
 
-    tasks.append(CocoaAnimation.Task{ [self] in
+    tasks.append(IINAAnimation.Task{ [self] in
       player.enableOSD = true
       // Swap window buttons
       windowController.updateMusicModeButtonsVisibility()
@@ -420,7 +420,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   private func applyGeometryForResize(newWindowFrame: NSRect) {
     let newGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
-    CocoaAnimation.disableAnimation{
+    IINAAnimation.disableAnimation{
       /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
       windowController.applyMusicModeGeometry(newGeometry, setFrame: false)
     }
@@ -467,7 +467,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
     resetScrollingLabels()
 
-    windowController.animationPipeline.submit(CocoaAnimation.Task{ [self] in
+    windowController.animationPipeline.submit(IINAAnimation.Task{ [self] in
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)

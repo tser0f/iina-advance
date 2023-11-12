@@ -117,7 +117,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       let newMusicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
       windowController.log.verbose("Scaling video from pinch gesture in music mode. Applying result bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newWindowFrame)")
 
-      CocoaAnimation.disableAnimation{
+      IINAAnimation.disableAnimation{
         /// Important: use `animate: false` so that window controller callbacks are not triggered
         windowController.applyMusicModeGeometry(newMusicModeGeometry, animate: false, updateCache: false)
       }

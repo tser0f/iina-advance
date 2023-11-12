@@ -206,7 +206,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     var viewHidePairs: [(NSView, Bool)] = []
     // Use animation where possible to make the transition less jarring
     NSAnimationContext.runAnimationGroup({context in
-      context.duration = 0 // TODO animate ? AccessibilityPreferences.adjustedDuration(CocoaAnimation.defaultDuration) : 0
+      context.duration = 0 // TODO animate ? AccessibilityPreferences.adjustedDuration(IINAAnimation.defaultDuration) : 0
       context.allowsImplicitAnimation = animate ? !AccessibilityPreferences.motionReductionEnabled : false
       context.timingFunction = CAMediaTimingFunction(name: .linear)
 
@@ -249,7 +249,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       windowPreviewImageView.image = ib.updateWindowPreviewImage()
 
       NSAnimationContext.runAnimationGroup({context in
-        context.duration = animate ? AccessibilityPreferences.adjustedDuration(CocoaAnimation.DefaultDuration) : 0
+        context.duration = animate ? AccessibilityPreferences.adjustedDuration(IINAAnimation.DefaultDuration) : 0
         context.allowsImplicitAnimation = animate ? !AccessibilityPreferences.motionReductionEnabled : false
         context.timingFunction = CAMediaTimingFunction(name: .linear)
         for (view, shouldHide) in viewHidePairs {
