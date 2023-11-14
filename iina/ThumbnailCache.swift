@@ -95,7 +95,7 @@ class ThumbnailCache {
     }
 
     // version
-    let versionData = Data.from(bytesOf: version)
+    let versionData = Data(bytesOf: version)
     file.write(versionData)
 
     guard let fileAttr = try? FileManager.default.attributesOfItem(atPath: videoPath!.path) else {
@@ -108,7 +108,7 @@ class ThumbnailCache {
       Logger.log("Cannot get video file size from attributes", level: .error, subsystem: subsystem)
       return
     }
-    let fileSizeData = Data.from(bytesOf: fileSize)
+    let fileSizeData = Data(bytesOf: fileSize)
     file.write(fileSizeData)
 
     // modified date
@@ -117,12 +117,12 @@ class ThumbnailCache {
       return
     }
     let fileTimestamp = FileTimestamp(fileModifiedDate.timeIntervalSince1970)
-    let fileModificationDateData = Data.from(bytesOf: fileTimestamp)
+    let fileModificationDateData = Data(bytesOf: fileTimestamp)
     file.write(fileModificationDateData)
 
     // data blocks
     for tb in thumbnails {
-      let timestampData = Data.from(bytesOf: tb.realTime)
+      let timestampData = Data(bytesOf: tb.realTime)
       guard let tiffData = tb.image?.tiffRepresentation else {
         Logger.log("Cannot generate tiff data.", level: .error, subsystem: subsystem)
         return
@@ -132,7 +132,7 @@ class ThumbnailCache {
         return
       }
       let blockLength = Int64(timestampData.count + jpegData.count)
-      let blockLengthData = Data.from(bytesOf: blockLength)
+      let blockLengthData = Data(bytesOf: blockLength)
       file.write(blockLengthData)
       file.write(timestampData)
       file.write(jpegData)

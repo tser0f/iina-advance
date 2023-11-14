@@ -142,11 +142,6 @@ class ViewLayer: CAOpenGLLayer {
     let mpv = videoView.player.mpv!
     needsMPVRender = false
 
-    CGLLockContext(ctx)
-    defer {
-      CGLUnlockContext(ctx)
-    }
-
     glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
 
     var i: GLint = 0
@@ -206,7 +201,7 @@ class ViewLayer: CAOpenGLLayer {
 
     blocked = false
 
-    draw(forced: true)
+    drawAsync()
   }
 
   func drawAsync() {
