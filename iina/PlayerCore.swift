@@ -1482,7 +1482,6 @@ class PlayerCore: NSObject {
     log.debug("File started")
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
-    currentMediaIsAudio = .unknown
 
     info.currentURL = path.contains("://") ?
       URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
@@ -1695,24 +1694,24 @@ class PlayerCore: NSObject {
     // list changes if mpv is terminating as accessing mpv once shutdown has been initiated can
     // trigger a crash.
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-    Logger.log("Track list changed", subsystem: subsystem)
+    log.debug("Track list changed")
     reloadTrackInfo()
     reloadSelectedTracks()
-    let audioStatus = checkCurrentMediaIsAudio()
-    currentMediaIsAudio = audioStatus
+    let audioStatus = currentMediaIsAudio
 
     // if need to switch to music mode
     if Preference.bool(for: .autoSwitchToMusicMode) {
       if overrideAutoMusicMode {
-        Logger.log("Skipping music mode auto-switch because overrideAutoMusicMode is true",
-                   level: .verbose, subsystem: subsystem)
+        log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
       } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
-        Logger.log("Current media is audio: auto-switching to mini player", subsystem: subsystem)
+        log.debug("Current media is audio: auto-switching to music mode")
         DispatchQueue.main.sync {
+          // Update to square aspect ratio now. Try to avoid excess geometry changes
+          windowController.refreshDefaultAlbumArtVisibility(applyGeometry: false)
           enterMusicMode(automatically: true)
         }
       } else if audioStatus == .notAudio && isInMiniPlayer {
-        Logger.log("Current media is not audio: auto-switching to normal window", subsystem: subsystem)
+        log.debug("Current media is not audio: auto-switching to normal window")
         DispatchQueue.main.sync {
           exitMusicMode(automatically: true)
         }
@@ -2442,9 +2441,7 @@ class PlayerCore: NSObject {
     case notAudio
   }
 
-  var currentMediaIsAudio = CurrentMediaIsAudioStatus.unknown
-
-  func checkCurrentMediaIsAudio() -> CurrentMediaIsAudioStatus {
+  var currentMediaIsAudio: CurrentMediaIsAudioStatus {
     guard !info.isNetworkResource else { return .notAudio }
     let noVideoTrack = info.videoTracks.isEmpty
     let noAudioTrack = info.audioTracks.isEmpty

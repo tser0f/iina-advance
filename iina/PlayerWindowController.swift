@@ -995,7 +995,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // default album art
-  func refreshDefaultAlbumArtVisibility() {
+  func refreshDefaultAlbumArtVisibility(applyGeometry: Bool = false) {
     guard loaded else { return }
 
     let vid = player.info.vid
@@ -1013,6 +1013,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     defaultAlbumArtView.isHidden = !showDefaultArt
     let newAspectRatio = showDefaultArt ? 1 : videoAspectRatio
+
+    guard applyGeometry else { return }
 
     switch currentLayout.mode {
     case .musicMode:

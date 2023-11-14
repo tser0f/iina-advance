@@ -197,7 +197,8 @@ struct PlayerSaveState {
     }
     if Preference.bool(for: .autoSwitchToMusicMode) {
       var overrideAutoMusicMode = player.overrideAutoMusicMode
-      if (player.currentMediaIsAudio == .notAudio && player.isInMiniPlayer) || (player.currentMediaIsAudio == .isAudio && !player.isInMiniPlayer) {
+      let audioStatus = player.currentMediaIsAudio
+      if (audioStatus == .notAudio && player.isInMiniPlayer) || (audioStatus == .isAudio && !player.isInMiniPlayer) {
         /// Need to set this so that when restoring, the player won't immediately overcorrect and auto-switch music mode.
         /// This can happen because the `iinaFileLoaded` event will be fired by mpv very soon after restore is done, which is where it switches.
         overrideAutoMusicMode = true
