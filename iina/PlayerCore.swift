@@ -1618,13 +1618,7 @@ class PlayerCore: NSObject {
     log.verbose("Audio track changed to: \(aid)")
     guard windowController.loaded else { return }
     DispatchQueue.main.sync {
-      if isInMiniPlayer {
-        windowController?.miniPlayer.muteButton.isEnabled = (info.aid != 0)
-        windowController?.miniPlayer.volumeSlider.isEnabled = (info.aid != 0)
-      } else {
-        windowController?.muteButton.isEnabled = (info.aid != 0)
-        windowController?.volumeSlider.isEnabled = (info.aid != 0)
-      }
+      windowController.updateVolumeUI()
     }
     postNotification(.iinaAIDChanged)
     sendOSD(.track(info.currentTrack(.audio) ?? .noneAudioTrack))

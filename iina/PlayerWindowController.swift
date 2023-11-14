@@ -2969,10 +2969,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func updateVolumeUI() {
     guard loaded else { return }
     if let volumeSlider = player.isInMiniPlayer ? player.windowController.miniPlayer.volumeSlider : volumeSlider {
+      volumeSlider.isEnabled = (player.info.aid != 0)
       volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
       volumeSlider.doubleValue = player.info.volume
     }
     if let muteButton = player.isInMiniPlayer ? player.windowController.miniPlayer.muteButton : muteButton {
+      muteButton.isEnabled = (player.info.aid != 0)
       muteButton.state = player.info.isMuted ? .on : .off
     }
     if player.isInMiniPlayer {
