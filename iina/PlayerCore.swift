@@ -784,9 +784,10 @@ class PlayerCore: NSObject {
   func setVideoAspect(_ aspect: String) {
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
     guard let videoRawWidth = info.videoRawWidth, let videoRawHeight = info.videoRawHeight else {
+      log.verbose("Video's raw size not available")
       if let aspectDouble = Double(aspect), aspectDouble == -1 {
         DispatchQueue.main.async { [self] in
-          windowController.refreshDefaultAlbumArtVisibility()
+          windowController.refreshAlbumArtDisplay()
         }
       }
       return
@@ -1649,12 +1650,33 @@ class PlayerCore: NSObject {
   }
 
   func playbackRestarted() {
-    Logger.log("Playback restarted", subsystem: subsystem)
+    log.debug("Playback restarted")
     reloadSavedIINAfilters()
     windowController.forceDraw()
     syncUITime()
 
+    let audioStatus = currentMediaIsAudio
+
     DispatchQueue.main.async { [self] in
+      // Update art & aspect *before* switching to/from music mode for more pleasant animation
+      if audioStatus == .isAudio || !info.isVideoTrackSelected {
+        log.verbose("Media has no audio track or no video track is selected")
+        windowController.refreshAlbumArtDisplay()
+      }
+
+      // if need to switch to music mode
+      if Preference.bool(for: .autoSwitchToMusicMode) {
+        if overrideAutoMusicMode {
+          log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
+        } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
+          log.debug("Current media is audio: auto-switching to music mode")
+          enterMusicMode(automatically: true)
+        } else if audioStatus == .notAudio && isInMiniPlayer {
+          log.debug("Current media is not audio: auto-switching to normal window")
+          exitMusicMode(automatically: true)
+        }
+      }
+
       /// The first "playback restart" msg after starting a file means that the file is
       /// officially done loading
       info.justOpenedFile = false
@@ -1707,24 +1729,6 @@ class PlayerCore: NSObject {
     log.debug("Track list changed")
     reloadTrackInfo()
     reloadSelectedTracks()
-    let audioStatus = currentMediaIsAudio
-
-    // if need to switch to music mode
-    if Preference.bool(for: .autoSwitchToMusicMode) {
-      if overrideAutoMusicMode {
-        log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
-      } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
-        log.debug("Current media is audio: auto-switching to music mode")
-        DispatchQueue.main.sync {
-          enterMusicMode(automatically: true)
-        }
-      } else if audioStatus == .notAudio && isInMiniPlayer {
-        log.debug("Current media is not audio: auto-switching to normal window")
-        DispatchQueue.main.sync {
-          exitMusicMode(automatically: true)
-        }
-      }
-    }
     saveState()
     log.verbose("Posting iinaTracklistChanged, vid=\(optString(info.vid)), aid=\(optString(info.aid)), sid=\(optString(info.sid))")
     postNotification(.iinaTracklistChanged)
