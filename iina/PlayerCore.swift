@@ -785,7 +785,9 @@ class PlayerCore: NSObject {
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
     guard let videoRawWidth = info.videoRawWidth, let videoRawHeight = info.videoRawHeight else {
       if let aspectDouble = Double(aspect), aspectDouble == -1 {
-        windowController.refreshDefaultAlbumArtVisibility()
+        DispatchQueue.main.async { [self] in
+          windowController.refreshDefaultAlbumArtVisibility()
+        }
       }
       return
     }
@@ -2429,8 +2431,11 @@ class PlayerCore: NSObject {
     if noVideoTrack && noAudioTrack {
       return .unknown
     }
+    if noVideoTrack {
+      return .isAudio
+    }
     let allVideoTracksAreAlbumCover = !info.videoTracks.contains { !$0.isAlbumart }
-    return (noVideoTrack || allVideoTracksAreAlbumCover) ? .isAudio : .notAudio
+    return allVideoTracksAreAlbumCover ? .isAudio : .notAudio
   }
 
   static func checkStatusForSleep() {
