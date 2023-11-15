@@ -25,7 +25,7 @@ fileprivate let oscFloatingWidth: Int = 140 * scaleFactor
 
 fileprivate let screenRoundedCornerRadius: CGFloat = 10.0 * CGFloat(scaleFactor)
 fileprivate let nativeWindowRoundedCornerRadius = CGFloat(10.0) * CGFloat(scaleFactor)
-fileprivate let desktopInset: Int = 1 * scaleFactor
+fileprivate let desktopInset: Int = Int(0.5 * Double(scaleFactor))
 
 fileprivate extension CGContext {
   // Decorator for state

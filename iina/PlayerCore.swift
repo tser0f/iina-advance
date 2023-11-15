@@ -553,6 +553,7 @@ class PlayerCore: NSObject {
     refreshSyncUITimer()
 
     info.currentFolder = nil
+    info.videoParams = nil
     info.$matchedSubs.withLock { $0.removeAll() }
 
     // Do not send a stop command to mpv if it is already stopped. This happens when quitting is
@@ -783,6 +784,9 @@ class PlayerCore: NSObject {
   func setVideoAspect(_ aspect: String) {
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
     guard let videoRawWidth = info.videoRawWidth, let videoRawHeight = info.videoRawHeight else {
+      if let aspectDouble = Double(aspect), aspectDouble == -1 {
+        windowController.refreshDefaultAlbumArtVisibility()
+      }
       return
     }
     let videoDefaultAspectDouble6f = (Double(videoRawWidth) / Double(videoRawHeight)).string6f
@@ -1593,12 +1597,6 @@ class PlayerCore: NSObject {
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
       }
-      windowController.playlistView.scrollPlaylistToCurrentItem()
-
-      if  Preference.bool(for: .fullScreenWhenOpen) && !windowController.isFullScreen && !isInMiniPlayer && !info.isRestoring {
-        log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
-        windowController.enterFullScreen()
-      }
     }
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
@@ -1654,14 +1652,24 @@ class PlayerCore: NSObject {
     windowController.forceDraw()
     syncUITime()
 
-    if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-      DispatchQueue.main.async {
+    DispatchQueue.main.async { [self] in
+      /// The first "playback restart" msg after starting a file means that the file is
+      /// officially done loading
+      info.justOpenedFile = false
+      info.justStartedFile = false
+      windowController.shouldApplyInitialWindowSize = false
+      if info.priorState != nil {
+        info.priorState = nil
+        log.debug("Done with restore")
+      }
+
+      if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
         NowPlayingInfoManager.updateInfo()
       }
-    }
-    DispatchQueue.main.async { [self] in
-      saveState()
+
       Timer.scheduledTimer(timeInterval: TimeInterval(0.2), target: self, selector: #selector(self.reEnableOSDAfterFileLoading), userInfo: nil, repeats: false)
+
+      saveState()
     }
   }
 
@@ -1706,8 +1714,6 @@ class PlayerCore: NSObject {
       } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
         log.debug("Current media is audio: auto-switching to music mode")
         DispatchQueue.main.sync {
-          // Update to square aspect ratio now. Try to avoid excess geometry changes
-          windowController.refreshDefaultAlbumArtVisibility(applyGeometry: false)
           enterMusicMode(automatically: true)
         }
       } else if audioStatus == .notAudio && isInMiniPlayer {
@@ -1734,21 +1740,21 @@ class PlayerCore: NSObject {
     guard !info.fileLoading, !isShuttingDown, !isShutdown else { return }
 
     let vParams = mpv.queryForVideoParams()
-    let drW = vParams.videoDisplayRotatedWidth
-    let drH = vParams.videoDisplayRotatedHeight
 
-    log.verbose("Got mpv `video-reconfig`. mpv = \(vParams); PlayerInfo = {W: \(info.videoDisplayWidth!) H: \(info.videoDisplayHeight!) (rawSize: \(info.videoRawWidth ?? 0) x \(info.videoRawHeight ?? 0)) Rot: \(info.userRotation)°}")
-    if drW != info.videoDisplayWidth! || drH != info.videoDisplayHeight! {
-      // filter the last video-reconfig event before quit
-      if drW == 0 && drH == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
-      // video size changed
-      info.videoDisplayWidth = drW
-      info.videoDisplayHeight = drH
-      DispatchQueue.main.sync {
-        self.windowController.mpvVideoDidReconfig()
-      }
-    } else {
+    log.verbose("Got mpv `video-reconfig`. mpv = \(vParams)")
+    if let prevParams = info.videoParams,
+        prevParams.videoDisplayRotatedWidth == vParams.videoDisplayRotatedWidth,
+       prevParams.videoDisplayRotatedHeight == vParams.videoDisplayRotatedHeight {
       log.verbose("No real change from video-reconfig; ignoring")
+    } else {
+      // filter the last video-reconfig event before quit
+      if vParams.videoDisplayRotatedWidth == 0 && vParams.videoDisplayRotatedHeight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
+
+      // video size changed
+      DispatchQueue.main.async { [self] in
+        info.videoParams = vParams
+        windowController.mpvVideoDidReconfig()
+      }
     }
   }
 
@@ -2284,32 +2290,7 @@ class PlayerCore: NSObject {
    and `dheight` while taking pure audio files and video rotations into consideration.
    */
   var videoBaseDisplaySize: CGSize? {
-    get {
-      guard let w = info.videoDisplayWidth, let h = info.videoDisplayHeight else {
-        log.error("Failed to generate videoBaseDisplaySize: dwidth or dheight not present!")
-        return nil
-      }
-      guard w != 0, h != 0 else {
-        log.debug("Failed to generate videoBaseDisplaySize: dwidth or dheight is 0")
-        return nil
-      }
-      var width: Int = w
-      var height: Int = h
-
-      // if video has rotation
-      let mpvParamRotate = mpv.getInt(MPVProperty.videoParamsRotate)
-      let mpvVideoRotate = mpv.getInt(MPVOption.Video.videoRotate)
-      var mpvNetRotate = mpvParamRotate - mpvVideoRotate
-      if mpvNetRotate < 0 {
-        mpvNetRotate += 360
-      }
-      if mpvNetRotate == 90 || mpvNetRotate == 270 {
-        swap(&width, &height)
-      }
-      let baseDisplaySize = CGSize(width: width, height: height)
-      log.verbose("From Rot=(\(mpvParamRotate) total, \(mpvVideoRotate) user)=\(mpvNetRotate), got videoBaseDisplaySize \(baseDisplaySize)")
-      return baseDisplaySize
-    }
+    return info.videoParams?.videoBaseDisplaySize
   }
 
   func getMediaTitle(withExtension: Bool = true) -> String {

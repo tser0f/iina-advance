@@ -347,9 +347,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     switch keyPath {
     case PK.themeMaterial.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        setMaterial(Preference.Theme(rawValue: newValue))
-      }
+      applyThemeMaterial()
     case PK.showRemainingTime.rawValue:
       if let newValue = change[.newKey] as? Bool {
         rightLabel.mode = newValue ? .remaining : .duration
@@ -790,12 +788,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     window.initialFirstResponder = nil
     window.titlebarAppearsTransparent = true
 
-//  TODO: Re-enable for Sonoma
-//    viewportView.clipsToBounds = true
-//    topBarView.clipsToBounds = true
-//    bottomBarView.clipsToBounds = true
+    viewportView.clipsToBounds = true
+    topBarView.clipsToBounds = true
+    bottomBarView.clipsToBounds = true
 
-    setMaterial(Preference.enum(for: .themeMaterial))
+    applyThemeMaterial()
 
     leftLabel.mode = .current
     rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
@@ -906,18 +903,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     })
 
-    addObserver(to: .default, forName: .iinaMediaTitleChanged, object: player) { [unowned self] _ in
-      self.updateTitle()
-    }
-
-    addObserver(to: .default, forName: .iinaFileLoaded, object: player) { [unowned self] _ in
-      self.updateTitle()
-    }
-
     if #available(macOS 10.15, *) {
       addObserver(to: .default, forName: NSScreen.colorSpaceDidChangeNotification, object: nil) { [unowned self] noti in
         player.refreshEdrMode()
       }
+    }
+
+    addObserver(to: .default, forName: .iinaMediaTitleChanged, object: player) { [unowned self] _ in
+      self.updateTitle()
     }
 
     /// The `iinaFileLoaded` event is useful here because it is posted after `fileLoaded`.
@@ -932,14 +925,22 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       quickSettingView.reload()
 
       refreshDefaultAlbumArtVisibility()
+
+      updateTitle()
+      playlistView.scrollPlaylistToCurrentItem()
+
+      if Preference.bool(for: .fullScreenWhenOpen) && !isFullScreen && !player.isInMiniPlayer && !player.info.isRestoring {
+        log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
+        enterFullScreen()
+      }
     }
 
     // FIXME: this is triggered while file is loading. Need to tighten up state logic before uncommenting
-//    addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] note in
-//      guard !player.info.fileLoading && player.info.fileLoaded else { return }
-//      log.verbose("Got iinaVIDChanged notification")
-//      refreshDefaultAlbumArtVisibility()
-//    }
+    addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] note in
+      guard !player.info.fileLoading && player.info.fileLoaded && !player.info.justStartedFile && !player.info.justOpenedFile else { return }
+      log.verbose("Got iinaVIDChanged notification")
+      refreshDefaultAlbumArtVisibility()
+    }
 
     // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
     NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main, using: self.windowDidChangeScreenParameters)
@@ -1074,11 +1075,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   /** Set material for OSC and title bar */
-  func setMaterial(_ theme: Preference.Theme?) {
-    guard let window = window, let theme = theme else { return }
+  func applyThemeMaterial() {
+    guard let window else { return }
 
+    let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
     if #available(macOS 10.14, *) {
-      window.appearance = NSAppearance(iinaTheme: theme)
+      let newAppearance = NSAppearance(iinaTheme: theme)
+      window.appearance = newAppearance
+
+      (newAppearance ?? window.effectiveAppearance).applyAppearanceFor { [self] in
+        thumbnailPeekView.refreshColors()
+      }
       // See overridden functions for 10.14-
       return
     }
@@ -2043,7 +2050,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Note: this gets triggered by many unnecessary situations, e.g. several times each time full screen is toggled.
   func windowDidChangeScreen(_ notification: Notification) {
     guard let window = window, let screen = window.screen else { return }
-    let blackWindows = self.blackWindows
 
     let displayId = screen.displayId
     // Legacy FS work below can be very slow. Try to avoid if possible
@@ -2052,6 +2058,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
+    let blackWindows = self.blackWindows
     if isFullScreen && Preference.bool(for: .blackOutMonitor) && blackWindows.compactMap({$0.screen?.displayId}).contains(displayId) {
       log.verbose("WindowDidChangeScreen: black windows contains window's displayId \(displayId); removing & regenerating black windows")
       // Window changed screen: adjust black windows accordingly
@@ -2734,7 +2741,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
 
   func enterInteractiveMode(_ mode: InteractiveMode) {
-    guard player.videoBaseDisplaySize != nil else {
+    guard player.info.videoParams?.videoBaseDisplaySize != nil else {
       Utility.showAlert("no_video_track")
       return
     }
@@ -2838,24 +2845,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
     if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image,
-        let totalRotation = player.info.totalRotation {
+       let videoParams = player.info.videoParams {
 
       let thumbWidth = image.size.width
       var thumbHeight = image.size.height
       let rawAspect = thumbWidth / thumbHeight
 
-      if let dwidth = player.info.videoDisplayWidth, let dheight = player.info.videoDisplayHeight,
+      if let drAspect = player.info.videoParams?.videoDisplayRotatedAspect,
          player.info.thumbnailWidth > 0 {
         // The aspect ratio of some videos is different at display time. May need to resize these videos
         // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
         // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
-        let dAspect = Double(dwidth) / Double(dheight)
-        if rawAspect != dAspect {
-          thumbHeight = CGFloat((Double(thumbWidth) / dAspect).rounded())
+        if rawAspect != drAspect {
+          thumbHeight = CGFloat((Double(thumbWidth) / drAspect).rounded())
         }
       }
 
-      let imageToDisplay = image.rotate(totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
+      let imageToDisplay = image.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
       let thumbnailSize = imageToDisplay.size
 
       thumbnailPeekView.imageView.image = imageToDisplay

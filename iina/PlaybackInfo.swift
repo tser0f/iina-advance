@@ -124,35 +124,26 @@ class PlaybackInfo {
     }
   }
 
-  /// Current video's native stored dimensions, before aspect correction applied.
-  /// In most cases `videoDisplayWidth` and `videoDisplayHeight` will be more useful.
-  /// From the mpv manual:
-  /// ```
-  /// width, height
-  ///   Video size. This uses the size of the video as decoded, or if no video frame has been decoded yet,
-  ///   the (possibly incorrect) container indicated size.
-  /// ```
-  var videoRawWidth: Int?
-  var videoRawHeight: Int?
+  var videoParams: MPVVideoParams? = nil
 
-  /// The video size, with aspect correction applied, but before scaling or rotation.
-  /// From the mpv manual:
-  /// ```
-  /// dwidth, dheight
-  /// Video display size. This is the video size after filters and aspect scaling have been applied. The actual
-  /// video window size can still be different from this, e.g. if the user resized the video window manually.
-  /// These have the same values as video-out-params/dw and video-out-params/dh.
-  /// ```
-  var videoDisplayWidth: Int?
-  var videoDisplayHeight: Int?
+  var videoRawWidth: Int? {
+    return videoParams?.videoRawWidth
+  }
+  var videoRawHeight: Int? {
+    return videoParams?.videoRawHeight
+  }
 
   // Is refreshed as property change events arrive for `MPVOption.Video.videoRotate` ("video-rotate").
   // Not to be confused with the `MPVProperty.videoParamsRotate` ("video-params/rotate")
-  var userRotation: Int = 0
+  var userRotation: Int {
+    return videoParams?.userRotation ?? 0
+  }
 
   // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
   // IINA only supports one of [0, 90, 180, 270]
-  var totalRotation: Int?
+  var totalRotation: Int? {
+    return videoParams?.totalRotation
+  }
 
   var cachedWindowScale: Double = 1.0
 
@@ -211,6 +202,13 @@ class PlaybackInfo {
   var sid: Int?
   var vid: Int?
   var secondSid: Int?
+
+  var isVideoTrackSelected: Bool {
+    if let vid {
+      return vid != 0
+    }
+    return false
+  }
 
   var isSubVisible = true
   var isSecondSubVisible = true

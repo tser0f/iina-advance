@@ -23,9 +23,13 @@ class ThumbnailPeekView: NSView {
       self.imageView.layer?.masksToBounds = true
     }
     // shadow is set in xib
-    self.layer?.shadowRadius = 8
+    self.layer?.shadowRadius = 6
     self.layer?.borderWidth = 0
-    self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
+    refreshColors()
   }
 
+  func refreshColors() {
+    self.layer?.shadowColor = CGColor(gray: 0.7, alpha: 0.75)
+    self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
+  }
 }

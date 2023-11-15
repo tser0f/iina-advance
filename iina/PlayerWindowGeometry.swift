@@ -791,17 +791,7 @@ extension PlayerWindowController {
       adjustWindowGeometryAfterVideoReconfig(videoBaseDisplaySize: videoBaseDisplaySize)
     }
 
-    // maybe not a good position, consider putting these at playback-restart
-    player.info.justOpenedFile = false
-    player.info.justStartedFile = false
-    shouldApplyInitialWindowSize = false
-    if player.info.priorState != nil {
-      player.info.priorState = nil
-      log.debug("[AdjustFrameAfterVideoReconfig] Done with restore")
-      videoView.stopDisplayLink()
-    } else {
-      log.debug("[AdjustFrameAfterVideoReconfig] Done")
-    }
+    log.debug("[AdjustFrameAfterVideoReconfig] Done")
   }
 
   private func adjustWindowGeometryAfterVideoReconfig(videoBaseDisplaySize: NSSize) {

@@ -75,8 +75,10 @@ extension PlayerWindowController {
         // Set the appearance to match the theme so the title bar matches the theme
         let iinaTheme = Preference.enum(for: .themeMaterial) as Preference.Theme
         switch(iinaTheme) {
-        case .dark, .ultraDark: window.appearance = NSAppearance(named: .vibrantDark)
-        default: window.appearance = NSAppearance(named: .vibrantLight)
+        case .dark, .ultraDark:
+          window.appearance = NSAppearance(named: .vibrantDark)
+        default: 
+          window.appearance = NSAppearance(named: .vibrantLight)
         }
       }
 
@@ -432,7 +434,7 @@ extension PlayerWindowController {
 
       // Update music mode UI
       updateTitle()
-      setMaterial(Preference.enum(for: .themeMaterial))
+      applyThemeMaterial()
 
     } else if transition.isExitingMusicMode {
       // Exiting music mode

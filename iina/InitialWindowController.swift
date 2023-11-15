@@ -130,14 +130,12 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
   private var currentlyHoveredRow: GrayHighlightRowView?
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-    guard let keyPath = keyPath, let change = change else { return }
+    guard let keyPath = keyPath else { return }
 
     switch keyPath {
 
     case Preference.Key.themeMaterial.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        setMaterial(Preference.Theme(rawValue: newValue))
-      }
+      setMaterial()
 
     default:
       return
@@ -194,7 +192,7 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
     recentFilesTableView.addTrackingArea(NSTrackingArea(rect: recentFilesTableView.bounds,
                                                         options: [.activeInKeyWindow, .mouseEnteredAndExited], owner: self, userInfo: nil))
 
-    setMaterial(Preference.enum(for: .themeMaterial))
+    setMaterial()
 
     observedPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
@@ -202,9 +200,10 @@ class InitialWindowController: NSWindowController, NSWindowDelegate {
     reloadData()
   }
 
-  private func setMaterial(_ theme: Preference.Theme?) {
-    guard let window = window, let theme = theme else { return }
+  private func setMaterial() {
+    guard let window = window else { return }
     if #available(macOS 10.14, *) {
+      let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
       window.appearance = NSAppearance(iinaTheme: theme)
       if #available(macOS 10.16, *) {
         let gradientLayer = CAGradientLayer()

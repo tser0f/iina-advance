@@ -893,48 +893,6 @@ not applying FFmpeg 9599 workaround
     return ""
   }
 
-  struct MPVVideoParams: CustomStringConvertible {
-    let videoRawWidth: Int
-    let videoRawHeight: Int
-
-    /// `dwidth`:
-    let videoDisplayWidth: Int
-    /// `dheight`:
-    let videoDisplayHeight: Int
-
-    /// `MPVProperty.videoParamsRotate`:
-    let totalRotation: Int
-    /// `MPVProperty.videoRotate`:
-    let userRotation: Int
-
-    var isWidthSwappedWithHeightByRotation: Bool {
-      // 90, 270, etc...
-      (userRotation %% 180) != 0
-    }
-
-    /// Like `dwidth`, but after applying `userRotation`.
-    var videoDisplayRotatedWidth: Int {
-      if isWidthSwappedWithHeightByRotation {
-        return videoDisplayHeight
-      } else {
-        return videoDisplayWidth
-      }
-    }
-
-    /// Like `dheight`, but after applying `userRotation`.
-    var videoDisplayRotatedHeight: Int {
-      if isWidthSwappedWithHeightByRotation {
-        return videoDisplayWidth
-      } else {
-        return videoDisplayHeight
-      }
-    }
-
-    var description: String {
-      return "MPVVideoParams:{rawSize:\(videoRawWidth)x\(videoRawHeight), dSize:\(videoDisplayWidth)x\(videoDisplayHeight), rotTotal: \(totalRotation), rotUser: \(userRotation)}"
-    }
-  }
-
   /// Makes calls to mpv to get the latest video params, then returns them.
   func queryForVideoParams() -> MPVVideoParams {
     let videoRawWidth = getInt(MPVProperty.width)
@@ -1171,22 +1129,19 @@ not applying FFmpeg 9599 workaround
       setFlag(MPVOption.PlaybackControl.pause, pause)
     }
 
-    let duration = getDouble(MPVProperty.duration)
-    let position = getDouble(MPVProperty.timePos)
     let vParams = queryForVideoParams()
-    player.log.debug("OnFileLoaded: Got info for opened file. \(vParams), Loc(sec): \(position.string6f) / \(duration.string6f)")
-    player.info.totalRotation = vParams.totalRotation
-    player.info.userRotation = vParams.userRotation
-    player.info.videoRawWidth = vParams.videoRawWidth
-    player.info.videoRawHeight = vParams.videoRawHeight
-    // FIXME: why is this zero? It doesn't need to be
-    player.info.videoDisplayWidth = 0
-    player.info.videoDisplayHeight = 0
+    player.info.videoParams = vParams
+
+    let duration = getDouble(MPVProperty.duration)
     player.info.videoDuration = VideoTime(duration)
     if let filename = getString(MPVProperty.path) {
       self.player.info.setCachedVideoDuration(filename, duration)
     }
+    let position = getDouble(MPVProperty.timePos)
     player.info.videoPosition = VideoTime(position)
+
+    player.log.debug("OnFileLoaded: Got info for opened file. \(vParams), Loc(sec): \(position.string6f) / \(duration.string6f)")
+
     player.fileLoaded()
 
     player.syncUI(.playlist)
@@ -1222,7 +1177,9 @@ not applying FFmpeg 9599 workaround
          Do not confuse with the user-configured `video-params` (above) */
       if let totalRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
         Logger.log("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(totalRotation)", level: .verbose, subsystem: player.subsystem)
-        player.info.totalRotation = totalRotation
+        if player.info.videoParams?.totalRotation != totalRotation {
+          player.info.videoParams = queryForVideoParams()
+        }
       }
 
     case MPVProperty.videoParamsPrimaries:
@@ -1316,8 +1273,8 @@ not applying FFmpeg 9599 workaround
         break
       }
       let userRotation = Int(data)
-      Logger.log("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)", level: .verbose, subsystem: player.subsystem)
-      player.info.userRotation = userRotation
+      player.log.verbose("Got mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)")
+      player.info.videoParams = queryForVideoParams()
       if self.player.windowController.loaded {
         player.saveState()
         DispatchQueue.main.async {
