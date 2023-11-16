@@ -337,7 +337,7 @@ struct PlayerSaveState {
       player.$isShuttingDown.withLock() { isShuttingDown in
         guard !isShuttingDown else { return }
         let properties = generatePropDict(from: player)
-        player.log.verbose("Saving player state, tkt#\(saveTicket)")
+        player.log.verbose("Saving player state, tkt# \(saveTicket)")
 //        player.log.verbose("Saving player state: \(properties)")
         Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
       }
