@@ -128,7 +128,7 @@ class MPVController: NSObject {
     MPVProperty.trackList: MPV_FORMAT_NONE,
     MPVProperty.vf: MPV_FORMAT_NONE,
     MPVProperty.af: MPV_FORMAT_NONE,
-    MPVProperty.videoAspect: MPV_FORMAT_NONE,
+    MPVProperty.videoParamsAspect: MPV_FORMAT_NONE,
 //    MPVProperty.videoOutParams: MPV_FORMAT_INT64,
     MPVOption.TrackSelection.vid: MPV_FORMAT_INT64,
     MPVOption.TrackSelection.aid: MPV_FORMAT_INT64,
@@ -1387,30 +1387,30 @@ not applying FFmpeg 9599 workaround
     // following properties may change before file loaded
 
     case MPVProperty.playlistCount:
-      Logger.log("Playlist changed in mpv", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Playlist changed in mpv")
       player.postNotification(.iinaPlaylistChanged)
 
     case MPVProperty.trackList:
-      Logger.log("Track list changed in mpv", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Track list changed in mpv")
       player.trackListChanged()
 
     case MPVProperty.vf:
-      Logger.log("Got mpv prop: \(MPVProperty.vf.quoted)", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv prop: \(MPVProperty.vf.quoted)")
       needReloadQuickSettingsView = true
       player.vfChanged()
 
     case MPVProperty.af:
       player.afChanged()
 
-    case MPVProperty.videoAspect:
+    case MPVProperty.videoParamsAspect:
       guard player.windowController.loaded, !player.isShuttingDown else { break }
-      guard let aspect = getString(MPVProperty.videoAspect) else { break }
-      Logger.log("Got mpv prop: video-aspect = \(aspect.quoted)")
+      guard let aspect = getString(MPVProperty.videoParamsAspect) else { break }
+      player.log.verbose("Got mpv prop: video-params/aspect = \(aspect.quoted)")
       player.setVideoAspect(aspect)
 
     case MPVOption.Window.fullscreen:
       let fs = getFlag(MPVOption.Window.fullscreen)
-      Logger.log("Got mpv prop: \(MPVOption.Window.fullscreen.quoted) = \(fs.yesno)", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv prop: \(MPVOption.Window.fullscreen.quoted) = \(fs.yesno)")
       guard player.windowController.loaded else { break }
       if fs != player.windowController.isFullScreen {
         DispatchQueue.main.async(execute: self.player.windowController.toggleWindowFullScreen)
@@ -1418,7 +1418,7 @@ not applying FFmpeg 9599 workaround
 
     case MPVOption.Window.ontop:
       let ontop = getFlag(MPVOption.Window.ontop)
-      Logger.log("Got mpv prop: \(MPVOption.Window.ontop.quoted) = \(ontop.yesno)", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv prop: \(MPVOption.Window.ontop.quoted) = \(ontop.yesno)")
       guard player.windowController.loaded else { break }
       if ontop != player.windowController.isOntop {
         DispatchQueue.main.async {
@@ -1467,13 +1467,13 @@ not applying FFmpeg 9599 workaround
           return "\t\(String(format: "%03d", index))   \(mapping.confFileFormat)"
         }.joined(separator: "\n")
 
-        Logger.log("Got mpv prop: \(MPVProperty.inputBindings.quoted)≔\n\(mappingListStr)", level: .verbose, subsystem: player.subsystem)
+        player.log.verbose("Got mpv prop: \(MPVProperty.inputBindings.quoted)≔\n\(mappingListStr)")
       } catch {
-        Logger.log("Failed to parse property data for \(MPVProperty.inputBindings.quoted)!", level: .error, subsystem: player.subsystem)
+        player.log.error("Failed to parse property data for \(MPVProperty.inputBindings.quoted)!")
       }
 
     default:
-      Logger.log("Unhandled mpv prop: \(name.quoted)", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Unhandled mpv prop: \(name.quoted)")
       break
 
     }

@@ -60,7 +60,7 @@ struct PlayerSaveState {
     case subDelay = "subDelay"        /// `MPVOption.Subtitles.subDelay`
     case abLoopA = "abLoopA"          /// `MPVOption.PlaybackControl.abLoopA`
     case abLoopB = "abLoopB"          /// `MPVOption.PlaybackControl.abLoopB`
-    case videoAspect = "aspect"       /// `MPVProperty.videoAspect`
+    case videoAspect = "aspect"       /// `MPVOption.Video.videoAspectOverride`
     case videoRotation = "videoRotate"/// `MPVOption.Video.videoRotate`
 
     case isSubVisible = "subVisible"  /// `MPVOption.Subtitles.subVisibility`
