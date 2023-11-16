@@ -676,11 +676,11 @@ extension PlayerWindowController {
 
   /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
   func mpvVideoDidReconfig() {
-    log.verbose("[AdjustFrameAfterVideoReconfig] Start")
+    log.verbose("[AdjustLayoutFromVideoReconfig] Start")
 
     // Get "correct" video size from mpv
     guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
-      log.error("[AdjustFrameAfterVideoReconfig] Could not get videoBaseDisplaySize from mpv! Cancelling adjustment")
+      log.error("[AdjustLayoutFromVideoReconfig] Could not get videoBaseDisplaySize from mpv! Cancelling adjustment")
       return
     }
     let newVideoAspectRatio = videoBaseDisplaySize.aspect
@@ -689,64 +689,47 @@ extension PlayerWindowController {
     }
     guard let screen = window?.screen else { return }
 
-    // Interactive mode
-    if isInInteractiveMode {
-      if let cropController = self.cropSettingsView, cropController.cropBoxView.didSubmit {
-        /// Finish crop submission to exit interactive mode
-        cropController.cropBoxView.didSubmit = false
-        let originalVideoSize = cropController.cropBoxView.actualSize
-        let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
-                                           width: cropController.cropw, height: cropController.croph)
+    if isInInteractiveMode, let cropController = self.cropSettingsView, cropController.cropBoxView.didSubmit {
+      /// Interactive mode after sumbit: finish crop submission and exit
+      cropController.cropBoxView.didSubmit = false
+      let originalVideoSize = cropController.cropBoxView.actualSize
+      let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
+                                         width: cropController.cropw, height: cropController.croph)
 
-        animationPipeline.submit(IINAAnimation.Task({ [self] in
-          log.verbose("Cropping video from origVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
-          windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
-          videoAspectRatio = windowedModeGeometry.videoAspectRatio
+      animationPipeline.submit(IINAAnimation.Task({ [self] in
+        log.verbose("Cropping video from origVideoSize: \(originalVideoSize), videoViewSize: \(cropController.cropBoxView.videoRect), cropBox: \(newVideoFrameUnscaled)")
+        windowedModeGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+        videoAspectRatio = windowedModeGeometry.videoAspectRatio
 
-          // fade out all this stuff before crop
-          cropController.view.alphaValue = 0
-          cropController.view.isHidden = true
-          cropController.cropBoxView.isHidden = true
-          cropController.cropBoxView.alphaValue = 0
-          cropController.view.removeFromSuperview()
-          cropController.cropBoxView.removeFromSuperview()
+        // fade out all this stuff before crop
+        cropController.view.alphaValue = 0
+        cropController.view.isHidden = true
+        cropController.cropBoxView.isHidden = true
+        cropController.cropBoxView.alphaValue = 0
+        cropController.view.removeFromSuperview()
+        cropController.cropBoxView.removeFromSuperview()
 
-          if currentLayout.isFullScreen {
-            let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
-            videoView.apply(newInteractiveModeGeo)
-          } else {
-            let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)
-            interactiveModeGeometry = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
-            player.window.setFrameImmediately(interactiveModeGeometry!.windowFrame)
-          }
+        if currentLayout.isFullScreen {
+          let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
+          videoView.apply(newInteractiveModeGeo)
+        } else {
+          let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)
+          interactiveModeGeometry = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
+          player.window.setFrameImmediately(interactiveModeGeometry!.windowFrame)
+        }
 
-          animationPipeline.submitZeroDuration({ [self] in
-            forceDraw()
-            exitInteractiveMode()
-          })
-        }))
-        return
-      } else if player.info.isRestoring {
-        /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
         animationPipeline.submitZeroDuration({ [self] in
-          let videoSize: NSSize
-          if currentLayout.isFullScreen {
-            let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoBaseDisplaySize.aspect)
-            videoSize = newInteractiveModeGeo.videoSize
-          } else { // windowed
-            videoSize = interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize
-          }
-          log.debug("[AdjustFrameAfterVideoReconfig] Restoring crop box origVideoSize=\(videoBaseDisplaySize), videoSize=\(videoSize)")
-          addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: videoSize)
+          forceDraw()
+          exitInteractiveMode()
         })
-      }
-      // else fall through and apply new parameters
+      }))
 
-    } else if let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
-      // Not in interactive mode, but just un-applied an active crop so that full video can be seen during interactive mode
-      log.verbose("[AdjustFrameAfterVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
+    } else if !isInInteractiveMode, let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
+      // Not yet in interactive mode, but the active crop was just disabled prior to entering it,
+      // so that full video can be seen during interactive mode
+      log.verbose("[AdjustLayoutFromVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
       let prevCropRect = prevCrop.cropRect(origVideoSize: videoBaseDisplaySize, flipYForMac: true)
-      log.verbose("[AdjustFrameAfterVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
+      log.verbose("[AdjustLayoutFromVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
 
       animationPipeline.submit(IINAAnimation.Task({ [self] in
         let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize, cropbox: prevCropRect,
@@ -765,125 +748,142 @@ extension PlayerWindowController {
         enterInteractiveMode(.crop)
       }))
 
-      return
-    }
-
-    if player.isInMiniPlayer {
-      log.debug("[AdjustFrameAfterVideoReconfig] Player is in music mode. Will update its contraints")
-      miniPlayer.adjustLayoutForVideoChange(newVideoAspectRatio: newVideoAspectRatio)
-
     } else if player.info.isRestoring {
+      if isInInteractiveMode {
+        /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
+        animationPipeline.submitZeroDuration({ [self] in
+          let videoSize: NSSize
+          if currentLayout.isFullScreen {
+            let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoBaseDisplaySize.aspect)
+            videoSize = newInteractiveModeGeo.videoSize
+          } else { // windowed
+            videoSize = interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize
+          }
+          log.debug("[AdjustLayoutFromVideoReconfig] Restoring crop box origVideoSize=\(videoBaseDisplaySize), videoSize=\(videoSize)")
+          addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: videoSize)
+        })
+        // fall through and apply new parameters
+      }
+
       // Confirm aspect ratio is consistent. To account for imprecision(s) due to floats coming from multiple sources,
       // just compare the first 6 digits after the decimal.
       let oldAspect = videoAspectRatio.string6f
       let newAspect = newVideoAspectRatio.string6f
       if oldAspect == newAspect {
-        log.verbose("[AdjustFrameAfterVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
+        log.verbose("[AdjustLayoutFromVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       } else {
-        log.error("[AdjustFrameAfterVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect). Will attempt to correct by resizing window.")
+        log.error("[AdjustLayoutFromVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect). Will attempt to correct by resizing window.")
         /// Set variables and resize viewport to fit properly
         videoAspectRatio = newVideoAspectRatio
         windowedModeGeometry = windowedModeGeometry.clone(videoAspectRatio: videoAspectRatio)
         resizeViewport()
       }
 
+    } else if player.isInMiniPlayer {
+      log.debug("[AdjustLayoutFromVideoReconfig] Player is in music mode. Will update its contraints")
+      miniPlayer.adjustLayoutForVideoChange(newVideoAspectRatio: newVideoAspectRatio)
+
     } else {
-      adjustWindowGeometryAfterVideoReconfig(videoBaseDisplaySize: videoBaseDisplaySize)
+      let windowGeo = windowedModeGeometry.clone(videoAspectRatio: videoBaseDisplaySize.aspect)
+
+      // Will only change the video size & video container size. Panels outside the video do not change size
+      let newWindowGeo: PlayerWindowGeometry
+      if shouldResizeWindowAfterVideoReconfig() {
+        newWindowGeo = resizeWindowAfterVideoReconfig(from: windowGeo, videoBaseDisplaySize: videoBaseDisplaySize)
+      } else {
+        newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoBaseDisplaySize: videoBaseDisplaySize)
+      }
+
+      /// Finally call `setFrame()`
+      log.debug("[AdjustLayoutFromVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
+      applyWindowGeometry(newWindowGeo)
+
+      // UI and slider
+      updatePlayTime(withDuration: true)
+      player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
     }
 
-    log.debug("[AdjustFrameAfterVideoReconfig] Done")
+    log.debug("[AdjustLayoutFromVideoReconfig] Done")
   }
 
-  private func adjustWindowGeometryAfterVideoReconfig(videoBaseDisplaySize: NSSize) {
-    // Will only change the video size & video container size. Panels outside the video do not change size
-    let newVideoAspectRatio = videoBaseDisplaySize.aspect
-    let windowGeo = windowedModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
-    let newWindowGeo: PlayerWindowGeometry
-
-    if shouldResizeWindowAfterVideoReconfig() {
-      // get videoSize on screen
-      var newVideoSize: NSSize = videoBaseDisplaySize
-      log.verbose("[AdjustFrameAfterVideoReconfig C-1]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
-
-      let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
-      if let strategy = resizeWindowStrategy, strategy != .fitScreen {
-        let resizeRatio = strategy.ratio
-        newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-        log.verbose("[AdjustFrameAfterVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
-      }
-
-      let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
-      let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
-
-      // check if have geometry set (initial window position/size)
-      if shouldApplyInitialWindowSize, let mpvGeometry = player.getGeometry() {
-        log.verbose("[AdjustFrameAfterVideoReconfig C-3] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
-        newWindowGeo = windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
-      } else if let strategy = resizeWindowStrategy, strategy == .fitScreen {
-        log.verbose("[AdjustFrameAfterVideoReconfig C-4] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
-        newWindowGeo = windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
-      } else if !player.info.justStartedFile {
-        // Try to match previous scale
-        newVideoSize = newVideoSize.multiply(player.info.cachedWindowScale)
-        log.verbose("[AdjustFrameAfterVideoReconfig C-5] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
-        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
-      } else {  // started file
-        log.verbose("[AdjustFrameAfterVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → center windowFrame")
-        newWindowGeo = windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
-      }
-
-    } else {  /// `!shouldResizeWindowAfterVideoReconfig()`
-      // user is navigating in playlist. retain same window width.
-      // This often isn't possible for vertical videos, which will end up shrinking the width.
-      // So try to remember the preferred width so it can be restored when possible
-      var desiredViewportSize = windowGeo.viewportSize
-
-      if Preference.bool(for: .lockViewportToVideoSize) {
-        if let prefVidConSize = player.info.getIntendedViewportSize(forVideoAspectRatio: videoBaseDisplaySize.aspect)  {
-          // Just use existing size in this case:
-          desiredViewportSize = prefVidConSize
-        }
-
-        let minNewVidConHeight = desiredViewportSize.width / videoBaseDisplaySize.aspect
-        if desiredViewportSize.height < minNewVidConHeight {
-          // Try to increase height if possible, though it may still be shrunk to fit screen
-          desiredViewportSize = NSSize(width: desiredViewportSize.width, height: minNewVidConHeight)
-        }
-      }
-
-      newWindowGeo = windowGeo.scaleViewport(to: desiredViewportSize)
-      log.verbose("[AdjustFrameAfterVideoReconfig D] Assuming user is navigating in playlist. Applying desiredViewportSize \(desiredViewportSize)")
-    }
-
-    /// Finally call `setFrame()`
-    log.debug("[AdjustFrameAfterVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-    applyWindowGeometry(newWindowGeo)
-
-    // UI and slider
-    updatePlayTime(withDuration: true)
-    player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
-  }
-
-  func shouldResizeWindowAfterVideoReconfig() -> Bool {
+  private func shouldResizeWindowAfterVideoReconfig() -> Bool {
     // FIXME: when rapidly moving between files this can fall out of sync. Find a better solution
     if player.info.justStartedFile {
       // resize option applies
       let resizeTiming = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
       switch resizeTiming {
       case .always:
-        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming='Always' → returning YES for shouldResize")
+        log.verbose("[AdjustLayoutFromVideoReconfig C] JustStartedFile & resizeTiming='Always' → returning YES for shouldResize")
         return true
       case .onlyWhenOpen:
-        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming='OnlyWhenOpen' → returning justOpenedFile (\(player.info.justOpenedFile.yesno)) for shouldResize")
+        log.verbose("[AdjustLayoutFromVideoReconfig C] JustStartedFile & resizeTiming='OnlyWhenOpen' → returning justOpenedFile (\(player.info.justOpenedFile.yesno)) for shouldResize")
         return player.info.justOpenedFile
       case .never:
-        log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile & resizeTiming='Never' → returning NO for shouldResize")
+        log.verbose("[AdjustLayoutFromVideoReconfig C] JustStartedFile & resizeTiming='Never' → returning NO for shouldResize")
         return false
       }
     }
     // video size changed during playback
-    log.verbose("[AdjustFrameAfterVideoReconfig C] JustStartedFile=NO → returning YES for shouldResize")
+    log.verbose("[AdjustLayoutFromVideoReconfig C] JustStartedFile=NO → returning YES for shouldResize")
     return true
+  }
+
+  private func resizeWindowAfterVideoReconfig(from windowGeo: PlayerWindowGeometry, videoBaseDisplaySize: NSSize) -> PlayerWindowGeometry {
+    // get videoSize on screen
+    var newVideoSize: NSSize = videoBaseDisplaySize
+    log.verbose("[AdjustLayoutFromVideoReconfig C-1]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
+
+    let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
+    if let resizeWindowStrategy, resizeWindowStrategy != .fitScreen {
+      let resizeRatio = resizeWindowStrategy.ratio
+      newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
+      log.verbose("[AdjustLayoutFromVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
+    }
+
+    let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
+    let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
+
+    // check if have mpv geometry set (initial window position/size)
+    if shouldApplyInitialWindowSize, let mpvGeometry = player.getGeometry() {
+      log.verbose("[AdjustLayoutFromVideoReconfig C-3] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
+      return windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
+
+    } else if let strategy = resizeWindowStrategy, strategy == .fitScreen {
+      log.verbose("[AdjustLayoutFromVideoReconfig C-4] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
+      return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
+
+    } else if !player.info.justStartedFile {
+      // Try to match previous scale
+      newVideoSize = newVideoSize.multiply(player.info.cachedWindowScale)
+      log.verbose("[AdjustLayoutFromVideoReconfig C-5] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
+      return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
+    } else {  // started file
+      log.verbose("[AdjustLayoutFromVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → center windowFrame")
+      return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
+    }
+  }
+
+  private func resizeMinimallyAfterVideoReconfig(from windowGeo: PlayerWindowGeometry, videoBaseDisplaySize: NSSize) -> PlayerWindowGeometry {
+    // User is navigating in playlist. retain same window width.
+    // This often isn't possible for vertical videos, which will end up shrinking the width.
+    // So try to remember the preferred width so it can be restored when possible
+    var desiredViewportSize = windowGeo.viewportSize
+
+    if Preference.bool(for: .lockViewportToVideoSize) {
+      if let prefVidConSize = player.info.getIntendedViewportSize(forVideoAspectRatio: videoBaseDisplaySize.aspect)  {
+        // Just use existing size in this case:
+        desiredViewportSize = prefVidConSize
+      }
+
+      let minNewVidConHeight = desiredViewportSize.width / videoBaseDisplaySize.aspect
+      if desiredViewportSize.height < minNewVidConHeight {
+        // Try to increase height if possible, though it may still be shrunk to fit screen
+        desiredViewportSize = NSSize(width: desiredViewportSize.width, height: minNewVidConHeight)
+      }
+    }
+
+    log.verbose("[AdjustLayoutFromVideoReconfig D] Assuming user is navigating in playlist. Applying desiredViewportSize \(desiredViewportSize)")
+    return windowGeo.scaleViewport(to: desiredViewportSize)
   }
 
   func setWindowScale(_ scale: CGFloat) {

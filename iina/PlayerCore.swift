@@ -782,7 +782,9 @@ class PlayerCore: NSObject {
   }
 
   func setVideoAspect(_ aspect: String) {
+    guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
+
     guard let videoRawWidth = info.videoRawWidth, let videoRawHeight = info.videoRawHeight else {
       log.verbose("Video's raw size not available")
       if let aspectDouble = Double(aspect), aspectDouble == -1 {
