@@ -211,14 +211,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return LayoutState(spec: LayoutSpec.defaultLayout())
   }()
 
-  // FIXME: merge this with PlaybackInfo.unsureAspect
-  // The most up-to-date aspect ratio of the video (width/height)
-  var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {
-    didSet {
-      log.verbose("Updated videoAspectRatio to \(videoAspectRatio)")
-    }
-  }
-
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
   var geoUpdateTicketCount: Int = 0
@@ -1018,6 +1010,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Part 2: default audio aspect ratio
 
+    let oldAspectRatio = player.info.videoAspectRatio
     let newAspectRatio: CGFloat
     if showDefaultArt || player.currentMediaIsAudio == .isAudio {
       newAspectRatio = 1
@@ -1025,16 +1018,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if let aspect = videoParams.videoBaseDisplaySize?.aspect {
         newAspectRatio = aspect
       } else {
-        log.error("Failed to determine videoAspectRatio! Will leave existing (\(videoAspectRatio.string6f))")
+        log.error("Failed to determine videoAspectRatio! Will leave existing (\(oldAspectRatio.string6f))")
         return
       }
     }
 
-    guard newAspectRatio.string6f != videoAspectRatio.string6f else {
+    guard newAspectRatio.string6f != oldAspectRatio.string6f else {
       log.verbose("No change to videoAspectRatio; no update needed")
       return
     }
-    log.verbose("Updating videoAspectRatio from: \(videoAspectRatio.string6f) to: \(newAspectRatio.string6f)")
+    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.string6f) to: \(newAspectRatio.string6f)")
 
     let layout = currentLayout
     switch layout.mode {
@@ -1055,9 +1048,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
     case .fullScreen:
-      videoAspectRatio = newAspectRatio
+      player.info.videoAspectRatio = newAspectRatio
       guard let screen = window?.screen else { return }
-      let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
+      let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspectRatio: newAspectRatio)
       if layout.isLegacyFullScreen {
         applyLegacyFullScreenGeometry(fsGeo)
       } else if layout.mode != .fullScreenInteractive {
@@ -1971,7 +1964,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return miniPlayer.windowWillResize(window, to: requestedSize)
     case .fullScreen, .fullScreenInteractive:
       if currentLayout.isLegacyFullScreen {
-        let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: videoAspectRatio)
+        let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: player.info.videoAspectRatio)
         return fsGeo.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
@@ -2109,7 +2102,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
           let screenID = bestScreen.screenID
-          let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspectRatio: videoAspectRatio)
+          let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspectRatio: player.info.videoAspectRatio)
           applyLegacyFullScreenGeometry(fsGeo)
           windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
           player.saveState()
@@ -2150,7 +2143,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         let layout = currentLayout
         guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
         log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
-        let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+        let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
         applyLegacyFullScreenGeometry(fsGeo)
       } else if currentLayout.isWindowed {
         /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
@@ -2187,7 +2180,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
       // window management app such as Amethyst. If this happens, move the window back to its proper place:
       log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
-      let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: videoAspectRatio)
+      let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
       applyLegacyFullScreenGeometry(fsGeo)
     } else {
       updateCachedGeometry(updatePreferredSizeAlso: false)

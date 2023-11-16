@@ -272,6 +272,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     } else {
       aspectSegment.selectedSegment = -1
     }
+
     if let index = AppData.cropsInPanel.firstIndex(of: player.info.unsureCrop) {
       cropSegment.selectedSegment = index
     } else {

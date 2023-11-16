@@ -481,7 +481,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
     let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
-    let videoAspectRatio = windowController.videoAspectRatio
+    let videoAspectRatio = player.info.videoAspectRatio
     let desiredWindowWidth = MiniPlayerController.defaultWindowWidth
     let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
     let desiredWindowHeight = desiredVideoHeight + MiniPlayerController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)

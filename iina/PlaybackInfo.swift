@@ -149,6 +149,13 @@ class PlaybackInfo {
 
   // - MARK: Filters & Equalizers
 
+  // The most up-to-date aspect ratio of the video (width/height)
+  var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {
+    didSet {
+      log.verbose("Updated videoAspectRatio to \(videoAspectRatio)")
+    }
+  }
+
   /** The current applied aspect, used for find current aspect in menu, etc. Maybe not a good approach. */
   var unsureAspect: String = "Default"
   var unsureCrop: String = "None" // TODO: rename this to "selectedCrop"
