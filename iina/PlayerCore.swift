@@ -1740,21 +1740,15 @@ class PlayerCore: NSObject {
     guard !info.fileLoading, !isShuttingDown, !isShutdown else { return }
 
     let vParams = mpv.queryForVideoParams()
+    log.verbose("Got mpv `video-reconfig`; \(vParams)")
 
-    log.verbose("Got mpv `video-reconfig`. mpv = \(vParams)")
-    if let prevParams = info.videoParams,
-        prevParams.videoDisplayRotatedWidth == vParams.videoDisplayRotatedWidth,
-       prevParams.videoDisplayRotatedHeight == vParams.videoDisplayRotatedHeight {
-      log.verbose("No real change from video-reconfig; ignoring")
-    } else {
-      // filter the last video-reconfig event before quit
-      if vParams.videoDisplayRotatedWidth == 0 && vParams.videoDisplayRotatedHeight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
+    // filter the last video-reconfig event before quit
+    if vParams.videoDisplayRotatedWidth == 0 && vParams.videoDisplayRotatedHeight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
 
-      // video size changed
-      DispatchQueue.main.async { [self] in
-        info.videoParams = vParams
-        windowController.mpvVideoDidReconfig()
-      }
+    // Always send this to window controller. It should be smart enough to resize only when needed:
+    DispatchQueue.main.async { [self] in
+      info.videoParams = vParams
+      windowController.mpvVideoDidReconfig()
     }
   }
 
@@ -2074,9 +2068,14 @@ class PlayerCore: NSObject {
     }
   }
 
-  func errorOpeningFileAndClosePlayerWindow() {
-    DispatchQueue.main.async {
-      Utility.showAlert("error_open")
+  func errorOpeningFileAndClosePlayerWindow(url: URL? = nil) {
+    DispatchQueue.main.async { [self] in
+      if let path = url?.path {
+        Utility.showAlert("error_open_name", arguments: [path.quoted])
+      } else {
+        Utility.showAlert("error_open")
+      }
+
       self.isStopped = true
       self.windowController.close()
     }
@@ -2232,7 +2231,7 @@ class PlayerCore: NSObject {
         break
       }
     }
-    Logger.log("Reloaded tracklist from mpv (\(trackCount) tracks)")
+    log.debug("Reloaded tracklist from mpv (\(trackCount) tracks)")
   }
 
   private func reloadSelectedTracks() {
@@ -2279,7 +2278,7 @@ class PlayerCore: NSObject {
   // MARK: - Notifications
 
   func postNotification(_ name: Notification.Name) {
-    Logger.log("Posting notification: \(name.rawValue)")
+    log.debug("Posting notification: \(name.rawValue)")
     NotificationCenter.default.post(Notification(name: name, object: self))
   }
 

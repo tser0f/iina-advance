@@ -798,7 +798,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
 
-    window.backgroundColor = .clear
+    window.backgroundColor = .black
 
     /// Set this to `false` to get rid of the gray pixel border around the window
 //    window.isOpaque = false
