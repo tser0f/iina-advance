@@ -408,7 +408,7 @@ extension PlayerWindowController {
       if Preference.bool(for: .lockViewportToVideoSize),
          let prevIntendedViewportSize = player.info.getIntendedViewportSize(forVideoAspectRatio: inputGeometry.videoAspectRatio),
          !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
-         windowedModeGeometry.videoAspectRatio.string6f == inputGeometry.videoAspectRatio.string6f
+         windowedModeGeometry.videoAspectRatio.stringTrunc2f == inputGeometry.videoAspectRatio.stringTrunc2f
       {
         log.verbose("Instead of shrinking window by \(ΔOutsideWidth) W & \(ΔOutsideHeight) H, will restore prev intendedViewportSize (\(prevIntendedViewportSize))")
         return outputGeo.scaleViewport(to: prevIntendedViewportSize)

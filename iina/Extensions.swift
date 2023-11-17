@@ -36,6 +36,7 @@ extension NSSegmentedControl {
         return
       }
     }
+    Logger.log("Could not find segment with label \(label.quoted). Setting selection to -1", level: .verbose)
     self.selectedSegment = -1
   }
 }
@@ -282,7 +283,16 @@ extension NSMenu {
   }
 }
 
-// Formats a number to max 2 digits after the decimal, but will omit trailing zeroes, and no commas or other formatting for large numbers
+fileprivate let fmtDecimalMaxFractionDigits2Truncated: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 2
+  fmt.roundingMode = .floor
+  return fmt
+}()
+
+// Formats a number to max 2 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
 fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
   let fmt = NumberFormatter()
   fmt.numberStyle = .decimal
@@ -291,7 +301,7 @@ fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
   return fmt
 }()
 
-// Formats a number to max 6 digits after the decimal, but will omit trailing zeroes, and no commas or other formatting for large numbers
+// Formats a number to max 6 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
 fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
   let fmt = NumberFormatter()
   fmt.numberStyle = .decimal
@@ -302,6 +312,10 @@ fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
 
 /// Applies to `Double`, `CGFloat`, ...
 extension FloatingPoint {
+
+  var stringTrunc2f: String {
+    return fmtDecimalMaxFractionDigits2Truncated.string(for: self)!
+  }
 
   var string2f: String {
     return fmtDecimalMaxFractionDigits2.string(for: self)!

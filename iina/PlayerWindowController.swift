@@ -986,7 +986,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return newMap
   }
 
-  // default album art
+  // Check whether to show album art, which may require changing videoView aspect ratio to 1:1.
+  // Also show or hide default album art if needed.
   func refreshAlbumArtDisplay() {
     guard loaded, !isClosing, !player.isShuttingDown else { return }
 
@@ -1018,16 +1019,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if let aspect = videoParams.videoBaseDisplaySize?.aspect {
         newAspectRatio = aspect
       } else {
-        log.error("Failed to determine videoAspectRatio! Will leave existing (\(oldAspectRatio.string6f))")
+        log.error("Failed to determine videoAspectRatio! Will leave existing (\(oldAspectRatio.stringTrunc2f))")
         return
       }
     }
 
-    guard newAspectRatio.string6f != oldAspectRatio.string6f else {
+    guard newAspectRatio.stringTrunc2f != oldAspectRatio.stringTrunc2f else {
       log.verbose("No change to videoAspectRatio; no update needed")
       return
     }
-    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.string6f) to: \(newAspectRatio.string6f)")
+    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.string2f) to: \(newAspectRatio.stringTrunc2f)")
 
     let layout = currentLayout
     switch layout.mode {

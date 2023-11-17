@@ -786,7 +786,7 @@ class PlayerCore: NSObject {
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
 
     guard let videoRawWidth = info.videoRawWidth, let videoRawHeight = info.videoRawHeight else {
-      log.verbose("Video's raw size not available")
+      log.verbose("Cannot set requested aspect: video's raw size not available")
       if let aspectDouble = Double(aspect), aspectDouble == -1 {
         DispatchQueue.main.async { [self] in
           windowController.refreshAlbumArtDisplay()
@@ -794,15 +794,15 @@ class PlayerCore: NSObject {
       }
       return
     }
-    let videoDefaultAspectDouble6f = (Double(videoRawWidth) / Double(videoRawHeight)).string6f
-    if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.string6f != videoDefaultAspectDouble6f {
+    let videoDefaultAspectNumString = (Double(videoRawWidth) / Double(videoRawHeight)).stringTrunc2f
+    if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.stringTrunc2f != videoDefaultAspectNumString {
       // Aspect is in colon notation (X:Y)
       setAspect(ratio: aspect)
-    } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.string6f != videoDefaultAspectDouble6f {
-      // Aspect is a number, up to 6 decimal places
+    } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.stringTrunc2f != videoDefaultAspectNumString {
+      // Aspect is a decimal number
       setAspect(decimal: aspectDouble)
     } else {
-      log.verbose("Desired aspect \(aspect.quoted) is unrecognized or matches default (\(videoDefaultAspectDouble6f.quoted)). Setting aspectRatio to default")
+      log.verbose("Desired aspect \(aspect.quoted) is unrecognized or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to default")
       setAspect()
     }
   }
@@ -810,10 +810,11 @@ class PlayerCore: NSObject {
   private func setAspect(ratio: String? = nil, decimal: Double? = nil) {
     var ratio = ratio
     if ratio == nil, let decimal {
-      // Try to match to known aspect by comparing their decimal values to the new aspect
-      let newAspectDouble6f = decimal.string6f
+      // Try to match to known aspect by comparing their decimal values to the new aspect.
+      // Note that mpv seems to do its calculations to only 2 decimal places of precision, so match that
+      let newAspectNumString = decimal.stringTrunc2f
       for knownAspectRatio in AppData.aspects {
-        if let parsedAspect = Aspect(string: knownAspectRatio), newAspectDouble6f == parsedAspect.value.string6f {
+        if let parsedAspect = Aspect(string: knownAspectRatio), newAspectNumString == parsedAspect.value.stringTrunc2f {
           // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
           ratio = knownAspectRatio
           break
@@ -822,7 +823,7 @@ class PlayerCore: NSObject {
     }
 
     // if both params are nil, default to "Default"
-    let aspectDisplay = ratio ?? decimal?.string6f ?? AppData.aspectsInPanel[0]
+    let aspectDisplay = ratio ?? decimal?.stringTrunc2f ?? AppData.aspectsInPanel[0]
     guard info.unsureAspect != aspectDisplay else { return }
     info.unsureAspect = aspectDisplay
     let newValue = (decimal == -1 || aspectDisplay == AppData.aspectsInPanel[0]) ? "no" : aspectDisplay

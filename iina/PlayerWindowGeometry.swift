@@ -769,8 +769,8 @@ extension PlayerWindowController {
 
       // Confirm aspect ratio is consistent. To account for imprecision(s) due to floats coming from multiple sources,
       // just compare the first 6 digits after the decimal.
-      let oldAspect = player.info.videoAspectRatio.string6f
-      let newAspect = newVideoAspectRatio.string6f
+      let oldAspect = player.info.videoAspectRatio.stringTrunc2f
+      let newAspect = newVideoAspectRatio.stringTrunc2f
       if oldAspect == newAspect {
         log.verbose("[AdjustLayoutFromVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       } else {
