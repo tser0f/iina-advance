@@ -238,10 +238,12 @@ class ViewLayer: CAOpenGLLayer {
       }
       guard needsMPVRender else { return }
 
-      videoView.player.mpv.lockAndSetOpenGLContext()
-      defer { videoView.player.mpv.unlockOpenGLContext() }
       // draw(inCGLContext:) is not called, needs a skip render
-      if let renderContext = videoView.player.mpv.mpvRenderContext {
+      if let renderContext = videoView.player.mpv.mpvRenderContext,
+         let openGLContext = CGLGetCurrentContext() {
+        CGLLockContext(openGLContext)
+        defer { CGLUnlockContext(openGLContext) }
+        
         var skip: CInt = 1
         withUnsafeMutablePointer(to: &skip) { skip in
           var params: [mpv_render_param] = [
