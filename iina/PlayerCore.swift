@@ -794,43 +794,38 @@ class PlayerCore: NSObject {
       }
       return
     }
+
+    var aspectDisplay: String
     let videoDefaultAspectNumString = (Double(videoRawWidth) / Double(videoRawHeight)).stringTrunc2f
     if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.stringTrunc2f != videoDefaultAspectNumString {
       // Aspect is in colon notation (X:Y)
-      setAspect(ratio: aspect)
+      aspectDisplay = aspect
     } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.stringTrunc2f != videoDefaultAspectNumString {
-      // Aspect is a decimal number
-      setAspect(decimal: aspectDouble)
-    } else {
-      log.verbose("Desired aspect \(aspect.quoted) is unrecognized or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to default")
-      setAspect()
-    }
-  }
-
-  private func setAspect(ratio: String? = nil, decimal: Double? = nil) {
-    var ratio = ratio
-    if ratio == nil, let decimal {
-      // Try to match to known aspect by comparing their decimal values to the new aspect.
-      // Note that mpv seems to do its calculations to only 2 decimal places of precision, so match that
-      let newAspectNumString = decimal.stringTrunc2f
+      /// Aspect is a decimal number, but is not default (`-1` or video default)
+      /// Try to match to known aspect by comparing their decimal values to the new aspect.
+      /// Note that mpv seems to do its calculations to only 2 decimal places of precision, so use that for comparison.
+      aspectDisplay = aspectDouble.stringTrunc2f
       for knownAspectRatio in AppData.aspects {
-        if let parsedAspect = Aspect(string: knownAspectRatio), newAspectNumString == parsedAspect.value.stringTrunc2f {
+        if let parsedAspect = Aspect(string: knownAspectRatio), aspectDisplay == parsedAspect.value.stringTrunc2f {
           // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
-          ratio = knownAspectRatio
+          aspectDisplay = knownAspectRatio
           break
         }
       }
+    } else {
+      aspectDisplay = AppData.defaultAspectName
+      log.verbose("Aspect \(aspect.quoted) is unrecognized or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
     }
 
-    // if both params are nil, default to "Default"
-    let aspectDisplay = ratio ?? decimal?.stringTrunc2f ?? AppData.aspectsInPanel[0]
     guard info.unsureAspect != aspectDisplay else { return }
     info.unsureAspect = aspectDisplay
-    let newValue = (decimal == -1 || aspectDisplay == AppData.aspectsInPanel[0]) ? "no" : aspectDisplay
-    log.verbose("Setting mpv video-aspect-override to: \(newValue.quoted)")
-    mpv.setString(MPVOption.Video.videoAspectOverride, newValue)
+
+    let mpvValue = aspectDisplay == AppData.defaultAspectName ? "no" : aspectDisplay
+    log.verbose("Setting mpv video-aspect-override to: \(mpvValue.quoted)")
+    mpv.setString(MPVOption.Video.videoAspectOverride, mpvValue)
 
     sendOSD(.aspect(aspectDisplay))
+
     DispatchQueue.main.async { [self] in
       if windowController.loaded, !windowController.isClosing {
         windowController.quickSettingView.aspectSegment.selectSegment(withLabel: aspectDisplay)

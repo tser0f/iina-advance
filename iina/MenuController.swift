@@ -296,7 +296,10 @@ class MenuController: NSObject, NSMenuDelegate {
     var aspectListObject = AppData.aspects
     aspectList.insert(Constants.String.default, at: 0)
     aspectListObject.insert("Default", at: 0)
-    bind(menu: aspectMenu, withOptions: aspectList, objects: aspectListObject, objectMap: nil, action: #selector(PlayerWindowController.menuChangeAspect(_:))) {_ in true }
+    bind(menu: aspectMenu, withOptions: aspectList, objects: aspectListObject, objectMap: nil, action: #selector(PlayerWindowController.menuChangeAspect(_:))) {
+      /// return `true` if menu item should be checked (i.e. if current aspect matches menu item)
+      return PlayerCore.active.info.unsureAspect == $0.representedObject as? String
+    }
 
     // -- crop
     var cropList = AppData.aspects
