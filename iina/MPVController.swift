@@ -1473,7 +1473,7 @@ not applying FFmpeg 9599 workaround
     }
 
     if needReloadQuickSettingsView {
-      player.needReloadQuickSettingsView()
+      player.reloadQuickSettingsView()
     }
 
     // This code is running in the com.colliderli.iina.controller dispatch queue. We must not run

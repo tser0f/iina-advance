@@ -1622,7 +1622,7 @@ class PlayerCore: NSObject {
     postNotification(.iinaMediaTitleChanged)
   }
 
-  func needReloadQuickSettingsView() {
+  func reloadQuickSettingsView() {
     saveState()
     DispatchQueue.main.async { [self] in
       guard !isShuttingDown, !isShutdown else { return }

@@ -69,14 +69,11 @@ extension PlayerWindowController {
       if Preference.bool(for: .fullScreenWhenOpen) {
         log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
         mode = .fullScreen
-      } else if currentLayout.isFullScreen {
-        // Go back to windowed mode
-        mode = .windowed
       } else {
-        mode = currentLayout.mode
+        mode = .windowed
       }
 
-      initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: currentLayout.spec)
+      initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: LayoutSpec.defaultLayout())
     }
 
     log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")
