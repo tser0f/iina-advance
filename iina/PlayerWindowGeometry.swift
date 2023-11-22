@@ -800,7 +800,6 @@ extension PlayerWindowController {
       applyWindowGeometry(newWindowGeo)
 
       // UI and slider
-      updatePlayTime(withDuration: true)
       player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
     }
 

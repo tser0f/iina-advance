@@ -1631,8 +1631,8 @@ class PlayerCore: NSObject {
   }
 
   func seeking() {
-    info.isSeeking = true
     DispatchQueue.main.sync { [self] in
+      info.isSeeking = true
       // When playback is paused the display link may be shutdown in order to not waste energy.
       // It must be running when seeking to avoid slowdowns caused by mpv waiting for IINA to call
       // mpv_render_report_swap.
@@ -1644,50 +1644,58 @@ class PlayerCore: NSObject {
 
   func playbackRestarted() {
     log.debug("Playback restarted")
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    info.isIdle = false
+    info.isSeeking = false
+    // When playback is paused the display link may be shutdown in order to not waste energy.
+    // The display link will be restarted while seeking. If playback is paused shut it down
+    // again.
+    if info.isPaused {
+      videoView.displayIdle()
+    }
+
     reloadSavedIINAfilters()
     windowController.forceDraw()
     syncUITime()
 
     let audioStatus = currentMediaIsAudio
 
-    DispatchQueue.main.async { [self] in
-      // Update art & aspect *before* switching to/from music mode for more pleasant animation
-      if audioStatus == .isAudio || !info.isVideoTrackSelected {
-        log.verbose("Media has no audio track or no video track is selected")
-        windowController.refreshAlbumArtDisplay()
-      }
-
-      // if need to switch to music mode
-      if Preference.bool(for: .autoSwitchToMusicMode) {
-        if overrideAutoMusicMode {
-          log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
-        } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
-          log.debug("Current media is audio: auto-switching to music mode")
-          enterMusicMode(automatically: true)
-        } else if audioStatus == .notAudio && isInMiniPlayer {
-          log.debug("Current media is not audio: auto-switching to normal window")
-          exitMusicMode(automatically: true)
-        }
-      }
-
-      /// The first "playback restart" msg after starting a file means that the file is
-      /// officially done loading
-      info.justOpenedFile = false
-      info.justStartedFile = false
-      windowController.shouldApplyInitialWindowSize = false
-      if info.priorState != nil {
-        info.priorState = nil
-        log.debug("Done with restore")
-      }
-
-      if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-        NowPlayingInfoManager.updateInfo()
-      }
-
-      Timer.scheduledTimer(timeInterval: TimeInterval(0.2), target: self, selector: #selector(self.reEnableOSDAfterFileLoading), userInfo: nil, repeats: false)
-
-      saveState()
+    // Update art & aspect *before* switching to/from music mode for more pleasant animation
+    if audioStatus == .isAudio || !info.isVideoTrackSelected {
+      log.verbose("Media has no audio track or no video track is selected")
+      windowController.refreshAlbumArtDisplay()
     }
+
+    // if need to switch to music mode
+    if Preference.bool(for: .autoSwitchToMusicMode) {
+      if overrideAutoMusicMode {
+        log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
+      } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
+        log.debug("Current media is audio: auto-switching to music mode")
+        enterMusicMode(automatically: true)
+      } else if audioStatus == .notAudio && isInMiniPlayer {
+        log.debug("Current media is not audio: auto-switching to normal window")
+        exitMusicMode(automatically: true)
+      }
+    }
+
+    /// The first "playback restart" msg after starting a file means that the file is
+    /// officially done loading
+    info.justOpenedFile = false
+    info.justStartedFile = false
+    windowController.shouldApplyInitialWindowSize = false
+    if info.priorState != nil {
+      info.priorState = nil
+      log.debug("Done with restore")
+    }
+
+    if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
+      NowPlayingInfoManager.updateInfo()
+    }
+
+    Timer.scheduledTimer(timeInterval: TimeInterval(0.2), target: self, selector: #selector(self.reEnableOSDAfterFileLoading), userInfo: nil, repeats: false)
+
+    saveState()
   }
 
   @available(macOS 10.15, *)
