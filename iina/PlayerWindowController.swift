@@ -3519,6 +3519,8 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       pipStatus = .notInPIP
 
       addVideoViewToWindow()
+      videoView.apply(windowedModeGeometry)
+      
       // If using legacy windowed mode, need to manually add title to Window menu & Dock
       updateTitle()
     })
