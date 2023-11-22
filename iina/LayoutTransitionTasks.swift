@@ -135,7 +135,7 @@ extension PlayerWindowController {
     } else if transition.isExitingInteractiveMode, let cropController = cropSettingsView {
       cropController.cropBoxView.isHidden = true
     }
-    
+
     if transition.isTogglingLegacyStyle {
       forceDraw()
     }
@@ -675,8 +675,8 @@ extension PlayerWindowController {
         )
       }
 
-      if let videoBaseDisplaySize = player.videoBaseDisplaySize, let cropController = cropSettingsView {
-        addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: transition.outputGeometry.videoSize)
+      if let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize, let cropController = cropSettingsView {
+        addOrReplaceCropBoxSelection(origVideoSize: videoDisplayRotatedSize, videoSize: transition.outputGeometry.videoSize)
         // Hide for now, to prepare for a nice fade-in animation
         cropController.cropBoxView.isHidden = true
         cropController.cropBoxView.alphaValue = 0

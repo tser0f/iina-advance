@@ -1129,9 +1129,6 @@ not applying FFmpeg 9599 workaround
       setFlag(MPVOption.PlaybackControl.pause, pause)
     }
 
-    let vParams = queryForVideoParams()
-    player.info.videoParams = vParams
-
     let duration = getDouble(MPVProperty.duration)
     player.info.videoDuration = VideoTime(duration)
     if let filename = getString(MPVProperty.path) {
@@ -1139,6 +1136,9 @@ not applying FFmpeg 9599 workaround
     }
     let position = getDouble(MPVProperty.timePos)
     player.info.videoPosition = VideoTime(position)
+
+    let vParams = queryForVideoParams()
+    player.info.videoParams = vParams
 
     player.log.debug("OnFileLoaded: Got info for opened file. \(vParams), Loc(sec): \(position.string6f) / \(duration.string6f)")
 
@@ -1178,7 +1178,8 @@ not applying FFmpeg 9599 workaround
       if let totalRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
         player.log.verbose("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(totalRotation)")
         if player.info.videoParams?.totalRotation != totalRotation {
-          player.info.videoParams = queryForVideoParams()
+          let videoParams = queryForVideoParams()
+          player.info.videoParams = videoParams
         }
       }
 

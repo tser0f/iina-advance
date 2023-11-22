@@ -652,15 +652,15 @@ struct PlayerWindowGeometry: Equatable {
     return self.clone(windowFrame: newWindowFrame, fitOption: newFitOption, videoAspectRatio: newVideoAspectRatio)
   }
 
-  func uncropVideo(videoBaseDisplaySize: NSSize, cropbox: NSRect, videoScale: CGFloat) -> PlayerWindowGeometry {
+  func uncropVideo(videoDisplayRotatedSize: NSSize, cropbox: NSRect, videoScale: CGFloat) -> PlayerWindowGeometry {
     let cropboxScaled = NSRect(x: cropbox.origin.x * videoScale,
                                y: cropbox.origin.y * videoScale,
                                width: cropbox.width * videoScale,
                                height: cropbox.height * videoScale)
     // Figure out part which wasn't cropped:
-    let antiCropboxSizeScaled = NSSize(width: (videoBaseDisplaySize.width - cropbox.width) * videoScale,
-                                       height: (videoBaseDisplaySize.height - cropbox.height) * videoScale)
-    let newVideoAspectRatio = videoBaseDisplaySize.aspect
+    let antiCropboxSizeScaled = NSSize(width: (videoDisplayRotatedSize.width - cropbox.width) * videoScale,
+                                       height: (videoDisplayRotatedSize.height - cropbox.height) * videoScale)
+    let newVideoAspectRatio = videoDisplayRotatedSize.aspect
     let newWindowFrame = NSRect(x: windowFrame.origin.x - cropboxScaled.origin.x,
                                 y: windowFrame.origin.y - cropboxScaled.origin.y,
                                 width: windowFrame.width + antiCropboxSizeScaled.width,
@@ -679,13 +679,13 @@ extension PlayerWindowController {
     log.verbose("[AdjustLayoutFromVideoReconfig] Start")
 
     // Get "correct" video size from mpv
-    guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
-      log.error("[AdjustLayoutFromVideoReconfig] Could not get videoBaseDisplaySize from mpv! Cancelling adjustment")
+    guard let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize else {
+      log.error("[AdjustLayoutFromVideoReconfig] Could not get videoDisplayRotatedSize from mpv! Cancelling adjustment")
       return
     }
-    let newVideoAspectRatio = videoBaseDisplaySize.aspect
+    let newVideoAspectRatio = videoDisplayRotatedSize.aspect
     if #available(macOS 10.12, *) {
-      pip.aspectRatio = videoBaseDisplaySize
+      pip.aspectRatio = videoDisplayRotatedSize
     }
     guard let screen = window?.screen else { return }
 
@@ -729,11 +729,11 @@ extension PlayerWindowController {
       // Not yet in interactive mode, but the active crop was just disabled prior to entering it,
       // so that full video can be seen during interactive mode
       log.verbose("[AdjustLayoutFromVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
-      let prevCropRect = prevCrop.cropRect(origVideoSize: videoBaseDisplaySize, flipYForMac: true)
-      log.verbose("[AdjustLayoutFromVideoReconfig] VideoBasedDisplaySize: \(videoBaseDisplaySize), PrevCropRect: \(prevCropRect)")
+      let prevCropRect = prevCrop.cropRect(origVideoSize: videoDisplayRotatedSize, flipYForMac: true)
+      log.verbose("[AdjustLayoutFromVideoReconfig] VideoBasedDisplaySize: \(videoDisplayRotatedSize), PrevCropRect: \(prevCropRect)")
 
       animationPipeline.submit(IINAAnimation.Task({ [self] in
-        let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoBaseDisplaySize: videoBaseDisplaySize, cropbox: prevCropRect,
+        let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropRect,
                                                                     videoScale: player.info.cachedWindowScale)
         // Update the cached objects
         player.info.videoAspectRatio = uncroppedWindowedGeo.videoAspectRatio
@@ -751,18 +751,18 @@ extension PlayerWindowController {
 
     } else if player.info.isRestoring {
       if isInInteractiveMode {
-        /// If restoring into interactive mode, we didn't have `videoBaseDisplaySize` while doing layout. Add it now (if needed)
+        /// If restoring into interactive mode, we didn't have `videoDisplayRotatedSize` while doing layout. Add it now (if needed)
         animationPipeline.submitZeroDuration({ [self] in
           let videoSize: NSSize
           if currentLayout.isFullScreen {
             let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, 
-                                                                              videoAspectRatio: videoBaseDisplaySize.aspect)
+                                                                              videoAspectRatio: videoDisplayRotatedSize.aspect)
             videoSize = newInteractiveModeGeo.videoSize
           } else { // windowed
             videoSize = interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize
           }
-          log.debug("[AdjustLayoutFromVideoReconfig] Restoring crop box origVideoSize=\(videoBaseDisplaySize), videoSize=\(videoSize)")
-          addOrReplaceCropBoxSelection(origVideoSize: videoBaseDisplaySize, videoSize: videoSize)
+          log.debug("[AdjustLayoutFromVideoReconfig] Restoring crop box origVideoSize=\(videoDisplayRotatedSize), videoSize=\(videoSize)")
+          addOrReplaceCropBoxSelection(origVideoSize: videoDisplayRotatedSize, videoSize: videoSize)
         })
         // fall through and apply new parameters
       }
@@ -785,14 +785,14 @@ extension PlayerWindowController {
       miniPlayer.adjustLayoutForVideoChange(newVideoAspectRatio: newVideoAspectRatio)
 
     } else {
-      let windowGeo = windowedModeGeometry.clone(videoAspectRatio: videoBaseDisplaySize.aspect)
+      let windowGeo = windowedModeGeometry.clone(videoAspectRatio: videoDisplayRotatedSize.aspect)
 
       // Will only change the video size & video container size. Panels outside the video do not change size
       let newWindowGeo: PlayerWindowGeometry
       if shouldResizeWindowAfterVideoReconfig() {
-        newWindowGeo = resizeWindowAfterVideoReconfig(from: windowGeo, videoBaseDisplaySize: videoBaseDisplaySize)
+        newWindowGeo = resizeWindowAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       } else {
-        newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoBaseDisplaySize: videoBaseDisplaySize)
+        newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
 
       /// Finally call `setFrame()`
@@ -830,10 +830,10 @@ extension PlayerWindowController {
   }
 
   private func resizeWindowAfterVideoReconfig(from windowGeo: PlayerWindowGeometry, 
-                                              videoBaseDisplaySize: NSSize) -> PlayerWindowGeometry {
+                                              videoDisplayRotatedSize: NSSize) -> PlayerWindowGeometry {
     // get videoSize on screen
-    var newVideoSize: NSSize = videoBaseDisplaySize
-    log.verbose("[AdjustLayoutFromVideoReconfig C-1]  Starting calc: set newVideoSize := videoBaseDisplaySize → \(videoBaseDisplaySize)")
+    var newVideoSize: NSSize = videoDisplayRotatedSize
+    log.verbose("[AdjustLayoutFromVideoReconfig C-1]  Starting calc: set newVideoSize := videoDisplayRotatedSize → \(videoDisplayRotatedSize)")
 
     let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
     if let resizeWindowStrategy, resizeWindowStrategy != .fitScreen {
@@ -866,19 +866,19 @@ extension PlayerWindowController {
   }
 
   private func resizeMinimallyAfterVideoReconfig(from windowGeo: PlayerWindowGeometry, 
-                                                 videoBaseDisplaySize: NSSize) -> PlayerWindowGeometry {
+                                                 videoDisplayRotatedSize: NSSize) -> PlayerWindowGeometry {
     // User is navigating in playlist. retain same window width.
     // This often isn't possible for vertical videos, which will end up shrinking the width.
     // So try to remember the preferred width so it can be restored when possible
     var desiredViewportSize = windowGeo.viewportSize
 
     if Preference.bool(for: .lockViewportToVideoSize) {
-      if let prefVidConSize = player.info.getIntendedViewportSize(forVideoAspectRatio: videoBaseDisplaySize.aspect)  {
+      if let prefVidConSize = player.info.getIntendedViewportSize(forVideoAspectRatio: videoDisplayRotatedSize.aspect)  {
         // Just use existing size in this case:
         desiredViewportSize = prefVidConSize
       }
 
-      let minNewVidConHeight = desiredViewportSize.width / videoBaseDisplaySize.aspect
+      let minNewVidConHeight = desiredViewportSize.width / videoDisplayRotatedSize.aspect
       if desiredViewportSize.height < minNewVidConHeight {
         // Try to increase height if possible, though it may still be shrunk to fit screen
         desiredViewportSize = NSSize(width: desiredViewportSize.width, height: minNewVidConHeight)
@@ -893,14 +893,14 @@ extension PlayerWindowController {
     guard currentLayout.mode == .windowed else { return }
     guard let window = window else { return }
 
-    guard let videoBaseDisplaySize = player.videoBaseDisplaySize else {
-      log.error("SetWindowScale failed: could not get videoBaseDisplaySize")
+    guard let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize else {
+      log.error("SetWindowScale failed: could not get videoDisplayRotatedSize")
       return
     }
 
-    var videoDesiredSize = videoBaseDisplaySize.multiply(scale)
+    var videoDesiredSize = videoDisplayRotatedSize.multiply(scale)
 
-    log.verbose("SetWindowScale: requested scale=\(scale)x, videoBaseDisplaySize=\(videoBaseDisplaySize) → videoDesiredSize=\(videoDesiredSize)")
+    log.verbose("SetWindowScale: requested scale=\(scale)x, videoDisplayRotatedSize=\(videoDisplayRotatedSize) → videoDesiredSize=\(videoDesiredSize)")
 
     // TODO
     if false && Preference.bool(for: .usePhysicalResolution) {

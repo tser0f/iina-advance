@@ -149,15 +149,15 @@ class PlaybackInfo {
 
   // - MARK: Filters & Equalizers
 
-  // The most up-to-date aspect ratio of the video (width/height)
+  /// The most up-to-date aspect ratio of the video (width/height), after `totalRotation` applied
   var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {
     didSet {
-      log.verbose("Updated videoAspectRatio to \(videoAspectRatio)")
+      log.verbose("Updated videoAspectRatio to \(videoAspectRatio.string6f)")
     }
   }
 
-  /** The current applied aspect, used for find current aspect in menu, etc. Maybe not a good approach. */
-  var unsureAspect: String = "Default"
+  /// The currently applied aspect, used for finding current aspect in menu & sidebar segmented control. Does not include rotation(s)
+  var selectedAspectRatioLabel: String = AppData.defaultAspectName
   var unsureCrop: String = "None" // TODO: rename this to "selectedCrop"
   var cropFilter: MPVFilter?
   var flipFilter: MPVFilter?

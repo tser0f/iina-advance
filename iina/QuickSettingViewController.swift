@@ -267,7 +267,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   }
 
   private func updateVideoTabControl() {
-    if let index = AppData.aspectsInPanel.firstIndex(of: player.info.unsureAspect) {
+    if let index = AppData.aspectsInPanel.firstIndex(of: player.info.selectedAspectRatioLabel) {
       aspectSegment.selectedSegment = index
     } else {
       aspectSegment.selectedSegment = -1

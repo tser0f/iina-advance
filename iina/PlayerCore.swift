@@ -781,12 +781,13 @@ class PlayerCore: NSObject {
     mpv.setDouble(MPVOption.PlaybackControl.speed, speed)
   }
 
+  /// Set video's aspect ratio. Note that aspectRatio is before any rotations.
   func setVideoAspect(_ aspect: String) {
     guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
 
-    guard let videoRawWidth = info.videoRawWidth, let videoRawHeight = info.videoRawHeight else {
-      log.verbose("Cannot set requested aspect: video's raw size not available")
+    guard let vParams = info.videoParams else {
+      log.verbose("Cannot set requested aspect: videoParams not available")
       if let aspectDouble = Double(aspect), aspectDouble == -1 {
         DispatchQueue.main.async { [self] in
           windowController.refreshAlbumArtDisplay()
@@ -795,6 +796,8 @@ class PlayerCore: NSObject {
       return
     }
 
+    let videoRawWidth = vParams.videoRawWidth
+    let videoRawHeight = vParams.videoRawHeight
     var aspectDisplay: String
     let videoDefaultAspectNumString = (Double(videoRawWidth) / Double(videoRawHeight)).stringTrunc2f
     if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.stringTrunc2f != videoDefaultAspectNumString {
@@ -817,8 +820,8 @@ class PlayerCore: NSObject {
       log.verbose("Aspect \(aspect.quoted) is unrecognized or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
     }
 
-    guard info.unsureAspect != aspectDisplay else { return }
-    info.unsureAspect = aspectDisplay
+    guard info.selectedAspectRatioLabel != aspectDisplay else { return }
+    info.selectedAspectRatioLabel = aspectDisplay
 
     let mpvValue = aspectDisplay == AppData.defaultAspectName ? "no" : aspectDisplay
     log.verbose("Setting mpv video-aspect-override to: \(mpvValue.quoted)")
@@ -2279,14 +2282,6 @@ class PlayerCore: NSObject {
   }
 
   // MARK: - Utils
-
-  /**
-   Non-nil and non-zero width/height value calculated for video window, from current `dwidth`
-   and `dheight` while taking pure audio files and video rotations into consideration.
-   */
-  var videoBaseDisplaySize: CGSize? {
-    return info.videoParams?.videoBaseDisplaySize
-  }
 
   func getMediaTitle(withExtension: Bool = true) -> String {
     let mediaTitle = mpv.getString(MPVProperty.mediaTitle)

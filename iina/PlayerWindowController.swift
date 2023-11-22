@@ -1016,12 +1016,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if showDefaultArt || player.currentMediaIsAudio == .isAudio {
       newAspectRatio = 1
     } else {
-      if let aspect = videoParams.videoBaseDisplaySize?.aspect {
-        newAspectRatio = aspect
-      } else {
-        log.error("Failed to determine videoAspectRatio! Will leave existing (\(oldAspectRatio.stringTrunc2f))")
-        return
-      }
+      // This can also equal 1 if not found
+      newAspectRatio = videoParams.videoDisplayRotatedAspect
     }
 
     guard newAspectRatio.stringTrunc2f != oldAspectRatio.stringTrunc2f else {
@@ -2764,7 +2760,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
 
   func enterInteractiveMode(_ mode: InteractiveMode) {
-    guard player.info.videoParams?.videoBaseDisplaySize != nil else {
+    guard player.info.videoParams?.videoDisplayRotatedSize != nil else {
       Utility.showAlert("no_video_track")
       return
     }
@@ -2933,8 +2929,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     log.verbose("UpdateWindowParametersForMPV called, videoSizeIsNil: \((videoSize == nil).yn)")
 
-    guard let videoWidth = player.videoBaseDisplaySize?.width else {
-      log.debug("Skipping send to mpv windowScale; could not get width from videoBaseDisplaySize")
+    guard let videoWidth = player.info.videoParams?.videoDisplayRotatedWidth else {
+      log.debug("Skipping send to mpv windowScale; could not get width from videoDisplayRotatedSize")
       return
     }
 

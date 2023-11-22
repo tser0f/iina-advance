@@ -292,13 +292,13 @@ class MenuController: NSObject, NSMenuDelegate {
 
     // -- aspect
     var aspectList = AppData.aspects
-    // we need to set the represented object separately, since `Constants.String.default` may be localized.
+    /// we need to set the represented object separately, since `Constants.String.default` may be localized.
     var aspectListObject = AppData.aspects
     aspectList.insert(Constants.String.default, at: 0)
-    aspectListObject.insert("Default", at: 0)
+    aspectListObject.insert(AppData.defaultAspectName, at: 0)
     bind(menu: aspectMenu, withOptions: aspectList, objects: aspectListObject, objectMap: nil, action: #selector(PlayerWindowController.menuChangeAspect(_:))) {
       /// return `true` if menu item should be checked (i.e. if current aspect matches menu item)
-      return PlayerCore.active.info.unsureAspect == $0.representedObject as? String
+      return PlayerCore.active.info.selectedAspectRatioLabel == $0.representedObject as? String
     }
 
     // -- crop

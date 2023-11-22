@@ -39,7 +39,7 @@ struct MPVVideoParams: CustomStringConvertible {
 
   var isWidthSwappedWithHeightByRotation: Bool {
     // 90, 270, etc...
-    (userRotation %% 180) != 0
+    (totalRotation %% 180) != 0
   }
 
   /// Like `dwidth`, but after applying `userRotation`.
@@ -61,15 +61,15 @@ struct MPVVideoParams: CustomStringConvertible {
   }
 
   var videoDisplayRotatedAspect: CGFloat {
-    guard let videoBaseDisplaySize else { return 1 }
-    return videoBaseDisplaySize.aspect
+    guard let videoDisplayRotatedSize else { return 1 }
+    return videoDisplayRotatedSize.aspect
   }
 
-  var videoBaseDisplaySize: CGSize? {
+  var videoDisplayRotatedSize: CGSize? {
     let drW = videoDisplayRotatedWidth
     let drH = videoDisplayRotatedHeight
     if drW == 0 || drH == 0 {
-      Logger.log("Failed to generate videoBaseDisplaySize: dwidth or dheight not present!", level: .error)
+      Logger.log("Failed to generate videoDisplayRotatedSize: dwidth or dheight not present!", level: .error)
       return nil
     }
       return CGSize(width: drW, height: drH)
