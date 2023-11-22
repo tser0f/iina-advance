@@ -2051,6 +2051,9 @@ class PlayerCore: NSObject {
     saveState()
   }
 
+  private var osdLastPosition: Double? = nil
+  private var osdLastDuration: Double? = nil
+
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
     /// Note: use `windowController.loaded` (querying `windowController.isWindowLoaded` will initialize windowController unexpectedly)
     guard windowController.loaded && Preference.bool(for: .enableOSD) else { return }
@@ -2059,6 +2062,20 @@ class PlayerCore: NSObject {
         return
       }
     }
+
+    if case .seek(let position, let duration) = osd {
+      // Try to avoid duplicate seek messages which are emitted when paused and changing video settings
+      guard position?.second != osdLastPosition || duration?.second != osdLastDuration else {
+        log.verbose("OSD position/duration has not changed; ignoring")
+        return
+      }
+      osdLastPosition = position?.second
+      osdLastDuration = duration?.second
+    } else if case .pause = osd {
+      osdLastPosition = info.videoPosition?.second
+      osdLastDuration = info.videoDuration?.second
+    }
+
     DispatchQueue.main.async { [self] in
       log.verbose("Showing OSD: \(osd)")
       windowController.displayOSD(osd,
