@@ -330,6 +330,8 @@ extension PlayerWindowController {
     return transition
   }
 
+  // - MARK: Building geometries
+
   private func buildInputGeometry(from inputLayout: LayoutState, transitionName: String, windowedModeScreen: NSScreen) -> PlayerWindowGeometry {
     // Restore window size & position
     switch inputLayout.mode {
@@ -402,8 +404,7 @@ extension PlayerWindowController {
       // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
       // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
       // Add check for aspect ratio & interactive mode so that we don't enable this when cropping or other things:
-      if Preference.bool(for: .lockViewportToVideoSize),
-         let prevIntendedViewportSize = player.info.getIntendedViewportSize(forVideoAspectRatio: inputGeometry.videoAspectRatio),
+      if let prevIntendedViewportSize = player.info.intendedViewportSize,
          !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
          windowedModeGeometry.videoAspectRatio.stringTrunc2f == inputGeometry.videoAspectRatio.stringTrunc2f
       {

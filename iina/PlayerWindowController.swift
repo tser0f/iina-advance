@@ -1036,7 +1036,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .windowed:
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
-         let intendedViewportSize = player.info.getIntendedViewportSize(forVideoAspectRatio: newAspectRatio) {
+         let intendedViewportSize = player.info.intendedViewportSize {
         viewportSize = intendedViewportSize
       } else {
         viewportSize = windowedModeGeometry.viewportSize

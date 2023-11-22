@@ -19,8 +19,7 @@ struct PlayerSaveState {
     case playlistSubtitles = "playlistSubs"
     case matchedSubtitles = "matchedSubs"
 
-    case intendedViewportSizeWide = "intendedViewportSize_Wide"
-    case intendedViewportSizeTall = "intendedViewportSize_Tall"
+    case intendedViewportSize = "intendedViewportSize"
     case layoutSpec = "layoutSpec"
     case windowedModeGeometry = "windowedModeGeo"
     case musicModeGeometry = "musicModeGeo"
@@ -182,14 +181,9 @@ struct PlayerSaveState {
     let screenMetaCSVList: [String] = wc.cachedScreens.values.map{$0.toCSV()}
     props[PropName.screens.rawValue] = screenMetaCSVList
 
-    if let size = info.intendedViewportSizeWide {
+    if let size = info.intendedViewportSize {
       let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
-      props[PropName.intendedViewportSizeWide.rawValue] = sizeString
-    }
-
-    if let size = info.intendedViewportSizeTall {
-      let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
-      props[PropName.intendedViewportSizeTall.rawValue] = sizeString
+      props[PropName.intendedViewportSize.rawValue] = sizeString
     }
 
     if player.windowController.isOntop {
@@ -635,11 +629,8 @@ struct PlayerSaveState {
       info.hdrEnabled = hdrEnabled
     }
 
-    if let size = nsSize(for: .intendedViewportSizeWide) {
-      info.intendedViewportSizeWide = size
-    }
-    if let size = nsSize(for: .intendedViewportSizeTall) {
-      info.intendedViewportSizeTall = size
+    if let size = nsSize(for: .intendedViewportSize) {
+      info.intendedViewportSize = size
     }
 
     if let videoURLListString = string(for: .playlistVideos) {

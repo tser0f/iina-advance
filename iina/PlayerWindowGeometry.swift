@@ -701,6 +701,7 @@ extension PlayerWindowController {
         let croppedGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
         windowedModeGeometry = croppedGeometry
         player.info.videoAspectRatio = croppedGeometry.videoAspectRatio
+        player.info.setIntendedViewportSize(from: croppedGeometry)
 
         // fade out all this stuff before crop
         cropController.view.alphaValue = 0
@@ -791,6 +792,7 @@ extension PlayerWindowController {
       let newWindowGeo: PlayerWindowGeometry
       if shouldResizeWindowAfterVideoReconfig() {
         newWindowGeo = resizeWindowAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
+        player.info.setIntendedViewportSize(from: newWindowGeo)
       } else {
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
@@ -872,7 +874,7 @@ extension PlayerWindowController {
     var desiredViewportSize = windowGeo.viewportSize
 
     if Preference.bool(for: .lockViewportToVideoSize) {
-      if let prefVidConSize = player.info.getIntendedViewportSize(forVideoAspectRatio: videoDisplayRotatedSize.aspect)  {
+      if let prefVidConSize = player.info.intendedViewportSize  {
         // Just use existing size in this case:
         desiredViewportSize = prefVidConSize
       }

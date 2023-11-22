@@ -145,7 +145,7 @@ extension Preference {
       let openWindowNames = self.getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
       let minimizedWindowNames = Array(AppDelegate.windowsMinimized)
       let hiddenWindowNames = Array(AppDelegate.windowsHidden)
-      Logger.log("Saving open windows (\(openWindowNames)), hidden (\(hiddenWindowNames)), & minimized (\(minimizedWindowNames))", level: .verbose)
+      Logger.log("Saving window list. Open: \(openWindowNames), hidden: \(hiddenWindowNames), minimized: \(minimizedWindowNames)", level: .verbose)
       let minimizedStrings = minimizedWindowNames.map({ "\(SavedWindow.minimizedPrefix)\($0)" })
       saveOpenWindowList(windowNamesBackToFront: minimizedStrings + hiddenWindowNames + openWindowNames, forLaunchID: AppDelegate.launchID)
     }
