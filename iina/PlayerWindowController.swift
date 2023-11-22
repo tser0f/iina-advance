@@ -2139,7 +2139,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if currentLayout.isLegacyFullScreen {
         let layout = currentLayout
         guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
-        log.verbose("Updating legacy full screen window in response to NSApplicationDidChangeScreenParametersNotification")
+        log.verbose("Updating legacy full screen window in response to ScreenParametersNotification")
         let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
         applyLegacyFullScreenGeometry(fsGeo)
       } else if currentLayout.isWindowed {
@@ -2149,11 +2149,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         let oldGeo = windowedModeGeometry
         let newGeo = oldGeo.refit()
         guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
-          log.verbose("No need to update windowFrame in response to NSApplicationDidChangeScreenParametersNotification - no change")
+          log.verbose("No need to update windowFrame in response to ScreenParametersNotification - no change")
           return
         }
         let newWindowFrame = newGeo.windowFrame
-        log.verbose("Calling setFrame() in response to NSApplicationDidChangeScreenParametersNotification with newWindowFrame \(newWindowFrame)")
+        log.verbose("Calling setFrame() in response to ScreenParametersNotification with windowFrame \(newWindowFrame), videoSize \(newGeo.videoSize)")
         videoView.apply(newGeo)
         player.window.setFrameImmediately(newWindowFrame)
       }

@@ -14,6 +14,8 @@ class ViewLayer: CAOpenGLLayer {
 
   weak var videoView: VideoView!
 
+  // Use semaphore to prevent more than 2 frames enqueued at any given time. Any more is wasted resources
+  private let mpvGLSemaphore = DispatchSemaphore(value: 2)
   private let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
   private var blocked = false
 
@@ -228,10 +230,15 @@ class ViewLayer: CAOpenGLLayer {
   }
 
   func drawAsync() {
-    guard !blocked else { return }
+    guard !blocked else {
+      return
+    }
+
+    // Do not draw if queue is already at capacity
+    if mpvGLSemaphore.wait(timeout: .now()) == .timedOut { return }
 
     mpvGLQueue.async { [self] in
-      guard !blocked else { return }
+      mpvGLSemaphore.signal()
       draw()
     }
   }
@@ -259,7 +266,7 @@ class ViewLayer: CAOpenGLLayer {
 
       // draw(inCGLContext:) is not called, needs a skip render
       if let renderContext = videoView.player.mpv.mpvRenderContext,
-         let openGLContext = CGLGetCurrentContext() {
+         let openGLContext = videoView.player.mpv.openGLContext {
         CGLLockContext(openGLContext)
         defer { CGLUnlockContext(openGLContext) }
         

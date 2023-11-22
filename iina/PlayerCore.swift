@@ -1639,7 +1639,7 @@ class PlayerCore: NSObject {
       // mpv_render_report_swap.
       videoView.displayActive()
     }
-    syncUITime()
+    refreshSyncUITimer()
     sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
@@ -1657,7 +1657,7 @@ class PlayerCore: NSObject {
 
     reloadSavedIINAfilters()
     windowController.forceDraw()
-    syncUITime()
+    refreshSyncUITimer()
 
     let audioStatus = currentMediaIsAudio
 

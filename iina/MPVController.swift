@@ -104,7 +104,7 @@ class MPVController: NSObject {
   var mpv: OpaquePointer!
   var mpvRenderContext: OpaquePointer?
 
-  private var openGLContext: CGLContextObj! = nil
+  var openGLContext: CGLContextObj! = nil
 
   var mpvClientName: UnsafePointer<CChar>!
   var mpvVersion: String!
