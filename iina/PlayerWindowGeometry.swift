@@ -792,7 +792,6 @@ extension PlayerWindowController {
       let newWindowGeo: PlayerWindowGeometry
       if shouldResizeWindowAfterVideoReconfig() {
         newWindowGeo = resizeWindowAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
-        player.info.setIntendedViewportSize(from: newWindowGeo)
       } else {
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
@@ -856,12 +855,17 @@ extension PlayerWindowController {
       return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
 
     } else if !player.info.justStartedFile {
-      // Try to match previous scale
-      newVideoSize = newVideoSize.multiply(player.info.cachedWindowScale)
-      log.verbose("[AdjustLayoutFromVideoReconfig C-5] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
-      return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
+      if Preference.bool(for: .lockViewportToVideoSize) {
+        // Try to match previous scale
+        newVideoSize = newVideoSize.multiply(player.info.cachedWindowScale)
+        log.verbose("[AdjustLayoutFromVideoReconfig C-5] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
+        return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
+      } else {
+        log.verbose("[AdjustLayoutFromVideoReconfig C-6] Using prev windowFrame \(windowGeo.windowFrame) with new aspect")
+        return windowGeo
+      }
     } else {  // started file
-      log.verbose("[AdjustLayoutFromVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → center windowFrame")
+      log.verbose("[AdjustLayoutFromVideoReconfig C-7] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → center windowFrame")
       return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
     }
   }
