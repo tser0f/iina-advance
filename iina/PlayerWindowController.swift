@@ -2582,11 +2582,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // "setTitleWithRepresentedFilename throws NSInvalidArgumentException: NSNextStepFrame _displayName"
       // Feedback number FB9789129
       title = player.info.currentURL?.lastPathComponent ?? ""
-      if Preference.bool(for: .useLegacyFullScreen), #available(macOS 11, *) {
-        window.title = title
-      } else {
-        window.setTitleWithRepresentedFilename(player.info.currentURL?.path ?? "")
-      }
+      window.setTitleWithRepresentedFilename(player.info.currentURL?.path ?? "")
     }
 
     /// This call is needed when using custom window style, otherwise the window won't get added to the Window menu or the Dock.
@@ -2595,6 +2591,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     NSApplication.shared.addWindowsItem(window, title: title, filename: false)
     NSApplication.shared.changeWindowsItem(window, title: title, filename: false)
 
+    log.verbose("Updating window title to: \(title.quoted)")
     customTitleBar?.refreshTitle()
   }
 
@@ -3520,7 +3517,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
 
       addVideoViewToWindow()
       videoView.apply(windowedModeGeometry)
-      
+
       // If using legacy windowed mode, need to manually add title to Window menu & Dock
       updateTitle()
     })

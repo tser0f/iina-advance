@@ -1267,7 +1267,9 @@ not applying FFmpeg 9599 workaround
       }
       let userRotation = Int(data)
       player.log.verbose("Received mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)")
-      player.info.videoParams = queryForVideoParams()
+      let videoParams = queryForVideoParams()
+      player.info.videoParams = videoParams
+      
       if self.player.windowController.loaded {
         player.saveState()
         DispatchQueue.main.async { [self] in

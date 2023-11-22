@@ -817,7 +817,7 @@ class PlayerCore: NSObject {
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
-      log.verbose("Aspect \(aspect.quoted) is unrecognized or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
+      log.verbose("Aspect \(aspect.quoted) is -1 or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
     }
 
     guard info.selectedAspectRatioLabel != aspectDisplay else { return }
@@ -1477,7 +1477,7 @@ class PlayerCore: NSObject {
   // MARK: - Listeners
 
   func fileStarted(path: String) {
-    guard !isStopping, !isStopped, !isShuttingDown else { return }
+    guard !isStopping, !isShuttingDown else { return }
 
     log.debug("File started")
     info.justStartedFile = true
@@ -1544,7 +1544,8 @@ class PlayerCore: NSObject {
 
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
-    guard !isStopping, !isStopped, !isShuttingDown else { return }
+    // note: player may be "stopped" here
+    guard !isStopping, !isShuttingDown else { return }
 
     log.debug("File loaded: \(info.currentURL?.absoluteString.quoted ?? "nil")")
     triedUsingExactSeekForCurrentFile = false

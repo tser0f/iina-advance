@@ -697,7 +697,7 @@ extension PlayerWindowController {
                                          width: cropController.cropw, height: cropController.croph)
 
       animationPipeline.submit(IINAAnimation.Task({ [self] in
-        log.verbose("Cropping video from origVideoSize: \(originalVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropResult: \(newVideoFrameUnscaled)")
+        log.verbose("[AdjustLayoutFromVideoReconfig] Cropping video from origVideoSize: \(originalVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropResult: \(newVideoFrameUnscaled)")
         let croppedGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
         windowedModeGeometry = croppedGeometry
         player.info.videoAspectRatio = croppedGeometry.videoAspectRatio
@@ -729,9 +729,14 @@ extension PlayerWindowController {
     } else if !isInInteractiveMode, let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       // Not yet in interactive mode, but the active crop was just disabled prior to entering it,
       // so that full video can be seen during interactive mode
-      log.verbose("[AdjustLayoutFromVideoReconfig] Found a disabled crop filter (\(prevCrop.stringFormat.quoted)). Assuming that it was disabled so that window can enter interactive crop")
+
+      // FIXME: handle multiple requests here
+
+
+
+      log.verbose("[AdjustLayoutFromVideoReconfig] Found a disabled crop filter: \(prevCrop.stringFormat.quoted). Assuming that it was disabled to enter interactive crop")
       let prevCropRect = prevCrop.cropRect(origVideoSize: videoDisplayRotatedSize, flipYForMac: true)
-      log.verbose("[AdjustLayoutFromVideoReconfig] VideoBasedDisplaySize: \(videoDisplayRotatedSize), PrevCropRect: \(prevCropRect)")
+      log.verbose("[AdjustLayoutFromVideoReconfig] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropRect: \(prevCropRect)")
 
       animationPipeline.submit(IINAAnimation.Task({ [self] in
         let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropRect,
@@ -778,7 +783,10 @@ extension PlayerWindowController {
         log.error("[AdjustLayoutFromVideoReconfig B] Aspect ratio mismatch during restore! Expected \(newAspect), found \(oldAspect). Will attempt to correct by resizing window.")
         /// Set variables and resize viewport to fit properly
         windowedModeGeometry = windowedModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
-        resizeViewport()
+        player.info.videoAspectRatio = newVideoAspectRatio
+        if currentLayout.mode == .windowed {
+          resizeViewport()
+        }
       }
 
     } else if player.isInMiniPlayer {
@@ -1027,7 +1035,7 @@ extension PlayerWindowController {
         log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateTicketCount)")
         return
       }
-      log.verbose("Running geoUpdate \(geoUpdateRequestID)")
+      log.verbose("Applying geoUpdate \(geoUpdateRequestID)")
 
       switch currentLayout.spec.mode {
       case .musicMode:

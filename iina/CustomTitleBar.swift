@@ -174,9 +174,10 @@ class CustomTitleBarViewController: NSViewController {
       view?.alphaValue = controlAlpha
     }
 
+    let title = windowController.player.info.currentURL?.lastPathComponent ?? ""
     titleText.textColor = NSColor.windowFrameTextColor
     titleText.font = NSFont.titleBarFont(ofSize: NSFont.systemFontSize(for: .regular))
-    titleText.string = windowController.player.info.currentURL?.lastPathComponent ?? ""
+    titleText.string = title
     titleText.sizeToFit()
   }
 
