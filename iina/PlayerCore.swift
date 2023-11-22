@@ -1477,7 +1477,7 @@ class PlayerCore: NSObject {
   // MARK: - Listeners
 
   func fileStarted(path: String) {
-    guard !isStopping, !isShuttingDown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown else { return }
 
     log.debug("File started")
     info.justStartedFile = true
@@ -1544,7 +1544,7 @@ class PlayerCore: NSObject {
 
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
-    guard !isStopping, !isShuttingDown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown else { return }
 
     log.debug("File loaded: \(info.currentURL?.absoluteString.quoted ?? "nil")")
     triedUsingExactSeekForCurrentFile = false
@@ -1599,13 +1599,13 @@ class PlayerCore: NSObject {
   }
 
   func afChanged() {
-    guard !isShuttingDown, !isShutdown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     saveState()
     postNotification(.iinaAFChanged)
   }
 
   func aidChanged() {
-    guard !isShuttingDown, !isShutdown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     let aid = Int(mpv.getInt(MPVOption.TrackSelection.aid))
     info.aid = aid
     log.verbose("Audio track changed to: \(aid)")
@@ -1618,7 +1618,7 @@ class PlayerCore: NSObject {
   }
 
   func mediaTitleChanged() {
-    guard !isShuttingDown, !isShutdown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     postNotification(.iinaMediaTitleChanged)
   }
 
@@ -1710,13 +1710,13 @@ class PlayerCore: NSObject {
   }
 
   func secondarySidChanged() {
-    guard !isShuttingDown, !isShutdown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     info.secondSid = Int(mpv.getInt(MPVOption.Subtitles.secondarySid))
     postNotification(.iinaSIDChanged)
   }
 
   func sidChanged() {
-    guard !isShuttingDown, !isShutdown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     info.sid = Int(mpv.getInt(MPVOption.TrackSelection.sid))
     postNotification(.iinaSIDChanged)
     sendOSD(.track(info.currentTrack(.sub) ?? .noneSubTrack))
@@ -1744,7 +1744,7 @@ class PlayerCore: NSObject {
 
   func onVideoReconfig() {
     // If loading file, video reconfig can return 0 width and height
-    guard !info.fileLoading, !isShuttingDown, !isShutdown else { return }
+    guard !info.fileLoading, !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
 
     let vParams = mpv.queryForVideoParams()
     log.verbose("Got mpv `video-reconfig`; \(vParams)")
@@ -1760,13 +1760,13 @@ class PlayerCore: NSObject {
   }
 
   func vfChanged() {
-    guard !isShuttingDown, !isShutdown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     saveState()
     postNotification(.iinaVFChanged)
   }
 
   func vidChanged() {
-    guard !isShuttingDown, !isShutdown else { return }
+    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
     info.vid = vid
     log.verbose("Video track changed to: \(vid)")

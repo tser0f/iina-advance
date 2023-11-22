@@ -989,7 +989,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Check whether to show album art, which may require changing videoView aspect ratio to 1:1.
   // Also show or hide default album art if needed.
   func refreshAlbumArtDisplay() {
-    guard loaded, !isClosing, !player.isShuttingDown else { return }
+    guard loaded, !isClosing, !player.isStopping, !player.isShuttingDown else { return }
 
     // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
     let videoParams = player.mpv.queryForVideoParams()
@@ -2932,6 +2932,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     guard let videoWidth = player.info.videoParams?.videoDisplayRotatedWidth else {
       log.debug("Skipping send to mpv windowScale; could not get width from videoDisplayRotatedSize")
+      return
+    }
+    guard videoWidth > 0 else {
+      log.debug("Skipping send to mpv windowScale; videoDisplayRotated width is \(videoWidth)")
       return
     }
 
