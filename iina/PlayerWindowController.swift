@@ -1873,7 +1873,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidExitFullScreen(_ notification: Notification) {
     if AccessibilityPreferences.motionReductionEnabled {
       animateExitFromFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: false)
+    } else {
+      // Kludge/workaround for race condition when exiting native FS to native windowed mode
+      animationPipeline.submitZeroDuration { [self] in
+        updateTitle()
+      }
     }
+
   }
 
   // Animation: Exit FullScreen

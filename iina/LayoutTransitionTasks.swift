@@ -713,8 +713,8 @@ extension PlayerWindowController {
             customTitleBar.view.alphaValue = 1
           }
         } else {
-          window.titleVisibility = .visible
           showBuiltInTitleBarViews()
+          window.titleVisibility = .visible
 
           /// Title bar accessories get removed by fullscreen or if window `styleMask` did not include `.titled`.
           /// Add them back:
@@ -758,6 +758,11 @@ extension PlayerWindowController {
       if !isPausedPriorToInteractiveMode {
         player.resume()
       }
+    }
+
+    if transition.isExitingFullScreen && !transition.outputLayout.spec.isLegacyStyle {
+      // MUST put this in prev task to avoid race condition!
+      window.titleVisibility = .visible
     }
   }
 
@@ -850,11 +855,9 @@ extension PlayerWindowController {
       } else {  // native windowed
         /// Same logic as in `fadeInNewViews()`
         setWindowStyleToNative()
-        if transition.outputLayout.titleBar.isShowable {
-          window.titleVisibility = .visible
-          showBuiltInTitleBarViews()  /// do this again after adding `titled` style
-          addTitleBarAccessoryViews()
-        }
+        showBuiltInTitleBarViews()  /// do this again after adding `titled` style
+        addTitleBarAccessoryViews()
+        updateTitle()
       }
 
       if transition.isExitingLegacyFullScreen {

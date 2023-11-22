@@ -1748,10 +1748,11 @@ class PlayerCore: NSObject {
     guard !info.fileLoading, !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
 
     let vParams = mpv.queryForVideoParams()
-    log.verbose("Got mpv `video-reconfig`; \(vParams)")
 
     // filter the last video-reconfig event before quit
     if vParams.videoDisplayRotatedWidth == 0 && vParams.videoDisplayRotatedHeight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
+
+    log.verbose("Got mpv `video-reconfig`; \(vParams)")
 
     // Always send this to window controller. It should be smart enough to resize only when needed:
     DispatchQueue.main.async { [self] in
