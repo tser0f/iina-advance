@@ -213,15 +213,17 @@ class ViewLayer: CAOpenGLLayer {
     /// which would cause noticable clipping or wobbling during animations.
     isAsynchronous = true
 
-    asychronousModeTimer = Timer.scheduledTimer(
-      timeInterval: AppData.asynchronousModeTimeIntervalSec,
-      target: self,
-      selector: #selector(self.exitAsynchronousMode),
-      userInfo: nil,
-      repeats: false
-    )
-    /// Save some CPU by making this less strict, because we don't really care that much
-    asychronousModeTimer?.tolerance = AppData.asynchronousModeTimeIntervalSec * 0.1
+    DispatchQueue.main.async { [self] in
+      asychronousModeTimer = Timer.scheduledTimer(
+        timeInterval: AppData.asynchronousModeTimeIntervalSec,
+        target: self,
+        selector: #selector(self.exitAsynchronousMode),
+        userInfo: nil,
+        repeats: false
+      )
+      /// Save some CPU by making this less strict, because we don't really care that much
+      asychronousModeTimer?.tolerance = AppData.asynchronousModeTimeIntervalSec * 0.1
+    }
   }
 
   @objc func exitAsynchronousMode() {
