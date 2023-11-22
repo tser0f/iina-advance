@@ -702,6 +702,7 @@ extension PlayerWindowController {
       Logger.log("Could not find a matching sidebar tab for \(tabName.quoted)!", level: .error, subsystem: player.subsystem)
       return
     }
+    log.verbose("Changing to tab: \(tabName.quoted)")
 
     // Try to avoid race conditions if possible
     animationPipeline.submitZeroDuration { [self] in
@@ -718,6 +719,7 @@ extension PlayerWindowController {
       let newLayoutSpec = layout.spec.clone(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar)
       let outputLayout = LayoutState.buildFrom(newLayoutSpec)
       currentLayout = outputLayout
+      player.saveState()
     }
   }
 
