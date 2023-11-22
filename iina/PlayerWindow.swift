@@ -23,6 +23,10 @@ class PlayerWindow: NSWindow {
    Note: if `animate` is `true`, a `windowDidEndLiveResize` event will be triggered, which is often not desirable!
    */
   func setFrameImmediately(_ newFrame: NSRect, animate: Bool = true) {
+    if let controller = windowController as? PlayerWindowController {
+      controller.videoView.videoLayer.enterAsynchronousMode()
+    }
+
     useZeroDurationForNextResize = true
     log.verbose("Entered setFrameImmediately: animate=\(animate.yn) frame=\(newFrame)")
     setFrame(newFrame, display: true, animate: animate)

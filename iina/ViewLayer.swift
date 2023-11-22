@@ -24,6 +24,8 @@ class ViewLayer: CAOpenGLLayer {
   private var needsMPVRender = false
   private var forceRender = false
 
+  private var asychronousModeTimer: Timer?
+
 #if DEBUG
   // For measuring frames per second
   var lastPrintTime = Date().timeIntervalSince1970
@@ -98,7 +100,7 @@ class ViewLayer: CAOpenGLLayer {
       )
       CGLChoosePixelFormat(attributes, &pix, &npix)
       if let pix = pix {
-        Logger.log("Created OpenGL pixel format with \(attributes)", level: .debug)
+        videoView.player.log.debug("Created OpenGL pixel format with \(attributes)")
         return pix
       }
     }
@@ -186,6 +188,7 @@ class ViewLayer: CAOpenGLLayer {
   }
 
   func suspend() {
+    asychronousModeTimer?.invalidate()
     /// If this is set to `true` while the video is paused, there is some degree of busy-waiting as the
     /// layer is polled at a high rate about whether it needs to draw. Disable this to save CPU while idle.
     isAsynchronous = false
@@ -194,14 +197,36 @@ class ViewLayer: CAOpenGLLayer {
   }
 
   func resume() {
+    blocked = false
+
+    drawAsync()
+  }
+
+  /// We want `isAsynchronous = true` while executing any animation which causes the layer to resize.
+  /// But we don't want to leave this on full-time, because it will result in extra draw requests and may
+  /// throw off the timing of each draw.
+  func enterAsynchronousMode() {
+    asychronousModeTimer?.invalidate()
+
     /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
     /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
     /// which would cause noticable clipping or wobbling during animations.
     isAsynchronous = true
 
-    blocked = false
+    asychronousModeTimer = Timer.scheduledTimer(
+      timeInterval: AppData.asynchronousModeTimeIntervalSec,
+      target: self,
+      selector: #selector(self.exitAsynchronousMode),
+      userInfo: nil,
+      repeats: false
+    )
+    /// Save some CPU by making this less strict, because we don't really care that much
+    asychronousModeTimer?.tolerance = AppData.asynchronousModeTimeIntervalSec * 0.1
+  }
 
-    drawAsync()
+  @objc func exitAsynchronousMode() {
+    videoView.player.log.verbose("Exiting asynchronous mode")
+    isAsynchronous = false
   }
 
   func drawAsync() {

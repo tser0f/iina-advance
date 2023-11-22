@@ -19,7 +19,8 @@ struct AppData {
 //  static let syncTimerPreciseConfig = SyncTimerConfig(interval: 0.04, tolerance: 0.01)
 
   /// If state save is enabled and video is playing, make sure player is saved every this number of secs
-  static let playTimeSaveStateIntervalSec: Double = 10.0
+  static let playTimeSaveStateIntervalSec: TimeInterval = 10.0
+  static let asynchronousModeTimeIntervalSec: TimeInterval = 2.0
 
   /** speed values when clicking left / right arrow button */
 
