@@ -2705,6 +2705,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       heightConstraint.isActive = true
 
       osdStackView.addView(accessoryView, in: .bottom)
+      accessoryView.addConstraintsToFillSuperview(leading: 0, trailing: 0)
 
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0
