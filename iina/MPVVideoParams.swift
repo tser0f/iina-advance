@@ -37,6 +37,14 @@ struct MPVVideoParams: CustomStringConvertible {
   /// `MPVProperty.videoRotate`:
   let userRotation: Int
 
+  var videoRawSize: CGSize {
+    return CGSize(width: videoRawWidth, height: videoRawHeight)
+  }
+
+  var videoDisplaySize: CGSize {
+    return CGSize(width: videoDisplayWidth, height: videoDisplayHeight)
+  }
+
   var isWidthSwappedWithHeightByRotation: Bool {
     // 90, 270, etc...
     (totalRotation %% 180) != 0
