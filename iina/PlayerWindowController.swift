@@ -1766,7 +1766,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     setInitialWindowLayout()
 
     // Unfortunately, seems that window must be visible for mpv init, or it will crash...
-    // FIXME: find way to delay until after fileLoaded. We don't know the video dimensions yet!
+    // TODO: find way to delay until after fileLoaded. We don't know the video dimensions yet!
     if window.isMiniaturized {
       log.verbose("De-miniturizing Player Window")
       window.deminiaturize(self)
@@ -2760,7 +2760,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     log.verbose("Entering interactive mode: \(mode)")
 
-    // TODO: use key interceptor to support ESC and ENTER keys for interactive mode
+    // TODO: use key binding interceptor to support ESC and ENTER keys for interactive mode
 
     if mode == .crop, let vf = player.info.cropFilter, let filterLabel = vf.label {
       log.error("Crop mode requested, but found an existing crop filter (\(vf.stringFormat.quoted)). Will remove it before entering")

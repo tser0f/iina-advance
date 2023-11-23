@@ -359,8 +359,8 @@ class PlayerWindowPreviewImageBuilder {
     return cgImage
   }
 
-  /** Draws icon from left to right in the given context. The width of the icon is derived from `totalHeight` and the icon's aspect ratio.
-  Returns the horizontal space which was used by the icon (including padding). */
+  /// Draws icon from left to right in the given context. The width of the icon is derived from `totalHeight` and the icon's aspect ratio.
+  /// Returns the horizontal space which was used by the icon (including padding).
   private func drawPaddedIcon(_ iconImage: NSImage, in cgContext: CGContext, x originX: CGFloat, y originY: CGFloat, totalHeight: CGFloat,
                               padTotalH: CGFloat? = nil, padTotalV: CGFloat? = nil,
                               padL: CGFloat? = nil, padR: CGFloat? = nil,
@@ -379,8 +379,8 @@ class PlayerWindowPreviewImageBuilder {
     return padRight + iconWidth
   }
 
-  /** Draws icon from left to right in the given context. The width of the icon is derived from `iconHeight` and the icon's aspect ratio.
-   Returns the width of the icon (not including padding). */
+  /// Draws icon from left to right in the given context. The width of the icon is derived from `iconHeight` and the icon's aspect ratio.
+  /// Returns the width of the icon (not including padding).
   private func drawIconVCenter(_ iconImage: NSImage, in cgContext: CGContext, originX: CGFloat, centerY: CGFloat, iconHeight: CGFloat) -> CGFloat {
     let originY = centerY - (iconHeight / 2)
     let iconWidth = CGFloat(iconHeight) * iconImage.size.aspect
@@ -389,7 +389,8 @@ class PlayerWindowPreviewImageBuilder {
   }
 
   private func drawIcon(_ iconImage: NSImage, in cgContext: CGContext, originX: CGFloat, originY: CGFloat, width: CGFloat, height: CGFloat) {
-    let tintedImage: NSImage = iconImage.tinted(iconColor) // FIXME: apply alpha
+    // Note: this doesn't support alpha
+    let tintedImage: NSImage = iconImage.tinted(iconColor)
     guard let cgImage = tintedImage.cgImage else {
       Logger.log("Cannot draw icon: failed to get tinted cgImage from NSImage \(iconImage.name()?.quoted ?? "nil")", level: .error)
       return
@@ -438,7 +439,7 @@ class PlayerWindowPreviewImageBuilder {
     return outputImage
   }
 
-  // Creates RGB image with alpha channel
+  /// Creates RGB image with alpha channel
   private func makeNewImgRep(width: Int, height: Int) -> NSBitmapImageRep? {
     return NSBitmapImageRep(
       bitmapDataPlanes: nil,
