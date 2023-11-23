@@ -1976,12 +1976,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case .windowed, .windowedInteractive:
       let newGeometry = resizeWindowedModeGeometry(to: requestedSize)
-
-      if currentMode == .windowed {
-        IINAAnimation.disableAnimation{
-          videoView.apply(newGeometry)
-        }
-      }
+      /// Do not call `videoView.apply()` - animation looks better without it
 
       updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
 
