@@ -2837,19 +2837,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .floating:
       // The layout preference for the on screen controller is set to the default floating layout.
       // Must ensure the top of the thumbnail will be below the top of the window.
+      // Keep in mind that the thumbnail will also be shrunk to fit if possible.
       let topOfThumbnailY = oscOriginInWindowY + oscHeight + thumbnailHeight
-      // Normally the height of the usable area of the window can be obtained from the content
-      // layout. But when the legacy full screen preference is enabled the layout height may be
-      // larger than the content view if the display contains a camera housing. Use the lower of
-      // the two heights.
-      let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
-      if topOfThumbnailY <= windowContentHeight {
-        return true
-      } else {
-        let topDelta = windowContentHeight - (oscOriginInWindowY - oscHeight)
-        let bottomDelta = oscOriginInWindowY
-        return topDelta >= bottomDelta
-      }
+      let availableHeight = viewportView.frame.height
+      return topOfThumbnailY <= availableHeight
     }
   }
 
@@ -2865,11 +2856,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 //    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
-    if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image,
+    if player.info.thumbnailsReady, let rawImage = player.info.getThumbnail(forSecond: previewTime.second)?.image,
        let videoParams = player.info.videoParams {
 
-      let thumbWidth = image.size.width
-      var thumbHeight = image.size.height
+      let thumbWidth = rawImage.size.width
+      var thumbHeight = rawImage.size.height
       let rawAspect = thumbWidth / thumbHeight
 
       if let drAspect = player.info.videoParams?.videoDisplayRotatedAspect,
@@ -2882,12 +2873,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       }
 
-      let thumbImage = image.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
+      let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
       thumbnailPeekView.imageView.image = thumbImage
 
       var thumbnailSize = thumbImage.size
-      if viewportView.frame.height < thumbnailSize.height {
-        let viewportSizeAdjusted = NSSize(width: viewportView.frame.size.width, height: viewportView.frame.size.height - thumbnailExtraOffsetY)
+      // TODO: also account for inside bottom bar height (corresponding to OSC==top). Need to find a good way to get this...
+      let availableHeight = viewportView.frame.height - ((currentLayout.oscPosition != .top) ? currentLayout.insideTopBarHeight : 0)
+      if availableHeight < thumbnailSize.height {
+        let viewportSizeAdjusted = NSSize(width: viewportView.frame.size.width, height: availableHeight - thumbnailExtraOffsetY)
         thumbnailSize = thumbnailSize.shrink(toSize: viewportSizeAdjusted)
       }
       thumbnailPeekView.frame.size = thumbnailSize

@@ -268,6 +268,10 @@ extension PlayerWindowController {
       self.titleBarHeight + self.topOSCHeight
     }
 
+    var insideTopBarHeight: CGFloat {
+      return topBarPlacement == .insideViewport ? topBarHeight : 0
+    }
+
     /// Bar widths/heights IF `outsideViewport`
 
     var outsideTopBarHeight: CGFloat {
