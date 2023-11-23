@@ -360,7 +360,7 @@ extension PlayerWindowController {
       apply(visibility: outputLayout.topBarView, to: topBarView)
     }
 
-    if transition.isOSCChanging {
+    if transition.isInitialLayout || transition.isOSCChanging {
       // Remove subviews from OSC
       for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
         view?.removeFromSuperview()
@@ -379,7 +379,7 @@ extension PlayerWindowController {
     let showBottomBarTopBorder = transition.outputGeometry.outsideBottomBarHeight > 0 && outputLayout.bottomBarPlacement == .outsideViewport && !outputLayout.isMusicMode
     bottomBarTopBorder.isHidden = !showBottomBarTopBorder
 
-    if transition.isOSCChanging && outputLayout.enableOSC {
+    if (transition.isInitialLayout || transition.isOSCChanging) && outputLayout.enableOSC {
       switch outputLayout.oscPosition {
       case .top:
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")

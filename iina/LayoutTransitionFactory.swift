@@ -75,8 +75,6 @@ extension PlayerWindowController {
 
       // Set to default layout, but use existing aspect ratio & video size for now, because we don't have that info yet for the new video
       initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: LayoutSpec.defaultLayout())
-      let outputLayout = LayoutState(spec: initialLayoutSpec)
-//      windowedModeGeometry = outputLayout.convertWindowedModeGeometry(from: windowedModeGeometry)
     }
 
     log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry!), musicModeGeometry: \(musicModeGeometry!)")
@@ -97,6 +95,10 @@ extension PlayerWindowController {
     case .windowed, .windowedInteractive, .musicMode:
       player.window.setFrameImmediately(initialTransition.outputGeometry.windowFrame)
       videoView.apply(initialTransition.outputGeometry)
+    }
+
+    if !isRestoringFromPrevLaunch && initialLayoutSpec.mode == .windowed {
+      player.info.setIntendedViewportSize(from: initialTransition.outputGeometry)
     }
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
@@ -172,11 +174,9 @@ extension PlayerWindowController {
                                       isInitialLayout: isInitialLayout)
 
     // MiddleGeometry if needed (is applied after ClosePanels step)
-    if !isInitialLayout {
-      transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
-      if let middleGeometry = transition.middleGeometry {
-        log.verbose("[\(transitionName)] Built middleGeometry: \(middleGeometry)")
-      }
+    transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
+    if let middleGeometry = transition.middleGeometry {
+      log.verbose("[\(transitionName)] Built middleGeometry: \(middleGeometry)")
     }
 
     let panelTimingName: CAMediaTimingFunctionName

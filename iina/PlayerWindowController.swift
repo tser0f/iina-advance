@@ -203,9 +203,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var pipStatus = PIPStatus.notInPIP
 
-  lazy var currentLayout: LayoutState = {
-    return LayoutState(spec: LayoutSpec.defaultLayout())
-  }()
+  var currentLayout: LayoutState = LayoutState(spec: LayoutSpec.defaultLayout())
 
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
