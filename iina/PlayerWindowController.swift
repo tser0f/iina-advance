@@ -12,6 +12,8 @@ import WebKit
 
 // MARK: - Constants
 
+fileprivate let thumbnailExtraOffsetY: CGFloat = -1
+
 // MARK: - Constants
 
 class PlayerWindowController: NSWindowController, NSWindowDelegate {
@@ -2826,7 +2828,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   ///   - timePreviewYPos: The y-coordinate of the time preview `TextField`.
   ///   - thumbnailHeight: The height of the thumbnail.
   /// - Returns: `true` if the thumbnail can be shown above the slider, `false` otherwise.
-  private func canShowThumbnailAbove(timePreviewYPos: Double, thumbnailHeight: Double) -> Bool {
+  private func canShowThumbnailAbove(oscOriginInWindowY: Double, oscHeight: Double, thumbnailHeight: Double) -> Bool {
     switch currentLayout.oscPosition {
     case .top:
       return false
@@ -2835,13 +2837,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .floating:
       // The layout preference for the on screen controller is set to the default floating layout.
       // Must ensure the top of the thumbnail will be below the top of the window.
-      let topOfThumbnail = timePreviewYPos + timePreviewWhenSeek.frame.height + thumbnailHeight
+      let topOfThumbnailY = oscOriginInWindowY + oscHeight + thumbnailHeight
       // Normally the height of the usable area of the window can be obtained from the content
       // layout. But when the legacy full screen preference is enabled the layout height may be
       // larger than the content view if the display contains a camera housing. Use the lower of
       // the two heights.
       let windowContentHeight = min(window!.contentLayoutRect.height, window!.contentView!.frame.height)
-      return topOfThumbnail <= windowContentHeight
+      if topOfThumbnailY <= windowContentHeight {
+        return true
+      } else {
+        let topDelta = windowContentHeight - (oscOriginInWindowY - oscHeight)
+        let bottomDelta = oscOriginInWindowY
+        return topDelta >= bottomDelta
+      }
     }
   }
 
@@ -2874,30 +2882,31 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       }
 
-      let imageToDisplay = image.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
-      let thumbnailSize = imageToDisplay.size
+      let thumbImage = image.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
+      thumbnailPeekView.imageView.image = thumbImage
 
-      thumbnailPeekView.imageView.image = imageToDisplay
-
+      var thumbnailSize = thumbImage.size
       if videoView.frame.height < thumbnailSize.height {
-        thumbnailPeekView.frame.size = thumbnailSize.shrink(toSize: videoView.frame.size)
-      } else {
-        thumbnailPeekView.frame.size = thumbnailSize
+        thumbnailSize = thumbnailSize.shrink(toSize: videoView.frame.size)
       }
-//      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H")
+      thumbnailPeekView.frame.size = thumbnailSize
+
       thumbnailPeekView.isHidden = false
-      let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
-      let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
+
+      let oscOriginInWindowY = currentControlBar!.superview!.convert(currentControlBar!.frame.origin, to: nil).y
+      let oscHeight = currentControlBar!.frame.size.height
+      let showAbove = canShowThumbnailAbove(oscOriginInWindowY: oscOriginInWindowY, oscHeight: oscHeight, thumbnailHeight: thumbHeight)
       let thumbOriginY: CGFloat
       if showAbove {
         // Show thumbnail above seek time, which is above slider
-        thumbOriginY = timePreviewOriginY + timePreviewWhenSeek.frame.height
+        thumbOriginY = oscOriginInWindowY + oscHeight + thumbnailExtraOffsetY
       } else {
         // Show thumbnail below slider
-        let sliderFrameInWindow = playSlider.superview!.convert(playSlider.frame.origin, to: nil)
-        thumbOriginY = sliderFrameInWindow.y - thumbHeight
+        thumbOriginY = oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY
       }
       thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: thumbOriginY)
+
+      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
     } else {
       thumbnailPeekView.isHidden = true
     }

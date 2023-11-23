@@ -582,7 +582,7 @@ extension PlayerWindowController {
       fragPositionSliderView.removeFromSuperview()
       fragVolumeView.removeFromSuperview()
       currentControlBar = nil
-    } else if transition.isOSCChanging && outputLayout.hasFloatingOSC {
+    } else if outputLayout.hasFloatingOSC {
       // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
       currentControlBar = controlBarFloating
 
