@@ -39,7 +39,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 
   override var sectionViews: [NSView] {
-    return [sectionFullScreenView, sectionWindowView, sectionAppearanceView, sectionOSCView, sectionOSDView,
+    return [sectionWindowView, sectionFullScreenView, sectionAppearanceView, sectionOSCView, sectionOSDView,
             sectionSidebarsView, sectionThumbnailView, sectionPictureInPictureView]
   }
 
