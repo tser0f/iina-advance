@@ -2891,7 +2891,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
       thumbnailPeekView.frame.size = thumbnailSize
 
-      thumbnailPeekView.isHidden = false
+      let contentView = window!.contentView!
+      if currentLayout.oscPosition != .top && currentLayout.topBarPlacement == .outsideViewport {
+        // If top bar is "outside", do not allow thumbnail to overlap onto it
+        contentView.addSubview(thumbnailPeekView, positioned: .below, relativeTo: topBarView)
+      } else {
+        // Otherwise allow thumbnail to occlude top bar (could find a clean look otherwise which works with sidebars and various options)
+        contentView.addSubview(thumbnailPeekView, positioned: .above, relativeTo: topBarView)
+      }
 
       let oscOriginInWindowY = currentControlBar!.superview!.convert(currentControlBar!.frame.origin, to: nil).y
       let oscHeight = currentControlBar!.frame.size.height
@@ -2906,7 +2913,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
       thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: thumbOriginY)
 
-      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
+//      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
+      thumbnailPeekView.isHidden = false
     } else {
       thumbnailPeekView.isHidden = true
     }

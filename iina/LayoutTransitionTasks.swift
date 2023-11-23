@@ -1031,6 +1031,8 @@ extension PlayerWindowController {
         contentView.addSubview(bottomBarView, positioned: .below, relativeTo: trailingSidebarView)
       }
     }
+
+    contentView.addSubview(controlBarFloating, positioned: .below, relativeTo: bottomBarView)
   }
 
   // MARK: - Title bar items
