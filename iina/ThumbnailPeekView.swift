@@ -14,26 +14,48 @@ class ThumbnailPeekView: NSView {
 
   override func awakeFromNib() {
     self.wantsLayer = true
-    let cornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
-    if cornerRadius > 0.0 {
-      self.layer?.cornerRadius = cornerRadius
-      self.layer?.masksToBounds = true
-      self.imageView.wantsLayer = true
-      self.imageView.layer?.cornerRadius = cornerRadius
-      self.imageView.layer?.masksToBounds = true
-    }
-    // shadow is set in xib
-    self.layer?.shadowRadius = 5
-    self.layer?.borderWidth = 0
+    self.imageView.wantsLayer = true
+    refreshStyle()
     refreshColors()
   }
 
-  func refreshColors() {
-    if effectiveAppearance.isDark {
-      layer?.shadowColor = CGColor(gray: 1, alpha: 0.7)
+  func refreshStyle() {
+    guard let layer = self.layer else { return }
+
+    let cornerRadius = CGFloat(Preference.float(for: .roundedCornerRadius))
+    if cornerRadius > 0.0 {
+      layer.cornerRadius = cornerRadius
+      layer.masksToBounds = true
+      self.imageView.layer?.cornerRadius = cornerRadius
+      self.imageView.layer?.masksToBounds = true
     } else {
-      layer?.shadowColor = CGColor(gray: 0, alpha: 0.75)
+      layer.masksToBounds = false
+      self.imageView.layer?.masksToBounds = false
     }
-    self.layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
+
+    let style: Preference.ThumnailBorderStyle = Preference.enum(for: .thumbnailBorderStyle)
+    switch style {
+    case .none:
+      layer.borderWidth = 0
+      layer.shadowRadius = 0
+    case .solidBorder:
+      layer.borderWidth = 2
+      layer.shadowRadius = 0
+    case .shadowOrGlow:
+      // shadow is set in xib
+      layer.borderWidth = 0
+      layer.shadowRadius = 6
+    }
+  }
+
+  func refreshColors() {
+    guard let layer = self.layer else { return }
+
+    if effectiveAppearance.isDark {
+      layer.shadowColor = CGColor(gray: 1, alpha: 0.7)
+    } else {
+      layer.shadowColor = CGColor(gray: 0, alpha: 0.75)
+    }
+    layer.borderColor = CGColor(gray: 0.6, alpha: 0.5)
   }
 }

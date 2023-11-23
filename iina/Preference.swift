@@ -192,10 +192,12 @@ struct Preference {
     static let playlistWidth = Key("playlistWidth")
     static let prefetchPlaylistVideoDuration = Key("prefetchPlaylistVideoDuration")
 
+    /// Thumbnail preview
     static let enableThumbnailPreview = Key("enableThumbnailPreview")
     static let maxThumbnailPreviewCacheSize = Key("maxThumbnailPreviewCacheSize")
     static let enableThumbnailForRemoteFiles = Key("enableThumbnailForRemoteFiles")
     static let thumbnailLength = Key("thumbnailLength")
+    static let thumbnailBorderStyle = Key("thumbnailBorderStyle")
 
     static let autoSwitchToMusicMode = Key("autoSwitchToMusicMode")
     static let musicModeShowPlaylist = Key("musicModeShowPlaylist")
@@ -506,6 +508,18 @@ struct Preference {
           return nil
         }
       }
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum ThumnailBorderStyle: Int, InitializingFromKey {
+    case none = 1
+    case solidBorder
+    case shadowOrGlow
+
+    static var defaultValue = ThumnailBorderStyle.shadowOrGlow
+
+    init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
     }
   }
@@ -994,6 +1008,7 @@ struct Preference {
     .roundedCornerRadius: 10.0,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
+    .thumbnailBorderStyle: ThumnailBorderStyle.shadowOrGlow.rawValue,
     .osdPosition: OSDPosition.topLeading.rawValue,
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(20),

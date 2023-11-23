@@ -12,7 +12,7 @@ import WebKit
 
 // MARK: - Constants
 
-fileprivate let thumbnailExtraOffsetY: CGFloat = -1
+fileprivate let thumbnailExtraOffsetY: CGFloat = 0
 
 // MARK: - Constants
 
@@ -281,6 +281,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   static let playerWindowPrefKeys: [Preference.Key] = [
     .themeMaterial,
+    .roundedCornerRadius,
     .showRemainingTime,
     .alwaysFloatOnTop,
     .maxVolume,
@@ -309,6 +310,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
     .thumbnailLength,
+    .thumbnailBorderStyle,
     .showChapterPos,
     .arrowButtonAction,
     .blackOutMonitor,
@@ -414,6 +416,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           }
         }
       }
+    case PK.thumbnailBorderStyle.rawValue, PK.roundedCornerRadius.rawValue:
+      thumbnailPeekView.refreshStyle()
+
     case PK.enableThumbnailPreview.rawValue, PK.enableThumbnailForRemoteFiles.rawValue:
       // May need to remove thumbs or generate new ones: let method below figure it out:
       self.player.reloadThumbnails()
