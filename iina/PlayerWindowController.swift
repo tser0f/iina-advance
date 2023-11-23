@@ -2886,8 +2886,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbnailPeekView.imageView.image = thumbImage
 
       var thumbnailSize = thumbImage.size
-      if videoView.frame.height < thumbnailSize.height {
-        thumbnailSize = thumbnailSize.shrink(toSize: videoView.frame.size)
+      if viewportView.frame.height < thumbnailSize.height {
+        let viewportSizeAdjusted = NSSize(width: viewportView.frame.size.width, height: viewportView.frame.size.height - thumbnailExtraOffsetY)
+        thumbnailSize = thumbnailSize.shrink(toSize: viewportSizeAdjusted)
       }
       thumbnailPeekView.frame.size = thumbnailSize
 
@@ -2909,7 +2910,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         thumbOriginY = oscOriginInWindowY + oscHeight + thumbnailExtraOffsetY
       } else {
         // Show thumbnail below slider
-        thumbOriginY = oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY
+        thumbOriginY = max(0, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
       }
       thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: thumbOriginY)
 
