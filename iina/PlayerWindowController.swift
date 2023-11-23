@@ -2876,9 +2876,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
       thumbnailPeekView.imageView.image = thumbImage
 
+      // Scale down thumbnail so it doesn't overlap top or bottom bars
       var thumbnailSize = thumbImage.size
-      // TODO: also account for inside bottom bar height (corresponding to OSC==top). Need to find a good way to get this...
-      let availableHeight = viewportView.frame.height - ((currentLayout.oscPosition != .top) ? currentLayout.insideTopBarHeight : 0)
+      let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
+      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight
       if availableHeight < thumbnailSize.height {
         let viewportSizeAdjusted = NSSize(width: viewportView.frame.size.width, height: availableHeight - thumbnailExtraOffsetY)
         thumbnailSize = thumbnailSize.shrink(toSize: viewportSizeAdjusted)
