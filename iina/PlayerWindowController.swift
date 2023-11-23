@@ -384,10 +384,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       PK.oscBarHeight.rawValue,
       PK.oscBarPlaybackIconSize.rawValue,
       PK.oscBarPlaybackIconSpacing.rawValue,
-      PK.showLeadingSidebarToggleButton.rawValue,
-      PK.showTrailingSidebarToggleButton.rawValue,
       PK.oscBarToolbarIconSize.rawValue,
       PK.oscBarToolbarIconSpacing.rawValue,
+      PK.showLeadingSidebarToggleButton.rawValue,
+      PK.showTrailingSidebarToggleButton.rawValue,
       PK.controlBarToolbarButtons.rawValue,
       PK.allowVideoToOverlapCameraHousing.rawValue,
       PK.useLegacyWindowedMode.rawValue:
@@ -2887,7 +2887,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       } else {
         thumbnailPeekView.frame.size = thumbnailSize
       }
-      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H")
+//      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H")
       thumbnailPeekView.isHidden = false
       let timePreviewOriginY = timePreviewWhenSeek.superview!.convert(timePreviewWhenSeek.frame.origin, to: nil).y
       let showAbove = canShowThumbnailAbove(timePreviewYPos: timePreviewOriginY, thumbnailHeight: thumbHeight)
