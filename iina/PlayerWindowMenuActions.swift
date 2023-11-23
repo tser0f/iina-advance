@@ -67,7 +67,6 @@ extension PlayerWindowController {
   }
 
   @objc func menuStop(_ sender: NSMenuItem) {
-    // FIXME: handle stop
     player.stop()
     player.sendOSD(.stop)
   }

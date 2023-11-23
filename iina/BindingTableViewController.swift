@@ -182,7 +182,6 @@ extension BindingTableViewController: NSTableViewDelegate {
             imageView.contentTintColor = NSColor.controlTextColor
           }
         } else {
-          // FIXME: find icons to use so that all versions are supported
           imageView.isHidden = true
         }
       }

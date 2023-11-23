@@ -923,7 +923,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    // FIXME: this is triggered while file is loading. Need to tighten up state logic before uncommenting
     addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] note in
       guard !player.info.fileLoading && player.info.fileLoaded && !player.info.justStartedFile && !player.info.justOpenedFile else { return }
       log.verbose("Got iinaVIDChanged notification")
@@ -1039,7 +1038,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         viewportSize = windowedModeGeometry.viewportSize
       }
       let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
-      // FIXME: need to request aspectRatio from video - mpv will not provide it if paused
       applyWindowGeometry(newGeo)
     case .fullScreen:
       player.info.videoAspectRatio = newAspectRatio
@@ -2134,7 +2132,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // frame.
     // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
     animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.FullScreenTransitionDuration * 0.2, { [self] in
-      // FIXME: add checks for duplicates
       if currentLayout.isLegacyFullScreen {
         let layout = currentLayout
         guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation

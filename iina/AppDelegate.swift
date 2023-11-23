@@ -312,7 +312,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     Logger.log("App launched")
 
-    // FIXME: this actually causes a window to opened in the background. Should delay this until intending to show it
+    // FIXME: this actually causes a window to open in the background. Should wait until intending to show it
     // show alpha in color panels
     NSColorPanel.shared.showsAlpha = true
 

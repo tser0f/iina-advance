@@ -35,7 +35,6 @@ class ConfTableViewController: NSObject {
 
   fileprivate var builtInConfTextColor: NSColor = .textColor
 
-  // FIXME: this doesn't update when dark mode is toggled
   func setCustomColors(builtInItemTextColor: NSColor) {
     builtInConfTextColor = builtInItemTextColor
   }

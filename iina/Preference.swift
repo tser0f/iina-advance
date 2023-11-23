@@ -436,7 +436,6 @@ struct Preference {
     static let uiHistoryTableGroupBy = Key("uiHistoryTableGroupBy")
     static let uiHistoryTableSearchType = Key("uiHistoryTableSearchType")
     static let uiHistoryTableSearchString = Key("uiHistoryTableSearchString")
-    static let uiHistoryTableScrollOffsetY = Key("uiHistoryTableScrollOffsetY")
 
     // Map of modern keys to deprecated keys. Do not reference outside this file.
     fileprivate static let legacyColorKeys: [Key: Key] = [
@@ -1147,7 +1146,6 @@ struct Preference {
     .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayedDay.rawValue,
     .uiHistoryTableSearchType: HistorySearchType.fullPath.rawValue,
     .uiHistoryTableSearchString: "",
-    .uiHistoryTableScrollOffsetY: 0,
     .userOptions: [[String]](),
     .useUserDefinedConfDir: false,
     .userDefinedConfDir: "~/.config/mpv/",

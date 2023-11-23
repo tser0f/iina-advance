@@ -633,7 +633,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
               // if FFmpeg got the duration successfully
               DispatchQueue.main.async { [self] in
                 let durationString = VideoTime(duration).stringRepresentation
-                // FIXME: this field doesn't update when dark mode is toggled
                 cellView.durationLabel.setFormattedText(stringValue: durationString, textColor: item.isPlaying ? isPlayingTextColor : .textColor)
                 if let progress = cached.progress {
                   cellView.playbackProgressView.percentage = progress / duration

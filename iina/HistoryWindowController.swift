@@ -113,13 +113,6 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     outlineView.target = self
     outlineView.doubleAction = #selector(doubleAction)
     reloadData()
-
-    // FIXME: this is not reliable at all. Maybe try enabling after fixing the XIB problems
-//    if let historyTableScrollView = self.outlineView.enclosingScrollView {
-//      let _ = historyTableScrollView.restoreAndObserveVerticalScroll(key: .uiHistoryTableScrollOffsetY, defaultScrollAction: {
-//        self.outlineView.scrollRowToVisible(0)
-//      })
-//    }
   }
 
   private static func getGroupByFromPrefs() -> Preference.HistoryGroupBy? {
