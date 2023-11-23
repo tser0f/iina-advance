@@ -40,8 +40,8 @@
 /* Class = "NSButtonCell"; title = "Show chapter position in progress bar"; ObjectID = "BVV-Z3-LHR"; */
 "BVV-Z3-LHR.title" = "Show chapter position in progress bar";
 
-/* Class = "NSButtonCell"; title = "When media is opened manually"; ObjectID = "CJE-ap-IH8"; */
-"CJE-ap-IH8.title" = "When media is opened manually";
+/* Class = "NSButtonCell"; title = "Only when media is opened manually"; ObjectID = "CJE-ap-IH8"; */
+"CJE-ap-IH8.title" = "Only when media is opened manually";
 
 /* Class = "NSButtonCell"; title = "Show remaining time instead of total duration"; ObjectID = "EAa-gN-8dL"; */
 "EAa-gN-8dL.title" = "Show remaining time instead of total duration";
@@ -199,8 +199,8 @@
 /* Class = "NSTextFieldCell"; title = "Text size:"; ObjectID = "suy-e8-j4i"; */
 "suy-e8-j4i.title" = "Text size:";
 
-/* Class = "NSMenuItem"; title = "fit the screen"; ObjectID = "vdi-lO-q6e"; */
-"vdi-lO-q6e.title" = "fit the screen";
+/* Class = "NSMenuItem"; title = "fill the screen"; ObjectID = "vdi-lO-q6e"; */
+"vdi-lO-q6e.title" = "fill the screen";
 
 /* Class = "NSButtonCell"; title = "Enable OSD"; ObjectID = "xMh-SP-nkc"; */
 "xMh-SP-nkc.title" = "Enable OSD";
@@ -215,7 +215,7 @@
 "xtL-XT-xzb.title" = "Hide";
 
 /* Class = "NSButtonCell"; title = "Always"; ObjectID = "yIN-jg-MxS"; */
-"yIN-jg-MxS.title" = "When media is loaded";
+"yIN-jg-MxS.title" = "When any media is loaded";
 
 /* Class = "NSTextFieldCell"; title = "Theme:"; ObjectID = "yLF-vu-1Gl"; */
 "yLF-vu-1Gl.title" = "Theme:";
