@@ -1961,6 +1961,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     let currentMode = currentLayout.mode
     log.verbose("WindowWillResize entered. RequestedSize: \(requestedSize), mode: \(currentMode)")
+    videoView.videoLayer.enterAsynchronousMode()
 
     switch currentMode {
     case .musicMode:

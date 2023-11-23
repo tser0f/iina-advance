@@ -206,14 +206,13 @@ class ViewLayer: CAOpenGLLayer {
   /// But we don't want to leave this on full-time, because it will result in extra draw requests and may
   /// throw off the timing of each draw.
   func enterAsynchronousMode() {
-    asychronousModeTimer?.invalidate()
-
-    /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
-    /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
-    /// which would cause noticable clipping or wobbling during animations.
-    isAsynchronous = true
-
     DispatchQueue.main.async { [self] in
+      asychronousModeTimer?.invalidate()
+      /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
+      /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
+      /// which would cause noticable clipping or wobbling during animations.
+      isAsynchronous = true
+
       asychronousModeTimer = Timer.scheduledTimer(
         timeInterval: AppData.asynchronousModeTimeIntervalSec,
         target: self,
