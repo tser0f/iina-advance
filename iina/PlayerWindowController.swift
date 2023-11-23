@@ -82,11 +82,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return playlistView
   }()
 
-  lazy var miniPlayer: MiniPlayerController = {
-    let controller = MiniPlayerController()
-    controller.windowController = self
-    return controller
-  }()
+  var miniPlayer: MiniPlayerController!
 
   /** The control view for interactive mode. */
   var cropSettingsView: CropBoxViewController?
@@ -215,21 +211,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // build up and result in weird freezes or short episodes of "wandering window"
   var geoUpdateTicketCount: Int = 0
 
-  lazy var windowedModeGeometry: PlayerWindowGeometry = {
-    // Build default window geometry from preferences and default frame
-    return buildWindowGeometryFromCurrentFrame(using: currentLayout)
-  }() {
+  var windowedModeGeometry: PlayerWindowGeometry! {
     didSet {
-      log.verbose("Updated windowedModeGeometry to \(windowedModeGeometry)")
+      log.verbose("Updated windowedModeGeometry to \(windowedModeGeometry!)")
       assert(!windowedModeGeometry.fitOption.isFullScreen, "windowedModeGeometry has invalid fitOption: \(windowedModeGeometry.fitOption)")
     }
   }
 
-  lazy var musicModeGeometry: MusicModeGeometry = {
-    return miniPlayer.buildMusicModeGeometryFromPrefs()
-  }(){
+  var musicModeGeometry: MusicModeGeometry! {
     didSet {
-      log.verbose("Updated musicModeGeometry to \(musicModeGeometry)")
+      log.verbose("Updated musicModeGeometry to \(musicModeGeometry!)")
     }
   }
 
@@ -773,6 +764,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   override func windowDidLoad() {
     log.verbose("PlayerWindow windowDidLoad starting")
     super.windowDidLoad()
+    
+    miniPlayer = MiniPlayerController()
+    miniPlayer.windowController = self
+
+    // Build default window geometries from preferences and default frame
+    windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
+    musicModeGeometry = miniPlayer.buildMusicModeGeometryFromPrefs()
+
     loaded = true
 
     guard let window = window else { return }
@@ -2148,7 +2147,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
         /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
         /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
-        let oldGeo = windowedModeGeometry
+        let oldGeo = windowedModeGeometry!
         let newGeo = oldGeo.refit()
         guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
           log.verbose("No need to update windowFrame in response to ScreenParametersNotification - no change")

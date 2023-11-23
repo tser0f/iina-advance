@@ -73,10 +73,13 @@ extension PlayerWindowController {
         mode = .windowed
       }
 
+      // Set to default layout, but use existing aspect ratio & video size for now, because we don't have that info yet for the new video
       initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: LayoutSpec.defaultLayout())
+      let outputLayout = LayoutState(spec: initialLayoutSpec)
+//      windowedModeGeometry = outputLayout.convertWindowedModeGeometry(from: windowedModeGeometry)
     }
 
-    log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")
+    log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry!), musicModeGeometry: \(musicModeGeometry!)")
 
     let transitionName = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
     let initialTransition = buildLayoutTransition(named: transitionName,
@@ -160,7 +163,8 @@ extension PlayerWindowController {
     log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
 
     // OutputGeometry
-    let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry, outputLayout: outputLayout)
+    let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry, 
+                                                                   outputLayout: outputLayout, isInitialLayout: isInitialLayout)
 
     let transition = LayoutTransition(name: transitionName,
                                       from: inputLayout, from: inputGeometry,
@@ -354,16 +358,19 @@ extension PlayerWindowController {
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildOutputGeometry(inputLayout: LayoutState, inputGeometry: PlayerWindowGeometry, outputLayout: LayoutState) -> PlayerWindowGeometry {
+  private func buildOutputGeometry(inputLayout: LayoutState, inputGeometry: PlayerWindowGeometry, 
+                                   outputLayout: LayoutState, isInitialLayout: Bool) -> PlayerWindowGeometry {
 
     switch outputLayout.mode {
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: player.info.videoAspectRatio).refit()
       return musicModeGeometryCorrected.toPlayerWindowGeometry()
+
     case .fullScreen, .fullScreenInteractive:
       // Full screen always uses same screen as windowed mode
       return outputLayout.buildFullScreenGeometry(inScreenID: inputGeometry.screenID, videoAspectRatio: player.info.videoAspectRatio)
+
     case .windowedInteractive:
       if let cachedInteractiveModeGeometry = interactiveModeGeometry {
         log.verbose("Using cached interactiveModeGeometry: \(cachedInteractiveModeGeometry)")
@@ -372,47 +379,29 @@ extension PlayerWindowController {
       let imGeo = InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
       log.verbose("Converted windowed mode geometry to interactiveModeGeometry: \(imGeo)")
       return imGeo.toPlayerWindowGeometry()
+
     case .windowed:
-      break  // see below
-    }
-
-    let bottomBarHeight: CGFloat
-    if outputLayout.enableOSC && outputLayout.oscPosition == .bottom {
-      bottomBarHeight = OSCToolbarButton.oscBarHeight
-    } else {
-      bottomBarHeight = 0
-    }
-
-    let insideTopBarHeight = outputLayout.topBarPlacement == .insideViewport ? outputLayout.topBarHeight : 0
-    let insideBottomBarHeight = outputLayout.bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
-    let outsideBottomBarHeight = outputLayout.bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
-
-    let outputGeo = windowedModeGeometry.withResizedBars(outsideTopBarHeight: outputLayout.outsideTopBarHeight,
-                                                         outsideTrailingBarWidth: outputLayout.outsideTrailingBarWidth,
-                                                         outsideBottomBarHeight: outsideBottomBarHeight,
-                                                         outsideLeadingBarWidth: outputLayout.outsideLeadingBarWidth,
-                                                         insideTopBarHeight: insideTopBarHeight,
-                                                         insideTrailingBarWidth: outputLayout.insideTrailingBarWidth,
-                                                         insideBottomBarHeight: insideBottomBarHeight,
-                                                         insideLeadingBarWidth: outputLayout.insideLeadingBarWidth,
-                                                         videoAspectRatio: inputGeometry.videoAspectRatio)
-
-    let ΔOutsideWidth = outputGeo.outsideBarsTotalWidth - inputGeometry.outsideBarsTotalWidth
-    let ΔOutsideHeight = outputGeo.outsideBarsTotalHeight - inputGeometry.outsideBarsTotalHeight
-    // Shrinking window width, or keeping width the same but shrinking height?
-    if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
-      // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
-      // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
-      // Add check for aspect ratio & interactive mode so that we don't enable this when cropping or other things:
-      if let prevIntendedViewportSize = player.info.intendedViewportSize,
-         !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
-         windowedModeGeometry.videoAspectRatio.stringTrunc2f == inputGeometry.videoAspectRatio.stringTrunc2f
-      {
-        log.verbose("Instead of shrinking window by \(ΔOutsideWidth) W & \(ΔOutsideHeight) H, will restore prev intendedViewportSize (\(prevIntendedViewportSize))")
-        return outputGeo.scaleViewport(to: prevIntendedViewportSize)
+      let outputGeo = outputLayout.convertWindowedModeGeometry(from: windowedModeGeometry, videoAspectRatio: inputGeometry.videoAspectRatio)
+      if isInitialLayout {
+        return outputGeo
       }
+
+      let ΔOutsideWidth = outputGeo.outsideBarsTotalWidth - inputGeometry.outsideBarsTotalWidth
+      let ΔOutsideHeight = outputGeo.outsideBarsTotalHeight - inputGeometry.outsideBarsTotalHeight
+      // Shrinking window width, or keeping width the same but shrinking height?
+      if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
+        // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
+        // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
+        // Add check for aspect ratio & interactive mode so that we don't enable this when cropping or other things:
+        if let prevIntendedViewportSize = player.info.intendedViewportSize,
+           !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
+           windowedModeGeometry.videoAspectRatio.stringTrunc2f == inputGeometry.videoAspectRatio.stringTrunc2f {
+          log.verbose("Instead of shrinking window by \(ΔOutsideWidth) W & \(ΔOutsideHeight) H, will restore prev intendedViewportSize (\(prevIntendedViewportSize))")
+          return outputGeo.scaleViewport(to: prevIntendedViewportSize)
+        }
+      }
+      return outputGeo
     }
-    return outputGeo
   }
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.

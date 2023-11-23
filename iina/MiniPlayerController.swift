@@ -295,7 +295,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let showPlaylist = !isPlaylistVisible
     Logger.log("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)", level: .verbose)
     let currentDisplayedPlaylistHeight = currentDisplayedPlaylistHeight
-    let oldGeometry = windowController.musicModeGeometry
+    let oldGeometry = windowController.musicModeGeometry!
     var newWindowFrame = window.frame
 
     if showPlaylist {
@@ -335,7 +335,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let showVideo = !isVideoVisible
     log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
 
-    let oldGeometry = windowController.musicModeGeometry
+    let oldGeometry = windowController.musicModeGeometry!
     var newWindowFrame = oldGeometry.windowFrame
     if showVideo {
       newWindowFrame.size.height += oldGeometry.videoHeightIfVisible
