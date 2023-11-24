@@ -2908,8 +2908,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       thumbWidth = thumbHeight * thumbAspect
 
-      // Also scale down thumbnail if it's wider than the viewport (although allowing one side to clip is OK).
-      // This may sound arbitrary, but it should match user's intuitions)
+      // Also scale down thumbnail if it's wider than the viewport
       let availableWidth = viewportView.frame.width
       if thumbWidth > availableWidth {
         thumbWidth = availableWidth
@@ -2941,7 +2940,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // Show thumbnail below slider
         thumbOriginY = max(0, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
       }
-      thumbnailPeekView.frame.origin = NSPoint(x: round(originalPos.x - thumbnailPeekView.frame.width / 2), y: thumbOriginY)
+      // Constrain X origin so that it stays entirely inside the viewport (and not insdie the outside sidebars)
+      let minX = currentLayout.outsideLeadingBarWidth
+      let maxX = availableWidth + currentLayout.outsideLeadingBarWidth
+      let thumbOriginX = min(max(minX, round(originalPos.x - thumbnailPeekView.frame.width / 2)), maxX - thumbnailPeekView.frame.width)
+      thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
 
 //      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
       thumbnailPeekView.isHidden = false
