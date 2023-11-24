@@ -309,7 +309,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .oscBarToolbarIconSpacing,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
-    .thumbnailLength,
+    .thumbnailSizeOption,
+    .thumbnailFixedLength,
+    .thumbnailDisplayedSizePercentage,
     .thumbnailBorderStyle,
     .showChapterPos,
     .arrowButtonAction,
@@ -407,13 +409,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         refreshHidesOnDeactivateStatus()
       })
 
-    case PK.thumbnailLength.rawValue:
+    case PK.thumbnailSizeOption.rawValue,
+      PK.thumbnailFixedLength.rawValue,
+      PK.thumbnailRawSizePercentage.rawValue,
+      PK.thumbnailDisplayedSizePercentage.rawValue:
       if let newValue = change[.newKey] as? Int {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
-          if newValue == Preference.integer(for: .thumbnailLength) && newValue != player.info.thumbnailLength {
-            log.debug("Pref \(keyPath.quoted) changed to \(newValue)px: requesting thumbs regen")
-            player.reloadThumbnails()
-          }
+          log.debug("Pref \(keyPath.quoted) changed to \(newValue): requesting thumbs regen")
+          player.reloadThumbnails()
         }
       }
     case PK.thumbnailBorderStyle.rawValue, PK.roundedCornerRadius.rawValue:
@@ -2864,8 +2867,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if player.info.thumbnailsReady, let rawImage = player.info.getThumbnail(forSecond: previewTime.second)?.image,
        let videoParams = player.info.videoParams {
 
-      let thumbWidth = rawImage.size.width
-      var thumbHeight = rawImage.size.height
+      var thumbWidth: Double = rawImage.size.width
+      var thumbHeight: Double = rawImage.size.height
       let rawAspect = thumbWidth / thumbHeight
 
       if let drAspect = player.info.videoParams?.videoDisplayRotatedAspect,
@@ -2874,22 +2877,32 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
         // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
         if rawAspect != drAspect {
-          thumbHeight = CGFloat((Double(thumbWidth) / drAspect).rounded())
+          thumbHeight = (thumbWidth / drAspect).rounded()
         }
+      }
+
+      let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
+      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight
+
+      let thumbAspect = thumbWidth / thumbHeight
+      let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
+      switch sizeOption {
+      case .fixed:
+        if availableHeight < thumbHeight {
+          // Scale down thumbnail so it doesn't overlap top or bottom bars
+          thumbHeight = availableHeight - thumbnailExtraOffsetY
+          thumbWidth = thumbHeight * thumbAspect
+        }
+      case .displayedVideoSizePercentage:
+        // Scale thumbnail as percentage of available height
+        let percentage = min(100, max(0, Preference.integer(for: .thumbnailDisplayedSizePercentage)))
+        thumbHeight = (availableHeight * Double(percentage) / 100.0) - thumbnailExtraOffsetY
+        thumbWidth = thumbHeight * thumbAspect
       }
 
       let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
       thumbnailPeekView.imageView.image = thumbImage
-
-      // Scale down thumbnail so it doesn't overlap top or bottom bars
-      var thumbnailSize = thumbImage.size
-      let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
-      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight
-      if availableHeight < thumbnailSize.height {
-        let viewportSizeAdjusted = NSSize(width: viewportView.frame.size.width, height: availableHeight - thumbnailExtraOffsetY)
-        thumbnailSize = thumbnailSize.shrink(toSize: viewportSizeAdjusted)
-      }
-      thumbnailPeekView.frame.size = thumbnailSize
+      thumbnailPeekView.frame.size = thumbImage.size
 
       let contentView = window!.contentView!
       if currentLayout.oscPosition != .top && currentLayout.topBarPlacement == .outsideViewport {

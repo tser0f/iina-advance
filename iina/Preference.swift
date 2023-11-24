@@ -196,8 +196,16 @@ struct Preference {
     static let enableThumbnailPreview = Key("enableThumbnailPreview")
     static let maxThumbnailPreviewCacheSize = Key("maxThumbnailPreviewCacheSize")
     static let enableThumbnailForRemoteFiles = Key("enableThumbnailForRemoteFiles")
-    static let thumbnailLength = Key("thumbnailLength")
     static let thumbnailBorderStyle = Key("thumbnailBorderStyle")
+    static let thumbnailSizeOption = Key("thumbnailSizeOption")
+    /// Only for `ThumbnailSizeOption.fixed`. Length of the longer dimension of thumbnail in screen points.
+    /// May be scaled down if needed to fit inside window.
+    static let thumbnailFixedLength = Key("thumbnailFixedLength")
+    /// Only for `ThumbnailSizeOption.displayedVideoSizePercentage`. Quality of generated thumbnail as % of raw video size, 1 - 100.
+    /// Will be scaled up/down to satisfy `thumbnailDisplayedSizePercentage`; may be scaled down if needed to fit inside window.
+    static let thumbnailRawSizePercentage = Key("thumbnailRawSizePercentage")
+    /// Only for `ThumbnailSizeOption.displayedVideoSizePercentage`. Size of displayed thumbnail as % of displayed video, 1 - 100
+    static let thumbnailDisplayedSizePercentage = Key("thumbnailDisplayedSizePercentage")
 
     static let autoSwitchToMusicMode = Key("autoSwitchToMusicMode")
     static let musicModeShowPlaylist = Key("musicModeShowPlaylist")
@@ -518,6 +526,18 @@ struct Preference {
     case shadowOrGlow
 
     static var defaultValue = ThumnailBorderStyle.shadowOrGlow
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum ThumbnailSizeOption: Int, InitializingFromKey {
+    case fixed = 1
+    /// Percentage of displayed video size
+    case displayedVideoSizePercentage
+
+    static var defaultValue = ThumbnailSizeOption.displayedVideoSizePercentage
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1008,7 +1028,6 @@ struct Preference {
     .roundedCornerRadius: 10.0,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
-    .thumbnailBorderStyle: ThumnailBorderStyle.shadowOrGlow.rawValue,
     .osdPosition: OSDPosition.topLeading.rawValue,
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(20),
@@ -1049,7 +1068,11 @@ struct Preference {
     .enableThumbnailPreview: true,
     .maxThumbnailPreviewCacheSize: 500,
     .enableThumbnailForRemoteFiles: false,
-    .thumbnailLength: 240,
+    .thumbnailBorderStyle: ThumnailBorderStyle.shadowOrGlow.rawValue,
+    .thumbnailSizeOption: ThumbnailSizeOption.displayedVideoSizePercentage.rawValue,
+    .thumbnailFixedLength: 240,
+    .thumbnailRawSizePercentage: 30,
+    .thumbnailDisplayedSizePercentage: 30,
     .autoSwitchToMusicMode: true,
     .musicModeShowPlaylist: false,
     .musicModePlaylistHeight: 300,

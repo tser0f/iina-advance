@@ -2141,9 +2141,21 @@ class PlayerCore: NSObject {
 
       // Run the following in the background at lower priority, so the UI is not slowed down
       PlayerCore.thumbnailQueue.async { [self] in
-        let requestedLength = Preference.integer(for: .thumbnailLength)
-        guard let thumbWidth = determineWidthOfThumbnail(from: requestedLength) else { return }
-        info.thumbnailLength = requestedLength
+
+        let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
+        let thumbWidth: Int
+        switch sizeOption {
+        case .fixed:
+          let requestedLength = Preference.integer(for: .thumbnailFixedLength)
+          guard let width = determineWidthOfThumbnail(from: requestedLength) else { return }
+          thumbWidth = width
+          log.verbose("Using fixed thumbnail width of \(thumbWidth)")
+        case .displayedVideoSizePercentage:
+          let rawSizePercentage: Int = min(max(0, Preference.integer(for: .thumbnailRawSizePercentage)), 100)
+          guard let videoWidth = info.videoRawWidth else { return }
+          thumbWidth = videoWidth * rawSizePercentage / 100
+          log.verbose("Using \(rawSizePercentage)% of \(videoWidth)px for thumbnail native width = \(thumbWidth)")
+        }
         info.thumbnailWidth = thumbWidth
 
         if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
@@ -2183,8 +2195,8 @@ class PlayerCore: NSObject {
     }
   }
 
-  /** We want the requested size of thumbnail to correspond to whichever video dimension is longer.
-   Example: if video's native size is 600 W x 800 H and requested thumbnail size is 100, then `thumbWidth` should be 75. */
+  /// We want the requested length of thumbnail to correspond to whichever video dimension is longer, and then get the corresponding width.
+  /// Example: if video's native size is 600 W x 800 H and requested thumbnail size is 100, then `thumbWidth` should be 75.
   private func determineWidthOfThumbnail(from requestedLength: Int) -> Int? {
     // Generate thumbnails using video's original dimensions, before aspect ratio correction.
     // We will adjust aspect ratio & rotation when we display the thumbnail, similar to how mpv works.
