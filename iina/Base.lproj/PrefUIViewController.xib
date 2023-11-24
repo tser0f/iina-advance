@@ -1850,10 +1850,10 @@
             <point key="canvasLocation" x="15" y="672"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="3uJ-UU-1zw" userLabel="Prefs &gt; UI &gt; Thumbnail Preview" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="650" height="200"/>
+            <rect key="frame" x="0.0" y="0.0" width="650" height="228"/>
             <subviews>
                 <textField identifier="SectionTitleThumb" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="maZ-e8-1vw" userLabel="Thumbnail Preview Section Label">
-                    <rect key="frame" x="-2" y="160" width="124" height="32"/>
+                    <rect key="frame" x="-2" y="188" width="124" height="32"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Thumbnail Preview:" id="kYu-0l-jQQ">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1861,7 +1861,7 @@
                     </textFieldCell>
                 </textField>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="mvX-qm-iUh" userLabel="Enable thumbnail preview Checkbox">
-                    <rect key="frame" x="118" y="175" width="181" height="18"/>
+                    <rect key="frame" x="118" y="203" width="181" height="18"/>
                     <buttonCell key="cell" type="check" title="Enable thumbnail preview" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Xey-3m-f6G">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -1874,7 +1874,7 @@
                     </connections>
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="5Om-Um-kQ4" userLabel="Enable for remote files also Checkbox">
-                    <rect key="frame" x="138" y="151" width="157" height="18"/>
+                    <rect key="frame" x="138" y="179" width="157" height="18"/>
                     <buttonCell key="cell" type="check" title="Including remote files" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="1NF-4u-sGn">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -1884,14 +1884,60 @@
                         <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.enableThumbnailPreview" id="QnO-oW-DaG"/>
                     </connections>
                 </button>
-                <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="47i-yB-uyE" userLabel="ThumbnailPreviewRightColumn Stack View">
-                    <rect key="frame" x="120" y="41" width="530" height="99"/>
+                <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="6" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="47i-yB-uyE" userLabel="ThumbnailRightColumn Stack View">
+                    <rect key="frame" x="120" y="41" width="530" height="127"/>
                     <subviews>
+                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5ri-jj-x4V" userLabel="BorderStyle HStack View">
+                            <rect key="frame" x="0.0" y="107" width="221" height="20"/>
+                            <subviews>
+                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="odN-74-yhg" userLabel="Border style: Label">
+                                    <rect key="frame" x="-2" y="3" width="110" height="16"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Border style:" id="nYb-Pq-5m8">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <popUpButton tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5gS-c3-0dD" userLabel="ThumbnailBorderStyle Popup">
+                                    <rect key="frame" x="111" y="-4" width="114" height="25"/>
+                                    <popUpButtonCell key="cell" type="push" title="Shadow" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3" imageScaling="proportionallyDown" inset="2" selectedItem="aOb-Nq-DWE" id="pZX-zE-D6m" userLabel="ThumbnailBorderStyle-Popup Button Cell">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                        <font key="font" metaFont="menu"/>
+                                        <menu key="menu" id="VoP-dn-bG2">
+                                            <items>
+                                                <menuItem title="No border" tag="1" id="iQw-41-8gz" userLabel="No border"/>
+                                                <menuItem title="Solid outline" tag="2" id="5g8-cK-VXK"/>
+                                                <menuItem title="Shadow" state="on" tag="3" id="aOb-Nq-DWE"/>
+                                            </items>
+                                        </menu>
+                                        <connections>
+                                            <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.thumbnailBorderStyle" id="ifm-Yq-KUO">
+                                                <dictionary key="options">
+                                                    <bool key="NSAllowsEditingMultipleValuesSelection" value="NO"/>
+                                                </dictionary>
+                                            </binding>
+                                        </connections>
+                                    </popUpButtonCell>
+                                    <connections>
+                                        <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.enableThumbnailPreview" id="WUv-Y9-JgW"/>
+                                        <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.thumbnailBorderStyle" id="gph-BY-RyY"/>
+                                    </connections>
+                                </popUpButton>
+                            </subviews>
+                            <visibilityPriorities>
+                                <integer value="1000"/>
+                                <integer value="1000"/>
+                            </visibilityPriorities>
+                            <customSpacing>
+                                <real value="3.4028234663852886e+38"/>
+                                <real value="3.4028234663852886e+38"/>
+                            </customSpacing>
+                        </stackView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Qwh-Zf-0ZE" userLabel="SizeOption HStack View">
-                            <rect key="frame" x="0.0" y="77" width="260" height="22"/>
+                            <rect key="frame" x="0.0" y="81" width="260" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cdn-kt-RoQ" userLabel="Sizing: Label">
-                                    <rect key="frame" x="-2" y="5" width="110" height="16"/>
+                                    <rect key="frame" x="-2" y="3" width="110" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Thumbnail sizing:" id="vkI-DO-KDn">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1899,14 +1945,14 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="n4r-UT-AYn" userLabel="ThumbnailSizeOption Popup">
-                                    <rect key="frame" x="111" y="-2" width="153" height="25"/>
-                                    <popUpButtonCell key="cell" type="push" title="Scale with Window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="0ZO-LV-I0e" id="5ql-tw-nwF" userLabel="ThumbnailSizeOption-Popup Button Cell">
+                                    <rect key="frame" x="111" y="-4" width="153" height="25"/>
+                                    <popUpButtonCell key="cell" type="push" title="Scale with Window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="0ZO-LV-I0e" id="5ql-tw-nwF" userLabel="ThumbnailSizeOption-Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="kCy-K1-JTv">
                                             <items>
                                                 <menuItem title="Constant" tag="1" id="JME-H5-i3H" userLabel="Fixed"/>
-                                                <menuItem title="Scale with Window" state="on" tag="2" id="0ZO-LV-I0e"/>
+                                                <menuItem title="Scale with Window" tag="2" id="0ZO-LV-I0e"/>
                                             </items>
                                         </menu>
                                     </popUpButtonCell>
@@ -1926,7 +1972,7 @@
                             </customSpacing>
                         </stackView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="SOY-Cw-Lh1" userLabel="DisplayedSizePixels HStack View">
-                            <rect key="frame" x="20" y="52" width="191" height="21"/>
+                            <rect key="frame" x="20" y="54" width="191" height="21"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqQ-ue-KEO" userLabel="DisplayedSizePixels: Label">
                                     <rect key="frame" x="-2" y="3" width="114" height="16"/>
@@ -1986,10 +2032,10 @@
                             </connections>
                         </stackView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qe6-RF-ITI" userLabel="Resolution HStack View">
-                            <rect key="frame" x="20" y="26" width="304" height="22"/>
+                            <rect key="frame" x="20" y="27" width="304" height="21"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="nqn-cQ-Hev" userLabel="Resolution: Label">
-                                    <rect key="frame" x="-2" y="4" width="114" height="16"/>
+                                    <rect key="frame" x="-2" y="3" width="114" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Resolution:" id="Xrd-Ve-Kd0">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1997,7 +2043,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OQ8-ow-oAR" userLabel="ThumbnailResolutionPercentage-Entry Text Field">
-                                    <rect key="frame" x="118" y="1" width="35" height="21"/>
+                                    <rect key="frame" x="118" y="0.0" width="35" height="21"/>
                                     <constraints>
                                         <constraint firstAttribute="width" constant="35" id="u1K-uP-WnW"/>
                                     </constraints>
@@ -2016,7 +2062,7 @@
                                     </connections>
                                 </textField>
                                 <textField identifier="MaximumCacheWidthPx" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ILm-M1-2Me" userLabel="% of video size Label">
-                                    <rect key="frame" x="159" y="4" width="147" height="16"/>
+                                    <rect key="frame" x="159" y="3" width="147" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="% of video's native size" id="uIM-ge-Lc0">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -2043,10 +2089,10 @@
                             </connections>
                         </stackView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VjJ-JN-yzX" userLabel="DisplayedSizePercentage HStack View">
-                            <rect key="frame" x="20" y="0.0" width="351" height="22"/>
+                            <rect key="frame" x="20" y="0.0" width="351" height="21"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="PtB-UF-vT8" userLabel="Displayed Size: Label">
-                                    <rect key="frame" x="-2" y="4" width="114" height="16"/>
+                                    <rect key="frame" x="-2" y="3" width="114" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Displayed size:" id="Qv4-g5-2wA">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -2054,7 +2100,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ctm-bY-bfH" userLabel="DisplayedSizePercentage-Entry Text Field">
-                                    <rect key="frame" x="118" y="1" width="35" height="21"/>
+                                    <rect key="frame" x="118" y="0.0" width="35" height="21"/>
                                     <constraints>
                                         <constraint firstAttribute="width" constant="35" id="lk9-ds-Den"/>
                                     </constraints>
@@ -2073,7 +2119,7 @@
                                     </connections>
                                 </textField>
                                 <textField identifier="MaximumCacheWidthPx" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VFP-gX-KUK" userLabel="% of available height Label">
-                                    <rect key="frame" x="159" y="4" width="194" height="16"/>
+                                    <rect key="frame" x="159" y="3" width="194" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="% of available height in window" id="QwQ-tN-lwn">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -2104,6 +2150,7 @@
                         <constraint firstItem="SOY-Cw-Lh1" firstAttribute="leading" secondItem="47i-yB-uyE" secondAttribute="leading" constant="20" id="38k-XL-Iwu"/>
                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="SOY-Cw-Lh1" secondAttribute="trailing" id="3sY-UJ-ait"/>
                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="VjJ-JN-yzX" secondAttribute="trailing" id="AJp-52-gJk"/>
+                        <constraint firstItem="n4r-UT-AYn" firstAttribute="leading" secondItem="5gS-c3-0dD" secondAttribute="leading" id="DRZ-bd-w5K"/>
                         <constraint firstItem="QSd-B9-68V" firstAttribute="leading" secondItem="OQ8-ow-oAR" secondAttribute="leading" id="PIz-MV-74A"/>
                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Qwh-Zf-0ZE" secondAttribute="trailing" id="Qxe-Or-h2F"/>
                         <constraint firstItem="VjJ-JN-yzX" firstAttribute="leading" secondItem="47i-yB-uyE" secondAttribute="leading" constant="20" id="TMV-jx-969"/>
@@ -2117,8 +2164,10 @@
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
+                        <integer value="1000"/>
                     </visibilityPriorities>
                     <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
