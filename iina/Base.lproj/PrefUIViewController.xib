@@ -1888,7 +1888,7 @@
                     <rect key="frame" x="120" y="41" width="530" height="99"/>
                     <subviews>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Qwh-Zf-0ZE" userLabel="SizeOption HStack View">
-                            <rect key="frame" x="0.0" y="77" width="194" height="22"/>
+                            <rect key="frame" x="0.0" y="77" width="260" height="22"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cdn-kt-RoQ" userLabel="Sizing: Label">
                                     <rect key="frame" x="-2" y="5" width="110" height="16"/>
@@ -1899,14 +1899,14 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="n4r-UT-AYn" userLabel="ThumbnailSizeOption Popup">
-                                    <rect key="frame" x="111" y="-2" width="87" height="25"/>
-                                    <popUpButtonCell key="cell" type="push" title="Relative" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="0ZO-LV-I0e" id="5ql-tw-nwF" userLabel="ThumbnailSizeOption-Popup Button Cell">
+                                    <rect key="frame" x="111" y="-2" width="153" height="25"/>
+                                    <popUpButtonCell key="cell" type="push" title="Scale with Window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="0ZO-LV-I0e" id="5ql-tw-nwF" userLabel="ThumbnailSizeOption-Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="kCy-K1-JTv">
                                             <items>
-                                                <menuItem title="Fixed" tag="1" id="JME-H5-i3H" userLabel="Fixed"/>
-                                                <menuItem title="Relative" state="on" tag="2" id="0ZO-LV-I0e"/>
+                                                <menuItem title="Constant" tag="1" id="JME-H5-i3H" userLabel="Fixed"/>
+                                                <menuItem title="Scale with Window" state="on" tag="2" id="0ZO-LV-I0e"/>
                                             </items>
                                         </menu>
                                     </popUpButtonCell>
