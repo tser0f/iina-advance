@@ -2004,7 +2004,7 @@
                                         </binding>
                                     </connections>
                                 </textField>
-                                <textField identifier="MaximumCacheWidthPx" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3kE-zA-EH8" userLabel="px Label">
+                                <textField identifier="DisplayedSizePixelsPx" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3kE-zA-EH8" userLabel="px Label">
                                     <rect key="frame" x="174" y="3" width="19" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="px" id="F9N-Mm-Fvd">
                                         <font key="font" metaFont="system"/>
@@ -2118,7 +2118,7 @@
                                         <binding destination="lH7-Vv-0M1" name="value" keyPath="values.thumbnailDisplayedSizePercentage" id="gFc-DL-bDb"/>
                                     </connections>
                                 </textField>
-                                <textField identifier="MaximumCacheWidthPx" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VFP-gX-KUK" userLabel="% of available height Label">
+                                <textField identifier="DisplayedSizePercentage-PercentLabel" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VFP-gX-KUK" userLabel="% of available height Label">
                                     <rect key="frame" x="159" y="3" width="194" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="% of available height in window" id="QwQ-tN-lwn">
                                         <font key="font" metaFont="system"/>

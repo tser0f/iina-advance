@@ -194,6 +194,7 @@
 		D1D29A282ADE2E8000D8660F /* CustomTitleBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D29A272ADE2E8000D8660F /* CustomTitleBar.swift */; };
 		D1D3DB342AE0FBE800997C9E /* InteractiveModeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D3DB332AE0FBE800997C9E /* InteractiveModeGeometry.swift */; };
 		D1D4C7422B0F3219003B09C2 /* MPVHookValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D4C7412B0F3219003B09C2 /* MPVHookValue.swift */; };
+		D1D4C7442B10B7D2003B09C2 /* ViewportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D4C7432B10B7D2003B09C2 /* ViewportView.swift */; };
 		D1D87DFC2923A4E500737886 /* BindingTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */; };
 		D1D87E002924F92100737886 /* ConfTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */; };
 		D1D87E02292B2AEE00737886 /* BiDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87E01292B2AEE00737886 /* BiDictionary.swift */; };
@@ -1578,6 +1579,7 @@
 		D1D29A272ADE2E8000D8660F /* CustomTitleBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTitleBar.swift; sourceTree = "<group>"; };
 		D1D3DB332AE0FBE800997C9E /* InteractiveModeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveModeGeometry.swift; sourceTree = "<group>"; };
 		D1D4C7412B0F3219003B09C2 /* MPVHookValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVHookValue.swift; sourceTree = "<group>"; };
+		D1D4C7432B10B7D2003B09C2 /* ViewportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewportView.swift; sourceTree = "<group>"; };
 		D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingTableStateManager.swift; sourceTree = "<group>"; };
 		D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfTableStateManager.swift; sourceTree = "<group>"; };
 		D1D87E01292B2AEE00737886 /* BiDictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiDictionary.swift; sourceTree = "<group>"; };
@@ -2466,6 +2468,7 @@
 			children = (
 				8407D13F1E3A684C0043895D /* ViewLayer.swift */,
 				84A0BAA01D2FAE7600BC8DA1 /* VideoView.swift */,
+				D1D4C7432B10B7D2003B09C2 /* ViewportView.swift */,
 			);
 			name = Video;
 			sourceTree = "<group>";
@@ -3083,6 +3086,7 @@
 				D19CF7162AB846D300511F80 /* MusicModeGeometry.swift in Sources */,
 				840820111ECF6C1800361416 /* FileGroup.swift in Sources */,
 				E374160C20F138A900B4F7F9 /* CollapseView.swift in Sources */,
+				D1D4C7442B10B7D2003B09C2 /* ViewportView.swift in Sources */,
 				84A0BA901D2F8D4100BC8DA1 /* IINAError.swift in Sources */,
 				D1FD2DDC28533EE700CF7B35 /* InputSection.swift in Sources */,
 				D1FF15752A7E072200C0CE86 /* PlayerCoreManager.swift in Sources */,

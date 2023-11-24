@@ -629,7 +629,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var osdAccessoryProgress: NSProgressIndicator!
 
   @IBOutlet weak var pipOverlayView: NSVisualEffectView!
-  @IBOutlet weak var viewportView: NSView!
+  @IBOutlet weak var viewportView: ViewportView!
   let defaultAlbumArtView = NSView()
 
   @IBOutlet weak var volumeSlider: NSSlider!
@@ -774,6 +774,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     
     miniPlayer = MiniPlayerController()
     miniPlayer.windowController = self
+
+    viewportView.player = player
 
     // Build default window geometries from preferences and default frame
     windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)

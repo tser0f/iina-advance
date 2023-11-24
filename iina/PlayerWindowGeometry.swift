@@ -802,8 +802,10 @@ extension PlayerWindowController {
       let newWindowGeo: PlayerWindowGeometry
       if shouldResizeWindowAfterVideoReconfig() {
         newWindowGeo = resizeWindowAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
-        // Update intended viewport to new size
-        player.info.setIntendedViewportSize(from: newWindowGeo)
+        if currentLayout.mode == .windowed {
+          // Update intended viewport to new size
+          player.info.setIntendedViewportSize(from: newWindowGeo)
+        }
       } else {
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
