@@ -172,23 +172,24 @@ struct Preference {
     static let osdAutoHideTimeout = Key("osdAutoHideTimeout")
     static let osdTextSize = Key("osdTextSize")
 
+    /// Window geometry
     static let usePhysicalResolution = Key("usePhysicalResolution")
-
     static let initialWindowSizePosition = Key("initialWindowSizePosition")
     static let resizeWindowTiming = Key("resizeWindowTiming")
     static let resizeWindowOption = Key("resizeWindowOption")
 
-    // Sidebars:
+    /// Sidebars
     static let leadingSidebarPlacement = Key("leadingSidebarPlacement")
     static let trailingSidebarPlacement = Key("trailingSidebarPlacement")
     static let showLeadingSidebarToggleButton = Key("showLeadingSidebarToggleButton")
     static let showTrailingSidebarToggleButton = Key("showTrailingSidebarToggleButton")
     static let hideLeadingSidebarOnClick = Key("hideLeadingSidebarOnClick")
     static let hideTrailingSidebarOnClick = Key("hideTrailingSidebarOnClick")
-    /// `Settings` tab group
+    /// `Settings` tab group (leading or trailing)
     static let settingsTabGroupLocation = Key("settingsTabGroupLocation")
-    /// `Playlist` tab group
+    /// `Playlist` tab group (leading or trailing)
     static let playlistTabGroupLocation = Key("playlistTabGroupLocation")
+    /// Preferred height of playlist (excluding music mode)
     static let playlistWidth = Key("playlistWidth")
     static let prefetchPlaylistVideoDuration = Key("prefetchPlaylistVideoDuration")
 
@@ -201,12 +202,13 @@ struct Preference {
     /// Only for `ThumbnailSizeOption.fixed`. Length of the longer dimension of thumbnail in screen points.
     /// May be scaled down if needed to fit inside window.
     static let thumbnailFixedLength = Key("thumbnailFixedLength")
-    /// Only for `ThumbnailSizeOption.displayedVideoSizePercentage`. Quality of generated thumbnail as % of raw video size, 1 - 100.
+    /// Only for `ThumbnailSizeOption.scaleWithViewport`. Quality of generated thumbnail as % of raw video size, 1 - 100.
     /// Will be scaled up/down to satisfy `thumbnailDisplayedSizePercentage`; may be scaled down if needed to fit inside window.
     static let thumbnailRawSizePercentage = Key("thumbnailRawSizePercentage")
-    /// Only for `ThumbnailSizeOption.displayedVideoSizePercentage`. Size of displayed thumbnail as % of displayed video, 1 - 100
+    /// Only for `ThumbnailSizeOption.scaleWithViewport`. Size of displayed thumbnail as % of displayed video, 1 - 100
     static let thumbnailDisplayedSizePercentage = Key("thumbnailDisplayedSizePercentage")
 
+    /// Music mode
     static let autoSwitchToMusicMode = Key("autoSwitchToMusicMode")
     static let musicModeShowPlaylist = Key("musicModeShowPlaylist")
     static let musicModeShowAlbumArt = Key("musicModeShowAlbumArt")
@@ -215,6 +217,7 @@ struct Preference {
 
     static let displayTimeAndBatteryInFullScreen = Key("displayTimeAndBatteryInFullScreen")
 
+    /// Picture-in-Picture (PiP)
     static let windowBehaviorWhenPip = Key("windowBehaviorWhenPip")
     static let pauseWhenPip = Key("pauseWhenPip")
     static let togglePipByMinimizingWindow = Key("togglePipByMinimizingWindow")
@@ -533,11 +536,11 @@ struct Preference {
   }
 
   enum ThumbnailSizeOption: Int, InitializingFromKey {
-    case fixed = 1
+    case fixedSize = 1
     /// Percentage of displayed video size
-    case displayedVideoSizePercentage
+    case scaleWithViewport
 
-    static var defaultValue = ThumbnailSizeOption.displayedVideoSizePercentage
+    static var defaultValue = ThumbnailSizeOption.scaleWithViewport
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1065,14 +1068,16 @@ struct Preference {
     .showRemainingTime: false,
     .timeDisplayPrecision: 0,
     .touchbarShowRemainingTime: true,
+
     .enableThumbnailPreview: true,
-    .maxThumbnailPreviewCacheSize: 500,
     .enableThumbnailForRemoteFiles: false,
     .thumbnailBorderStyle: ThumnailBorderStyle.shadowOrGlow.rawValue,
-    .thumbnailSizeOption: ThumbnailSizeOption.displayedVideoSizePercentage.rawValue,
+    .thumbnailSizeOption: ThumbnailSizeOption.scaleWithViewport.rawValue,
     .thumbnailFixedLength: 240,
     .thumbnailRawSizePercentage: 75,
     .thumbnailDisplayedSizePercentage: 40,
+    .maxThumbnailPreviewCacheSize: 500,
+
     .autoSwitchToMusicMode: true,
     .musicModeShowPlaylist: false,
     .musicModePlaylistHeight: 300,

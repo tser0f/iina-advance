@@ -2870,36 +2870,52 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       var thumbWidth: Double = rawImage.size.width
       var thumbHeight: Double = rawImage.size.height
-      let rawAspect = thumbWidth / thumbHeight
+      var thumbAspect = thumbWidth / thumbHeight
 
       if let drAspect = player.info.videoParams?.videoDisplayRotatedAspect,
          player.info.thumbnailWidth > 0 {
         // The aspect ratio of some videos is different at display time. May need to resize these videos
         // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
         // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
-        if rawAspect != drAspect {
+        if thumbAspect != drAspect {
           thumbHeight = (thumbWidth / drAspect).rounded()
+          /// Recalculate this for later use (will use it and `thumbHeight`, and derive width)
+          thumbAspect = thumbWidth / thumbHeight
         }
       }
 
+      /// Calculate `availableHeight` (viewport height, minus top & bottom bars)
+      /// Easy to get `insideTopBarHeight`, but need to work a bit to get `insideBottomBarHeight`
       let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
-      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight
+      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight - thumbnailExtraOffsetY
 
-      let thumbAspect = thumbWidth / thumbHeight
       let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
       switch sizeOption {
-      case .fixed:
-        if availableHeight < thumbHeight {
-          // Scale down thumbnail so it doesn't overlap top or bottom bars
-          thumbHeight = availableHeight - thumbnailExtraOffsetY
-          thumbWidth = thumbHeight * thumbAspect
-        }
-      case .displayedVideoSizePercentage:
+      case .fixedSize:
+        // Stored thumb size should be correct (but may need to be scaled down)
+        break
+      case .scaleWithViewport:
         // Scale thumbnail as percentage of available height
-        let percentage = min(100, max(0, Preference.integer(for: .thumbnailDisplayedSizePercentage)))
-        thumbHeight = (availableHeight * Double(percentage) / 100.0) - thumbnailExtraOffsetY
-        thumbWidth = thumbHeight * thumbAspect
+        let percentage = min(1, max(0, Preference.double(for: .thumbnailDisplayedSizePercentage) / 100.0))
+        thumbHeight = availableHeight * percentage
       }
+
+      // Thumb too tall?
+      if thumbHeight > availableHeight {
+        // Scale down thumbnail so it doesn't overlap top or bottom bars
+        thumbHeight = availableHeight
+      }
+
+      thumbWidth = thumbHeight * thumbAspect
+
+      // Also scale down thumbnail if it's wider than the viewport (although allowing one side to clip is OK).
+      // This may sound arbitrary, but it should match user's intuitions)
+      let availableWidth = viewportView.frame.width
+      if thumbWidth > availableWidth {
+        thumbWidth = availableWidth
+        thumbHeight = thumbWidth / thumbAspect
+      }
+
 
       let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
       thumbnailPeekView.imageView.image = thumbImage

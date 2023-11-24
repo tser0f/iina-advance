@@ -2145,12 +2145,12 @@ class PlayerCore: NSObject {
         let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
         let thumbWidth: Int
         switch sizeOption {
-        case .fixed:
+        case .fixedSize:
           let requestedLength = Preference.integer(for: .thumbnailFixedLength)
           guard let width = determineWidthOfThumbnail(from: requestedLength) else { return }
           thumbWidth = width
           log.verbose("Using fixed thumbnail width of \(thumbWidth)")
-        case .displayedVideoSizePercentage:
+        case .scaleWithViewport:
           let rawSizePercentage: Int = min(max(0, Preference.integer(for: .thumbnailRawSizePercentage)), 100)
           guard let videoWidth = info.videoRawWidth else { return }
           thumbWidth = videoWidth * rawSizePercentage / 100
