@@ -400,11 +400,35 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 }
 
+@objc(IntEqualsOneTransformer) class IntEqualsOneTransformer: IntEqualsZeroTransformer {
+
+  override func transformedValue(_ value: Any?) -> Any? {
+    guard let number = value as? NSNumber else { return nil }
+    return number == 1
+  }
+}
+
 @objc(IntEqualsTwoTransformer) class IntEqualsTwoTransformer: IntEqualsZeroTransformer {
 
   override func transformedValue(_ value: Any?) -> Any? {
     guard let number = value as? NSNumber else { return nil }
     return number == 2
+  }
+}
+
+@objc(IntNotEqualsOneTransformer) class IntNotEqualsOneTransformer: IntEqualsZeroTransformer {
+
+  override func transformedValue(_ value: Any?) -> Any? {
+    guard let number = value as? NSNumber else { return nil }
+    return number != 1
+  }
+}
+
+@objc(IntNotEqualsTwoTransformer) class IntNotEqualsTwoTransformer: IntEqualsZeroTransformer {
+
+  override func transformedValue(_ value: Any?) -> Any? {
+    guard let number = value as? NSNumber else { return nil }
+    return number != 2
   }
 }
 

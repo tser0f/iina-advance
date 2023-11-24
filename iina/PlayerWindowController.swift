@@ -311,6 +311,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .enableThumbnailForRemoteFiles,
     .thumbnailSizeOption,
     .thumbnailFixedLength,
+    .thumbnailRawSizePercentage,
     .thumbnailDisplayedSizePercentage,
     .thumbnailBorderStyle,
     .showChapterPos,
@@ -413,11 +414,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       PK.thumbnailFixedLength.rawValue,
       PK.thumbnailRawSizePercentage.rawValue,
       PK.thumbnailDisplayedSizePercentage.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
-          log.debug("Pref \(keyPath.quoted) changed to \(newValue): requesting thumbs regen")
-          player.reloadThumbnails()
-        }
+      DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
+        log.verbose("Pref \(keyPath.quoted) changed: requesting thumbs regen")
+        player.reloadThumbnails()
       }
     case PK.thumbnailBorderStyle.rawValue, PK.roundedCornerRadius.rawValue:
       thumbnailPeekView.refreshStyle()
