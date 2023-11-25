@@ -244,7 +244,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       playlistTableView.reloadData()
     }
     if chapters {
-      player.reloadChapters()
       chapterTableView.reloadData()
     }
 
@@ -676,6 +675,9 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     // chapter
     else if tableView == chapterTableView {
       let chapters = info.chapters
+      guard row < chapters.count else {
+        return nil
+      }
       let chapter = chapters[row]
       // next chapter time
       let nextChapterTime = chapters[at: row+1]?.time ?? .infinite

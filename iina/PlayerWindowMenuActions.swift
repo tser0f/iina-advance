@@ -138,8 +138,12 @@ extension PlayerWindowController {
 
   @objc func menuChapterSwitch(_ sender: NSMenuItem) {
     let index = sender.tag
-    player.playChapter(index)
-    let chapter = player.info.chapters[index]
+    guard let chapter = player.playChapter(index) else {
+      Logger.log("Cannot switch to chapter \(index) because it was not found! Will ignore request and reload chapters instead",
+                 level: .error, subsystem: player.subsystem)
+      player.reloadChapters()
+      return
+    }
     player.sendOSD(.chapter(chapter.title))
   }
 

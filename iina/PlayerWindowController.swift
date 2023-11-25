@@ -2940,7 +2940,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // Show thumbnail below slider
         thumbOriginY = max(0, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
       }
-      // Constrain X origin so that it stays entirely inside the viewport (and not insdie the outside sidebars)
+      // Constrain X origin so that it stays entirely inside the viewport (and not inside the outside sidebars)
       let minX = currentLayout.outsideLeadingBarWidth
       let maxX = availableWidth + currentLayout.outsideLeadingBarWidth
       let thumbOriginX = min(max(minX, round(originalPos.x - thumbnailPeekView.frame.width / 2)), maxX - thumbnailPeekView.frame.width)
