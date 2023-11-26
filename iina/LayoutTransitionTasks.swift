@@ -313,10 +313,12 @@ extension PlayerWindowController {
     if transition.outputLayout.spec.isLegacyStyle {
       // Set legacy style
       setWindowStyleToLegacy()
+
       /// if `isTogglingLegacyStyle==true && isExitingFullScreen==true`, we are toggling out of legacy FS
       /// -> don't change `styleMask` to `.titled` here - it will look bad if screen has camera housing. Change at end of animation
     } else {
       // Not legacy style
+
       if !transition.isEnteringFullScreen {
         setWindowStyleToNative()
       }

@@ -12,7 +12,8 @@ import WebKit
 
 // MARK: - Constants
 
-fileprivate let thumbnailExtraOffsetY: CGFloat = 0
+fileprivate let thumbnailExtraOffsetX: CGFloat = 5
+fileprivate let thumbnailExtraOffsetY: CGFloat = 5
 
 // MARK: - Constants
 
@@ -873,14 +874,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       view?.state = .active
     }
 
-    let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius))
-
-    // buffer indicator view
-    if roundedCornerRadius > 0.0 {
-      bufferIndicatorView.roundCorners(withRadius: roundedCornerRadius)
-      osdVisualEffectView.roundCorners(withRadius: roundedCornerRadius)
-      additionalInfoView.roundCorners(withRadius: roundedCornerRadius)
-    }
+    let roundedCornerRadius: CGFloat = 6.0
+    bufferIndicatorView.roundCorners(withRadius: roundedCornerRadius)
+    osdVisualEffectView.roundCorners(withRadius: roundedCornerRadius)
+    additionalInfoView.roundCorners(withRadius: roundedCornerRadius)
     
     if player.disableUI { hideFadeableViews() }
 
@@ -2887,7 +2884,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       /// Calculate `availableHeight` (viewport height, minus top & bottom bars)
       /// Easy to get `insideTopBarHeight`, but need to work a bit to get `insideBottomBarHeight`
       let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
-      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight - thumbnailExtraOffsetY
+      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight - thumbnailExtraOffsetY - thumbnailExtraOffsetY
 
       let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
       switch sizeOption {
@@ -2909,7 +2906,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbWidth = thumbHeight * thumbAspect
 
       // Also scale down thumbnail if it's wider than the viewport
-      let availableWidth = viewportView.frame.width
+      let availableWidth = viewportView.frame.width - thumbnailExtraOffsetX - thumbnailExtraOffsetX
       if thumbWidth > availableWidth {
         thumbWidth = availableWidth
         thumbHeight = thumbWidth / thumbAspect
@@ -2938,11 +2935,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         thumbOriginY = oscOriginInWindowY + oscHeight + thumbnailExtraOffsetY
       } else {
         // Show thumbnail below slider
-        thumbOriginY = max(0, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
+        thumbOriginY = max(thumbnailExtraOffsetY, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
       }
       // Constrain X origin so that it stays entirely inside the viewport (and not inside the outside sidebars)
-      let minX = currentLayout.outsideLeadingBarWidth
-      let maxX = availableWidth + currentLayout.outsideLeadingBarWidth
+      let minX = currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
+      let maxX = availableWidth + currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
       let thumbOriginX = min(max(minX, round(originalPos.x - thumbnailPeekView.frame.width / 2)), maxX - thumbnailPeekView.frame.width)
       thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
 

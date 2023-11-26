@@ -1646,7 +1646,10 @@ class PlayerCore: NSObject {
       // mpv_render_report_swap.
       videoView.displayActive()
     }
-    refreshSyncUITimer()
+
+    // need to call this to update info.videoPosition, info.videoDuration
+    syncUITime()
+
     sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
@@ -1664,7 +1667,8 @@ class PlayerCore: NSObject {
 
     reloadSavedIINAfilters()
     windowController.forceDraw()
-    refreshSyncUITimer()
+
+    syncUITime()
 
     let audioStatus = currentMediaIsAudio
 
@@ -2073,14 +2077,14 @@ class PlayerCore: NSObject {
     }
 
     if case .seek(let position, let duration) = osd {
-      // Try to avoid duplicate seek messages which are emitted when paused and changing video settings
+      // Try to avoid duplicate seek messages which are emitted when changing video settings while paused
       guard position?.second != osdLastPosition || duration?.second != osdLastDuration else {
-        log.verbose("OSD position/duration has not changed; ignoring")
+        log.verbose("Ignoring request to show OSD seek; position/duration has not changed")
         return
       }
       osdLastPosition = position?.second
       osdLastDuration = duration?.second
-    } else if case .pause = osd {
+    } else if case .pause = osd, case .resume = osd {
       osdLastPosition = info.videoPosition?.second
       osdLastDuration = info.videoDuration?.second
     }

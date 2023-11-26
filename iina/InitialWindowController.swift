@@ -458,8 +458,7 @@ class InitialWindowViewActionButton: NSView {
 
   override func awakeFromNib() {
     self.wantsLayer = true
-    let roundedCornerRadius: CGFloat = CGFloat(Preference.float(for: .roundedCornerRadius))
-    self.layer?.cornerRadius = roundedCornerRadius == 0 ? 0 : 6
+    self.layer?.cornerRadius = 6  // Round highlights
     self.layer?.backgroundColor = normalBackground.cgColor
     self.addTrackingArea(NSTrackingArea(rect: self.bounds, options: [.activeInKeyWindow, .mouseEnteredAndExited], owner: self, userInfo: nil))
   }

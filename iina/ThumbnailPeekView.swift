@@ -52,7 +52,7 @@ class ThumbnailPeekView: NSView {
     guard let layer = self.layer else { return }
 
     if effectiveAppearance.isDark {
-      layer.shadowColor = CGColor(gray: 1, alpha: 0.7)
+      layer.shadowColor = CGColor(gray: 1, alpha: 0.75)
     } else {
       layer.shadowColor = CGColor(gray: 0, alpha: 0.75)
     }
