@@ -12,8 +12,8 @@ import WebKit
 
 // MARK: - Constants
 
-fileprivate let thumbnailExtraOffsetX: CGFloat = 5
-fileprivate let thumbnailExtraOffsetY: CGFloat = 5
+fileprivate let thumbnailExtraOffsetX: CGFloat = 12
+fileprivate let thumbnailExtraOffsetY: CGFloat = 12
 
 // MARK: - Constants
 
@@ -282,7 +282,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   static let playerWindowPrefKeys: [Preference.Key] = [
     .themeMaterial,
-    .roundedCornerRadius,
     .showRemainingTime,
     .alwaysFloatOnTop,
     .maxVolume,
@@ -315,6 +314,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .thumbnailRawSizePercentage,
     .thumbnailDisplayedSizePercentage,
     .thumbnailBorderStyle,
+    .enableThumbnailRoundedCorners,
     .showChapterPos,
     .arrowButtonAction,
     .blackOutMonitor,
@@ -413,14 +413,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     case PK.thumbnailSizeOption.rawValue,
       PK.thumbnailFixedLength.rawValue,
-      PK.thumbnailRawSizePercentage.rawValue,
-      PK.thumbnailDisplayedSizePercentage.rawValue:
+      PK.thumbnailRawSizePercentage.rawValue:
       DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
         log.verbose("Pref \(keyPath.quoted) changed: requesting thumbs regen")
         player.reloadThumbnails()
       }
-    case PK.thumbnailBorderStyle.rawValue, PK.roundedCornerRadius.rawValue:
-      thumbnailPeekView.refreshStyle()
 
     case PK.enableThumbnailPreview.rawValue, PK.enableThumbnailForRemoteFiles.rawValue:
       // May need to remove thumbs or generate new ones: let method below figure it out:
@@ -1623,12 +1620,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if controlBarFloating.isDragging { return }
       // slider
       isMouseInSlider = true
-      timePreviewWhenSeek.isHidden = false
-      thumbnailPeekView.isHidden = !player.info.thumbnailsReady
+      refreshSeekTimeAndThumnail(from: event)
     } else if obj == 2 {
       customTitleBar?.leadingTitleBarView.mouseEntered(with: event)
     }
-    refreshSeekTimeAndThumnail(from: event)
   }
 
   override func mouseExited(with event: NSEvent) {
@@ -1652,8 +1647,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // slider
       isMouseInSlider = false
       refreshSeekTimeAndThumnail(from: event)
-      timePreviewWhenSeek.isHidden = true
-      thumbnailPeekView.isHidden = true
     } else if obj == 2 {
       customTitleBar?.leadingTitleBarView.mouseExited(with: event)
     }
@@ -2813,17 +2806,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     animationPipeline.submit(animationTasks)
   }
 
-  private func refreshSeekTimeAndThumnail(from event: NSEvent) {
-    let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
-    let mousePos = playSlider.convert(event.locationInWindow, from: nil)
-    if isMouseInSlider && !isCoveredByOSD {
-      updateTimeLabelAndThumbnail(mousePos.x, originalPos: event.locationInWindow)
-    } else {
-      thumbnailPeekView.isHidden = true
-      timePreviewWhenSeek.isHidden = true
-    }
-  }
-
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..
   ///
   /// Normally the OSC's thumbnail preview is shown above the time preview. This is the preferred location. However the
@@ -2850,13 +2832,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  /** Display time label when mouse over slider */
-  private func updateTimeLabelAndThumbnail(_ mouseXPos: CGFloat, originalPos: NSPoint) {
-    timePreviewWhenSeekHorizontalCenterConstraint.constant = mouseXPos
+  /// Display time label & thumbnail when mouse over slider
+  private func refreshSeekTimeAndThumnail(from event: NSEvent) {
+    let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
+    guard isMouseInSlider && !isCoveredByOSD else {
+      thumbnailPeekView.isHidden = true
+      timePreviewWhenSeek.isHidden = true
+      return
+    }
+
+    let mousePosX = playSlider.convert(event.locationInWindow, from: nil).x
+    let originalPosX = event.locationInWindow.x
+
+    timePreviewWhenSeekHorizontalCenterConstraint.constant = mousePosX
 
     guard let duration = player.info.videoDuration else { return }
-    let percentage = max(0, Double((mouseXPos - 3) / (playSlider.frame.width - 6)))
-    let previewTime = duration * percentage
+    let playbackPositionPercentage = max(0, Double((mousePosX - 3) / (playSlider.frame.width - 6)))
+    let previewTime = duration * playbackPositionPercentage
     guard timePreviewWhenSeek.stringValue != previewTime.stringRepresentation else { return }
 
 //    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
@@ -2912,7 +2904,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         thumbHeight = thumbWidth / thumbAspect
       }
 
-
       let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
       thumbnailPeekView.imageView.image = thumbImage
       thumbnailPeekView.frame.size = thumbImage.size
@@ -2940,8 +2931,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // Constrain X origin so that it stays entirely inside the viewport (and not inside the outside sidebars)
       let minX = currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
       let maxX = availableWidth + currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
-      let thumbOriginX = min(max(minX, round(originalPos.x - thumbnailPeekView.frame.width / 2)), maxX - thumbnailPeekView.frame.width)
+      let thumbOriginX = min(max(minX, round(originalPosX - thumbWidth / 2)), maxX - thumbWidth)
       thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
+
+      thumbnailPeekView.refreshStyle()
 
 //      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
       thumbnailPeekView.isHidden = false

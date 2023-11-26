@@ -57,9 +57,6 @@ struct Preference {
     static let recordRecentFiles = Key("recordRecentFiles")
     static let trackAllFilesInRecentOpenMenu = Key("trackAllFilesInRecentOpenMenu")
 
-    /** Radius for rounded corners for windows & UI elements (0 for none) */
-    static let roundedCornerRadius = Key("roundedCornerRadius")
-
     /** Material for OSC and title bar (Theme(int)) */
     static let themeMaterial = Key("themeMaterial")
 
@@ -195,7 +192,6 @@ struct Preference {
 
     /// Thumbnail preview
     static let enableThumbnailPreview = Key("enableThumbnailPreview")
-    static let maxThumbnailPreviewCacheSize = Key("maxThumbnailPreviewCacheSize")
     static let enableThumbnailForRemoteFiles = Key("enableThumbnailForRemoteFiles")
     static let thumbnailBorderStyle = Key("thumbnailBorderStyle")
     static let thumbnailSizeOption = Key("thumbnailSizeOption")
@@ -207,6 +203,9 @@ struct Preference {
     static let thumbnailRawSizePercentage = Key("thumbnailRawSizePercentage")
     /// Only for `ThumbnailSizeOption.scaleWithViewport`. Size of displayed thumbnail as % of displayed video, 1 - 100
     static let thumbnailDisplayedSizePercentage = Key("thumbnailDisplayedSizePercentage")
+    /// Whether to enable thumbnail rounded corners
+    static let enableThumbnailRoundedCorners = Key("enableThumbnailRoundedCorners")
+    static let maxThumbnailPreviewCacheSize = Key("maxThumbnailPreviewCacheSize")
 
     /// Music mode
     static let autoSwitchToMusicMode = Key("autoSwitchToMusicMode")
@@ -1028,7 +1027,6 @@ struct Preference {
     .hideLeadingSidebarOnClick: true,
     .hideTrailingSidebarOnClick: true,
     .prefetchPlaylistVideoDuration: true,
-    .roundedCornerRadius: 10.0,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
     .osdPosition: OSDPosition.topLeading.rawValue,
@@ -1076,6 +1074,7 @@ struct Preference {
     .thumbnailFixedLength: 240,
     .thumbnailRawSizePercentage: 75,
     .thumbnailDisplayedSizePercentage: 40,
+    .enableThumbnailRoundedCorners: true,
     .maxThumbnailPreviewCacheSize: 500,
 
     .autoSwitchToMusicMode: true,
