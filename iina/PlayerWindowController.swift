@@ -2843,6 +2843,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
+  var counter: Int = 0
   /// Display time label & thumbnail when mouse over slider
   private func refreshSeekTimeAndThumnail(from event: NSEvent) {
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
@@ -2851,6 +2852,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       timePreviewWhenSeek.isHidden = true
       return
     }
+
+    counter += 1
+
+    log.verbose("COUNT: \(counter)")
 
     let mousePosX = playSlider.convert(event.locationInWindow, from: nil).x
     let originalPosX = event.locationInWindow.x

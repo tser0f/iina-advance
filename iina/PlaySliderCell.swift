@@ -201,23 +201,25 @@ class PlaySliderCell: NSSliderCell {
     NSGraphicsContext.restoreGraphicsState()
 
     // draw chapters
-    NSGraphicsContext.saveGraphicsState()
-    if drawChapters {
-      if let totalSec = info.videoDuration?.second {
-        chapterStrokeColor.setStroke()
-        let chapters = info.chapters
-        if chapters.count > 1 {
-          for chapt in chapters[1...] {
-            let chapPos = CGFloat(chapt.time.second) / CGFloat(totalSec) * barRect.width
-            let linePath = NSBezierPath()
-            linePath.move(to: NSPoint(x: chapPos, y: barRect.origin.y))
-            linePath.line(to: NSPoint(x: chapPos, y: barRect.origin.y + barRect.height))
-            linePath.stroke()
-          }
+    if drawChapters, let totalSec = info.videoDuration?.second {
+      let scaleFactor = controlView?.window?.screen?.screenScaleFactor ?? 1
+      let lineWidth = round(2.5 * scaleFactor)
+
+      NSGraphicsContext.saveGraphicsState()
+      chapterStrokeColor.setStroke()
+      let chapters = info.chapters
+      if chapters.count > 1 {
+        for chapt in chapters[1...] {
+          let chapPos = CGFloat(chapt.time.second) / CGFloat(totalSec) * barRect.width
+          let linePath = NSBezierPath()
+          linePath.lineWidth = lineWidth
+          linePath.move(to: NSPoint(x: chapPos, y: barRect.origin.y))
+          linePath.line(to: NSPoint(x: chapPos, y: barRect.origin.y + barRect.height))
+          linePath.stroke()
         }
       }
+      NSGraphicsContext.restoreGraphicsState()
     }
-    NSGraphicsContext.restoreGraphicsState()
   }
 
   // MARK:- Tracking the Mouse
