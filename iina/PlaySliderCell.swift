@@ -202,8 +202,9 @@ class PlaySliderCell: NSSliderCell {
 
     // draw chapters
     if drawChapters, let totalSec = info.videoDuration?.second {
+      let isRetina = controlView?.window?.screen?.backingScaleFactor ?? 1.0 > 1.0
       let scaleFactor = controlView?.window?.screen?.screenScaleFactor ?? 1
-      let lineWidth = round(2.5 * scaleFactor)
+      let lineWidth = round(1 + (isRetina ? (1.5 / (scaleFactor - 1)) : (1.5 / scaleFactor)))
 
       NSGraphicsContext.saveGraphicsState()
       chapterStrokeColor.setStroke()

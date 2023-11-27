@@ -40,6 +40,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   var loaded = false
+  private var thumbDisplayCounter: Int = 0
 
   @objc let monospacedFont: NSFont = {
     let fontSize = NSFont.systemFontSize(for: .small)
@@ -2843,19 +2844,26 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  var counter: Int = 0
   /// Display time label & thumbnail when mouse over slider
   private func refreshSeekTimeAndThumnail(from event: NSEvent) {
+    let now = Date().timeIntervalSince1970
+
+    thumbDisplayCounter += 1
+    let currentTicket = thumbDisplayCounter
+
+    DispatchQueue.main.async { [self] in
+      guard currentTicket == thumbDisplayCounter else { return }
+      refreshSeekTimeAndThumnailInternal(from: event)
+    }
+  }
+
+  private func refreshSeekTimeAndThumnailInternal(from event: NSEvent) {
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
     guard isMouseInSlider && !isCoveredByOSD else {
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
       return
     }
-
-    counter += 1
-
-    log.verbose("COUNT: \(counter)")
 
     let mousePosX = playSlider.convert(event.locationInWindow, from: nil).x
     let originalPosX = event.locationInWindow.x
@@ -2870,7 +2878,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 //    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
-    if player.info.thumbnailsReady, let rawImage = player.info.getThumbnail(forSecond: previewTime.second)?.image,
+    if player.info.thumbnailsReady, let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
+       let rawImage = ffThumbnail.image,
        let videoParams = player.info.videoParams {
 
       var thumbWidth: Double = rawImage.size.width
@@ -2920,9 +2929,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         thumbHeight = thumbWidth / thumbAspect
       }
 
-      let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
-      thumbnailPeekView.imageView.image = thumbImage
-      thumbnailPeekView.frame.size = thumbImage.size
+      // Rotating and scaling are expensive operations, so reuse the last image if no change is needed
+      if player.info.lastThumbFFTimestamp != ffThumbnail.realTime {
+        player.info.lastThumbFFTimestamp = ffThumbnail.realTime
+        let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
+        thumbnailPeekView.imageView.image = thumbImage
+        thumbnailPeekView.frame.size = thumbImage.size
+      }
 
       let contentView = window!.contentView!
       if currentLayout.oscPosition != .top && currentLayout.topBarPlacement == .outsideViewport {
