@@ -1110,8 +1110,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newAppearance = NSAppearance(iinaTheme: theme)
       window.appearance = newAppearance
 
-      (newAppearance ?? window.effectiveAppearance).applyAppearanceFor { [self] in
-        thumbnailPeekView.refreshColors()
+      // Change to appearance above does not take effect until this task completes. Enqueue a new task to run after this one.
+      DispatchQueue.main.async { [self] in
+        (newAppearance ?? window.effectiveAppearance).applyAppearanceFor {
+          thumbnailPeekView.refreshColors()
+        }
       }
       // See overridden functions for 10.14-
       return
