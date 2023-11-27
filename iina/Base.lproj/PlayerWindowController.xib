@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22155" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22155"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -61,6 +62,7 @@
                 <outlet property="pipOverlayView" destination="Nrz-jZ-Luf" id="EU7-oY-Bwp"/>
                 <outlet property="playButton" destination="gxw-pJ-Lcg" id="t9H-xd-uqj"/>
                 <outlet property="playSlider" destination="eBP-6g-bAT" id="lGv-18-YeQ"/>
+                <outlet property="playSliderHeightConstraint" destination="VU5-c1-ivd" id="NEQ-Hc-xay"/>
                 <outlet property="playbackButtonsHorizontalPaddingConstraint" destination="V3v-73-S9H" id="N0E-eR-w7j"/>
                 <outlet property="playbackButtonsSquareWidthConstraint" destination="7xv-qQ-n43" id="Bu6-zH-TFP"/>
                 <outlet property="rightArrowButton" destination="EIi-qd-glM" id="U46-Gl-e8D"/>
@@ -69,6 +71,7 @@
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePreviewWhenSeek" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
                 <outlet property="timePreviewWhenSeekHorizontalCenterConstraint" destination="ekV-Sh-cEZ" id="zYq-k1-B2g"/>
+                <outlet property="timePreviewWhenSeekVerticalSpaceConstraint" destination="ZlC-qT-aez" id="3PF-D3-K9o"/>
                 <outlet property="titleBarHeightConstraint" destination="fcC-MX-fmN" id="3FJ-wZ-oVK"/>
                 <outlet property="titleBarView" destination="WaC-08-utU" id="Ahh-93-k7q"/>
                 <outlet property="topBarBottomBorder" destination="iA3-pt-6Jm" id="RD4-8v-bHB"/>
@@ -713,6 +716,9 @@
             <subviews>
                 <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eBP-6g-bAT" userLabel="Playback Slider" customClass="PlaySlider" customModule="IINA" customModuleProvider="target">
                     <rect key="frame" x="46" y="5" width="408" height="28"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="20" identifier="playSliderHeightConstraint" id="VU5-c1-ivd"/>
+                    </constraints>
                     <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
                         <action selector="playSliderDidChange:" target="-2" id="UBG-Ky-3rr"/>
@@ -749,7 +755,7 @@
                     </connections>
                 </textField>
                 <textField identifier="Playback-Seek-Time-Label" hidden="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
-                    <rect key="frame" x="229" y="31" width="39" height="11"/>
+                    <rect key="frame" x="229" y="29" width="39" height="11"/>
                     <constraints>
                         <constraint firstAttribute="height" priority="900" constant="11" id="Eis-nn-SIU"/>
                     </constraints>
@@ -763,10 +769,9 @@
             <constraints>
                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="150" id="E6z-SF-UDn"/>
                 <constraint firstItem="GgV-Cc-sk0" firstAttribute="centerY" secondItem="NBD-MV-OuG" secondAttribute="centerY" id="N3P-Qk-arP"/>
-                <constraint firstItem="qOq-6a-7j7" firstAttribute="bottom" secondItem="eBP-6g-bAT" secondAttribute="top" id="Usb-aX-iyc"/>
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="centerX" secondItem="BE1-yC-oJL" secondAttribute="centerX" id="VDD-aU-mmP"/>
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="centerY" secondItem="BE1-yC-oJL" secondAttribute="centerY" id="XFh-GC-Pub"/>
-                <constraint firstItem="qOq-6a-7j7" firstAttribute="top" secondItem="BE1-yC-oJL" secondAttribute="top" id="ZlC-qT-aez"/>
+                <constraint firstItem="qOq-6a-7j7" firstAttribute="top" secondItem="BE1-yC-oJL" secondAttribute="top" constant="2" identifier="timePreviewWhenSeekVerticalSpaceConstraint" id="ZlC-qT-aez"/>
                 <constraint firstItem="eBP-6g-bAT" firstAttribute="centerY" secondItem="NBD-MV-OuG" secondAttribute="centerY" id="dX4-4l-aJM"/>
                 <constraint firstItem="qOq-6a-7j7" firstAttribute="centerX" secondItem="eBP-6g-bAT" secondAttribute="leading" constant="200" identifier="TimePreviewWhenSeekHorizontalCenterConstraint" id="ekV-Sh-cEZ"/>
                 <constraint firstItem="NBD-MV-OuG" firstAttribute="leading" secondItem="BE1-yC-oJL" secondAttribute="leading" id="fcm-ao-T7h"/>

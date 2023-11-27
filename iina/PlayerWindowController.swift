@@ -556,6 +556,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var topOSCHeightConstraint: NSLayoutConstraint!
 
   @IBOutlet weak var timePreviewWhenSeekHorizontalCenterConstraint: NSLayoutConstraint!
+  @IBOutlet weak var timePreviewWhenSeekVerticalSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var playSliderHeightConstraint: NSLayoutConstraint!
 
   // - Outlets: Views
 
@@ -742,8 +744,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }()
 
   lazy var subPopoverView = playlistView.subPopover?.contentViewController?.view
-
-  private var oscFloatingLeadingTrailingConstraint: [NSLayoutConstraint]?
 
   // MARK: - PIP
 

@@ -330,6 +330,10 @@ extension PlayerWindowController {
       }
     }
 
+    if let playSliderHeightConstraint {
+      playSliderHeightConstraint.isActive = false
+    }
+
     // Allow for showing/hiding each button individually
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
@@ -379,6 +383,10 @@ extension PlayerWindowController {
     let showBottomBarTopBorder = transition.outputGeometry.outsideBottomBarHeight > 0 && outputLayout.bottomBarPlacement == .outsideViewport && !outputLayout.isMusicMode
     bottomBarTopBorder.isHidden = !showBottomBarTopBorder
 
+    if let timePreviewWhenSeekVerticalSpaceConstraint {
+      timePreviewWhenSeekVerticalSpaceConstraint.isActive = false
+    }
+
     // [Re-]add OSC:
     if outputLayout.enableOSC {
       switch outputLayout.oscPosition {
@@ -387,6 +395,15 @@ extension PlayerWindowController {
         currentControlBar = controlBarTop
         addControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
+        if let timePreviewWhenSeekVerticalSpaceConstraint {
+          timePreviewWhenSeekVerticalSpaceConstraint.isActive = false
+        }
+
+        playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: OSCToolbarButton.oscBarHeight)
+        playSliderHeightConstraint.isActive = true
+
+        timePreviewWhenSeekVerticalSpaceConstraint = timePreviewWhenSeek.bottomAnchor.constraint(equalTo: timePreviewWhenSeek.superview!.bottomAnchor, constant: -4)
+        timePreviewWhenSeekVerticalSpaceConstraint.isActive = true
 
       case .bottom:
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
@@ -398,8 +415,17 @@ extension PlayerWindowController {
         addControlBarViews(to: oscBottomMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
+        playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: OSCToolbarButton.oscBarHeight)
+        playSliderHeightConstraint.isActive = true
+
+        timePreviewWhenSeekVerticalSpaceConstraint = timePreviewWhenSeek.topAnchor.constraint(equalTo: timePreviewWhenSeek.superview!.topAnchor, constant: 2)
+        timePreviewWhenSeekVerticalSpaceConstraint.isActive = true
+
       case .floating:
-        // Wait to add these in the next task. For some reason, adding too soon here can cause volume slider to disappear
+        timePreviewWhenSeekVerticalSpaceConstraint = timePreviewWhenSeek.bottomAnchor.constraint(equalTo: timePreviewWhenSeek.superview!.bottomAnchor, constant: -4)
+        timePreviewWhenSeekVerticalSpaceConstraint.isActive = true
+
+        // Wait to add the subviews in the next task. For some reason, adding too soon here can cause volume slider to disappear
         break
       }
     }
