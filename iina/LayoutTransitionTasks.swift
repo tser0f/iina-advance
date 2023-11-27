@@ -1289,7 +1289,6 @@ extension PlayerWindowController {
 
     thumbnailPeekView.isHidden = true
     timePreviewWhenSeek.isHidden = true
-    isMouseInSlider = false
   }
 
   private func updatePanelBlendingModes(to outputLayout: LayoutState) {

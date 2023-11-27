@@ -155,7 +155,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // might use another obj to handle slider?
   var isMouseInWindow: Bool = false
-  var isMouseInSlider: Bool = false
 
   var isFastforwarding: Bool = false
 
@@ -1631,7 +1630,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       showFadeableViews(duration: 0)
     case .playSlider:
       if controlBarFloating.isDragging { return }
-      isMouseInSlider = true
       refreshSeekTimeAndThumnail(from: event)
     case .customTitleBar:
       customTitleBar?.leadingTitleBarView.mouseEntered(with: event)
@@ -1657,7 +1655,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         resetFadeTimer()
       }
     case .playSlider:
-      isMouseInSlider = false
       refreshSeekTimeAndThumnail(from: event)
     case .customTitleBar:
       customTitleBar?.leadingTitleBarView.mouseExited(with: event)
@@ -2857,11 +2854,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   private func refreshSeekTimeAndThumnailInternal(from event: NSEvent) {
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
-    guard isMouseInSlider && !isCoveredByOSD else {
+    let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
+    guard isMouseInPlaySlider && !isCoveredByOSD else {
       thumbnailPeekView.isHidden = true
       timePreviewWhenSeek.isHidden = true
       return
     }
+    timePreviewWhenSeek.isHidden = false
 
     let mousePosX = playSlider.convert(event.locationInWindow, from: nil).x
     let originalPosX = event.locationInWindow.x
@@ -2876,98 +2875,100 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 //    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
     timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
 
-    if player.info.thumbnailsReady, let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
-       let rawImage = ffThumbnail.image,
-       let videoParams = player.info.videoParams {
+    // Thumbnail:
+    guard player.info.thumbnailsReady,
+            let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
+          let rawImage = ffThumbnail.image,
+          let videoParams = player.info.videoParams else {
+      thumbnailPeekView.isHidden = true
+      return
+    }
 
-      var thumbWidth: Double = rawImage.size.width
-      var thumbHeight: Double = rawImage.size.height
-      var thumbAspect = thumbWidth / thumbHeight
+    var thumbWidth: Double = rawImage.size.width
+    var thumbHeight: Double = rawImage.size.height
+    var thumbAspect = thumbWidth / thumbHeight
 
-      if let drAspect = player.info.videoParams?.videoDisplayRotatedAspect,
-         player.info.thumbnailWidth > 0 {
-        // The aspect ratio of some videos is different at display time. May need to resize these videos
-        // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
-        // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
-        if thumbAspect != drAspect {
-          thumbHeight = (thumbWidth / drAspect).rounded()
-          /// Recalculate this for later use (will use it and `thumbHeight`, and derive width)
-          thumbAspect = thumbWidth / thumbHeight
-        }
+    if let drAspect = player.info.videoParams?.videoDisplayRotatedAspect,
+       player.info.thumbnailWidth > 0 {
+      // The aspect ratio of some videos is different at display time. May need to resize these videos
+      // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
+      // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
+      if thumbAspect != drAspect {
+        thumbHeight = (thumbWidth / drAspect).rounded()
+        /// Recalculate this for later use (will use it and `thumbHeight`, and derive width)
+        thumbAspect = thumbWidth / thumbHeight
       }
+    }
 
-      /// Calculate `availableHeight` (viewport height, minus top & bottom bars)
-      /// Easy to get `insideTopBarHeight`, but need to work a bit to get `insideBottomBarHeight`
-      let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
-      let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight - thumbnailExtraOffsetY - thumbnailExtraOffsetY
+    /// Calculate `availableHeight` (viewport height, minus top & bottom bars)
+    /// Easy to get `insideTopBarHeight`, but need to work a bit to get `insideBottomBarHeight`
+    let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
+    let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight - thumbnailExtraOffsetY - thumbnailExtraOffsetY
 
-      let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
-      switch sizeOption {
-      case .fixedSize:
-        // Stored thumb size should be correct (but may need to be scaled down)
-        break
-      case .scaleWithViewport:
-        // Scale thumbnail as percentage of available height
-        let percentage = min(1, max(0, Preference.double(for: .thumbnailDisplayedSizePercentage) / 100.0))
-        thumbHeight = availableHeight * percentage
-      }
+    let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
+    switch sizeOption {
+    case .fixedSize:
+      // Stored thumb size should be correct (but may need to be scaled down)
+      break
+    case .scaleWithViewport:
+      // Scale thumbnail as percentage of available height
+      let percentage = min(1, max(0, Preference.double(for: .thumbnailDisplayedSizePercentage) / 100.0))
+      thumbHeight = availableHeight * percentage
+    }
 
-      // Thumb too tall?
-      if thumbHeight > availableHeight {
-        // Scale down thumbnail so it doesn't overlap top or bottom bars
-        thumbHeight = availableHeight
-      }
+    // Thumb too tall?
+    if thumbHeight > availableHeight {
+      // Scale down thumbnail so it doesn't overlap top or bottom bars
+      thumbHeight = availableHeight
+    }
 
-      thumbWidth = thumbHeight * thumbAspect
+    thumbWidth = thumbHeight * thumbAspect
 
-      // Also scale down thumbnail if it's wider than the viewport
-      let availableWidth = viewportView.frame.width - thumbnailExtraOffsetX - thumbnailExtraOffsetX
-      if thumbWidth > availableWidth {
-        thumbWidth = availableWidth
-        thumbHeight = thumbWidth / thumbAspect
-      }
+    // Also scale down thumbnail if it's wider than the viewport
+    let availableWidth = viewportView.frame.width - thumbnailExtraOffsetX - thumbnailExtraOffsetX
+    if thumbWidth > availableWidth {
+      thumbWidth = availableWidth
+      thumbHeight = thumbWidth / thumbAspect
+    }
 
-      // Rotating and scaling are expensive operations, so reuse the last image if no change is needed
-      if player.info.lastThumbFFTimestamp != ffThumbnail.realTime {
-        player.info.lastThumbFFTimestamp = ffThumbnail.realTime
-        let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
-        thumbnailPeekView.imageView.image = thumbImage
-        thumbnailPeekView.frame.size = thumbImage.size
-      }
+    // Rotating and scaling are expensive operations, so reuse the last image if no change is needed
+    if player.info.lastThumbFFTimestamp != ffThumbnail.realTime {
+      player.info.lastThumbFFTimestamp = ffThumbnail.realTime
+      let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
+      thumbnailPeekView.imageView.image = thumbImage
+      thumbnailPeekView.frame.size = thumbImage.size
+    }
 
-      let contentView = window!.contentView!
-      if currentLayout.oscPosition != .top && currentLayout.topBarPlacement == .outsideViewport {
-        // If top bar is "outside", do not allow thumbnail to overlap onto it
-        contentView.addSubview(thumbnailPeekView, positioned: .below, relativeTo: topBarView)
-      } else {
-        // Otherwise allow thumbnail to occlude top bar (could find a clean look otherwise which works with sidebars and various options)
-        contentView.addSubview(thumbnailPeekView, positioned: .above, relativeTo: topBarView)
-      }
+    let contentView = window!.contentView!
+    if currentLayout.oscPosition != .top && currentLayout.topBarPlacement == .outsideViewport {
+      // If top bar is "outside", do not allow thumbnail to overlap onto it
+      contentView.addSubview(thumbnailPeekView, positioned: .below, relativeTo: topBarView)
+    } else {
+      // Otherwise allow thumbnail to occlude top bar (could find a clean look otherwise which works with sidebars and various options)
+      contentView.addSubview(thumbnailPeekView, positioned: .above, relativeTo: topBarView)
+    }
 
-      let oscOriginInWindowY = currentControlBar!.superview!.convert(currentControlBar!.frame.origin, to: nil).y
-      let oscHeight = currentControlBar!.frame.size.height
-      let showAbove = canShowThumbnailAbove(oscOriginInWindowY: oscOriginInWindowY, oscHeight: oscHeight, thumbnailHeight: thumbHeight)
-      let thumbOriginY: CGFloat
-      if showAbove {
-        // Show thumbnail above seek time, which is above slider
-        thumbOriginY = oscOriginInWindowY + oscHeight + thumbnailExtraOffsetY
-      } else {
-        // Show thumbnail below slider
-        thumbOriginY = max(thumbnailExtraOffsetY, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
-      }
-      // Constrain X origin so that it stays entirely inside the viewport (and not inside the outside sidebars)
-      let minX = currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
-      let maxX = availableWidth + currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
-      let thumbOriginX = min(max(minX, round(originalPosX - thumbWidth / 2)), maxX - thumbWidth)
-      thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
+    let oscOriginInWindowY = currentControlBar!.superview!.convert(currentControlBar!.frame.origin, to: nil).y
+    let oscHeight = currentControlBar!.frame.size.height
+    let showAbove = canShowThumbnailAbove(oscOriginInWindowY: oscOriginInWindowY, oscHeight: oscHeight, thumbnailHeight: thumbHeight)
+    let thumbOriginY: CGFloat
+    if showAbove {
+      // Show thumbnail above seek time, which is above slider
+      thumbOriginY = oscOriginInWindowY + oscHeight + thumbnailExtraOffsetY
+    } else {
+      // Show thumbnail below slider
+      thumbOriginY = max(thumbnailExtraOffsetY, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
+    }
+    // Constrain X origin so that it stays entirely inside the viewport (and not inside the outside sidebars)
+    let minX = currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
+    let maxX = availableWidth + currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
+    let thumbOriginX = min(max(minX, round(originalPosX - thumbWidth / 2)), maxX - thumbWidth)
+    thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
 
-      thumbnailPeekView.refreshStyle()
+    thumbnailPeekView.refreshStyle()
 
 //      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
-      thumbnailPeekView.isHidden = false
-    } else {
-      thumbnailPeekView.isHidden = true
-    }
+    thumbnailPeekView.isHidden = false
   }
 
   func updateBufferIndicatorView() {
