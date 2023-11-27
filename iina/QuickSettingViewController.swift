@@ -273,7 +273,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       aspectSegment.selectedSegment = -1
     }
 
-    if let index = AppData.cropsInPanel.firstIndex(of: player.info.unsureCrop) {
+    if let index = AppData.cropsInPanel.firstIndex(of: player.info.selectedCropLabel) {
       cropSegment.selectedSegment = index
     } else {
       // Select last segment ("Custom...")
@@ -579,9 +579,12 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       // User clicked on "Custom...": show custom crop UI
       windowController.enterInteractiveMode(.crop)
     } else {
+      guard sender.selectedSegment < AppData.cropsInPanel.count else {
+        player.log.error("Bad crop segment: \(sender.selectedSegment)")
+        return
+      }
       let cropStr = AppData.cropsInPanel[sender.selectedSegment]
       player.setCrop(fromString: cropStr)
-      player.sendOSD(.crop(cropStr))
     }
   }
 

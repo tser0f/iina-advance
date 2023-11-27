@@ -2846,8 +2846,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /// Display time label & thumbnail when mouse over slider
   private func refreshSeekTimeAndThumnail(from event: NSEvent) {
-    let now = Date().timeIntervalSince1970
-
     thumbDisplayCounter += 1
     let currentTicket = thumbDisplayCounter
 

@@ -130,7 +130,10 @@ class PlayerCore: NSObject {
   // TODO: fold hideOSDTimer into this
   var syncUITimer: Timer?
 
+  // OSD
   var enableOSD: Bool = true
+  private var osdLastPosition: Double? = nil
+  private var osdLastDuration: Double? = nil
 
   /// Whether shutdown of this player has been initiated.
   @Atomic var isShuttingDown = false
@@ -1116,17 +1119,25 @@ class PlayerCore: NSObject {
       let vf = MPVFilter.crop(w: Int(cropped.width), h: Int(cropped.height), x: nil, y: nil)
       vf.label = Constants.FilterLabel.crop
       if setCrop(fromFilter: vf) {
-        info.unsureCrop = str
+        updateCropUI(to: str)
         return
       }
     } else {
       Logger.log("Requested crop string is invalid: \(str.quoted)", level: .error, subsystem: subsystem)
       if let filter = info.cropFilter {
         Logger.log("Setting crop to \("None".quoted) and removing crop filter", level: .verbose, subsystem: subsystem)
-        let _ = removeVideoFilter(filter)
-        info.unsureCrop = "None"
+        removeVideoFilter(filter)
+        updateCropUI(to: AppData.cropNone)
       }
     }
+  }
+
+  func updateCropUI(to newCropLabel: String) {
+    guard info.selectedCropLabel != newCropLabel else { return }
+    info.selectedCropLabel = newCropLabel
+
+    let osdLabel = newCropLabel.isEmpty ? "Custom" : newCropLabel
+    sendOSD(.crop(osdLabel))
   }
 
   @discardableResult
@@ -1253,6 +1264,7 @@ class PlayerCore: NSObject {
   /// remove a filter.
   /// - Parameter filter: The filter to remove.
   /// - Returns: `true` if the filter was successfully removed, `false` otherwise.
+  @discardableResult
   func removeVideoFilter(_ filter: MPVFilter) -> Bool {
     if let label = filter.label {
       // Has label: we care most about these
@@ -1278,7 +1290,7 @@ class PlayerCore: NSObject {
       switch filter.label {
       case Constants.FilterLabel.crop:
         info.cropFilter = nil
-        info.unsureCrop = "None"
+        updateCropUI(to: AppData.cropNone)
       case Constants.FilterLabel.flip:
         info.flipFilter = nil
       case Constants.FilterLabel.delogo:
@@ -1647,6 +1659,7 @@ class PlayerCore: NSObject {
       videoView.displayActive()
     }
 
+    syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
     sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
@@ -2061,24 +2074,26 @@ class PlayerCore: NSObject {
     saveState()
   }
 
-  private var osdLastPosition: Double? = nil
-  private var osdLastDuration: Double? = nil
-
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
     /// Note: use `windowController.loaded` (querying `windowController.isWindowLoaded` will initialize windowController unexpectedly)
     guard windowController.loaded && Preference.bool(for: .enableOSD) else { return }
-    if info.disableOSDForFileLoading && !external {
-      guard case .fileStart = osd else {
-        return
-      }
-    }
 
+    // Many redundant messages are sent from mpv. Try to filter them out here
     switch osd {
     case .seek(_, _):
       syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
       // Try to avoid duplicate seek messages which are emitted when changing video settings while paused
-      guard let position = info.videoPosition?.second, let duration = info.videoDuration?.second,
-              position != osdLastPosition || duration != osdLastDuration else {
+      guard let position = info.videoPosition?.second, let duration = info.videoDuration?.second else {
+        log.verbose("Ignoring request to show OSD seek: position or duration is missing")
+        return
+      }
+      // There seem to be precision errors which break equality when comparing values beyond 6 decimal places.
+      // Just round to nearest 1/1000000 sec for comparison.
+      let newPosRounded = round(position * AppData.osdSeekSubSecPrecisionComparison)
+      let newDurRounded = round(duration * AppData.osdSeekSubSecPrecisionComparison)
+      let oldPosRounded = round((osdLastPosition ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+      let oldDurRounded = round((osdLastDuration ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+      guard newPosRounded != oldPosRounded || newDurRounded != oldDurRounded else {
         log.verbose("Ignoring request to show OSD seek; position/duration has not changed")
         return
       }
@@ -2090,6 +2105,12 @@ class PlayerCore: NSObject {
       osdLastDuration = info.videoDuration?.second
     default:
       break
+    }
+
+    if info.disableOSDForFileLoading && !external {
+      guard case .fileStart = osd else {
+        return
+      }
     }
 
     DispatchQueue.main.async { [self] in
@@ -2368,7 +2389,6 @@ class PlayerCore: NSObject {
     case Constants.FilterLabel.crop:
       // CROP
       info.cropFilter = filter
-      info.unsureCrop = ""  // default to "Custom" crop in Quick Settings panel
       if let p = filter.params, let wStr = p["w"], let hStr = p["h"], p["x"] == nil && p["y"] == nil, let w = Double(wStr), let h = Double(hStr) {
         // Probably a selection from the Quick Settings panel. See if there are any matches.
         // Truncate to 2 decimal places precision for comparison.
@@ -2378,16 +2398,19 @@ class PlayerCore: NSObject {
           if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
             let aspectRatio = Int((width / height) * 100)
             if aspectRatio == selectedAspect {
-              sendOSD(.crop(cropLabel))
-              info.unsureCrop = cropLabel
-              break
+              updateCropUI(to: cropLabel)
+              return
             }
           }
         }
       } else if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
         // Probably a custom crop
         sendOSD(.crop("(\(x), \(y)) (\(w)\u{d7}\(h))"))
+        info.selectedCropLabel = ""
+        return
       }
+      // Default to "Custom" crop in Quick Settings panel
+      updateCropUI(to: "")
     case Constants.FilterLabel.flip:
       info.flipFilter = filter
     case Constants.FilterLabel.mirror:
@@ -2395,7 +2418,7 @@ class PlayerCore: NSObject {
     case Constants.FilterLabel.delogo:
       info.delogoFilter = filter
     default:
-      break
+      return
     }
   }
 

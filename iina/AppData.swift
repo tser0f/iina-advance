@@ -43,6 +43,8 @@ struct AppData {
   /// restored when the movies is played again. Using the following value as the minimum for loop points avoids this issue.
   static let minLoopPointTime = 0.000001
 
+  static let osdSeekSubSecPrecisionComparison: Double = 1000000
+
   /** generate aspect and crop options in menu */
   static let aspects: [String] = ["4:3", "5:4", "16:9", "16:10", "1:1", "3:2", "2.21:1", "2.35:1", "2.39:1",
                                   "3:4", "4:5", "9:16", "10:16", "2:3", "1:2.35", "1:2.39", "21:9"]
@@ -51,6 +53,7 @@ struct AppData {
   static let aspectsInPanel: [String] = [defaultAspectName, "4:3", "16:9", "16:10", "21:9", "5:4"]
   static let cropsInPanel: [String] = ["None", "4:3", "16:9", "16:10", "21:9", "5:4"]
 
+  static let cropNone = "None"
   static let rotations: [Int] = [0, 90, 180, 270]
   static let scaleStep: CGFloat = 25
 
