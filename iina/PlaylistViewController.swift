@@ -1072,5 +1072,5 @@ class SubPopoverViewController: NSViewController, NSTableViewDelegate, NSTableVi
 }
 
 class ChapterTableCellView: NSTableCellView {
-  @IBOutlet weak var durationTextField: NSTextField!
+  @IBOutlet weak var durationTextField: EditableTextField!
 }
