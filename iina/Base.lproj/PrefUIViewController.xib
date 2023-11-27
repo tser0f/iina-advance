@@ -1077,7 +1077,6 @@
                             </subviews>
                             <constraints>
                                 <constraint firstItem="GbG-nw-ict" firstAttribute="firstBaseline" secondItem="jbc-22-59W" secondAttribute="firstBaseline" id="Aq7-xU-jxu"/>
-                                <constraint firstItem="jbc-22-59W" firstAttribute="height" secondItem="bVg-yv-fOx" secondAttribute="height" id="C4M-5W-wEp"/>
                                 <constraint firstAttribute="trailing" secondItem="GbG-nw-ict" secondAttribute="trailing" id="aoF-K0-KkN"/>
                                 <constraint firstItem="jbc-22-59W" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="bVg-yv-fOx" secondAttribute="trailing" constant="8" id="hLc-PK-ole"/>
                                 <constraint firstItem="GbG-nw-ict" firstAttribute="leading" secondItem="jbc-22-59W" secondAttribute="trailing" constant="8" id="jsV-Tp-iPd"/>
@@ -1132,6 +1131,9 @@
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>
+                                    <constraints>
+                                        <constraint firstAttribute="height" constant="16" id="ZVj-CE-mjd"/>
+                                    </constraints>
                                     <connections>
                                         <binding destination="lH7-Vv-0M1" name="value" keyPath="values.controlBarStickToCenter" id="Nqp-F5-12U"/>
                                     </connections>
@@ -1394,11 +1396,9 @@
                 <constraint firstItem="4XH-GU-VhV" firstAttribute="top" secondItem="gjB-It-iFS" secondAttribute="top" constant="8" id="SUP-it-bME"/>
                 <constraint firstItem="gVR-so-xgt" firstAttribute="top" secondItem="4SE-r9-OnD" secondAttribute="bottom" constant="12" id="TAm-p2-Hv6"/>
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="height" secondItem="nDu-Yq-tPI" secondAttribute="height" id="TCG-3o-gTV"/>
-                <constraint firstItem="HgG-px-UUt" firstAttribute="height" secondItem="jbc-22-59W" secondAttribute="height" id="TFK-n0-TM0"/>
                 <constraint firstItem="q8D-b2-H0y" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="gjB-It-iFS" secondAttribute="leading" priority="499" constant="120" id="TML-nx-KjJ"/>
                 <constraint firstItem="q8D-b2-H0y" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="gjB-It-iFS" secondAttribute="leading" id="V4u-kf-cdn"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="4SE-r9-OnD" secondAttribute="trailing" id="YVV-Zk-8Iw"/>
-                <constraint firstItem="OMM-mG-Uts" firstAttribute="height" secondItem="bVg-yv-fOx" secondAttribute="height" id="Yhh-hb-boj"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="OMM-mG-Uts" secondAttribute="trailing" id="Yxo-AW-upP"/>
                 <constraint firstItem="vC3-U1-cHH" firstAttribute="centerY" secondItem="2Fc-2d-hIJ" secondAttribute="centerY" id="ZIt-uS-S1A"/>
                 <constraint firstAttribute="bottom" secondItem="0eU-xI-byi" secondAttribute="bottom" constant="8" id="dsz-0o-3UL"/>
@@ -1946,13 +1946,13 @@
                                 </textField>
                                 <popUpButton tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="n4r-UT-AYn" userLabel="ThumbnailSizeOption Popup">
                                     <rect key="frame" x="111" y="-4" width="153" height="25"/>
-                                    <popUpButtonCell key="cell" type="push" title="Scale with Window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="0ZO-LV-I0e" id="5ql-tw-nwF" userLabel="ThumbnailSizeOption-Popup Button Cell">
+                                    <popUpButtonCell key="cell" type="push" title="Scale with Window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="2" imageScaling="proportionallyDown" inset="2" selectedItem="0ZO-LV-I0e" id="5ql-tw-nwF" userLabel="ThumbnailSizeOption-Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="kCy-K1-JTv">
                                             <items>
                                                 <menuItem title="Constant" tag="1" id="JME-H5-i3H" userLabel="Fixed"/>
-                                                <menuItem title="Scale with Window" tag="2" id="0ZO-LV-I0e"/>
+                                                <menuItem title="Scale with Window" state="on" tag="2" id="0ZO-LV-I0e"/>
                                             </items>
                                         </menu>
                                     </popUpButtonCell>

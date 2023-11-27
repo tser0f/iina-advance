@@ -420,7 +420,7 @@ extension PlayerWindowController {
         playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: OSCToolbarButton.oscBarHeight)
         playSliderHeightConstraint.isActive = true
 
-        let timeLabelOffset = (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4
+        let timeLabelOffset = max(-1, (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 - 2)
         timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.topAnchor.constraint(equalTo: timePositionHoverLabel.superview!.topAnchor, constant: timeLabelOffset)
         timePositionHoverLabelVerticalSpaceConstraint.isActive = true
 
