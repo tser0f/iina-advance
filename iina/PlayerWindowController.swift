@@ -18,6 +18,14 @@ fileprivate let thumbnailExtraOffsetY: CGFloat = 12
 // MARK: - Constants
 
 class PlayerWindowController: NSWindowController, NSWindowDelegate {
+  enum TrackingArea: Int {
+    static let key: String = "area"
+
+    case playerWindow = 0
+    case playSlider
+    case customTitleBar
+  }
+
   unowned var player: PlayerCore
   unowned var log: Logger.Subsystem {
     return player.log
@@ -1607,34 +1615,35 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   override func mouseEntered(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
-    guard let obj = event.trackingArea?.userInfo?["obj"] as? Int else {
+    guard let area = event.trackingArea?.userInfo?[TrackingArea.key] as? TrackingArea else {
       log.warn("No data for tracking area")
       return
     }
     mouseExitEnterCount += 1
-    if obj == 0 {
-      // player window
+
+    switch area {
+    case .playerWindow:
       isMouseInWindow = true
       showFadeableViews(duration: 0)
-    } else if obj == 1 {
+    case .playSlider:
       if controlBarFloating.isDragging { return }
-      // slider
       isMouseInSlider = true
       refreshSeekTimeAndThumnail(from: event)
-    } else if obj == 2 {
+    case .customTitleBar:
       customTitleBar?.leadingTitleBarView.mouseEntered(with: event)
     }
   }
 
   override func mouseExited(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
-    guard let obj = event.trackingArea?.userInfo?["obj"] as? Int else {
+    guard let area = event.trackingArea?.userInfo?[TrackingArea.key] as? TrackingArea else {
       log.warn("No data for tracking area")
       return
     }
     mouseExitEnterCount += 1
-    if obj == 0 {
-      // player window
+
+    switch area {
+    case .playerWindow:  // player window
       isMouseInWindow = false
       if controlBarFloating.isDragging { return }
       if !isAnimating && Preference.bool(for: .hideFadeableViewsWhenOutsideWindow) {
@@ -1643,11 +1652,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // Closes loophole in case cursor hovered over OSC before exiting (in which case timer was destroyed)
         resetFadeTimer()
       }
-    } else if obj == 1 {
-      // slider
+    case .playSlider:  // slider
       isMouseInSlider = false
       refreshSeekTimeAndThumnail(from: event)
-    } else if obj == 2 {
+    case .customTitleBar:
       customTitleBar?.leadingTitleBarView.mouseExited(with: event)
     }
   }
@@ -1734,20 +1742,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if cv.trackingAreas.isEmpty {
       cv.addTrackingArea(NSTrackingArea(rect: cv.bounds,
                                         options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
-                                        owner: self, userInfo: ["obj": 0]))
+                                        owner: self, userInfo: [TrackingArea.key: TrackingArea.playerWindow]))
     }
     if playSlider.trackingAreas.isEmpty {
       playSlider.addTrackingArea(NSTrackingArea(rect: playSlider.bounds,
                                                 options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
-                                                owner: self, userInfo: ["obj": 1]))
+                                                owner: self, userInfo: [TrackingArea.key: TrackingArea.playSlider]))
     }
     // Track the thumbs on the progress bar representing the A-B loop points and treat them as part
     // of the slider.
     if playSlider.abLoopA.trackingAreas.count <= 1 {
-      playSlider.abLoopA.addTrackingArea(NSTrackingArea(rect: playSlider.abLoopA.bounds, options:  [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved], owner: self, userInfo: ["obj": 1]))
+      playSlider.abLoopA.addTrackingArea(NSTrackingArea(rect: playSlider.abLoopA.bounds, options:  [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved], owner: self, userInfo: [TrackingArea.key: TrackingArea.playSlider]))
     }
     if playSlider.abLoopB.trackingAreas.count <= 1 {
-      playSlider.abLoopB.addTrackingArea(NSTrackingArea(rect: playSlider.abLoopB.bounds, options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved], owner: self, userInfo: ["obj": 1]))
+      playSlider.abLoopB.addTrackingArea(NSTrackingArea(rect: playSlider.abLoopB.bounds, options: [.activeAlways, .enabledDuringMouseDrag, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved], owner: self, userInfo: [TrackingArea.key: TrackingArea.playSlider]))
     }
 
     // truncate middle for title

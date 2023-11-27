@@ -16,7 +16,7 @@ fileprivate let MenuItemTagCopy = 602
 fileprivate let MenuItemTagPaste = 603
 fileprivate let MenuItemTagDelete = 604
 
-fileprivate let isPlayingTextBlendFraction: CGFloat = 0.4
+fileprivate let isPlayingTextBlendFraction: CGFloat = 0.5
 
 class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, SidebarTabGroupViewController, NSMenuItemValidation {
 
@@ -200,7 +200,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       popoverView.trackingAreas.isEmpty {
       popoverView.addTrackingArea(NSTrackingArea(rect: popoverView.bounds,
                                                  options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited, .mouseMoved],
-                                                 owner: windowController, userInfo: ["obj": 0]))
+                                                 owner: windowController, userInfo: [PlayerWindowController.TrackingArea.key: PlayerWindowController.TrackingArea.playerWindow]))
     }
     view.layoutSubtreeIfNeeded()
   }
@@ -626,7 +626,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
             }
           }
           if let cached = self.player.info.getCachedVideoDurationAndProgress(item.filename),
-            let duration = cached.duration {
+             let duration = cached.duration {
             // if it's cached
             if duration > 0 {
               // if FFmpeg got the duration successfully
@@ -650,7 +650,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
               self.player.refreshCachedVideoInfo(forVideoPath: item.filename)
               // Only schedule a reload if data was obtained and cached to avoid looping
               if let cached = self.player.info.getCachedVideoDurationAndProgress(item.filename),
-                  let duration = cached.duration, duration > 0 {
+                 let duration = cached.duration, duration > 0 {
                 // if FFmpeg got the duration successfully
                 self.refreshTotalLength()
                 DispatchQueue.main.async {
@@ -662,7 +662,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         }
         // sub button
         if !info.isMatchingSubtitles,
-          let matchedSubs = player.info.getMatchedSubs(item.filename), !matchedSubs.isEmpty {
+           let matchedSubs = player.info.getMatchedSubs(item.filename), !matchedSubs.isEmpty {
           cellView.setDisplaySubButton(true)
         } else {
           cellView.setDisplaySubButton(false)
@@ -682,16 +682,19 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       // next chapter time
       let nextChapterTime = chapters[at: row+1]?.time ?? .infinite
       // construct view
+      let isCurrentChapter = info.chapter == row
+      let textColor = isCurrentChapter ? isPlayingTextColor : .controlTextColor
 
       if identifier == .isChosen {
         // left column
-        v.textField?.stringValue = (info.chapter == row) ? Constants.String.play : ""
+        v.setTitle(isCurrentChapter ? Constants.String.play : "", textColor: textColor)
         return v
       } else if identifier == .trackName {
         // right column
+        let titleString = chapter.title.isEmpty ? "Chapter \(row)" : chapter.title
+        v.setTitle(titleString, textColor: textColor)
         let cellView = v as! ChapterTableCellView
-        cellView.setTitle(chapter.title.isEmpty ? "Chapter \(row)" : chapter.title)
-        cellView.durationTextField.stringValue = "\(chapter.time.stringRepresentation) → \(nextChapterTime.stringRepresentation)"
+        cellView.durationTextField.setText("\(chapter.time.stringRepresentation) → \(nextChapterTime.stringRepresentation)", textColor: textColor)
         return cellView
       } else {
         return nil
@@ -986,13 +989,6 @@ class PlaylistTrackCellView: NSTableCellView {
     }
   }
 
-  func setTitle(_ title: String, textColor: NSColor) {
-    guard let textField = textField else { return }
-    textField.setFormattedText(stringValue: title, textColor: textColor)
-    textField.stringValue = title
-    textField.toolTip = title
-  }
-
   override func prepareForReuse() {
     super.prepareForReuse()
     playbackProgressView.percentage = 0
@@ -1077,9 +1073,4 @@ class SubPopoverViewController: NSViewController, NSTableViewDelegate, NSTableVi
 
 class ChapterTableCellView: NSTableCellView {
   @IBOutlet weak var durationTextField: NSTextField!
-
-  func setTitle(_ title: String) {
-    textField?.stringValue = title
-    textField?.toolTip = title
-  }
 }

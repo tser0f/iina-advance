@@ -72,7 +72,7 @@ class CustomTitleBarViewController: NSViewController {
         /// This solution works better than using `window` as owner, because with that the green button would get stuck with highlight
         /// when menu was shown.
         // FIXME: zoom button context menu items are grayed out
-        btn.addTrackingArea(NSTrackingArea(rect: btn.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: leadingStackView, userInfo: ["obj": 2]))
+        btn.addTrackingArea(NSTrackingArea(rect: btn.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: leadingStackView, userInfo: [PlayerWindowController.TrackingArea.key: PlayerWindowController.TrackingArea.customTitleBar]))
       }
     }
 

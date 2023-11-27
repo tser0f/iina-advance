@@ -647,6 +647,12 @@ extension NSTextField {
     }
   }
 
+  func setText(_ textContent: String, textColor: NSColor) {
+    setFormattedText(stringValue: textContent, textColor: textColor)
+    stringValue = textContent
+    toolTip = textContent
+  }
+
   func setFormattedText(stringValue: String, textColor: NSColor? = nil,
                         strikethrough: Bool = false, italic: Bool = false) {
     let attrString = NSMutableAttributedString(string: stringValue)
@@ -1021,6 +1027,12 @@ extension NSWindow {
       return true
     }
     return false
+  }
+}
+
+extension NSTableCellView {
+  func setTitle(_ title: String, textColor: NSColor) {
+    textField?.setText(title, textColor: textColor)
   }
 }
 
