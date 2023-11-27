@@ -183,6 +183,7 @@
 		D19CF7162AB846D300511F80 /* MusicModeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */; };
 		D19F9DAA28645C860054CC45 /* EditableTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19F9DA928645C860054CC45 /* EditableTableView.swift */; };
 		D1A44D8A2A5E18D00089B283 /* PlayerWindowGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A44D892A5E18D00089B283 /* PlayerWindowGeometry.swift */; };
+		D1A4D9882B1486A10009AB4E /* LegacyMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A4D9872B1486A10009AB4E /* LegacyMigration.swift */; };
 		D1A8878C29D16452000D1AE4 /* RotationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A8878B29D16452000D1AE4 /* RotationHandler.swift */; };
 		D1A8878E29D1696C000D1AE4 /* Sidebars.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A8878D29D1696C000D1AE4 /* Sidebars.swift */; };
 		D1AD325A2ACC078600F86EE8 /* LayoutState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1AD32592ACC078600F86EE8 /* LayoutState.swift */; };
@@ -1568,6 +1569,7 @@
 		D19CF7152AB846D300511F80 /* MusicModeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicModeGeometry.swift; sourceTree = "<group>"; };
 		D19F9DA928645C860054CC45 /* EditableTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableTableView.swift; sourceTree = "<group>"; };
 		D1A44D892A5E18D00089B283 /* PlayerWindowGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerWindowGeometry.swift; sourceTree = "<group>"; };
+		D1A4D9872B1486A10009AB4E /* LegacyMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyMigration.swift; sourceTree = "<group>"; };
 		D1A8878B29D16452000D1AE4 /* RotationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationHandler.swift; sourceTree = "<group>"; };
 		D1A8878D29D1696C000D1AE4 /* Sidebars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebars.swift; sourceTree = "<group>"; };
 		D1AD32592ACC078600F86EE8 /* LayoutState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutState.swift; sourceTree = "<group>"; };
@@ -2300,6 +2302,7 @@
 				D1DC673028ED682100C419CB /* RemainingRemovalTracker.swift */,
 				51C1BA39291CA76700C1208A /* InfoDictionary.swift */,
 				51DE55C82A6646710050AD06 /* Sysctl.swift */,
+				D1A4D9872B1486A10009AB4E /* LegacyMigration.swift */,
 			);
 			name = Utils;
 			sourceTree = "<group>";
@@ -3176,6 +3179,7 @@
 				84D377671D737F58007F7396 /* MPVChapter.swift in Sources */,
 				84A886E61E24F3BD008755BB /* OnlineSubtitle.swift in Sources */,
 				847C62CA1DC13CDA00E1EF16 /* PrefGeneralViewController.swift in Sources */,
+				D1A4D9882B1486A10009AB4E /* LegacyMigration.swift in Sources */,
 				E3530700214908DD008FE492 /* JavascriptAPIHttp.swift in Sources */,
 				D1D29A282ADE2E8000D8660F /* CustomTitleBar.swift in Sources */,
 				84FBF23E1EF06A90003EA491 /* ThumbnailCache.swift in Sources */,
