@@ -383,8 +383,8 @@ extension PlayerWindowController {
     let showBottomBarTopBorder = transition.outputGeometry.outsideBottomBarHeight > 0 && outputLayout.bottomBarPlacement == .outsideViewport && !outputLayout.isMusicMode
     bottomBarTopBorder.isHidden = !showBottomBarTopBorder
 
-    if let timePreviewWhenSeekVerticalSpaceConstraint {
-      timePreviewWhenSeekVerticalSpaceConstraint.isActive = false
+    if let timePositionHoverLabelVerticalSpaceConstraint {
+      timePositionHoverLabelVerticalSpaceConstraint.isActive = false
     }
 
     // [Re-]add OSC:
@@ -395,15 +395,17 @@ extension PlayerWindowController {
         currentControlBar = controlBarTop
         addControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
-        if let timePreviewWhenSeekVerticalSpaceConstraint {
-          timePreviewWhenSeekVerticalSpaceConstraint.isActive = false
+        if let timePositionHoverLabelVerticalSpaceConstraint {
+          timePositionHoverLabelVerticalSpaceConstraint.isActive = false
         }
 
         playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: OSCToolbarButton.oscBarHeight)
         playSliderHeightConstraint.isActive = true
 
-        timePreviewWhenSeekVerticalSpaceConstraint = timePreviewWhenSeek.bottomAnchor.constraint(equalTo: timePreviewWhenSeek.superview!.bottomAnchor, constant: -4)
-        timePreviewWhenSeekVerticalSpaceConstraint.isActive = true
+        // Subtract height of slider bar (4), then divide by 2 to get total bottom space, then subtract time label height to get total margin
+        let timeLabelOffset = (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 + 2
+        timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.bottomAnchor.constraint(equalTo: timePositionHoverLabel.superview!.bottomAnchor, constant: -timeLabelOffset)
+        timePositionHoverLabelVerticalSpaceConstraint.isActive = true
 
       case .bottom:
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
@@ -418,12 +420,13 @@ extension PlayerWindowController {
         playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: OSCToolbarButton.oscBarHeight)
         playSliderHeightConstraint.isActive = true
 
-        timePreviewWhenSeekVerticalSpaceConstraint = timePreviewWhenSeek.topAnchor.constraint(equalTo: timePreviewWhenSeek.superview!.topAnchor, constant: 2)
-        timePreviewWhenSeekVerticalSpaceConstraint.isActive = true
+        let timeLabelOffset = (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4
+        timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.topAnchor.constraint(equalTo: timePositionHoverLabel.superview!.topAnchor, constant: timeLabelOffset)
+        timePositionHoverLabelVerticalSpaceConstraint.isActive = true
 
       case .floating:
-        timePreviewWhenSeekVerticalSpaceConstraint = timePreviewWhenSeek.bottomAnchor.constraint(equalTo: timePreviewWhenSeek.superview!.bottomAnchor, constant: -4)
-        timePreviewWhenSeekVerticalSpaceConstraint.isActive = true
+        timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.bottomAnchor.constraint(equalTo: timePositionHoverLabel.superview!.bottomAnchor, constant: -4)
+        timePositionHoverLabelVerticalSpaceConstraint.isActive = true
 
         // Wait to add the subviews in the next task. For some reason, adding too soon here can cause volume slider to disappear
         break
@@ -1314,7 +1317,7 @@ extension PlayerWindowController {
     videoView.displayActive()
 
     thumbnailPeekView.isHidden = true
-    timePreviewWhenSeek.isHidden = true
+    timePositionHoverLabel.isHidden = true
   }
 
   private func updatePanelBlendingModes(to outputLayout: LayoutState) {

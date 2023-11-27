@@ -555,8 +555,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var playbackButtonsHorizontalPaddingConstraint: NSLayoutConstraint!
   @IBOutlet weak var topOSCHeightConstraint: NSLayoutConstraint!
 
-  @IBOutlet weak var timePreviewWhenSeekHorizontalCenterConstraint: NSLayoutConstraint!
-  @IBOutlet weak var timePreviewWhenSeekVerticalSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var timePositionHoverLabelHorizontalCenterConstraint: NSLayoutConstraint!
+  @IBOutlet weak var timePositionHoverLabelVerticalSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var playSliderHeightConstraint: NSLayoutConstraint!
 
   // - Outlets: Views
@@ -596,7 +596,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /** Top border of `bottomBarView`. */
   @IBOutlet weak var bottomBarTopBorder: NSBox!
 
-  @IBOutlet weak var timePreviewWhenSeek: NSTextField!
+  @IBOutlet weak var timePositionHoverLabel: NSTextField!
   @IBOutlet weak var thumbnailPeekView: ThumbnailPeekView!
   @IBOutlet weak var leftArrowButton: NSButton!
   @IBOutlet weak var rightArrowButton: NSButton!
@@ -923,7 +923,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.verbose("Got iinaFileLoaded notification")
 
       thumbnailPeekView.isHidden = true
-      timePreviewWhenSeek.isHidden = true
+      timePositionHoverLabel.isHidden = true
 
       quickSettingView.reload()
 
@@ -2857,23 +2857,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
     guard isMouseInPlaySlider && !isCoveredByOSD else {
       thumbnailPeekView.isHidden = true
-      timePreviewWhenSeek.isHidden = true
+      timePositionHoverLabel.isHidden = true
       return
     }
-    timePreviewWhenSeek.isHidden = false
+    timePositionHoverLabel.isHidden = false
 
     let mousePosX = playSlider.convert(event.locationInWindow, from: nil).x
     let originalPosX = event.locationInWindow.x
 
-    timePreviewWhenSeekHorizontalCenterConstraint.constant = mousePosX
+    timePositionHoverLabelHorizontalCenterConstraint.constant = mousePosX
 
     guard let duration = player.info.videoDuration else { return }
     let playbackPositionPercentage = max(0, Double((mousePosX - 3) / (playSlider.frame.width - 6)))
     let previewTime = duration * playbackPositionPercentage
-    guard timePreviewWhenSeek.stringValue != previewTime.stringRepresentation else { return }
+    guard timePositionHoverLabel.stringValue != previewTime.stringRepresentation else { return }
 
 //    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
-    timePreviewWhenSeek.stringValue = previewTime.stringRepresentation
+    timePositionHoverLabel.stringValue = previewTime.stringRepresentation
 
     // Thumbnail:
     guard player.info.thumbnailsReady,
@@ -3362,12 +3362,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     player.seek(percent: percentage, forceExact: !followGlobalSeekTypeWhenAdjustSlider)
 
     // update position of time label
-    timePreviewWhenSeekHorizontalCenterConstraint.constant = sender.knobPointPosition() - playSlider.frame.origin.x
+    timePositionHoverLabelHorizontalCenterConstraint.constant = sender.knobPointPosition() - playSlider.frame.origin.x
 
     // update text of time label
     let seekTime = player.info.videoDuration! * percentage * 0.01
     log.debug("PlaySliderDidChange: setting slider position time label to \(seekTime.stringRepresentation.quoted)")
-    timePreviewWhenSeek.stringValue = seekTime.stringRepresentation
+    timePositionHoverLabel.stringValue = seekTime.stringRepresentation
   }
 
   @objc func toolBarButtonAction(_ sender: NSButton) {
