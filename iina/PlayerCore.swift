@@ -1647,9 +1647,6 @@ class PlayerCore: NSObject {
       videoView.displayActive()
     }
 
-    // need to call this to update info.videoPosition, info.videoDuration
-    syncUITime()
-
     sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
@@ -2076,17 +2073,23 @@ class PlayerCore: NSObject {
       }
     }
 
-    if case .seek(let position, let duration) = osd {
+    switch osd {
+    case .seek(_, _):
+      syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
       // Try to avoid duplicate seek messages which are emitted when changing video settings while paused
-      guard position?.second != osdLastPosition || duration?.second != osdLastDuration else {
+      guard let position = info.videoPosition?.second, let duration = info.videoDuration?.second,
+              position != osdLastPosition || duration != osdLastDuration else {
         log.verbose("Ignoring request to show OSD seek; position/duration has not changed")
         return
       }
-      osdLastPosition = position?.second
-      osdLastDuration = duration?.second
-    } else if case .pause = osd, case .resume = osd {
+      osdLastPosition = position
+      osdLastDuration = duration
+    case .pause, .resume:
+      syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
       osdLastPosition = info.videoPosition?.second
       osdLastDuration = info.videoDuration?.second
+    default:
+      break
     }
 
     DispatchQueue.main.async { [self] in

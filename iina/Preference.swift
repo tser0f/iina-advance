@@ -1073,7 +1073,7 @@ struct Preference {
     .thumbnailSizeOption: ThumbnailSizeOption.scaleWithViewport.rawValue,
     .thumbnailFixedLength: 240,
     .thumbnailRawSizePercentage: 75,
-    .thumbnailDisplayedSizePercentage: 40,
+    .thumbnailDisplayedSizePercentage: 30,
     .enableThumbnailRoundedCorners: true,
     .maxThumbnailPreviewCacheSize: 500,
 
