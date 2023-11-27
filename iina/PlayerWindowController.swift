@@ -1647,7 +1647,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     mouseExitEnterCount += 1
 
     switch area {
-    case .playerWindow:  // player window
+    case .playerWindow:
       isMouseInWindow = false
       if controlBarFloating.isDragging { return }
       if !isAnimating && Preference.bool(for: .hideFadeableViewsWhenOutsideWindow) {
@@ -1656,7 +1656,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // Closes loophole in case cursor hovered over OSC before exiting (in which case timer was destroyed)
         resetFadeTimer()
       }
-    case .playSlider:  // slider
+    case .playSlider:
       isMouseInSlider = false
       refreshSeekTimeAndThumnail(from: event)
     case .customTitleBar:
@@ -3211,7 +3211,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  @IBAction func volumeSliderChanges(_ sender: NSSlider) {
+  @IBAction func volumeSliderDidChange(_ sender: NSSlider) {
     let value = sender.doubleValue
     if Preference.double(for: .maxVolume) > 100, value > 100 && value < 101 {
       NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
@@ -3354,7 +3354,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   /** When slider changes */
-  @IBAction func playSliderChanges(_ sender: NSSlider) {
+  @IBAction func playSliderDidChange(_ sender: NSSlider) {
     guard !player.info.fileLoading else { return }
 
     let percentage = 100 * sender.doubleValue / sender.maxValue
@@ -3365,7 +3365,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // update text of time label
     let seekTime = player.info.videoDuration! * percentage * 0.01
-    log.debug("PlaySliderChanged: setting seek time label to \(seekTime.stringRepresentation.quoted)")
+    log.debug("PlaySliderDidChange: setting slider position time label to \(seekTime.stringRepresentation.quoted)")
     timePreviewWhenSeek.stringValue = seekTime.stringRepresentation
   }
 

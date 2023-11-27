@@ -257,12 +257,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   // MARK: - IBActions
 
-  @IBAction func playSliderChanges(_ sender: NSSlider) {
-    windowController.playSliderChanges(sender)
+  @IBAction func playSliderDidChange(_ sender: NSSlider) {
+    windowController.playSliderDidChange(sender)
   }
 
-  @IBAction func volumeSliderChanges(_ sender: NSSlider) {
-    windowController.volumeSliderChanges(sender)
+  @IBAction func volumeSliderDidChange(_ sender: NSSlider) {
+    windowController.volumeSliderDidChange(sender)
   }
 
   @IBAction func muteButtonAction(_ sender: NSButton) {

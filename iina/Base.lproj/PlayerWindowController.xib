@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22155" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
-        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22155"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -695,7 +694,7 @@
                     </constraints>
                     <sliderCell key="cell" controlSize="mini" continuous="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="ncp-01-dCG" customClass="VolumeSliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
-                        <action selector="volumeSliderChanges:" target="-2" id="5AA-pG-FOc"/>
+                        <action selector="volumeSliderDidChange:" target="-2" id="5AA-pG-FOc"/>
                     </connections>
                 </slider>
             </subviews>
@@ -716,7 +715,7 @@
                     <rect key="frame" x="46" y="5" width="408" height="28"/>
                     <sliderCell key="cell" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="f1c-xF-8a2" customClass="PlaySliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
-                        <action selector="playSliderChanges:" target="-2" id="UBG-Ky-3rr"/>
+                        <action selector="playSliderDidChange:" target="-2" id="UBG-Ky-3rr"/>
                     </connections>
                 </slider>
                 <textField identifier="Playback-Position-LeftLabel" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NBD-MV-OuG" userLabel="Left Label" customClass="DurationDisplayTextField" customModule="IINA" customModuleProvider="target">
