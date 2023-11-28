@@ -1128,6 +1128,8 @@ not applying FFmpeg 9599 workaround
         if player.info.videoParams?.totalRotation != totalRotation {
           let videoParams = queryForVideoParams()
           player.info.videoParams = videoParams
+          // Thumb rotation needs updating:
+          player.reloadThumbnails()
         }
       }
 
@@ -1225,7 +1227,10 @@ not applying FFmpeg 9599 workaround
       player.log.verbose("Received mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)")
       let videoParams = queryForVideoParams()
       player.info.videoParams = videoParams
-      
+      if videoParams.totalRotation != player.info.videoParams?.totalRotation {
+        player.reloadThumbnails()
+      }
+
       if self.player.windowController.loaded {
         player.saveState()
         DispatchQueue.main.async { [self] in

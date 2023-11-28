@@ -422,10 +422,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case PK.thumbnailSizeOption.rawValue,
       PK.thumbnailFixedLength.rawValue,
       PK.thumbnailRawSizePercentage.rawValue:
-      DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
-        log.verbose("Pref \(keyPath.quoted) changed: requesting thumbs regen")
-        player.reloadThumbnails()
-      }
+      log.verbose("Pref \(keyPath.quoted) changed: requesting thumbs regen")
+      player.reloadThumbnails()
 
     case PK.enableThumbnailPreview.rawValue, PK.enableThumbnailForRemoteFiles.rawValue:
       // May need to remove thumbs or generate new ones: let method below figure it out:
@@ -2878,26 +2876,29 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Thumbnail:
     guard player.info.thumbnailsReady,
             let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
-          let rawImage = ffThumbnail.image,
           let videoParams = player.info.videoParams else {
       thumbnailPeekView.isHidden = true
       return
     }
 
-    var thumbWidth: Double = rawImage.size.width
-    var thumbHeight: Double = rawImage.size.height
+    let rotatedImage = ffThumbnail.image
+    var thumbWidth: Double = rotatedImage.size.width
+    var thumbHeight: Double = rotatedImage.size.height
+
+    guard thumbWidth > 0, thumbHeight > 0 else {
+      log.error("Cannot display thumbnail: thumbnail width or height is not positive!")
+      return
+    }
     var thumbAspect = thumbWidth / thumbHeight
 
-    if let drAspect = player.info.videoParams?.videoDisplayRotatedAspect,
-       player.info.thumbnailWidth > 0 {
-      // The aspect ratio of some videos is different at display time. May need to resize these videos
-      // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
-      // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
-      if thumbAspect != drAspect {
-        thumbHeight = (thumbWidth / drAspect).rounded()
-        /// Recalculate this for later use (will use it and `thumbHeight`, and derive width)
-        thumbAspect = thumbWidth / thumbHeight
-      }
+    let drAspect = videoParams.videoDisplayRotatedAspect
+    // The aspect ratio of some videos is different at display time. May need to resize these videos
+    // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
+    // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
+    if thumbAspect != drAspect {
+      thumbHeight = (thumbWidth / drAspect).rounded()
+      /// Recalculate this for later use (will use it and `thumbHeight`, and derive width)
+      thumbAspect = thumbWidth / thumbHeight
     }
 
     /// Calculate `availableHeight` (viewport height, minus top & bottom bars)
@@ -2932,9 +2933,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // Rotating and scaling are expensive operations, so reuse the last image if no change is needed
-    if player.info.lastThumbFFTimestamp != ffThumbnail.realTime {
-      player.info.lastThumbFFTimestamp = ffThumbnail.realTime
-      let thumbImage = rawImage.rotate(videoParams.totalRotation).resized(newWidth: thumbWidth, newHeight: thumbHeight)
+    if player.info.lastThumbFFTimestamp != ffThumbnail.timestamp {
+      player.info.lastThumbFFTimestamp = ffThumbnail.timestamp
+      let thumbImage = rotatedImage.resized(newWidth: thumbWidth, newHeight: thumbHeight)
       thumbnailPeekView.imageView.image = thumbImage
       thumbnailPeekView.frame.size = thumbImage.size
     }

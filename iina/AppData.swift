@@ -65,7 +65,7 @@ struct AppData {
   // Time in seconds to wait before regenerating thumbnails.
   // Each character the user types into the thumbnailWidth text field triggers a new thumb regen request.
   // This should help cut down on unnecessary requests.
-  static let thumbnailRegenerationDelay = 2.0
+  static let thumbnailRegenerationDelay = 1.0
 
   static let encodings = CharEncoding.list
 

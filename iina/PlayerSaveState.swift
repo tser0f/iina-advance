@@ -300,12 +300,12 @@ struct PlayerSaveState {
   static func save(_ player: PlayerCore) {
     guard Preference.UIState.isSaveEnabled else { return }
 
-    player.saveTicketCount += 1
-    let saveTicket = player.saveTicketCount
+    player.saveTicketCounter += 1
+    let saveTicket = player.saveTicketCounter
 
     // Run in background queue to avoid blocking UI. Cut down on duplicate work via delay and ticket check
     PlayerCore.backgroundQueue.asyncAfter(deadline: DispatchTime.now() + 0.5) {
-      guard saveTicket == player.saveTicketCount else {
+      guard saveTicket == player.saveTicketCounter else {
         return
       }
 

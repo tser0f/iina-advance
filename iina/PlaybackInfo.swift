@@ -343,17 +343,47 @@ class PlaybackInfo {
 
   // MARK: - Thumbnails
 
+  struct Thumbnail {
+    let image: NSImage
+    let timestamp: Double
+  }
+
   var thumbnailsReady = false
   var thumbnailsProgress: Double = 0
-  var thumbnails: [FFThumbnail] = []
+  var ffThumbnails: [FFThumbnail] = []
+  var thumbnails: [Thumbnail] = []
   var thumbnailWidth: Int = 0
   var lastThumbFFTimestamp: Double = -1
 
-  func getThumbnail(forSecond sec: Double) -> FFThumbnail? {
+  func addThumbnails(_ ffThumbnails: [FFThumbnail]) {
+    let rotation = videoParams?.totalRotation ?? 0
+    if rotation != 0 {
+      log.verbose("Rotating \(ffThumbnails.count) thumbnails by \(rotation)°")
+    }
+
+    for ffThumbnail in ffThumbnails {
+      guard let rawImage = ffThumbnail.image else { continue }
+
+      let image: NSImage
+      if rotation != 0 {
+        // Rotation is an expensive procedure. Do it up front so that thumbnail display is snappier
+        image = rawImage.rotate(rotation)
+      } else {
+        image = rawImage
+      }
+      self.ffThumbnails.append(ffThumbnail)
+      let thumb = Thumbnail(image: image, timestamp: ffThumbnail.realTime)
+      self.thumbnails.append(thumb)
+    }
+
+    thumbnailsReady = true
+  }
+
+  func getThumbnail(forSecond sec: Double) -> Thumbnail? {
     guard !thumbnails.isEmpty else { return nil }
     var tb = thumbnails.last!
     for i in 0..<thumbnails.count {
-      if thumbnails[i].realTime >= sec {
+      if thumbnails[i].timestamp >= sec {
         tb = thumbnails[(i == 0 ? i : i - 1)]
         break
       }

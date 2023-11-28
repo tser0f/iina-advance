@@ -55,7 +55,8 @@ class PlayerCore: NSObject {
   unowned var log: Logger.Subsystem { self.subsystem }
   var label: String
 
-  var saveTicketCount: Int = 0
+  var saveTicketCounter: Int = 0
+  var thumbnailReloadTicketCounter: Int = 0
 
   // Plugins
   var isManagedByPlugin = false
@@ -1777,8 +1778,12 @@ class PlayerCore: NSObject {
 
     // Always send this to window controller. It should be smart enough to resize only when needed:
     DispatchQueue.main.async { [self] in
+      let totalRotationPrev = info.videoParams?.totalRotation
       info.videoParams = vParams
       windowController.mpvVideoDidReconfig()
+      if vParams.totalRotation != totalRotationPrev {
+        reloadThumbnails()
+      }
     }
   }
 
@@ -2150,32 +2155,38 @@ class PlayerCore: NSObject {
   }
 
   func reloadThumbnails() {
-    DispatchQueue.main.async { [self] in
-      Logger.log("Getting thumbnails", subsystem: subsystem)
+    info.thumbnailsReady = false
 
-      info.thumbnailsReady = false
-      info.thumbnails.removeAll(keepingCapacity: true)
-      info.thumbnailsProgress = 0
+    DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
       if #available(macOS 10.12.2, *) {
         self.touchBarSupport.touchBarPlaySlider?.resetCachedThumbnails()
       }
       guard !info.isNetworkResource, let url = info.currentURL else {
-        Logger.log("...stopped because cannot get file path", subsystem: subsystem)
+        log.debug("Thumbnails reload stopped because cannot get file path")
         return
       }
       if !Preference.bool(for: .enableThumbnailForRemoteFiles) {
         if let attrs = try? url.resourceValues(forKeys: Set([.volumeIsLocalKey])), !attrs.volumeIsLocal! {
-          Logger.log("...stopped because file is on a mounted remote drive", subsystem: subsystem)
+          log.debug("Thumbnails reload stopped because file is on a mounted remote drive")
           return
         }
       }
       guard Preference.bool(for: .enableThumbnailPreview) else {
-        Logger.log("...stopped because thumbnails are disabled by user", level: .verbose, subsystem: subsystem)
+        log.verbose("Thumbnails reload stopped because thumbnails are disabled by user")
         return
       }
 
+      thumbnailReloadTicketCounter += 1
+      let ticket = thumbnailReloadTicketCounter
+
       // Run the following in the background at lower priority, so the UI is not slowed down
       PlayerCore.thumbnailQueue.async { [self] in
+        guard ticket == thumbnailReloadTicketCounter else { return }
+        log.debug("Reloading thumbnails, tkt# \(ticket)")
+
+        info.ffThumbnails = []
+        info.thumbnails = []
+        info.thumbnailsProgress = 0
 
         let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
         let thumbWidth: Int
@@ -2196,15 +2207,13 @@ class PlayerCore: NSObject {
         if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
           Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
           if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: thumbWidth) {
-            self.info.thumbnails = thumbnails
-            self.info.thumbnailsReady = true
-            self.info.thumbnailsProgress = 1
+            info.addThumbnails(thumbnails)
             self.refreshTouchBarSlider()
           } else {
-            Logger.log("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px", level: .error, subsystem: self.subsystem)
+            log.error("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px")
           }
         } else {
-          Logger.log("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)", subsystem: subsystem)
+          log.debug("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)")
           ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
         }
       }
@@ -2527,7 +2536,7 @@ extension PlayerCore: FFmpegControllerDelegate {
     }
     let targetCount = ffmpegController.thumbnailCount
     if let thumbnails = thumbnails {
-      info.thumbnails.append(contentsOf: thumbnails)
+      info.addThumbnails(thumbnails)
     }
     Logger.log("Got \(thumbnails?.count ?? 0) more \(width)px thumbs (\(info.thumbnails.count) so far), progress: \(progress) / \(targetCount)", subsystem: subsystem)
     info.thumbnailsProgress = Double(progress) / Double(targetCount)
@@ -2543,16 +2552,16 @@ extension PlayerCore: FFmpegControllerDelegate {
     }
     Logger.log("Done generating thumbnails: success=\(succeeded) count=\(thumbnails.count) width=\(width)px", subsystem: subsystem)
     if succeeded {
-      info.thumbnails = thumbnails
-      info.thumbnailsReady = true
-      info.thumbnailsProgress = 1
       refreshTouchBarSlider()
       if let cacheName = info.mpvMd5 {
         PlayerCore.backgroundQueue.async {
-          ThumbnailCache.write(self.info.thumbnails, forName: cacheName, forVideo: self.info.currentURL, forWidth: Int(width))
+          ThumbnailCache.write(self.info.ffThumbnails, forName: cacheName, forVideo: self.info.currentURL, forWidth: Int(width))
+          self.info.ffThumbnails = []  // free the memory - not needed anymore
         }
       }
       events.emit(.thumbnailsReady)
+    } else {
+      self.info.ffThumbnails = []
     }
   }
 }
