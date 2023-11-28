@@ -1255,34 +1255,34 @@ extension PlayerWindowController {
     let cph = Preference.float(for: .controlBarPositionHorizontal)
     let cpv = Preference.float(for: .controlBarPositionVertical)
 
-    let windowWidth = window.frame.width
+    let viewportWidth = viewportView.frame.width
     let margin: CGFloat = 10
-    let minWindowWidth: CGFloat = 480 // 460 + 20 margin
+    let minViewportWidth: CGFloat = 480 // 460 + 20 margin
     var xPos: CGFloat
 
-    if windowWidth < minWindowWidth {
+    if viewportWidth < minViewportWidth {
       // osc is compressed
-      xPos = windowWidth / 2
+      xPos = viewportWidth / 2
     } else {
       // osc has full width
       let oscHalfWidth: CGFloat = 230
-      xPos = windowWidth * CGFloat(cph)
+      xPos = viewportWidth * CGFloat(cph)
       if xPos - oscHalfWidth < margin {
         xPos = oscHalfWidth + margin
-      } else if xPos + oscHalfWidth + margin > windowWidth {
-        xPos = windowWidth - oscHalfWidth - margin
+      } else if xPos + oscHalfWidth + margin > viewportWidth {
+        xPos = viewportWidth - oscHalfWidth - margin
       }
     }
 
-    let windowHeight = window.frame.height
-    var yPos = windowHeight * CGFloat(cpv)
+    let viewportHeight = viewportView.frame.height
+    var yPos = viewportHeight * CGFloat(cpv)
     let oscHeight: CGFloat = 67
     let yMargin: CGFloat = 25
 
     if yPos < 0 {
       yPos = 0
-    } else if yPos + oscHeight + yMargin > windowHeight {
-      yPos = windowHeight - oscHeight - yMargin
+    } else if yPos + oscHeight + yMargin > viewportHeight {
+      yPos = viewportHeight - oscHeight - yMargin
     }
 
     controlBarFloating.xConstraint.constant = xPos

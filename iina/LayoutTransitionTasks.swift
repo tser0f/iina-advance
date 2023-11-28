@@ -395,7 +395,7 @@ extension PlayerWindowController {
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = controlBarTop
 
-        addControlBarViews(to: oscTopMainView,
+        addFloatingControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
         // Subtract height of slider bar (4), then divide by 2 to get total bottom space, then subtract time label height to get total margin
@@ -411,7 +411,7 @@ extension PlayerWindowController {
           oscBottomMainView.addConstraintsToFillSuperview(top: 0, bottom: 0, leading: 8, trailing: 8)
         }
 
-        addControlBarViews(to: oscBottomMainView,
+        addFloatingControlBarViews(to: oscBottomMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
         let timeLabelOffset = max(-1, (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 - 2)
@@ -432,9 +432,7 @@ extension PlayerWindowController {
         playSliderHeightConstraint.isActive = true
 
         switch barHeight {
-        case 60...:
-          timeLabelFontSize = 16
-        case 40..<60:
+        case 40...:
           timeLabelFontSize = NSFont.systemFontSize
         default:
           timeLabelFontSize = NSFont.smallSystemFontSize
@@ -648,8 +646,8 @@ extension PlayerWindowController {
       // center control bar
       let cph = Preference.float(for: .controlBarPositionHorizontal)
       let cpv = Preference.float(for: .controlBarPositionVertical)
-      controlBarFloating.xConstraint.constant = window.frame.width * CGFloat(cph)
-      controlBarFloating.yConstraint.constant = window.frame.height * CGFloat(cpv)
+      controlBarFloating.xConstraint.constant = viewportView.frame.width * CGFloat(cph)
+      controlBarFloating.yConstraint.constant = viewportView.frame.height * CGFloat(cpv)
 
       playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
@@ -1207,7 +1205,7 @@ extension PlayerWindowController {
 
   // MARK: - Controller content layout
 
-  private func addControlBarViews(to containerView: NSStackView, playBtnSize: CGFloat, playBtnSpacing: CGFloat,
+  private func addFloatingControlBarViews(to containerView: NSStackView, playBtnSize: CGFloat, playBtnSpacing: CGFloat,
                                   toolbarIconSize: CGFloat? = nil, toolbarIconSpacing: CGFloat? = nil) {
     let toolbarView = rebuildToolbar(iconSize: toolbarIconSize, iconPadding: toolbarIconSpacing)
     containerView.addView(fragPlaybackControlButtonsView, in: .leading)

@@ -587,7 +587,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /** Control bar at top of window, if configured. */
   @IBOutlet weak var controlBarTop: NSView!
 
-  @IBOutlet weak var controlBarFloating: ControlBarView!
+  @IBOutlet weak var controlBarFloating: FloatingControlBarView!
 
   /** Control bar at bottom of window, if configured. May be `insideViewport` or `outsideViewport`. */
   @IBOutlet weak var bottomBarView: NSVisualEffectView!
