@@ -145,6 +145,7 @@ class PlaybackInfo {
   /// The currently applied aspect, used for finding current aspect in menu & sidebar segmented control. Does not include rotation(s)
   var selectedAspectRatioLabel: String = AppData.defaultAspectName
   var selectedCropLabel: String = AppData.cropNone
+  var selectedRotation: Int = 0
   var cropFilter: MPVFilter?
   var flipFilter: MPVFilter?
   var mirrorFilter: MPVFilter?

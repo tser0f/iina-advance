@@ -1122,9 +1122,9 @@ not applying FFmpeg 9599 workaround
 
     case MPVProperty.videoParamsRotate:
         /** `video-params/rotate: Intended display rotation in degrees (clockwise).` - mpv manual
-         Do not confuse with the user-configured `video-params` (above) */
+         Do not confuse with the user-configured `video-rotate` (below) */
       if let totalRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
-        player.log.verbose("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted). Rotation: \(totalRotation)")
+        player.log.verbose("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted) = \(totalRotation)")
         if player.info.videoParams?.totalRotation != totalRotation {
           let videoParams = queryForVideoParams()
           player.info.videoParams = videoParams
@@ -1132,6 +1132,33 @@ not applying FFmpeg 9599 workaround
           player.reloadThumbnails()
         }
       }
+
+    case MPVOption.Video.videoRotate:
+      guard let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee else {
+        break
+      }
+      let userRotation = Int(data)
+      if userRotation != player.info.selectedRotation {
+        player.log.verbose("Received mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)")
+        player.info.selectedRotation = userRotation
+        needReloadQuickSettingsView = true
+
+        if self.player.windowController.loaded {
+          player.sendOSD(.rotate(userRotation))
+          // Thumb rotation needs updating:
+          player.reloadThumbnails()
+
+          DispatchQueue.main.async { [self] in
+            // FIXME: this isn't perfect - a bad frame briefly appears during transition
+            player.log.verbose("Resetting videoView")
+            IINAAnimation.disableAnimation {
+              self.player.windowController.rotationHandler.rotateVideoView(toDegrees: 0)
+            }
+          }
+        }
+        player.saveState()
+      }
+
 
     case MPVProperty.videoParamsPrimaries:
       fallthrough
@@ -1217,29 +1244,6 @@ not applying FFmpeg 9599 workaround
       if player.info.hwdec != data {
         player.info.hwdec = data
         player.sendOSD(.hwdec(player.info.hwdecEnabled))
-      }
-
-    case MPVOption.Video.videoRotate:
-      guard let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee else {
-        break
-      }
-      let userRotation = Int(data)
-      player.log.verbose("Received mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)")
-      let videoParams = queryForVideoParams()
-      player.info.videoParams = videoParams
-      if videoParams.totalRotation != player.info.videoParams?.totalRotation {
-        player.reloadThumbnails()
-      }
-
-      if self.player.windowController.loaded {
-        player.saveState()
-        DispatchQueue.main.async { [self] in
-          // FIXME: this isn't perfect - a bad frame briefly appears during transition
-          player.log.verbose("Resetting videoView")
-          IINAAnimation.disableAnimation {
-            self.player.windowController.rotationHandler.rotateVideoView(toDegrees: 0)
-          }
-        }
       }
 
     case MPVOption.Audio.mute:

@@ -749,32 +749,11 @@ extension NSImage {
     return image
   }
 
-  func rotate(_ degree: Int) -> NSImage {
-    var degree = ((degree % 360) + 360) % 360
-    guard degree % 90 == 0 && degree != 0 else { return self }
-    // mpv's rotation is clockwise, NSAffineTransform's rotation is counterclockwise
-    degree = 360 - degree
-    let newSize = (degree == 180 ? self.size : NSMakeSize(self.size.height, self.size.width))
-    let rotation = NSAffineTransform.init()
-    rotation.rotate(byDegrees: CGFloat(degree))
-    rotation.append(.init(translationByX: newSize.width / 2, byY: newSize.height / 2))
-
-    let newImage = NSImage(size: newSize)
-    newImage.lockFocus()
-    rotation.concat()
-    let rect = NSMakeRect(0, 0, self.size.width, self.size.height)
-    let corner = NSMakePoint(-self.size.width / 2, -self.size.height / 2)
-    self.draw(at: corner, from: rect, operation: .copy, fraction: 1)
-    newImage.unlockFocus()
-    return newImage
-  }
-
-  /// This uses CoreGraphics calls, which in tests was ~5x faster than `rotate()`
+  /// This uses CoreGraphics calls, which in tests was ~5x faster than using `NSAffineTransform` on `NSImage` directly
   func rotated(degrees: Int) -> NSImage {
     let currentImage = self.cgImage!
     let imgRect = CGRect(origin: CGPointZero, size: CGSize(width: currentImage.width, height: currentImage.height))
 
-    // angle to rotate image by
     let angleRadians = degToRad(CGFloat(degrees))
     let imgRotateTransform = rotateTransformRectAroundCenter(rect: imgRect, angle: angleRadians)
     let rotatedImgFrame = CGRectApplyAffineTransform(imgRect, imgRotateTransform)

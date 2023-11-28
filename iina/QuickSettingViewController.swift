@@ -279,7 +279,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       // Select last segment ("Custom...")
       cropSegment.selectedSegment = cropSegment.segmentCount - 1
     }
-    rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.userRotation) ?? -1)
+    rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.selectedRotation) ?? -1)
 
     deinterlaceSwitch.checked = player.info.deinterlace
     deinterlaceSwitch.action = {
@@ -592,7 +592,6 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func rotationChangedAction(_ sender: NSSegmentedControl) {
     let value = AppData.rotations[sender.selectedSegment]
     player.setVideoRotate(value)
-    player.sendOSD(.rotate(value))
   }
 
   @IBAction func customAspectEditFinishedAction(_ sender: AnyObject?) {
