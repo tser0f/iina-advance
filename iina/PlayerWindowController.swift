@@ -2853,7 +2853,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   private func refreshSeekTimeAndThumnailInternal(from event: NSEvent) {
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
     let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
-    guard isMouseInPlaySlider && !isCoveredByOSD else {
+    guard isMouseInPlaySlider && !isCoveredByOSD, let duration = player.info.videoDuration else {
       thumbnailPeekView.isHidden = true
       timePositionHoverLabel.isHidden = true
       return
@@ -2865,13 +2865,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     timePositionHoverLabelHorizontalCenterConstraint.constant = mousePosX
 
-    guard let duration = player.info.videoDuration else { return }
     let playbackPositionPercentage = max(0, Double((mousePosX - 3) / (playSlider.frame.width - 6)))
     let previewTime = duration * playbackPositionPercentage
-    guard timePositionHoverLabel.stringValue != previewTime.stringRepresentation else { return }
-
-//    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
-    timePositionHoverLabel.stringValue = previewTime.stringRepresentation
+    if timePositionHoverLabel.stringValue != previewTime.stringRepresentation {
+      //    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
+      timePositionHoverLabel.stringValue = previewTime.stringRepresentation
+    }
 
     // Thumbnail:
     guard player.info.thumbnailsReady,
@@ -2932,12 +2931,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbHeight = thumbWidth / thumbAspect
     }
 
+    // Need integers below.
+    thumbWidth = round(thumbWidth)
+    thumbHeight = round(thumbHeight)
+
     // Rotating and scaling are expensive operations, so reuse the last image if no change is needed
     if player.info.lastThumbFFTimestamp != ffThumbnail.timestamp {
       player.info.lastThumbFFTimestamp = ffThumbnail.timestamp
-      let thumbImage = rotatedImage.resized(newWidth: thumbWidth, newHeight: thumbHeight)
-      thumbnailPeekView.imageView.image = thumbImage
-      thumbnailPeekView.frame.size = thumbImage.size
+      let finalImage = rotatedImage.resized(newWidth: Int(thumbWidth), newHeight: Int(thumbHeight))
+      thumbnailPeekView.imageView.image = finalImage
+      thumbnailPeekView.frame.size = finalImage.size
     }
 
     let contentView = window!.contentView!

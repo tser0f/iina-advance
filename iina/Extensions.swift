@@ -769,18 +769,64 @@ extension NSImage {
     return newImage
   }
 
-  func resized(newWidth: CGFloat, newHeight: CGFloat) -> NSImage {
-    guard newWidth != self.size.width || newHeight != self.size.height else {
+  func resized(newWidth: Int, newHeight: Int) -> NSImage {
+    guard CGFloat(newWidth) != self.size.width || CGFloat(newHeight) != self.size.height else {
       return self
     }
-    let newSize = NSSize(width: newWidth, height: newHeight)
-    let image = NSImage(size: newSize)
-    image.lockFocus()
-    let context = NSGraphicsContext.current
-    context!.imageInterpolation = .high
-    draw(in: NSRect(origin: .zero, size: newSize), from: NSZeroRect, operation: .copy, fraction: 1)
-    image.unlockFocus()
-    return image
+
+    // Use raw CoreGraphics calls instead of their NS equivalents. They are > 10x faster, and only downside is that the image's
+    // dimensions must be integer values instead of decimals.
+    let currentImage = self.cgImage!
+    let drawingCalls: (CGContext) -> Void = { cgContext in
+      cgContext.draw(currentImage, in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+    }
+    return drawImageInBitmapImageContext(width: Int(newWidth), height: Int(newHeight), drawingCalls: drawingCalls)!
+  }
+
+  /// This code is copied from `PlayerWindowPreviewImageBuilder`.
+  /// If it's found useful for any more situations, should put in its own class
+  private func drawImageInBitmapImageContext(width: Int, height: Int, drawingCalls: (CGContext) -> Void) -> NSImage? {
+
+    guard let compositeImageRep = makeNewImgRep(width: width, height: height) else {
+      Logger.log("DrawImageInBitmapImageContext: Failed to create NSBitmapImageRep!", level: .error)
+      return nil
+    }
+
+    guard let context = NSGraphicsContext(bitmapImageRep: compositeImageRep) else {
+      Logger.log("DrawImageInBitmapImageContext: Failed to create NSGraphicsContext!", level: .error)
+      return nil
+    }
+
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = context
+    let cgContext = context.cgContext
+
+    drawingCalls(cgContext)
+
+    defer {
+      NSGraphicsContext.restoreGraphicsState()
+    }
+
+    let outputImage = NSImage(size: CGSize(width: width, height: height))
+    // Create the CGImage from the contents of the bitmap context.
+    outputImage.addRepresentation(compositeImageRep)
+
+    return outputImage
+  }
+
+  /// Creates RGB image with alpha channel
+  private func makeNewImgRep(width: Int, height: Int) -> NSBitmapImageRep? {
+    return NSBitmapImageRep(
+      bitmapDataPlanes: nil,
+      pixelsWide: width,
+      pixelsHigh: height,
+      bitsPerSample: 8,
+      samplesPerPixel: 4,
+      hasAlpha: true,
+      isPlanar: false,
+      colorSpaceName: NSColorSpaceName.calibratedRGB,
+      bytesPerRow: 0,
+      bitsPerPixel: 0)
   }
 }
 

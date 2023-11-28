@@ -60,7 +60,7 @@
 		8434BAA71D5DF2DA003BECF2 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8434BAA61D5DF2DA003BECF2 /* Extensions.swift */; };
 		8434BAAD1D5E4546003BECF2 /* SlideUpButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8434BAAC1D5E4546003BECF2 /* SlideUpButton.swift */; };
 		843FFD4D1D5DAA01001F3A44 /* RoundedTextFieldCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843FFD4C1D5DAA01001F3A44 /* RoundedTextFieldCell.swift */; };
-		844C59E71F7C143D008D1B00 /* CacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 844C59E61F7C143D008D1B00 /* CacheManager.swift */; };
+		844C59E71F7C143D008D1B00 /* ThumbnailCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 844C59E61F7C143D008D1B00 /* ThumbnailCacheManager.swift */; };
 		844D72EF1E056E1400522E5E /* input.conf in Copy Configs */ = {isa = PBXBuildFile; fileRef = 84E745D81DFDE8C100588DED /* input.conf */; };
 		844DE1BF1D3E2B9900272589 /* MPVEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 844DE1BE1D3E2B9900272589 /* MPVEvent.swift */; };
 		8450403D1E0A9EE20079C194 /* InspectorWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8450403B1E0A9EE20079C194 /* InspectorWindowController.swift */; };
@@ -1136,7 +1136,7 @@
 		8434BAAC1D5E4546003BECF2 /* SlideUpButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = SlideUpButton.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		843B97AA1E82D3C100D07261 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		843FFD4C1D5DAA01001F3A44 /* RoundedTextFieldCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = RoundedTextFieldCell.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
-		844C59E61F7C143D008D1B00 /* CacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheManager.swift; sourceTree = "<group>"; };
+		844C59E61F7C143D008D1B00 /* ThumbnailCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCacheManager.swift; sourceTree = "<group>"; };
 		844DE1BE1D3E2B9900272589 /* MPVEvent.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = MPVEvent.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		844E2FD21F1C7C6000CB1170 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/HistoryWindowController.strings; sourceTree = "<group>"; };
 		8450403B1E0A9EE20079C194 /* InspectorWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InspectorWindowController.swift; sourceTree = "<group>"; };
@@ -2286,7 +2286,7 @@
 				8492C2871E7721A600CE5825 /* ISO639Helper.swift */,
 				840820101ECF6C1800361416 /* FileGroup.swift */,
 				84FBF23D1EF06A90003EA491 /* ThumbnailCache.swift */,
-				844C59E61F7C143D008D1B00 /* CacheManager.swift */,
+				844C59E61F7C143D008D1B00 /* ThumbnailCacheManager.swift */,
 				E3FC31451FE1501E00B9B86F /* PowerSource.swift */,
 				E3ECC89D1FE9A6D900BED8C7 /* GeometryDef.swift */,
 				E3C12F6A201F281F00297964 /* FirstRunManager.swift */,
@@ -3125,7 +3125,7 @@
 				8488D6DC1E1167EF00D5B952 /* FloatingPointByteCountFormatter.swift in Sources */,
 				8488D6E71E11ABE900D5B952 /* PrefNetworkViewController.swift in Sources */,
 				84AABE941DBFAF1A00D138FD /* FontPickerWindowController.swift in Sources */,
-				844C59E71F7C143D008D1B00 /* CacheManager.swift in Sources */,
+				844C59E71F7C143D008D1B00 /* ThumbnailCacheManager.swift in Sources */,
 				E34EAA83251A36CE00057F27 /* JavascriptAPIFile.swift in Sources */,
 				E32712B024EAA14500359DAB /* ScreenshootOSDView.swift in Sources */,
 				D11AB83628EEE72A00673A90 /* EditableTableViewDelegate.swift in Sources */,

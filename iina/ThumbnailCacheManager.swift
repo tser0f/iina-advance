@@ -1,5 +1,5 @@
 //
-//  CacheManager.swift
+//  ThumbnailCacheManager.swift
 //  iina
 //
 //  Created by lhc on 28/9/2017.
@@ -8,9 +8,9 @@
 
 import Cocoa
 
-class CacheManager {
+class ThumbnailCacheManager {
 
-  static var shared = CacheManager()
+  static var shared = ThumbnailCacheManager()
 
   var isJobRunning = false
   var needsRefresh = true

@@ -74,10 +74,10 @@ class ThumbnailCache {
     if maxCacheSize == 0 {
       return
     }
-    let cacheSize = CacheManager.shared.getCacheSize()
+    let cacheSize = ThumbnailCacheManager.shared.getCacheSize()
     if cacheSize > maxCacheSize {
       Logger.log("Thumbnail cache size (\(cacheSize)) is larger than max allowed (\(maxCacheSize)) and will be cleared", subsystem: subsystem)
-      CacheManager.shared.clearOldCache()
+      ThumbnailCacheManager.shared.clearOldCache()
     }
 
     let pathURL = urlFor(name, width: width)
@@ -146,7 +146,7 @@ class ThumbnailCache {
       }
     }
 
-    CacheManager.shared.needsRefresh = true
+    ThumbnailCacheManager.shared.needsRefresh = true
     Logger.log("Finished writing thumbnail cache: \(path.pii.quoted)", subsystem: subsystem)
   }
 
