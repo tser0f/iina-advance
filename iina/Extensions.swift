@@ -769,6 +769,38 @@ extension NSImage {
     return newImage
   }
 
+  /// This uses CoreGraphics calls, which in tests was ~5x faster than `rotate()`
+  func rotated(degrees: Int) -> NSImage {
+    let currentImage = self.cgImage!
+    let imgRect = CGRect(origin: CGPointZero, size: CGSize(width: currentImage.width, height: currentImage.height))
+
+    // angle to rotate image by
+    let angleRadians = degToRad(CGFloat(degrees))
+    let imgRotateTransform = rotateTransformRectAroundCenter(rect: imgRect, angle: angleRadians)
+    let rotatedImgFrame = CGRectApplyAffineTransform(imgRect, imgRotateTransform)
+
+
+    let drawingCalls: (CGContext) -> Void = { [self] cgContext in
+      let rotateContext = rotateTransformRectAroundCenter(rect: rotatedImgFrame, angle: angleRadians)
+      cgContext.concatenate(rotateContext)
+      cgContext.draw(currentImage, in: imgRect)
+    }
+    return drawImageInBitmapImageContext(width: Int(rotatedImgFrame.size.width), height: Int(rotatedImgFrame.size.height), drawingCalls: drawingCalls)!
+  }
+
+  private func degToRad(_ degrees: CGFloat) -> CGFloat {
+    return degrees * CGFloat.pi / 180
+  }
+
+  /// returns the transform equivalent of rotating a rect around its center
+  private func rotateTransformRectAroundCenter(rect:CGRect, angle:CGFloat) -> CGAffineTransform {
+    let t = CGAffineTransformConcat(
+      CGAffineTransformMakeTranslation(-rect.origin.x-rect.size.width*0.5, -rect.origin.y-rect.size.height*0.5),
+      CGAffineTransformMakeRotation(angle)
+    )
+    return CGAffineTransformConcat(t, CGAffineTransformMakeTranslation(rect.size.width*0.5, rect.size.height*0.5))
+  }
+
   func resized(newWidth: Int, newHeight: Int) -> NSImage {
     guard CGFloat(newWidth) != self.size.width || CGFloat(newHeight) != self.size.height else {
       return self

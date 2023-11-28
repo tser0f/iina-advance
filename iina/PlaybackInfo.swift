@@ -357,6 +357,7 @@ class PlaybackInfo {
 
   func addThumbnails(_ ffThumbnails: [FFThumbnail]) {
     let rotation = videoParams?.totalRotation ?? 0
+    let sw = Utility.Stopwatch()
     if rotation != 0 {
       log.verbose("Rotating \(ffThumbnails.count) thumbnails by \(rotation)°")
     }
@@ -367,7 +368,7 @@ class PlaybackInfo {
       let image: NSImage
       if rotation != 0 {
         // Rotation is an expensive procedure. Do it up front so that thumbnail display is snappier
-        image = rawImage.rotate(rotation)
+        image = rawImage.rotated(degrees: rotation)
       } else {
         image = rawImage
       }
@@ -376,6 +377,9 @@ class PlaybackInfo {
       self.thumbnails.append(thumb)
     }
 
+    if rotation != 0 {
+      log.verbose("Rotated thumbnails in \(sw) ms")
+    }
     thumbnailsReady = true
   }
 
