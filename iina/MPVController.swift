@@ -1144,7 +1144,7 @@ not applying FFmpeg 9599 workaround
         needReloadQuickSettingsView = true
 
         if self.player.windowController.loaded {
-          player.sendOSD(.rotate(userRotation))
+          player.sendOSD(.rotation(userRotation))
           // Thumb rotation needs updating:
           player.reloadThumbnails()
 

@@ -38,7 +38,7 @@ enum OSDMessage {
   case speed(Double)
   case aspect(String)
   case crop(String)
-  case rotate(Int)
+  case rotation(Int)
   case deinterlace(Bool)
   case hwdec(Bool)
   case audioDelay(Double)
@@ -134,9 +134,9 @@ enum OSDMessage {
         .normal
       )
 
-    case .rotate(let value):
+    case .rotation(let value):
       return (
-        String(format: NSLocalizedString("osd.rotate", comment: "Rotate: %i°"), value),
+        String(format: NSLocalizedString("osd.rotate", comment: "Rotation: %i°"), value),
         .normal
       )
 
