@@ -32,6 +32,8 @@ struct AppData {
   static let minSpeed = 0.25
   static let maxSpeed = 16.0
 
+  static let minOSCBarHeight: CGFloat = 24
+
   /** For Force Touch. */
   static let minimumPressDuration: TimeInterval = 0.5
 

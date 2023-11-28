@@ -36,7 +36,7 @@ class OSCToolbarButton: NSButton {
   // TODO: put this outside this class. Maybe in a new class "OSCToolbar"
   /// Preferred height for "full-width" OSCs (i.e. top/bottom, not floating/title bar)
   static var oscBarHeight: CGFloat {
-    return max(16, CGFloat(Preference.integer(for: .oscBarHeight)))
+    return max(AppData.minOSCBarHeight, CGFloat(Preference.integer(for: .oscBarHeight)))
   }
 
   static func setStyle(of toolbarButton: NSButton, buttonType: Preference.ToolBarButton, iconSize: CGFloat? = nil) {

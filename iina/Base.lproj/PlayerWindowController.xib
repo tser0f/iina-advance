@@ -110,7 +110,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" texturedBackground="YES" fullSizeContentView="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2056" height="1285"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
             <value key="minSize" type="size" width="285" height="120"/>
             <view key="contentView" identifier="PlayerWindow-ContentView" autoresizesSubviews="NO" wantsLayer="YES" id="se5-gp-TjO" userLabel="Window-Content View">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
@@ -715,10 +715,7 @@
             <rect key="frame" x="0.0" y="0.0" width="500" height="42"/>
             <subviews>
                 <textField identifier="Playback-Seek-Time-Label" hidden="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
-                    <rect key="frame" x="229" y="29" width="39" height="11"/>
-                    <constraints>
-                        <constraint firstAttribute="height" priority="900" constant="11" id="Eis-nn-SIU"/>
-                    </constraints>
+                    <rect key="frame" x="229" y="27" width="39" height="13"/>
                     <textFieldCell key="cell" controlSize="large" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" sendsActionOnEndEditing="YES" alignment="center" title="-:--:--" id="Pw8-rd-mUu">
                         <font key="font" metaFont="system" size="10"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>

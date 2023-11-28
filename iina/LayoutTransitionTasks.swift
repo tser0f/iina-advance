@@ -330,10 +330,6 @@ extension PlayerWindowController {
       }
     }
 
-    if let playSliderHeightConstraint {
-      playSliderHeightConstraint.isActive = false
-    }
-
     // Allow for showing/hiding each button individually
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
@@ -383,54 +379,69 @@ extension PlayerWindowController {
     let showBottomBarTopBorder = transition.outputGeometry.outsideBottomBarHeight > 0 && outputLayout.bottomBarPlacement == .outsideViewport && !outputLayout.isMusicMode
     bottomBarTopBorder.isHidden = !showBottomBarTopBorder
 
+    if let playSliderHeightConstraint {
+      playSliderHeightConstraint.isActive = false
+    }
+
     if let timePositionHoverLabelVerticalSpaceConstraint {
       timePositionHoverLabelVerticalSpaceConstraint.isActive = false
     }
 
     // [Re-]add OSC:
     if outputLayout.enableOSC {
+
       switch outputLayout.oscPosition {
       case .top:
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = controlBarTop
+
         addControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
-        if let timePositionHoverLabelVerticalSpaceConstraint {
-          timePositionHoverLabelVerticalSpaceConstraint.isActive = false
-        }
-
-        playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: OSCToolbarButton.oscBarHeight)
-        playSliderHeightConstraint.isActive = true
 
         // Subtract height of slider bar (4), then divide by 2 to get total bottom space, then subtract time label height to get total margin
         let timeLabelOffset = (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 + 2
         timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.bottomAnchor.constraint(equalTo: timePositionHoverLabel.superview!.bottomAnchor, constant: -timeLabelOffset)
-        timePositionHoverLabelVerticalSpaceConstraint.isActive = true
 
       case .bottom:
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = bottomBarView
+
         if !bottomBarView.subviews.contains(oscBottomMainView) {
           bottomBarView.addSubview(oscBottomMainView)
           oscBottomMainView.addConstraintsToFillSuperview(top: 0, bottom: 0, leading: 8, trailing: 8)
         }
+
         addControlBarViews(to: oscBottomMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
-        playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: OSCToolbarButton.oscBarHeight)
-        playSliderHeightConstraint.isActive = true
-
         let timeLabelOffset = max(-1, (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 - 2)
         timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.topAnchor.constraint(equalTo: timePositionHoverLabel.superview!.topAnchor, constant: timeLabelOffset)
-        timePositionHoverLabelVerticalSpaceConstraint.isActive = true
 
       case .floating:
-        timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.bottomAnchor.constraint(equalTo: timePositionHoverLabel.superview!.bottomAnchor, constant: -4)
-        timePositionHoverLabelVerticalSpaceConstraint.isActive = true
+        timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.bottomAnchor.constraint(equalTo: timePositionHoverLabel.superview!.bottomAnchor, constant: -2)
 
         // Wait to add the subviews in the next task. For some reason, adding too soon here can cause volume slider to disappear
-        break
       }
+
+      let timeLabelFontSize: CGFloat
+      if outputLayout.oscPosition == .floating {
+        timeLabelFontSize = NSFont.smallSystemFontSize
+      } else {
+        let barHeight = OSCToolbarButton.oscBarHeight
+        playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: barHeight)
+        playSliderHeightConstraint.isActive = true
+
+        switch barHeight {
+        case 60...:
+          timeLabelFontSize = 16
+        case 40..<60:
+          timeLabelFontSize = NSFont.systemFontSize
+        default:
+          timeLabelFontSize = NSFont.smallSystemFontSize
+        }
+      }
+      timePositionHoverLabel.font = NSFont.systemFont(ofSize: timeLabelFontSize)
+      timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
     }
 
     // Sidebars: finish closing (if closing)
