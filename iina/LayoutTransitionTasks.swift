@@ -648,8 +648,9 @@ extension PlayerWindowController {
         fragPositionSliderView.addConstraintsToFillSuperview()
       }
 
-      // center control bar
-      controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV)
+      // Update floating control bar position
+      controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV, 
+                                layout: transition.outputLayout, viewportSize: transition.outputGeometry.viewportSize)
 
       playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad

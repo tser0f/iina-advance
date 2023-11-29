@@ -1252,7 +1252,8 @@ extension PlayerWindowController {
 
   func updateFloatingOSCAfterWindowDidResize() {
     guard let window = window, currentLayout.oscPosition == .floating else { return }
-    controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV)
+    controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, 
+                              originRatioV: floatingOSCOriginRatioV, layout: currentLayout, viewportSize: viewportView.frame.size)
 
     // Detach the views in oscFloatingUpperView manually on macOS 11 only; as it will cause freeze
     if #available(macOS 11.0, *) {
