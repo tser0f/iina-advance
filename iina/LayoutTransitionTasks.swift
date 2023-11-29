@@ -281,7 +281,7 @@ extension PlayerWindowController {
       // Update title bar item spacing to align with sidebars
       updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
 
-      controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV,
+      controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV,
                                 layout: transition.outputLayout, viewportSize: middleGeo.viewportSize)
 
       // Sidebars (if closing)
@@ -652,7 +652,7 @@ extension PlayerWindowController {
       }
 
       // Update floating control bar position
-      controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV, 
+      controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV, 
                                 layout: transition.outputLayout, viewportSize: transition.outputGeometry.viewportSize)
 
       playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize

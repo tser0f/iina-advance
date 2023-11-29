@@ -1084,6 +1084,12 @@ extension PlayerWindowController {
     IINAAnimation.disableAnimation{
       // Make sure this is up-to-date
       videoView.apply(newGeometry)
+
+      if currentLayout.oscPosition == .floating {
+        // Update floating control bar position
+        controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH,
+                                  originRatioV: floatingOSCOriginRatioV, layout: currentLayout, viewportSize: newGeometry.viewportSize)
+      }
     }
 
     if !isFullScreen {
@@ -1252,7 +1258,7 @@ extension PlayerWindowController {
 
   func updateFloatingOSCAfterWindowDidResize() {
     guard let window = window, currentLayout.oscPosition == .floating else { return }
-    controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, 
+    controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, 
                               originRatioV: floatingOSCOriginRatioV, layout: currentLayout, viewportSize: viewportView.frame.size)
 
     // Detach the views in oscFloatingUpperView manually on macOS 11 only; as it will cause freeze

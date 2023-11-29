@@ -39,16 +39,16 @@ class FloatingControlBarView: NSVisualEffectView {
 
   // MARK: - Positioning
 
-  func moveTo(centerRatioH cH: CGFloat, originRatioV oV: CGFloat, layout: PlayerWindowController.LayoutState, viewportSize: CGSize) {
-    assert(cH >= 0 && cH <= 1, "centerRatioH is invalid: \(cH)")
-    assert(oV >= 0 && oV <= 1, "originRatioV is invalid: \(oV)")
+  func moveTo(centerRatioH ratioH: CGFloat, originRatioV ratioV: CGFloat, layout: PlayerWindowController.LayoutState, viewportSize: CGSize) {
+    assert(ratioH >= 0 && ratioH <= 1, "centerRatioH is invalid: \(ratioH)")
+    assert(ratioV >= 0 && ratioV <= 1, "originRatioV is invalid: \(ratioV)")
 
     let geometry = FloatingControllerGeometry(windowLayout: layout, viewportSize: viewportSize)
     let availableWidth = geometry.availableWidth
-    let centerX = geometry.availableWidthMinX + (availableWidth * cH)
-    let originY = geometry.minOriginY + (oV * (geometry.maxOriginY - geometry.minOriginY))
+    let centerX = geometry.minCenterX + ((availableWidth - geometry.barWidth) * ratioH)
+    let originY = geometry.minOriginY + (ratioV * (geometry.maxOriginY - geometry.minOriginY))
     let (xConst, yConst) = geometry.calculateConstraintConstants(centerX: centerX, originY: originY)
-    
+//    Logger.log("Setting xConstraint to: \(xConst), from \(geometry.minCenterX) + ((\(availableWidth) - \(geometry.barWidth)) * \(ratioH))", level: .verbose)
     xConstraint.animateToConstant(xConst)
     yConstraint.animateToConstant(yConst)
   }
@@ -111,28 +111,29 @@ class FloatingControlBarView: NSVisualEffectView {
       // apply position
       xConstraint.animateToConstant(xConst)
       yConstraint.animateToConstant(yConst)
-      updateRatios(xConst: xConst, yConst: yConst, geometry)
-      return
-    }
 
-    updateRatios(xConst: xConstraint.constant, yConst: yConstraint.constant, geometry)
+      updateRatios(xConst: xConst, yConst: yConst, geometry)
+    } else {
+      updateRatios(xConst: xConstraint.constant, yConst: yConstraint.constant, geometry)
+    }
   }
 
   private func updateRatios(xConst: CGFloat, yConst: CGFloat, _ geometry: FloatingControllerGeometry) {
     guard let playerWindowController else { return }
-    let minXCenter = geometry.minXCenter
+    let minCenterX = geometry.minCenterX
 
     // save final position
-    let xRatio = (xConstraint.constant - minXCenter) / (geometry.maxXCenter - minXCenter)
+    let ratioH = (xConst - minCenterX) / (geometry.availableWidth - geometry.barWidth)
     let minOriginY = geometry.minOriginY
-    let yRatio = (yConstraint.constant - minOriginY) / (geometry.maxOriginY - minOriginY)
+    let ratioV = (yConst - minOriginY) / (geometry.maxOriginY - minOriginY)
+//    Logger.log("Drag: Setting ratioH to: (\(xConst) - \(minCenterX)) / (\(geometry.availableWidth) - \(geometry.barWidth)) = \(ratioH)", level: .verbose)
 
     // Save in window for use when resizing, etc.
-    playerWindowController.floatingOscCenterRatioH = xRatio
-    playerWindowController.floatingOSCOriginRatioV = yRatio
+    playerWindowController.floatingOSCCenterRatioH = ratioH
+    playerWindowController.floatingOSCOriginRatioV = ratioV
     // Save to prefs as future default
-    Preference.set(xRatio, for: .controlBarPositionHorizontal)
-    Preference.set(yRatio, for: .controlBarPositionVertical)
+    Preference.set(ratioH, for: .controlBarPositionHorizontal)
+    Preference.set(ratioV, for: .controlBarPositionVertical)
   }
 
   // MARK: - Coordinates in Viewport
@@ -156,19 +157,23 @@ class FloatingControlBarView: NSVisualEffectView {
       return availableWidthMaxX - availableWidthMinX
     }
 
-    var halfBarWidth: CGFloat {
+    var barWidth: CGFloat {
       if availableWidth < FloatingControlBarView.preferredBarWidth {
-        return FloatingControlBarView.minBarWidth / 2
+        return FloatingControlBarView.minBarWidth
       }
-      return FloatingControlBarView.preferredBarWidth / 2
+      return FloatingControlBarView.preferredBarWidth
     }
 
-    var minXCenter: CGFloat {
+    var halfBarWidth: CGFloat {
+      return barWidth / 2
+    }
+
+    var minCenterX: CGFloat {
       return availableWidthMinX + halfBarWidth
     }
 
     // Centered
-    var maxXCenter: CGFloat {
+    var maxCenterX: CGFloat {
       return availableWidthMaxX - halfBarWidth
     }
 
@@ -186,19 +191,19 @@ class FloatingControlBarView: NSVisualEffectView {
     }
 
     var centerX: CGFloat {
-      let minX = minXCenter
-      let maxX = maxXCenter
+      let minX = minCenterX
+      let maxX = maxCenterX
       let availableWidth = maxX - minX
       return minX + (availableWidth * 0.5)
     }
 
     func calculateConstraintConstants(centerX: CGFloat, originY: CGFloat) -> (CGFloat, CGFloat) {
       let minOriginY = minOriginY
-      let minXCenter = minXCenter
-      let maxXCenter = maxXCenter
+      let minCenterX = minCenterX
+      let maxCenterX = maxCenterX
       let maxOriginY = maxOriginY
       // bound to viewport frame
-      let constraintRect = NSRect(x: minXCenter, y: minOriginY, width: maxXCenter - minXCenter, height: maxOriginY - minOriginY)
+      let constraintRect = NSRect(x: minCenterX, y: minOriginY, width: maxCenterX - minCenterX, height: maxOriginY - minOriginY)
       let newOrigin = CGPoint(x: centerX, y: originY).constrained(to: constraintRect)
       return (newOrigin.x, newOrigin.y)
     }
