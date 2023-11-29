@@ -257,8 +257,8 @@ extension PlayerWindowController {
     }
 
     // Update heights of top & bottom bars
-    if let geo = transition.middleGeometry {
-      let topBarHeight = transition.inputLayout.topBarPlacement == .insideViewport ? geo.insideTopBarHeight : geo.outsideTopBarHeight
+    if let middleGeo = transition.middleGeometry {
+      let topBarHeight = transition.inputLayout.topBarPlacement == .insideViewport ? middleGeo.insideTopBarHeight : middleGeo.outsideTopBarHeight
       let cameraOffset: CGFloat
       if transition.isExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
         // Use prev offset for a smoother animation
@@ -275,11 +275,14 @@ extension PlayerWindowController {
         updateSidebarVerticalConstraints(tabHeight: tabHeight, downshift: downshift)
       }
 
-      let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideViewport ? geo.insideBottomBarHeight : geo.outsideBottomBarHeight
+      let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideViewport ? middleGeo.insideBottomBarHeight : middleGeo.outsideBottomBarHeight
       updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.inputLayout.bottomBarPlacement)
 
       // Update title bar item spacing to align with sidebars
       updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
+
+      controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV,
+                                layout: transition.outputLayout, viewportSize: middleGeo.viewportSize)
 
       // Sidebars (if closing)
       animateShowOrHideSidebars(transition: transition, layout: transition.inputLayout,
@@ -289,10 +292,10 @@ extension PlayerWindowController {
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
       if !transition.isInitialLayout && !transition.isTogglingFullScreen {
-        log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(geo.windowFrame)")
-        player.window.setFrameImmediately(geo.windowFrame)
+        log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(middleGeo.windowFrame)")
+        player.window.setFrameImmediately(middleGeo.windowFrame)
         if !transition.isExitingInteractiveMode {
-          videoView.apply(geo)
+          videoView.apply(middleGeo)
         }
       }
     }

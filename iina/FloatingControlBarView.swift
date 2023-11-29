@@ -45,13 +45,12 @@ class FloatingControlBarView: NSVisualEffectView {
 
     let geometry = FloatingControllerGeometry(windowLayout: layout, viewportSize: viewportSize)
     let availableWidth = geometry.availableWidth
-    let minXCenter = geometry.minXCenter
     let centerX = geometry.availableWidthMinX + (availableWidth * cH)
     let originY = geometry.minOriginY + (oV * (geometry.maxOriginY - geometry.minOriginY))
     let (xConst, yConst) = geometry.calculateConstraintConstants(centerX: centerX, originY: originY)
-    Logger.log("Setting xConstraint to: \(xConst)")
-    xConstraint.constant = xConst
-    yConstraint.constant = yConst
+    
+    xConstraint.animateToConstant(xConst)
+    yConstraint.animateToConstant(yConst)
   }
 
   // MARK: - Mouse Events
@@ -95,8 +94,6 @@ class FloatingControlBarView: NSVisualEffectView {
       }
     }
 
-    let availableWidth = geometry.availableWidth
-    Logger.log("Drag: Setting xConstraint to: \(newCenterX)")
     let (xConst, yConst) = geometry.calculateConstraintConstants(centerX: newCenterX, originY: newOriginY)
     xConstraint.constant = xConst
     yConstraint.constant = yConst
@@ -112,8 +109,8 @@ class FloatingControlBarView: NSVisualEffectView {
       let (xConst, yConst) = geometry.calculateConstraintConstants(centerX: geometry.centerX, originY: frame.origin.y)
 
       // apply position
-      xConstraint.constant = xConst
-      yConstraint.constant = yConst
+      xConstraint.animateToConstant(xConst)
+      yConstraint.animateToConstant(yConst)
       updateRatios(xConst: xConst, yConst: yConst, geometry)
       return
     }
@@ -130,7 +127,6 @@ class FloatingControlBarView: NSVisualEffectView {
     let minOriginY = geometry.minOriginY
     let yRatio = (yConstraint.constant - minOriginY) / (geometry.maxOriginY - minOriginY)
 
-    Logger.log("Drag: Setting x ratio to: \(xRatio)")
     // Save in window for use when resizing, etc.
     playerWindowController.floatingOscCenterRatioH = xRatio
     playerWindowController.floatingOSCOriginRatioV = yRatio
