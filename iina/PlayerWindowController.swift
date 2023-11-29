@@ -147,6 +147,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var isPausedDueToMiniaturization: Bool = false
   var isPausedPriorToInteractiveMode: Bool = false
 
+  var floatingOscCenterRatioH = CGFloat(Preference.float(for: .controlBarPositionHorizontal))
+  var floatingOSCOriginRatioV = CGFloat(Preference.float(for: .controlBarPositionVertical))
+
   // - Mouse
 
   var mousePosRelatedToWindow: CGPoint?
@@ -1997,6 +2000,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
 
+    if currentLayout.isWindowed && currentLayout.oscPosition == .floating {
+      // Update floating control bar position
+      updateFloatingOSCAfterWindowDidResize()
+    }
     guard !isAnimating, !isMagnifying else { return }
 
     defer {
@@ -2011,17 +2018,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // Re-evaluate space requirements for labels. May need to start scrolling.
         // Will also update saved state
         miniPlayer.windowDidResize()
-        return
       case .windowed:
         let viewportSize = viewportView.frame.size
         let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
         // Need to update this always when resizing window:
         videoView.apply(resizedGeo)
 
-        if currentLayout.oscPosition == .floating {
-          // Update floating control bar position
-          updateFloatingOSCAfterWindowDidResize()
-        }
       case .windowedInteractive, .fullScreenInteractive:
         // Update interactive mode selectable box size. Origin is relative to viewport origin
         let selectableRect = NSRect(origin: CGPointZero, size: videoView.frame.size)
@@ -2813,7 +2815,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     animationPipeline.submit(animationTasks)
   }
 
-  // - MARK: UI: Thumbnail Preview
+  // MARK: - UI: Thumbnail Preview
 
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..
   ///
@@ -2977,7 +2979,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     thumbnailPeekView.isHidden = false
   }
 
-  // - MARK: UI: Other
+  // MARK: - UI: Other
 
   func updateBufferIndicatorView() {
     guard loaded else { return }

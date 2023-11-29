@@ -334,7 +334,7 @@ extension PlayerWindowController {
     return transition
   }
 
-  // - MARK: Geometry
+  // MARK: - Geometry
 
   private func buildInputGeometry(from inputLayout: LayoutState, transitionName: String, windowedModeScreen: NSScreen) -> PlayerWindowGeometry {
     // Restore window size & position

@@ -23,7 +23,7 @@ protocol OnlineSubtitleFetcher {
   func fetch(from url: URL, withProviderID id: String, playerCore player: PlayerCore) -> Promise<[Subtitle]>
 }
 
-class OnlineSubtitle: NSObject {
+class OnlineSubtitle {
   enum CommonError: Error {
     case noResult
     case canceled

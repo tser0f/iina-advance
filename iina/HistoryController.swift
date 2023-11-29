@@ -8,7 +8,7 @@
 
 import Cocoa
 
-class HistoryController: NSObject {
+class HistoryController {
 
   static let shared = HistoryController(plistFileURL: Utility.playbackHistoryURL)
 
@@ -19,7 +19,6 @@ class HistoryController: NSObject {
   init(plistFileURL: URL) {
     self.plistURL = plistFileURL
     self.history = []
-    super.init()
     read()
   }
 

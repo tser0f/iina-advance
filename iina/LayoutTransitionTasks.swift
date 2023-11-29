@@ -362,9 +362,12 @@ extension PlayerWindowController {
       apply(visibility: outputLayout.topBarView, to: topBarView)
     }
 
-    // Always remove subviews from OSC - is inexpensive + easier than figuring out if anything has changed
-    for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
-      view?.removeFromSuperview()
+    if !(transition.inputLayout.hasFloatingOSC && transition.outputLayout.hasFloatingOSC) {
+      // Always remove subviews from OSC - is inexpensive + easier than figuring out if anything has changed
+      // (except for floating OSC, which doesn't change much and has animation glitches if removed & re-added)
+      for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
+        view?.removeFromSuperview()
+      }
     }
 
     if transition.isTopBarPlacementChanging {
@@ -625,28 +628,28 @@ extension PlayerWindowController {
       // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
       currentControlBar = controlBarFloating
 
-      oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
-      // There sweems to be a race condition when adding to these StackViews.
-      // Sometimes it still contains the old view, and then trying to add again will cause a crash.
-      // Must check if it already contains the view before adding.
-      if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
-        oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+      if !transition.inputLayout.hasFloatingOSC {
+        oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
+        // There sweems to be a race condition when adding to these StackViews.
+        // Sometimes it still contains the old view, and then trying to add again will cause a crash.
+        // Must check if it already contains the view before adding.
+        if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
+          oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+        }
+        let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
+        oscFloatingUpperView.addView(toolbarView, in: .trailing)
+        fragToolbarView = toolbarView
+
+        oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
+        oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
+        oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+
+        oscFloatingLowerView.addSubview(fragPositionSliderView)
+        fragPositionSliderView.addConstraintsToFillSuperview()
       }
-      let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
-      oscFloatingUpperView.addView(toolbarView, in: .trailing)
-      fragToolbarView = toolbarView
 
-      oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
-      oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
-      oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-
-      oscFloatingLowerView.addSubview(fragPositionSliderView)
-      fragPositionSliderView.addConstraintsToFillSuperview()
       // center control bar
-      let cph = Preference.float(for: .controlBarPositionHorizontal)
-      let cpv = Preference.float(for: .controlBarPositionVertical)
-      controlBarFloating.xConstraint.constant = viewportView.frame.width * CGFloat(cph) + (controlBarFloating.frame.width / 2)
-      controlBarFloating.yConstraint.constant = viewportView.frame.height * CGFloat(cpv)
+      controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV)
 
       playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
       playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad

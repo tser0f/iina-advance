@@ -133,7 +133,7 @@ class PlaybackInfo {
 
   var cachedWindowScale: Double = 1.0
 
-  // - MARK: Filters & Equalizers
+  // MARK: - Filters & Equalizers
 
   /// The most up-to-date aspect ratio of the video (width/height), after `totalRotation` applied
   var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {

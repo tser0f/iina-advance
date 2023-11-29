@@ -1252,40 +1252,7 @@ extension PlayerWindowController {
 
   func updateFloatingOSCAfterWindowDidResize() {
     guard let window = window, currentLayout.oscPosition == .floating else { return }
-    let cph = Preference.float(for: .controlBarPositionHorizontal)
-    let cpv = Preference.float(for: .controlBarPositionVertical)
-
-    let viewportWidth = viewportView.frame.width
-    let margin: CGFloat = 10
-    let minViewportWidth: CGFloat = 480 // 460 + 20 margin
-    var xPos: CGFloat
-
-    if viewportWidth < minViewportWidth {
-      // osc is compressed
-      xPos = viewportWidth / 2
-    } else {
-      // osc has full width
-      let oscHalfWidth: CGFloat = 230
-      xPos = viewportWidth * CGFloat(cph)
-      if xPos - oscHalfWidth < margin {
-        xPos = oscHalfWidth + margin
-      } else if xPos + oscHalfWidth + margin > viewportWidth {
-        xPos = viewportWidth - oscHalfWidth - margin
-      }
-    }
-
-    let viewportHeight = viewportView.frame.height
-    var yPos = viewportHeight * CGFloat(cpv)
-    let oscHeight: CGFloat = 67
-    let yMargin: CGFloat = 25
-
-    if yPos < 0 {
-      yPos = 0
-    } else if yPos + oscHeight + yMargin > viewportHeight {
-      yPos = viewportHeight - oscHeight - yMargin
-    }
-
-    controlBarFloating.updateConstraints(newOriginInViewport: NSPoint(x: xPos, y: yPos))
+    controlBarFloating.moveTo(centerRatioH: floatingOscCenterRatioH, originRatioV: floatingOSCOriginRatioV)
 
     // Detach the views in oscFloatingUpperView manually on macOS 11 only; as it will cause freeze
     if #available(macOS 11.0, *) {
