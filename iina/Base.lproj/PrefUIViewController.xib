@@ -1875,7 +1875,7 @@
                 </button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="5Om-Um-kQ4" userLabel="Enable for remote files also Checkbox">
                     <rect key="frame" x="138" y="179" width="157" height="18"/>
-                    <buttonCell key="cell" type="check" title="Including remote files" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="1NF-4u-sGn">
+                    <buttonCell key="cell" type="check" title="Enable for remote files also" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="1NF-4u-sGn">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
