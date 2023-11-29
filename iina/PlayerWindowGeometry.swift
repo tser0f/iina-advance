@@ -1285,8 +1285,7 @@ extension PlayerWindowController {
       yPos = viewportHeight - oscHeight - yMargin
     }
 
-    controlBarFloating.xConstraint.constant = xPos
-    controlBarFloating.yConstraint.constant = yPos
+    controlBarFloating.updateConstraints(newOriginInViewport: NSPoint(x: xPos, y: yPos))
 
     // Detach the views in oscFloatingUpperView manually on macOS 11 only; as it will cause freeze
     if #available(macOS 11.0, *) {

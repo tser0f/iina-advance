@@ -10,9 +10,12 @@ import Cocoa
 
 // The control bar when position=="floating"
 class FloatingControlBarView: NSVisualEffectView {
+  private static let minBarWidth: CGFloat = 200
+  private static let preferredBarWidth: CGFloat = 440
+  private static let minOffsetFromSides: CGFloat = 10
 
-  @IBOutlet weak var xConstraint: NSLayoutConstraint!  // this is CENTER of OSC
-  @IBOutlet weak var yConstraint: NSLayoutConstraint!
+  @IBOutlet weak var xConstraint: NSLayoutConstraint!  // this is X CENTER of OSC
+  @IBOutlet weak var yConstraint: NSLayoutConstraint!  // Bottom of OSC
 
   var mousePosRelatedToView: CGPoint?
 
@@ -20,9 +23,78 @@ class FloatingControlBarView: NSVisualEffectView {
 
   private var isAlignFeedbackSent = false
 
+  private var playerWindowController: PlayerWindowController? {
+    return window?.windowController as? PlayerWindowController
+  }
+
+  private var viewportView: NSView? {
+    return playerWindowController?.viewportView
+  }
+
+  // - MARK: Coordinates in Viewport
+
+  var minX: CGFloat {
+    return FloatingControlBarView.minOffsetFromSides + (playerWindowController?.currentLayout.insideLeadingBarWidth ?? 0)
+  }
+
+  var minY: CGFloat {
+    if Preference.enum(for: .oscPosition) == Preference.OSCPosition.bottom, 
+        Preference.enum(for: .bottomBarPlacement) == Preference.PanelPlacement.insideViewport,
+        let bottomBarHeight = playerWindowController?.bottomBarView.frame.height {
+      return FloatingControlBarView.minOffsetFromSides + bottomBarHeight
+    }
+    return FloatingControlBarView.minOffsetFromSides
+  }
+
+  var maxX: CGFloat {
+    guard let viewportView else {
+      return FloatingControlBarView.minBarWidth
+    }
+    let availableSpace = viewportView.frame.width - FloatingControlBarView.minOffsetFromSides
+    if availableSpace < FloatingControlBarView.preferredBarWidth {
+      return availableSpace - (FloatingControlBarView.minBarWidth / 2)
+    } else {
+      return availableSpace - (FloatingControlBarView.preferredBarWidth / 2)
+    }
+  }
+
+  var maxY: CGFloat {
+    let maxYWithoutTopBar = (viewportView?.frame.height ?? 0) - frame.height - FloatingControlBarView.minOffsetFromSides
+    let value: CGFloat
+    if Preference.enum(for: .topBarPlacement) == Preference.PanelPlacement.insideViewport,
+       let topBarHeight = playerWindowController?.topBarView.frame.height {
+      value = maxYWithoutTopBar - topBarHeight
+    } else {
+      value = maxYWithoutTopBar
+    }
+    // ensure sanity
+    return max(value, frame.height + FloatingControlBarView.minOffsetFromSides)
+  }
+
+  var centerX: CGFloat {
+    let minX = minX
+    let maxX = maxX
+    let availableWidth = maxX - minX
+    return (availableWidth * 0.5) + minX
+  }
+
   override func awakeFromNib() {
     self.roundCorners(withRadius: 6)
     self.translatesAutoresizingMaskIntoConstraints = false
+  }
+
+  func updateConstraints(newOriginInViewport newOrigin: NSPoint) {
+    // bound to viewport frame
+    let newOrigin = newOrigin.constrained(to: NSRect(x: minX, y: minY, width: maxX - FloatingControlBarView.minOffsetFromSides, height: maxY - FloatingControlBarView.minOffsetFromSides))
+    // apply position
+    xConstraint.constant = newOrigin.x + frame.width / 2
+    yConstraint.constant = newOrigin.y
+  }
+
+  // - MARK: Mouse Events
+
+  override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+    return Preference.bool(for: .videoViewAcceptsFirstMouse)
   }
 
   override func mouseDown(with event: NSEvent) {
@@ -52,7 +124,7 @@ class FloatingControlBarView: NSVisualEffectView {
     )
     // stick to center
     if Preference.bool(for: .controlBarStickToCenter) {
-      let xPosWhenCenter = (viewportFrame.width - frame.width) / 2
+      let xPosWhenCenter = centerX - (frame.width / 2)
       if abs(newOrigin.x - xPosWhenCenter) <= Constants.Distance.floatingControllerSnapToCenterThreshold {
         newOrigin.x = xPosWhenCenter
         if !isAlignFeedbackSent {
@@ -63,22 +135,24 @@ class FloatingControlBarView: NSVisualEffectView {
         isAlignFeedbackSent = false
       }
     }
-    // bound to viewport frame
-    let xMax = viewportFrame.width - frame.width - 10
-    let yMax = viewportFrame.height - frame.height - 25
-    newOrigin = newOrigin.constrained(to: NSRect(x: 10, y: 0, width: xMax, height: yMax))
-    // apply position
-    xConstraint.constant = newOrigin.x + frame.width / 2
-    yConstraint.constant = newOrigin.y
+
+    updateConstraints(newOriginInViewport: newOrigin)
   }
 
   override func mouseUp(with event: NSEvent) {
     isDragging = false
+
+    if event.clickCount == 2 {
+      let newOrigin = NSPoint(x: centerX - (frame.width / 2), y: frame.origin.y)
+      updateConstraints(newOriginInViewport: newOrigin)
+      return
+    }
+
     guard let viewportFrame = (window?.windowController as? PlayerWindowController)?.viewportView.frame else { return }
     // save final position
     // FIXME: change this to work for multiple windows
-    let xRatio = (xConstraint.constant - frame.width / 2) / viewportFrame.width
-    let yRatio = yConstraint.constant / viewportFrame.height
+    let xRatio = (xConstraint.constant - (frame.width / 2)) / viewportFrame.width
+    let yRatio = yConstraint.constant / maxY
     Preference.set(xRatio, for: .controlBarPositionHorizontal)
     Preference.set(yRatio, for: .controlBarPositionVertical)
   }

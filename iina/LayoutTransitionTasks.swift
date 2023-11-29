@@ -586,7 +586,6 @@ extension PlayerWindowController {
   /// -------------------------------------------------
   /// OPEN PANELS & FINALIZE OFFSETS
   func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
-    guard let window = window else { return }
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleBar_H: \(outputLayout.titleBarHeight), TopOSC_H: \(outputLayout.topOSCHeight)")
 
@@ -646,7 +645,7 @@ extension PlayerWindowController {
       // center control bar
       let cph = Preference.float(for: .controlBarPositionHorizontal)
       let cpv = Preference.float(for: .controlBarPositionVertical)
-      controlBarFloating.xConstraint.constant = viewportView.frame.width * CGFloat(cph)
+      controlBarFloating.xConstraint.constant = viewportView.frame.width * CGFloat(cph) + (controlBarFloating.frame.width / 2)
       controlBarFloating.yConstraint.constant = viewportView.frame.height * CGFloat(cpv)
 
       playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
@@ -1244,7 +1243,7 @@ extension PlayerWindowController {
       stackView.removeFromSuperview()
       fragToolbarView = nil
     }
-    let toolbarView = NSStackView(views: toolButtons)
+    let toolbarView = ClickThroughStackView(views: toolButtons)
     toolbarView.orientation = .horizontal
 
     for button in toolButtons {

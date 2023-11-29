@@ -2207,15 +2207,20 @@ class PlayerCore: NSObject {
         if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL, forWidth: thumbWidth) {
           Logger.log("Found matching thumbnail cache \(cacheName.quoted), width: \(thumbWidth)px", subsystem: subsystem)
           if let thumbnails = ThumbnailCache.read(forName: cacheName, forWidth: thumbWidth) {
-            info.addThumbnails(thumbnails)
-            self.refreshTouchBarSlider()
+            if thumbnails.count >= AppData.minThumbnailsPerFile {
+              info.addThumbnails(thumbnails)
+              refreshTouchBarSlider()
+              return
+            } else {
+              log.error("Expected at least \(AppData.minThumbnailsPerFile) thumbnails, but found only \(thumbnails.count) (width \(thumbWidth)px). Will try to regenerate")
+            }
           } else {
-            log.error("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px")
+            log.error("Cannot read thumbnails from cache \(cacheName.quoted), width \(thumbWidth)px. Will try to regenerate")
           }
-        } else {
-          log.debug("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)")
-          ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
         }
+
+        log.debug("Generating new thumbnails for file \(url.path.pii.quoted), width=\(thumbWidth)")
+        ffmpegController.generateThumbnail(forFile: url.path, thumbWidth:Int32(thumbWidth))
       }
     }
   }

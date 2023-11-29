@@ -2813,6 +2813,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     animationPipeline.submit(animationTasks)
   }
 
+  // - MARK: UI: Thumbnail Preview
+
   /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..
   ///
   /// Normally the OSC's thumbnail preview is shown above the time preview. This is the preferred location. However the
@@ -2975,6 +2977,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     thumbnailPeekView.isHidden = false
   }
 
+  // - MARK: UI: Other
+
   func updateBufferIndicatorView() {
     guard loaded else { return }
 
@@ -3016,8 +3020,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
   }
-
-  // MARK: - UI: Others
 
   func refreshHidesOnDeactivateStatus() {
     guard let window else { return }

@@ -69,6 +69,8 @@ struct AppData {
   // This should help cut down on unnecessary requests.
   static let thumbnailRegenerationDelay = 0.5
 
+  static let minThumbnailsPerFile = 1
+
   static let encodings = CharEncoding.list
 
   static let userInputConfFolder = "input_conf"
