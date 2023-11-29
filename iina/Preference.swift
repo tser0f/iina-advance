@@ -148,10 +148,12 @@ struct Preference {
     static let oscBarToolbarIconSpacing = Key("oscBarToolbarIconSpacing")
 
     /// OSC toolbar
-    /** Horizontal position of control bar. (float, 0 - 1) */
+    /// How close the floating OSC is allowed to get to the edges of its available space, in pixels
+    static let floatingControlBarMargin = Key("floatingControlBarMargin")
+    /** Horizontal position of floating control bar. (float, 0 - 1) */
     static let controlBarPositionHorizontal = Key("controlBarPositionHorizontal")
 
-    /** Horizontal position of control bar. In percentage from bottom. (float, 0 - 1) */
+    /** Horizontal position of floating control bar. In percentage from bottom. (float, 0 - 1) */
     static let controlBarPositionVertical = Key("controlBarPositionVertical")
 
     /** Whether control bar stick to center when dragging. (bool) */
@@ -993,6 +995,7 @@ struct Preference {
     .recordRecentFiles: true,
     .trackAllFilesInRecentOpenMenu: true,
     .cursorAutoHideTimeout: Float(2.0),
+    .floatingControlBarMargin: 5,
     .controlBarPositionHorizontal: Float(0.5),
     .controlBarPositionVertical: Float(0.1),
     .controlBarStickToCenter: true,

@@ -13,7 +13,7 @@ class FloatingControlBarView: NSVisualEffectView {
   private static let barHeight: CGFloat = 67
   private static let minBarWidth: CGFloat = 200
   private static let preferredBarWidth: CGFloat = 440
-  private static let margin: CGFloat = 10
+  private static let margin: CGFloat = CGFloat(max(0, Preference.integer(for: .floatingControlBarMargin)))
 
   @IBOutlet weak var xConstraint: NSLayoutConstraint!  // this is X CENTER of OSC
   @IBOutlet weak var yConstraint: NSLayoutConstraint!  // Bottom of OSC
