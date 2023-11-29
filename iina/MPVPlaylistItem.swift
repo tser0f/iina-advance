@@ -6,9 +6,9 @@
 //  Copyright © 2016 lhc. All rights reserved.
 //
 
-import Cocoa
+import Foundation
 
-class MPVPlaylistItem: NSObject {
+class MPVPlaylistItem {
 
   /** Actually this is the path. Use `filename` to conform mpv API's naming. */
   var filename: String

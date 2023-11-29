@@ -6,9 +6,9 @@
 //  Copyright © 2016 lhc. All rights reserved.
 //
 
-import Cocoa
+import Foundation
 
-class MPVChapter: NSObject {
+class MPVChapter {
 
   private var privTitle: String?
   var title: String {
