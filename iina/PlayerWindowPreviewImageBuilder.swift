@@ -25,6 +25,7 @@ fileprivate let oscFloatingWidth: Int = 140 * scaleFactor
 
 fileprivate let screenRoundedCornerRadius: CGFloat = 10.0 * CGFloat(scaleFactor)
 fileprivate let nativeWindowRoundedCornerRadius = CGFloat(10.0) * CGFloat(scaleFactor)
+fileprivate let widgetRoundedCornerRadius = CGFloat(10.0) * CGFloat(scaleFactor)
 fileprivate let desktopInset: Int = Int(0.5 * Double(scaleFactor))
 
 fileprivate extension CGContext {
@@ -230,7 +231,7 @@ class PlayerWindowPreviewImageBuilder {
         if oscPosition == .floating {
           // Draw floating OSC panel
           cgContext.withNewCGState {
-            cgContext.drawRoundedRect(oscRect, cornerRadius: windowRoundedCornerRadius * 0.5, fillColor: oscPanelColor)
+            cgContext.drawRoundedRect(oscRect, cornerRadius: widgetRoundedCornerRadius * 0.5, fillColor: oscPanelColor)
           }
 
           // Draw play controls
@@ -295,7 +296,7 @@ class PlayerWindowPreviewImageBuilder {
             let pillOriginY = iconGroupCenterY - (pillHeight / 2)
             let pillRect = NSRect(x: Int(nextIconMinX), y: Int(pillOriginY), width: Int(pillWidth), height: Int(pillHeight))
             cgContext.withNewCGState {
-              cgContext.drawRoundedRect(pillRect, cornerRadius: min(pillHeight * 0.5, windowRoundedCornerRadius * 0.5), fillColor: iconColor.cgColor)
+              cgContext.drawRoundedRect(pillRect, cornerRadius: min(pillHeight * 0.5, widgetRoundedCornerRadius * 0.5), fillColor: iconColor.cgColor)
             }
           }
         }
