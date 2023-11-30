@@ -1020,6 +1020,11 @@ extension PlayerWindowController {
       return
     }
 
+    if currentLayout.hasFloatingOSC {
+      controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV,
+                                layout: currentLayout, viewportSize: geometry.viewportSize)
+    }
+
     log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")
     let topBarHeight = layout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
     updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)

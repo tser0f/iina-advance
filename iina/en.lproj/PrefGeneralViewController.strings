@@ -47,8 +47,8 @@
 /* Class = "NSButtonCell"; title = "Pause"; ObjectID = "FbF-jJ-W5b"; */
 "FbF-jJ-W5b.title" = "Pause";
 
-/* Class = "NSTextFieldCell"; title = "Only when media is opened manually:"; ObjectID = "GNV-VA-NBW"; */
-"GNV-VA-NBW.title" = "Only when media is opened manually:";
+/* Class = "NSTextFieldCell"; title = "When media is opened manually:"; ObjectID = "GNV-VA-NBW"; */
+"GNV-VA-NBW.title" = "When media is opened manually:";
 
 /* Class = "NSMenuItem"; title = "Weekly"; ObjectID = "Imf-6g-2Cd"; */
 "Imf-6g-2Cd.title" = "Weekly";

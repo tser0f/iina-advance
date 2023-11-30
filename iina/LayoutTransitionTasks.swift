@@ -281,8 +281,10 @@ extension PlayerWindowController {
       // Update title bar item spacing to align with sidebars
       updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
 
-      controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV,
-                                layout: transition.outputLayout, viewportSize: middleGeo.viewportSize)
+      if !transition.isExitingFullScreen {
+        controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV,
+                                  layout: transition.outputLayout, viewportSize: middleGeo.viewportSize)
+      }
 
       // Sidebars (if closing)
       animateShowOrHideSidebars(transition: transition, layout: transition.inputLayout,
@@ -367,7 +369,7 @@ extension PlayerWindowController {
       apply(visibility: outputLayout.topBarView, to: topBarView)
     }
 
-    if !(transition.inputLayout.hasFloatingOSC && transition.outputLayout.hasFloatingOSC) {
+    if !transition.inputLayout.hasFloatingOSC {
       // Always remove subviews from OSC - is inexpensive + easier than figuring out if anything has changed
       // (except for floating OSC, which doesn't change much and has animation glitches if removed & re-added)
       for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
@@ -633,25 +635,23 @@ extension PlayerWindowController {
       // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
       currentControlBar = controlBarFloating
 
-      if !transition.inputLayout.hasFloatingOSC {
-        oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
-        // There sweems to be a race condition when adding to these StackViews.
-        // Sometimes it still contains the old view, and then trying to add again will cause a crash.
-        // Must check if it already contains the view before adding.
-        if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
-          oscFloatingUpperView.addView(fragVolumeView, in: .leading)
-        }
-        let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
-        oscFloatingUpperView.addView(toolbarView, in: .trailing)
-        fragToolbarView = toolbarView
-
-        oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
-        oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
-        oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-
-        oscFloatingLowerView.addSubview(fragPositionSliderView)
-        fragPositionSliderView.addConstraintsToFillSuperview()
+      oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
+      // There sweems to be a race condition when adding to these StackViews.
+      // Sometimes it still contains the old view, and then trying to add again will cause a crash.
+      // Must check if it already contains the view before adding.
+      if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
+        oscFloatingUpperView.addView(fragVolumeView, in: .leading)
       }
+      let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
+      oscFloatingUpperView.addView(toolbarView, in: .trailing)
+      fragToolbarView = toolbarView
+
+      oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
+      oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
+      oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+
+      oscFloatingLowerView.addSubview(fragPositionSliderView)
+      fragPositionSliderView.addConstraintsToFillSuperview()
 
       // Update floating control bar position
       controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV, 
