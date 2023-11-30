@@ -333,9 +333,7 @@ extension PlayerWindowController {
       }
     }
 
-    if !transition.outputLayout.spec.isLegacyStyle || transition.outputLayout.isFullScreen {
-      customWindowBorderBox.isHidden = true
-    }
+    updateCustomBorderBoxVisibility(using: transition.outputLayout)
 
     // Allow for showing/hiding each button individually
 
@@ -813,9 +811,7 @@ extension PlayerWindowController {
       window.titleVisibility = .visible
     }
 
-    if transition.outputLayout.spec.isLegacyStyle && !transition.outputLayout.isFullScreen {
-      customWindowBorderBox.isHidden = false
-    }
+    updateCustomBorderBoxVisibility(using: transition.outputLayout)
   }
 
   /// -------------------------------------------------
@@ -1326,13 +1322,18 @@ extension PlayerWindowController {
     log.verbose("Inserting window styleMask.titled")
     window.styleMask.insert(.titled)
     window.styleMask.remove(.borderless)
-    customWindowBorderBox.isHidden = true
 
     if let customTitleBar {
       customTitleBar.removeAndCleanUp()
       fadeableViews.remove(customTitleBar.view)
       self.customTitleBar = nil
     }
+  }
+
+  func updateCustomBorderBoxVisibility(using layout: LayoutState) {
+    let hide = !layout.spec.isLegacyStyle || layout.isFullScreen
+    customWindowBorderBox.isHidden = hide
+    customWindowBorderTopHighlightBox.isHidden = hide
   }
 
   private func resetViewsForFullScreenTransition() {

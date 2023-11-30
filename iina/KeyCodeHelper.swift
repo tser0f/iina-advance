@@ -492,7 +492,9 @@ class KeyCodeHelper {
   public static func normalizeMpv(_ mpvKeystrokes: String) -> String {
     let normalizedList = splitAndNormalizeMpvString(mpvKeystrokes)
     let normnalizedString = normalizedList.joined(separator: "-")
-    Logger.log("Normalized mpv: \(mpvKeystrokes.quoted) → \(normnalizedString.quoted)", level: .verbose)
+    if AppInputConfig.logBindingsRebuild {
+      Logger.log("Normalized mpv: \(mpvKeystrokes.quoted) → \(normnalizedString.quoted)", level: .verbose)
+    }
     return normnalizedString
   }
 

@@ -33,6 +33,7 @@
                 <outlet property="controlBarFloating" destination="OiF-pA-8Sd" id="7C1-6a-ZK6"/>
                 <outlet property="controlBarTop" destination="pgt-r3-Vbf" id="dqS-nQ-If8"/>
                 <outlet property="customWindowBorderBox" destination="xqX-4W-gdw" id="ut2-mE-M78"/>
+                <outlet property="customWindowBorderTopHighlightBox" destination="IeW-QK-xIO" id="6In-Z5-KJw"/>
                 <outlet property="fragPlaybackControlButtonsView" destination="Yv6-0K-6E4" id="8vA-vh-qiH"/>
                 <outlet property="fragPositionSliderView" destination="BE1-yC-oJL" id="KXu-MZ-mx8"/>
                 <outlet property="fragVolumeView" destination="N3B-DL-XOA" id="4VW-Wa-AD7"/>
@@ -111,7 +112,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" texturedBackground="YES" fullSizeContentView="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2056" height="1285"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
             <value key="minSize" type="size" width="285" height="120"/>
             <view key="contentView" identifier="PlayerWindow-ContentView" autoresizesSubviews="NO" wantsLayer="YES" id="se5-gp-TjO" userLabel="Window-Content View">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
@@ -627,6 +628,17 @@
                         </view>
                         <color key="borderColor" red="0.59999999999999998" green="0.59999999999999998" blue="0.59999999999999998" alpha="0.45000000000000001" colorSpace="custom" customColorSpace="calibratedRGB"/>
                     </box>
+                    <box identifier="customWindowBorderTopHighlightBox" boxType="custom" borderType="line" title="CustomWindowBorderTopHighlight Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="IeW-QK-xIO" userLabel="CustomWindowBorderTopHighlight Box">
+                        <rect key="frame" x="0.0" y="400" width="640" height="1"/>
+                        <view key="contentView" id="2sJ-m4-Y4B">
+                            <rect key="frame" x="1" y="1" width="638" height="0.0"/>
+                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        </view>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="1" id="rFV-5d-f7U"/>
+                        </constraints>
+                        <color key="borderColor" red="0.59999999999999998" green="0.59999999999999998" blue="0.59999999999999998" alpha="0.25" colorSpace="custom" customColorSpace="calibratedRGB"/>
+                    </box>
                 </subviews>
                 <constraints>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="viewportTrailingOffsetFromTrailingSidebarLeadingConstraint" id="0m3-Bq-3N0"/>
@@ -635,15 +647,18 @@
                     <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="bottomBarTrailingSpaceConstraint" id="3qV-vK-qlg"/>
                     <constraint firstAttribute="bottom" secondItem="3nL-Ky-Hfa" secondAttribute="bottom" identifier="viewportlViewBottom-ContentViewBottom-Constraint" id="4gm-o8-h98"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="top" identifier="viewportBottom-BottomBarTop-Constraint" id="68T-mq-A30"/>
+                    <constraint firstItem="IeW-QK-xIO" firstAttribute="top" secondItem="xqX-4W-gdw" secondAttribute="top" constant="-0.5" id="9bg-Sf-jRQ"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="leading" priority="249" constant="330" identifier="floatingOSC-CenterX-Constraint" id="9z2-rX-b7C"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="Agb-na-g88"/>
+                    <constraint firstItem="IeW-QK-xIO" firstAttribute="trailing" secondItem="xqX-4W-gdw" secondAttribute="trailing" id="BNf-KZ-frQ"/>
                     <constraint firstItem="88M-Ln-4mc" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" constant="4" id="C4g-bz-uwS"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" identifier="TopOfViewport-TopOfTopBar-Constraint" id="Drc-3Y-nhs"/>
-                    <constraint firstAttribute="trailing" secondItem="xqX-4W-gdw" secondAttribute="trailing" constant="0.5" id="EF0-Zz-Ceg"/>
+                    <constraint firstAttribute="trailing" secondItem="xqX-4W-gdw" secondAttribute="trailing" constant="-0.40000000000000002" id="EF0-Zz-Ceg"/>
                     <constraint firstItem="xqX-4W-gdw" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" constant="-0.5" id="HGd-2V-bmg"/>
                     <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="OiF-pA-8Sd" secondAttribute="bottom" identifier="contentViewBtm_GE_oscFloatingBtm_Constraint" id="Ham-QL-hBU"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="oscFloatingLeading_GE_leadingSidebarTrailing_Constraint" id="HfB-0k-fyF"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Qbi-jx-9pO" secondAttribute="trailing" constant="8" id="Ja8-8A-W6L"/>
+                    <constraint firstItem="IeW-QK-xIO" firstAttribute="leading" secondItem="xqX-4W-gdw" secondAttribute="leading" id="Kd6-Gb-mSX"/>
                     <constraint firstItem="XBs-34-TIm" firstAttribute="trailing" secondItem="g0O-v5-RQj" secondAttribute="leading" priority="750" constant="-8" identifier="leadingSidebarToOSDSpaceConstraint" id="LBY-By-mfi"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="trailing" constant="-360" identifier="viewportTrailingOffsetFromTrailingSidebarTrailingConstraint" id="PAj-s6-32e"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="leading" constant="360" identifier="viewportLeadingOffsetFromLeadingSidebarLeadingConstraint" id="PMP-ks-GY2"/>

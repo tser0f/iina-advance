@@ -563,6 +563,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // - Outlets: Views
 
   @IBOutlet weak var customWindowBorderBox: NSBox!
+  @IBOutlet weak var customWindowBorderTopHighlightBox: NSBox!
 
   // MiniPlayer buttons
   @IBOutlet weak var closeButtonView: NSView!
@@ -815,10 +816,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
 
-    window.backgroundColor = .clear
-
-    /// Set this to `false` to get rid of the gray pixel border around the window
-    window.isOpaque = false
+    window.backgroundColor = .black
 
     /// Set `viewportView`'s background to black so that the windows behind this one don't bleed through
     /// when `lockViewportToVideoSize` is disabled.
