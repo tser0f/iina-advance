@@ -562,6 +562,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // - Outlets: Views
 
+  @IBOutlet weak var customWindowBorderBox: NSBox!
+
   // MiniPlayer buttons
   @IBOutlet weak var closeButtonView: NSView!
   // Mini island containing window buttons which hover over album art / video (when video is visible):
@@ -813,10 +815,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
 
-    window.backgroundColor = .black
+    window.backgroundColor = .clear
 
     /// Set this to `false` to get rid of the gray pixel border around the window
-//    window.isOpaque = false
+    window.isOpaque = false
 
     /// Set `viewportView`'s background to black so that the windows behind this one don't bleed through
     /// when `lockViewportToVideoSize` is disabled.

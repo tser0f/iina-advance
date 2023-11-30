@@ -333,6 +333,10 @@ extension PlayerWindowController {
       }
     }
 
+    if !transition.outputLayout.spec.isLegacyStyle || transition.outputLayout.isFullScreen {
+      customWindowBorderBox.isHidden = true
+    }
+
     // Allow for showing/hiding each button individually
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
@@ -807,6 +811,10 @@ extension PlayerWindowController {
     if transition.isExitingFullScreen && !transition.outputLayout.spec.isLegacyStyle {
       // MUST put this in prev task to avoid race condition!
       window.titleVisibility = .visible
+    }
+
+    if transition.outputLayout.spec.isLegacyStyle && !transition.outputLayout.isFullScreen {
+      customWindowBorderBox.isHidden = false
     }
   }
 
@@ -1318,6 +1326,7 @@ extension PlayerWindowController {
     log.verbose("Inserting window styleMask.titled")
     window.styleMask.insert(.titled)
     window.styleMask.remove(.borderless)
+    customWindowBorderBox.isHidden = true
 
     if let customTitleBar {
       customTitleBar.removeAndCleanUp()
