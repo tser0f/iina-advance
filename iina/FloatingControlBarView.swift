@@ -53,6 +53,25 @@ class FloatingControlBarView: NSVisualEffectView {
     yConstraint.animateToConstant(yConst)
   }
 
+  /// Converts the relative offsets of `xConst` and `yConst` into ratios into available space in the range [0...1]
+  private func updateRatios(xConst: CGFloat, yConst: CGFloat, _ geometry: FloatingControllerGeometry) {
+    guard let playerWindowController else { return }
+    let minCenterX = geometry.minCenterX
+
+    // save final position
+    let ratioH = (xConst - minCenterX) / (geometry.availableWidth - geometry.barWidth)
+    let minOriginY = geometry.minOriginY
+    let ratioV = (yConst - minOriginY) / (geometry.maxOriginY - minOriginY)
+    //    Logger.log("Drag: Setting ratioH to: (\(xConst) - \(minCenterX)) / (\(geometry.availableWidth) - \(geometry.barWidth)) = \(ratioH)", level: .verbose)
+
+    // Save in window for use when resizing, etc.
+    playerWindowController.floatingOSCCenterRatioH = ratioH
+    playerWindowController.floatingOSCOriginRatioV = ratioV
+    // Save to prefs as future default
+    Preference.set(ratioH, for: .controlBarPositionHorizontal)
+    Preference.set(ratioV, for: .controlBarPositionVertical)
+  }
+
   // MARK: - Mouse Events
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
@@ -116,24 +135,6 @@ class FloatingControlBarView: NSVisualEffectView {
     } else {
       updateRatios(xConst: xConstraint.constant, yConst: yConstraint.constant, geometry)
     }
-  }
-
-  private func updateRatios(xConst: CGFloat, yConst: CGFloat, _ geometry: FloatingControllerGeometry) {
-    guard let playerWindowController else { return }
-    let minCenterX = geometry.minCenterX
-
-    // save final position
-    let ratioH = (xConst - minCenterX) / (geometry.availableWidth - geometry.barWidth)
-    let minOriginY = geometry.minOriginY
-    let ratioV = (yConst - minOriginY) / (geometry.maxOriginY - minOriginY)
-//    Logger.log("Drag: Setting ratioH to: (\(xConst) - \(minCenterX)) / (\(geometry.availableWidth) - \(geometry.barWidth)) = \(ratioH)", level: .verbose)
-
-    // Save in window for use when resizing, etc.
-    playerWindowController.floatingOSCCenterRatioH = ratioH
-    playerWindowController.floatingOSCOriginRatioV = ratioV
-    // Save to prefs as future default
-    Preference.set(ratioH, for: .controlBarPositionHorizontal)
-    Preference.set(ratioV, for: .controlBarPositionVertical)
   }
 
   // MARK: - Coordinates in Viewport

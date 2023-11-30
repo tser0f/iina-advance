@@ -197,6 +197,7 @@
 		D1D4C7422B0F3219003B09C2 /* MPVHookValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D4C7412B0F3219003B09C2 /* MPVHookValue.swift */; };
 		D1D4C7442B10B7D2003B09C2 /* ViewportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D4C7432B10B7D2003B09C2 /* ViewportView.swift */; };
 		D1D579542B16C38F009E3520 /* ClickThroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D579532B16C38F009E3520 /* ClickThroughView.swift */; };
+		D1D579562B192946009E3520 /* CustomWindowBorderBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D579552B192946009E3520 /* CustomWindowBorderBox.swift */; };
 		D1D87DFC2923A4E500737886 /* BindingTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */; };
 		D1D87E002924F92100737886 /* ConfTableStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */; };
 		D1D87E02292B2AEE00737886 /* BiDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D87E01292B2AEE00737886 /* BiDictionary.swift */; };
@@ -1584,6 +1585,7 @@
 		D1D4C7412B0F3219003B09C2 /* MPVHookValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVHookValue.swift; sourceTree = "<group>"; };
 		D1D4C7432B10B7D2003B09C2 /* ViewportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewportView.swift; sourceTree = "<group>"; };
 		D1D579532B16C38F009E3520 /* ClickThroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickThroughView.swift; sourceTree = "<group>"; };
+		D1D579552B192946009E3520 /* CustomWindowBorderBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWindowBorderBox.swift; sourceTree = "<group>"; };
 		D1D87DFB2923A4E500737886 /* BindingTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingTableStateManager.swift; sourceTree = "<group>"; };
 		D1D87DFF2924F92100737886 /* ConfTableStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfTableStateManager.swift; sourceTree = "<group>"; };
 		D1D87E01292B2AEE00737886 /* BiDictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiDictionary.swift; sourceTree = "<group>"; };
@@ -2465,6 +2467,7 @@
 				E3958563253133E80096811F /* SidebarTabView.swift */,
 				D17504A72918F13E005C3DD0 /* OSCToolbarButton.swift */,
 				D1D579532B16C38F009E3520 /* ClickThroughView.swift */,
+				D1D579552B192946009E3520 /* CustomWindowBorderBox.swift */,
 			);
 			name = Accessories;
 			sourceTree = "<group>";
@@ -2995,6 +2998,7 @@
 				849581F11F02728700D3B359 /* InitialWindowController.swift in Sources */,
 				8461C52E1D45FFF6006E91FF /* PlaySliderCell.swift in Sources */,
 				84F5D4A21E4796F50060A838 /* KeyBindingTranslator.swift in Sources */,
+				D1D579562B192946009E3520 /* CustomWindowBorderBox.swift in Sources */,
 				E3DBD23E218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift in Sources */,
 				8452DD851D3B956D008A543A /* Preference.swift in Sources */,
 				8488D6E31E1183D300D5B952 /* PrefSubViewController.swift in Sources */,

@@ -620,17 +620,17 @@
                             <constraint firstItem="DSj-5w-Wrw" firstAttribute="top" secondItem="88M-Ln-4mc" secondAttribute="top" constant="2" id="vKq-ur-Mlf"/>
                         </constraints>
                     </customView>
-                    <box identifier="customWindowBorderBox" focusRingType="none" boxType="custom" borderType="line" title="CustomWindowBorder Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="xqX-4W-gdw">
+                    <box identifier="customWindowBorderBox" focusRingType="none" boxType="custom" borderType="line" title="CustomWindowBorder Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="xqX-4W-gdw" customClass="CustomWindowBorderBox" customModule="IINA" customModuleProvider="target">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
-                        <view key="contentView" id="ngR-tT-BTi">
+                        <view key="contentView" id="ngR-tT-BTi" userLabel="Box View" customClass="ClickThroughView" customModule="IINA" customModuleProvider="target">
                             <rect key="frame" x="1" y="1" width="638" height="398"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         </view>
                         <color key="borderColor" red="0.59999999999999998" green="0.59999999999999998" blue="0.59999999999999998" alpha="0.45000000000000001" colorSpace="custom" customColorSpace="calibratedRGB"/>
                     </box>
-                    <box identifier="customWindowBorderTopHighlightBox" boxType="custom" borderType="line" title="CustomWindowBorderTopHighlight Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="IeW-QK-xIO" userLabel="CustomWindowBorderTopHighlight Box">
+                    <box identifier="customWindowBorderTopHighlightBox" boxType="custom" borderType="line" title="CustomWindowBorderTopHighlight Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="IeW-QK-xIO" userLabel="CustomWindowBorderTopHighlight Box" customClass="CustomWindowBorderBox" customModule="IINA" customModuleProvider="target">
                         <rect key="frame" x="0.0" y="400" width="640" height="1"/>
-                        <view key="contentView" id="2sJ-m4-Y4B">
+                        <view key="contentView" id="2sJ-m4-Y4B" userLabel="Box View" customClass="ClickThroughView" customModule="IINA" customModuleProvider="target">
                             <rect key="frame" x="1" y="1" width="638" height="0.0"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         </view>
