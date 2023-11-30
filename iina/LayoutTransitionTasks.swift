@@ -1254,8 +1254,12 @@ extension PlayerWindowController {
       stackView.removeFromSuperview()
       fragToolbarView = nil
     }
-    let toolbarView = ClickThroughStackView(views: toolButtons)
+    let toolbarView = ClickThroughStackView()
     toolbarView.orientation = .horizontal
+    toolbarView.distribution = .gravityAreas
+    for button in toolButtons {
+      toolbarView.addView(button, in: .trailing)
+    }
 
     for button in toolButtons {
       toolbarView.setVisibilityPriority(.detachOnlyIfNecessary, for: button)
