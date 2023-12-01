@@ -405,7 +405,7 @@ extension PlayerWindowController {
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = controlBarTop
 
-        addFloatingControlBarViews(to: oscTopMainView,
+        addControlBarViews(to: oscTopMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
         // Subtract height of slider bar (4), then divide by 2 to get total bottom space, then subtract time label height to get total margin
@@ -421,7 +421,7 @@ extension PlayerWindowController {
           oscBottomMainView.addConstraintsToFillSuperview(top: 0, bottom: 0, leading: 8, trailing: 8)
         }
 
-        addFloatingControlBarViews(to: oscBottomMainView,
+        addControlBarViews(to: oscBottomMainView,
                            playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
         let timeLabelOffset = max(-1, (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 - 2)
@@ -430,7 +430,13 @@ extension PlayerWindowController {
       case .floating:
         timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.bottomAnchor.constraint(equalTo: timePositionHoverLabel.superview!.bottomAnchor, constant: -2)
 
-        // Wait to add the subviews in the next task. For some reason, adding too soon here can cause volume slider to disappear
+        let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
+        oscFloatingUpperView.addView(toolbarView, in: .trailing)
+        fragToolbarView = toolbarView
+        oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
+
+        playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
+        playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
       }
 
       let timeLabelFontSize: CGFloat
@@ -635,30 +641,25 @@ extension PlayerWindowController {
       // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
       currentControlBar = controlBarFloating
 
-      oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
-      // There sweems to be a race condition when adding to these StackViews.
-      // Sometimes it still contains the old view, and then trying to add again will cause a crash.
-      // Must check if it already contains the view before adding.
-      if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
-        oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+      if !transition.inputLayout.hasFloatingOSC {
+        oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
+        // There sweems to be a race condition when adding to these StackViews.
+        // Sometimes it still contains the old view, and then trying to add again will cause a crash.
+        // Must check if it already contains the view before adding.
+        if !oscFloatingUpperView.views(in: .leading).contains(fragVolumeView) {
+          oscFloatingUpperView.addView(fragVolumeView, in: .leading)
+        }
+        oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
+
+        oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+
+        oscFloatingLowerView.addSubview(fragPositionSliderView)
+        fragPositionSliderView.addConstraintsToFillSuperview()
       }
-      let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
-      oscFloatingUpperView.addView(toolbarView, in: .trailing)
-      fragToolbarView = toolbarView
-
-      oscFloatingUpperView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
-      oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
-      oscFloatingUpperView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-
-      oscFloatingLowerView.addSubview(fragPositionSliderView)
-      fragPositionSliderView.addConstraintsToFillSuperview()
 
       // Update floating control bar position
-      controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV, 
+      controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV,
                                 layout: transition.outputLayout, viewportSize: transition.outputGeometry.viewportSize)
-
-      playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
-      playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
     }
 
     switch transition.outputLayout.mode {
@@ -1215,12 +1216,13 @@ extension PlayerWindowController {
 
   // MARK: - Controller content layout
 
-  private func addFloatingControlBarViews(to containerView: NSStackView, playBtnSize: CGFloat, playBtnSpacing: CGFloat,
+  private func addControlBarViews(to containerView: NSStackView, playBtnSize: CGFloat, playBtnSpacing: CGFloat,
                                   toolbarIconSize: CGFloat? = nil, toolbarIconSpacing: CGFloat? = nil) {
-    let toolbarView = rebuildToolbar(iconSize: toolbarIconSize, iconPadding: toolbarIconSpacing)
     containerView.addView(fragPlaybackControlButtonsView, in: .leading)
     containerView.addView(fragPositionSliderView, in: .leading)
     containerView.addView(fragVolumeView, in: .leading)
+
+    let toolbarView = rebuildToolbar(iconSize: toolbarIconSize, iconPadding: toolbarIconSpacing)
     containerView.addView(toolbarView, in: .leading)
     fragToolbarView = toolbarView
 
@@ -1259,9 +1261,6 @@ extension PlayerWindowController {
     toolbarView.distribution = .gravityAreas
     for button in toolButtons {
       toolbarView.addView(button, in: .trailing)
-    }
-
-    for button in toolButtons {
       toolbarView.setVisibilityPriority(.detachOnlyIfNecessary, for: button)
     }
 

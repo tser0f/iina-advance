@@ -25,7 +25,7 @@
             <point key="canvasLocation" x="-1607" y="64"/>
         </customView>
         <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="530" height="543"/>
+            <rect key="frame" x="0.0" y="0.0" width="550" height="543"/>
             <subviews>
                 <textField identifier="SectionTitleBehavior" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="38y-2I-MGs">
                     <rect key="frame" x="-2" y="519" width="66" height="16"/>
@@ -36,10 +36,10 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="aKH-Me-5XB" userLabel="WhenMediaIsOpened Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="387" width="410" height="65"/>
+                    <rect key="frame" x="120" y="387" width="430" height="65"/>
                     <subviews>
                         <customView id="Pga-vd-zGA" userLabel="WhenMediaIsOpenedHeader View">
-                            <rect key="frame" x="0.0" y="48" width="410" height="17"/>
+                            <rect key="frame" x="0.0" y="48" width="430" height="17"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="10b-EJ-N6W">
@@ -69,7 +69,7 @@
                             </constraints>
                         </customView>
                         <box identifier="Content0" verticalHuggingPriority="1000" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="DZT-7n-S4M" userLabel="WhenMediaIsOpened Box">
-                            <rect key="frame" x="-3" y="-4" width="416" height="50"/>
+                            <rect key="frame" x="-3" y="-4" width="436" height="50"/>
                             <view key="contentView" horizontalHuggingPriority="251" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="867-m1-aVc" userLabel="WhenMediaIsOpened Content View">
                                 <rect key="frame" x="4" y="16" width="408" height="20"/>
                                 <subviews>
@@ -125,10 +125,10 @@
                     </customSpacing>
                 </stackView>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2uj-sK-U1e" userLabel="WhenMediaIsStarted Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="290" width="410" height="85"/>
+                    <rect key="frame" x="120" y="290" width="430" height="85"/>
                     <subviews>
                         <customView id="6hO-Vh-FNE" userLabel="WhenMediaIsStartedHeader View">
-                            <rect key="frame" x="0.0" y="68" width="410" height="17"/>
+                            <rect key="frame" x="0.0" y="68" width="430" height="17"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="f24-lZ-4m7">
@@ -158,9 +158,9 @@
                             </constraints>
                         </customView>
                         <box identifier="Content1" verticalHuggingPriority="1000" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Aks-lf-F2l" userLabel="WhenMediaIsStarted Box">
-                            <rect key="frame" x="-3" y="-4" width="416" height="70"/>
+                            <rect key="frame" x="-3" y="-4" width="436" height="70"/>
                             <view key="contentView" horizontalHuggingPriority="251" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ezj-tQ-LSK" userLabel="WhenMediaIsStarted Content View">
-                                <rect key="frame" x="4" y="4" width="408" height="64"/>
+                                <rect key="frame" x="4" y="4" width="428" height="64"/>
                                 <subviews>
                                     <stackView distribution="equalCentering" orientation="vertical" alignment="leading" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="aeG-gA-mcO" userLabel="WhenMediaIsLoaded Vertical Stack View">
                                         <rect key="frame" x="12" y="12" width="414" height="40"/>
@@ -261,7 +261,7 @@
                         <real value="3.4028234663852886e+38"/>
                     </customSpacing>
                 </stackView>
-                <stackView distribution="fill" orientation="vertical" alignment="leading" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="UJm-0c-3Ha" userLabel="Vertical Stack View">
+                <stackView distribution="fill" orientation="vertical" alignment="leading" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="501" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="UJm-0c-3Ha" userLabel="Vertical Stack View">
                     <rect key="frame" x="120" y="258" width="416" height="20"/>
                     <subviews>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="F6o-D4-gDa">
@@ -283,10 +283,10 @@
                     </customSpacing>
                 </stackView>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8iE-FU-0g0" userLabel="PauseResumeWhen Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                    <rect key="frame" x="120" y="99" width="410" height="147"/>
+                    <rect key="frame" x="120" y="99" width="430" height="147"/>
                     <subviews>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="W54-Em-Hx4">
-                            <rect key="frame" x="0.0" y="130" width="410" height="17"/>
+                            <rect key="frame" x="0.0" y="130" width="430" height="17"/>
                             <subviews>
                                 <button identifier="TriggerPauseResume" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="CaQ-Om-AFL">
                                     <rect key="frame" x="0.0" y="0.0" width="13" height="13"/>
@@ -315,9 +315,9 @@
                             </constraints>
                         </customView>
                         <box identifier="Content2" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="5RN-PV-pOZ">
-                            <rect key="frame" x="-3" y="-4" width="416" height="132"/>
+                            <rect key="frame" x="-3" y="-4" width="436" height="132"/>
                             <view key="contentView" id="gWB-X2-AzC">
-                                <rect key="frame" x="4" y="5" width="408" height="124"/>
+                                <rect key="frame" x="4" y="5" width="428" height="124"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UFY-vM-qHd">
@@ -433,7 +433,7 @@
                     </connections>
                 </button>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="SsM-Tv-8AZ">
-                    <rect key="frame" x="118" y="11" width="183" height="16"/>
+                    <rect key="frame" x="118" y="7" width="183" height="20"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="When all windows are closed:" id="Oni-TE-rZ6">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -530,12 +530,12 @@
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                             <connections>
+                                <binding destination="IBP-Mz-Maa" name="value" keyPath="values.alwaysAskBeforeRestoreAtLaunch" id="Dpt-nk-Mqg"/>
                                 <binding destination="IBP-Mz-Maa" name="hidden" keyPath="values.enableRestoreUIState" id="yBM-Pr-bd2">
                                     <dictionary key="options">
                                         <string key="NSValueTransformerName">NSNegateBoolean</string>
                                     </dictionary>
                                 </binding>
-                                <binding destination="IBP-Mz-Maa" name="value" keyPath="values.alwaysAskBeforeRestoreAtLaunch" id="Dpt-nk-Mqg"/>
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="iYC-W4-rw7" userLabel="4pt Spacer">
@@ -567,6 +567,7 @@
                 </stackView>
             </subviews>
             <constraints>
+                <constraint firstItem="SsM-Tv-8AZ" firstAttribute="height" secondItem="y2l-T9-GFV" secondAttribute="height" id="0Ca-Xg-hl1"/>
                 <constraint firstItem="OXi-vL-mzp" firstAttribute="firstBaseline" secondItem="38y-2I-MGs" secondAttribute="firstBaseline" id="1h7-Bl-tua"/>
                 <constraint firstItem="Xi9-i5-9V4" firstAttribute="leading" secondItem="SsM-Tv-8AZ" secondAttribute="leading" id="2HC-NO-brG"/>
                 <constraint firstItem="Xi9-i5-9V4" firstAttribute="height" secondItem="F6o-D4-gDa" secondAttribute="height" id="46G-YA-CpT"/>
@@ -945,7 +946,7 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="64"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <textField identifier="SectionTitleHistory" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hhD-aO-k96">
+                <textField identifier="SectionTitleUpdates" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hhD-aO-k96">
                     <rect key="frame" x="-2" y="40" width="63" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Updates:" id="yEJ-S7-ZfM">
                         <font key="font" metaFont="systemBold"/>
@@ -980,16 +981,13 @@
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                             <constraints>
-                                <constraint firstAttribute="height" constant="20" id="LaI-gO-Sjo"/>
+                                <constraint firstAttribute="height" constant="20" id="Amg-vH-hcb"/>
                             </constraints>
                             <connections>
                                 <binding destination="IBP-Mz-Maa" name="value" keyPath="values.receiveBetaUpdate" id="hup-g9-DSv"/>
                             </connections>
                         </button>
                     </subviews>
-                    <constraints>
-                        <constraint firstItem="tUl-6f-ClP" firstAttribute="height" secondItem="ibu-Tq-kBr" secondAttribute="height" id="RoU-DR-RN1"/>
-                    </constraints>
                     <visibilityPriorities>
                         <integer value="1000"/>
                         <integer value="1000"/>
@@ -1002,7 +1000,7 @@
                     </customSpacing>
                 </stackView>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ONF-nX-zDm">
-                    <rect key="frame" x="261" y="30" width="88" height="25"/>
+                    <rect key="frame" x="261" y="33" width="88" height="25"/>
                     <popUpButtonCell key="cell" type="push" title="Hourly" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="3600" imageScaling="proportionallyDown" inset="2" selectedItem="slG-Jb-54B" id="fRX-zX-ecC">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -1031,14 +1029,14 @@
             </subviews>
             <constraints>
                 <constraint firstItem="uTN-fm-JGD" firstAttribute="leading" secondItem="MjK-7m-iKq" secondAttribute="leading" constant="120" id="3Br-WP-4s6"/>
-                <constraint firstAttribute="bottom" secondItem="tUl-6f-ClP" secondAttribute="bottom" constant="8" id="5XS-yG-ZXt"/>
                 <constraint firstItem="hhD-aO-k96" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="MjK-7m-iKq" secondAttribute="leading" constant="120" id="Fjz-RP-k1f"/>
-                <constraint firstItem="uTN-fm-JGD" firstAttribute="top" secondItem="MjK-7m-iKq" secondAttribute="top" constant="8" id="S5P-9J-kWY"/>
                 <constraint firstItem="hhD-aO-k96" firstAttribute="leading" secondItem="MjK-7m-iKq" secondAttribute="leading" id="V65-Mm-rrd"/>
                 <constraint firstItem="ONF-nX-zDm" firstAttribute="leading" secondItem="ibu-Tq-kBr" secondAttribute="trailing" constant="8" id="a0k-ZK-eRu"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ONF-nX-zDm" secondAttribute="trailing" id="aS5-6j-iOl"/>
                 <constraint firstItem="hhD-aO-k96" firstAttribute="top" secondItem="MjK-7m-iKq" secondAttribute="top" constant="8" id="joI-fI-aYo"/>
-                <constraint firstItem="ONF-nX-zDm" firstAttribute="firstBaseline" secondItem="ibu-Tq-kBr" secondAttribute="firstBaseline" constant="3" id="jpU-ko-6cB"/>
+                <constraint firstItem="ONF-nX-zDm" firstAttribute="firstBaseline" secondItem="ibu-Tq-kBr" secondAttribute="firstBaseline" id="jpU-ko-6cB"/>
+                <constraint firstAttribute="bottom" secondItem="uTN-fm-JGD" secondAttribute="bottom" constant="8" id="tAg-Po-3eD"/>
+                <constraint firstItem="ibu-Tq-kBr" firstAttribute="firstBaseline" secondItem="hhD-aO-k96" secondAttribute="firstBaseline" id="yDR-1B-Bic"/>
             </constraints>
             <point key="canvasLocation" x="-2215" y="1144"/>
         </customView>
