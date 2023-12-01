@@ -37,6 +37,13 @@ class FloatingControlBarView: NSVisualEffectView {
     self.translatesAutoresizingMaskIntoConstraints = false
   }
 
+  func windowDidLoad() {
+    guard let wc = playerWindowController, let contentView = wc.window?.contentView else { return }
+    self.leadingAnchor.constraint(greaterThanOrEqualTo: wc.leadingSidebarView.trailingAnchor, constant: FloatingControlBarView.margin).isActive = true
+    wc.trailingSidebarView.leadingAnchor.constraint(greaterThanOrEqualTo: self.trailingAnchor, constant: FloatingControlBarView.margin).isActive = true
+    self.bottomAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: FloatingControlBarView.margin).isActive = true
+  }
+
   // MARK: - Positioning
 
   func moveTo(centerRatioH ratioH: CGFloat, originRatioV ratioV: CGFloat, layout: PlayerWindowController.LayoutState, viewportSize: CGSize) {
