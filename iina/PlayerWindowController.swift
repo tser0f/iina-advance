@@ -856,8 +856,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       cv.addSubview(view)
     }
 
-    controlBarFloating.windowDidLoad()
-
     // default album art
     defaultAlbumArtView.translatesAutoresizingMaskIntoConstraints = false
     defaultAlbumArtView.wantsLayer = true

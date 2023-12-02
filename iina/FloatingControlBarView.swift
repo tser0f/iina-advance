@@ -18,6 +18,10 @@ class FloatingControlBarView: NSVisualEffectView {
   @IBOutlet weak var xConstraint: NSLayoutConstraint!  // this is X CENTER of OSC
   @IBOutlet weak var yConstraint: NSLayoutConstraint!  // Bottom of OSC
 
+  weak var leadingMarginConstraint: NSLayoutConstraint!
+  weak var trailingMarginConstraint: NSLayoutConstraint!
+  weak var bottomMarginConstraint: NSLayoutConstraint!
+
   var mousePosRelatedToView: CGPoint?
 
   var isDragging: Bool = false
@@ -37,11 +41,32 @@ class FloatingControlBarView: NSVisualEffectView {
     self.translatesAutoresizingMaskIntoConstraints = false
   }
 
-  func windowDidLoad() {
+  func addMarginConstraints() {
     guard let wc = playerWindowController, let contentView = wc.window?.contentView else { return }
-    self.leadingAnchor.constraint(greaterThanOrEqualTo: wc.leadingSidebarView.trailingAnchor, constant: FloatingControlBarView.margin).isActive = true
-    wc.trailingSidebarView.leadingAnchor.constraint(greaterThanOrEqualTo: self.trailingAnchor, constant: FloatingControlBarView.margin).isActive = true
-    self.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: FloatingControlBarView.margin).isActive = true
+    if leadingMarginConstraint == nil || !leadingMarginConstraint.isActive {
+      leadingMarginConstraint = self.leadingAnchor.constraint(greaterThanOrEqualTo: wc.leadingSidebarView.trailingAnchor, constant: FloatingControlBarView.margin)
+      leadingMarginConstraint.isActive = true
+    }
+    if trailingMarginConstraint == nil || !trailingMarginConstraint.isActive {
+      trailingMarginConstraint = wc.trailingSidebarView.leadingAnchor.constraint(greaterThanOrEqualTo: self.trailingAnchor, constant: FloatingControlBarView.margin)
+      trailingMarginConstraint.isActive = true
+    }
+    if bottomMarginConstraint == nil || !bottomMarginConstraint.isActive {
+      bottomMarginConstraint = self.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: FloatingControlBarView.margin)
+      bottomMarginConstraint.isActive = true
+    }
+  }
+
+  func removeMarginConstraints() {
+    if let leadingMarginConstraint {
+      leadingMarginConstraint.isActive = false
+    }
+    if let trailingMarginConstraint {
+      trailingMarginConstraint.isActive = false
+    }
+    if let bottomMarginConstraint {
+      bottomMarginConstraint.isActive = false
+    }
   }
 
   // MARK: - Positioning
@@ -101,6 +126,8 @@ class FloatingControlBarView: NSVisualEffectView {
       return
     }
 
+    guard isDragging else { return }
+
     let currentLocInViewport = viewportView.convert(event.locationInWindow, from: nil)
     let geometry = FloatingControllerGeometry(windowLayout: playerWindowController.currentLayout, viewportSize: viewportView.frame.size)
 
@@ -126,9 +153,9 @@ class FloatingControlBarView: NSVisualEffectView {
   }
 
   override func mouseUp(with event: NSEvent) {
+    isDragging = false
     guard let playerWindowController, let viewportView = playerWindowController.viewportView else { return }
 
-    isDragging = false
     let geometry = FloatingControllerGeometry(windowLayout: playerWindowController.currentLayout, viewportSize: viewportView.frame.size)
 
     if event.clickCount == 2 {

@@ -647,7 +647,7 @@
                     <constraint firstItem="DFb-1L-U9o" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="bottomBarTrailingSpaceConstraint" id="3qV-vK-qlg"/>
                     <constraint firstAttribute="bottom" secondItem="3nL-Ky-Hfa" secondAttribute="bottom" identifier="viewportlViewBottom-ContentViewBottom-Constraint" id="4gm-o8-h98"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="DFb-1L-U9o" secondAttribute="top" identifier="viewportBottom-BottomBarTop-Constraint" id="68T-mq-A30"/>
-                    <constraint firstItem="IeW-QK-xIO" firstAttribute="top" secondItem="xqX-4W-gdw" secondAttribute="top" constant="-0.5" id="9bg-Sf-jRQ"/>
+                    <constraint firstItem="IeW-QK-xIO" firstAttribute="top" secondItem="xqX-4W-gdw" secondAttribute="top" priority="900" constant="-0.5" id="9bg-Sf-jRQ"/>
                     <constraint firstItem="OiF-pA-8Sd" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="leading" priority="249" constant="330" identifier="floatingOSC-CenterX-Constraint" id="9z2-rX-b7C"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="8" id="Agb-na-g88"/>
                     <constraint firstItem="88M-Ln-4mc" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" constant="4" id="C4g-bz-uwS"/>
@@ -674,12 +674,12 @@
                     <constraint firstItem="epo-S6-QVB" firstAttribute="bottom" secondItem="XBs-34-TIm" secondAttribute="bottom" id="f5L-Kv-wdv"/>
                     <constraint firstItem="88M-Ln-4mc" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" constant="4" id="fJp-4W-b6q"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="bottom" priority="900" constant="8" identifier="TopOSD-EQ-topBar-Constraint" id="hAe-Tn-76i"/>
-                    <constraint firstItem="xqX-4W-gdw" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" id="jfz-t9-Cw5"/>
+                    <constraint firstItem="xqX-4W-gdw" firstAttribute="top" secondItem="se5-gp-TjO" secondAttribute="top" priority="900" id="jfz-t9-Cw5"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="bottom" secondItem="Nrz-jZ-Luf" secondAttribute="bottom" id="kHE-py-RY5"/>
                     <constraint firstItem="oX4-0N-but" firstAttribute="centerX" secondItem="3nL-Ky-Hfa" secondAttribute="centerX" id="kfR-hG-8ee"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Nrz-jZ-Luf" secondAttribute="trailing" id="mJs-PF-Ex5"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="n2d-ys-qVW"/>
-                    <constraint firstAttribute="bottom" secondItem="xqX-4W-gdw" secondAttribute="bottom" constant="-0.5" id="nax-8a-6v3"/>
+                    <constraint firstAttribute="bottom" secondItem="xqX-4W-gdw" secondAttribute="bottom" priority="900" constant="-0.5" id="nax-8a-6v3"/>
                     <constraint firstItem="TRx-2V-Gr3" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="topBarLeadingSpaceConstraint" id="ofB-WP-9dW"/>
                     <constraint firstItem="Qbi-jx-9pO" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" priority="900" id="r5V-EL-YbE"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="epo-S6-QVB" secondAttribute="leading" constant="-8" id="rQT-Vg-6uB"/>

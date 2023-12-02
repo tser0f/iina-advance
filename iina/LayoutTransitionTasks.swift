@@ -225,6 +225,10 @@ extension PlayerWindowController {
       hideOSD()
     }
 
+    if !outputLayout.hasFloatingOSC {
+      controlBarFloating.removeMarginConstraints()
+    }
+
     if transition.isExitingInteractiveMode, let cropController = self.cropSettingsView {
       // Exiting interactive mode
       cropController.cropBoxView.alphaValue = 0
@@ -653,6 +657,8 @@ extension PlayerWindowController {
 
         oscFloatingLowerView.addSubview(fragPositionSliderView)
         fragPositionSliderView.addConstraintsToFillSuperview()
+
+        controlBarFloating.addMarginConstraints()
       }
 
       // Update floating control bar position
