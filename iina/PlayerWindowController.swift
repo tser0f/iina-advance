@@ -2858,6 +2858,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func refreshSeekTimeAndThumnailInternal(from event: NSEvent) {
+    guard !currentLayout.isMusicMode && currentLayout.isInteractiveMode else { return }
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
     let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
     guard isMouseInPlaySlider && !isCoveredByOSD, let duration = player.info.videoDuration else {
@@ -2882,7 +2883,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Thumbnail:
     guard player.info.thumbnailsReady,
             let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
-          let videoParams = player.info.videoParams else {
+          let videoParams = player.info.videoParams, let currentControlBar else {
       thumbnailPeekView.isHidden = true
       return
     }
@@ -2959,8 +2960,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       contentView.addSubview(thumbnailPeekView, positioned: .above, relativeTo: topBarView)
     }
 
-    let oscOriginInWindowY = currentControlBar!.superview!.convert(currentControlBar!.frame.origin, to: nil).y
-    let oscHeight = currentControlBar!.frame.size.height
+    let oscOriginInWindowY = currentControlBar.superview!.convert(currentControlBar.frame.origin, to: nil).y
+    let oscHeight = currentControlBar.frame.size.height
     let showAbove = canShowThumbnailAbove(oscOriginInWindowY: oscOriginInWindowY, oscHeight: oscHeight, thumbnailHeight: thumbHeight)
     let thumbOriginY: CGFloat
     if showAbove {

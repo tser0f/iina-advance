@@ -41,7 +41,7 @@ class FloatingControlBarView: NSVisualEffectView {
     guard let wc = playerWindowController, let contentView = wc.window?.contentView else { return }
     self.leadingAnchor.constraint(greaterThanOrEqualTo: wc.leadingSidebarView.trailingAnchor, constant: FloatingControlBarView.margin).isActive = true
     wc.trailingSidebarView.leadingAnchor.constraint(greaterThanOrEqualTo: self.trailingAnchor, constant: FloatingControlBarView.margin).isActive = true
-    self.bottomAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: FloatingControlBarView.margin).isActive = true
+    self.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: FloatingControlBarView.margin).isActive = true
   }
 
   // MARK: - Positioning
