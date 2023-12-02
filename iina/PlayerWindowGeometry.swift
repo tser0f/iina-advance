@@ -370,8 +370,8 @@ struct PlayerWindowGeometry: Equatable {
                   height: min(desiredViewportSize.height, maxSize.height - outsideBarsTotalSize.height))
   }
 
-  func refit(_ newFit: ScreenFitOption? = nil) -> PlayerWindowGeometry {
-    return scaleViewport(fitOption: newFit)
+  func refit(_ newFit: ScreenFitOption? = nil, lockViewportToVideoSize: Bool? = nil) -> PlayerWindowGeometry {
+    return scaleViewport(fitOption: newFit, lockViewportToVideoSize: lockViewportToVideoSize)
   }
 
   /// Computes a new `PlayerWindowGeometry`, attempting to attain the given window size.
