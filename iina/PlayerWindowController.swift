@@ -2868,7 +2868,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func refreshSeekTimeAndThumnailInternal(from event: NSEvent) {
-    guard !currentLayout.isMusicMode && currentLayout.isInteractiveMode else { return }
+    guard !currentLayout.isMusicMode && !currentLayout.isInteractiveMode else { return }
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
     let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
     guard isMouseInPlaySlider && !isCoveredByOSD, let duration = player.info.videoDuration else {
