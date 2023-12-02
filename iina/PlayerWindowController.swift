@@ -2186,7 +2186,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidMove(_ notification: Notification) {
     guard !isAnimating else { return }
     guard let window = window else { return }
-    
+
     animationPipeline.submitZeroDuration({ [self] in
       log.verbose("WindowDidMove to frame: \(window.frame)")
       let layout = currentLayout
@@ -3564,7 +3564,8 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     }
 
     // Set frame to animate back to
-    pip.replacementRect = windowedModeGeometry.videoFrameInWindowCoords
+    let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPlayerWindowGeometry() : windowedModeGeometry!
+    pip.replacementRect = geo.videoFrameInWindowCoords
     pip.replacementWindow = window
 
     // Bring the window to the front and deminiaturize it
@@ -3601,8 +3602,9 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
+      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPlayerWindowGeometry() : windowedModeGeometry
       addVideoViewToWindow()
-      videoView.apply(windowedModeGeometry)
+      videoView.apply(geo)
 
       // If using legacy windowed mode, need to manually add title to Window menu & Dock
       updateTitle()
