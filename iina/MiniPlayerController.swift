@@ -156,12 +156,16 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   private func hideControl() {
     windowController.animationPipeline.submit(IINAAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
-      windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .defaultLow
-
-      windowController.closeButtonView.animator().alphaValue = 0
-      controlView.animator().alphaValue = 0
-      mediaInfoView.animator().alphaValue = 1
+      hideControlInternal()
     }))
+  }
+
+  private func hideControlInternal() {
+    windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .defaultLow
+
+    windowController.closeButtonView.animator().alphaValue = 0
+    controlView.animator().alphaValue = 0
+    mediaInfoView.animator().alphaValue = 1
   }
 
   // MARK: - UI
@@ -439,6 +443,9 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // Make sure to restore video
     applyVideoViewVisibilityConstraints(isVideoVisible: true)
     windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
+
+    // Make sure to reset constraints for OSD
+    hideControlInternal()
   }
 
   func applyVideoViewVisibilityConstraints(isVideoVisible: Bool) {

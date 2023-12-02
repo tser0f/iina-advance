@@ -110,7 +110,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   let animationPipeline = IINAAnimation.Pipeline()
 
-  // MARK: - Status
+  // MARK: - Status variables
 
   var isAnimating: Bool {
     return animationPipeline.isRunning
@@ -1990,9 +1990,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       // We know the size, but don't yet know where AppKit is actually going to put the resized window.
       // Enqueue task which will run after this method returns, so we can check once the window is in its new location.
-      DispatchQueue.main.async { [self] in
+      animationPipeline.submitZeroDuration({ [self] in
         updateCachedGeometry()
-      }
+      })
 
       return newGeometry.windowFrame.size
     }
@@ -2004,43 +2004,45 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     guard !isAnimating, !isMagnifying else { return }
 
-    defer {
-      updateCachedGeometry()
-    }
+    animationPipeline.submitZeroDuration({ [self] in
+      defer {
+        updateCachedGeometry()
+      }
 
-    IINAAnimation.disableAnimation {
-      log.verbose("WindowDidResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
+      IINAAnimation.disableAnimation {
+        log.verbose("WindowDidResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
 
-      switch currentLayout.mode {
-      case .musicMode:
-        // Re-evaluate space requirements for labels. May need to start scrolling.
-        // Will also update saved state
-        miniPlayer.windowDidResize()
-        return
-      case .windowed:
-        let viewportSize = viewportView.frame.size
-        let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
-        // Need to update this always when resizing window:
-        videoView.apply(resizedGeo)
+        switch currentLayout.mode {
+        case .musicMode:
+          // Re-evaluate space requirements for labels. May need to start scrolling.
+          // Will also update saved state
+          miniPlayer.windowDidResize()
+          return
+        case .windowed:
+          let viewportSize = viewportView.frame.size
+          let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
+          // Need to update this always when resizing window:
+          videoView.apply(resizedGeo)
 
-        if currentLayout.oscPosition == .floating {
-          // Update floating control bar position
-          updateFloatingOSCAfterWindowDidResize()
+          if currentLayout.oscPosition == .floating {
+            // Update floating control bar position
+            updateFloatingOSCAfterWindowDidResize()
+          }
+        case .windowedInteractive, .fullScreenInteractive:
+          // Update interactive mode selectable box size. Origin is relative to viewport origin
+          let selectableRect = NSRect(origin: CGPointZero, size: videoView.frame.size)
+          cropSettingsView?.cropBoxView.resized(with: selectableRect)
+        case .fullScreen:
+          return
         }
-      case .windowedInteractive, .fullScreenInteractive:
-        // Update interactive mode selectable box size. Origin is relative to viewport origin
-        let selectableRect = NSRect(origin: CGPointZero, size: videoView.frame.size)
-        cropSettingsView?.cropBoxView.resized(with: selectableRect)
-      case .fullScreen:
-        return
+
+        if currentLayout.isWindowed {
+          updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
+        }
       }
 
-      if currentLayout.isWindowed {
-        updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
-      }
-    }
-
-    player.events.emit(.windowResized, data: window.frame)
+      player.events.emit(.windowResized, data: window.frame)
+    })
   }
 
   /// Called when done with user drag of window border.
@@ -2050,21 +2052,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // See comments in windowWillExitFullScreen for details.
     guard !isClosing, !isAnimating, !isMagnifying else { return }
 
-    log.verbose("WindowDidEndLiveResize mode: \(currentLayout.mode)")
+    animationPipeline.submitZeroDuration({ [self] in
+      log.verbose("WindowDidEndLiveResize mode: \(currentLayout.mode)")
 
-    switch currentLayout.mode {
-    case .windowed:
-      updateCachedGeometry()
-      // resize framebuffer in videoView after resizing.
-      updateWindowParametersForMPV()
-    case .windowedInteractive:
-      updateCachedGeometry()
-    case .musicMode:
-      miniPlayer.windowDidEndLiveResize()
-    default:
-      break
-    }
-    player.saveState()
+      switch currentLayout.mode {
+      case .windowed:
+        updateCachedGeometry()
+        // resize framebuffer in videoView after resizing.
+        updateWindowParametersForMPV()
+      case .windowedInteractive:
+        updateCachedGeometry()
+      case .musicMode:
+        miniPlayer.windowDidEndLiveResize()
+      default:
+        break
+      }
+      player.saveState()
+    })
   }
 
   // MARK: - Window Delegate: window move, screen changes
@@ -2171,27 +2175,33 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowWillMove(_ notification: Notification) {
     guard let window = window else { return }
-    log.verbose("WindowWillMove frame: \(window.frame)")
-    /// Sometimes there is a `windowWillMove` notification without a `windowDidMove`. So do the update here too:
-    updateCachedGeometry(updatePreferredSizeAlso: false)
+
+    animationPipeline.submitZeroDuration({ [self] in
+      log.verbose("WindowWillMove frame: \(window.frame)")
+      /// Sometimes there is a `windowWillMove` notification without a `windowDidMove`. So do the update here too:
+      updateCachedGeometry(updatePreferredSizeAlso: false)
+    })
   }
 
   func windowDidMove(_ notification: Notification) {
     guard !isAnimating else { return }
     guard let window = window else { return }
-    log.verbose("WindowDidMove to frame: \(window.frame)")
-    let layout = currentLayout
-    if layout.isLegacyFullScreen && !player.info.isRestoring {
-      // MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
-      // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
-      // window management app such as Amethyst. If this happens, move the window back to its proper place:
-      log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
-      let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
-      applyLegacyFullScreenGeometry(fsGeo)
-    } else {
-      updateCachedGeometry(updatePreferredSizeAlso: false)
-      player.events.emit(.windowMoved, data: window.frame)
-    }
+    
+    animationPipeline.submitZeroDuration({ [self] in
+      log.verbose("WindowDidMove to frame: \(window.frame)")
+      let layout = currentLayout
+      if layout.isLegacyFullScreen && !player.info.isRestoring {
+        // MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
+        // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
+        // window management app such as Amethyst. If this happens, move the window back to its proper place:
+        log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
+        let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
+        applyLegacyFullScreenGeometry(fsGeo)
+      } else {
+        updateCachedGeometry(updatePreferredSizeAlso: false)
+        player.events.emit(.windowMoved, data: window.frame)
+      }
+    })
   }
 
   // MARK: - Window delegate: Activeness status
