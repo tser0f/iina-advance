@@ -405,11 +405,10 @@ extension PlayerWindowController {
         log.verbose("[\(transition.name)] Setting up control bar: \(outputLayout.oscPosition)")
         currentControlBar = controlBarTop
 
-        addControlBarViews(to: oscTopMainView,
-                           playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
+        addControlBarViews(to: oscTopMainView, playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
         // Subtract height of slider bar (4), then divide by 2 to get total bottom space, then subtract time label height to get total margin
-        let timeLabelOffset = (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 + 2
+        let timeLabelOffset = max(0, (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4)
         timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.bottomAnchor.constraint(equalTo: timePositionHoverLabel.superview!.bottomAnchor, constant: -timeLabelOffset)
 
       case .bottom:
@@ -421,8 +420,7 @@ extension PlayerWindowController {
           oscBottomMainView.addConstraintsToFillSuperview(top: 0, bottom: 0, leading: 8, trailing: 8)
         }
 
-        addControlBarViews(to: oscBottomMainView,
-                           playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
+        addControlBarViews(to: oscBottomMainView, playBtnSize: oscBarPlaybackIconSize, playBtnSpacing: oscBarPlaybackIconSpacing)
 
         let timeLabelOffset = max(-1, (((OSCToolbarButton.oscBarHeight - 4) / 2) - timePositionHoverLabel.frame.height) / 4 - 2)
         timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.topAnchor.constraint(equalTo: timePositionHoverLabel.superview!.topAnchor, constant: timeLabelOffset)
@@ -448,7 +446,7 @@ extension PlayerWindowController {
         playSliderHeightConstraint.isActive = true
 
         switch barHeight {
-        case 40...:
+        case 48...:
           timeLabelFontSize = NSFont.systemFontSize
         default:
           timeLabelFontSize = NSFont.smallSystemFontSize

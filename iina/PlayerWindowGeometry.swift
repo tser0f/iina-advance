@@ -959,8 +959,8 @@ extension PlayerWindowController {
   /// Updates the appropriate in-memory cached geometry (based on the current window mode) using the current window & view frames.
   /// Param `updatePreferredSizeAlso` only applies to `.windowed` mode.
   func updateCachedGeometry(updatePreferredSizeAlso: Bool = true) {
-    guard !isAnimating, !currentLayout.isFullScreen else {
-      log.verbose("Not updating cached geometry: isAnimating=\(isAnimating.yn) isFS=\(currentLayout.isFullScreen.yn)")
+    guard !currentLayout.isFullScreen, !player.info.isRestoring else {
+      log.verbose("Not updating cached geometry: isFS=\(currentLayout.isFullScreen.yn), isRestoring=\(player.info.isRestoring)")
       return
     }
     log.verbose("Updating cached \(currentLayout.mode) geometry from current window")

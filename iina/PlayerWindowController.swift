@@ -1399,7 +1399,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // if it's a mouseup after dragging window
       isDragging = false
     } else if finishResizingSidebar(with: event) {
-      updateCachedGeometry()
+      animationPipeline.submitZeroDuration{ [self] in
+        updateCachedGeometry()
+      }
       return
     } else {
       // if it's a mouseup after clicking
@@ -2184,13 +2186,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidMove(_ notification: Notification) {
-    guard !isAnimating else { return }
+    guard !isAnimating, !player.info.isRestoring else { return }
     guard let window = window else { return }
 
     animationPipeline.submitZeroDuration({ [self] in
       log.verbose("WindowDidMove to frame: \(window.frame)")
       let layout = currentLayout
-      if layout.isLegacyFullScreen && !player.info.isRestoring {
+      if layout.isLegacyFullScreen {
         // MacOS (as of 14.0 Sonoma) sometimes moves the window around when there are multiple screens
         // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
         // window management app such as Amethyst. If this happens, move the window back to its proper place:
