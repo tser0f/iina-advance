@@ -75,6 +75,8 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     let scale = max(0.0001, magnification + 1.0)
     windowController.log.verbose("Scaling pinched video, target scale: \(scale)")
 
+    // TODO: merge with `setWindowScale()`
+
     let originalGeometry: PlayerWindowGeometry
     if windowController.currentLayout.isMusicMode {
       originalGeometry = windowController.musicModeGeometry.toPlayerWindowGeometry()

@@ -388,7 +388,7 @@ extension PlayerWindowController {
       }
     }
 
-    func computePinToTopButtonVisibility(isOnTop: Bool) -> Visibility {
+    func computeOnTopButtonVisibility(isOnTop: Bool) -> Visibility {
       let showOnTopStatus = Preference.bool(for: .alwaysShowOnTopIcon) || isOnTop
       if isFullScreen || !showOnTopStatus {
         return .hidden

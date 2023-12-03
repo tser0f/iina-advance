@@ -186,7 +186,7 @@ struct PlayerSaveState {
       props[PropName.intendedViewportSize.rawValue] = sizeString
     }
 
-    if player.windowController.isOntop {
+    if player.windowController.isOnTop {
       props[PropName.isOnTop.rawValue] = true.yn
     }
     if Preference.bool(for: .autoSwitchToMusicMode) {

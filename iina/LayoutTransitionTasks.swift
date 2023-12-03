@@ -196,13 +196,13 @@ extension PlayerWindowController {
         }
       }
 
-      let pinToTopButtonVisibility = transition.outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
-      if pinToTopButtonVisibility == .hidden {
-        pinToTopButton.alphaValue = 0
-        fadeableViewsTopBar.remove(pinToTopButton)
+      let onTopButtonVisibility = transition.outputLayout.computeOnTopButtonVisibility(isOnTop: isOnTop)
+      if onTopButtonVisibility == .hidden {
+        onTopButton.alphaValue = 0
+        fadeableViewsTopBar.remove(onTopButton)
 
         if let customTitleBar {
-          customTitleBar.pinToTopButton.alphaValue = 0
+          customTitleBar.onTopButton.alphaValue = 0
         }
       }
     }
@@ -345,13 +345,13 @@ extension PlayerWindowController {
 
     applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
     applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-    let pinToTopButtonVisibility = transition.outputLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
-    applyHiddenOnly(visibility: pinToTopButtonVisibility, to: pinToTopButton)
+    let onTopButtonVisibility = transition.outputLayout.computeOnTopButtonVisibility(isOnTop: isOnTop)
+    applyHiddenOnly(visibility: onTopButtonVisibility, to: onTopButton)
 
     if let customTitleBar {
       applyHiddenOnly(visibility: outputLayout.leadingSidebarToggleButton, to: customTitleBar.leadingSidebarToggleButton)
       applyHiddenOnly(visibility: outputLayout.trailingSidebarToggleButton, to: customTitleBar.trailingSidebarToggleButton)
-      applyHiddenOnly(visibility: pinToTopButtonVisibility, to: customTitleBar.pinToTopButton)
+      applyHiddenOnly(visibility: onTopButtonVisibility, to: customTitleBar.onTopButton)
     }
 
     if outputLayout.titleBar == .hidden || transition.isTopBarPlacementChanging {
@@ -775,12 +775,12 @@ extension PlayerWindowController {
 
       applyShowableOnly(visibility: outputLayout.leadingSidebarToggleButton, to: leadingSidebarToggleButton)
       applyShowableOnly(visibility: outputLayout.trailingSidebarToggleButton, to: trailingSidebarToggleButton)
-      updatePinToTopButton()
+      updateOnTopButton()
 
       if let customTitleBar {
         apply(visibility: outputLayout.leadingSidebarToggleButton, to: customTitleBar.leadingSidebarToggleButton)
         apply(visibility: outputLayout.trailingSidebarToggleButton, to: customTitleBar.trailingSidebarToggleButton)
-        /// pinToTop button is already handled by `updatePinToTopButton()`
+        /// onTop button is already handled by `updateOnTopButton()`
       }
 
       // Add back title bar accessories (if needed):
@@ -923,7 +923,7 @@ extension PlayerWindowController {
 
       // restore ontop status
       if player.info.isPlaying {
-        setWindowFloatingOnTop(isOntop, updateOnTopStatus: false)
+        setWindowFloatingOnTop(isOnTop, updateOnTopStatus: false)
       }
 
       if Preference.bool(for: .pauseWhenLeavingFullScreen) && player.info.isPlaying {
@@ -1143,13 +1143,13 @@ extension PlayerWindowController {
   // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
   private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutState, windowWidth: CGFloat) {
     var spaceForButtons: CGFloat = 0
-    let isPinToTopButtonShowable = layout.computePinToTopButtonVisibility(isOnTop: isOntop).isShowable
+    let isOnTopButtonShowable = layout.computeOnTopButtonVisibility(isOnTop: isOnTop).isShowable
 
     if layout.trailingSidebarToggleButton.isShowable {
       spaceForButtons += trailingSidebarToggleButton.frame.width
     }
-    if isPinToTopButtonShowable {
-      spaceForButtons += pinToTopButton.frame.width
+    if isOnTopButtonShowable {
+      spaceForButtons += onTopButton.frame.width
     }
 
     let leadingSpaceNeeded: CGFloat = layout.topBarPlacement == .outsideViewport ? 0 : max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
@@ -1159,7 +1159,7 @@ extension PlayerWindowController {
     trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
 
     // Add padding to the side for buttons
-    let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || isPinToTopButtonShowable
+    let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || isOnTopButtonShowable
     let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
     trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
 
@@ -1199,17 +1199,17 @@ extension PlayerWindowController {
     documentIconButton?.alphaValue = 1
   }
 
-  func updatePinToTopButton() {
-    let pinToTopButtonVisibility = currentLayout.computePinToTopButtonVisibility(isOnTop: isOntop)
-    pinToTopButton.state = isOntop ? .on : .off
-    apply(visibility: pinToTopButtonVisibility, to: pinToTopButton)
+  func updateOnTopButton() {
+    let onTopButtonVisibility = currentLayout.computeOnTopButtonVisibility(isOnTop: isOnTop)
+    onTopButton.state = isOnTop ? .on : .off
+    apply(visibility: onTopButtonVisibility, to: onTopButton)
 
     if let customTitleBar {
-      customTitleBar.pinToTopButton.state = isOntop ? .on : .off
-      apply(visibility: pinToTopButtonVisibility, to: customTitleBar.pinToTopButton)
+      customTitleBar.onTopButton.state = isOnTop ? .on : .off
+      apply(visibility: onTopButtonVisibility, to: customTitleBar.onTopButton)
     }
 
-    if pinToTopButtonVisibility == .showFadeableTopBar {
+    if onTopButtonVisibility == .showFadeableTopBar {
       showFadeableViews()
     }
     if let window = window {

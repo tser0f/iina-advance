@@ -232,7 +232,7 @@ fileprivate class WindowAPI: JavascriptAPI, CoreSubAPIExportable {
     case "pip":
       return window.pipStatus == .inPIP
     case "ontop":
-      return window.isOntop
+      return window.isOnTop
     case "visible":
       return window.window!.occlusionState == .visible
     case "sidebar":

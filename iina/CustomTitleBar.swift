@@ -32,7 +32,7 @@ class CustomTitleBarViewController: NSViewController {
   // Trailing side
   var trailingTitleBarView: NSStackView!
   var trailingSidebarToggleButton: NSButton!
-  var pinToTopButton: NSButton!
+  var onTopButton: NSButton!
 
   /// Use `loadView` instead of `viewDidLoad` because controller is not using storyboard
   override func loadView() {
@@ -110,14 +110,14 @@ class CustomTitleBarViewController: NSViewController {
 
     // - Trailing views
 
-    pinToTopButton = makeTitleBarButton(imgName: "ontop_off",
+    onTopButton = makeTitleBarButton(imgName: "ontop_off",
                                         action: #selector(windowController.toggleOnTop(_:)))
-    pinToTopButton.setButtonType(.toggle)
-    pinToTopButton.alternateImage = NSImage(imageLiteralResourceName: "ontop")
+    onTopButton.setButtonType(.toggle)
+    onTopButton.alternateImage = NSImage(imageLiteralResourceName: "ontop")
 
     trailingSidebarToggleButton = makeTitleBarButton(imgName: "sidebar.trailing",
                                                      action: #selector(windowController.toggleTrailingSidebarVisibility(_:)))
-    let trailingStackView = NSStackView(views: [trailingSidebarToggleButton, pinToTopButton])
+    let trailingStackView = NSStackView(views: [trailingSidebarToggleButton, onTopButton])
     trailingStackView.wantsLayer = true
     trailingStackView.layer?.backgroundColor = .clear
     trailingStackView.orientation = .horizontal
@@ -170,7 +170,7 @@ class CustomTitleBarViewController: NSViewController {
     let drawAsMainWindow = titleText.window?.isMainWindow ?? false
     titleText.alphaValue = drawAsMainWindow ? activeTitleTextOpacity : inactiveTitleTextOpacity
     let controlAlpha = drawAsMainWindow ? 1 : inactiveTitleControlOpacity
-    for view in [leadingSidebarToggleButton, documentIconButton, trailingSidebarToggleButton, pinToTopButton] {
+    for view in [leadingSidebarToggleButton, documentIconButton, trailingSidebarToggleButton, onTopButton] {
       view?.alphaValue = controlAlpha
     }
 

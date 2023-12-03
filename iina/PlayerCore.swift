@@ -1853,8 +1853,8 @@ class PlayerCore: NSObject {
     }
 
     let ontop = mpv.getFlag(MPVOption.Window.ontop)
-    if ontop != windowController.isOntop {
-      log.verbose("IINA OnTop state (\(windowController.isOntop.yn)) does not match mpv (\(ontop.yn)). Will change to match mpv state")
+    if ontop != windowController.isOnTop {
+      log.verbose("IINA OnTop state (\(windowController.isOnTop.yn)) does not match mpv (\(ontop.yn)). Will change to match mpv state")
       DispatchQueue.main.async {
         self.windowController.setWindowFloatingOnTop(ontop, updateOnTopStatus: false)
       }

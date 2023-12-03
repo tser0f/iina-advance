@@ -116,12 +116,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return animationPipeline.isRunning
   }
 
-  var isOntop: Bool = false {
-    didSet {
-      player.mpv.setFlag(MPVOption.Window.ontop, isOntop)
-      updatePinToTopButton()
-    }
-  }
+  var isOnTop: Bool = false 
 
   var isOpen: Bool {
     if !self.loaded {
@@ -294,7 +289,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   static let playerWindowPrefKeys: [Preference.Key] = [
     .themeMaterial,
     .showRemainingTime,
-    .alwaysFloatOnTop,
     .maxVolume,
     .useExactSeek,
     .relativeSeekAmount,
@@ -354,12 +348,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         rightLabel.mode = newValue ? .remaining : .duration
         if player.isInMiniPlayer {
           player.windowController.miniPlayer.rightLabel.mode = newValue ? .remaining : .duration
-        }
-      }
-    case PK.alwaysFloatOnTop.rawValue:
-      if let newValue = change[.newKey] as? Bool {
-        if player.info.isPlaying {
-          setWindowFloatingOnTop(newValue)
         }
       }
     case PK.maxVolume.rawValue:
@@ -465,7 +453,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       }
     case PK.alwaysShowOnTopIcon.rawValue:
-      updatePinToTopButton()
+      updateOnTopButton()
     case PK.leadingSidebarPlacement.rawValue, PK.trailingSidebarPlacement.rawValue:
       updateSidebarPlacements()
     case PK.settingsTabGroupLocation.rawValue:
@@ -578,26 +566,26 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @IBOutlet var leadingTitleBarAccessoryView: NSView!
   @IBOutlet var trailingTitleBarAccessoryView: NSView!
-  /** "Pin to Top" button in title bar, if configured to  be shown */
-  @IBOutlet weak var pinToTopButton: NSButton!
+  /// "Pin to Top" icon in title bar, if configured to  be shown
+  @IBOutlet weak var onTopButton: NSButton!
   @IBOutlet weak var leadingSidebarToggleButton: NSButton!
   @IBOutlet weak var trailingSidebarToggleButton: NSButton!
 
-  /** Panel at top of window. May be `insideViewport` or `outsideViewport`. May contain `titleBarView` and/or `controlBarTop`
-   depending on configuration. */
+  /// Panel at top of window. May be `insideViewport` or `outsideViewport`. May contain `titleBarView` and/or `controlBarTop`
+  /// depending on configuration.
   @IBOutlet weak var topBarView: NSVisualEffectView!
-  /** Bottom border of `topBarView`. */
+  /// Bottom border of `topBarView`.
   @IBOutlet weak var topBarBottomBorder: NSBox!
-  /** Reserves space for the title bar components. Does not contain any child views. */
+  /// Reserves space for the title bar components. Does not contain any child views.
   @IBOutlet weak var titleBarView: NSView!
-  /** Control bar at top of window, if configured. */
+  /// Control bar at top of window, if configured.
   @IBOutlet weak var controlBarTop: NSView!
 
   @IBOutlet weak var controlBarFloating: FloatingControlBarView!
 
-  /** Control bar at bottom of window, if configured. May be `insideViewport` or `outsideViewport`. */
+  /// Control bar at bottom of window, if configured. May be `insideViewport` or `outsideViewport`.
   @IBOutlet weak var bottomBarView: NSVisualEffectView!
-  /** Top border of `bottomBarView`. */
+  /// Top border of `bottomBarView`.
   @IBOutlet weak var bottomBarTopBorder: NSBox!
 
   @IBOutlet weak var timePositionHoverLabel: NSTextField!
@@ -651,7 +639,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var rightLabel: DurationDisplayTextField!
   @IBOutlet weak var leftLabel: DurationDisplayTextField!
 
-  /** Differentiate between single clicks and double clicks. */
+  /// Differentiate between single clicks and double clicks.
   internal var singleClickTimer: Timer?
   internal var mouseExitEnterCount = 0
 
@@ -659,7 +647,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Scroll direction
 
-  /** The direction of current scrolling event. */
+  /// The direction of current scrolling event.
   enum ScrollDirection {
     case horizontal
     case vertical
@@ -3157,9 +3145,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
     guard !isFullScreen else { return }
     guard let window = window else { return }
+
     window.level = onTop ? .iinaFloating : .normal
     if updateOnTopStatus {
-      self.isOntop = onTop
+      self.isOnTop = onTop
+      player.mpv.setFlag(MPVOption.Window.ontop, onTop)
+      updateOnTopButton()
     }
     resetCollectionBehavior()
   }
@@ -3372,8 +3363,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  @IBAction func toggleOnTop(_ sender: NSButton) {
-    setWindowFloatingOnTop(!isOntop)
+  @IBAction func toggleOnTop(_ sender: AnyObject) {
+    if Preference.bool(for: .alwaysFloatOnTop) {
+      let isPlaying = isOnTop
+      if isPlaying {
+        // Assume window is only on top because media is playing. Pause the media to remove on-top.
+        player.pause()
+        return
+      }
+    }
+    setWindowFloatingOnTop(!isOnTop)
   }
 
   /** When slider changes */

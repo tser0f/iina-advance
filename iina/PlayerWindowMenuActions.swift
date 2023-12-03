@@ -476,7 +476,7 @@ extension PlayerWindowController {
   }
 
   @objc func menuAlwaysOnTop(_ sender: AnyObject) {
-    setWindowFloatingOnTop(!isOntop)
+    self.toggleOnTop(sender)
   }
 
   @available(macOS 10.12, *)

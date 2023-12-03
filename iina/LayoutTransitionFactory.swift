@@ -110,7 +110,7 @@ extension PlayerWindowController {
       log.verbose("Done with transition to initial layout")
     }
 
-    if Preference.bool(for: .alwaysFloatOnTop) {
+    if !isRestoringFromPrevLaunch && Preference.bool(for: .alwaysFloatOnTop) && !player.info.isPaused {
       log.verbose("Setting window OnTop=true per app pref")
       setWindowFloatingOnTop(true)
     }

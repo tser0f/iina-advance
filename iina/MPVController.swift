@@ -1381,7 +1381,7 @@ not applying FFmpeg 9599 workaround
       let ontop = getFlag(MPVOption.Window.ontop)
       player.log.verbose("Received mpv prop: \(MPVOption.Window.ontop.quoted) = \(ontop.yesno)")
       guard player.windowController.loaded else { break }
-      if ontop != player.windowController.isOntop {
+      if ontop != player.windowController.isOnTop {
         DispatchQueue.main.async {
           self.player.windowController.setWindowFloatingOnTop(ontop)
         }
