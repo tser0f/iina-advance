@@ -939,10 +939,8 @@ extension PlayerWindowController {
     case .musicMode:
       // will return nil if video is not visible
       guard let newMusicModeGeometry = musicModeGeometry.scaleVideo(to: desiredVideoSize) else { return }
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-        log.verbose("Calling applyMusicModeGeometry from setVideoScale, to: \(newMusicModeGeometry.windowFrame)")
-        applyMusicModeGeometry(newMusicModeGeometry)
-      }))
+      log.verbose("Calling applyMusicModeGeometry from setVideoScale, to: \(newMusicModeGeometry.windowFrame)")
+      applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
     default:
       return
     }
@@ -970,10 +968,8 @@ extension PlayerWindowController {
     case .musicMode:
       /// In music mode, `viewportSize==videoSize` always. Will get `nil` here if video is not visible
       guard let newMusicModeGeometry = musicModeGeometry.scaleVideo(to: desiredViewportSize) else { return }
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-        log.verbose("Calling applyMusicModeGeometry from resizeViewport, to: \(newMusicModeGeometry.windowFrame)")
-        applyMusicModeGeometry(newMusicModeGeometry)
-      }))
+      log.verbose("Calling applyMusicModeGeometry from resizeViewport, to: \(newMusicModeGeometry.windowFrame)")
+      applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
     default:
       return
     }
@@ -1143,10 +1139,20 @@ extension PlayerWindowController {
     }
   }
 
+  /// Same as `applyMusicModeGeometry()`, but enqueues inside an `IINAAnimation.Task` for a nice smooth animation
+  func applyMusicModeGeometryInAnimationTask(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
+    animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      applyMusicModeGeometry(geometry)
+    }))
+  }
+
   /// Updates the current window and its subviews to match the given `MusicModeGeometry`, and caches it.
   func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
     let geometry = geometry.refit()  // constrain to screen
     log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
+    // Update defaults:
+    Preference.set(geometry.isVideoVisible, for: .musicModeShowAlbumArt)
+    Preference.set(geometry.isPlaylistVisible, for: .musicModeShowPlaylist)
 
     player.info.videoAspectRatio = geometry.videoAspectRatio
 

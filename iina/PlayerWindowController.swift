@@ -1027,10 +1027,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let layout = currentLayout
     switch layout.mode {
     case .musicMode:
-      let newGeo = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-        applyMusicModeGeometry(newGeo)
-      }))
+      let newMusicModeGeometry = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
+      applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
     case .windowed:
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
@@ -1039,7 +1037,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       } else {
         viewportSize = windowedModeGeometry.viewportSize
       }
-      let newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio).scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
+      var newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio)
+      newGeo = newGeo.scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
       applyWindowGeometry(newGeo)
     case .fullScreen:
       player.info.videoAspectRatio = newAspectRatio

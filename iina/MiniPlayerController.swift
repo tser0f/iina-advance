@@ -327,12 +327,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     newWindowFrame.origin.y = newWindowFrame.origin.y - heightDifference
 
     // Constrain window so that it doesn't expand below bottom of screen, or fall offscreen
-    let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
-
-    windowController.animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-      Preference.set(showPlaylist, for: .musicModeShowPlaylist)
-      windowController.applyMusicModeGeometry(newGeometry)
-    }))
+    let newMusicModeGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
+    windowController.applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
@@ -366,12 +362,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       }
     })
 
-    tasks.append(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-      Preference.set(showVideo, for: .musicModeShowAlbumArt)
-
-      log.verbose("VideoView setting visible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
-      windowController.applyMusicModeGeometry(newGeometry)
-    }))
+    log.verbose("VideoView setting videoViewVisible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
+    windowController.applyMusicModeGeometryInAnimationTask(newGeometry)
 
     tasks.append(IINAAnimation.Task{ [self] in
       player.enableOSD = true
