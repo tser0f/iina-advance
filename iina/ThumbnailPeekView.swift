@@ -27,7 +27,7 @@ class ThumbnailPeekView: NSView {
     let cornerRadius: CGFloat
     let style: Preference.ThumnailBorderStyle = Preference.enum(for: .thumbnailBorderStyle)
     switch style {
-    case .none:
+    case .plain:
       layer.borderWidth = 0
       layer.shadowRadius = 0
       cornerRadius = 0
@@ -47,11 +47,11 @@ class ThumbnailPeekView: NSView {
       layer.borderWidth = 0
       layer.shadowRadius = shadowRadius()
       cornerRadius = roundedCornerRadius()
-    case .outlinePlusShadowSharp:
+    case .outlinePlusShadowSharpCorners:
       layer.borderWidth = outlineRoundedCornersWidth()
       layer.shadowRadius = shadowRadius()
       cornerRadius = 0
-    case .outlinePlusShadowRounded:
+    case .outlinePlusShadowRoundedCorners:
       layer.borderWidth = outlineRoundedCornersWidth()
       layer.shadowRadius = shadowRadius()
       cornerRadius = roundedCornerRadius()

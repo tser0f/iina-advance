@@ -1888,7 +1888,7 @@
                     <rect key="frame" x="120" y="41" width="430" height="127"/>
                     <subviews>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5ri-jj-x4V" userLabel="BorderStyle HStack View">
-                            <rect key="frame" x="0.0" y="107" width="311" height="20"/>
+                            <rect key="frame" x="0.0" y="107" width="389" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="odN-74-yhg" userLabel="Border style: Label">
                                     <rect key="frame" x="-2" y="3" width="110" height="16"/>
@@ -1899,19 +1899,19 @@
                                     </textFieldCell>
                                 </textField>
                                 <popUpButton tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5gS-c3-0dD" userLabel="ThumbnailBorderStyle Popup">
-                                    <rect key="frame" x="111" y="-4" width="204" height="25"/>
-                                    <popUpButtonCell key="cell" type="push" title="No Border" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="iQw-41-8gz" id="pZX-zE-D6m" userLabel="ThumbnailBorderStyle-Popup Button Cell">
+                                    <rect key="frame" x="111" y="-4" width="282" height="25"/>
+                                    <popUpButtonCell key="cell" type="push" title="None" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="iQw-41-8gz" id="pZX-zE-D6m" userLabel="ThumbnailBorderStyle-Popup Button Cell">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="VoP-dn-bG2">
                                             <items>
-                                                <menuItem title="No Border" tag="1" id="iQw-41-8gz" userLabel="No border"/>
-                                                <menuItem title="Outline" tag="2" id="5g8-cK-VXK"/>
-                                                <menuItem title="Rounded Outline" tag="3" id="aU1-fp-wna" userLabel="Outline, Rounded"/>
-                                                <menuItem title="Shadow" tag="4" id="aOb-Nq-DWE"/>
-                                                <menuItem title="Rounded Shadow" state="on" tag="5" id="ACO-Gh-z2M" userLabel="Shadow, Rounded"/>
-                                                <menuItem title="Outline + Shadow" tag="6" id="N3d-wl-eFH" userLabel="Outline + Shadow"/>
-                                                <menuItem title="Rounded Outline + Shadow" tag="7" id="58s-Ws-2l3" userLabel="Outline + Shadow, Rounded"/>
+                                                <menuItem title="None" tag="1" id="iQw-41-8gz"/>
+                                                <menuItem title="Thin Outline" tag="3" id="5g8-cK-VXK"/>
+                                                <menuItem title="Thin Outline + Round Corners" tag="4" id="aU1-fp-wna"/>
+                                                <menuItem title="Shadow" tag="5" id="aOb-Nq-DWE"/>
+                                                <menuItem title="Shadow + Round Corners" state="on" tag="6" id="ACO-Gh-z2M"/>
+                                                <menuItem title="Shadow + Thin Outline" tag="7" id="N3d-wl-eFH"/>
+                                                <menuItem title="Shadow + Thin Outline + Round Corners" tag="8" id="58s-Ws-2l3"/>
                                             </items>
                                         </menu>
                                         <connections>

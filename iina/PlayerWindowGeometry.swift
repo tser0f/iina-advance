@@ -1120,6 +1120,7 @@ extension PlayerWindowController {
   // Not animated
   func applyWindowGeometryLivePreview(_ newGeometry: PlayerWindowGeometry) {
     log.verbose("applyWindowGeometryLivePreview: \(newGeometry)")
+    videoView.videoLayer.enterAsynchronousMode()
     // Update video aspect ratio
     player.info.videoAspectRatio = newGeometry.videoAspectRatio
 
@@ -1156,6 +1157,7 @@ extension PlayerWindowController {
 
     player.info.videoAspectRatio = geometry.videoAspectRatio
 
+    videoView.videoLayer.enterAsynchronousMode()
     updateMusicModeButtonsVisibility()
 
     /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:

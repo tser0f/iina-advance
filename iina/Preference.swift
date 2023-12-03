@@ -516,15 +516,15 @@ struct Preference {
   }
 
   enum ThumnailBorderStyle: Int, InitializingFromKey {
-    case none = 1
-    case outlineSharpCorners
+    case plain = 1
+    case outlineSharpCorners = 3
     case outlineRoundedCorners
     case shadowSharpCorners
     case shadowRoundedCorners
-    case outlinePlusShadowSharp
-    case outlinePlusShadowRounded
+    case outlinePlusShadowSharpCorners
+    case outlinePlusShadowRoundedCorners
 
-    static var defaultValue = ThumnailBorderStyle.shadowRoundedCorners
+    static var defaultValue = ThumnailBorderStyle.outlinePlusShadowRoundedCorners
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
