@@ -521,6 +521,7 @@ struct Preference {
     case none = 1
     case solidBorder
     case shadowOrGlow
+    case borderPlusShadow
 
     static var defaultValue = ThumnailBorderStyle.shadowOrGlow
 
