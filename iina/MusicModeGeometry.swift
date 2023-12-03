@@ -83,6 +83,10 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     return NSSize(width: windowFrame.width, height: videoHeightIfVisible)
   }
 
+  var viewportSize: NSSize? {
+    return videoSize
+  }
+
   var videoHeight: CGFloat {
     return isVideoVisible ? videoHeightIfVisible : 0
   }
@@ -139,6 +143,58 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
 
     let newWindowFrame = NSRect(origin: windowFrame.origin, size: newWindowSize).constrain(in: containerFrame)
     return self.clone(windowFrame: newWindowFrame)
+  }
+
+  func scaleVideo(to desiredSize: NSSize? = nil,
+                     screenID: String? = nil) -> MusicModeGeometry? {
+
+    guard isVideoVisible else {
+      Logger.log("Cannot scale video of MiniPlayer: isVideoVisible=\(isVideoVisible.yesno)", level: .error)
+      return nil
+    }
+
+    let newVideoSize = desiredSize ?? videoSize!
+    Logger.log("Scaling MiniPlayer, newVideoSize: \(newVideoSize)", level: .verbose)
+
+    let newScreenID = screenID ?? self.screenID
+    let screenFrame: NSRect = PlayerWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: .keepInVisibleScreen)!
+
+    // Window height should not change. Only video size should be scaled
+    let windowHeight = min(screenFrame.height, windowFrame.height)
+
+    // Constrain desired width within min and max allowed, then recalculate height from new value
+    var newVideoWidth = newVideoSize.width
+    newVideoWidth = max(newVideoWidth, MiniPlayerController.minWindowWidth)
+    newVideoWidth = min(newVideoWidth, MiniPlayerController.maxWindowWidth)
+    newVideoWidth = min(newVideoWidth, screenFrame.width)
+
+    var newVideoHeight = newVideoWidth / videoAspectRatio
+
+    let minPlaylistHeight: CGFloat = isPlaylistVisible ? MiniPlayerController.PlaylistMinHeight : 0
+    let minBottomBarHeight: CGFloat = MiniPlayerController.controlViewHeight + minPlaylistHeight
+    let maxVideoHeight = windowHeight - minBottomBarHeight
+    if newVideoHeight > maxVideoHeight {
+      newVideoHeight = maxVideoHeight
+      newVideoWidth = newVideoHeight * videoAspectRatio
+    }
+
+    var newOriginX = windowFrame.origin.x
+
+    // Determine which X direction to scale towards by checking which side of the screen it's closest to
+    let distanceToLeadingSideOfScreen = abs(abs(windowFrame.minX) - abs(screenFrame.minX))
+    let distanceToTrailingSideOfScreen = abs(abs(windowFrame.maxX) - abs(screenFrame.maxX))
+    if distanceToTrailingSideOfScreen < distanceToLeadingSideOfScreen {
+      // Closer to trailing side. Keep trailing side fixed by adjusting the window origin by the width changed
+      let widthChange = windowFrame.width - newVideoWidth
+      newOriginX += widthChange
+    }
+    // else (closer to leading side): keep leading side fixed
+
+    let newWindowOrigin = NSPoint(x: newOriginX, y: windowFrame.origin.y)
+    let newWindowSize = NSSize(width: newVideoWidth, height: windowHeight)
+    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: screenFrame)
+
+    return clone(windowFrame: newWindowFrame)
   }
 
   var description: String {

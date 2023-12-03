@@ -77,61 +77,21 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
     // TODO: merge with `setWindowScale()`
 
-    let originalGeometry: PlayerWindowGeometry
-    if windowController.currentLayout.isMusicMode {
-      originalGeometry = windowController.musicModeGeometry.toPlayerWindowGeometry()
-    } else {
-      originalGeometry = windowController.windowedModeGeometry
-    }
-
     // If in music mode but playlist is not visible, allow scaling up to screen size like regular windowed mode.
     // If playlist is visible, do not resize window beyond current window height
-    if windowController.player.isInMiniPlayer {
+    if windowController.currentLayout.isMusicMode {
       _ = windowController.miniPlayer.view
+
+      let originalGeometry = windowController.musicModeGeometry.toPlayerWindowGeometry()
 
       if windowController.miniPlayer.isPlaylistVisible {
         guard windowController.miniPlayer.isVideoVisible else {
           windowController.log.verbose("Window is in music mode but video is not visible; ignoring pinch gesture")
           return nil
         }
-        let screenFrame = windowController.bestScreen.visibleFrame
-        // Window height should not change. Only video size should be scaled
-        let windowHeight = min(screenFrame.height, originalGeometry.windowFrame.height)  // should stay fixed
-
-        // Constrain desired width within min and max allowed, then recalculate height from new value
-        var newVideoWidth = originalGeometry.windowFrame.width * scale
-        newVideoWidth = max(newVideoWidth, MiniPlayerController.minWindowWidth)
-        newVideoWidth = min(newVideoWidth, MiniPlayerController.maxWindowWidth)
-        newVideoWidth = min(newVideoWidth, screenFrame.width)
-
-        windowController.log.verbose("Scaling video from pinch gesture in music mode, aspect: \(originalGeometry.videoAspectRatio). Trying width: \(newVideoWidth)")
-
-        var newVideoHeight = newVideoWidth / originalGeometry.videoAspectRatio
-
-        let minPlaylistHeight: CGFloat = windowController.miniPlayer.isPlaylistVisible ? MiniPlayerController.PlaylistMinHeight : 0
-        let minBottomBarHeight: CGFloat = MiniPlayerController.controlViewHeight + minPlaylistHeight
-        let maxVideoHeight = windowHeight - minBottomBarHeight
-        if newVideoHeight > maxVideoHeight {
-          newVideoHeight = maxVideoHeight
-          newVideoWidth = newVideoHeight * originalGeometry.videoAspectRatio
-        }
-
-        var newOriginX = originalGeometry.windowFrame.origin.x
-
-        // Determine which X direction to scale towards by checking which side of the screen it's closest to
-        let distanceToLeadingSideOfScreen = abs(abs(originalGeometry.windowFrame.minX) - abs(screenFrame.minX))
-        let distanceToTrailingSideOfScreen = abs(abs(originalGeometry.windowFrame.maxX) - abs(screenFrame.maxX))
-        if distanceToTrailingSideOfScreen < distanceToLeadingSideOfScreen {
-          // Closer to trailing side. Keep trailing side fixed by adjusting the window origin by the width changed
-          let widthChange = originalGeometry.windowFrame.width - newVideoWidth
-          newOriginX += widthChange
-        }
-        // else (closer to leading side): keep leading side fixed
-
-        let newWindowFrame = NSRect(origin: NSPoint(x: newOriginX, y: originalGeometry.windowFrame.origin.y), size: NSSize(width: newVideoWidth, height: windowHeight)).constrain(in: screenFrame)
-
-        let newMusicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
-        windowController.log.verbose("Scaling video from pinch gesture in music mode. Applying result bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newWindowFrame)")
+        let newVideoSize = windowController.musicModeGeometry.videoSize!.multiply(scale)
+        let newMusicModeGeometry = windowController.musicModeGeometry.scaleVideo(to: newVideoSize)!
+        windowController.log.verbose("Scaling video from pinch gesture in music mode. Applying result bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newMusicModeGeometry.windowFrame)")
 
         IINAAnimation.disableAnimation{
           /// Important: use `animate: false` so that window controller callbacks are not triggered
@@ -143,12 +103,15 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         // Scaling music mode without playlist (only fixed-height controller)
         let newViewportSize = originalGeometry.viewportSize.multiply(scale)
 
+        // TODO: modify this to keep either leading or trailing edge fixed (as above)
         let newGeometry = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .keepInVisibleScreen, lockViewportToVideoSize: true)
         windowController.applyWindowGeometryLivePreview(newGeometry)
         return newGeometry
       }
     }
     // Else: not music mode
+
+    let originalGeometry = windowController.windowedModeGeometry!
 
     let newViewportSize = originalGeometry.viewportSize.multiply(scale)
 

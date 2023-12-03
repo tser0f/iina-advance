@@ -1394,7 +1394,7 @@ not applying FFmpeg 9599 workaround
       player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale). Cached scale = \(player.info.cachedWindowScale) → changed=\(needsUpdate.yn)")
       if needsUpdate {
         DispatchQueue.main.async {
-          self.player.windowController.setWindowScale(CGFloat(windowScale))
+          self.player.windowController.setVideoScale(CGFloat(windowScale))
           self.player.info.cachedWindowScale = windowScale
         }
       }

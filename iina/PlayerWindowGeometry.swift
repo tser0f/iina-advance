@@ -908,32 +908,44 @@ extension PlayerWindowController {
     return windowGeo.scaleViewport(to: desiredViewportSize)
   }
 
-  func setWindowScale(_ scale: CGFloat) {
-    guard currentLayout.mode == .windowed else { return }
+  func setVideoScale(_ desiredVideoScale: CGFloat) {
     guard let window = window else { return }
+    guard currentLayout.mode == .windowed || currentLayout.mode == .musicMode else { return }
 
     guard let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize else {
       log.error("SetWindowScale failed: could not get videoDisplayRotatedSize")
       return
     }
 
-    var videoDesiredSize = videoDisplayRotatedSize.multiply(scale)
+    var desiredVideoSize = videoDisplayRotatedSize.multiply(desiredVideoScale)
 
-    log.verbose("SetWindowScale: requested scale=\(scale)x, videoDisplayRotatedSize=\(videoDisplayRotatedSize) → videoDesiredSize=\(videoDesiredSize)")
+    log.verbose("SetVideoScale: requested scale=\(desiredVideoScale)x, videoDisplayRotatedSize=\(videoDisplayRotatedSize) → desiredVideoSize=\(desiredVideoSize)")
 
     // TODO
     if false && Preference.bool(for: .usePhysicalResolution) {
-      videoDesiredSize = window.convertFromBacking(NSRect(origin: window.frame.origin, size: videoDesiredSize)).size
-      log.verbose("SetWindowScale: converted videoDesiredSize to physical resolution: \(videoDesiredSize)")
+      desiredVideoSize = window.convertFromBacking(NSRect(origin: window.frame.origin, size: desiredVideoSize)).size
+      log.verbose("SetWindowScale: converted desiredVideoSize to physical resolution: \(desiredVideoSize)")
     }
 
-    let newGeoUnconstrained = windowedModeGeometry.scaleVideo(to: videoDesiredSize, fitOption: .noConstraints)
-    // User has actively resized the video. Assume this is the new preferred resolution
-    player.info.setIntendedViewportSize(from: newGeoUnconstrained)
+    switch currentLayout.mode {
+    case .windowed:
+      let newGeoUnconstrained = windowedModeGeometry.scaleVideo(to: desiredVideoSize, fitOption: .noConstraints)
+      // User has actively resized the video. Assume this is the new preferred resolution
+      player.info.setIntendedViewportSize(from: newGeoUnconstrained)
 
-    let newGeometry = newGeoUnconstrained.refit(.keepInVisibleScreen)
-    log.verbose("Calling applyWindowGeometry from setWindowScale, to: \(newGeometry.windowFrame)")
-    applyWindowGeometry(newGeometry)
+      let newGeometry = newGeoUnconstrained.refit(.keepInVisibleScreen)
+      log.verbose("Calling applyWindowGeometry from setVideoScale, to: \(newGeometry.windowFrame)")
+      applyWindowGeometry(newGeometry)
+    case .musicMode:
+      // will return nil if video is not visible
+      guard let newMusicModeGeometry = musicModeGeometry.scaleVideo(to: desiredVideoSize) else { return }
+      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+        log.verbose("Calling applyMusicModeGeometry from setVideoScale, to: \(newMusicModeGeometry.windowFrame)")
+        applyMusicModeGeometry(newMusicModeGeometry)
+      }))
+    default:
+      return
+    }
   }
 
   /**
@@ -943,17 +955,45 @@ extension PlayerWindowController {
    ensure it is placed entirely inside `screen.visibleFrame`.
    */
   func resizeViewport(to desiredViewportSize: CGSize? = nil, centerOnScreen: Bool = false) {
-    // TODO: support music mode
-    guard currentLayout.mode == .windowed else { return }
+    guard currentLayout.mode == .windowed || currentLayout.mode == .musicMode else { return }
 
-    let newGeoUnconstrained = windowedModeGeometry.scaleViewport(to: desiredViewportSize, fitOption: .noConstraints)
-    // User has actively resized the video. Assume this is the new preferred resolution
-    player.info.setIntendedViewportSize(from: newGeoUnconstrained)
+    switch currentLayout.mode {
+    case .windowed:
+      let newGeoUnconstrained = windowedModeGeometry.scaleViewport(to: desiredViewportSize, fitOption: .noConstraints)
+      // User has actively resized the video. Assume this is the new preferred resolution
+      player.info.setIntendedViewportSize(from: newGeoUnconstrained)
 
-    let fitOption: ScreenFitOption = centerOnScreen ? .centerInVisibleScreen : .keepInVisibleScreen
-    let newGeometry = newGeoUnconstrained.refit(fitOption)
-    log.verbose("Calling setFrame from resizeViewport (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
-    applyWindowGeometry(newGeometry)
+      let fitOption: ScreenFitOption = centerOnScreen ? .centerInVisibleScreen : .keepInVisibleScreen
+      let newGeometry = newGeoUnconstrained.refit(fitOption)
+      log.verbose("Calling applyWindowGeometry from resizeViewport (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
+      applyWindowGeometry(newGeometry)
+    case .musicMode:
+      /// In music mode, `viewportSize==videoSize` always. Will get `nil` here if video is not visible
+      guard let newMusicModeGeometry = musicModeGeometry.scaleVideo(to: desiredViewportSize) else { return }
+      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+        log.verbose("Calling applyMusicModeGeometry from resizeViewport, to: \(newMusicModeGeometry.windowFrame)")
+        applyMusicModeGeometry(newMusicModeGeometry)
+      }))
+    default:
+      return
+    }
+  }
+
+  func scaleVideoByIncrement(_ widthStep: CGFloat) {
+    let currentViewportSize: NSSize
+    switch currentLayout.mode {
+    case .windowed:
+      currentViewportSize = windowedModeGeometry.viewportSize
+    case .musicMode:
+      guard let viewportSize = musicModeGeometry.viewportSize else { return }
+      currentViewportSize = viewportSize
+    default:
+      return
+    }
+    let heightStep = widthStep / currentViewportSize.aspect
+    let desiredViewportSize = CGSize(width: currentViewportSize.width + widthStep, height: currentViewportSize.height + heightStep)
+    log.verbose("Incrementing viewport width by \(widthStep), to desired size \(desiredViewportSize)")
+    resizeViewport(to: desiredViewportSize)
   }
 
   /// Updates the appropriate in-memory cached geometry (based on the current window mode) using the current window & view frames.

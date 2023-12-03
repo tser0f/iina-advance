@@ -450,11 +450,11 @@ extension PlayerWindowController {
     log.verbose("ChangeWindowSize requested from menu, option: \(size)")
     switch size {
     case 0:  //  0: half
-      setWindowScale(0.5)
+      setVideoScale(0.5)
     case 1:  //  1: normal
-      setWindowScale(1)
+      setVideoScale(1)
     case 2:  //  2: double
-      setWindowScale(2)
+      setVideoScale(2)
     case 3:  // fit screen
       resizeViewport(to: bestScreen.visibleFrame.size, centerOnScreen: true)
 
@@ -465,14 +465,6 @@ extension PlayerWindowController {
     default:
       return
     }
-  }
-
-  func scaleVideoByIncrement(_ widthStep: CGFloat) {
-    let currentViewportSize = viewportView.frame.size
-    let heightStep = widthStep / currentViewportSize.aspect
-    let desiredViewportSize = CGSize(width: currentViewportSize.width + widthStep, height: currentViewportSize.height + heightStep)
-    log.verbose("Incrementing viewport width by \(widthStep), to desired size \(desiredViewportSize)")
-    resizeViewport(to: desiredViewportSize)
   }
 
   @objc func menuAlwaysOnTop(_ sender: AnyObject) {

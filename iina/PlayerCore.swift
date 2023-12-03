@@ -2200,7 +2200,7 @@ class PlayerCore: NSObject {
           let rawSizePercentage: Int = min(max(0, Preference.integer(for: .thumbnailRawSizePercentage)), 100)
           guard let videoWidth = info.videoRawWidth else { return }
           thumbWidth = videoWidth * rawSizePercentage / 100
-          log.verbose("Using \(rawSizePercentage)% of \(videoWidth)px for thumbnail native width = \(thumbWidth)")
+          log.verbose("Thumbnail native width will be \(thumbWidth)px (\(rawSizePercentage)% of video's \(videoWidth)px)")
         }
         info.thumbnailWidth = thumbWidth
 
@@ -2551,15 +2551,18 @@ extension PlayerCore: FFmpegControllerDelegate {
 
   func didGenerate(_ thumbnails: [FFThumbnail], forFile filename: String, thumbWidth width: Int32, succeeded: Bool) {
     guard let currentFilePath = info.currentURL?.path, currentFilePath == filename, width == info.thumbnailWidth else {
-      Logger.log("Ignoring generated thumbnails (\(width)px width): either filePath or thumbnailWidth does not match expected",
-                 level: .error, subsystem: subsystem)
+      log.error("Ignoring generated thumbnails (\(width)px width): either filePath or thumbnailWidth does not match expected")
       return
     }
-    Logger.log("Done generating thumbnails: success=\(succeeded) count=\(thumbnails.count) width=\(width)px", subsystem: subsystem)
+    log.debug("Done generating thumbnails: success=\(succeeded) count=\(thumbnails.count) width=\(width)px")
     if succeeded {
       refreshTouchBarSlider()
       if let cacheName = info.mpvMd5 {
-        PlayerCore.backgroundQueue.async {
+        PlayerCore.backgroundQueue.async { [self] in
+          guard !info.ffThumbnails.isEmpty else {
+            log.verbose("No thumbnails to write")
+            return
+          }
           ThumbnailCache.write(self.info.ffThumbnails, forName: cacheName, forVideo: self.info.currentURL, forWidth: Int(width))
           self.info.ffThumbnails = []  // free the memory - not needed anymore
         }
