@@ -127,7 +127,7 @@ class PlayerWindow: NSWindow {
     self.miniaturize(self)
   }
 
-  /// Need to override this for Minimize to work when `!styleMask.contains(.titled)`
+  /// Need to override this for Zoom to work when `!styleMask.contains(.titled)`
   override func performZoom(_ sender: Any?) {
     self.zoom(self)
   }

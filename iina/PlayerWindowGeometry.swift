@@ -979,7 +979,7 @@ extension PlayerWindowController {
                                                   screenID: bestScreen.screenID)
       player.saveState()
     case .fullScreen, .fullScreenInteractive:
-      break
+      break  // will never get here; see guard above
     }
   }
 

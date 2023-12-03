@@ -1401,11 +1401,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       }
       if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarView]) {
-        let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
-        if userDefault == "Minimize" {
-          window?.performMiniaturize(nil)
-        } else if userDefault == "Maximize" {
-          window?.performZoom(nil)
+        if let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
+          log.verbose("Double-click occurred in title bar. Executing \(userDefault.quoted)")
+          if userDefault == "Minimize" {
+            window?.performMiniaturize(nil)
+          } else if userDefault == "Maximize" {
+            window?.performZoom(nil)
+          }
         }
         return
       }
@@ -1972,7 +1974,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case .windowed, .windowedInteractive:
       let newGeometry = resizeWindowedModeGeometry(to: requestedSize)
-      /// Do not call `videoView.apply()` - animation looks better without it
+      videoView.apply(newGeometry)
 
       updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
 
@@ -1989,8 +1991,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Called anytime window is resized. May be called after every call to `window.setFrame()`.
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
-
-    guard !isAnimating, !isMagnifying else { return }
+    // OK to call this while animating. Enqueuing into the pipeline below ensures it will not interrupt existing animations.
+    guard !isClosing, !isMagnifying else { return }
 
     animationPipeline.submitZeroDuration({ [self] in
       defer {
@@ -2036,9 +2038,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Called when done with user drag of window border.
   /// Do not use for most things! Use `windowDidResize` instead.
   func windowDidEndLiveResize(_ notification: Notification) {
-    // Must not access mpv while it is asynchronously processing stop and quit commands.
-    // See comments in windowWillExitFullScreen for details.
-    guard !isClosing, !isAnimating, !isMagnifying else { return }
+    // Must not access mpv while it is asynchronously processing stop and quit commands. See comments in windowWillExitFullScreen for details.
+    // OK to call this while animating. Enqueuing into the pipeline below ensures it will not interrupt existing animations.
+    guard !isClosing, !isMagnifying else { return }
 
     animationPipeline.submitZeroDuration({ [self] in
       log.verbose("WindowDidEndLiveResize mode: \(currentLayout.mode)")
@@ -2048,6 +2050,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         updateCachedGeometry()
         // resize framebuffer in videoView after resizing.
         updateWindowParametersForMPV()
+        if currentLayout.oscPosition == .floating {
+          updateFloatingOSCAfterWindowDidResize()
+        }
       case .windowedInteractive:
         updateCachedGeometry()
       case .musicMode:
@@ -3151,6 +3156,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       self.isOnTop = onTop
       player.mpv.setFlag(MPVOption.Window.ontop, onTop)
       updateOnTopButton()
+      player.saveState()
     }
     resetCollectionBehavior()
   }
