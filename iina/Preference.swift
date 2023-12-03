@@ -206,8 +206,6 @@ struct Preference {
     static let thumbnailRawSizePercentage = Key("thumbnailRawSizePercentage")
     /// Only for `ThumbnailSizeOption.scaleWithViewport`. Size of displayed thumbnail as % of displayed video, 1 - 100
     static let thumbnailDisplayedSizePercentage = Key("thumbnailDisplayedSizePercentage")
-    /// Whether to enable thumbnail rounded corners
-    static let enableThumbnailRoundedCorners = Key("enableThumbnailRoundedCorners")
     static let maxThumbnailPreviewCacheSize = Key("maxThumbnailPreviewCacheSize")
 
     /// Music mode
@@ -519,11 +517,14 @@ struct Preference {
 
   enum ThumnailBorderStyle: Int, InitializingFromKey {
     case none = 1
-    case solidBorder
-    case shadowOrGlow
-    case borderPlusShadow
+    case outlineSharpCorners
+    case outlineRoundedCorners
+    case shadowSharpCorners
+    case shadowRoundedCorners
+    case outlinePlusShadowSharp
+    case outlinePlusShadowRounded
 
-    static var defaultValue = ThumnailBorderStyle.shadowOrGlow
+    static var defaultValue = ThumnailBorderStyle.shadowRoundedCorners
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1066,12 +1067,11 @@ struct Preference {
 
     .enableThumbnailPreview: true,
     .enableThumbnailForRemoteFiles: false,
-    .thumbnailBorderStyle: ThumnailBorderStyle.shadowOrGlow.rawValue,
+    .thumbnailBorderStyle: ThumnailBorderStyle.shadowRoundedCorners.rawValue,
     .thumbnailSizeOption: ThumbnailSizeOption.scaleWithViewport.rawValue,
     .thumbnailFixedLength: 240,
     .thumbnailRawSizePercentage: 75,
     .thumbnailDisplayedSizePercentage: 30,
-    .enableThumbnailRoundedCorners: true,
     .maxThumbnailPreviewCacheSize: 500,
 
     .autoSwitchToMusicMode: true,

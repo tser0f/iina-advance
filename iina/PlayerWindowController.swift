@@ -12,8 +12,8 @@ import WebKit
 
 // MARK: - Constants
 
-fileprivate let thumbnailExtraOffsetX: CGFloat = 12
-fileprivate let thumbnailExtraOffsetY: CGFloat = 12
+fileprivate let thumbnailExtraOffsetX: CGFloat = 15
+fileprivate let thumbnailExtraOffsetY: CGFloat = 15
 
 // MARK: - Constants
 
@@ -320,7 +320,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .thumbnailRawSizePercentage,
     .thumbnailDisplayedSizePercentage,
     .thumbnailBorderStyle,
-    .enableThumbnailRoundedCorners,
     .showChapterPos,
     .arrowButtonAction,
     .blackOutMonitor,
@@ -2989,7 +2988,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let thumbOriginX = min(max(minX, round(originalPosX - thumbWidth / 2)), maxX - thumbWidth)
     thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
 
-    thumbnailPeekView.refreshStyle()
+    thumbnailPeekView.refreshBorderStyle()
 
 //      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
     thumbnailPeekView.isHidden = false

@@ -21,35 +21,49 @@ class ThumbnailPeekView: NSView {
     refreshColors()
   }
 
-  func refreshStyle() {
+  func refreshBorderStyle() {
     guard let layer = self.layer else { return }
 
-    // Set corner radius to betwen 10 and 20
     let cornerRadius: CGFloat
-    if Preference.bool(for: .enableThumbnailRoundedCorners) {
-      cornerRadius = 10 + min(10, max(0, (frame.height - 400) * 0.01))
-    } else {
-      cornerRadius = 0
-    }
-    layer.cornerRadius = cornerRadius
-    imageView.layer?.cornerRadius = cornerRadius
-
-    // Adjust border width based on frame height
     let style: Preference.ThumnailBorderStyle = Preference.enum(for: .thumbnailBorderStyle)
     switch style {
     case .none:
       layer.borderWidth = 0
       layer.shadowRadius = 0
-    case .solidBorder:
-      layer.borderWidth = solidBorderWidth()
+      cornerRadius = 0
+    case .outlineSharpCorners:
+      layer.borderWidth = outlineRoundedCornersWidth()
       layer.shadowRadius = 0
-    case .shadowOrGlow:
+      cornerRadius = 0
+    case .outlineRoundedCorners:
+      layer.borderWidth = outlineRoundedCornersWidth()
+      layer.shadowRadius = 0
+      cornerRadius = roundedCornerRadius()
+    case .shadowSharpCorners:
       layer.borderWidth = 0
       layer.shadowRadius = shadowRadius()
-    case .borderPlusShadow:
-      layer.borderWidth = solidBorderWidth()
+      cornerRadius = 0
+    case .shadowRoundedCorners:
+      layer.borderWidth = 0
       layer.shadowRadius = shadowRadius()
+      cornerRadius = roundedCornerRadius()
+    case .outlinePlusShadowSharp:
+      layer.borderWidth = outlineRoundedCornersWidth()
+      layer.shadowRadius = shadowRadius()
+      cornerRadius = 0
+    case .outlinePlusShadowRounded:
+      layer.borderWidth = outlineRoundedCornersWidth()
+      layer.shadowRadius = shadowRadius()
+      cornerRadius = roundedCornerRadius()
     }
+
+    layer.cornerRadius = cornerRadius
+    imageView.layer?.cornerRadius = cornerRadius
+  }
+
+  private func roundedCornerRadius() -> CGFloat {
+    // Set corner radius to betwen 10 and 20
+    return 10 + min(10, max(0, (frame.height - 400) * 0.01))
   }
 
   private func shadowRadius() -> CGFloat {
@@ -58,14 +72,8 @@ class ThumbnailPeekView: NSView {
     return min(10, 2 + (frame.height * 0.005))
   }
 
-  private func solidBorderWidth() -> CGFloat {
-    // Set border width to between 1 and 2 based on frame height
-    switch frame.height {
-    case 0..<1000:
-      return 1
-    default:
-      return 2
-    }
+  private func outlineRoundedCornersWidth() -> CGFloat {
+    return 1
   }
 
   func refreshColors() {
