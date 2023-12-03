@@ -217,6 +217,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
   var geoUpdateTicketCount: Int = 0
+  var windowDidResizeTicketCount: Int = 0
 
   var windowedModeGeometry: PlayerWindowGeometry! {
     didSet {
@@ -1400,7 +1401,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           return
         }
       }
-      if event.clickCount == 2 && isMouseEvent(event, inAnyOf: [titleBarView]) {
+      let titleBarMinY = window!.frame.height - PlayerWindowController.standardTitleBarHeight
+      if event.clickCount == 2 && (event.locationInWindow.y >= titleBarMinY) {
         if let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
           log.verbose("Double-click occurred in title bar. Executing \(userDefault.quoted)")
           if userDefault == "Minimize" {
@@ -1408,6 +1410,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           } else if userDefault == "Maximize" {
             window?.performZoom(nil)
           }
+        } else {
+          log.verbose("No action for AppleActionOnDoubleClick")
         }
         return
       }
@@ -1988,13 +1992,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  /// Called anytime window is resized. May be called after every call to `window.setFrame()`.
+  /// Called after window is resized from (almost) any cause. Will be called many times during every call to `window.setFrame()`.
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     // OK to call this while animating. Enqueuing into the pipeline below ensures it will not interrupt existing animations.
     guard !isClosing, !isMagnifying else { return }
 
+    // Use ticket to cut duplicate work by ~90%
+    windowDidResizeTicketCount += 1
+    let currentTicket = windowDidResizeTicketCount
+
     animationPipeline.submitZeroDuration({ [self] in
+      guard currentTicket == windowDidResizeTicketCount else { return }
       defer {
         updateCachedGeometry()
       }

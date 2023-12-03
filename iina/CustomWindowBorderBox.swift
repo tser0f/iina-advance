@@ -24,7 +24,6 @@ class CustomWindowBorderBox: NSBox {
           playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
         controlBarFloating.mouseDown(with: event)
       }
-      playerWindowController.mouseDown(with: event)
     }
     super.mouseDown(with: event)
   }
@@ -35,7 +34,6 @@ class CustomWindowBorderBox: NSBox {
          controlBarFloating.isDragging {
         controlBarFloating.mouseDragged(with: event)
       }
-      playerWindowController.mouseDragged(with: event)
     }
     super.mouseDragged(with: event)
   }
@@ -46,7 +44,6 @@ class CustomWindowBorderBox: NSBox {
          controlBarFloating.isDragging || playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
         controlBarFloating.mouseUp(with: event)
       }
-      playerWindowController.mouseUp(with: event)
     }
     super.mouseUp(with: event)
   }
@@ -57,7 +54,6 @@ class CustomWindowBorderBox: NSBox {
           playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
         controlBarFloating.rightMouseDown(with: event)
       }
-      playerWindowController.rightMouseDown(with: event)
     }
     super.rightMouseDown(with: event)
   }
@@ -68,7 +64,6 @@ class CustomWindowBorderBox: NSBox {
          playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
         controlBarFloating.rightMouseUp(with: event)
       }
-      playerWindowController.rightMouseUp(with: event)
     }
     super.rightMouseUp(with: event)
   }
@@ -79,7 +74,6 @@ class CustomWindowBorderBox: NSBox {
          playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
         controlBarFloating.pressureChange(with: event)
       }
-      playerWindowController.pressureChange(with: event)
     }
     super.pressureChange(with: event)
   }
@@ -90,7 +84,6 @@ class CustomWindowBorderBox: NSBox {
          playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
         controlBarFloating.otherMouseDown(with: event)
       }
-      playerWindowController.otherMouseDown(with: event)
     }
     super.otherMouseDown(with: event)
   }
@@ -101,7 +94,6 @@ class CustomWindowBorderBox: NSBox {
          playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
         controlBarFloating.otherMouseUp(with: event)
       }
-      playerWindowController.otherMouseUp(with: event)
     }
     super.otherMouseUp(with: event)
   }
