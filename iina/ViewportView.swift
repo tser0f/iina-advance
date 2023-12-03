@@ -16,6 +16,10 @@ class ViewportView: NSView {
     registerForDraggedTypes([.nsFilenames, .nsURL, .string])
   }
   
+  override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+    return Preference.bool(for: .videoViewAcceptsFirstMouse)
+  }
+
   override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
     return player.acceptFromPasteboard(sender)
   }
