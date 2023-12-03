@@ -41,6 +41,7 @@ extension PlayerWindowController {
   func doPreTransitionWork(_ transition: LayoutTransition) {
     log.verbose("[\(transition.name)] DoPreTransitionWork")
     controlBarFloating.isDragging = false
+    isAnimatingLayoutTransition = true
 
     /// Some methods where reference `currentLayout` get called as a side effect of the transition animations.
     /// To avoid possible bugs as a result, let's update this at the very beginning.
@@ -945,6 +946,8 @@ extension PlayerWindowController {
     videoView.needsLayout = true
     videoView.layoutSubtreeIfNeeded()
     forceDraw()
+
+    isAnimatingLayoutTransition = false
 
     log.verbose("[\(transition.name)] Done with transition. IsFullScreen:\(transition.outputLayout.isFullScreen.yn), IsLegacy:\(transition.outputLayout.spec.isLegacyStyle), Mode:\(currentLayout.mode)")
     player.saveState()
