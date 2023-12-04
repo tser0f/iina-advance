@@ -790,28 +790,28 @@ class PlayerCore: NSObject {
     guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
 
-    guard let vParams = info.videoParams else {
+    let videoParams = mpv.queryForVideoParams()
+    info.videoParams = videoParams
+    guard videoParams.videoRawWidth > 0, videoParams.videoRawHeight > 0 else {
       log.verbose("Cannot set requested aspect: videoParams not available")
-      if let aspectDouble = Double(aspect), aspectDouble == -1 {
-        DispatchQueue.main.async { [self] in
-          windowController.refreshAlbumArtDisplay()
-        }
-      }
       return
     }
 
-    let videoRawWidth = vParams.videoRawWidth
-    let videoRawHeight = vParams.videoRawHeight
+    let videoRawWidth = videoParams.videoRawWidth
+    let videoRawHeight = videoParams.videoRawHeight
     var aspectDisplay: String
     let videoDefaultAspectNumString = (Double(videoRawWidth) / Double(videoRawHeight)).stringTrunc2f
+    let aspectNumberString2f: String
     if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.stringTrunc2f != videoDefaultAspectNumString {
       // Aspect is in colon notation (X:Y)
       aspectDisplay = aspect
+      aspectNumberString2f = colonBasedAspect.value.stringTrunc2f
     } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.stringTrunc2f != videoDefaultAspectNumString {
       /// Aspect is a decimal number, but is not default (`-1` or video default)
       /// Try to match to known aspect by comparing their decimal values to the new aspect.
       /// Note that mpv seems to do its calculations to only 2 decimal places of precision, so use that for comparison.
       aspectDisplay = aspectDouble.stringTrunc2f
+      aspectNumberString2f = aspectDisplay
       for knownAspectRatio in AppData.aspects {
         if let parsedAspect = Aspect(string: knownAspectRatio), aspectDisplay == parsedAspect.value.stringTrunc2f {
           // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
@@ -821,18 +821,29 @@ class PlayerCore: NSObject {
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
+      aspectNumberString2f = videoDefaultAspectNumString
       log.verbose("Aspect \(aspect.quoted) is -1 or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
     }
 
-    guard info.selectedAspectRatioLabel != aspectDisplay else { return }
+    if info.videoAspectRatio.stringTrunc2f != aspectNumberString2f {
+      log.verbose("Need to update player window geometry with new aspect ratio. Old: \(info.videoAspectRatio.stringTrunc2f), New: \(aspectNumberString2f)")
+      DispatchQueue.main.async { [self] in
+        windowController.mpvVideoDidReconfig()
+      }
+    }
+    guard info.selectedAspectRatioLabel != aspectDisplay else {
+      return
+    }
     info.selectedAspectRatioLabel = aspectDisplay
 
+    // Send update to mpv
     let mpvValue = aspectDisplay == AppData.defaultAspectName ? "no" : aspectDisplay
     log.verbose("Setting mpv video-aspect-override to: \(mpvValue.quoted)")
     mpv.setString(MPVOption.Video.videoAspectOverride, mpvValue)
 
     sendOSD(.aspect(aspectDisplay))
 
+    // Update controls in UI
     DispatchQueue.main.async { [self] in
       if windowController.loaded, !windowController.isClosing {
         windowController.quickSettingView.aspectSegment.selectSegment(withLabel: aspectDisplay)

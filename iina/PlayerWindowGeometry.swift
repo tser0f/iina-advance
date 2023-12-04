@@ -1351,13 +1351,13 @@ extension PlayerWindowController {
     if hasChange {
       /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:
       miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
-      videoView.apply(geometry.toPlayerWindowGeometry())
       updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideViewport)
+      videoView.apply(geometry.toPlayerWindowGeometry())
       if setFrame {
         player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
+      } else {
+        log.verbose("Not updating music mode windowFrame or constraints - no changes needed")
       }
-    } else {
-      log.verbose("Not updating music mode windowFrame or constraints - no changes needed")
     }
     if updateCache {
       musicModeGeometry = geometry
