@@ -348,9 +348,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case PK.showRemainingTime.rawValue:
       if let newValue = change[.newKey] as? Bool {
         rightLabel.mode = newValue ? .remaining : .duration
-        if player.isInMiniPlayer {
-          player.windowController.miniPlayer.rightLabel.mode = newValue ? .remaining : .duration
-        }
       }
     case PK.maxVolume.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -618,7 +615,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var fragToolbarView: NSStackView? = nil
   @IBOutlet weak var fragVolumeView: NSView!
-  @IBOutlet weak var fragPositionSliderView: NSView!
+  @IBOutlet var fragPositionSliderView: NSView!
   @IBOutlet weak var fragPlaybackControlButtonsView: NSView!
 
   @IBOutlet weak var leftArrowLabel: NSTextField!
@@ -1516,7 +1513,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   override func scrollWheel(with event: NSEvent) {
     guard !isInInteractiveMode else { return }
     guard !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, titleBarView, subPopoverView]) else { return }
-    // TODO: figure out hit test to make sure scroll doesn't happen when window is occluded
+    // TODO: tweak scroll so it doesn't get tripped so easily
 
     if isMouseEvent(event, inAnyOf: [fragPositionSliderView]) && playSlider.isEnabled {
       seekOverride = true
@@ -2549,16 +2546,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     let percentage = (pos.second / duration.second) * 100
-    if player.isInMiniPlayer {
-      // Music mode
-      _ = player.windowController.miniPlayer.view // make sure it is loaded
-      player.windowController.miniPlayer.playSlider.updateTo(percentage: percentage)
-      [player.windowController.miniPlayer.leftLabel, player.windowController.miniPlayer.rightLabel].forEach { $0.updateText(with: duration, given: pos) }
-    } else {
-      // Normal player
-      [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
-      playSlider.updateTo(percentage: percentage)
-    }
+    [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+    playSlider.updateTo(percentage: percentage)
     // Touch bar
     if #available(macOS 10.12.2, *) {
       player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
@@ -2870,14 +2859,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func refreshSeekTimeAndThumnailInternal(from event: NSEvent) {
-    guard !currentLayout.isMusicMode && !currentLayout.isInteractiveMode else { return }
+    guard !currentLayout.isInteractiveMode else { return }
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
     let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
-    guard isMouseInPlaySlider && !isCoveredByOSD, let duration = player.info.videoDuration else {
+    guard isMouseInPlaySlider && !isCoveredByOSD && !isAnimatingLayoutTransition, let duration = player.info.videoDuration else {
       thumbnailPeekView.isHidden = true
       timePositionHoverLabel.isHidden = true
       return
     }
+
+    // - 1. Time Hover Label
+
     timePositionHoverLabel.isHidden = false
 
     let mousePosX = playSlider.convert(event.locationInWindow, from: nil).x
@@ -2892,7 +2884,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       timePositionHoverLabel.stringValue = previewTime.stringRepresentation
     }
 
-    // Thumbnail:
+    // - 2. Thumbnail Preview
+
     guard player.info.thumbnailsReady,
             let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
           let videoParams = player.info.videoParams, let currentControlBar else {
@@ -3012,7 +3005,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
-    // See comments in resetViewsForFullScreenTransition for details.
+    // See comments in resetViewsForModeTransition for details.
     guard !isClosing else { return }
 
     log.verbose("UpdateWindowParametersForMPV called, videoSizeIsNil: \((videoSize == nil).yn)")
@@ -3056,13 +3049,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func syncPlaySliderABLoop() {
     let a = player.abLoopA
     let b = player.abLoopB
-    if let slider = player.isInMiniPlayer ? player.windowController.playSlider : playSlider {
-      slider.abLoopA.isHidden = a == 0
-      slider.abLoopA.doubleValue = secondsToPercent(a)
-      slider.abLoopB.isHidden = b == 0
-      slider.abLoopB.doubleValue = secondsToPercent(b)
-      slider.needsDisplay = true
-    }
+    playSlider.abLoopA.isHidden = a == 0
+    playSlider.abLoopA.doubleValue = secondsToPercent(a)
+    playSlider.abLoopB.isHidden = b == 0
+    playSlider.abLoopB.doubleValue = secondsToPercent(b)
+    playSlider.needsDisplay = true
   }
 
   /// Returns the percent of the total duration of the video the given position in seconds represents.

@@ -28,9 +28,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var volumeSlider: NSSlider!
   @IBOutlet weak var muteButton: NSButton!
   @IBOutlet weak var playButton: NSButton!
-  @IBOutlet weak var playSlider: PlaySlider!
-  @IBOutlet weak var rightLabel: DurationDisplayTextField!
-  @IBOutlet weak var leftLabel: DurationDisplayTextField!
+
+  @IBOutlet weak var positionSliderWrapperView: NSView!
 
   @IBOutlet weak var volumeButton: NSButton!
   @IBOutlet var volumePopover: NSPopover!
@@ -115,9 +114,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
 
     volumePopover.delegate = self
-
-    leftLabel.mode = .current
-    rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
 
     log.verbose("MiniPlayer viewDidLoad done")
   }
@@ -260,10 +256,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   // MARK: - IBActions
-
-  @IBAction func playSliderDidChange(_ sender: NSSlider) {
-    windowController.playSliderDidChange(sender)
-  }
 
   @IBAction func volumeSliderDidChange(_ sender: NSSlider) {
     windowController.volumeSliderDidChange(sender)
@@ -435,6 +427,10 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // Make sure to restore video
     applyVideoViewVisibilityConstraints(isVideoVisible: true)
     windowController.viewportBottomOffsetFromContentViewBottomConstraint.isActive = true
+
+    windowController.leftLabel.font = NSFont.messageFont(ofSize: 11)
+    windowController.rightLabel.font = NSFont.messageFont(ofSize: 11)
+    windowController.fragPositionSliderView.removeFromSuperview()
 
     // Make sure to reset constraints for OSD
     hideControlInternal()

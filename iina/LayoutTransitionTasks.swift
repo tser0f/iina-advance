@@ -108,12 +108,12 @@ extension PlayerWindowController {
         player.mpv.setFlag(MPVOption.Window.keepaspect, true)
       }
 
-      resetViewsForFullScreenTransition()
+      resetViewsForModeTransition()
 
     } else if transition.isExitingFullScreen {
       // Exiting FullScreen
 
-      resetViewsForFullScreenTransition()
+      resetViewsForModeTransition()
 
       apply(visibility: .hidden, to: additionalInfoView)
 
@@ -130,10 +130,16 @@ extension PlayerWindowController {
 
     // Interactive mode
     if transition.isEnteringInteractiveMode {
+      resetViewsForModeTransition()
+
       isPausedPriorToInteractiveMode = player.info.isPaused
       player.pause()
     } else if transition.isExitingInteractiveMode, let cropController = cropSettingsView {
       cropController.cropBoxView.isHidden = true
+    }
+
+    if transition.isTogglingMusicMode {
+      resetViewsForModeTransition()
     }
 
     if transition.isTogglingLegacyStyle {
@@ -402,6 +408,12 @@ extension PlayerWindowController {
       timePositionHoverLabelVerticalSpaceConstraint.isActive = false
     }
 
+    if transition.isExitingMusicMode {
+      // Exiting music mode. Make sure to execute this before adding OSC below
+      _ = miniPlayer.view
+      miniPlayer.cleanUpForMusicModeExit()
+    }
+
     // [Re-]add OSC:
     if outputLayout.enableOSC {
 
@@ -447,6 +459,8 @@ extension PlayerWindowController {
         timeLabelFontSize = NSFont.smallSystemFontSize
       } else {
         let barHeight = OSCToolbarButton.oscBarHeight
+
+        // Expand slider bounds to entire bar so it's easier to hover and/or click on it
         playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: barHeight)
         playSliderHeightConstraint.isActive = true
 
@@ -459,6 +473,8 @@ extension PlayerWindowController {
       }
       timePositionHoverLabel.font = NSFont.systemFont(ofSize: timeLabelFontSize)
       timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
+    } else { // No OSC
+      currentControlBar = nil
     }
 
     // Sidebars: finish closing (if closing)
@@ -489,14 +505,24 @@ extension PlayerWindowController {
       miniPlayer.playlistWrapperView.addSubview(playlistView)
       playlistView.addConstraintsToFillSuperview()
 
+      // move playback position slider
+      miniPlayer.positionSliderWrapperView.addSubview(fragPositionSliderView)
+      fragPositionSliderView.addConstraintsToFillSuperview()
+      // Expand slider bounds so that hovers are more likely to register
+      playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: miniPlayer.positionSliderWrapperView.frame.height - 4)
+      playSliderHeightConstraint.isActive = true
+
+      timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.topAnchor.constraint(equalTo: timePositionHoverLabel.superview!.topAnchor, constant: -2)
+      timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
+      timePositionHoverLabel.font = NSFont.systemFont(ofSize: 9)
+
+      // Decrease font size of time labels
+      leftLabel.font = NSFont.labelFont(ofSize: 9)
+      rightLabel.font = NSFont.labelFont(ofSize: 9)
+
       // Update music mode UI
       updateTitle()
       applyThemeMaterial()
-
-    } else if transition.isExitingMusicMode {
-      // Exiting music mode
-      _ = miniPlayer.view
-      miniPlayer.cleanUpForMusicModeExit()
     }
     // Need to call this for initial layout also:
     updateMusicModeButtonsVisibility()
@@ -634,14 +660,8 @@ extension PlayerWindowController {
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(tabHeight: outputLayout.sidebarTabHeight, downshift: outputLayout.sidebarDownshift)
 
-    if !outputLayout.enableOSC {
-      // No OSC. Clean up its subviews
-      fragToolbarView?.removeFromSuperview()
-      fragPositionSliderView.removeFromSuperview()
-      fragVolumeView.removeFromSuperview()
-      currentControlBar = nil
-    } else if outputLayout.hasFloatingOSC {
-      // Set up floating OSC views here. Doing this in prev or next task while animating results in visibility bugs
+    if outputLayout.enableOSC && outputLayout.hasFloatingOSC {
+      // Wait until now to set up floating OSC views. Doing this in prev or next task while animating results in visibility bugs
       currentControlBar = controlBarFloating
 
       if !transition.inputLayout.hasFloatingOSC {
@@ -1346,7 +1366,7 @@ extension PlayerWindowController {
     customWindowBorderTopHighlightBox.isHidden = hide
   }
 
-  private func resetViewsForFullScreenTransition() {
+  private func resetViewsForModeTransition() {
     // When playback is paused the display link is stopped in order to avoid wasting energy on
     // needless processing. It must be running while transitioning to/from full screen mode.
     videoView.displayActive()
