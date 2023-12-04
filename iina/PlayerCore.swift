@@ -55,8 +55,8 @@ class PlayerCore: NSObject {
   unowned var log: Logger.Subsystem { self.subsystem }
   var label: String
 
-  var saveTicketCounter: Int = 0
-  var thumbnailReloadTicketCounter: Int = 0
+  @Atomic var saveTicketCounter: Int = 0
+  @Atomic private var thumbnailReloadTicketCounter: Int = 0
 
   // Plugins
   var isManagedByPlugin = false
@@ -100,7 +100,7 @@ class PlayerCore: NSObject {
   @Atomic var backgroundQueueTicket = 0
 
   // Ticket for sync UI update request
-  private var syncUITicketCount: Int = 0
+  @Atomic private var syncUITicketCount: Int = 0
 
   // Windows
 
@@ -2176,13 +2176,16 @@ class PlayerCore: NSObject {
         return
       }
 
-      thumbnailReloadTicketCounter += 1
-      let ticket = thumbnailReloadTicketCounter
+      var ticket: Int = 0
+      $thumbnailReloadTicketCounter.withLock {
+        $0 += 1
+        ticket = $0
+      }
 
       // Run the following in the background at lower priority, so the UI is not slowed down
       PlayerCore.thumbnailQueue.async { [self] in
         guard ticket == thumbnailReloadTicketCounter else { return }
-        log.debug("Reloading thumbnails, tkt# \(ticket)")
+        log.debug("Reloading thumbnails (tkt \(ticket))")
 
         info.ffThumbnails = []
         info.thumbnails = []

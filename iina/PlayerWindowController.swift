@@ -218,8 +218,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
-  var geoUpdateTicketCount: Int = 0
-  var windowDidResizeTicketCount: Int = 0
+  @Atomic var geoUpdateTicketCounter: Int = 0
+  /// For throttling `windowDidResize`. Duplicates of these can easily build up due to how we enqueue work
+  @Atomic var windowDidResizeTicketCounter: Int = 0
+  /// For throttling `windowDidChangeScreen` notifications. MacOS 14 often sends hundreds in short bursts
+  @Atomic var screenChangedTicketCounter: Int = 0
+  /// For throttling `windowDidChangeScreenParameters` notifications. MacOS 14 often sends hundreds in short bursts
+  @Atomic var screenParamsChangedTicketCounter: Int = 0
 
   var windowedModeGeometry: PlayerWindowGeometry! {
     didSet {
@@ -1997,11 +2002,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard !isClosing, !isAnimatingLayoutTransition, !isMagnifying else { return }
 
     // Use ticket to cut duplicate work by ~90%
-    windowDidResizeTicketCount += 1
-    let currentTicket = windowDidResizeTicketCount
+    var ticket: Int = 0
+    $windowDidResizeTicketCounter.withLock {
+      $0 += 1
+      ticket = $0
+    }
 
     animationPipeline.submitZeroDuration({ [self] in
-      guard currentTicket == windowDidResizeTicketCount else { return }
+      guard ticket == windowDidResizeTicketCounter else { return }
       defer {
         updateCachedGeometry()
       }
@@ -2073,6 +2081,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Window Delegate: window move, screen changes
 
   func windowDidChangeBackingProperties(_ notification: Notification) {
+    log.verbose("WindowDidChangeBackingProperties received")
     if videoView.refreshContentsScale() {
       // Do not allow MacOS to change the window size:
       denyNextWindowResize = true
@@ -2081,32 +2090,40 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Note: this gets triggered by many unnecessary situations, e.g. several times each time full screen is toggled.
   func windowDidChangeScreen(_ notification: Notification) {
-    guard let window = window, let screen = window.screen else { return }
-
-    let displayId = screen.displayId
-    // Legacy FS work below can be very slow. Try to avoid if possible
-    guard videoView.currentDisplay != displayId else {
-      log.verbose("WindowDidChangeScreen: no work needed; currentDisplayID \(displayId) is unchanged")
-      return
+    var ticket: Int = 0
+    $screenChangedTicketCounter.withLock {
+      $0 += 1
+      ticket = $0
     }
 
-    let blackWindows = self.blackWindows
-    if isFullScreen && Preference.bool(for: .blackOutMonitor) && blackWindows.compactMap({$0.screen?.displayId}).contains(displayId) {
-      log.verbose("WindowDidChangeScreen: black windows contains window's displayId \(displayId); removing & regenerating black windows")
-      // Window changed screen: adjust black windows accordingly
-      removeBlackWindows()
-      blackOutOtherMonitors()
-    }
+    // MacOS Sonoma sometimes blasts tons of these for unknown reasons. Attempt to prevent slowdown by de-duplicating
+    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) { [self] in
+      guard ticket == screenChangedTicketCounter else { return }
+      guard let window = window, let screen = window.screen else { return }
 
-    log.verbose("WindowDidChangeScreen: screenFrame=\(screen.frame)")
-    videoView.updateDisplayLink()
-    player.events.emit(.windowScreenChanged)
+      let displayId = screen.displayId
+      // Legacy FS work below can be very slow. Try to avoid if possible
+      guard videoView.currentDisplay != displayId else {
+        log.verbose("WindowDidChangeScreen (tkt \(ticket)): no work needed; currentDisplayID \(displayId) is unchanged")
+        return
+      }
 
-    /// Need to recompute legacy FS's window size so it exactly fills the new screen.
-    /// But looks like the OS will try to reposition the window on its own and can't be stopped...
-    /// Just wait until after it does its thing before calling `setFrame()`.
-    if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
+      let blackWindows = self.blackWindows
+      if isFullScreen && Preference.bool(for: .blackOutMonitor) && blackWindows.compactMap({$0.screen?.displayId}).contains(displayId) {
+        log.verbose("WindowDidChangeScreen: black windows contains window's displayId \(displayId); removing & regenerating black windows")
+        // Window changed screen: adjust black windows accordingly
+        removeBlackWindows()
+        blackOutOtherMonitors()
+      }
+
+      log.verbose("WindowDidChangeScreen (tkt \(ticket)): screenFrame=\(screen.frame)")
+      videoView.updateDisplayLink()
+      player.events.emit(.windowScreenChanged)
+
+      /// Need to recompute legacy FS's window size so it exactly fills the new screen.
+      /// But looks like the OS will try to reposition the window on its own and can't be stopped...
+      /// Just wait until after it does its thing before calling `setFrame()`.
+      if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
         animationPipeline.submit(IINAAnimation.Task({ [self] in
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
@@ -2118,7 +2135,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           player.saveState()
         }))
       }
-      return
     }
   }
 
@@ -2130,46 +2146,58 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// • Sometimes called hundreds(!) of times while window is closing
   private func windowDidChangeScreenParameters(_ notification: Notification) {
     guard !isClosing else { return }
-    let screens = PlayerWindowController.buildScreenMap()
-    let screenIDs = screens.keys.sorted()
-    let cachedScreenIDs = cachedScreens.keys.sorted()
-    log.verbose("WindowDidChangeScreenParameters: screenIDs was \(cachedScreenIDs), is now \(screenIDs)")
 
-    // Update the cached value
-    self.cachedScreens = screens
+    var ticket: Int = 0
+    $screenParamsChangedTicketCounter.withLock {
+      $0 += 1
+      ticket = $0
+    }
 
-    self.videoView.updateDisplayLink()
+    // MacOS Sonoma sometimes blasts tons of these for unknown reasons. Attempt to prevent slowdown by de-duplicating
+    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) { [self] in
+      guard ticket == screenParamsChangedTicketCounter else { return }
 
-    guard !player.info.isRestoring else { return }
+      let screens = PlayerWindowController.buildScreenMap()
+      let screenIDs = screens.keys.sorted()
+      let cachedScreenIDs = cachedScreens.keys.sorted()
+      log.verbose("WindowDidChangeScreenParameters (tkt \(ticket)): screenIDs was \(cachedScreenIDs), is now \(screenIDs)")
 
-    // In normal full screen mode AppKit will automatically adjust the window frame if the window
-    // is moved to a new screen such as when the window is on an external display and that display
-    // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
-    // frame.
-    // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
-    animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.FullScreenTransitionDuration * 0.2, { [self] in
-      if currentLayout.isLegacyFullScreen {
-        let layout = currentLayout
-        guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
-        log.verbose("Updating legacy full screen window in response to ScreenParametersNotification")
-        let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
-        applyLegacyFullScreenGeometry(fsGeo)
-      } else if currentLayout.isWindowed {
-        /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
-        /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
-        /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
-        let oldGeo = windowedModeGeometry!
-        let newGeo = oldGeo.refit()
-        guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
-          log.verbose("No need to update windowFrame in response to ScreenParametersNotification - no change")
-          return
+      // Update the cached value
+      self.cachedScreens = screens
+
+      self.videoView.updateDisplayLink()
+
+      guard !player.info.isRestoring else { return }
+
+      // In normal full screen mode AppKit will automatically adjust the window frame if the window
+      // is moved to a new screen such as when the window is on an external display and that display
+      // is disconnected. In legacy full screen mode IINA is responsible for adjusting the window's
+      // frame.
+      // Use very short duration. This usually gets triggered at the end when entering fullscreen, when the dock and/or menu bar are hidden.
+      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.FullScreenTransitionDuration * 0.2, { [self] in
+        if currentLayout.isLegacyFullScreen {
+          let layout = currentLayout
+          guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
+          log.verbose("Updating legacy full screen window in response to ScreenParametersNotification")
+          let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
+          applyLegacyFullScreenGeometry(fsGeo)
+        } else if currentLayout.isWindowed {
+          /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
+          /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
+          /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
+          let oldGeo = windowedModeGeometry!
+          let newGeo = oldGeo.refit()
+          guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
+            log.verbose("No need to update windowFrame in response to ScreenParametersNotification - no change")
+            return
+          }
+          let newWindowFrame = newGeo.windowFrame
+          log.verbose("Calling setFrame() in response to ScreenParametersNotification with windowFrame \(newWindowFrame), videoSize \(newGeo.videoSize)")
+          videoView.apply(newGeo)
+          player.window.setFrameImmediately(newWindowFrame)
         }
-        let newWindowFrame = newGeo.windowFrame
-        log.verbose("Calling setFrame() in response to ScreenParametersNotification with windowFrame \(newWindowFrame), videoSize \(newGeo.videoSize)")
-        videoView.apply(newGeo)
-        player.window.setFrameImmediately(newWindowFrame)
-      }
-    }))
+      }))
+    }
   }
 
   func windowWillMove(_ notification: Notification) {

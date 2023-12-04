@@ -457,13 +457,13 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
     resetScrollingLabels()
 
-    windowController.animationPipeline.submit(IINAAnimation.Task{ [self] in
+    windowController.animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
       log.verbose("Updating music mode geometry for video change")
       windowController.applyMusicModeGeometry(newGeometry)
-    })
+    }))
   }
 
   func buildMusicModeGeometryFromPrefs() -> MusicModeGeometry {

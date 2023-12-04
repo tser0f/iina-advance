@@ -1075,15 +1075,17 @@ extension PlayerWindowController {
     // Update video aspect ratio always
     player.info.videoAspectRatio = newGeometry.videoAspectRatio
 
-    geoUpdateTicketCount += 1
-    let geoUpdateRequestID = geoUpdateTicketCount
+    var ticket: Int = 0
+    $geoUpdateTicketCounter.withLock {
+      $0 += 1
+      ticket = $0
+    }
 
     animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-      if geoUpdateRequestID < geoUpdateTicketCount {
-        log.verbose("Skipping geoUpdate \(geoUpdateRequestID); latest is \(geoUpdateTicketCount)")
+      guard ticket == geoUpdateTicketCounter else {
         return
       }
-      log.verbose("Applying geoUpdate \(geoUpdateRequestID)")
+      log.verbose("Applying geoUpdate \(ticket)")
 
       switch currentLayout.spec.mode {
       case .musicMode:

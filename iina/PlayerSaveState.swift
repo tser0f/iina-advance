@@ -300,12 +300,15 @@ struct PlayerSaveState {
   static func save(_ player: PlayerCore) {
     guard Preference.UIState.isSaveEnabled else { return }
 
-    player.saveTicketCounter += 1
-    let saveTicket = player.saveTicketCounter
+    var ticket: Int = 0
+    player.$saveTicketCounter.withLock {
+      $0 += 1
+      ticket = $0
+    }
 
     // Run in background queue to avoid blocking UI. Cut down on duplicate work via delay and ticket check
     PlayerCore.backgroundQueue.asyncAfter(deadline: DispatchTime.now() + 0.5) {
-      guard saveTicket == player.saveTicketCounter else {
+      guard ticket == player.saveTicketCounter else {
         return
       }
 
@@ -331,7 +334,7 @@ struct PlayerSaveState {
       player.$isShuttingDown.withLock() { isShuttingDown in
         guard !isShuttingDown else { return }
         let properties = generatePropDict(from: player)
-        player.log.verbose("Saving player state, tkt# \(saveTicket)")
+        player.log.verbose("Saving player state (tkt \(ticket))")
 //        player.log.verbose("Saving player state: \(properties)")
         Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
       }
