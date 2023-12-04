@@ -1072,7 +1072,7 @@ not applying FFmpeg 9599 workaround
   private func onFileLoaded() {
     // Get video size and set the initial window size
     if !player.info.isRestoring {
-      let pause = player.info.justOpenedFile && Preference.bool(for: .pauseWhenOpen)
+      let pause = Preference.bool(for: .pauseWhenOpen)
       player.log.verbose("OnFileLoaded: setting playback to \(pause ? "paused" : "resume")")
       setFlag(MPVOption.PlaybackControl.pause, pause)
     }

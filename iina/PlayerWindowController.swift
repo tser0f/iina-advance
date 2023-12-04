@@ -930,7 +930,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] note in
-      guard !player.info.fileLoading && player.info.fileLoaded && !player.info.justStartedFile && !player.info.justOpenedFile else { return }
+      guard !player.info.fileLoading && player.info.fileLoaded && !player.info.justStartedFile else { return }
       log.verbose("Got iinaVIDChanged notification")
       refreshAlbumArtDisplay()
     }
