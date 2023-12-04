@@ -1502,6 +1502,7 @@ class PlayerCore: NSObject {
     log.debug("File started")
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
+    info.videoParams = nil
 
     info.currentURL = path.contains("://") ?
       URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :

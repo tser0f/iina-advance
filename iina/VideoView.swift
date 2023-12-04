@@ -32,6 +32,12 @@ class VideoView: NSView {
   var videoViewConstraints: VideoViewConstraints? = nil
   var widthConstraint: NSLayoutConstraint!
   var heightConstraint: NSLayoutConstraint!
+  var lastSetVideoSize: NSSize? {
+    if let widthConstraint, let heightConstraint, widthConstraint.isActive && heightConstraint.isActive {
+      return NSSize(width: widthConstraint.constant, height: heightConstraint.constant)
+    }
+    return nil
+  }
 
   lazy var hdrSubsystem = Logger.makeSubsystem("hdr")
 

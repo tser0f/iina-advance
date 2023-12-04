@@ -95,6 +95,10 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     return windowFrame.height - videoHeight
   }
 
+  func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
+    return PlayerWindowGeometry.areEqual(windowFrame1: windowFrame, windowFrame2: windowFrame2, videoSize1: videoSize, videoSize2: videoSize2)
+  }
+
   /// The MiniPlayerWindow's width must be between `MiniPlayerMinWidth` and `Preference.musicModeMaxWidth`.
   /// It is composed of up to 3 vertical sections:
   /// 1. `videoWrapperView`: Visible if `isVideoVisible` is true). Scales with the aspect ratio of its video

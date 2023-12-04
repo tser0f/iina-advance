@@ -10,7 +10,7 @@ import Foundation
 
 fileprivate let iconSpacingH: CGFloat = 6  // matches spacing as of MacOS Sonoma (14.0)
 // try to roughly match Apple's title bar text:
-fileprivate let activeTitleTextOpacity: CGFloat = 0.75
+fileprivate let activeTitleTextOpacity: CGFloat = 0.85
 fileprivate let inactiveTitleTextOpacity: CGFloat = 0.35
 fileprivate let inactiveTitleControlOpacity: CGFloat = 0.50
 

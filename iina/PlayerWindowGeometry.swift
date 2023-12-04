@@ -220,15 +220,17 @@ struct PlayerWindowGeometry: Equatable {
   }
 
   func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
-    if let other = windowFrame2 {
-      if !(windowFrame.origin.x == other.origin.x && windowFrame.origin.y == other.origin.y
-           && windowFrame.width == other.width && windowFrame.height == other.height) {
+    return PlayerWindowGeometry.areEqual(windowFrame1: windowFrame, windowFrame2: windowFrame2, videoSize1: videoSize, videoSize2: videoSize2)
+  }
 
+  static func areEqual(windowFrame1: NSRect? = nil, windowFrame2: NSRect? = nil, videoSize1: NSSize? = nil, videoSize2: NSSize? = nil) -> Bool {
+    if let windowFrame1, let windowFrame2 {
+      if !windowFrame1.equalTo(windowFrame2) {
         return false
       }
     }
-    if let other = videoSize2 {
-      if !(videoSize.width == other.width && videoSize.height == other.height) {
+    if let videoSize1, let videoSize2 {
+      if !(videoSize1.width == videoSize2.width && videoSize1.height == videoSize2.height) {
         return false
       }
     }
@@ -676,13 +678,13 @@ extension PlayerWindowController {
 
   /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
   func mpvVideoDidReconfig() {
-    log.verbose("[MPVVideoReconfig] Start")
-
     // Get "correct" video size from mpv
     guard let videoParams = player.info.videoParams, let videoDisplayRotatedSize = videoParams.videoDisplayRotatedSize else {
       log.error("[MPVVideoReconfig] Could not get videoDisplayRotatedSize from mpv! Cancelling adjustment")
       return
     }
+    log.verbose("[MPVVideoReconfig] Start, videoDisplayRotatedSize: \(videoDisplayRotatedSize)")
+
     let newVideoAspectRatio = videoDisplayRotatedSize.aspect
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoDisplayRotatedSize
@@ -1228,7 +1230,7 @@ extension PlayerWindowController {
     if !layout.isInteractiveMode {
       videoView.apply(geometry)
     }
-    guard !geometry.hasEqual(windowFrame: window.frame) else {
+    guard !geometry.windowFrame.equalTo(window.frame) else {
       log.verbose("No need to update windowFrame for legacyFullScreen - no change")
       return
     }
@@ -1320,7 +1322,7 @@ extension PlayerWindowController {
 
   /// Same as `applyMusicModeGeometry()`, but enqueues inside an `IINAAnimation.Task` for a nice smooth animation
   func applyMusicModeGeometryInAnimationTask(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
-    animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
       applyMusicModeGeometry(geometry)
     }))
   }
@@ -1339,15 +1341,23 @@ extension PlayerWindowController {
     miniPlayer.resetScrollingLabels()
     updateMusicModeButtonsVisibility()
 
-    /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:
-    miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
-    videoView.apply(geometry.toPlayerWindowGeometry())
-    updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideViewport)
-    if geometry.isVideoVisible {
-      forceDraw()
+    /// Try to detect & remove unnecessary constraint updates - `updateBottomBarHeight()` may cause animation glitches if called twice
+    let hasVideoVisChange = geometry.isVideoVisible == (viewportViewHeightContraint?.isActive ?? false)
+    var hasChange: Bool = !geometry.windowFrame.equalTo(window!.frame) || hasVideoVisChange
+    if let newVideoSize = geometry.videoSize, let currentVideoSize = videoView.lastSetVideoSize,
+       !newVideoSize.equalTo(currentVideoSize) {
+      hasChange = true
     }
-    if setFrame {
-      player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
+    if hasChange {
+      /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:
+      miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
+      videoView.apply(geometry.toPlayerWindowGeometry())
+      updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideViewport)
+      if setFrame {
+        player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
+      }
+    } else {
+      log.verbose("Not updating music mode windowFrame or constraints - no changes needed")
     }
     if updateCache {
       musicModeGeometry = geometry
