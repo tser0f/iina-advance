@@ -3047,7 +3047,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
-    let videoScale = Double((videoSize ?? windowedModeGeometry.videoSize).width) / Double(videoWidth)
+    let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
     let prevVideoScale = player.info.cachedWindowScale
     if videoScale != prevVideoScale {
       // Setting the window-scale property seems to result in a small hiccup during playback.

@@ -307,7 +307,7 @@ struct PlayerSaveState {
     }
 
     // Run in background queue to avoid blocking UI. Cut down on duplicate work via delay and ticket check
-    PlayerCore.backgroundQueue.asyncAfter(deadline: DispatchTime.now() + 0.5) {
+    PlayerCore.backgroundQueue.asyncAfter(deadline: DispatchTime.now() + AppData.playerStateSaveDelay) {
       guard ticket == player.saveTicketCounter else {
         return
       }

@@ -792,8 +792,11 @@ extension PlayerWindowController {
       }
 
     } else if player.isInMiniPlayer {
-      log.debug("[MPVVideoReconfig] Player is in music mode. Will update its contraints")
-      miniPlayer.adjustLayoutForVideoChange(newVideoAspectRatio: newVideoAspectRatio)
+      log.debug("[MPVVideoReconfig] Player is in music mode; will update its geometry")
+      /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
+      /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
+      let newGeometry = musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
+      applyMusicModeGeometryInAnimationTask(newGeometry)
 
     } else {
       let windowGeo = windowedModeGeometry.clone(videoAspectRatio: videoDisplayRotatedSize.aspect)
@@ -1160,12 +1163,16 @@ extension PlayerWindowController {
     player.info.videoAspectRatio = geometry.videoAspectRatio
 
     videoView.videoLayer.enterAsynchronousMode()
+    miniPlayer.resetScrollingLabels()
     updateMusicModeButtonsVisibility()
 
     /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:
     miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
     videoView.apply(geometry.toPlayerWindowGeometry())
     updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideViewport)
+    if geometry.isVideoVisible {
+      forceDraw()
+    }
     if setFrame {
       player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
     }

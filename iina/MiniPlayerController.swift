@@ -171,7 +171,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     artistAlbumLabel.stepNext()
   }
 
-  private func resetScrollingLabels() {
+  func resetScrollingLabels() {
     _ = view  // make sure views load to avoid crashes from unwrapping nil Optionals
     titleLabel.reset()
     artistAlbumLabel.reset()
@@ -385,7 +385,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    resetScrollingLabels()
     let oldGeometry = windowController.musicModeGeometry!
 
     if requestedSize.width < MiniPlayerController.minWindowWidth {
@@ -452,18 +451,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
 
     windowController.forceDraw()
-  }
-
-  func adjustLayoutForVideoChange(newVideoAspectRatio: CGFloat) {
-    resetScrollingLabels()
-
-    windowController.animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-      /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
-      /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
-      let newGeometry = windowController.musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
-      log.verbose("Updating music mode geometry for video change")
-      windowController.applyMusicModeGeometry(newGeometry)
-    }))
   }
 
   func buildMusicModeGeometryFromPrefs() -> MusicModeGeometry {

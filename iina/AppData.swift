@@ -66,6 +66,7 @@ struct AppData {
   // Each character the user types into the thumbnailWidth text field triggers a new thumb regen request.
   // This should help cut down on unnecessary requests.
   static let thumbnailRegenerationDelay = 0.5
+  static let playerStateSaveDelay = 0.2
 
   static let minThumbnailsPerFile = 1
 

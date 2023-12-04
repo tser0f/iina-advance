@@ -110,28 +110,32 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     /// Calculate the maximum width/height the art can grow to so that `backgroundView` is not pushed off the screen.
     let minPlaylistHeight = isPlaylistVisible ? MiniPlayerController.PlaylistMinHeight : 0
 
-    let maxWindowWidth: CGFloat
+    var maxWidth: CGFloat
     if isVideoVisible {
       var maxVideoHeight = containerFrame.height - MiniPlayerController.controlViewHeight - minPlaylistHeight
       /// `maxVideoHeight` can be negative if very short screen! Fall back to height based on `MiniPlayerMinWidth` if needed
       maxVideoHeight = max(maxVideoHeight, round(MiniPlayerController.minWindowWidth / videoAspectRatio))
-      maxWindowWidth = maxVideoHeight * videoAspectRatio
+      maxWidth = round(maxVideoHeight * videoAspectRatio)
     } else {
-      maxWindowWidth = MiniPlayerController.maxWindowWidth
+      maxWidth = MiniPlayerController.maxWindowWidth
     }
+    maxWidth = min(maxWidth, containerFrame.width)
 
+    // Determine width first
     let newWidth: CGFloat
     let requestedSize = windowFrame.size
     if requestedSize.width < MiniPlayerController.minWindowWidth {
       // Clamp to min width
       newWidth = MiniPlayerController.minWindowWidth
-    } else if requestedSize.width > maxWindowWidth {
+    } else if requestedSize.width > maxWidth {
       // Clamp to max width
-      newWidth = maxWindowWidth
+      newWidth = maxWidth
     } else {
       // Requested size is valid
       newWidth = requestedSize.width
     }
+
+    // Now determine height
     let videoHeight = isVideoVisible ? round(newWidth / videoAspectRatio) : 0
     let minWindowHeight = videoHeight + MiniPlayerController.controlViewHeight + minPlaylistHeight
     // Make sure height is within acceptable values
