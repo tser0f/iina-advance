@@ -287,11 +287,10 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   @IBAction func togglePlaylist(_ sender: Any) {
-    guard let window = windowController.window else { return }
+    guard let window = windowController.window, let oldGeometry = windowController.musicModeGeometry else { return }
     let showPlaylist = !isPlaylistVisible
-    Logger.log("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)", level: .verbose)
+    log.verbose("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)")
     let currentDisplayedPlaylistHeight = currentDisplayedPlaylistHeight
-    let oldGeometry = windowController.musicModeGeometry!
     var newWindowFrame = window.frame
 
     if showPlaylist {
@@ -378,12 +377,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     // Do not save musicModeGeometry here! Pinch gesture will handle itself. Drag-to-resize will be handled below.
   }
 
-  // Presumable playlist size was affected by the resize. Update the default playlist size to match
   func windowDidEndLiveResize() {
     if isPlaylistVisible {
+      // Presumably, playlist size was affected by the resize. Update the default playlist size to match
       saveDefaultPlaylistHeight()
     }
-    applyGeometryForResize(newWindowFrame: window!.frame)
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
@@ -400,18 +398,14 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       return window.frame.size
     }
 
-    let requestedWindowFrame = NSRect(origin: windowController.musicModeGeometry.windowFrame.origin, size: requestedSize)
-    applyGeometryForResize(newWindowFrame: requestedWindowFrame)
-
-    return windowController.musicModeGeometry.windowFrame.size
-  }
-
-  private func applyGeometryForResize(newWindowFrame: NSRect) {
-    let newGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowFrame)
+    let oldGeometry = windowController.musicModeGeometry!
+    let newGeometry = oldGeometry.clone(windowFrame: NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize))
     IINAAnimation.disableAnimation{
       /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
       windowController.applyMusicModeGeometry(newGeometry, setFrame: false)
     }
+
+    return newGeometry.windowFrame.size
   }
 
   func cleanUpForMusicModeExit() {

@@ -1149,7 +1149,7 @@ extension PlayerWindowController {
 
   /// Updates the current window and its subviews to match the given `MusicModeGeometry`, and caches it.
   func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
-    let geometry = geometry.refit()  // constrain to screen
+    let geometry = geometry.refit()  // enforces internal constraints, and constrains to screen
     log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
     // Update defaults:
     Preference.set(geometry.isVideoVisible, for: .musicModeShowAlbumArt)

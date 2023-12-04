@@ -50,7 +50,6 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       case .cancelled, .failed:
         newWindowGeometry = scaleVideoFromPinchGesture(to: 1.0)
         windowController.isMagnifying = false
-        break
       default:
         return
       }
@@ -74,8 +73,6 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
     windowController.log.verbose("Scaling pinched video, target scale: \(scale)")
-
-    // TODO: merge with `setWindowScale()`
 
     // If in music mode but playlist is not visible, allow scaling up to screen size like regular windowed mode.
     // If playlist is visible, do not resize window beyond current window height
