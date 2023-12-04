@@ -1169,7 +1169,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if let menuItem = keyBinding.menuItem, let action = menuItem.action {
         // - Menu item (e.g. custom video filter)
         // If a menu item's key equivalent doesn't have any modifiers, the player window will get the key event instead of the main menu.
-        Logger.log("Executing action for menuItem \(menuItem.title.quoted)", level: .verbose, subsystem: player.subsystem)
+        log.verbose("Executing action for menuItem \(menuItem.title.quoted)")
         NSApp.sendAction(action, to: self, from: menuItem)
         return true
       }
@@ -1179,7 +1179,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         handleIINACommand(iinaCommand)
         return true
       } else {
-        Logger.log("Unrecognized IINA command: \(keyBinding.rawAction.quoted)", level: .error, subsystem: player.subsystem)
+        log.error("Unrecognized IINA command: \(keyBinding.rawAction.quoted)")
         return false
       }
     } else {
@@ -1214,8 +1214,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
 
       } else {
-        Logger.log("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)",
-                   level: .error, subsystem: player.subsystem)
+        log.error("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)")
       }
       return success
     }
@@ -1450,7 +1449,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func otherMouseUp(with event: NSEvent) {
-    Logger.log("PlayerWindow otherMouseUp!", level: .verbose, subsystem: player.subsystem)
+    log.verbose("PlayerWindow otherMouseUp!")
     restartHideCursorTimer()
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
 
@@ -1888,8 +1887,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Animation: Exit FullScreen
   private func animateExitFromFullScreen(withDuration duration: TimeInterval, isLegacy: Bool) {
-    Logger.log("Animating exit from \(isLegacy ? "legacy " : "")full screen, duration: \(duration)",
-               level: .verbose, subsystem: player.subsystem)
+    log.verbose("Animating exit from \(isLegacy ? "legacy " : "")full screen, duration: \(duration)")
 
     // If a window is closed while in full screen mode (control-w pressed) AppKit will still call
     // this method. Because windows are tied to player cores and cores are cached and reused some
@@ -1979,7 +1977,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         return requestedSize
       }
     case .windowed, .windowedInteractive:
-      let newGeometry = resizeWindowedModeGeometry(to: requestedSize)
+      let newGeometry = resizeWindow(to: requestedSize)
       videoView.apply(newGeometry)
 
       updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
@@ -2549,11 +2547,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // The mpv documentation for the duration property indicates mpv is not always able to determine
     // the video duration in which case the property is not available.
     guard let duration = player.info.videoDuration else {
-      Logger.log("Video duration not available", subsystem: player.subsystem)
+      log.debug("Video duration not available")
       return
     }
     guard let pos = player.info.videoPosition else {
-      Logger.log("Video position not available", subsystem: player.subsystem)
+      log.debug("Video position not available")
       return
     }
 
@@ -2908,14 +2906,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let playbackPositionPercentage = max(0, Double((mousePosX - 3) / (playSlider.frame.width - 6)))
     let previewTime = duration * playbackPositionPercentage
     if timePositionHoverLabel.stringValue != previewTime.stringRepresentation {
-      //    Logger.log("Updating seek time indicator to: \(previewTime.stringRepresentation)", level: .verbose, subsystem: player.subsystem)
       timePositionHoverLabel.stringValue = previewTime.stringRepresentation
     }
 
     // - 2. Thumbnail Preview
 
-    guard player.info.thumbnailsReady,
-            let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
+    guard player.info.thumbnailsReady, let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
           let videoParams = player.info.videoParams, let currentControlBar else {
       thumbnailPeekView.isHidden = true
       return

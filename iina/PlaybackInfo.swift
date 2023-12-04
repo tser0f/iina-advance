@@ -60,7 +60,7 @@ class PlaybackInfo {
   var isPaused: Bool = false {
     willSet {
       if isPaused != newValue {
-        Logger.log("Player mode changing to \(newValue ? "PAUSED" : "PLAYING")", level: .verbose)
+        log.verbose("Player mode changing to \(newValue ? "PAUSED" : "PLAYING")")
       }
     }
   }

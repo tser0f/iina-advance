@@ -809,7 +809,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     if Preference.UIState.isSaveEnabled {
       // unlock for new launch
-      Logger.log("Setting launchName \(AppDelegate.launchName.quoted) status to 'done' in prefs", level: .verbose)
+      Logger.log("Updating lauch \(AppDelegate.launchName.quoted) to 'done' in prefs", level: .verbose)
       UserDefaults.standard.setValue(Preference.UIState.LaunchStatus.done, forKey: AppDelegate.launchName)
     }
 
