@@ -386,20 +386,21 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     resetScrollingLabels()
+    let oldGeometry = windowController.musicModeGeometry!
 
     if requestedSize.width < MiniPlayerController.minWindowWidth {
       // Responding with the current size seems to work much better with certain window management tools
       // (e.g. BetterTouchTool's window snapping) than trying to respond with the min size,
       // which seems to result in the window manager retrying with different sizes, which results in flickering.
       player.log.verbose("WindowWillResize: requestedSize smaller than min \(MiniPlayerController.minWindowWidth); returning existing size")
-      return window.frame.size
+      return oldGeometry.windowFrame.size
     } else if requestedSize.width > MiniPlayerController.maxWindowWidth {
       player.log.verbose("WindowWillResize: requestedSize larger than max \(MiniPlayerController.maxWindowWidth); returning existing size")
-      return window.frame.size
+      return oldGeometry.windowFrame.size
     }
 
-    let oldGeometry = windowController.musicModeGeometry!
-    let newGeometry = oldGeometry.clone(windowFrame: NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize))
+    let requestedWindowFrame = NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize)
+    let newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame).refit()
     IINAAnimation.disableAnimation{
       /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
       windowController.applyMusicModeGeometry(newGeometry, setFrame: false)
