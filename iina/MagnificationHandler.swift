@@ -77,7 +77,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     // If in music mode but playlist is not visible, allow scaling up to screen size like regular windowed mode.
     // If playlist is visible, do not resize window beyond current window height
     if windowController.currentLayout.isMusicMode {
-      _ = windowController.miniPlayer.view
+      windowController.miniPlayer.loadIfNeeded()
 
       let originalGeometry = windowController.musicModeGeometry.toPlayerWindowGeometry()
 

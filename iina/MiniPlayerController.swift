@@ -89,6 +89,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   // MARK: - Initialization
 
+  /// Polyfill for MacOS 14.0's `loadViewIfNeeded()`.
+  /// Load XIB if not already loaded. Prevents unboxing nils for `@IBOutlet` properties.
+  func loadIfNeeded() {
+    _ = self.view
+  }
+
   override func viewDidLoad() {
     super.viewDidLoad()
 
@@ -345,6 +351,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
       /// Temporarily hide window buttons. Using `isHidden` will conveniently override its alpha value
       windowController.closeButtonView.isHidden = true
+
+      windowController.thumbnailPeekView.isHidden = true
 
       /// If needing to reactivate this constraint, do it before the toggle animation, so that window doesn't jump.
       /// (See note in `applyMusicModeGeometry` for why this constraint needed to be disabled in the first place)

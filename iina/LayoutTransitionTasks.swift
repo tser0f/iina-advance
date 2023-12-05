@@ -410,7 +410,7 @@ extension PlayerWindowController {
 
     if transition.isExitingMusicMode {
       // Exiting music mode. Make sure to execute this before adding OSC below
-      _ = miniPlayer.view
+      miniPlayer.loadIfNeeded()
       miniPlayer.cleanUpForMusicModeExit()
     }
 
@@ -474,7 +474,12 @@ extension PlayerWindowController {
       timePositionHoverLabel.font = NSFont.systemFont(ofSize: timeLabelFontSize)
       timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
     } else { // No OSC
-      currentControlBar = nil
+      if outputLayout.isMusicMode {
+        miniPlayer.loadIfNeeded()
+        currentControlBar = miniPlayer.controlView
+      } else {
+        currentControlBar = nil
+      }
     }
 
     // Sidebars: finish closing (if closing)

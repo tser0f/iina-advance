@@ -2013,7 +2013,7 @@ class PlayerCore: NSObject {
         windowController.updatePlayTime(withDuration: isNetworkStream)
         windowController.updateAdditionalInfo()
         if isInMiniPlayer {
-          _ = windowController.miniPlayer.view // make sure it is loaded
+          windowController.miniPlayer.loadIfNeeded()
           windowController.miniPlayer.updateScrollingLabels()
           windowController.miniPlayer.playButton.state = info.isPaused ? .off : .on
         }
@@ -2174,14 +2174,19 @@ class PlayerCore: NSObject {
         log.debug("Thumbnails reload stopped because cannot get file path")
         return
       }
+      guard Preference.bool(for: .enableThumbnailPreview) else {
+        log.verbose("Thumbnails reload stopped because thumbnails are disabled by user")
+        return
+      }
       if !Preference.bool(for: .enableThumbnailForRemoteFiles) {
         if let attrs = try? url.resourceValues(forKeys: Set([.volumeIsLocalKey])), !attrs.volumeIsLocal! {
           log.debug("Thumbnails reload stopped because file is on a mounted remote drive")
           return
         }
       }
-      guard Preference.bool(for: .enableThumbnailPreview) else {
-        log.verbose("Thumbnails reload stopped because thumbnails are disabled by user")
+
+      guard !isInMiniPlayer || Preference.bool(for: .enableThumbnailForMusicMode) else {
+        log.verbose("Thumbnails reload stopped because user has not enabled for music mode")
         return
       }
 
@@ -2194,12 +2199,15 @@ class PlayerCore: NSObject {
       // Run the following in the background at lower priority, so the UI is not slowed down
       PlayerCore.thumbnailQueue.async { [self] in
         guard ticket == thumbnailReloadTicketCounter else { return }
+        guard !isStopping, !isStopped, !isShuttingDown else { return }
         log.debug("Reloading thumbnails (tkt \(ticket))")
 
         // Generate thumbnails using video's original dimensions, before aspect ratio correction.
         // We will adjust aspect ratio & rotation when we display the thumbnail, similar to how mpv works.
-        guard let videoRawSize = info.videoParams?.videoRawSize, videoRawSize.height > 0, videoRawSize.width > 0, let videoParams = info.videoParams else {
-          log.error("Failed to generate thumbnails: video height and/or width not present in playback info")
+        let videoParams = mpv.queryForVideoParams()
+        let videoRawSize = videoParams.videoRawSize
+        guard videoRawSize.height > 0, videoRawSize.width > 0  else {
+          log.error("Failed to generate thumbnails: video height and/or width is zero")
           return
         }
 

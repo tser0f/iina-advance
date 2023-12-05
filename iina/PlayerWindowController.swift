@@ -321,6 +321,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .oscBarToolbarIconSpacing,
     .enableThumbnailPreview,
     .enableThumbnailForRemoteFiles,
+    .enableThumbnailForMusicMode,
     .thumbnailSizeOption,
     .thumbnailFixedLength,
     .thumbnailRawSizePercentage,
@@ -415,13 +416,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     case PK.thumbnailSizeOption.rawValue,
       PK.thumbnailFixedLength.rawValue,
-      PK.thumbnailRawSizePercentage.rawValue:
-      log.verbose("Pref \(keyPath.quoted) changed: requesting thumbs regen")
-      player.reloadThumbnails()
+      PK.thumbnailRawSizePercentage.rawValue,
+      PK.enableThumbnailPreview.rawValue,
+      PK.enableThumbnailForRemoteFiles.rawValue, 
+      PK.enableThumbnailForMusicMode.rawValue:
 
-    case PK.enableThumbnailPreview.rawValue, PK.enableThumbnailForRemoteFiles.rawValue:
+      log.verbose("Pref \(keyPath.quoted) changed: requesting thumbs regen")
       // May need to remove thumbs or generate new ones: let method below figure it out:
-      self.player.reloadThumbnails()
+      player.reloadThumbnails()
 
     case PK.showChapterPos.rawValue:
       if let newValue = change[.newKey] as? Bool {
@@ -1127,7 +1129,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     if player.isInMiniPlayer {
-      _ = miniPlayer.view  // load XIB if not loaded to prevent unboxing nils
+      miniPlayer.loadIfNeeded()
 
       for view in [miniPlayer.backgroundView, closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
         view?.appearance = appearance
@@ -2579,10 +2581,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let title: String
     if player.isInMiniPlayer {
+      miniPlayer.loadIfNeeded()
       let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
       title = mediaTitle
       window.title = title
-      _ = miniPlayer.view
       miniPlayer.updateTitle(mediaTitle: mediaTitle, mediaAlbum: mediaAlbum, mediaArtist: mediaArtist)
     } else if player.info.isNetworkResource {
       title = player.getMediaTitle()
@@ -2903,7 +2905,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     guard let currentMediaThumbnails = player.info.currentMediaThumbnails,
           let ffThumbnail = currentMediaThumbnails.getThumbnail(forSecond: previewTime.second),
-          let videoParams = player.info.videoParams, let currentControlBar else {
+          let videoParams = player.info.videoParams, let currentControlBar,
+          (!currentLayout.isMusicMode || (Preference.bool(for: .enableThumbnailForMusicMode) && musicModeGeometry.isVideoVisible)) else {
       thumbnailPeekView.isHidden = true
       return
     }
