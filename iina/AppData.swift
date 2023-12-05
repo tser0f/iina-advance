@@ -193,6 +193,7 @@ struct Constants {
     static let minOSCBarHeight: CGFloat = 24
 
     static let musicModePlaySliderKnobHeight: CGFloat = 12
+    static let floatingOSCPlaySliderKnobHeight: CGFloat = 15
   }
 }
 

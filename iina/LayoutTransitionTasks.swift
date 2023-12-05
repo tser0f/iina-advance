@@ -383,7 +383,7 @@ extension PlayerWindowController {
     if !transition.inputLayout.hasFloatingOSC {
       // Always remove subviews from OSC - is inexpensive + easier than figuring out if anything has changed
       // (except for floating OSC, which doesn't change much and has animation glitches if removed & re-added)
-      for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView, fragPositionSliderView] {
+      for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView] {
         view?.removeFromSuperview()
       }
     }
@@ -455,8 +455,10 @@ extension PlayerWindowController {
       }
 
       let timeLabelFontSize: CGFloat
+      let knobHeight: CGFloat
       if outputLayout.oscPosition == .floating {
         timeLabelFontSize = NSFont.smallSystemFontSize
+        knobHeight = Constants.Distance.floatingOSCPlaySliderKnobHeight
       } else {
         let barHeight = OSCToolbarButton.oscBarHeight
 
@@ -465,16 +467,21 @@ extension PlayerWindowController {
         playSliderHeightConstraint.isActive = true
 
         switch barHeight {
+        case 60...:
+          timeLabelFontSize = NSFont.systemFontSize
+          knobHeight = 24
         case 48...:
           timeLabelFontSize = NSFont.systemFontSize
+          knobHeight = 18
         default:
           timeLabelFontSize = NSFont.smallSystemFontSize
+          knobHeight = 16
         }
       }
+      playSlider.customCell.knobHeight = knobHeight
       timePositionHoverLabel.font = NSFont.systemFont(ofSize: timeLabelFontSize)
       timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
 
-      playSlider.customCell.knobHeight = 16
     } else { // No OSC
       if outputLayout.isMusicMode {
         miniPlayer.loadIfNeeded()
