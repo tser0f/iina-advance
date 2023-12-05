@@ -85,6 +85,13 @@ class PlaybackInfo {
   var isNetworkResource: Bool = false
   var mpvMd5: String?
 
+  var isMediaOnRemoteDrive: Bool {
+    if let attrs = try? currentURL?.resourceValues(forKeys: Set([.volumeIsLocalKey])), !attrs.volumeIsLocal! {
+      return true
+    }
+    return false
+  }
+
   // MARK: - Geometry
 
   // When navigating in playlist, and user does not have any other predefined resizing strategy, try to maintain the same window width

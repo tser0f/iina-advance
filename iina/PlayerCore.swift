@@ -2178,11 +2178,9 @@ class PlayerCore: NSObject {
         log.verbose("Thumbnails reload stopped because thumbnails are disabled by user")
         return
       }
-      if !Preference.bool(for: .enableThumbnailForRemoteFiles) {
-        if let attrs = try? url.resourceValues(forKeys: Set([.volumeIsLocalKey])), !attrs.volumeIsLocal! {
-          log.debug("Thumbnails reload stopped because file is on a mounted remote drive")
-          return
-        }
+      if !Preference.bool(for: .enableThumbnailForRemoteFiles) && info.isMediaOnRemoteDrive {
+        log.debug("Thumbnails reload stopped because file is on a mounted remote drive")
+        return
       }
 
       guard !isInMiniPlayer || Preference.bool(for: .enableThumbnailForMusicMode) else {
