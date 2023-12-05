@@ -523,19 +523,21 @@ struct PlayerWindowGeometry: Equatable {
                       outsideBottomBarHeight: newOutsideBottomBarHeight, outsideLeadingBarWidth: newOutsideLeadingBarWidth)
   }
 
-  func withResizedBars(outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
+  func withResizedBars(fitOption: ScreenFitOption? = nil,
+                       outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
                        outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
                        insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
                        insideBottomBarHeight: CGFloat? = nil, insideLeadingBarWidth: CGFloat? = nil,
                        videoAspectRatio: CGFloat? = nil) -> PlayerWindowGeometry {
 
     // Inside bars
-    var newGeo = clone(insideTopBarHeight: insideTopBarHeight,
+    var newGeo = clone(fitOption: fitOption,
+                       insideTopBarHeight: insideTopBarHeight,
                        insideTrailingBarWidth: insideTrailingBarWidth,
                        insideBottomBarHeight: insideBottomBarHeight,
                        insideLeadingBarWidth: insideLeadingBarWidth,
                        videoAspectRatio: videoAspectRatio)
-    
+
     newGeo = newGeo.withResizedOutsideBars(newOutsideTopBarHeight: outsideTopBarHeight,
                                            newOutsideTrailingBarWidth: outsideTrailingBarWidth,
                                            newOutsideBottomBarHeight: outsideBottomBarHeight,
@@ -1006,24 +1008,34 @@ extension PlayerWindowController {
       log.verbose("Not updating cached geometry: isFS=\(currentLayout.isFullScreen.yn), isRestoring=\(player.info.isRestoring)")
       return
     }
-    log.verbose("Updating cached \(currentLayout.mode) geometry from current window")
-
-    switch currentLayout.mode {
-    case .windowed:
-      windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
-      if updatePreferredSizeAlso {
-        player.info.setIntendedViewportSize(from: windowedModeGeometry)
-      }
-      player.saveState()
-    case .windowedInteractive:
-      interactiveModeGeometry = InteractiveModeGeometry.from(buildWindowGeometryFromCurrentFrame(using: currentLayout))
-    case .musicMode:
-      musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame, 
-                                                  screenID: bestScreen.screenID)
-      player.saveState()
-    case .fullScreen, .fullScreenInteractive:
-      break  // will never get here; see guard above
+    
+    var ticket: Int = 0
+    $updateCachedGeometryTicketCounter.withLock {
+      $0 += 1
+      ticket = $0
     }
+
+    animationPipeline.submitZeroDuration({ [self] in
+      guard ticket == updateCachedGeometryTicketCounter else { return }
+      log.verbose("Updating cached \(currentLayout.mode) geometry from current window (tkt \(ticket))")
+
+      switch currentLayout.mode {
+      case .windowed:
+        windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
+        if updatePreferredSizeAlso {
+          player.info.setIntendedViewportSize(from: windowedModeGeometry)
+        }
+        player.saveState()
+      case .windowedInteractive:
+        interactiveModeGeometry = InteractiveModeGeometry.from(buildWindowGeometryFromCurrentFrame(using: currentLayout))
+      case .musicMode:
+        musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame,
+                                                    screenID: bestScreen.screenID)
+        player.saveState()
+      case .fullScreen, .fullScreenInteractive:
+        break  // will never get here; see guard above
+      }
+    })
   }
 
   // For windowed mode
@@ -1355,9 +1367,9 @@ extension PlayerWindowController {
       videoView.apply(geometry.toPlayerWindowGeometry())
       if setFrame {
         player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
-      } else {
-        log.verbose("Not updating music mode windowFrame or constraints - no changes needed")
       }
+    } else {
+      log.verbose("Not updating music mode windowFrame or constraints - no changes needed")
     }
     if updateCache {
       musicModeGeometry = geometry

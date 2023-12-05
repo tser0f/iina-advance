@@ -23,6 +23,7 @@ class ViewLayer: CAOpenGLLayer {
 
   private var forceRender = false
 
+  private let asychronousModeLock = Lock()
   private var asychronousModeTimer: Timer?
 
 #if DEBUG
@@ -204,7 +205,7 @@ class ViewLayer: CAOpenGLLayer {
   /// But we don't want to leave this on full-time, because it will result in extra draw requests and may
   /// throw off the timing of each draw.
   func enterAsynchronousMode() {
-    DispatchQueue.main.async { [self] in
+    asychronousModeLock.withLock{
       asychronousModeTimer?.invalidate()
       /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
       /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
@@ -224,8 +225,10 @@ class ViewLayer: CAOpenGLLayer {
   }
 
   @objc func exitAsynchronousMode() {
-    videoView.player.log.verbose("Exiting asynchronous mode")
-    isAsynchronous = false
+    asychronousModeLock.withLock{
+      videoView.player.log.verbose("Exiting asynchronous mode")
+      isAsynchronous = false
+    }
   }
 
   func drawAsync() {

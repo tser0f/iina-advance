@@ -223,6 +223,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @Atomic var screenChangedTicketCounter: Int = 0
   /// For throttling `windowDidChangeScreenParameters` notifications. MacOS 14 often sends hundreds in short bursts
   @Atomic var screenParamsChangedTicketCounter: Int = 0
+  @Atomic var updateCachedGeometryTicketCounter: Int = 0
 
   var windowedModeGeometry: PlayerWindowGeometry! {
     didSet {
@@ -1385,9 +1386,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // if it's a mouseup after dragging window
       isDragging = false
     } else if finishResizingSidebar(with: event) {
-      animationPipeline.submitZeroDuration{ [self] in
-        updateCachedGeometry()
-      }
+      updateCachedGeometry()
       return
     } else {
       // if it's a mouseup after clicking
@@ -1982,9 +1981,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       // We know the size, but don't yet know where AppKit is actually going to put the resized window.
       // Enqueue task which will run after this method returns, so we can check once the window is in its new location.
-      animationPipeline.submitZeroDuration({ [self] in
-        updateCachedGeometry()
-      })
+      updateCachedGeometry()
 
       return newGeometry.windowFrame.size
     }
@@ -1997,9 +1994,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard !isClosing, !isAnimatingLayoutTransition, !isMagnifying else { return }
 
     defer {
-      animationPipeline.submitZeroDuration({ [self] in
-        updateCachedGeometry()
-      })
+      updateCachedGeometry()
     }
 
     IINAAnimation.disableAnimation {

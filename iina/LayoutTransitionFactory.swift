@@ -407,6 +407,11 @@ extension PlayerWindowController {
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
   func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry? {
     if transition.isEnteringMusicMode {
+      if transition.inputLayout.isFullScreen {
+        // "ExitFullScreen" animation does not use the Close Panels step currently. May want to enhance it in the future
+        return nil
+      }
+
       return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
                                                       outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
                                                       insideTopBarHeight: 0, insideTrailingBarWidth: 0,
@@ -416,19 +421,20 @@ extension PlayerWindowController {
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
     } else if transition.isTogglingInteractiveMode {
       if transition.inputLayout.isFullScreen {
-        return transition.outputGeometry
-      } else {
-        let outsideTopBarHeight = transition.inputLayout.outsideTopBarHeight >= transition.outputLayout.topBarHeight ? transition.outputLayout.outsideTopBarHeight : 0
-        let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: 0,
-                                                                  outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
-                                                                  insideTopBarHeight: 0, insideTrailingBarWidth: 0,
-                                                                  insideBottomBarHeight: 0, insideLeadingBarWidth: 0)
-        if transition.isEnteringInteractiveMode {
-          return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
-        } else if transition.isExitingInteractiveMode {
-          // This will scale video up to viewport size (or close enough - we are removing videobox which won't 100% match the video aspect)
-          return resizedGeo.scaleViewport(lockViewportToVideoSize: true)
-        }
+        // "ExitFullScreen" animation does not use the Close Panels step currently. May want to enhance it in the future
+        return nil
+      }
+
+      let outsideTopBarHeight = transition.inputLayout.outsideTopBarHeight >= transition.outputLayout.topBarHeight ? transition.outputLayout.outsideTopBarHeight : 0
+      let resizedGeo = transition.inputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: 0,
+                                                                outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
+                                                                insideTopBarHeight: 0, insideTrailingBarWidth: 0,
+                                                                insideBottomBarHeight: 0, insideLeadingBarWidth: 0)
+      if transition.isEnteringInteractiveMode {
+        return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
+      } else if transition.isExitingInteractiveMode {
+        // This will scale video up to viewport size (or close enough - we are removing videobox which won't 100% match the video aspect)
+        return resizedGeo.scaleViewport(lockViewportToVideoSize: true)
       }
     }
     // TOP
