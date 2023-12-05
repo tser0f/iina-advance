@@ -371,20 +371,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   // MARK: - Window size & layout
 
-  func windowDidResize() {
-    _ = view
-    resetScrollingLabels()
-    // Do not save musicModeGeometry here! Pinch gesture will handle itself. Drag-to-resize will be handled below.
-  }
-
-  func windowDidEndLiveResize() {
-    if isPlaylistVisible {
-      // Presumably, playlist size was affected by the resize. Update the default playlist size to match
-      saveDefaultPlaylistHeight()
-    }
-  }
-
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
+    resetScrollingLabels()
     let oldGeometry = windowController.musicModeGeometry!
 
     if requestedSize.width < MiniPlayerController.minWindowWidth {
@@ -406,6 +394,19 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
 
     return newGeometry.windowFrame.size
+  }
+
+  func windowDidResize() {
+    _ = view
+    resetScrollingLabels()
+    // Do not save musicModeGeometry here! Pinch gesture will handle itself. Drag-to-resize will be handled below.
+  }
+
+  func windowDidEndLiveResize() {
+    if isPlaylistVisible {
+      // Presumably, playlist size was affected by the resize. Update the default playlist size to match
+      saveDefaultPlaylistHeight()
+    }
   }
 
   func cleanUpForMusicModeExit() {

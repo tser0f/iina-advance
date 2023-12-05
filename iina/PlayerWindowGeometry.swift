@@ -1350,7 +1350,6 @@ extension PlayerWindowController {
     player.info.videoAspectRatio = geometry.videoAspectRatio
 
     videoView.videoLayer.enterAsynchronousMode()
-    miniPlayer.resetScrollingLabels()
     updateMusicModeButtonsVisibility()
 
     /// Try to detect & remove unnecessary constraint updates - `updateBottomBarHeight()` may cause animation glitches if called twice
