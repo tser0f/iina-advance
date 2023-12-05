@@ -21,6 +21,7 @@ class ViewLayer: CAOpenGLLayer {
 
   private var fbo: GLint = 1
 
+  private var needsMPVRender = false
   private var forceRender = false
 
   private let asychronousModeLock = Lock()
@@ -142,6 +143,7 @@ class ViewLayer: CAOpenGLLayer {
 
   override func draw(inCGLContext ctx: CGLContextObj, pixelFormat pf: CGLPixelFormatObj, forLayerTime t: CFTimeInterval, displayTime ts: UnsafePointer<CVTimeStamp>?) {
     let mpv = videoView.player.mpv!
+    needsMPVRender = false
 
     glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
 
@@ -247,9 +249,10 @@ class ViewLayer: CAOpenGLLayer {
 
   func draw(forced: Bool = false) {
     videoView.$isUninited.withLock() { isUninited in
-      // The property forceRender is always accessed while holding isUninited's
+      // The properties forceRender and needsMPVRender are always accessed while holding isUninited's
       // lock. This avoids the need for separate locks to avoid data races with these flags. No need
       // to check isUninited at this point.
+      needsMPVRender = true
       if forced { forceRender = true }
     }
 
@@ -263,6 +266,22 @@ class ViewLayer: CAOpenGLLayer {
         forceRender = false
         return
       }
+      guard needsMPVRender else { return }
+
+      if let renderContext = videoView.player.mpv.mpvRenderContext,
+         let openGLContext = videoView.player.mpv.openGLContext {
+        CGLLockContext(openGLContext)
+        defer { CGLUnlockContext(openGLContext) }
+        var skip: CInt = 1
+        withUnsafeMutablePointer(to: &skip) { skip in
+          var params: [mpv_render_param] = [
+            mpv_render_param(type: MPV_RENDER_PARAM_SKIP_RENDERING, data: .init(skip)),
+            mpv_render_param()
+          ]
+          mpv_render_context_render(renderContext, &params);
+        }
+      }
+      needsMPVRender = false
     }
   }
 
