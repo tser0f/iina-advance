@@ -427,7 +427,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     case PK.showChapterPos.rawValue:
       if let newValue = change[.newKey] as? Bool {
-        (playSlider.cell as! PlaySliderCell).drawChapters = newValue
+        playSlider.customCell.drawChapters = newValue
       }
     case PK.verticalScrollAction.rawValue:
       if let newValue = change[.newKey] as? Int {

@@ -473,6 +473,8 @@ extension PlayerWindowController {
       }
       timePositionHoverLabel.font = NSFont.systemFont(ofSize: timeLabelFontSize)
       timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
+
+      playSlider.customCell.knobHeight = 16
     } else { // No OSC
       if outputLayout.isMusicMode {
         miniPlayer.loadIfNeeded()
@@ -516,8 +518,9 @@ extension PlayerWindowController {
       // Expand slider bounds so that hovers are more likely to register
       playSliderHeightConstraint = playSlider.heightAnchor.constraint(equalToConstant: miniPlayer.positionSliderWrapperView.frame.height - 4)
       playSliderHeightConstraint.isActive = true
+      playSlider.customCell.knobHeight = Constants.Distance.musicModePlaySliderKnobHeight
 
-      timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.topAnchor.constraint(equalTo: timePositionHoverLabel.superview!.topAnchor, constant: -2)
+      timePositionHoverLabelVerticalSpaceConstraint = timePositionHoverLabel.topAnchor.constraint(equalTo: timePositionHoverLabel.superview!.topAnchor, constant: -1)
       timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
       timePositionHoverLabel.font = NSFont.systemFont(ofSize: 9)
 
