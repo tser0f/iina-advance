@@ -2850,6 +2850,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   ///   - thumbnailHeight: The height of the thumbnail.
   /// - Returns: `true` if the thumbnail can be shown above the slider, `false` otherwise.
   private func canShowThumbnailAbove(oscOriginInWindowY: Double, oscHeight: Double, thumbnailHeight: Double) -> Bool {
+    if currentLayout.isMusicMode {
+      return true  // always show above
+    }
+
     switch currentLayout.oscPosition {
     case .top:
       return false

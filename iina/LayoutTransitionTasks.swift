@@ -388,6 +388,10 @@ extension PlayerWindowController {
       }
     }
 
+    if !outputLayout.enableOSC && !outputLayout.isMusicMode {
+      fragPositionSliderView?.removeFromSuperview()
+    }
+
     if transition.isTopBarPlacementChanging {
       updateTopBarPlacement(placement: outputLayout.topBarPlacement)
     }
@@ -485,7 +489,7 @@ extension PlayerWindowController {
     } else { // No OSC
       if outputLayout.isMusicMode {
         miniPlayer.loadIfNeeded()
-        currentControlBar = miniPlayer.controlView
+        currentControlBar = miniPlayer.backgroundView
       } else {
         currentControlBar = nil
       }
