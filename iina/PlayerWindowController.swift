@@ -219,8 +219,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
   @Atomic var geoUpdateTicketCounter: Int = 0
-  /// For throttling `windowDidResize`. Duplicates of these can easily build up due to how we enqueue work
-  @Atomic var windowDidResizeTicketCounter: Int = 0
   /// For throttling `windowDidChangeScreen` notifications. MacOS 14 often sends hundreds in short bursts
   @Atomic var screenChangedTicketCounter: Int = 0
   /// For throttling `windowDidChangeScreenParameters` notifications. MacOS 14 often sends hundreds in short bursts
@@ -1995,57 +1993,48 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Called after window is resized from (almost) any cause. Will be called many times during every call to `window.setFrame()`.
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
-    // OK to call this while animating. Enqueuing into the pipeline below ensures it will not interrupt existing animations.
-    // But do not want to trigger this during layout transition, because it will mess up the intended viewport size.
+    // Do not want to trigger this during layout transition. It will mess up the intended viewport size.
     guard !isClosing, !isAnimatingLayoutTransition, !isMagnifying else { return }
 
-    // Use ticket to cut duplicate work by ~90%
-    var ticket: Int = 0
-    $windowDidResizeTicketCounter.withLock {
-      $0 += 1
-      ticket = $0
+    defer {
+      animationPipeline.submitZeroDuration({ [self] in
+        updateCachedGeometry()
+      })
     }
 
-    animationPipeline.submitZeroDuration({ [self] in
-      guard ticket == windowDidResizeTicketCounter else { return }
-      defer {
-        updateCachedGeometry()
+    IINAAnimation.disableAnimation {
+      log.verbose("WindowDidResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
+
+      switch currentLayout.mode {
+      case .musicMode:
+        // Re-evaluate space requirements for labels. May need to start scrolling.
+        // Will also update saved state
+        miniPlayer.windowDidResize()
+        return
+      case .windowed:
+        let viewportSize = viewportView.frame.size
+        let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
+        // Need to update this always when resizing window:
+        videoView.apply(resizedGeo)
+
+        if currentLayout.oscPosition == .floating {
+          // Update floating control bar position
+          updateFloatingOSCAfterWindowDidResize()
+        }
+      case .windowedInteractive, .fullScreenInteractive:
+        // Update interactive mode selectable box size. Origin is relative to viewport origin
+        let selectableRect = NSRect(origin: CGPointZero, size: videoView.frame.size)
+        cropSettingsView?.cropBoxView.resized(with: selectableRect)
+      case .fullScreen:
+        return
       }
 
-      IINAAnimation.disableAnimation {
-        log.verbose("WindowDidResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
-
-        switch currentLayout.mode {
-        case .musicMode:
-          // Re-evaluate space requirements for labels. May need to start scrolling.
-          // Will also update saved state
-          miniPlayer.windowDidResize()
-          return
-        case .windowed:
-          let viewportSize = viewportView.frame.size
-          let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
-          // Need to update this always when resizing window:
-          videoView.apply(resizedGeo)
-
-          if currentLayout.oscPosition == .floating {
-            // Update floating control bar position
-            updateFloatingOSCAfterWindowDidResize()
-          }
-        case .windowedInteractive, .fullScreenInteractive:
-          // Update interactive mode selectable box size. Origin is relative to viewport origin
-          let selectableRect = NSRect(origin: CGPointZero, size: videoView.frame.size)
-          cropSettingsView?.cropBoxView.resized(with: selectableRect)
-        case .fullScreen:
-          return
-        }
-
-        if currentLayout.isWindowed {
-          updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
-        }
+      if currentLayout.isWindowed {
+        updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
       }
+    }
 
-      player.events.emit(.windowResized, data: window.frame)
-    })
+    player.events.emit(.windowResized, data: window.frame)
   }
 
   /// Called when done with user drag of window border.
