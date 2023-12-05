@@ -324,7 +324,7 @@ class TouchBarPlaySliderCell: NSSliderCell {
     let info = playerCore.info
     let superKnob = super.knobRect(flipped: flipped)
     if isTouching {
-      if info.thumbnails.count > 0 {
+      if let thumbSet = info.currentMediaThumbnails, thumbSet.thumbnails.count > 0 {
         let imageKnobWidth = knobWidthWithImage
         let barWidth = barRect(flipped: flipped).width
 
@@ -347,7 +347,7 @@ class TouchBarPlaySliderCell: NSSliderCell {
   override func drawKnob(_ knobRect: NSRect) {
     let info = playerCore.info
     guard !info.isIdle else { return }
-    if isTouching, let dur = info.videoDuration?.second, let tb = info.getThumbnail(forSecond: (doubleValue / 100) * dur) {
+    if isTouching, let dur = info.videoDuration?.second, let tb = info.currentMediaThumbnails?.getThumbnail(forSecond: (doubleValue / 100) * dur) {
       let image = tb.image
       NSGraphicsContext.saveGraphicsState()
       NSBezierPath(roundedRect: knobRect, xRadius: 3, yRadius: 3).setClip()
@@ -377,7 +377,7 @@ class TouchBarPlaySliderCell: NSSliderCell {
     let info = playerCore.info
     guard !info.isIdle else { return }
     let barRect = self.barRect(flipped: flipped)
-    if let image = backgroundImage, info.thumbnailsProgress == cachedThumbnailProgress {
+    if let image = backgroundImage, info.currentMediaThumbnails?.thumbnailsProgress == cachedThumbnailProgress {
       // draw cached background image
       image.draw(in: barRect)
     } else {
@@ -395,8 +395,9 @@ class TouchBarPlaySliderCell: NSSliderCell {
         let percent = Double(i / end)
         let dest = NSRect(x: i, y: 0, width: 2, height: imageRect.height)
         if let dur = info.videoDuration?.second,
-          let image = info.getThumbnail(forSecond: percent * dur)?.image,
-          info.thumbnailsProgress >= percent {
+           let currentMedaiThumbs = info.currentMediaThumbnails,
+          let image = currentMedaiThumbs.getThumbnail(forSecond: percent * dur)?.image,
+           currentMedaiThumbs.thumbnailsProgress >= percent {
           let orig = NSRect(origin: .zero, size: image.size)
           image.draw(in: dest, from: orig, operation: .copy, fraction: 1, respectFlipped: true, hints: nil)
         } else {
@@ -407,7 +408,7 @@ class TouchBarPlaySliderCell: NSSliderCell {
       NSGraphicsContext.restoreGraphicsState()
       image.unlockFocus()
       backgroundImage = image
-      cachedThumbnailProgress = info.thumbnailsProgress
+      cachedThumbnailProgress = info.currentMediaThumbnails?.thumbnailsProgress ?? 0
       image.draw(in: barRect)
     }
   }

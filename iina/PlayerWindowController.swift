@@ -1959,8 +1959,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     let currentMode = currentLayout.mode
-    log.verbose("WindowWillResize entered. RequestedSize: \(requestedSize), mode: \(currentMode)")
+    log.verbose("WindowWILLResize mode=\(currentMode) RequestedSize=\(requestedSize)")
     videoView.videoLayer.enterAsynchronousMode()
+
+    /// This method only provides the desired size for the window, but we don't have access to the  desired origin.
+    /// So we need to be careful not to make assumptions about which directions the window is expanding toward.
+    /// It's OK to use `PlayerWindowGeometry` for size calculations, but do not save the geometry objects.
+    /// After the window frame is updated, `updateCachedGeometry()` will query the window for its location & size,
+    /// and will save that.
+    defer {
+      updateCachedGeometry()
+    }
 
     switch currentMode {
     case .musicMode:
@@ -1979,10 +1988,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
 
-      // We know the size, but don't yet know where AppKit is actually going to put the resized window.
-      // Enqueue task which will run after this method returns, so we can check once the window is in its new location.
-      updateCachedGeometry()
-
       return newGeometry.windowFrame.size
     }
   }
@@ -1998,7 +2003,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     IINAAnimation.disableAnimation {
-      log.verbose("WindowDidResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
+      log.verbose("WindowDIDResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
 
       switch currentLayout.mode {
       case .musicMode:
@@ -2053,6 +2058,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         updateCachedGeometry()
       case .musicMode:
         miniPlayer.windowDidEndLiveResize()
+        updateCachedGeometry()
       default:
         break
       }
@@ -2895,7 +2901,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // - 2. Thumbnail Preview
 
-    guard player.info.thumbnailsReady, let ffThumbnail = player.info.getThumbnail(forSecond: previewTime.second),
+    guard let currentMediaThumbnails = player.info.currentMediaThumbnails,
+          let ffThumbnail = currentMediaThumbnails.getThumbnail(forSecond: previewTime.second),
           let videoParams = player.info.videoParams, let currentControlBar else {
       thumbnailPeekView.isHidden = true
       return
@@ -2957,8 +2964,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     thumbHeight = round(thumbHeight)
 
     // Rotating and scaling are expensive operations, so reuse the last image if no change is needed
-    if player.info.lastThumbFFTimestamp != ffThumbnail.timestamp {
-      player.info.lastThumbFFTimestamp = ffThumbnail.timestamp
+    if currentMediaThumbnails.lastThumbFFTimestamp != ffThumbnail.timestamp {
+      currentMediaThumbnails.lastThumbFFTimestamp = ffThumbnail.timestamp
       let finalImage = rotatedImage.resized(newWidth: Int(thumbWidth), newHeight: Int(thumbHeight))
       thumbnailPeekView.imageView.image = finalImage
       thumbnailPeekView.frame.size = finalImage.size

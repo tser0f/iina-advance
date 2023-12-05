@@ -206,6 +206,6 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
   }
 
   var description: String {
-    return "MusicModeGeometry winFrame=\(windowFrame) Video={show=\(isVideoVisible.yn) aspect=\(videoAspectRatio) H=\(videoHeight)} Plist={show=\(isPlaylistVisible.yn) H=\(playlistHeight)} btmBarH=\(bottomBarHeight)"
+    return "MusicModeGeometry winFrame=\(windowFrame) BtmBarH=\(bottomBarHeight) Video={show=\(isVideoVisible.yn) aspect=\(videoAspectRatio) H=\(videoHeight)} Plist={show=\(isPlaylistVisible.yn) H=\(playlistHeight)}"
   }
 }

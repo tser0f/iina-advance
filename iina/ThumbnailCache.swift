@@ -29,8 +29,8 @@ class ThumbnailCache {
     return FileManager.default.fileExists(atPath: urlFor(name, width: width).path)
   }
 
-  static func fileIsCached(forName name: String, forVideo videoPath: URL?, forWidth width: Int) -> Bool {
-    guard let fileAttr = try? FileManager.default.attributesOfItem(atPath: videoPath!.path) else {
+  static func fileIsCached(forName name: String, forVideo videoFilePath: String, forWidth width: Int) -> Bool {
+    guard let fileAttr = try? FileManager.default.attributesOfItem(atPath: videoFilePath) else {
       Logger.log("Cannot get video file attributes", level: .error, subsystem: subsystem)
       return false
     }
@@ -67,7 +67,7 @@ class ThumbnailCache {
 
   /// Write thumbnail cache to file.
   /// This method is expected to be called when the file doesn't exist.
-  static func write(_ thumbnails: [FFThumbnail], forName name: String, forVideo videoPath: URL?, forWidth width: Int) {
+  static func write(_ thumbnails: [FFThumbnail], forName name: String, forVideo videoFilePath: String, forWidth width: Int) {
     Logger.log("Writing \(thumbnails.count) thumbnails with width \(width) to cache file", subsystem: subsystem)
 
     let maxCacheSize = Preference.integer(for: .maxThumbnailPreviewCacheSize) * FloatingPointByteCountFormatter.PrefixFactor.mi.rawValue
@@ -98,8 +98,8 @@ class ThumbnailCache {
     let versionData = Data(bytesOf: version)
     file.write(versionData)
 
-    guard let fileAttr = try? FileManager.default.attributesOfItem(atPath: videoPath!.path) else {
-      Logger.log("Cannot get video file attributes (path: \(videoPath!.path.pii.quoted))", level: .error, subsystem: subsystem)
+    guard let fileAttr = try? FileManager.default.attributesOfItem(atPath: videoFilePath) else {
+      Logger.log("Cannot get video file attributes (path: \(videoFilePath.pii.quoted))", level: .error, subsystem: subsystem)
       return
     }
 
