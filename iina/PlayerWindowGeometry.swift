@@ -1063,14 +1063,15 @@ extension PlayerWindowController {
     return geo.scaleViewport()
   }
 
-  /// Called from `windowWillResize()` if in `windowed` mode.
-  func resizeWindow(to requestedSize: NSSize) -> PlayerWindowGeometry {
+  /// Encapsulates logic for `windowWillResize`, but specfically for windowed modes
+  func resizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> PlayerWindowGeometry {
     assert(currentLayout.isWindowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
     let currentGeo: PlayerWindowGeometry
     switch currentLayout.spec.mode {
     case .windowed:
       currentGeo = windowedModeGeometry
     case .windowedInteractive:
+      // FIXME: need to account for margins in viewport around video. Window size will go weird if made too small!
       if let interactiveModeGeometry {
         currentGeo = interactiveModeGeometry.toPlayerWindowGeometry()
       } else {
@@ -1085,7 +1086,6 @@ extension PlayerWindowController {
       log.error("WindowWillResize: requested mode is invalid: \(currentLayout.spec.mode). Will fall back to windowedModeGeometry")
       return windowedModeGeometry
     }
-    guard let window = window else { return currentGeo }
 
     if denyNextWindowResize {
       let currentFrame = window.frame

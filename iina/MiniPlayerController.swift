@@ -379,7 +379,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   // MARK: - Window size & layout
 
-  func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
+  /// `windowWillResize`, but specfically applied when in music mode
+  func resizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     resetScrollingLabels()
     let oldGeometry = windowController.musicModeGeometry!
 

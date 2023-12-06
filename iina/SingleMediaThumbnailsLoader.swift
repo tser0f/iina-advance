@@ -111,7 +111,7 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
   private func addThumbnails(_ ffThumbnails: [FFThumbnail]) {
     let sw = Utility.Stopwatch()
     if rotationDegrees != 0 {
-      log.verbose("Rotating \(ffThumbnails.count) thumbnails by \(rotationDegrees)°")
+      log.verbose("Rotating \(ffThumbnails.count) thumbnails by \(rotationDegrees)° clockwise")
     }
 
     for ffThumbnail in ffThumbnails {
@@ -119,8 +119,9 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
 
       let image: NSImage
       if rotationDegrees != 0 {
-        // Rotation is an expensive procedure. Do it up front so that thumbnail display is snappier
-        image = rawImage.rotated(degrees: rotationDegrees)
+        // Rotation is an expensive procedure. Do it up front so that thumbnail display is snappier.
+        // Reverse the rotation direction because mpv is opposite direction of Core Graphics
+        image = rawImage.rotated(degrees: -rotationDegrees)
       } else {
         image = rawImage
       }

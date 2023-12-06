@@ -1960,8 +1960,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    let currentMode = currentLayout.mode
-    log.verbose("WindowWILLResize mode=\(currentMode) RequestedSize=\(requestedSize)")
+    let currentLayout = currentLayout
+    log.verbose("WindowWILLResize mode=\(currentLayout.mode) RequestedSize=\(requestedSize)")
     videoView.videoLayer.enterAsynchronousMode()
 
     /// This method only provides the desired size for the window, but we don't have access to the  desired origin.
@@ -1973,23 +1973,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       updateCachedGeometry()
     }
 
-    switch currentMode {
+    switch currentLayout.mode {
     case .musicMode:
-      return miniPlayer.windowWillResize(window, to: requestedSize)
+      return miniPlayer.resizeWindow(window, to: requestedSize)
+
     case .fullScreen, .fullScreenInteractive:
       if currentLayout.isLegacyFullScreen {
-        let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: player.info.videoAspectRatio)
-        return fsGeo.windowFrame.size
+        let newGeometry = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: player.info.videoAspectRatio)
+        return newGeometry.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
         return requestedSize
       }
+
     case .windowed, .windowedInteractive:
-      let newGeometry = resizeWindow(to: requestedSize)
+      let newGeometry = resizeWindow(window, to: requestedSize)
       videoView.apply(newGeometry)
-
       updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
-
       return newGeometry.windowFrame.size
     }
   }
@@ -3511,6 +3511,16 @@ extension PlayerWindowController: PIPViewControllerDelegate {
 
   func enterPIP(usePipBehavior: Preference.WindowBehaviorWhenPip? = nil) {
     guard pipStatus != .inPIP else { return }
+    if currentLayout.isInteractiveMode {
+      exitInteractiveMode(then: { [self] in
+        enterPIPInternal(usePipBehavior: usePipBehavior)
+      })
+    } else {
+      enterPIPInternal(usePipBehavior: usePipBehavior)
+    }
+  }
+
+  private func enterPIPInternal(usePipBehavior: Preference.WindowBehaviorWhenPip? = nil) {
     guard let window else { return }
     pipStatus = .inPIP
     showFadeableViews()

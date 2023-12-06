@@ -1100,7 +1100,7 @@ not applying FFmpeg 9599 workaround
     switch name {
 
     case MPVProperty.videoParams:
-      player.log.verbose("Got mpv prop: \(MPVProperty.videoParams.quoted)")
+      player.log.verbose("Received mpv prop: \(MPVProperty.videoParams.quoted)")
       needReloadQuickSettingsView = true
 
     case MPVProperty.videoOutParams:
@@ -1112,14 +1112,14 @@ not applying FFmpeg 9599 workaround
        Has the same sub-properties as video-params.
        ```
        */
-      player.log.verbose("Got mpv prop: \(MPVProperty.videoOutParams.quoted)")
+      player.log.verbose("Received mpv prop: \(MPVProperty.videoOutParams.quoted)")
       break
 
     case MPVProperty.videoParamsRotate:
         /** `video-params/rotate: Intended display rotation in degrees (clockwise).` - mpv manual
          Do not confuse with the user-configured `video-rotate` (below) */
       if let totalRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
-        player.log.verbose("Got mpv prop: \(MPVProperty.videoParamsRotate.quoted) = \(totalRotation)")
+        player.log.verbose("Received mpv prop: 'video-params/rotate' = \(totalRotation)")
         /// Nothing to do here. Everything will be handled by `video-reconfig` callback
       }
 
@@ -1129,7 +1129,7 @@ not applying FFmpeg 9599 workaround
       }
       let userRotation = Int(data)
       if userRotation != player.info.selectedRotation {
-        player.log.verbose("Received mpv prop: \(MPVOption.Video.videoRotate.quoted) ≔ \(userRotation)")
+        player.log.verbose("Received mpv prop: 'video-rotate' ≔ \(userRotation)")
         player.info.selectedRotation = userRotation
         needReloadQuickSettingsView = true
 

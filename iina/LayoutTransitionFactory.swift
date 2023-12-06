@@ -421,8 +421,8 @@ extension PlayerWindowController {
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
     } else if transition.isTogglingInteractiveMode {
       if transition.inputLayout.isFullScreen {
-        // "ExitFullScreen" animation does not use the Close Panels step currently. May want to enhance it in the future
-        return nil
+        // Need to hide sidebars when entering interactive mode in full screen
+        return transition.outputGeometry
       }
 
       let outsideTopBarHeight = transition.inputLayout.outsideTopBarHeight >= transition.outputLayout.topBarHeight ? transition.outputLayout.outsideTopBarHeight : 0
