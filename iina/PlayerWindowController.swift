@@ -678,6 +678,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return currentLayout.isFullScreen
   }
 
+  var isInMiniPlayer: Bool {
+    return currentLayout.isMusicMode
+  }
+
   var isInInteractiveMode: Bool {
     return currentLayout.isInteractiveMode
   }
@@ -924,7 +928,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       updateTitle()
       playlistView.scrollPlaylistToCurrentItem()
 
-      if Preference.bool(for: .fullScreenWhenOpen) && !isFullScreen && !player.isInMiniPlayer && !player.info.isRestoring {
+      if Preference.bool(for: .fullScreenWhenOpen) && !isFullScreen && !isInMiniPlayer && !player.info.isRestoring {
         log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
         enterFullScreen()
       }
@@ -1128,7 +1132,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       sidebar?.appearance = NSAppearance(named: .vibrantDark)
     }
 
-    if player.isInMiniPlayer {
+    if isInMiniPlayer {
       miniPlayer.loadIfNeeded()
 
       for view in [miniPlayer.backgroundView, closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
@@ -1520,7 +1524,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     if isMouseEvent(event, inAnyOf: [fragPositionSliderView]) && playSlider.isEnabled {
       seekOverride = true
-    } else if volumeSlider.isEnabled && (player.isInMiniPlayer && isMouseEvent(event, inAnyOf: [miniPlayer.volumeSliderView])
+    } else if volumeSlider.isEnabled && (isInMiniPlayer && isMouseEvent(event, inAnyOf: [miniPlayer.volumeSliderView])
                                          || isMouseEvent(event, inAnyOf: [fragVolumeView])) {
       volumeOverride = true
     } else {
@@ -1551,7 +1555,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else {
       scrollAction = scrollDirection == .horizontal ? horizontalScrollAction : verticalScrollAction
       // show volume popover when volume seek begins and hide on end
-      if scrollAction == .volume && player.isInMiniPlayer {
+      if scrollAction == .volume && isInMiniPlayer {
         player.windowController.miniPlayer.handleVolumePopover(isTrackpadBegan, isTrackpadEnd, isMouse)
       }
     }
@@ -1600,7 +1604,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // don't use precised delta for mouse
       let newVolume = player.info.volume + (isMouse ? delta : AppData.volumeMap[volumeScrollAmount] * delta)
       player.setVolume(newVolume)
-      if player.isInMiniPlayer {
+      if isInMiniPlayer {
         player.windowController.miniPlayer.volumeSlider.doubleValue = newVolume
       } else {
         volumeSlider.doubleValue = newVolume
@@ -2580,7 +2584,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window else { return }
 
     let title: String
-    if player.isInMiniPlayer {
+    if isInMiniPlayer {
       miniPlayer.loadIfNeeded()
       let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
       title = mediaTitle
@@ -2811,20 +2815,30 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let oldLayout = currentLayout
     let newMode: WindowMode = oldLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
     let interactiveModeLayout = oldLayout.spec.clone(mode: newMode, interactiveMode: mode)
-    let duration = IINAAnimation.CropAnimationDuration
+    let startDuration = IINAAnimation.CropAnimationDuration
+    let endDuration = oldLayout.mode == .fullScreen ? startDuration * 0.5 : startDuration
     buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout,
-                          totalStartingDuration: duration * 0.5, totalEndingDuration: duration * 0.5,
+                          totalStartingDuration: startDuration, totalEndingDuration: endDuration,
                           thenRun: true)
   }
 
-  /// Use `immediately: true` to exit without animation
+  /// Use `immediately: true` to exit without animation.
+  /// This method can be run safely even if not in interactive mode
   func exitInteractiveMode(immediately: Bool = false, then doAfter: (() -> Void)? = nil) {
     let oldLayout = currentLayout
+    if !oldLayout.isInteractiveMode {
+      if let doAfter {
+        animationPipeline.submitZeroDuration({
+          doAfter()
+        })
+      }
+      return
+    }
 
     let newMode: WindowMode = oldLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
     log.verbose("Exiting interactive mode, newMode: \(newMode)")
     let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
-    let halfDuration = IINAAnimation.CropAnimationDuration * 0.5
+    let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
     let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
                                            totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
 
@@ -3092,22 +3106,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updateVolumeUI() {
     guard loaded else { return }
-    if let volumeSlider = player.isInMiniPlayer ? player.windowController.miniPlayer.volumeSlider : volumeSlider {
+    if let volumeSlider = isInMiniPlayer ? player.windowController.miniPlayer.volumeSlider : volumeSlider {
       volumeSlider.isEnabled = (player.info.aid != 0)
       volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
       volumeSlider.doubleValue = player.info.volume
     }
-    if let muteButton = player.isInMiniPlayer ? player.windowController.miniPlayer.muteButton : muteButton {
+    if let muteButton = isInMiniPlayer ? player.windowController.miniPlayer.muteButton : muteButton {
       muteButton.isEnabled = (player.info.aid != 0)
       muteButton.state = player.info.isMuted ? .on : .off
     }
-    if player.isInMiniPlayer {
+    if isInMiniPlayer {
       miniPlayer.updateVolumeUI()
     }
   }
 
   func enterMusicMode() {
-    animationPipeline.submitZeroDuration { [self] in
+    // TODO: also exit full screen first if needed
+    exitInteractiveMode(then: { [self] in
       /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
       let oldLayout = currentLayout
@@ -3119,7 +3134,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         let miniPlayerLayout = oldLayout.spec.clone(mode: .musicMode)
         buildLayoutTransition(named: "EnterMusicMode", from: oldLayout, to: miniPlayerLayout, thenRun: true)
       }
-    }
+    })
   }
 
   func exitMusicMode() {
@@ -3192,7 +3207,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
     guard loaded else { return }
-    if let playButton = player.isInMiniPlayer ? player.windowController.miniPlayer.playButton : playButton {
+    if let playButton = isInMiniPlayer ? player.windowController.miniPlayer.playButton : playButton {
       playButton.state = state
     }
 
@@ -3240,7 +3255,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - IBActions
 
   @objc func menuSwitchToMiniPlayer(_ sender: NSMenuItem) {
-    if player.isInMiniPlayer {
+    if isInMiniPlayer {
       player.exitMusicMode()
     } else {
       player.enterMusicMode()
@@ -3511,16 +3526,12 @@ extension PlayerWindowController: PIPViewControllerDelegate {
 
   func enterPIP(usePipBehavior: Preference.WindowBehaviorWhenPip? = nil) {
     guard pipStatus != .inPIP else { return }
-    if currentLayout.isInteractiveMode {
-      exitInteractiveMode(then: { [self] in
-        enterPIPInternal(usePipBehavior: usePipBehavior)
-      })
-    } else {
-      enterPIPInternal(usePipBehavior: usePipBehavior)
-    }
+    exitInteractiveMode(then: { [self] in
+      doPIPEntry(usePipBehavior: usePipBehavior)
+    })
   }
 
-  private func enterPIPInternal(usePipBehavior: Preference.WindowBehaviorWhenPip? = nil) {
+  private func doPIPEntry(usePipBehavior: Preference.WindowBehaviorWhenPip? = nil) {
     guard let window else { return }
     pipStatus = .inPIP
     showFadeableViews()

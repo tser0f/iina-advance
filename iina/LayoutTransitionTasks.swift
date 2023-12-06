@@ -236,6 +236,10 @@ extension PlayerWindowController {
       controlBarFloating.removeMarginConstraints()
     }
 
+    if outputLayout.mode == .fullScreenInteractive {
+      apply(visibility: .hidden, to: additionalInfoView)
+    }
+
     if transition.isExitingInteractiveMode, let cropController = self.cropSettingsView {
       // Exiting interactive mode
       cropController.cropBoxView.alphaValue = 0
@@ -794,7 +798,7 @@ extension PlayerWindowController {
     applyShowableOnly(visibility: outputLayout.controlBarFloating, to: controlBarFloating)
 
     if outputLayout.isFullScreen {
-      if Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
+      if !outputLayout.isInteractiveMode && Preference.bool(for: .displayTimeAndBatteryInFullScreen) {
         apply(visibility: .showFadeableNonTopBar, to: additionalInfoView)
       }
     } else if outputLayout.titleBar.isShowable {

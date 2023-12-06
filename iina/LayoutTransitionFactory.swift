@@ -214,9 +214,14 @@ extension PlayerWindowController {
 
     // Extra animation for entering legacy full screen: cover camera housing with black bar
     let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && windowedModeScreen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
+
+    var fadeInNewViewsDuration = endingAnimationDuration * 0.5
     var openFinalPanelsDuration = endingAnimationDuration
     if useExtraAnimationForEnteringLegacyFullScreen {
       openFinalPanelsDuration *= 0.8
+    } else if transition.isEnteringInteractiveMode {
+      openFinalPanelsDuration *= 0.5
+      fadeInNewViewsDuration *= 0.5
     }
 
     log.verbose("[\(transitionName)] Building transition animations. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
@@ -308,7 +313,7 @@ extension PlayerWindowController {
 
     // EndingAnimation: Fade in new views
     if !transition.isTogglingFullScreen && transition.needsFadeInNewViews {
-      transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration, timing: panelTimingName, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: fadeInNewViewsDuration, timing: panelTimingName, { [self] in
         fadeInNewViews(transition)
       }))
     }

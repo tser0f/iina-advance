@@ -1381,12 +1381,14 @@ not applying FFmpeg 9599 workaround
       guard player.windowController.loaded else { break }
       let windowScale = getDouble(MPVOption.Window.windowScale)
       let needsUpdate = fabs(windowScale - player.info.cachedWindowScale) > 10e-10
-      player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale). Cached scale = \(player.info.cachedWindowScale) → changed=\(needsUpdate.yn)")
       if needsUpdate {
+        player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale) → changed from cached (\(player.info.cachedWindowScale))")
         DispatchQueue.main.async {
           self.player.windowController.setVideoScale(CGFloat(windowScale))
           self.player.info.cachedWindowScale = windowScale
         }
+      } else {
+        player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale), but no change from cache")
       }
 
     case MPVProperty.mediaTitle:

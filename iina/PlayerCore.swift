@@ -143,7 +143,15 @@ class PlayerCore: NSObject {
   var isStopped = true
 
   var isInMiniPlayer: Bool {
-    return windowController.currentLayout.isMusicMode
+    return windowController.isInMiniPlayer
+  }
+
+  var isFullScreen: Bool {
+    return windowController.isFullScreen
+  }
+
+  var isInInteractiveMode: Bool {
+    return windowController.isInInteractiveMode
   }
 
   /// Set this to `true` if user changes "music mode" status manually. This disables `autoSwitchToMusicMode`
@@ -2118,6 +2126,12 @@ class PlayerCore: NSObject {
       syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
       osdLastPosition = info.videoPosition?.second
       osdLastDuration = info.videoDuration?.second
+    case .crop(let newCropLabel):
+      if newCropLabel == AppData.cropNone && !isInInteractiveMode && info.videoFiltersDisabled[Constants.FilterLabel.crop] != nil {
+        log.verbose("Ignoring request to show OSD crop 'None': looks like user starting to edit an existing crop")
+        return
+      }
+
     default:
       break
     }

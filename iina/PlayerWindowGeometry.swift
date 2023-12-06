@@ -702,6 +702,7 @@ extension PlayerWindowController {
 
       animationPipeline.submit(IINAAnimation.Task({ [self] in
         log.verbose("[MPVVideoReconfig] Cropping video from origVideoSize: \(originalVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropResult: \(newVideoFrameUnscaled)")
+        /// Updated `windowedModeGeometry` even if in full screen - we are not prepared to look for changes later
         let croppedGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
         windowedModeGeometry = croppedGeometry
         player.info.videoAspectRatio = croppedGeometry.videoAspectRatio
@@ -716,8 +717,9 @@ extension PlayerWindowController {
         cropController.cropBoxView.removeFromSuperview()
 
         if currentLayout.isFullScreen {
-          let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: croppedGeometry.videoAspectRatio)
-          videoView.apply(newInteractiveModeGeo)
+          let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: croppedGeometry.videoAspectRatio)
+          videoView.apply(fsInteractiveModeGeo)
+          interactiveModeGeometry = InteractiveModeGeometry.from(fsInteractiveModeGeo)
         } else {
           let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.from(windowedModeGeometry)
           interactiveModeGeometry = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
@@ -752,8 +754,9 @@ extension PlayerWindowController {
         windowedModeGeometry = uncroppedWindowedGeo
 
         if currentLayout.isFullScreen {
-          let fsGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: uncroppedWindowedGeo.videoAspectRatio)
-          videoView.apply(fsGeo)
+          let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: uncroppedWindowedGeo.videoAspectRatio)
+          videoView.apply(fsInteractiveModeGeo)
+          interactiveModeGeometry = InteractiveModeGeometry.from(fsInteractiveModeGeo)
           forceDraw()
         } else {
           applyWindowGeometry(uncroppedWindowedGeo)
@@ -767,9 +770,10 @@ extension PlayerWindowController {
         animationPipeline.submitZeroDuration({ [self] in
           let videoSize: NSSize
           if currentLayout.isFullScreen {
-            let newInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, 
+            let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen,
                                                                               videoAspectRatio: videoDisplayRotatedSize.aspect)
-            videoSize = newInteractiveModeGeo.videoSize
+            videoSize = fsInteractiveModeGeo.videoSize
+            interactiveModeGeometry = InteractiveModeGeometry.from(fsInteractiveModeGeo)
           } else { // windowed
             videoSize = interactiveModeGeometry?.videoSize ?? windowedModeGeometry.videoSize
           }
