@@ -103,7 +103,7 @@ struct PlayerSaveState {
   /// `PlayerWindowGeometry` -> String
   private static func toCSV(_ geo: PlayerWindowGeometry) -> String {
     return [windowGeometryPrefStringVersion,
-            geo.videoAspectRatio.stringTrunc2f,
+            geo.videoAspectRatio.aspectNormalDecimalString,
             geo.topMarginHeight.string2f,
             geo.outsideTopBarHeight.string2f,
             geo.outsideTrailingBarWidth.string2f,
@@ -132,7 +132,7 @@ struct PlayerSaveState {
             geo.playlistHeight.string2f,
             geo.isVideoVisible.yn,
             geo.isPlaylistVisible.yn,
-            geo.videoAspectRatio.stringTrunc2f,
+            geo.videoAspectRatio.aspectNormalDecimalString,
             geo.screenID
     ].joined(separator: ",")
   }

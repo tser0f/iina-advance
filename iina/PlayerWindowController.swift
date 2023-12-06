@@ -1027,11 +1027,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       newAspectRatio = videoParams.videoDisplayRotatedAspect
     }
 
-    guard newAspectRatio.stringTrunc2f != oldAspectRatio.stringTrunc2f else {
+    guard newAspectRatio.aspectNormalDecimalString != oldAspectRatio.aspectNormalDecimalString else {
       log.verbose("No change to videoAspectRatio; no update needed")
       return
     }
-    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.string2f) to: \(newAspectRatio.stringTrunc2f)")
+    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.string2f) to: \(newAspectRatio.aspectNormalDecimalString)")
 
     let layout = currentLayout
     switch layout.mode {

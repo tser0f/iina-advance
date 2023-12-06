@@ -32,6 +32,10 @@ struct MPVVideoParams: CustomStringConvertible {
   /// `dheight`:
   let videoDisplayHeight: Int
 
+  /// Decimal number given by mpv, for some reason with 6 digits after decimal.
+  /// When comparing to other aspect ratio, use only the first 2 digits after decimal.
+  let aspectRatio: String?
+
   /// `MPVProperty.videoParamsRotate`:
   let totalRotation: Int
   /// `MPVProperty.videoRotate`:

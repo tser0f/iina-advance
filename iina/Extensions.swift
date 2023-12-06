@@ -313,16 +313,25 @@ fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
 /// Applies to `Double`, `CGFloat`, ...
 extension FloatingPoint {
 
+  /// Formats as String, truncating the number to 2 digits after the decimal
   var stringTrunc2f: String {
     return fmtDecimalMaxFractionDigits2Truncated.string(for: self)!
   }
 
+  /// Formats as String, rounding the number to 2 digits after the decimal
   var string2f: String {
     return fmtDecimalMaxFractionDigits2.string(for: self)!
   }
 
+  /// Formats as String, rounding the number to 6 digits after the decimal
   var string6f: String {
     return fmtDecimalMaxFractionDigits6.string(for: self)!
+  }
+
+  /// Returns a "normalized" number string for the exclusive purpose of comparing two mpv aspect ratios while avoiding precision errors.
+  /// Not pretty to put this here, but need to make this searchable & don't have time for a larger refactor
+  var aspectNormalDecimalString: String {
+    return string2f
   }
 }
 

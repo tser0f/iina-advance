@@ -400,7 +400,7 @@ extension PlayerWindowController {
         // Add check for aspect ratio & interactive mode so that we don't enable this when cropping or other things:
         if let prevIntendedViewportSize = player.info.intendedViewportSize,
            !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
-           windowedModeGeometry.videoAspectRatio.stringTrunc2f == inputGeometry.videoAspectRatio.stringTrunc2f {
+           windowedModeGeometry.videoAspectRatio.aspectNormalDecimalString == inputGeometry.videoAspectRatio.aspectNormalDecimalString {
           log.verbose("Instead of shrinking window by \(ΔOutsideWidth) W & \(ΔOutsideHeight) H, will restore prev intendedViewportSize (\(prevIntendedViewportSize))")
           return outputGeo.scaleViewport(to: prevIntendedViewportSize)
         }

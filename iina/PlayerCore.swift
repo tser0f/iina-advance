@@ -787,7 +787,7 @@ class PlayerCore: NSObject {
     mpv.setDouble(MPVOption.PlaybackControl.speed, speed)
   }
 
-  /// Set video's aspect ratio. Note that aspectRatio is before any rotations.
+  /// Set video's aspect ratio. Note that a video's aspect ratio is before rotation is applied.
   func setVideoAspect(_ aspect: String) {
     guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
@@ -798,32 +798,32 @@ class PlayerCore: NSObject {
       log.verbose("Cannot set requested aspect: videoParams not available")
       return
     }
-    let videoDefaultAspectNumString = videoParams.videoRawSize.aspect.stringTrunc2f
+    let videoDefaultAspectNumString = videoParams.videoRawSize.aspect.aspectNormalDecimalString
 
     let aspectDisplay: String
-    let aspectNumberString2f: String
-    if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.stringTrunc2f != videoDefaultAspectNumString {
+    let aspectNormalDecimalString: String
+    if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.aspectNormalDecimalString != videoDefaultAspectNumString {
       // Aspect is in colon notation (X:Y)
       aspectDisplay = aspect
-      aspectNumberString2f = colonBasedAspect.value.stringTrunc2f
-    } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.stringTrunc2f != videoDefaultAspectNumString {
+      aspectNormalDecimalString = colonBasedAspect.value.aspectNormalDecimalString
+    } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.aspectNormalDecimalString != videoDefaultAspectNumString {
       /// Aspect is a decimal number, but is not default (`-1` or video default)
       /// Try to match to known aspect by comparing their decimal values to the new aspect.
       /// Note that mpv seems to do its calculations to only 2 decimal places of precision, so use that for comparison.
-      aspectNumberString2f = aspectDouble.stringTrunc2f
+      aspectNormalDecimalString = aspectDouble.aspectNormalDecimalString
       if let knownAspectRatio = findLabelForAspectRatio(aspectDouble) {
         aspectDisplay = knownAspectRatio
       } else {
-        aspectDisplay = aspectNumberString2f
+        aspectDisplay = aspectNormalDecimalString
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
-      aspectNumberString2f = videoDefaultAspectNumString
+      aspectNormalDecimalString = videoDefaultAspectNumString
       log.verbose("Aspect \(aspect.quoted) is -1 or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
     }
 
-    if info.videoAspectRatio.stringTrunc2f != aspectNumberString2f {
-      log.verbose("Need to update player window geometry with new aspect ratio. Old: \(info.videoAspectRatio.stringTrunc2f), New: \(aspectNumberString2f)")
+    if info.videoAspectRatio.aspectNormalDecimalString != aspectNormalDecimalString {
+      log.verbose("Need to update geometry with new aspect ratio. Old: \(info.videoAspectRatio.aspectNormalDecimalString), New: \(aspectNormalDecimalString)")
       DispatchQueue.main.async { [self] in
         windowController.mpvVideoDidReconfig()
       }
@@ -848,9 +848,9 @@ class PlayerCore: NSObject {
   }
 
   private func findLabelForAspectRatio(_ aspectRatioNumber: Double) -> String? {
-    let aspectNumberString2f = aspectRatioNumber.stringTrunc2f
+    let aspectNumberString2f = aspectRatioNumber.aspectNormalDecimalString
     for knownAspectRatio in AppData.aspects {
-      if let parsedAspect = Aspect(string: knownAspectRatio), parsedAspect.value.stringTrunc2f == aspectNumberString2f {
+      if let parsedAspect = Aspect(string: knownAspectRatio), parsedAspect.value.aspectNormalDecimalString == aspectNumberString2f {
         // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
         return knownAspectRatio
       }

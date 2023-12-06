@@ -697,9 +697,9 @@ extension PlayerWindowController {
       log.error("[MPVVideoReconfig] Could not get videoDisplayRotatedSize from mpv! Cancelling adjustment")
       return
     }
-    log.verbose("[MPVVideoReconfig] Start, videoDisplayRotatedSize: \(videoDisplayRotatedSize)")
-
     let newVideoAspectRatio = videoDisplayRotatedSize.aspect
+    log.verbose("[MPVVideoReconfig] Start, videoDisplayRotatedSize: \(videoDisplayRotatedSize), drAspect: \(newVideoAspectRatio)")
+
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoDisplayRotatedSize
     }
@@ -797,8 +797,8 @@ extension PlayerWindowController {
 
       // Confirm aspect ratio is consistent. To account for imprecision(s) due to floats coming from multiple sources,
       // just compare the first 6 digits after the decimal.
-      let oldAspect = player.info.videoAspectRatio.stringTrunc2f
-      let newAspect = newVideoAspectRatio.stringTrunc2f
+      let oldAspect = player.info.videoAspectRatio.aspectNormalDecimalString
+      let newAspect = newVideoAspectRatio.aspectNormalDecimalString
       if oldAspect == newAspect {
         log.verbose("[MPVVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       } else {

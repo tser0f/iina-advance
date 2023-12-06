@@ -147,7 +147,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     let maxHeight = isPlaylistVisible ? containerFrame.height : minWindowHeight
     newHeight = min(newHeight, maxHeight)
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
-    Logger.log("Constraining miniPlayer. Video=\(isVideoVisible.yn) Playlist=\(isPlaylistVisible.yn) VideoAspect=\(videoAspectRatio.stringTrunc2f), ReqSize=\(requestedSize), NewSize=\(newWindowSize)", level: .verbose)
+    Logger.log("Constraining miniPlayer. Video=\(isVideoVisible.yn) Playlist=\(isPlaylistVisible.yn) VideoAspect=\(videoAspectRatio.aspectNormalDecimalString), ReqSize=\(requestedSize), NewSize=\(newWindowSize)", level: .verbose)
 
     let newWindowFrame = NSRect(origin: windowFrame.origin, size: newWindowSize).constrain(in: containerFrame)
     return self.clone(windowFrame: newWindowFrame)
