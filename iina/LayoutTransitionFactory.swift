@@ -378,11 +378,11 @@ extension PlayerWindowController {
 
     case .windowedInteractive:
       if let cachedInteractiveModeGeometry = interactiveModeGeometry {
-        log.verbose("Using cached interactiveModeGeometry: \(cachedInteractiveModeGeometry)")
+        log.verbose("Using cached interactiveModeGeometry for outputGeo: \(cachedInteractiveModeGeometry)")
         return cachedInteractiveModeGeometry.toPlayerWindowGeometry()
       }
       let imGeo = InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
-      log.verbose("Converted windowed mode geometry to interactiveModeGeometry: \(imGeo)")
+      log.verbose("Calculated entry into interactiveModeGeometry from windowedModeGeometry for outputGeo: \(imGeo)")
       return imGeo.toPlayerWindowGeometry()
 
     case .windowed:

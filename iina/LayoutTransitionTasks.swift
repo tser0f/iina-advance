@@ -134,8 +134,6 @@ extension PlayerWindowController {
 
       isPausedPriorToInteractiveMode = player.info.isPaused
       player.pause()
-    } else if transition.isExitingInteractiveMode, let cropController = cropSettingsView {
-      cropController.cropBoxView.isHidden = true
     }
 
     if transition.isTogglingMusicMode {
@@ -249,6 +247,7 @@ extension PlayerWindowController {
 
   /// -------------------------------------------------
   /// CLOSE OLD PANELS
+  /// This step is not always executed (e.g., for full screen toggle)
   func closeOldPanels(_ transition: LayoutTransition) {
     guard let window = window else { return }
     let outputLayout = transition.outputLayout
@@ -309,7 +308,7 @@ extension PlayerWindowController {
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
       if !transition.isInitialLayout && !transition.isTogglingFullScreen {
-        log.debug("Calling setFrame() from closeOldPanels with newWindowFrame \(middleGeo.windowFrame)")
+        log.debug("Calling setFrame from closeOldPanels with newWindowFrame \(middleGeo.windowFrame)")
         player.window.setFrameImmediately(middleGeo.windowFrame)
         if !transition.isExitingInteractiveMode {
           videoView.apply(middleGeo)
@@ -550,42 +549,51 @@ extension PlayerWindowController {
     // Need to call this for initial layout also:
     updateMusicModeButtonsVisibility()
 
-    if transition.isEnteringInteractiveMode {
-      // Entering interactive mode
-      if #available(macOS 10.14, *) {
-        viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
-      } else {
-        viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
-      }
-
-      // Add crop settings at bottom
-      let cropController = transition.outputLayout.spec.interactiveMode!.viewController()
-      cropController.windowController = self
-      bottomBarView.addSubview(cropController.view)
-      cropController.view.addConstraintsToFillSuperview()
-      cropController.view.alphaValue = 0
-      self.cropSettingsView = cropController
-
-      if !transition.outputLayout.isFullScreen {
-        // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
-        videoView.constrainLayoutToEqualsOffsetOnly(top: 0, trailing: 0, bottom: 0, leading: 0)
-        videoView.apply(nil)
-      }
-    } else if transition.isExitingInteractiveMode {
-      // Exiting interactive mode
-      viewportView.layer?.backgroundColor = .black
-
-      // Restore prev constraints:
-      videoView.constrainForNormalLayout()
-
+    if transition.isTogglingInteractiveMode {
+      // Even if entering IM, may have a prev crop due to a bug elsewhere. Remove if found
       if let cropController = self.cropSettingsView {
         cropController.cropBoxView.removeFromSuperview()
         cropController.view.removeFromSuperview()
         self.cropSettingsView = nil
       }
 
-      if transition.outputLayout.isWindowed, let middleGeometry = transition.middleGeometry {
-        videoView.apply(middleGeometry)
+      if transition.isEnteringInteractiveMode {
+        // Entering interactive mode
+        if #available(macOS 10.14, *) {
+          viewportView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        } else {
+          viewportView.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
+        }
+
+        // Add crop settings at bottom
+        let cropController = transition.outputLayout.spec.interactiveMode!.viewController()
+        cropController.windowController = self
+        bottomBarView.addSubview(cropController.view)
+        cropController.view.addConstraintsToFillSuperview()
+        cropController.view.alphaValue = 0
+        self.cropSettingsView = cropController
+
+        if !transition.outputLayout.isFullScreen {
+          // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
+          videoView.constrainLayoutToEqualsOffsetOnly(top: 0, trailing: 0, bottom: 0, leading: 0)
+          videoView.apply(nil)
+        }
+      } else if transition.isExitingInteractiveMode {
+        // Exiting interactive mode
+        viewportView.layer?.backgroundColor = .black
+
+        // Restore prev constraints:
+        videoView.constrainForNormalLayout()
+
+        if let cropController = self.cropSettingsView {
+          cropController.cropBoxView.removeFromSuperview()
+          cropController.view.removeFromSuperview()
+          self.cropSettingsView = nil
+        }
+
+        if transition.outputLayout.isWindowed, let middleGeometry = transition.middleGeometry {
+          videoView.apply(middleGeometry)
+        }
       }
     }
 
@@ -714,7 +722,7 @@ extension PlayerWindowController {
     case .fullScreen, .fullScreenInteractive:
       if transition.outputLayout.isNativeFullScreen {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
-        log.verbose("[\(transition.name)] Calling setFrame() to animate into native full screen, to: \(transition.outputGeometry.windowFrame)")
+        log.verbose("[\(transition.name)] Calling setFrame to animate into nativeFS, to: \(transition.outputGeometry.windowFrame)")
         if transition.outputLayout.mode != .fullScreenInteractive {
           videoView.apply(transition.outputGeometry)
         }
@@ -742,7 +750,7 @@ extension PlayerWindowController {
           /// Either already in legacy FS, or entering legacy FS. Apply final geometry.
           newGeo = transition.outputGeometry
         }
-        log.verbose("[\(transition.name)] Calling setFrame() for legacy full screen in OpenNewPanelsAndFinalizeOffsets")
+        log.verbose("[\(transition.name)] Calling setFrame for legacyFS in OpenNewPanelsAndFinalizeOffsets")
         applyLegacyFullScreenGeometry(newGeo)
       }
     case .musicMode:
@@ -750,7 +758,7 @@ extension PlayerWindowController {
       applyMusicModeGeometry(musicModeGeometry)
     case .windowed, .windowedInteractive:
       let newWindowFrame = transition.outputGeometry.windowFrame
-      log.verbose("[\(transition.name)] Calling setFrame() from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
+      log.verbose("[\(transition.name)] Calling setFrame from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
       if !transition.outputLayout.isInteractiveMode {
         videoView.apply(transition.outputGeometry)
       }

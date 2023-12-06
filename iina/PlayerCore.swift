@@ -2395,8 +2395,8 @@ class PlayerCore: NSObject {
         }
       } else if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
         // Probably a custom crop
-        sendOSD(.crop("(\(x), \(y)) (\(w)\u{d7}\(h))"))
-        info.selectedCropLabel = ""
+        let customCropLabel = "(\(x), \(y)) (\(w)\u{d7}\(h))"
+        updateCropUI(to: customCropLabel)
         return
       }
       // Default to "Custom" crop in Quick Settings panel

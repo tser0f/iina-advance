@@ -3055,7 +3055,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // Setting the window-scale property seems to result in a small hiccup during playback.
       // Not sure if this is an mpv limitation
       player.mpv.queue.async { [self] in
-        log.verbose("Sending mpv windowScale: \(player.info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : " (given videoSize \(videoSize!))")")
+        log.verbose("Sending windowScale update to mpv: \(player.info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : ", given videoSize \(videoSize!)")")
         player.info.cachedWindowScale = videoScale
         player.mpv.setDouble(MPVProperty.windowScale, videoScale)
       }
