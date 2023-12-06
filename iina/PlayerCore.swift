@@ -794,7 +794,7 @@ class PlayerCore: NSObject {
     let videoRawWidth = videoParams.videoRawWidth
     let videoRawHeight = videoParams.videoRawHeight
     var aspectDisplay: String
-    let videoDefaultAspectNumString = (Double(videoRawWidth) / Double(videoRawHeight)).stringTrunc2f
+    let videoDefaultAspectNumString = videoParams.videoRawSize.aspect.stringTrunc2f
     let aspectNumberString2f: String
     if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.stringTrunc2f != videoDefaultAspectNumString {
       // Aspect is in colon notation (X:Y)
@@ -825,19 +825,20 @@ class PlayerCore: NSObject {
         windowController.mpvVideoDidReconfig()
       }
     }
-    guard info.selectedAspectRatioLabel != aspectDisplay else {
-      return
+
+    if info.selectedAspectRatioLabel != aspectDisplay {
+      info.selectedAspectRatioLabel = aspectDisplay
+
+      // Send update to mpv
+      let mpvValue = aspectDisplay == AppData.defaultAspectName ? "no" : aspectDisplay
+      log.verbose("Setting mpv video-aspect-override to: \(mpvValue.quoted)")
+      mpv.setString(MPVOption.Video.videoAspectOverride, mpvValue)
+
+      sendOSD(.aspect(aspectDisplay))
     }
-    info.selectedAspectRatioLabel = aspectDisplay
 
-    // Send update to mpv
-    let mpvValue = aspectDisplay == AppData.defaultAspectName ? "no" : aspectDisplay
-    log.verbose("Setting mpv video-aspect-override to: \(mpvValue.quoted)")
-    mpv.setString(MPVOption.Video.videoAspectOverride, mpvValue)
-
-    sendOSD(.aspect(aspectDisplay))
-
-    // Update controls in UI
+    // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
+    // immediately changes the selection to "Default".
     DispatchQueue.main.async { [self] in
       if windowController.loaded, !windowController.isClosing {
         windowController.quickSettingView.aspectSegment.selectSegment(withLabel: aspectDisplay)
@@ -1775,19 +1776,18 @@ class PlayerCore: NSObject {
     // If loading file, video reconfig can return 0 width and height
     guard !info.fileLoading, !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
 
-    let vParams = mpv.queryForVideoParams()
+    let videoParams = mpv.queryForVideoParams()
 
     // filter the last video-reconfig event before quit
-    if vParams.videoDisplayRotatedWidth == 0 && vParams.videoDisplayRotatedHeight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
+    if videoParams.videoDisplayRotatedWidth == 0 && videoParams.videoDisplayRotatedHeight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
 
-    log.verbose("Got mpv `video-reconfig`; \(vParams)")
+    log.verbose("Got mpv `video-reconfig`; \(videoParams)")
 
     // Always send this to window controller. It should be smart enough to resize only when needed:
     DispatchQueue.main.async { [self] in
-      let totalRotationPrev = info.videoParams?.totalRotation
-      info.videoParams = vParams
+      info.videoParams = videoParams
       windowController.mpvVideoDidReconfig()
-      if vParams.totalRotation != totalRotationPrev {
+      if videoParams.totalRotation != info.currentMediaThumbnails?.rotationDegrees {
         reloadThumbnails()
       }
     }
@@ -2166,10 +2166,10 @@ class PlayerCore: NSObject {
         oldThumbnailSet.isCancelled = true
         info.currentMediaThumbnails = nil
       }
-
       if #available(macOS 10.12.2, *) {
         self.touchBarSupport.touchBarPlaySlider?.resetCachedThumbnails()
       }
+
       guard !info.isNetworkResource, let url = info.currentURL, let mpvMD5 = info.mpvMd5 else {
         log.debug("Thumbnails reload stopped because cannot get file path")
         return
@@ -2182,7 +2182,6 @@ class PlayerCore: NSObject {
         log.debug("Thumbnails reload stopped because file is on a mounted remote drive")
         return
       }
-
       guard !isInMiniPlayer || Preference.bool(for: .enableThumbnailForMusicMode) else {
         log.verbose("Thumbnails reload stopped because user has not enabled for music mode")
         return
@@ -2209,9 +2208,9 @@ class PlayerCore: NSObject {
           return
         }
 
-        let newThumbnailSet = SingleMediaThumbnailsLoader(self, mediaFilePath: url.path, mediaFilePathMD5: mpvMD5, videoRawSize: videoRawSize, rotationDegrees: videoParams.totalRotation)
-        info.currentMediaThumbnails = newThumbnailSet
-        newThumbnailSet.loadThumbnails()
+        let newMediaThumbnailLoader = SingleMediaThumbnailsLoader(self, mediaFilePath: url.path, mediaFilePathMD5: mpvMD5, videoRawSize: videoRawSize, rotationDegrees: videoParams.totalRotation)
+        info.currentMediaThumbnails = newMediaThumbnailLoader
+        newMediaThumbnailLoader.loadThumbnails()
       }
     }
   }

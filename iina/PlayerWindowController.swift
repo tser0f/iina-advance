@@ -2839,19 +2839,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - UI: Thumbnail Preview
 
-  /// Determine if the thumbnail preview can be shown above the progress bar in the on screen controller..
-  ///
-  /// Normally the OSC's thumbnail preview is shown above the time preview. This is the preferred location. However the
-  /// thumbnail preview extends beyond the frame of the OSC. If the OSC is near the top of the window this could result
-  /// in the thumbnail extending outside of the window resulting in clipping. This method checks if there is room for the
-  /// thumbnail to fully fit in the window. Otherwise the thumbnail must be displayed below the OSC's progress bar.
-  /// - Parameters:
-  ///   - timePreviewYPos: The y-coordinate of the time preview `TextField`.
-  ///   - thumbnailHeight: The height of the thumbnail.
-  /// - Returns: `true` if the thumbnail can be shown above the slider, `false` otherwise.
-  private func canShowThumbnailAbove(oscOriginInWindowY: Double, oscHeight: Double, thumbnailHeight: Double) -> Bool {
+  /// - Returns: `true` if the thumbnail showld be shown above the slider, `false` if it should be shown below.
+  private func shouldShowThumbnailAbove(oscOriginInWindowY: Double, oscHeight: Double, thumbnailHeight: Double) -> Bool {
     if currentLayout.isMusicMode {
-      return true  // always show above
+      return true  // always show above in music mode
     }
 
     switch currentLayout.oscPosition {
@@ -2860,12 +2851,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .bottom:
       return true
     case .floating:
-      // The layout preference for the on screen controller is set to the default floating layout.
-      // Must ensure the top of the thumbnail will be below the top of the window.
-      // Keep in mind that the thumbnail will also be shrunk to fit if possible.
-      let topOfThumbnailY = oscOriginInWindowY + oscHeight + thumbnailHeight
-      let availableHeight = viewportView.frame.height
-      return topOfThumbnailY <= availableHeight
+      let totalMargin = thumbnailExtraOffsetY + thumbnailExtraOffsetY
+      let availableHeightBelow = oscOriginInWindowY - totalMargin
+      if availableHeightBelow > thumbnailHeight {
+        // Show below by default, if there is space for the desired size
+        return false
+      }
+      // If not enough space to show the full-size thumb below, then show above if it has more space
+      let availableHeightAbove = viewportView.frame.height - (oscOriginInWindowY + oscHeight + totalMargin)
+      return availableHeightAbove > availableHeightBelow
     }
   }
 
@@ -2989,7 +2983,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let oscOriginInWindowY = currentControlBar.superview!.convert(currentControlBar.frame.origin, to: nil).y
     let oscHeight = currentControlBar.frame.size.height
-    let showAbove = canShowThumbnailAbove(oscOriginInWindowY: oscOriginInWindowY, oscHeight: oscHeight, thumbnailHeight: thumbHeight)
+    let showAbove = shouldShowThumbnailAbove(oscOriginInWindowY: oscOriginInWindowY, oscHeight: oscHeight, thumbnailHeight: thumbHeight)
     let thumbOriginY: CGFloat
     if showAbove {
       // Show thumbnail above seek time, which is above slider

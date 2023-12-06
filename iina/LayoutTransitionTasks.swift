@@ -476,10 +476,10 @@ extension PlayerWindowController {
           knobHeight = 24
         case 48...:
           timeLabelFontSize = NSFont.systemFontSize
-          knobHeight = 18
+          knobHeight = outputLayout.oscPosition == .bottom ? 18 : 15
         default:
           timeLabelFontSize = NSFont.smallSystemFontSize
-          knobHeight = 16
+          knobHeight = 15
         }
       }
       playSlider.customCell.knobHeight = knobHeight

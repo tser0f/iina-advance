@@ -138,7 +138,8 @@ class PlaybackInfo {
 
   // MARK: - Filters & Equalizers
 
-  /// The most up-to-date aspect ratio of the video (width/height), after `totalRotation` applied
+  /// The most up-to-date aspect ratio of the video (width/height), after `totalRotation` applied.
+  /// Should match `videoParams.videoDisplayRotatedAspect`
   var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {
     didSet {
       log.verbose("Updated videoAspectRatio to \(videoAspectRatio.string6f)")

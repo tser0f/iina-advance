@@ -571,7 +571,6 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func aspectChangedAction(_ sender: NSSegmentedControl) {
     let aspect = AppData.aspectsInPanel[sender.selectedSegment]
     player.setVideoAspect(aspect)
-    player.sendOSD(.aspect(aspect))
   }
 
   @IBAction func cropChangedAction(_ sender: NSSegmentedControl) {
