@@ -790,11 +790,9 @@ class PlayerCore: NSObject {
       log.verbose("Cannot set requested aspect: videoParams not available")
       return
     }
-
-    let videoRawWidth = videoParams.videoRawWidth
-    let videoRawHeight = videoParams.videoRawHeight
-    var aspectDisplay: String
     let videoDefaultAspectNumString = videoParams.videoRawSize.aspect.stringTrunc2f
+
+    let aspectDisplay: String
     let aspectNumberString2f: String
     if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.stringTrunc2f != videoDefaultAspectNumString {
       // Aspect is in colon notation (X:Y)
@@ -804,14 +802,11 @@ class PlayerCore: NSObject {
       /// Aspect is a decimal number, but is not default (`-1` or video default)
       /// Try to match to known aspect by comparing their decimal values to the new aspect.
       /// Note that mpv seems to do its calculations to only 2 decimal places of precision, so use that for comparison.
-      aspectDisplay = aspectDouble.stringTrunc2f
-      aspectNumberString2f = aspectDisplay
-      for knownAspectRatio in AppData.aspects {
-        if let parsedAspect = Aspect(string: knownAspectRatio), aspectDisplay == parsedAspect.value.stringTrunc2f {
-          // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
-          aspectDisplay = knownAspectRatio
-          break
-        }
+      aspectNumberString2f = aspectDouble.stringTrunc2f
+      if let knownAspectRatio = findLabelForAspectRatio(aspectDouble) {
+        aspectDisplay = knownAspectRatio
+      } else {
+        aspectDisplay = aspectNumberString2f
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
@@ -840,12 +835,20 @@ class PlayerCore: NSObject {
     // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
     // immediately changes the selection to "Default".
     DispatchQueue.main.async { [self] in
-      if windowController.loaded, !windowController.isClosing {
-        windowController.quickSettingView.aspectSegment.selectSegment(withLabel: aspectDisplay)
-        let isAspectInPanel = windowController.quickSettingView.aspectSegment.selectedSegment >= 0
-        windowController.quickSettingView.customAspectTextField.stringValue = isAspectInPanel ? "" : aspectDisplay
+      reloadQuickSettingsView()
+    }
+  }
+
+  private func findLabelForAspectRatio(_ aspectRatioNumber: Double) -> String? {
+    let aspectNumberString2f = aspectRatioNumber.stringTrunc2f
+    for knownAspectRatio in AppData.aspects {
+      if let parsedAspect = Aspect(string: knownAspectRatio), parsedAspect.value.stringTrunc2f == aspectNumberString2f {
+        // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
+        return knownAspectRatio
       }
     }
+    // Not found
+    return nil
   }
 
   func setVideoRotate(_ degree: Int) {
@@ -1139,12 +1142,13 @@ class PlayerCore: NSObject {
     }
   }
 
-  func updateCropUI(to newCropLabel: String) {
+  private func updateCropUI(to newCropLabel: String) {
     guard info.selectedCropLabel != newCropLabel else { return }
     info.selectedCropLabel = newCropLabel
 
     let osdLabel = newCropLabel.isEmpty ? "Custom" : newCropLabel
     sendOSD(.crop(osdLabel))
+    reloadQuickSettingsView()
   }
 
   @discardableResult

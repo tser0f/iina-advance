@@ -267,18 +267,18 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   }
 
   private func updateVideoTabControl() {
-    if let index = AppData.aspectsInPanel.firstIndex(of: player.info.selectedAspectRatioLabel) {
-      aspectSegment.selectedSegment = index
-    } else {
-      aspectSegment.selectedSegment = -1
+    let aspectLabel = player.info.selectedAspectRatioLabel
+    aspectSegment.selectSegment(withLabel: aspectLabel)
+    let isAspectInPanel = aspectSegment.selectedSegment >= 0
+    customAspectTextField.stringValue = isAspectInPanel ? "" : aspectLabel
+
+    let selectedCropLabel = player.info.selectedCropLabel
+    cropSegment.selectSegment(withLabel: selectedCropLabel)
+    let isCropInPanel = cropSegment.selectedSegment >= 0
+    if !isCropInPanel {
+      cropSegment.selectSegment(withTag: cropSegment.segmentCount - 1)
     }
 
-    if let index = AppData.cropsInPanel.firstIndex(of: player.info.selectedCropLabel) {
-      cropSegment.selectedSegment = index
-    } else {
-      // Select last segment ("Custom...")
-      cropSegment.selectedSegment = cropSegment.segmentCount - 1
-    }
     rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.selectedRotation) ?? -1)
 
     deinterlaceSwitch.checked = player.info.deinterlace
@@ -582,8 +582,8 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
         player.log.error("Bad crop segment: \(sender.selectedSegment)")
         return
       }
-      let cropStr = AppData.cropsInPanel[sender.selectedSegment]
-      player.setCrop(fromString: cropStr)
+      let selectedCropString = AppData.cropsInPanel[sender.selectedSegment]
+      player.setCrop(fromString: selectedCropString)
     }
   }
 

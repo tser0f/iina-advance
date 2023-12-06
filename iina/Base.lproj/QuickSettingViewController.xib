@@ -428,8 +428,8 @@
                                                                     <segment label="16:9" tag="2"/>
                                                                     <segment label="16:10" tag="3"/>
                                                                     <segment label="21:9" tag="4"/>
-                                                                    <segment label="5:4"/>
-                                                                    <segment label="Custom…"/>
+                                                                    <segment label="5:4" tag="5"/>
+                                                                    <segment label="Custom…" tag="6"/>
                                                                 </segments>
                                                             </segmentedCell>
                                                             <connections>

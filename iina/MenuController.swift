@@ -291,26 +291,20 @@ class MenuController: NSObject, NSMenuDelegate {
     alwaysOnTop.action = #selector(PlayerWindowController.menuAlwaysOnTop(_:))
 
     // -- aspect
-    var aspectList = AppData.aspects
+    let aspectRatioIdentifiers = [AppData.defaultAspectName] + AppData.aspects
     /// we need to set the represented object separately, since `Constants.String.default` may be localized.
-    var aspectListObject = AppData.aspects
-    aspectList.insert(Constants.String.default, at: 0)
-    aspectListObject.insert(AppData.defaultAspectName, at: 0)
-    bind(menu: aspectMenu, withOptions: aspectList, objects: aspectListObject, objectMap: nil, action: #selector(PlayerWindowController.menuChangeAspect(_:))) {
+    let aspectRatioMenuItemTitles = [Constants.String.default] + AppData.aspects
+    bind(menu: aspectMenu, withOptions: aspectRatioMenuItemTitles, objects: aspectRatioIdentifiers, objectMap: nil,
+         action: #selector(PlayerWindowController.menuChangeAspect(_:))) {
       /// return `true` if menu item should be checked (i.e. if current aspect matches menu item)
       return PlayerCore.active.info.selectedAspectRatioLabel == $0.representedObject as? String
     }
 
     // -- crop
-    var cropList = AppData.aspects
+    let cropMenuItemTitles = [Constants.String.none] + AppData.aspects + [Constants.String.custom]
     // same as aspectList above.
-    var cropListForObject = AppData.aspects
-    cropList.insert(Constants.String.none, at: 0)
-    cropListForObject.insert(AppData.cropNone, at: 0)
-    // Allow custom crop size.
-    cropList.append(Constants.String.custom)
-    cropListForObject.append("Custom")
-    bind(menu: cropMenu, withOptions: cropList, objects: cropListForObject, objectMap: nil, action: #selector(PlayerWindowController.menuChangeCrop(_:))) {
+    let cropIdentifiers = [AppData.cropNone] + AppData.aspects + ["Custom"]
+    bind(menu: cropMenu, withOptions: cropMenuItemTitles, objects: cropIdentifiers, objectMap: nil, action: #selector(PlayerWindowController.menuChangeCrop(_:))) {
       return PlayerCore.active.info.selectedCropLabel == $0.representedObject as? String
     }
     // Separate "Custom..." from other crop sizes.
