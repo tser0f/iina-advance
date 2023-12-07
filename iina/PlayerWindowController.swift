@@ -2790,65 +2790,72 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
 
   func enterInteractiveMode(_ mode: InteractiveMode) {
-    guard player.info.videoParams?.videoDisplayRotatedSize != nil else {
-      Utility.showAlert("no_video_track")
-      return
-    }
-    log.verbose("Entering interactive mode: \(mode)")
+    animationPipeline.submitZeroDuration({ [self] in
 
-    // TODO: use key binding interceptor to support ESC and ENTER keys for interactive mode
-
-    if mode == .crop, let vf = player.info.cropFilter, let filterLabel = vf.label {
-      log.error("Crop mode requested, but found an existing crop filter (\(vf.stringFormat.quoted)). Will remove it before entering")
-      // A crop is already set. Need to temporarily remove it so that the whole video can be seen again,
-      // so that a new crop can be chosen. But keep info from the old filter in case the user cancels.
-      assert(vf.label == Constants.FilterLabel.crop, "Unexpected label for crop filter: \(vf.name.quoted)")
-      player.info.videoFiltersDisabled[filterLabel] = vf
-      if player.removeVideoFilter(vf) {
-        // We can expect to receive a new video-params from mpv asynchronously. Pick it up there.
-        // Will check whether there is a disabled crop filter there
+      guard player.info.videoParams?.videoDisplayRotatedSize != nil else {
+        Utility.showAlert("no_video_track")
         return
-      } else {
-        log.error("Failed to remove prev crop filter: (\(vf.stringFormat.quoted)) for some reason. Will ignore and try to proceed anyway")
       }
-    }
-    let oldLayout = currentLayout
-    let newMode: WindowMode = oldLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
-    let interactiveModeLayout = oldLayout.spec.clone(mode: newMode, interactiveMode: mode)
-    let startDuration = IINAAnimation.CropAnimationDuration
-    let endDuration = oldLayout.mode == .fullScreen ? startDuration * 0.5 : startDuration
-    buildLayoutTransition(named: "EnterInteractiveMode", from: oldLayout, to: interactiveModeLayout,
-                          totalStartingDuration: startDuration, totalEndingDuration: endDuration,
-                          thenRun: true)
+      let currentLayout = currentLayout
+      // Especially needed to avoid duplicate transitions
+      guard !currentLayout.isInteractiveMode else { return }
+
+      log.verbose("Entering interactive mode: \(mode)")
+
+      // TODO: use key binding interceptor to support ESC and ENTER keys for interactive mode
+
+      if mode == .crop, let vf = player.info.cropFilter, let filterLabel = vf.label {
+        log.error("Crop mode requested, but found an existing crop filter (\(vf.stringFormat.quoted)). Will remove it before entering")
+        // A crop is already set. Need to temporarily remove it so that the whole video can be seen again,
+        // so that a new crop can be chosen. But keep info from the old filter in case the user cancels.
+        assert(vf.label == Constants.FilterLabel.crop, "Unexpected label for crop filter: \(vf.name.quoted)")
+        player.info.videoFiltersDisabled[filterLabel] = vf
+        if player.removeVideoFilter(vf) {
+          // We can expect to receive a new video-params from mpv asynchronously. Pick it up there.
+          // Will check whether there is a disabled crop filter there
+          return
+        } else {
+          log.error("Failed to remove prev crop filter: (\(vf.stringFormat.quoted)) for some reason. Will ignore and try to proceed anyway")
+        }
+      }
+      let newMode: WindowMode = currentLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
+      let interactiveModeLayout = currentLayout.spec.clone(mode: newMode, interactiveMode: mode)
+      let startDuration = IINAAnimation.CropAnimationDuration
+      let endDuration = currentLayout.mode == .fullScreen ? startDuration * 0.5 : startDuration
+      buildLayoutTransition(named: "EnterInteractiveMode", from: currentLayout, to: interactiveModeLayout,
+                            totalStartingDuration: startDuration, totalEndingDuration: endDuration,
+                            thenRun: true)
+    })
   }
 
   /// Use `immediately: true` to exit without animation.
   /// This method can be run safely even if not in interactive mode
   func exitInteractiveMode(immediately: Bool = false, then doAfter: (() -> Void)? = nil) {
-    let oldLayout = currentLayout
-    if !oldLayout.isInteractiveMode {
-      if let doAfter {
-        animationPipeline.submitZeroDuration({
+    animationPipeline.submitZeroDuration({ [self] in
+      let oldLayout = currentLayout
+      
+      if !oldLayout.isInteractiveMode {
+        if let doAfter {
           doAfter()
-        })
+        }
+        return
       }
-      return
-    }
 
-    let newMode: WindowMode = oldLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
-    log.verbose("Exiting interactive mode, newMode: \(newMode)")
-    let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
-    let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
-    let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
-                                           totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
+      let newMode: WindowMode = oldLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
+      log.verbose("Exiting interactive mode, newMode: \(newMode)")
+      let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
+      let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
+      let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
+                                             totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
 
-    var animationTasks = transition.animationTasks
-    if let doAfter {
-      animationTasks.append(IINAAnimation.Task({
-        doAfter()
-      }))
-    }
-    animationPipeline.submit(animationTasks)
+      var animationTasks = transition.animationTasks
+      if let doAfter {
+        animationTasks.append(IINAAnimation.Task({
+          doAfter()
+        }))
+      }
+      animationPipeline.submit(animationTasks)
+    })
   }
 
   // MARK: - UI: Thumbnail Preview

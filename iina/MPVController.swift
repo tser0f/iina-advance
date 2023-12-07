@@ -859,7 +859,7 @@ not applying FFmpeg 9599 workaround
     let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
     let aspectRatio = getString(MPVProperty.videoParamsAspect)
 
-    let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight, videoDisplayWidth: videoDisplayWidth, videoDisplayHeight: videoDisplayHeight, aspectRatio: aspectRatio, totalRotation: mpvParamRotate, userRotation: mpvVideoRotate)
+    let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight, aspectRatio: aspectRatio, videoDisplayWidth: videoDisplayWidth, videoDisplayHeight: videoDisplayHeight, totalRotation: mpvParamRotate, userRotation: mpvVideoRotate)
 
     return params
   }

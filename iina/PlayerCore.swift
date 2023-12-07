@@ -787,7 +787,19 @@ class PlayerCore: NSObject {
     mpv.setDouble(MPVOption.PlaybackControl.speed, speed)
   }
 
-  /// Set video's aspect ratio. Note that a video's aspect ratio is before rotation is applied.
+  /// Set video's aspect ratio. The param may be one of:
+  /// 1. Target aspect ratio. This came from user input, either from a button, menu, or text entry.
+  /// This can be either in colon notation (e.g., "16:10") or decimal ("2.333333").
+  /// 2. Actual aspect ratio (like `info.videoAspectRatio`, but that is applied *after* video rotation). After the target aspect
+  /// is applied to the raw video dimensions, the resulting dimensions must be rounded to their nearest integer values
+  /// (because of reasons). So when the aspect is recalculated from the new dimensions, the result may be slightly different.
+  ///
+  /// This method ensures that the following components are synced to the given aspect ratio:
+  /// 1. mpv `video-aspect-override` property
+  /// 2. Player window geometry / displayed video size
+  /// 3. Quick Settings controls & menu item checkmarks
+  ///
+  /// To hopefully avoid precision problems, `aspectNormalDecimalString` is used for comparisons across data sources.
   func setVideoAspect(_ aspect: String) {
     guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
@@ -822,13 +834,6 @@ class PlayerCore: NSObject {
       log.verbose("Aspect \(aspect.quoted) is -1 or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
     }
 
-    if info.videoAspectRatio.aspectNormalDecimalString != aspectNormalDecimalString {
-      log.verbose("Need to update geometry with new aspect ratio. Old: \(info.videoAspectRatio.aspectNormalDecimalString), New: \(aspectNormalDecimalString)")
-      DispatchQueue.main.async { [self] in
-        windowController.mpvVideoDidReconfig()
-      }
-    }
-
     if info.selectedAspectRatioLabel != aspectDisplay {
       info.selectedAspectRatioLabel = aspectDisplay
 
@@ -840,9 +845,12 @@ class PlayerCore: NSObject {
       sendOSD(.aspect(aspectDisplay))
     }
 
-    // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
-    // immediately changes the selection to "Default".
     DispatchQueue.main.async { [self] in
+      // Make sure window geometry is up to date
+      windowController.mpvVideoDidReconfig()
+      
+      // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
+      // immediately changes the selection to "Default".
       reloadQuickSettingsView()
     }
   }

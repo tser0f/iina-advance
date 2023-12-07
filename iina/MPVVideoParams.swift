@@ -10,7 +10,6 @@ import Foundation
 
 struct MPVVideoParams: CustomStringConvertible {
   /// Current video's native stored dimensions, before aspect correction applied.
-  /// In most cases `videoDisplayWidth` and `videoDisplayHeight` will be more useful.
   /// From the mpv manual:
   /// ```
   /// width, height
@@ -20,7 +19,29 @@ struct MPVVideoParams: CustomStringConvertible {
   let videoRawWidth: Int
   let videoRawHeight: Int
 
-  /// The video size, with aspect correction applied, but before scaling or rotation.
+  var videoRawSize: CGSize {
+    return CGSize(width: videoRawWidth, height: videoRawHeight)
+  }
+
+  /// Decimal number given by mpv with 6 digits after decimal.
+  /// When comparing to other aspect ratio, use only the first 2 digits after decimal.
+  let aspectRatio: String?
+
+  /// Same as `videoRawSize` but with aspect ratio override applied. If no aspect ratio override, then identical to `videoRawSize`.
+  var videoWithAspectOverrideSize: CGSize {
+    let videoRawSize = videoRawSize
+    let rawAspectDouble = videoRawSize.aspect
+    guard let aspectRatio, let aspectRatioDouble = Double(aspectRatio),
+            aspectRatioDouble.aspectNormalDecimalString != rawAspectDouble.aspectNormalDecimalString else {
+      return videoRawSize
+    }
+    if rawAspectDouble > aspectRatioDouble {
+      return CGSize(width: videoRawSize.width, height: round(videoRawSize.height * rawAspectDouble / aspectRatioDouble))
+    }
+    return CGSize(width: round(videoRawSize.width / rawAspectDouble * aspectRatioDouble), height: videoRawSize.height)
+  }
+
+  /// The video size, with aspect override, crop and other filters applied, but before rotation or final scaling.
   /// From the mpv manual:
   /// ```
   /// dwidth, dheight
@@ -32,22 +53,14 @@ struct MPVVideoParams: CustomStringConvertible {
   /// `dheight`:
   let videoDisplayHeight: Int
 
-  /// Decimal number given by mpv, for some reason with 6 digits after decimal.
-  /// When comparing to other aspect ratio, use only the first 2 digits after decimal.
-  let aspectRatio: String?
+  var videoDisplaySize: CGSize {
+    return CGSize(width: videoDisplayWidth, height: videoDisplayHeight)
+  }
 
   /// `MPVProperty.videoParamsRotate`:
   let totalRotation: Int
   /// `MPVProperty.videoRotate`:
   let userRotation: Int
-
-  var videoRawSize: CGSize {
-    return CGSize(width: videoRawWidth, height: videoRawHeight)
-  }
-
-  var videoDisplaySize: CGSize {
-    return CGSize(width: videoDisplayWidth, height: videoDisplayHeight)
-  }
 
   var isWidthSwappedWithHeightByRotation: Bool {
     // 90, 270, etc...
@@ -72,11 +85,6 @@ struct MPVVideoParams: CustomStringConvertible {
     }
   }
 
-  var videoDisplayRotatedAspect: CGFloat {
-    guard let videoDisplayRotatedSize else { return 1 }
-    return videoDisplayRotatedSize.aspect
-  }
-
   var videoDisplayRotatedSize: CGSize? {
     let drW = videoDisplayRotatedWidth
     let drH = videoDisplayRotatedHeight
@@ -85,6 +93,11 @@ struct MPVVideoParams: CustomStringConvertible {
       return nil
     }
       return CGSize(width: drW, height: drH)
+  }
+
+  var videoDisplayRotatedAspect: CGFloat {
+    guard let videoDisplayRotatedSize else { return 1 }
+    return videoDisplayRotatedSize.aspect
   }
 
   var description: String {
