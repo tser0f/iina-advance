@@ -853,13 +853,16 @@ not applying FFmpeg 9599 workaround
   func queryForVideoParams() -> MPVVideoParams {
     let videoRawWidth = getInt(MPVProperty.width)
     let videoRawHeight = getInt(MPVProperty.height)
+    let aspectRatio = getString(MPVProperty.videoParamsAspect)
     let videoDisplayWidth = getInt(MPVProperty.dwidth)
     let videoDisplayHeight = getInt(MPVProperty.dheight)
     let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
     let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
-    let aspectRatio = getString(MPVProperty.videoParamsAspect)
+    let windowScale = getDouble(MPVOption.Window.windowScale)
 
-    let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight, aspectRatio: aspectRatio, videoDisplayWidth: videoDisplayWidth, videoDisplayHeight: videoDisplayHeight, totalRotation: mpvParamRotate, userRotation: mpvVideoRotate)
+    let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight, aspectRatio: aspectRatio, 
+                                videoDisplayWidth: videoDisplayWidth, videoDisplayHeight: videoDisplayHeight,
+                                totalRotation: mpvParamRotate, userRotation: mpvVideoRotate, videoScale: windowScale)
 
     return params
   }
@@ -1380,16 +1383,18 @@ not applying FFmpeg 9599 workaround
 
     case MPVOption.Window.windowScale:
       guard player.windowController.loaded else { break }
-      let windowScale = getDouble(MPVOption.Window.windowScale)
-      let needsUpdate = fabs(windowScale - player.info.cachedWindowScale) > 10e-10
+      let videoParams = queryForVideoParams()
+      player.info.videoParams = videoParams
+      let videoScale = videoParams.videoScale
+      let needsUpdate = fabs(videoScale - player.info.cachedWindowScale) > 10e-10
       if needsUpdate {
-        player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale) → changed from cached (\(player.info.cachedWindowScale))")
+        player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(videoScale) → changed from cached (\(player.info.cachedWindowScale))")
         DispatchQueue.main.async {
-          self.player.windowController.setVideoScale(CGFloat(windowScale))
-          self.player.info.cachedWindowScale = windowScale
+          self.player.windowController.setVideoScale(CGFloat(videoScale))
+          self.player.info.cachedWindowScale = videoScale
         }
       } else {
-        player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(windowScale), but no change from cache")
+        player.log.verbose("Received mpv prop: \(MPVOption.Window.windowScale.quoted) ≔ \(videoScale), but no change from cache")
       }
 
     case MPVProperty.mediaTitle:

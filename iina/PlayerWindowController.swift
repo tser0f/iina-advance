@@ -2054,9 +2054,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       switch currentLayout.mode {
       case .windowed:
-        updateCachedGeometry()
-        // resize framebuffer in videoView after resizing.
-        player.updateMpvWindowScale()
+        updateCachedGeometry(updateMPVWindowScale: true)
         if currentLayout.oscPosition == .floating {
           updateFloatingOSCAfterWindowDidResize()
         }

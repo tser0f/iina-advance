@@ -867,31 +867,33 @@ class PlayerCore: NSObject {
     return nil
   }
 
-  func updateMpvWindowScale(withSize videoSize: CGSize? = nil) {
+  func updateMPVWindowScale(using newWindowGeo: PlayerWindowGeometry) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in resetViewsForModeTransition for details.
     guard !windowController.isClosing else { return }
 
-    log.verbose("UpdateWindowParametersForMPV called, videoSizeIsNil: \((videoSize == nil).yn)")
+    mpv.queue.async { [self] in
+      let videoSize = newWindowGeo.videoSize
+      let videoWidthScaled = videoSize.width
 
-    guard let videoWidth = info.videoParams?.videoDisplayRotatedWidth else {
-      log.debug("Skipping send to mpv windowScale; could not get width from videoDisplayRotatedSize")
-      return
-    }
-    guard videoWidth > 0 else {
-      log.debug("Skipping send to mpv windowScale; videoDisplayRotated width is \(videoWidth)")
-      return
-    }
+      let videoParams = mpv.queryForVideoParams()
+      info.videoParams = videoParams
+      // Need to factor out aspect override when comparing relative widths
+      let videoWidthUnscaled = videoParams.videoWithAspectOverrideSize.width
 
-    let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
-    let prevVideoScale = info.cachedWindowScale
-    if videoScale != prevVideoScale {
-      // Setting the window-scale property seems to result in a small hiccup during playback.
-      // Not sure if this is an mpv limitation
-      mpv.queue.async { [self] in
-        log.verbose("Sending windowScale update to mpv: \(info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : ", given videoSize \(videoSize!)")")
-        info.cachedWindowScale = videoScale
-        mpv.setDouble(MPVProperty.windowScale, videoScale)
+      guard videoWidthUnscaled > 0 else {
+        log.debug("Skipping update to mpv windowScale; videoWidthScaled is \(videoWidthScaled)")
+        return
+      }
+
+      let actualVideoScale = videoWidthScaled / videoWidthUnscaled // TODO: * crop
+      let prevVideoScale = videoParams.videoScale
+      if actualVideoScale != prevVideoScale {
+        // Setting the window-scale property seems to result in a small hiccup during playback.
+        // Not sure if this is an mpv limitation
+        log.verbose("Updating mpv window-scale, videoSize \(videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
+        info.cachedWindowScale = actualVideoScale
+        mpv.setDouble(MPVProperty.windowScale, actualVideoScale)
       }
     }
   }

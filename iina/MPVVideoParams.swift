@@ -8,6 +8,17 @@
 
 import Foundation
 
+/// `MPVVideoParams`: collection of metadata for the current video.Fetched from mpv.
+///
+/// Processing pipeline:
+/// `videoRawSize` (`videoRawWidth`, `videoRawHeight`)
+///   ➤ apply `aspectRatio`
+///     ➤ `videoWithAspectOverrideSize`
+///       ➤ apply crop
+///         ➤ `videoDisplaySize` (`videoDisplayWidth`, `videoDisplayHeight`)
+///           ➤ apply `totalRotation`
+///             ➤ `videoDisplayRotatedSize` (`videoDisplayRotatedWidth`, `videoDisplayRotatedHeight`)
+///               ➤ apply `videoScale`
 struct MPVVideoParams: CustomStringConvertible {
   /// Current video's native stored dimensions, before aspect correction applied.
   /// From the mpv manual:
@@ -19,6 +30,7 @@ struct MPVVideoParams: CustomStringConvertible {
   let videoRawWidth: Int
   let videoRawHeight: Int
 
+  /// The native size of the current video, before any filters, rotations, or other transformations applied
   var videoRawSize: CGSize {
     return CGSize(width: videoRawWidth, height: videoRawHeight)
   }
@@ -40,6 +52,8 @@ struct MPVVideoParams: CustomStringConvertible {
     }
     return CGSize(width: round(videoRawSize.width / rawAspectDouble * aspectRatioDouble), height: videoRawSize.height)
   }
+
+  // dVideo
 
   /// The video size, with aspect override, crop and other filters applied, but before rotation or final scaling.
   /// From the mpv manual:
@@ -67,6 +81,8 @@ struct MPVVideoParams: CustomStringConvertible {
     (totalRotation %% 180) != 0
   }
 
+  // drVideo
+
   /// Like `dwidth`, but after applying `userRotation`.
   var videoDisplayRotatedWidth: Int {
     if isWidthSwappedWithHeightByRotation {
@@ -76,7 +92,7 @@ struct MPVVideoParams: CustomStringConvertible {
     }
   }
 
-  /// Like `dheight`, but after applying `userRotation`.
+  /// Like `dheight`, but after applying `totalRotation`.
   var videoDisplayRotatedHeight: Int {
     if isWidthSwappedWithHeightByRotation {
       return videoDisplayWidth
@@ -85,6 +101,7 @@ struct MPVVideoParams: CustomStringConvertible {
     }
   }
 
+  /// Like `videoDisplaySize`, but after applying `totalRotation`.
   var videoDisplayRotatedSize: CGSize? {
     let drW = videoDisplayRotatedWidth
     let drH = videoDisplayRotatedHeight
@@ -100,7 +117,12 @@ struct MPVVideoParams: CustomStringConvertible {
     return videoDisplayRotatedSize.aspect
   }
 
+  /// `MPVProperty.windowScale`:
+  var videoScale: CGFloat
+
+  // Etc
+
   var description: String {
-    return "MPVVideoParams:{rawSize:\(videoRawWidth)x\(videoRawHeight), dSize:\(videoDisplayWidth)x\(videoDisplayHeight), rotTotal: \(totalRotation), rotUser: \(userRotation)}"
+    return "MPVVideoParams:{rawSize:\(videoRawWidth)x\(videoRawHeight), dSize:\(videoDisplayWidth)x\(videoDisplayHeight), rotTotal: \(totalRotation), rotUser: \(userRotation), scale: \(videoScale)}"
   }
 }

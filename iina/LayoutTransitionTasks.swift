@@ -915,8 +915,6 @@ extension PlayerWindowController {
         player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: true)
       }
 
-      player.updateMpvWindowScale()
-
       // Exit PIP if necessary
       if pipStatus == .inPIP,
          #available(macOS 10.12, *) {
@@ -950,7 +948,6 @@ extension PlayerWindowController {
       }
 
       resetCollectionBehavior()
-      player.updateMpvWindowScale()
 
       if transition.outputLayout.spec.isLegacyStyle {  // legacy windowed
         setWindowStyleToLegacy()
@@ -983,6 +980,10 @@ extension PlayerWindowController {
       }
 
       player.events.emit(.windowFullscreenChanged, data: false)
+    }
+
+    if transition.isTogglingFullScreen || transition.isTogglingMusicMode {
+      player.updateMPVWindowScale(using: transition.outputGeometry)
     }
 
     if transition.isExitingInteractiveMode {

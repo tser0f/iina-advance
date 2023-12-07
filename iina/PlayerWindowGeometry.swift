@@ -1020,7 +1020,7 @@ extension PlayerWindowController {
 
   /// Updates the appropriate in-memory cached geometry (based on the current window mode) using the current window & view frames.
   /// Param `updatePreferredSizeAlso` only applies to `.windowed` mode.
-  func updateCachedGeometry(updatePreferredSizeAlso: Bool = true) {
+  func updateCachedGeometry(updatePreferredSizeAlso: Bool = true, updateMPVWindowScale: Bool = false) {
     guard !currentLayout.isFullScreen, !player.info.isRestoring else {
       log.verbose("Not updating cached geometry: isFS=\(currentLayout.isFullScreen.yn), isRestoring=\(player.info.isRestoring)")
       return
@@ -1039,19 +1039,26 @@ extension PlayerWindowController {
       switch currentLayout.mode {
       case .windowed:
         windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
-        if updatePreferredSizeAlso {
-          player.info.setIntendedViewportSize(from: windowedModeGeometry)
+        if updateMPVWindowScale {
+          player.updateMPVWindowScale(using: windowedModeGeometry)
         }
         player.saveState()
       case .windowedInteractive:
         interactiveModeGeometry = InteractiveModeGeometry.from(buildWindowGeometryFromCurrentFrame(using: currentLayout))
+        if updateMPVWindowScale {
+          player.updateMPVWindowScale(using: interactiveModeGeometry!.toPlayerWindowGeometry())
+        }
       case .musicMode:
         musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame,
                                                     screenID: bestScreen.screenID)
+        if updateMPVWindowScale {
+          player.updateMPVWindowScale(using: musicModeGeometry.toPlayerWindowGeometry())
+        }
         player.saveState()
       case .fullScreen, .fullScreenInteractive:
-        break  // will never get here; see guard above
+        return  // will never get here; see guard above
       }
+
     })
   }
 
@@ -1321,8 +1328,8 @@ extension PlayerWindowController {
       windowedModeGeometry = newGeometry
       player.saveState()
 
-      log.verbose("Calling updateMpvWindowScale from applyWindowGeometry, videoSize: \(newGeometry.videoSize)")
-      player.updateMpvWindowScale()
+      log.verbose("Calling updateMPVWindowScale from applyWindowGeometry, videoSize: \(newGeometry.videoSize)")
+      player.updateMPVWindowScale(using: newGeometry)
     }))
   }
 
