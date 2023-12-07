@@ -2002,14 +2002,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func windowDidResize(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
     // Do not want to trigger this during layout transition. It will mess up the intended viewport size.
-    guard !isClosing, !isAnimatingLayoutTransition, !isMagnifying else { return }
+    guard !player.info.isRestoring, !isClosing, !isAnimatingLayoutTransition, !isMagnifying else { return }
 
     defer {
       updateCachedGeometry()
     }
 
     IINAAnimation.disableAnimation {
-      log.verbose("WindowDIDResize live=\(window.inLiveResize.yn) mode=\(currentLayout.mode) frame=\(window.frame)")
+      log.verbose("WindowDIDResize mode=\(currentLayout.mode) frame=\(window.frame)")
 
       switch currentLayout.mode {
       case .musicMode:
@@ -2047,7 +2047,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Do not use for most things! Use `windowDidResize` instead.
   func windowDidEndLiveResize(_ notification: Notification) {
     // Must not access mpv while it is asynchronously processing stop and quit commands. See comments in windowWillExitFullScreen for details.
-    guard !isClosing, !isAnimatingLayoutTransition, !isMagnifying else { return }
+    guard !isClosing, !isAnimating, !isMagnifying else { return }
 
     animationPipeline.submitZeroDuration({ [self] in
       log.verbose("WindowDidEndLiveResize mode: \(currentLayout.mode)")
@@ -2988,7 +2988,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       currentMediaThumbnails.currentDisplayedThumbFFTimestamp = ffThumbnail.timestamp
       // Apply crop first. Then aspect
       let croppedImage: NSImage
-      if let normalizedCropRect = player.getCurrentCropRect(normalized: true, flipY: false) {
+      if let videoRawSize = player.info.videoParams?.videoRawSize,
+         let normalizedCropRect = player.getCurrentCropRect(videoRawSize: videoRawSize, normalized: true, flipY: false) {
         croppedImage = rotatedImage.cropped(normalizedCropRect: normalizedCropRect)
       } else {
         croppedImage = rotatedImage

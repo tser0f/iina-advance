@@ -19,6 +19,7 @@ import Foundation
 ///           ➤ apply `totalRotation`
 ///             ➤ `videoDisplayRotatedSize` (`videoDisplayRotatedWidth`, `videoDisplayRotatedHeight`)
 ///               ➤ apply `videoScale`
+///                 ➤ `videoSize` (`PlayerWindowGeometry`)
 struct MPVVideoParams: CustomStringConvertible {
   /// Current video's native stored dimensions, before aspect correction applied.
   /// From the mpv manual:
@@ -109,7 +110,7 @@ struct MPVVideoParams: CustomStringConvertible {
       Logger.log("Failed to generate videoDisplayRotatedSize: dwidth or dheight not present!", level: .error)
       return nil
     }
-      return CGSize(width: drW, height: drH)
+    return CGSize(width: drW, height: drH)
   }
 
   var videoDisplayRotatedAspect: CGFloat {

@@ -60,6 +60,13 @@ extension PlayerWindowController {
       break
     }
 
+    if transition.outputLayout.mode != .windowedInteractive {
+      // Need to have these required almost always or else these often aren't honored during animations
+      videoView.widthConstraint.priority = .required
+      videoView.heightConstraint.priority = .required
+    }
+
+
     guard let window = window else { return }
 
     if transition.isEnteringFullScreen {
@@ -883,6 +890,12 @@ extension PlayerWindowController {
     resetFadeTimer()
 
     guard let window = window else { return }
+
+    if transition.outputLayout.mode == .windowedInteractive {
+      // Need to set the priorities to low, or else interactive mode window can't be resized
+      videoView.widthConstraint.priority = .defaultLow
+      videoView.heightConstraint.priority = .defaultLow
+    }
 
     if transition.isEnteringFullScreen {
       // Entered FullScreen

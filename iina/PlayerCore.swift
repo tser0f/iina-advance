@@ -867,37 +867,43 @@ class PlayerCore: NSObject {
     return nil
   }
 
-  func updateMPVWindowScale(using newWindowGeo: PlayerWindowGeometry) {
+  func updateMPVWindowScale(using windowGeo: PlayerWindowGeometry) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in resetViewsForModeTransition for details.
     guard !windowController.isClosing else { return }
 
     mpv.queue.async { [self] in
-      let videoSize = newWindowGeo.videoSize
-      let videoWidthScaled = videoSize.width
 
-      let videoParams = mpv.queryForVideoParams()
-      info.videoParams = videoParams
-      // Need to factor out aspect override when comparing relative widths
-      let videoWidthUnscaled = videoParams.videoWithAspectOverrideSize.width
-
-      guard videoWidthUnscaled > 0 else {
-        log.debug("Skipping update to mpv windowScale; videoWidthScaled is \(videoWidthScaled)")
+      guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
+        log.verbose("Skipping update to mpv window-scale")
         return
       }
+      let prevVideoScale = info.cachedWindowScale
 
-      let actualVideoScale = videoWidthScaled / videoWidthUnscaled // TODO: * crop
-      let prevVideoScale = videoParams.videoScale
-      if actualVideoScale != prevVideoScale {
+      if actualVideoScale != info.cachedWindowScale {
         // Setting the window-scale property seems to result in a small hiccup during playback.
         // Not sure if this is an mpv limitation
-        log.verbose("Updating mpv window-scale, videoSize \(videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
+        log.verbose("Updating mpv window-scale from videoSize \(windowGeo.videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
         info.cachedWindowScale = actualVideoScale
         mpv.setDouble(MPVProperty.windowScale, actualVideoScale)
       }
     }
   }
 
+  private func deriveVideoScale(from windowGeometry: PlayerWindowGeometry) -> CGFloat? {
+    let videoSize = windowGeometry.videoSize
+    var videoWidthScaled = videoSize.width
+
+    let videoParams = mpv.queryForVideoParams()
+    info.videoParams = videoParams
+    // This should take into account aspect override and/or crop already
+    guard let videoWidthUnscaled = videoParams.videoDisplayRotatedSize?.width else {
+      return nil
+    }
+
+    var videoScale = videoWidthScaled / videoWidthUnscaled
+    return videoScale
+  }
 
   func setVideoRotate(_ degree: Int) {
     guard AppData.rotations.firstIndex(of: degree)! >= 0 else {
@@ -1168,16 +1174,14 @@ class PlayerCore: NSObject {
     return chapter
   }
 
-  func getCurrentCropRect(normalized: Bool = false, flipY: Bool = false) -> NSRect? {
-    let videoParams = mpv.queryForVideoParams()
-    guard videoParams.videoRawWidth > 0 && videoParams.videoRawHeight > 0 else { return nil }
-    let rawSize = videoParams.videoRawSize
+  func getCurrentCropRect(videoRawSize: NSSize, normalized: Bool = false, flipY: Bool = false) -> NSRect? {
+    guard videoRawSize.width > 0 && videoRawSize.height > 0 else { return nil }
 
     let cropRect: NSRect
     if let cropFilter = info.cropFilter {
-      cropRect = cropFilter.cropRect(origVideoSize: videoParams.videoRawSize, flipY: flipY)
+      cropRect = cropFilter.cropRect(origVideoSize: videoRawSize, flipY: flipY)
     } else if let prevCropFilter = info.videoFiltersDisabled[Constants.FilterLabel.crop] {
-      cropRect = prevCropFilter.cropRect(origVideoSize: videoParams.videoRawSize, flipY: flipY)
+      cropRect = prevCropFilter.cropRect(origVideoSize: videoRawSize, flipY: flipY)
     } else {
       return nil
     }
@@ -1186,10 +1190,10 @@ class PlayerCore: NSObject {
       return cropRect
     }
 
-    let xNorm = cropRect.origin.x / rawSize.width
-    let yNorm = cropRect.origin.y / rawSize.height
-    let widthNorm = cropRect.width / rawSize.width
-    let heightNorm = cropRect.height / rawSize.height
+    let xNorm = cropRect.origin.x / videoRawSize.width
+    let yNorm = cropRect.origin.y / videoRawSize.height
+    let widthNorm = cropRect.width / videoRawSize.width
+    let heightNorm = cropRect.height / videoRawSize.height
     let normRect = NSRect(x: xNorm, y: yNorm, width: widthNorm, height: heightNorm)
     log.verbose("Normalized cropRect \(cropRect) → \(normRect)")
     return normRect
@@ -1208,9 +1212,11 @@ class PlayerCore: NSObject {
         return
       }
     } else {
-      Logger.log("Requested crop string is invalid: \(str.quoted)", level: .error, subsystem: subsystem)
+      if str != AppData.cropNone {
+        log.error("Requested crop string is invalid: \(str.quoted)")
+      }
       if let filter = info.cropFilter {
-        Logger.log("Setting crop to \("None".quoted) and removing crop filter", level: .verbose, subsystem: subsystem)
+        log.verbose("Setting crop to \(AppData.cropNone.quoted) and removing crop filter")
         removeVideoFilter(filter)
         updateCropUI(to: AppData.cropNone)
       }
