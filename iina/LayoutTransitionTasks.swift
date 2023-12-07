@@ -389,6 +389,7 @@ extension PlayerWindowController {
       for view in [fragVolumeView, fragToolbarView, fragPlaybackControlButtonsView] {
         view?.removeFromSuperview()
       }
+      removeToolBar()
     }
 
     if !outputLayout.enableOSC && !outputLayout.isMusicMode {
@@ -454,7 +455,6 @@ extension PlayerWindowController {
 
         let toolbarView = rebuildToolbar(iconSize: oscFloatingToolbarButtonIconSize, iconPadding: oscFloatingToolbarButtonIconPadding)
         oscFloatingUpperView.addView(toolbarView, in: .trailing)
-        fragToolbarView = toolbarView
         oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
 
         playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
@@ -915,7 +915,7 @@ extension PlayerWindowController {
         player.touchBarSupport.toggleTouchBarEsc(enteringFullScr: true)
       }
 
-      updateWindowParametersForMPV()
+      player.updateMpvWindowScale()
 
       // Exit PIP if necessary
       if pipStatus == .inPIP,
@@ -950,7 +950,7 @@ extension PlayerWindowController {
       }
 
       resetCollectionBehavior()
-      updateWindowParametersForMPV()
+      player.updateMpvWindowScale()
 
       if transition.outputLayout.spec.isLegacyStyle {  // legacy windowed
         setWindowStyleToLegacy()
@@ -1282,7 +1282,6 @@ extension PlayerWindowController {
 
     let toolbarView = rebuildToolbar(iconSize: toolbarIconSize, iconPadding: toolbarIconSpacing)
     containerView.addView(toolbarView, in: .leading)
-    fragToolbarView = toolbarView
 
     containerView.setClippingResistancePriority(.defaultLow, for: .horizontal)
     containerView.setVisibilityPriority(.mustHold, for: fragPositionSliderView)
@@ -1308,12 +1307,9 @@ extension PlayerWindowController {
       button.action = #selector(self.toolBarButtonAction(_:))
       toolButtons.append(button)
     }
+    
+    removeToolBar()
 
-    if let stackView = fragToolbarView {
-      stackView.views.forEach { stackView.removeView($0) }
-      stackView.removeFromSuperview()
-      fragToolbarView = nil
-    }
     let toolbarView = ClickThroughStackView()
     toolbarView.orientation = .horizontal
     toolbarView.distribution = .gravityAreas
@@ -1321,6 +1317,7 @@ extension PlayerWindowController {
       toolbarView.addView(button, in: .trailing)
       toolbarView.setVisibilityPriority(.detachOnlyIfNecessary, for: button)
     }
+    fragToolbarView = toolbarView
 
     // FIXME: this causes a crash due to conflicting constraints. Need to rewrite layout for toolbar button spacing!
     // It's not possible to control the icon padding from inside the buttons in all cases.
@@ -1333,6 +1330,15 @@ extension PlayerWindowController {
     //      Logger.log("Toolbar spacing: \(toolbarView.spacing), edgeInsets: \(toolbarView.edgeInsets)", level: .verbose, subsystem: player.subsystem)
     //    }
     return toolbarView
+  }
+
+  // Looks like in some cases, the toolbar doesn't disappear unless all its buttons are also removed
+  private func removeToolBar() {
+    guard let toolBarStackView = fragToolbarView else { return }
+
+    toolBarStackView.views.forEach { toolBarStackView.removeView($0) }
+    toolBarStackView.removeFromSuperview()
+    fragToolbarView = nil
   }
 
   // MARK: - Misc support functions
@@ -1352,7 +1358,7 @@ extension PlayerWindowController {
     switch currentLayout.spec.interactiveMode {
     case .crop:
       if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
-        selectedRect = prevCropFilter.cropRect(origVideoSize: origVideoSize, flipYForMac: true)
+        selectedRect = prevCropFilter.cropRect(origVideoSize: origVideoSize, flipY: true)
         log.verbose("Setting crop box selection from prevFilter: \(selectedRect)")
       } else {
         selectedRect = NSRect(origin: .zero, size: origVideoSize)

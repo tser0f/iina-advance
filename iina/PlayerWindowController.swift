@@ -2056,7 +2056,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       case .windowed:
         updateCachedGeometry()
         // resize framebuffer in videoView after resizing.
-        updateWindowParametersForMPV()
+        player.updateMpvWindowScale()
         if currentLayout.oscPosition == .floating {
           updateFloatingOSCAfterWindowDidResize()
         }
@@ -2833,7 +2833,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func exitInteractiveMode(immediately: Bool = false, then doAfter: (() -> Void)? = nil) {
     animationPipeline.submitZeroDuration({ [self] in
       let oldLayout = currentLayout
-      
+
       if !oldLayout.isInteractiveMode {
         if let doAfter {
           doAfter()
@@ -2985,10 +2985,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     thumbWidth = round(thumbWidth)
     thumbHeight = round(thumbHeight)
 
-    // Rotating and scaling are expensive operations, so reuse the last image if no change is needed
-    if currentMediaThumbnails.lastThumbFFTimestamp != ffThumbnail.timestamp {
-      currentMediaThumbnails.lastThumbFFTimestamp = ffThumbnail.timestamp
-      let finalImage = rotatedImage.resized(newWidth: Int(thumbWidth), newHeight: Int(thumbHeight))
+    // Scaling is a potentially expensive operation, so reuse the last image if no change is needed
+    if currentMediaThumbnails.currentDisplayedThumbFFTimestamp != ffThumbnail.timestamp {
+      currentMediaThumbnails.currentDisplayedThumbFFTimestamp = ffThumbnail.timestamp
+      // Apply crop first. Then aspect
+      let croppedImage: NSImage
+      if let normalizedCropRect = player.getCurrentCropRect(normalized: true, flipY: false) {
+        croppedImage = rotatedImage.cropped(normalizedCropRect: normalizedCropRect)
+      } else {
+        croppedImage = rotatedImage
+      }
+      let finalImage = croppedImage.resized(newWidth: Int(thumbWidth), newHeight: Int(thumbHeight))
       thumbnailPeekView.imageView.image = finalImage
       thumbnailPeekView.frame.size = finalImage.size
     }
@@ -3021,7 +3028,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     thumbnailPeekView.refreshBorderStyle()
 
-//      log.verbose("Displaying thumbnail: \(thumbnailSize.width) W x \(thumbnailSize.height) H \(showAbove ? "above" : "below") OSC")
+    log.verbose("Displaying thumbnail \(showAbove ? "above" : "below") OSC, size \(thumbnailPeekView.frame.size)")
     thumbnailPeekView.isHidden = false
   }
 
@@ -3037,35 +3044,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       bufferDetailLabel.stringValue = ""
     } else {
       bufferIndicatorView.isHidden = true
-    }
-  }
-
-  func updateWindowParametersForMPV(withSize videoSize: CGSize? = nil) {
-    // Must not access mpv while it is asynchronously processing stop and quit commands.
-    // See comments in resetViewsForModeTransition for details.
-    guard !isClosing else { return }
-
-    log.verbose("UpdateWindowParametersForMPV called, videoSizeIsNil: \((videoSize == nil).yn)")
-
-    guard let videoWidth = player.info.videoParams?.videoDisplayRotatedWidth else {
-      log.debug("Skipping send to mpv windowScale; could not get width from videoDisplayRotatedSize")
-      return
-    }
-    guard videoWidth > 0 else {
-      log.debug("Skipping send to mpv windowScale; videoDisplayRotated width is \(videoWidth)")
-      return
-    }
-
-    let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
-    let prevVideoScale = player.info.cachedWindowScale
-    if videoScale != prevVideoScale {
-      // Setting the window-scale property seems to result in a small hiccup during playback.
-      // Not sure if this is an mpv limitation
-      player.mpv.queue.async { [self] in
-        log.verbose("Sending windowScale update to mpv: \(player.info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : ", given videoSize \(videoSize!)")")
-        player.info.cachedWindowScale = videoScale
-        player.mpv.setDouble(MPVProperty.windowScale, videoScale)
-      }
     }
   }
 

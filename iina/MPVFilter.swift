@@ -258,7 +258,7 @@ class MPVFilter: NSObject {
   // MARK: - Param getter
 
   // Returns in mpv coords!
-  func cropRect(origVideoSize: NSSize, flipYForMac: Bool = false) -> NSRect {
+  func cropRect(origVideoSize: NSSize, flipY: Bool = false) -> NSRect {
     guard label == Constants.FilterLabel.crop else {
       Logger.fatal("Trying to get crop params from a non-crop filter! (\(label.debugDescription))")
     }
@@ -279,7 +279,7 @@ class MPVFilter: NSObject {
       y = (origVideoSize.height - h) * 0.5
     }
 
-    if flipYForMac {
+    if flipY {
       y = origVideoSize.height - (y + h)
     }
     return NSRect(x: x, y: y, width: w, height: h)

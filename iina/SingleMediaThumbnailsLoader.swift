@@ -24,7 +24,7 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
   var thumbnailsProgress: Double = 0
   var ffThumbnails: [FFThumbnail] = []
   var thumbnails: [Thumbnail] = []
-  var lastThumbFFTimestamp: Double = -1
+  var currentDisplayedThumbFFTimestamp: Double = -1
 
   lazy var ffmpegController: FFmpegController = {
     let controller = FFmpegController()

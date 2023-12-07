@@ -706,7 +706,7 @@ extension PlayerWindowController {
     guard let screen = window?.screen else { return }
 
     if isInInteractiveMode, let cropController = self.cropSettingsView, cropController.cropBoxView.didSubmit {
-      /// Interactive mode after sumbit: finish crop submission and exit
+      /// Interactive mode after submit: finish crop submission and exit
       cropController.cropBoxView.didSubmit = false
       let originalVideoSize = cropController.cropBoxView.actualSize
       let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
@@ -756,7 +756,7 @@ extension PlayerWindowController {
         return
       }
 
-      let prevCropRect = prevCrop.cropRect(origVideoSize: videoDisplayRotatedSize, flipYForMac: true)
+      let prevCropRect = prevCrop.cropRect(origVideoSize: videoDisplayRotatedSize, flipY: true)
       log.verbose("[MPVVideoReconfig] Found a disabled crop filter: \(prevCrop.stringFormat.quoted). Will enter interactive crop.")
       log.verbose("[MPVVideoReconfig] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropRect: \(prevCropRect)")
 
@@ -1321,8 +1321,8 @@ extension PlayerWindowController {
       windowedModeGeometry = newGeometry
       player.saveState()
 
-      log.verbose("Calling updateWinParamsForMPV from apply() with videoSize: \(newGeometry.videoSize)")
-      updateWindowParametersForMPV(withSize: newGeometry.videoSize)
+      log.verbose("Calling updateMpvWindowScale from applyWindowGeometry, videoSize: \(newGeometry.videoSize)")
+      player.updateMpvWindowScale()
     }))
   }
 

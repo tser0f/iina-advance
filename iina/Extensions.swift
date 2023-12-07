@@ -789,6 +789,16 @@ extension NSImage {
     return CGAffineTransformConcat(t, CGAffineTransformMakeTranslation(rect.size.width*0.5, rect.size.height*0.5))
   }
 
+  func cropped(normalizedCropRect: NSRect) -> NSImage {
+    let cropOrigin = NSPoint(x: round(size.width * normalizedCropRect.origin.x), y: round(size.height * normalizedCropRect.origin.y))
+    let cropSize = NSSize(width: round(size.width * normalizedCropRect.size.width), height: round(size.height * normalizedCropRect.size.height))
+    let cropRect = CGRect(origin: cropOrigin, size: cropSize)
+
+    Logger.log("Cropping image size \(size) using cropRect \(cropRect)", level: .verbose)
+    let croppedImage = self.cgImage!.cropping(to: cropRect)!
+    return NSImage(cgImage: croppedImage, size: cropSize)
+  }
+
   func resized(newWidth: Int, newHeight: Int) -> NSImage {
     guard CGFloat(newWidth) != self.size.width || CGFloat(newHeight) != self.size.height else {
       return self

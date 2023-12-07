@@ -848,7 +848,7 @@ class PlayerCore: NSObject {
     DispatchQueue.main.async { [self] in
       // Make sure window geometry is up to date
       windowController.mpvVideoDidReconfig()
-      
+
       // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
       // immediately changes the selection to "Default".
       reloadQuickSettingsView()
@@ -866,6 +866,36 @@ class PlayerCore: NSObject {
     // Not found
     return nil
   }
+
+  func updateMpvWindowScale(withSize videoSize: CGSize? = nil) {
+    // Must not access mpv while it is asynchronously processing stop and quit commands.
+    // See comments in resetViewsForModeTransition for details.
+    guard !windowController.isClosing else { return }
+
+    log.verbose("UpdateWindowParametersForMPV called, videoSizeIsNil: \((videoSize == nil).yn)")
+
+    guard let videoWidth = info.videoParams?.videoDisplayRotatedWidth else {
+      log.debug("Skipping send to mpv windowScale; could not get width from videoDisplayRotatedSize")
+      return
+    }
+    guard videoWidth > 0 else {
+      log.debug("Skipping send to mpv windowScale; videoDisplayRotated width is \(videoWidth)")
+      return
+    }
+
+    let videoScale = Double((videoSize ?? videoView.frame.size).width) / Double(videoWidth)
+    let prevVideoScale = info.cachedWindowScale
+    if videoScale != prevVideoScale {
+      // Setting the window-scale property seems to result in a small hiccup during playback.
+      // Not sure if this is an mpv limitation
+      mpv.queue.async { [self] in
+        log.verbose("Sending windowScale update to mpv: \(info.cachedWindowScale) → \(videoScale)\(videoSize == nil ? "" : ", given videoSize \(videoSize!)")")
+        info.cachedWindowScale = videoScale
+        mpv.setDouble(MPVProperty.windowScale, videoScale)
+      }
+    }
+  }
+
 
   func setVideoRotate(_ degree: Int) {
     guard AppData.rotations.firstIndex(of: degree)! >= 0 else {
@@ -1134,6 +1164,33 @@ class PlayerCore: NSObject {
     mpv.command(.seek, args: ["\(chapter.time.second)", "absolute"])
     resume()
     return chapter
+  }
+
+  func getCurrentCropRect(normalized: Bool = false, flipY: Bool = false) -> NSRect? {
+    let videoParams = mpv.queryForVideoParams()
+    guard videoParams.videoRawWidth > 0 && videoParams.videoRawHeight > 0 else { return nil }
+    let rawSize = videoParams.videoRawSize
+
+    let cropRect: NSRect
+    if let cropFilter = info.cropFilter {
+      cropRect = cropFilter.cropRect(origVideoSize: videoParams.videoRawSize, flipY: flipY)
+    } else if let prevCropFilter = info.videoFiltersDisabled[Constants.FilterLabel.crop] {
+      cropRect = prevCropFilter.cropRect(origVideoSize: videoParams.videoRawSize, flipY: flipY)
+    } else {
+      return nil
+    }
+
+    if !normalized {
+      return cropRect
+    }
+
+    let xNorm = cropRect.origin.x / rawSize.width
+    let yNorm = cropRect.origin.y / rawSize.height
+    let widthNorm = cropRect.width / rawSize.width
+    let heightNorm = cropRect.height / rawSize.height
+    let normRect = NSRect(x: xNorm, y: yNorm, width: widthNorm, height: heightNorm)
+    log.verbose("Normalized cropRect \(cropRect) → \(normRect)")
+    return normRect
   }
 
   func setCrop(fromString str: String) {
