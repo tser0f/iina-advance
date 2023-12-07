@@ -60,10 +60,11 @@ extension PlayerWindowController {
       break
     }
 
-    if transition.outputLayout.mode != .windowedInteractive {
+    if transition.inputLayout.mode == .windowedInteractive && transition.outputLayout.mode != .windowedInteractive {
       // Need to have these required almost always or else these often aren't honored during animations
       videoView.widthConstraint.priority = .required
       videoView.heightConstraint.priority = .required
+      videoView.layoutSubtreeIfNeeded()
     }
 
 
@@ -326,7 +327,8 @@ extension PlayerWindowController {
     if transition.isTogglingLegacyStyle {
       forceDraw()
     }
-    window.contentView?.layoutSubtreeIfNeeded()
+    // Need this to prevent flicker when closing leading sidebar
+    videoView.layoutSubtreeIfNeeded()
   }
 
   /// -------------------------------------------------
@@ -891,7 +893,7 @@ extension PlayerWindowController {
 
     guard let window = window else { return }
 
-    if transition.outputLayout.mode == .windowedInteractive {
+    if transition.inputLayout.mode != .windowedInteractive && transition.outputLayout.mode == .windowedInteractive {
       // Need to set the priorities to low, or else interactive mode window can't be resized
       videoView.widthConstraint.priority = .defaultLow
       videoView.heightConstraint.priority = .defaultLow

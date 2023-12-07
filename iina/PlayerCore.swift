@@ -810,19 +810,16 @@ class PlayerCore: NSObject {
       log.verbose("Cannot set requested aspect: videoParams not available")
       return
     }
-    let videoDefaultAspectNumString = videoParams.videoRawSize.aspect.aspectNormalDecimalString
 
     let aspectDisplay: String
-    let aspectNormalDecimalString: String
-    if let colonBasedAspect = Aspect(string: aspect), colonBasedAspect.value.aspectNormalDecimalString != videoDefaultAspectNumString {
+    if let colonBasedAspect = Aspect(string: aspect) {
       // Aspect is in colon notation (X:Y)
       aspectDisplay = aspect
-      aspectNormalDecimalString = colonBasedAspect.value.aspectNormalDecimalString
-    } else if let aspectDouble = Double(aspect), aspectDouble >= 0, aspectDouble.aspectNormalDecimalString != videoDefaultAspectNumString {
+    } else if let aspectDouble = Double(aspect), aspectDouble > 0 {
       /// Aspect is a decimal number, but is not default (`-1` or video default)
       /// Try to match to known aspect by comparing their decimal values to the new aspect.
       /// Note that mpv seems to do its calculations to only 2 decimal places of precision, so use that for comparison.
-      aspectNormalDecimalString = aspectDouble.aspectNormalDecimalString
+      let aspectNormalDecimalString = aspectDouble.aspectNormalDecimalString
       if let knownAspectRatio = findLabelForAspectRatio(aspectDouble) {
         aspectDisplay = knownAspectRatio
       } else {
@@ -830,8 +827,7 @@ class PlayerCore: NSObject {
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
-      aspectNormalDecimalString = videoDefaultAspectNumString
-      log.verbose("Aspect \(aspect.quoted) is -1 or matches default (\(videoDefaultAspectNumString.quoted)). Setting aspectRatio to \(aspectDisplay.quoted)")
+      log.verbose("Aspect \(aspect.quoted) is -1, default, or unrecognized. Setting aspectRatio to \(aspectDisplay.quoted)")
     }
 
     if info.selectedAspectRatioLabel != aspectDisplay {
@@ -1757,7 +1753,7 @@ class PlayerCore: NSObject {
   }
 
   func playbackRestarted() {
-    log.debug("Playback restarted")
+    log.debug("Playback restarted (justStartedFile: \(info.justStartedFile))")
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     info.isIdle = false
     info.isSeeking = false
@@ -1777,7 +1773,7 @@ class PlayerCore: NSObject {
 
     // Update art & aspect *before* switching to/from music mode for more pleasant animation
     if audioStatus == .isAudio || !info.isVideoTrackSelected {
-      log.verbose("Media has no audio track or no video track is selected")
+      log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
       windowController.refreshAlbumArtDisplay()
     }
 
