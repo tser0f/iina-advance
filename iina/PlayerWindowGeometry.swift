@@ -1087,6 +1087,7 @@ extension PlayerWindowController {
 
   /// Encapsulates logic for `windowWillResize`, but specfically for windowed modes
   func resizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> PlayerWindowGeometry {
+    let currentLayout = currentLayout
     assert(currentLayout.isWindowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
     let currentGeo: PlayerWindowGeometry
     switch currentLayout.spec.mode {
@@ -1260,8 +1261,8 @@ extension PlayerWindowController {
   /// For screens that contain a camera housing the content view will be adjusted to not use that area of the screen.
   func applyLegacyFullScreenGeometry(_ geometry: PlayerWindowGeometry) {
     guard let window = window else { return }
-    let layout = currentLayout
-    if !layout.isInteractiveMode {
+    let currentLayout = currentLayout
+    if !currentLayout.isInteractiveMode {
       videoView.apply(geometry)
     }
     guard !geometry.windowFrame.equalTo(window.frame) else {
@@ -1276,8 +1277,8 @@ extension PlayerWindowController {
 
     log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")
     player.window.setFrameImmediately(geometry.windowFrame)
-    let topBarHeight = layout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
-    updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
+    let topBarHeight = currentLayout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
+    updateTopBarHeight(to: topBarHeight, topBarPlacement: currentLayout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
   }
 
   /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
@@ -1365,20 +1366,24 @@ extension PlayerWindowController {
   }
 
   /// Updates the current window and its subviews to match the given `MusicModeGeometry`, and caches it.
-  func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
+  @discardableResult
+  func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) -> MusicModeGeometry {
     let geometry = geometry.refit()  // enforces internal constraints, and constrains to screen
     log.verbose("Applying \(geometry), setFrame=\(setFrame.yn) updateCache=\(updateCache.yn)")
+
+    videoView.videoLayer.enterAsynchronousMode()
+
     // Update defaults:
     Preference.set(geometry.isVideoVisible, for: .musicModeShowAlbumArt)
     Preference.set(geometry.isPlaylistVisible, for: .musicModeShowPlaylist)
 
     player.info.videoAspectRatio = geometry.videoAspectRatio
 
-    videoView.videoLayer.enterAsynchronousMode()
     updateMusicModeButtonsVisibility()
 
     /// Try to detect & remove unnecessary constraint updates - `updateBottomBarHeight()` may cause animation glitches if called twice
-    let hasVideoVisChange = geometry.isVideoVisible == (viewportViewHeightContraint?.isActive ?? false)
+    let isVideoVisible = !(viewportViewHeightContraint?.isActive ?? false)
+    let hasVideoVisChange = geometry.isVideoVisible != isVideoVisible
     var hasChange: Bool = !geometry.windowFrame.equalTo(window!.frame) || hasVideoVisChange
     if let newVideoSize = geometry.videoSize, let currentVideoSize = videoView.lastSetVideoSize,
        !newVideoSize.equalTo(currentVideoSize) {
@@ -1408,6 +1413,8 @@ extension PlayerWindowController {
     animationPipeline.submitZeroDuration({ [self] in
       viewportBottomOffsetFromContentViewBottomConstraint.isActive = !shouldDisableConstraint
     })
+
+    return geometry
   }
 
 }

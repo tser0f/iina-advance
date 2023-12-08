@@ -293,6 +293,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   @IBAction func togglePlaylist(_ sender: Any) {
+    windowController.animationPipeline.submitZeroDuration({ [self] in
+      doTogglePlaylist()
+    })
+  }
+
+  private func doTogglePlaylist() {
     guard let window = windowController.window, let oldGeometry = windowController.musicModeGeometry else { return }
     let showPlaylist = !isPlaylistVisible
     log.verbose("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)")
@@ -329,6 +335,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
+    windowController.animationPipeline.submitZeroDuration({ [self] in
+      doToggleVideoView()
+    })
+  }
+
+  private func doToggleVideoView() {
     let showVideo = !isVideoVisible
     log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
 
@@ -361,8 +373,10 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       }
     })
 
-    log.verbose("VideoView setting videoViewVisible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
-    windowController.applyMusicModeGeometryInAnimationTask(newGeometry)
+    tasks.append(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
+      log.verbose("VideoView setting videoViewVisible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
+      windowController.applyMusicModeGeometry(newGeometry)
+    }))
 
     tasks.append(IINAAnimation.Task{ [self] in
       player.enableOSD = true
@@ -396,10 +410,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
 
     let requestedWindowFrame = NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize)
-    let newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame).refit()
+    var newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
     IINAAnimation.disableAnimation{
+      // FIXME: this is super jittery when resizing via the bottom of the window. Possible imprecision?
       /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
-      windowController.applyMusicModeGeometry(newGeometry, setFrame: false, updateCache: false)
+      newGeometry = windowController.applyMusicModeGeometry(newGeometry, setFrame: false, animate: false, updateCache: false)
     }
 
     return newGeometry.windowFrame.size
