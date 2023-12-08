@@ -821,7 +821,7 @@ struct PlayerSaveState {
     }
 
     if let videoAspect = string(for: .videoAspect) {
-      player.setVideoAspect(videoAspect)
+      player.setVideoAspectOverride(videoAspect)
     }
 
     if let audioFilters = string(for: .audioFilters) {

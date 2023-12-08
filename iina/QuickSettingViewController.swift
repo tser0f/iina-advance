@@ -570,7 +570,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   @IBAction func aspectChangedAction(_ sender: NSSegmentedControl) {
     let aspect = AppData.aspectsInPanel[sender.selectedSegment]
-    player.setVideoAspect(aspect)
+    player.setVideoAspectOverride(aspect)
   }
 
   @IBAction func cropChangedAction(_ sender: NSSegmentedControl) {
@@ -596,7 +596,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBAction func customAspectEditFinishedAction(_ sender: AnyObject?) {
     let value = customAspectTextField.stringValue
     if value != "" {
-      player.setVideoAspect(value)
+      player.setVideoAspectOverride(value)
     }
   }
 

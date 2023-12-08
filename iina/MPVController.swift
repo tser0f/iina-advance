@@ -1361,7 +1361,7 @@ not applying FFmpeg 9599 workaround
       guard player.windowController.loaded, !player.isShuttingDown else { break }
       guard let aspect = getString(MPVOption.Video.videoAspectOverride) else { break }
       player.log.verbose("Received mpv prop: \(MPVOption.Video.videoAspectOverride.quoted) = \(aspect.quoted)")
-      player.setVideoAspect(aspect)
+      player.setVideoAspectOverride(aspect)
 
     case MPVOption.Window.fullscreen:
       let fs = getFlag(MPVOption.Window.fullscreen)

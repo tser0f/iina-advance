@@ -176,7 +176,7 @@ extension PlayerWindowController {
   @objc func menuChangeAspect(_ sender: NSMenuItem) {
     if let aspectStr = sender.representedObject as? String {
       player.log.verbose("Setting aspect ratio from menu item: \(aspectStr)")
-      player.setVideoAspect(aspectStr)
+      player.setVideoAspectOverride(aspectStr)
     } else {
       player.log.error("Unknown aspect in menuChangeAspect(): \(sender.representedObject.debugDescription)")
     }

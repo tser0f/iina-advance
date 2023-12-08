@@ -704,6 +704,7 @@ extension PlayerWindowController {
       pip.aspectRatio = videoDisplayRotatedSize
     }
     guard let screen = window?.screen else { return }
+    let currentLayout = currentLayout
 
     if isInInteractiveMode, let cropController = self.cropSettingsView, cropController.cropBoxView.didSubmit {
       /// Interactive mode after submit: finish crop submission and exit
@@ -764,19 +765,21 @@ extension PlayerWindowController {
       animationPipeline.submit(IINAAnimation.Task({ [self] in
         let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropRect,
                                                                     videoScale: player.info.cachedWindowScale)
-        // Update the cached objects
+        // Update the cached objects even if not in windowed mode
         player.info.videoAspectRatio = uncroppedWindowedGeo.videoAspectRatio
         windowedModeGeometry = uncroppedWindowedGeo
 
-        if currentLayout.isFullScreen {
+        if currentLayout.mode == .fullScreen {
           let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: uncroppedWindowedGeo.videoAspectRatio)
           videoView.apply(fsInteractiveModeGeo)
           interactiveModeGeometry = InteractiveModeGeometry.from(fsInteractiveModeGeo)
           forceDraw()
-        } else {
+          enterInteractiveMode(.crop)
+
+        } else if currentLayout.mode == .windowed {
           applyWindowGeometry(uncroppedWindowedGeo)
+          enterInteractiveMode(.crop)
         }
-        enterInteractiveMode(.crop)
       }))
 
     } else if player.info.isRestoring {
@@ -822,9 +825,14 @@ extension PlayerWindowController {
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
 
-      /// Finally call `setFrame()`
-      log.debug("[MPVVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-      applyWindowGeometry(newWindowGeo)
+      if currentLayout.mode == .windowed {
+        /// Finally call `setFrame()`
+        log.debug("[MPVVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
+        applyWindowGeometry(newWindowGeo)
+      } else {
+        // Update this for later use if not currently in windowed mode
+        windowedModeGeometry = newWindowGeo
+      }
 
       // UI and slider
       player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
@@ -1290,43 +1298,46 @@ extension PlayerWindowController {
         return
       }
       log.verbose("Applying geoUpdate \(ticket)")
-
-      if currentLayout.mode == .windowed && !isWindowHidden {
-        player.window.setFrameImmediately(newGeometry.windowFrame)
-      }
-
+      let currentLayout = currentLayout
       switch currentLayout.spec.mode {
-      case .musicMode:
-        log.error("ApplyWindowGeometry cannot be used in music mode!")
-        return
+
+      case .musicMode, .windowedInteractive, .fullScreenInteractive:
+        log.error("ApplyWindowGeometry is not used for \(currentLayout.spec.mode) mode")
+
       case .fullScreen:
         // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
         let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID, 
                                                           videoAspectRatio: newGeometry.videoAspectRatio)
         videoView.apply(fsGeo)
+        log.verbose("Calling updateMPVWindowScale from applyWindowGeometry (FS) videoSize: \(newGeometry.videoSize)")
+        player.updateMPVWindowScale(using: fsGeo)
 
       case .windowed:
+        if !isWindowHidden {
+          player.window.setFrameImmediately(newGeometry.windowFrame)
+        }
         // Make sure this is up-to-date
         videoView.apply(newGeometry)
-
-      case .windowedInteractive, .fullScreenInteractive:
-        // VideoView size constraints not used
-        break
+        windowedModeGeometry = newGeometry
+        log.verbose("Calling updateMPVWindowScale from applyWindowGeometry, videoSize: \(newGeometry.videoSize)")
+        player.updateMPVWindowScale(using: newGeometry)
+        player.saveState()
       }
-
-      // Update this, even if not currently in windowed mode
-      windowedModeGeometry = newGeometry
-      player.saveState()
-
-      log.verbose("Calling updateMPVWindowScale from applyWindowGeometry, videoSize: \(newGeometry.videoSize)")
-      player.updateMPVWindowScale(using: newGeometry)
     }))
   }
 
-  // Not animated
-  func applyWindowGeometryLivePreview(_ newGeometry: PlayerWindowGeometry) {
-    log.verbose("applyWindowGeometryLivePreview: \(newGeometry)")
+  /// For pinch-to-zoom or resizing outside sidebars when the whole window needs to be resized or moved.
+  /// Not animated. Can be used in either windowed mode, or music mode if the playlist is hidden.
+  func applyWindowGeometryForSpecialResize(_ newGeometry: PlayerWindowGeometry) {
+    log.verbose("ApplyWindowGeometryLivePreview: \(newGeometry)")
+    let currentLayout = currentLayout
+    guard currentLayout.spec.mode == .windowed || (currentLayout.spec.mode == .musicMode) else {
+      log.error("ApplyWindowGeometryLivePreview: cannot be used in \(currentLayout.spec.mode) mode!")
+      return
+    }
+    // Need this if video is playing
     videoView.videoLayer.enterAsynchronousMode()
+
     // Update video aspect ratio
     player.info.videoAspectRatio = newGeometry.videoAspectRatio
 
@@ -1338,7 +1349,7 @@ extension PlayerWindowController {
       // Make sure this is up-to-date
       videoView.apply(newGeometry)
 
-      if currentLayout.oscPosition == .floating {
+      if currentLayout.hasFloatingOSC {
         // Update floating control bar position
         controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH,
                                   originRatioV: floatingOSCOriginRatioV, layout: currentLayout, viewportSize: newGeometry.viewportSize)

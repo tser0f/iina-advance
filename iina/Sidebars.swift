@@ -936,7 +936,7 @@ extension PlayerWindowController {
 
       Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
       updateSpacingForTitleBarAccessories(windowWidth: oldGeo.windowFrame.width)
-      applyWindowGeometryLivePreview(newGeo)
+      applyWindowGeometryForSpecialResize(newGeo)
       return true
     }
   }

@@ -102,7 +102,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
         // TODO: modify this to keep either leading or trailing edge fixed (as above)
         let newGeometry = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .keepInVisibleScreen, lockViewportToVideoSize: true)
-        windowController.applyWindowGeometryLivePreview(newGeometry)
+        windowController.applyWindowGeometryForSpecialResize(newGeometry)
         return newGeometry
       }
     }
@@ -118,7 +118,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     windowController.player.info.intendedViewportSize = intendedGeo.viewportSize
 
     let newGeometry = intendedGeo.refit(.keepInVisibleScreen)
-    windowController.applyWindowGeometryLivePreview(newGeometry)
+    windowController.applyWindowGeometryForSpecialResize(newGeometry)
     return newGeometry
   }
 }

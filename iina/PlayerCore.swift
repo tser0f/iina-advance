@@ -800,9 +800,9 @@ class PlayerCore: NSObject {
   /// 3. Quick Settings controls & menu item checkmarks
   ///
   /// To hopefully avoid precision problems, `aspectNormalDecimalString` is used for comparisons across data sources.
-  func setVideoAspect(_ aspect: String) {
+  func setVideoAspectOverride(_ aspect: String) {
     guard !windowController.isClosing, !isShuttingDown else { return }
-    log.verbose("Got request to set aspectRatio to: \(aspect.quoted)")
+    log.verbose("Got request to set videoAspectOverride to: \(aspect.quoted)")
 
     let videoParams = mpv.queryForVideoParams()
     info.videoParams = videoParams
@@ -827,7 +827,7 @@ class PlayerCore: NSObject {
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
-      log.verbose("Aspect \(aspect.quoted) is -1, default, or unrecognized. Setting aspectRatio to \(aspectDisplay.quoted)")
+      log.verbose("Aspect \(aspect.quoted) is -1, default, or unrecognized. Setting videoAspectOverride to \(aspectDisplay.quoted)")
     }
 
     if info.selectedAspectRatioLabel != aspectDisplay {
@@ -2288,7 +2288,7 @@ class PlayerCore: NSObject {
         let videoParams = mpv.queryForVideoParams()
         let videoRawSize = videoParams.videoRawSize
         guard videoRawSize.height > 0, videoRawSize.width > 0  else {
-          log.error("Failed to generate thumbnails: video height and/or width is zero")
+          log.error("Cannot generate thumbnails: video height and/or width is zero")
           clearExistingThumbnails()
           return
         }
