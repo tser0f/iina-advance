@@ -86,7 +86,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
           windowController.log.verbose("Window is in music mode but video is not visible; ignoring pinch gesture")
           return nil
         }
-        let newVideoSize = windowController.musicModeGeometry.videoSize!.multiply(scale)
+        let newVideoSize = windowController.musicModeGeometry.videoSize!.multiplyThenRound(scale)
         let newMusicModeGeometry = windowController.musicModeGeometry.scaleVideo(to: newVideoSize)!
         windowController.log.verbose("Scaling video from pinch gesture in music mode. Applying result bottomBarHeight: \(newMusicModeGeometry.bottomBarHeight), windowFrame: \(newMusicModeGeometry.windowFrame)")
 
@@ -98,7 +98,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         return newMusicModeGeometry.toPlayerWindowGeometry()
       } else {
         // Scaling music mode without playlist (only fixed-height controller)
-        let newViewportSize = originalGeometry.viewportSize.multiply(scale)
+        let newViewportSize = originalGeometry.viewportSize.multiplyThenRound(scale)
 
         // TODO: modify this to keep either leading or trailing edge fixed (as above)
         let newGeometry = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .keepInVisibleScreen, lockViewportToVideoSize: true)
@@ -110,7 +110,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
     let originalGeometry = windowController.windowedModeGeometry!
 
-    let newViewportSize = originalGeometry.viewportSize.multiply(scale)
+    let newViewportSize = originalGeometry.viewportSize.multiplyThenRound(scale)
 
     let intendedGeo = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .noConstraints)
     // User has actively resized the video. Assume this is the new intended resolution, even if it is outside the current screen size.
