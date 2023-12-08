@@ -33,6 +33,7 @@ class IINAAnimation {
   private static var disableAllAnimation = false
 
   // Wrap a block of code inside this function to disable its animations
+  @discardableResult
   static func disableAnimation<T>(_ closure: () throws -> T) rethrows -> T {
     let prevDisableState = disableAllAnimation
     disableAllAnimation = true

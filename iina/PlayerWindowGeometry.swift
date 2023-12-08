@@ -8,6 +8,21 @@
 
 import Foundation
 
+struct BoxQuad {
+  let top: CGFloat
+  let trailing: CGFloat
+  let bottom: CGFloat
+  let leading: CGFloat
+
+  var totalWidth: CGFloat {
+    return leading + trailing
+  }
+
+  var totalHeight: CGFloat {
+    return top + bottom
+  }
+}
+
 /**
  `ScreenFitOption`
   Describes how a given player window must fit inside its given screen.
@@ -89,7 +104,7 @@ enum ScreenFitOption: Int {
  │                                ▼   (of `wc.bottomBarView`)                  │
  └─────────────────────────────────────────────────────────────────────────────┘
  */
-struct PlayerWindowGeometry: Equatable {
+struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
   // MARK: - Stored properties
 
   // The ID of the screen on which this window is displayed
@@ -116,10 +131,6 @@ struct PlayerWindowGeometry: Equatable {
 
   let videoAspectRatio: CGFloat
   let videoSize: NSSize
-
-  var lockViewportToVideoSize: Bool {
-    return Preference.bool(for: .lockViewportToVideoSize)
-  }
 
   // MARK: - Initializers
 
@@ -219,25 +230,23 @@ struct PlayerWindowGeometry: Equatable {
                                 videoSize: videoSize)
   }
 
-  func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
-    return PlayerWindowGeometry.areEqual(windowFrame1: windowFrame, windowFrame2: windowFrame2, videoSize1: videoSize, videoSize2: videoSize2)
-  }
-
-  static func areEqual(windowFrame1: NSRect? = nil, windowFrame2: NSRect? = nil, videoSize1: NSSize? = nil, videoSize2: NSSize? = nil) -> Bool {
-    if let windowFrame1, let windowFrame2 {
-      if !windowFrame1.equalTo(windowFrame2) {
-        return false
-      }
-    }
-    if let videoSize1, let videoSize2 {
-      if !(videoSize1.width == videoSize2.width && videoSize1.height == videoSize2.height) {
-        return false
-      }
-    }
-    return true
-  }
-
   // MARK: - Computed properties
+
+  var lockViewportToVideoSize: Bool {
+    return Preference.bool(for: .lockViewportToVideoSize)
+  }
+
+  var outsideBars: BoxQuad {
+    BoxQuad(top: outsideTopBarHeight, trailing: outsideTrailingBarWidth, bottom: outsideBottomBarHeight, leading: outsideLeadingBarWidth)
+  }
+
+  var insideBars: BoxQuad {
+    BoxQuad(top: insideTopBarHeight, trailing: insideTrailingBarWidth, bottom: insideBottomBarHeight, leading: insideLeadingBarWidth)
+  }
+
+  var description: String {
+    return "PWGeometry (screenID: \(screenID.quoted), fit: \(fitOption), topMargin: \(topMarginHeight), outsideBars: \(outsideBars), insideBars: \(insideBars) videoAspectRatio: \(videoAspectRatio), videoSize: \(videoSize) windowFrame: \(windowFrame))"
+  }
 
   /// This will be equal to `videoSize`, unless IINA is configured to allow the window to expand beyond
   /// the bounds of the video for a letterbox/pillarbox effect (separate from anything mpv includes)
@@ -295,7 +304,21 @@ struct PlayerWindowGeometry: Equatable {
     return topMarginHeight > 0
   }
 
-  // MARK: - Functions
+  // MARK: - Static Functions
+
+  static func areEqual(windowFrame1: NSRect? = nil, windowFrame2: NSRect? = nil, videoSize1: NSSize? = nil, videoSize2: NSSize? = nil) -> Bool {
+    if let windowFrame1, let windowFrame2 {
+      if !windowFrame1.equalTo(windowFrame2) {
+        return false
+      }
+    }
+    if let videoSize1, let videoSize2 {
+      if !(videoSize1.width == videoSize2.width && videoSize1.height == videoSize2.height) {
+        return false
+      }
+    }
+    return true
+  }
 
   /// Returns the limiting frame for the given `fitOption`, inside which the player window must fit.
   /// If no fit needed, returns `nil`.
@@ -314,10 +337,6 @@ struct PlayerWindowGeometry: Equatable {
     }
   }
 
-  private func getContainerFrame(fitOption: ScreenFitOption? = nil) -> NSRect? {
-    return PlayerWindowGeometry.getContainerFrame(forScreenID: screenID, fitOption: fitOption ?? self.fitOption)
-  }
-  
   static func computeViewportSize(from windowFrame: NSRect, topMarginHeight: CGFloat,
                                   outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat,
                                   outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat) -> NSSize {
@@ -359,6 +378,12 @@ struct PlayerWindowGeometry: Equatable {
     }
   }
 
+  // MARK: - Instance Functions
+
+  private func getContainerFrame(fitOption: ScreenFitOption? = nil) -> NSRect? {
+    return PlayerWindowGeometry.getContainerFrame(forScreenID: screenID, fitOption: fitOption ?? self.fitOption)
+  }
+
   fileprivate func computeMaxViewportSize(in containerSize: NSSize) -> NSSize {
     // Resize only the video. Panels outside the video do not change size.
     // To do this, subtract the "outside" panels from the container frame
@@ -383,9 +408,12 @@ struct PlayerWindowGeometry: Equatable {
     return NSSize(width: min(desiredViewportSize.width, maxSize.width - outsideBarsTotalSize.width),
                   height: min(desiredViewportSize.height, maxSize.height - outsideBarsTotalSize.height))
   }
-
   func refit(_ newFit: ScreenFitOption? = nil, lockViewportToVideoSize: Bool? = nil) -> PlayerWindowGeometry {
     return scaleViewport(fitOption: newFit, lockViewportToVideoSize: lockViewportToVideoSize)
+  }
+
+  func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
+    return PlayerWindowGeometry.areEqual(windowFrame1: windowFrame, windowFrame2: windowFrame2, videoSize1: videoSize, videoSize2: videoSize2)
   }
 
   /// Computes a new `PlayerWindowGeometry`, attempting to attain the given window size.
@@ -1330,10 +1358,10 @@ extension PlayerWindowController {
   /// For pinch-to-zoom or resizing outside sidebars when the whole window needs to be resized or moved.
   /// Not animated. Can be used in either windowed mode, or music mode if the playlist is hidden.
   func applyWindowGeometryForSpecialResize(_ newGeometry: PlayerWindowGeometry) {
-    log.verbose("ApplyWindowGeometryLivePreview: \(newGeometry)")
+    log.verbose("ApplySpecial \(newGeometry)")
     let currentLayout = currentLayout
     guard currentLayout.spec.mode == .windowed || (currentLayout.spec.mode == .musicMode) else {
-      log.error("ApplyWindowGeometryLivePreview: cannot be used in \(currentLayout.spec.mode) mode!")
+      log.error("ApplySpecial: cannot be used in \(currentLayout.spec.mode) mode!")
       return
     }
     // Need this if video is playing

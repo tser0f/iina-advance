@@ -8,21 +8,6 @@
 
 import Foundation
 
-struct BoxQuad {
-  let top: CGFloat
-  let trailing: CGFloat
-  let bottom: CGFloat
-  let leading: CGFloat
-
-  var totalWidth: CGFloat {
-    return leading + trailing
-  }
-
-  var totalHeight: CGFloat {
-    return top + bottom
-  }
-}
-
 /**
  `InteractiveModeGeometry`
  Useful for representing a player window which is in interactive mode.

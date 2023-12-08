@@ -147,22 +147,23 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     let maxHeight = isPlaylistVisible ? containerFrame.height : minWindowHeight
     newHeight = min(newHeight, maxHeight)
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
-    Logger.log("Constraining miniPlayer. Video=\(isVideoVisible.yn) Playlist=\(isPlaylistVisible.yn) VideoAspect=\(videoAspectRatio.aspectNormalDecimalString), ReqSize=\(requestedSize), NewSize=\(newWindowSize)", level: .verbose)
 
     let newWindowFrame = NSRect(origin: windowFrame.origin, size: newWindowSize).constrain(in: containerFrame)
-    return self.clone(windowFrame: newWindowFrame)
+    let fittedGeo = self.clone(windowFrame: newWindowFrame)
+    Logger.log("Refitted \(fittedGeo), from requestedSize: \(requestedSize)", level: .verbose)
+    return fittedGeo
   }
 
   func scaleVideo(to desiredSize: NSSize? = nil,
                      screenID: String? = nil) -> MusicModeGeometry? {
 
     guard isVideoVisible else {
-      Logger.log("Cannot scale video of MiniPlayer: isVideoVisible=\(isVideoVisible.yesno)", level: .error)
+      Logger.log("Cannot scale video of MusicMode: isVideoVisible=\(isVideoVisible.yesno)", level: .error)
       return nil
     }
 
     let newVideoSize = desiredSize ?? videoSize!
-    Logger.log("Scaling MiniPlayer, newVideoSize: \(newVideoSize)", level: .verbose)
+    Logger.log("Scaling MusicMode video to desiredSize: \(newVideoSize)", level: .verbose)
 
     let newScreenID = screenID ?? self.screenID
     let screenFrame: NSRect = PlayerWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: .keepInVisibleScreen)!
@@ -206,6 +207,6 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
   }
 
   var description: String {
-    return "MusicModeGeometry winFrame=\(windowFrame) BtmBarH=\(bottomBarHeight) Video={show=\(isVideoVisible.yn) aspect=\(videoAspectRatio) H=\(videoHeight)} Plist={show=\(isPlaylistVisible.yn) H=\(playlistHeight)}"
+    return "MusicModeGeometry(Video={show:\(isVideoVisible.yn) H:\(videoHeight) aspect:\(videoAspectRatio.aspectNormalDecimalString)} PL={show:\(isPlaylistVisible.yn) H:\(playlistHeight)} BtmBarH:\(bottomBarHeight) windowFrame:\(windowFrame))"
   }
 }
