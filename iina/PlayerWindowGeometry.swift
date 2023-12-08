@@ -718,7 +718,7 @@ extension PlayerWindowController {
         let croppedGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
         windowedModeGeometry = croppedGeometry
         player.info.videoAspectRatio = croppedGeometry.videoAspectRatio
-        player.info.setIntendedViewportSize(from: croppedGeometry)
+        player.info.intendedViewportSize = croppedGeometry.viewportSize
 
         // fade out all this stuff before crop
         cropController.view.alphaValue = 0
@@ -816,7 +816,7 @@ extension PlayerWindowController {
         if currentLayout.mode == .windowed {
           // Update intended viewport to new size.
           // FIXME: this mechanism barely works. Find a better solution
-          player.info.setIntendedViewportSize(from: newWindowGeo)
+          player.info.intendedViewportSize = newWindowGeo.viewportSize
         }
       } else {
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
@@ -947,7 +947,7 @@ extension PlayerWindowController {
     case .windowed:
       let newGeoUnconstrained = windowedModeGeometry.scaleVideo(to: desiredVideoSize, fitOption: .noConstraints)
       // User has actively resized the video. Assume this is the new preferred resolution
-      player.info.setIntendedViewportSize(from: newGeoUnconstrained)
+      player.info.intendedViewportSize = newGeoUnconstrained.viewportSize
 
       let newGeometry = newGeoUnconstrained.refit(.keepInVisibleScreen)
       log.verbose("SetVideoScale: calling applyWindowGeometry")
@@ -975,7 +975,7 @@ extension PlayerWindowController {
     case .windowed:
       let newGeoUnconstrained = windowedModeGeometry.scaleViewport(to: desiredViewportSize, fitOption: .noConstraints)
       // User has actively resized the video. Assume this is the new preferred resolution
-      player.info.setIntendedViewportSize(from: newGeoUnconstrained)
+      player.info.intendedViewportSize = newGeoUnconstrained.viewportSize
 
       let fitOption: ScreenFitOption = centerOnScreen ? .centerInVisibleScreen : .keepInVisibleScreen
       let newGeometry = newGeoUnconstrained.refit(fitOption)
@@ -1144,10 +1144,10 @@ extension PlayerWindowController {
 
       if currentLayout.mode == .windowed && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
-        player.info.setIntendedViewportSize(from: intendedGeo)
+        player.info.intendedViewportSize = intendedGeo.viewportSize
       }
-      let requestedGeoConstrained = intendedGeo.refit(.keepInVisibleScreen)
-      return requestedGeoConstrained
+      let newGeo = intendedGeo.refit(.keepInVisibleScreen)
+      return newGeo
     }
 
     let outsideBarsTotalSize = currentGeo.outsideBarsTotalSize
@@ -1190,7 +1190,7 @@ extension PlayerWindowController {
 
       if currentLayout.mode == .windowed {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise.
-        player.info.setIntendedViewportSize(from: chosenGeometry)
+        player.info.intendedViewportSize = chosenGeometry.viewportSize
       }
     } else {
       // Resize request is not coming from the user. Could be BetterTouchTool, Retangle, or some window manager, or the OS.
@@ -1267,9 +1267,9 @@ extension PlayerWindowController {
     }
 
     log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")
+    player.window.setFrameImmediately(geometry.windowFrame)
     let topBarHeight = layout.topBarPlacement == .insideViewport ? geometry.insideTopBarHeight : geometry.outsideTopBarHeight
     updateTopBarHeight(to: topBarHeight, topBarPlacement: layout.topBarPlacement, cameraHousingOffset: geometry.topMarginHeight)
-    player.window.setFrameImmediately(geometry.windowFrame)
   }
 
   /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
@@ -1291,6 +1291,10 @@ extension PlayerWindowController {
       }
       log.verbose("Applying geoUpdate \(ticket)")
 
+      if currentLayout.mode == .windowed && !isWindowHidden {
+        player.window.setFrameImmediately(newGeometry.windowFrame)
+      }
+
       switch currentLayout.spec.mode {
       case .musicMode:
         log.error("ApplyWindowGeometry cannot be used in music mode!")
@@ -1310,10 +1314,6 @@ extension PlayerWindowController {
         break
       }
 
-      if currentLayout.mode == .windowed && !isWindowHidden {
-        player.window.setFrameImmediately(newGeometry.windowFrame)
-      }
-
       // Update this, even if not currently in windowed mode
       windowedModeGeometry = newGeometry
       player.saveState()
@@ -1331,6 +1331,10 @@ extension PlayerWindowController {
     player.info.videoAspectRatio = newGeometry.videoAspectRatio
 
     IINAAnimation.disableAnimation{
+      if !isFullScreen {
+        player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
+      }
+
       // Make sure this is up-to-date
       videoView.apply(newGeometry)
 
@@ -1339,10 +1343,6 @@ extension PlayerWindowController {
         controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH,
                                   originRatioV: floatingOSCOriginRatioV, layout: currentLayout, viewportSize: newGeometry.viewportSize)
       }
-    }
-
-    if !isFullScreen {
-      player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
     }
   }
 
@@ -1374,13 +1374,13 @@ extension PlayerWindowController {
       hasChange = true
     }
     if hasChange {
+      if setFrame {
+        player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
+      }
       /// Make sure to call `apply` AFTER `applyVideoViewVisibilityConstraints`:
       miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: geometry.isVideoVisible)
       updateBottomBarHeight(to: geometry.bottomBarHeight, bottomBarPlacement: .outsideViewport)
       videoView.apply(geometry.toPlayerWindowGeometry())
-      if setFrame {
-        player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
-      }
     } else {
       log.verbose("Not updating music mode windowFrame or constraints - no changes needed")
     }

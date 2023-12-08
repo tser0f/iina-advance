@@ -209,6 +209,9 @@ class ViewLayer: CAOpenGLLayer {
   func enterAsynchronousMode() {
     asychronousModeLock.withLock{
       asychronousModeTimer?.invalidate()
+      if !isAsynchronous {
+        videoView.player.log.verbose("Entering asynchronous mode")
+      }
       /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
       /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
       /// which would cause noticable clipping or wobbling during animations.

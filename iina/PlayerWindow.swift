@@ -24,7 +24,7 @@ class PlayerWindow: NSWindow {
    */
   func setFrameImmediately(_ newFrame: NSRect, animate: Bool = true) {
     guard !frame.equalTo(newFrame) else {
-      log.verbose("setFrameImmediately(): no need to update windowFrame - no change")
+      log.verbose("SetFrameImmediately: no change; will not update windowFrame")
       return
     }
     
@@ -33,7 +33,7 @@ class PlayerWindow: NSWindow {
     }
 
     useZeroDurationForNextResize = true
-    log.verbose("Entered setFrameImmediately: animate=\(animate.yn) frame=\(newFrame)")
+    log.verbose("SetFrameImmediately: animate=\(animate.yn) frame=\(newFrame)")
     setFrame(newFrame, display: true, animate: animate)
   }
 

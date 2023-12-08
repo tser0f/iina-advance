@@ -98,7 +98,7 @@ extension PlayerWindowController {
     }
 
     if !isRestoringFromPrevLaunch && initialLayoutSpec.mode == .windowed {
-      player.info.setIntendedViewportSize(from: initialTransition.outputGeometry)
+      player.info.intendedViewportSize = initialTransition.outputGeometry.viewportSize
     }
 
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
@@ -162,11 +162,12 @@ extension PlayerWindowController {
 
     // InputGeometry
     let inputGeometry: PlayerWindowGeometry = buildInputGeometry(from: inputLayout, transitionName: transitionName, windowedModeScreen: windowedModeScreen)
-    log.verbose("[\(transitionName)] Built inputGeometry: \(inputGeometry)")
+    log.verbose("[\(transitionName)] InputGeometry: \(inputGeometry)")
 
     // OutputGeometry
     let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry, 
                                                                    outputLayout: outputLayout, isInitialLayout: isInitialLayout)
+    log.verbose("[\(transitionName)] OutputGeometry: \(outputGeometry)")
 
     let transition = LayoutTransition(name: transitionName,
                                       from: inputLayout, from: inputGeometry,
@@ -176,7 +177,7 @@ extension PlayerWindowController {
     // MiddleGeometry if needed (is applied after ClosePanels step)
     transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
     if let middleGeometry = transition.middleGeometry {
-      log.verbose("[\(transitionName)] Built middleGeometry: \(middleGeometry)")
+      log.verbose("[\(transitionName)] MiddleGeometry: \(middleGeometry)")
     }
 
     let panelTimingName: CAMediaTimingFunctionName
@@ -224,7 +225,7 @@ extension PlayerWindowController {
       fadeInNewViewsDuration *= 0.5
     }
 
-    log.verbose("[\(transitionName)] Building transition animations. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
+    log.verbose("[\(transitionName)] Building transition. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
 
     // - Starting animations:
 
@@ -251,7 +252,7 @@ extension PlayerWindowController {
     if useExtraAnimationForExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let newGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
-        log.verbose("[\(transition.name)] Updating legacy full screen window to show camera housing prior to entering native windowed mode")
+        log.verbose("[\(transition.name)] Updating legacy FS window to show camera housing prior to entering native windowed mode")
         applyLegacyFullScreenGeometry(newGeo)
       }))
     }
@@ -278,6 +279,7 @@ extension PlayerWindowController {
         // TODO: develop a nice sliding animation if possible
         log.verbose("[\(transition.name)] Moving & resizing window")
 
+        player.window.setFrameImmediately(transition.outputGeometry.videoFrameInScreenCoords)
         if musicModeGeometry.isVideoVisible {
           // Entering music mode when album art is visible
           videoView.apply(transition.outputGeometry)
@@ -285,7 +287,6 @@ extension PlayerWindowController {
           // Entering music mode when album art is hidden
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
         }
-        player.window.setFrameImmediately(transition.outputGeometry.videoFrameInScreenCoords)
       }))
     }
 
@@ -295,7 +296,7 @@ extension PlayerWindowController {
     if useExtraAnimationForExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
       transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let extraGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
-        log.verbose("[\(transition.name)] Updating legacy full screen window to show camera housing prior to entering legacy windowed mode")
+        log.verbose("[\(transition.name)] Updating legacy FS window to show camera housing prior to entering legacy windowed mode")
         applyLegacyFullScreenGeometry(extraGeo)
       }))
     }
@@ -323,7 +324,7 @@ extension PlayerWindowController {
       transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
         let topBlackBarHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : windowedModeScreen.cameraHousingHeight ?? 0
         let newGeo = transition.outputGeometry.clone(windowFrame: windowedModeScreen.frame, topMarginHeight: topBlackBarHeight)
-        log.verbose("[\(transition.name)] Updating legacy full screen window to cover camera housing / menu bar / dock")
+        log.verbose("[\(transition.name)] Updating legacy FS window to cover camera housing / menu bar / dock")
         applyLegacyFullScreenGeometry(newGeo)
       }))
     }

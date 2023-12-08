@@ -2185,8 +2185,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           }
           let newWindowFrame = newGeo.windowFrame
           log.verbose("Calling setFrame() in response to ScreenParametersNotification with windowFrame \(newWindowFrame), videoSize \(newGeo.videoSize)")
-          videoView.apply(newGeo)
           player.window.setFrameImmediately(newWindowFrame)
+          videoView.apply(newGeo)
         }
       }))
     }

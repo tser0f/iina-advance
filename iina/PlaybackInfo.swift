@@ -103,14 +103,14 @@ class PlaybackInfo {
   // When opening a sidebar and there is not enough space on screen, the viewport will be shrunk so that the sidebar can open while
   // keeping the window fully within the bounds of the screen. But when the sidebar is closed again, the viewport / window wiil be
   // expanded again to the preferred container size.
-  var intendedViewportSize: NSSize? = nil
-
-  /// Use a single preferred container size when allowing blackspace around video.
-  /// But it may be more desirable to have 2 preferred sizes when `videoSize`==`viewportSize`.
-  /// Need to reconcile these requirements...
-  func setIntendedViewportSize(from windowGeometry: PlayerWindowGeometry) {
-    log.verbose("Updating intendedViewportSize to \(windowGeometry.viewportSize)")
-    intendedViewportSize = windowGeometry.viewportSize
+  var intendedViewportSize: NSSize? = nil {
+    didSet {
+      if let newValue = intendedViewportSize {
+        log.verbose("Updated intendedViewportSize to \(newValue)")
+      } else {
+        log.verbose("Updated intendedViewportSize to nil")
+      }
+    }
   }
 
   var videoParams: MPVVideoParams? = nil

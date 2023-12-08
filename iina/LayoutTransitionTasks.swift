@@ -64,7 +64,6 @@ extension PlayerWindowController {
       // Need to have these required almost always or else these often aren't honored during animations
       videoView.widthConstraint.priority = .required
       videoView.heightConstraint.priority = .required
-      videoView.layoutSubtreeIfNeeded()
     }
 
 
@@ -72,7 +71,7 @@ extension PlayerWindowController {
 
     if transition.isEnteringFullScreen {
       /// `windowedModeGeometry` should already be kept up to date. Might be hard to track down bugs...
-      log.verbose("Entering full screen; priorWindowedGeometry = \(windowedModeGeometry!)")
+      log.verbose("[\(transition.name)] Entering full screen; priorWindowedGeometry = \(windowedModeGeometry!)")
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
@@ -94,7 +93,7 @@ extension PlayerWindowController {
 
       if transition.outputLayout.isLegacyFullScreen {
         // stylemask
-        log.verbose("Removing window styleMask.titled")
+        log.verbose("[\(transition.name)] Entering legacy FS; removing window styleMask.titled")
         if #available(macOS 10.16, *) {
           window.styleMask.remove(.titled)
           window.styleMask.insert(.borderless)
@@ -317,7 +316,7 @@ extension PlayerWindowController {
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
       if !transition.isInitialLayout && !transition.isTogglingFullScreen {
-        log.debug("Calling setFrame from closeOldPanels with newWindowFrame \(middleGeo.windowFrame)")
+        log.debug("[\(transition.name)] Calling setFrame from closeOldPanels with \(middleGeo.windowFrame)")
         player.window.setFrameImmediately(middleGeo.windowFrame)
         if !transition.isExitingInteractiveMode {
           videoView.apply(middleGeo)
@@ -326,12 +325,10 @@ extension PlayerWindowController {
     }
 
     if !transition.isInitialLayout {
+      videoView.layoutSubtreeIfNeeded()
       if transition.isTogglingLegacyStyle {
         forceDraw()
       }
-
-      // Need this to prevent flicker when closing leading sidebar
-      videoView.layoutSubtreeIfNeeded()
     }
   }
 
@@ -678,7 +675,7 @@ extension PlayerWindowController {
   /// OPEN PANELS & FINALIZE OFFSETS
   func openNewPanelsAndFinalizeOffsets(_ transition: LayoutTransition) {
     let outputLayout = transition.outputLayout
-    log.verbose("[\(transition.name)] OpenNewPanelsAndFinalizeOffsets. TitleBar_H: \(outputLayout.titleBarHeight), TopOSC_H: \(outputLayout.topOSCHeight)")
+    log.verbose("[\(transition.name)] OpenNewPanels. TitleBar_H: \(outputLayout.titleBarHeight), TopOSC_H: \(outputLayout.topOSCHeight)")
 
     if transition.isEnteringMusicMode {
       miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: musicModeGeometry.isVideoVisible)
@@ -738,10 +735,10 @@ extension PlayerWindowController {
       if transition.outputLayout.isNativeFullScreen {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
         log.verbose("[\(transition.name)] Calling setFrame to animate into nativeFS, to: \(transition.outputGeometry.windowFrame)")
+        player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
         if transition.outputLayout.mode != .fullScreenInteractive {
           videoView.apply(transition.outputGeometry)
         }
-        player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
       } else if transition.outputLayout.isLegacyFullScreen {
         let screen = NSScreen.getScreenOrDefault(screenID: transition.outputGeometry.screenID)
         let newGeo: PlayerWindowGeometry
@@ -765,7 +762,7 @@ extension PlayerWindowController {
           /// Either already in legacy FS, or entering legacy FS. Apply final geometry.
           newGeo = transition.outputGeometry
         }
-        log.verbose("[\(transition.name)] Calling setFrame for legacyFS in OpenNewPanelsAndFinalizeOffsets")
+        log.verbose("[\(transition.name)] Calling setFrame for legacyFS in OpenNewPanels")
         applyLegacyFullScreenGeometry(newGeo)
       }
     case .musicMode:
@@ -773,12 +770,11 @@ extension PlayerWindowController {
       applyMusicModeGeometry(musicModeGeometry)
     case .windowed, .windowedInteractive:
       let newWindowFrame = transition.outputGeometry.windowFrame
-      log.verbose("[\(transition.name)] Calling setFrame from openNewPanelsAndFinalizeOffsets with newWindowFrame \(newWindowFrame)")
+      log.verbose("[\(transition.name)] Calling setFrame from OpenNewPanels with \(newWindowFrame)")
+      player.window.setFrameImmediately(newWindowFrame)
       if !transition.outputLayout.isInteractiveMode {
         videoView.apply(transition.outputGeometry)
       }
-
-      player.window.setFrameImmediately(newWindowFrame)
     }
 
     if transition.isEnteringInteractiveMode {
@@ -1018,9 +1014,10 @@ extension PlayerWindowController {
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
 
-    videoView.needsLayout = true
-    videoView.layoutSubtreeIfNeeded()
-    forceDraw()
+    if !transition.isInitialLayout {
+      videoView.layoutSubtreeIfNeeded()
+      forceDraw()
+    }
 
     isAnimatingLayoutTransition = false
 
