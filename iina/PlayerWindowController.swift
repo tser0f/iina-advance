@@ -3089,7 +3089,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateVolumeUI() {
-    guard loaded else { return }
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    guard loaded, !isClosing, !player.isStopping, !player.isStopped, !player.isShuttingDown else { return }
+
     if let volumeSlider = isInMiniPlayer ? player.windowController.miniPlayer.volumeSlider : volumeSlider {
       volumeSlider.isEnabled = (player.info.aid != 0)
       volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))

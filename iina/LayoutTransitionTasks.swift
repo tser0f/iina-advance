@@ -60,7 +60,7 @@ extension PlayerWindowController {
       break
     }
 
-    if transition.inputLayout.mode == .windowedInteractive && transition.outputLayout.mode != .windowedInteractive {
+    if !transition.isInitialLayout && (transition.inputLayout.mode == .windowedInteractive && transition.outputLayout.mode != .windowedInteractive) {
       // Need to have these required almost always or else these often aren't honored during animations
       videoView.widthConstraint.priority = .required
       videoView.heightConstraint.priority = .required
@@ -148,8 +148,10 @@ extension PlayerWindowController {
       resetViewsForModeTransition()
     }
 
-    if transition.isTogglingLegacyStyle {
-      forceDraw()
+    if !transition.isInitialLayout {
+      if transition.isTogglingLegacyStyle {
+        forceDraw()
+      }
     }
   }
 
@@ -257,7 +259,6 @@ extension PlayerWindowController {
   /// CLOSE OLD PANELS
   /// This step is not always executed (e.g., for full screen toggle)
   func closeOldPanels(_ transition: LayoutTransition) {
-    guard let window = window else { return }
     let outputLayout = transition.outputLayout
     log.verbose("[\(transition.name)] CloseOldPanels: title_H=\(outputLayout.titleBarHeight), topOSC_H=\(outputLayout.topOSCHeight)")
 
@@ -324,11 +325,14 @@ extension PlayerWindowController {
       }
     }
 
-    if transition.isTogglingLegacyStyle {
-      forceDraw()
+    if !transition.isInitialLayout {
+      if transition.isTogglingLegacyStyle {
+        forceDraw()
+      }
+
+      // Need this to prevent flicker when closing leading sidebar
+      videoView.layoutSubtreeIfNeeded()
     }
-    // Need this to prevent flicker when closing leading sidebar
-    videoView.layoutSubtreeIfNeeded()
   }
 
   /// -------------------------------------------------
@@ -662,9 +666,11 @@ extension PlayerWindowController {
     updateVolumeUI()
     player.syncUITime()
 
-    window.contentView?.layoutSubtreeIfNeeded()
-    if transition.isTogglingLegacyStyle {
-      forceDraw()
+    if !transition.isInitialLayout {
+      window.contentView?.layoutSubtreeIfNeeded()
+      if transition.isTogglingLegacyStyle {
+        forceDraw()
+      }
     }
   }
 
@@ -800,8 +806,10 @@ extension PlayerWindowController {
       videoView.apply(transition.outputGeometry)
     }
 
-    if transition.isTogglingLegacyStyle {
-      forceDraw()
+    if !transition.isInitialLayout {
+      if transition.isTogglingLegacyStyle {
+        forceDraw()
+      }
     }
   }
 
