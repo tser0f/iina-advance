@@ -27,7 +27,7 @@ class ViewLayer: CAOpenGLLayer {
   private let asychronousModeLock = Lock()
   private var asychronousModeTimer: Timer?
 
-#if DEBUG
+#if LOG_VIDEO_LAYER
   // For measuring frames per second
   var lastPrintTime = Date().timeIntervalSince1970
   var displayCountTotal: Int = 0
@@ -124,7 +124,7 @@ class ViewLayer: CAOpenGLLayer {
   // MARK: Draw
 
   override func canDraw(inCGLContext ctx: CGLContextObj, pixelFormat pf: CGLPixelFormatObj, forLayerTime t: CFTimeInterval, displayTime ts: UnsafePointer<CVTimeStamp>?) -> Bool {
-#if DEBUG
+#if LOG_VIDEO_LAYER
     canDrawCountTotal += 1
 
 //    if let ts = ts?.pointee {
@@ -158,7 +158,7 @@ class ViewLayer: CAOpenGLLayer {
       if let context = mpv.mpvRenderContext {
         fbo = i != 0 ? i : fbo
 
-#if DEBUG
+#if LOG_VIDEO_LAYER
         lastWidth = Int32(dims[2])
         lastHeight = Int32(dims[3])
         drawCountTotal += 1
@@ -298,7 +298,7 @@ class ViewLayer: CAOpenGLLayer {
 
     guard needsFlush else { return }
 
-#if DEBUG
+#if LOG_VIDEO_LAYER
     displayCountTotal += 1
 #endif
 

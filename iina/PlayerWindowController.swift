@@ -2009,7 +2009,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     IINAAnimation.disableAnimation {
-      log.verbose("WindowDIDResize mode=\(currentLayout.mode) frame=\(window.frame)")
+      if log.isTraceEnabled {
+        log.trace("WindowDIDResize mode=\(currentLayout.mode) frame=\(window.frame)")
+      }
 
       switch currentLayout.mode {
       case .musicMode:
@@ -2621,7 +2623,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     NSApplication.shared.addWindowsItem(window, title: title, filename: false)
     NSApplication.shared.changeWindowsItem(window, title: title, filename: false)
 
-    log.verbose("Updating window title to: \(title.quoted)")
+    log.verbose("Updating window title to: \(title.pii.quoted)")
     customTitleBar?.refreshTitle()
   }
 
@@ -3027,7 +3029,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     thumbnailPeekView.refreshBorderStyle()
 
-    log.verbose("Displaying thumbnail \(showAbove ? "above" : "below") OSC, size \(thumbnailPeekView.frame.size)")
+    if log.isTraceEnabled {
+      log.trace("Displaying thumbnail \(showAbove ? "above" : "below") OSC, size \(thumbnailPeekView.frame.size)")
+    }
     thumbnailPeekView.isHidden = false
   }
 
@@ -3157,11 +3161,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let blackWindows = self.blackWindows
     self.blackWindows = []
     guard !blackWindows.isEmpty else { return }
-    log.verbose("Removing black windows for screens \(blackWindows.compactMap({$0.screen?.displayId}).map{String($0)})")
     for window in blackWindows {
       window.orderOut(self)
     }
-    log.verbose("Removed all black windows")
+    log.verbose("Removed black windows for screens \(blackWindows.compactMap({$0.screen?.displayId}).map{String($0)})")
   }
 
   func setWindowFloatingOnTop(_ onTop: Bool, updateOnTopStatus: Bool = true) {
@@ -3410,7 +3413,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // update text of time label
     let seekTime = player.info.videoDuration! * percentage * 0.01
-    log.debug("PlaySliderDidChange: setting slider position time label to \(seekTime.stringRepresentation.quoted)")
+    if log.isTraceEnabled {
+      log.trace("PlaySliderDidChange: setting slider position time label to \(seekTime.stringRepresentation.quoted)")
+    }
     timePositionHoverLabel.stringValue = seekTime.stringRepresentation
   }
 

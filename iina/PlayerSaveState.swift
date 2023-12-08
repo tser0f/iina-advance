@@ -313,11 +313,15 @@ struct PlayerSaveState {
       }
 
       guard player.windowController.loaded else {
-//        player.log.debug("Skipping player state save: player window is not loaded")
+        if player.log.isTraceEnabled {
+          player.log.trace("Skipping player state save: player window is not loaded")
+        }
         return
       }
       guard !player.info.isRestoring else {
-  //      player.log.verbose("Skipping player state save: still restoring previous state")
+        if player.log.isTraceEnabled {
+          player.log.trace("Skipping player state save: still restoring previous state")
+        }
         return
       }
       guard !player.isShuttingDown else {
@@ -327,15 +331,16 @@ struct PlayerSaveState {
       guard !player.windowController.isClosing else {
         // mpv core is often still active even after closing, and will send events which
         // can trigger save. Need to make sure we check for this so that we don't un-delete state
-        player.log.verbose("Skipping player state save: window.isClosing is true")
+        player.log.trace("Skipping player state save: window.isClosing is true")
         return
       }
 
       player.$isShuttingDown.withLock() { isShuttingDown in
         guard !isShuttingDown else { return }
         let properties = generatePropDict(from: player)
-        player.log.verbose("Saving player state (tkt \(ticket))")
-//        player.log.verbose("Saving player state: \(properties)")
+        if player.log.isTraceEnabled {
+          player.log.trace("Saving player state (tkt \(ticket)): \(properties)")
+        }
         Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
       }
     }

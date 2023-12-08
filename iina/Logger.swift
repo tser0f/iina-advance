@@ -20,6 +20,7 @@ import Foundation
 ///     that method will attempt to report it using the logger. If the logger is still being initialized this will result in a crash. For that reason
 ///     the logger uses its own similar method.
 class Logger: NSObject {
+  static let isTraceEnabled = false
 
   fileprivate static let sessionDirName: String = {
     let formatter = DateFormatter()
@@ -76,20 +77,30 @@ class Logger: NSObject {
     static let general = Subsystem(rawValue: "iina")
     static let input = Logger.Subsystem(rawValue: "input")
 
+    var isTraceEnabled: Bool {
+      return Logger.isTraceEnabled
+    }
+
     required init(rawValue: String) {
       self.rawValue = rawValue
     }
 
-     func verbose(_ rawMessage: String) {
-       Logger.log(rawMessage, level: .verbose, subsystem: self)
+    func trace(_ rawMessage: String) {
+      guard isTraceEnabled else { return }
+      /// trace is not a "real" level yet. Just use `verbose` for now
+      Logger.log(rawMessage, level: .verbose, subsystem: self)
     }
 
-     func debug(_ rawMessage: String) {
-       Logger.log(rawMessage, level: .debug, subsystem: self)
+    func verbose(_ rawMessage: String) {
+      Logger.log(rawMessage, level: .verbose, subsystem: self)
     }
 
-     func warn(_ rawMessage: String) {
-       Logger.log(rawMessage, level: .warning, subsystem: self)
+    func debug(_ rawMessage: String) {
+      Logger.log(rawMessage, level: .debug, subsystem: self)
+    }
+
+    func warn(_ rawMessage: String) {
+      Logger.log(rawMessage, level: .warning, subsystem: self)
     }
 
      func error(_ rawMessage: String) {

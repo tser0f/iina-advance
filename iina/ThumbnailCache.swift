@@ -154,11 +154,16 @@ class ThumbnailCache {
   /// This method is expected to be called when the file exists.
   static func read(forName name: String, forWidth width: Int) -> [FFThumbnail]? {
     let pathURL = urlFor(name, width: width)
+    let sw = Utility.Stopwatch()
     guard let file = try? FileHandle(forReadingFrom: pathURL) else {
       Logger.log("Cannot open thumbnail cache file: \(pathURL.path.pii.quoted)", level: .error, subsystem: subsystem)
       return nil
     }
     Logger.log("Reading thumbnail cache from \(pathURL.path.pii.quoted)", subsystem: subsystem)
+
+    defer {
+      file.closeFile()
+    }
 
     var result: [FFThumbnail] = []
 
@@ -176,7 +181,6 @@ class ThumbnailCache {
             let timestamp = file.read(type: Double.self) else {
         Logger.log("Cannot read image header. Cache file will be deleted: \(pathURL.absoluteString.pii.quoted)",
                    level: .warning, subsystem: subsystem)
-        file.closeFile()
         deleteCacheFile(at: pathURL)
         return nil
       }
@@ -184,7 +188,6 @@ class ThumbnailCache {
       let jpegData = file.readData(ofLength: Int(blockLength) - MemoryLayout.size(ofValue: timestamp))
       guard let image = NSImage(data: jpegData) else {
         Logger.log("Cannot read image. Cache file will be deleted: \(pathURL.absoluteString.pii.quoted)", level: .warning, subsystem: subsystem)
-        file.closeFile()
         deleteCacheFile(at: pathURL)
         return nil
       }
@@ -195,8 +198,7 @@ class ThumbnailCache {
       result.append(tb)
     }
 
-    file.closeFile()
-    Logger.log("Finished reading thumbnail cache, \(result.count) in total", subsystem: subsystem)
+    Logger.log("Finished reading thumbnail cache: read \(result.count) thumbs in \(sw) ms", subsystem: subsystem)
     return result
   }
 

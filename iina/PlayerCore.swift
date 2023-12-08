@@ -812,7 +812,7 @@ class PlayerCore: NSObject {
     }
 
     let aspectDisplay: String
-    if let colonBasedAspect = Aspect(string: aspect) {
+    if Aspect(string: aspect) != nil {
       // Aspect is in colon notation (X:Y)
       aspectDisplay = aspect
     } else if let aspectDouble = Double(aspect), aspectDouble > 0 {
@@ -887,8 +887,7 @@ class PlayerCore: NSObject {
   }
 
   private func deriveVideoScale(from windowGeometry: PlayerWindowGeometry) -> CGFloat? {
-    let videoSize = windowGeometry.videoSize
-    var videoWidthScaled = videoSize.width
+    let videoWidthScaled = windowGeometry.videoSize.width
 
     let videoParams = mpv.queryForVideoParams()
     info.videoParams = videoParams
@@ -897,7 +896,7 @@ class PlayerCore: NSObject {
       return nil
     }
 
-    var videoScale = videoWidthScaled / videoWidthUnscaled
+    let videoScale = videoWidthScaled / videoWidthUnscaled
     return videoScale
   }
 
@@ -2075,7 +2074,9 @@ class PlayerCore: NSObject {
     let now = Date().timeIntervalSince1970
     let secSinceLastSave = now - lastSaveTime
     if secSinceLastSave >= AppData.playTimeSaveStateIntervalSec {
-      log.verbose("Another \(AppData.playTimeSaveStateIntervalSec)s has passed: saving player state")
+      if log.isTraceEnabled {
+        log.trace("Another \(AppData.playTimeSaveStateIntervalSec)s has passed: saving player state")
+      }
       saveState()
       lastSaveTime = now
     }
@@ -2249,28 +2250,24 @@ class PlayerCore: NSObject {
 
   func reloadThumbnails() {
     DispatchQueue.main.asyncAfter(deadline: .now() + AppData.thumbnailRegenerationDelay) { [self] in
-      if let oldThumbnailSet = info.currentMediaThumbnails {
-        oldThumbnailSet.isCancelled = true
-        info.currentMediaThumbnails = nil
-      }
-      if #available(macOS 10.12.2, *) {
-        self.touchBarSupport.touchBarPlaySlider?.resetCachedThumbnails()
-      }
-
       guard !info.isNetworkResource, let url = info.currentURL, let mpvMD5 = info.mpvMd5 else {
         log.debug("Thumbnails reload stopped because cannot get file path")
+        clearExistingThumbnails()
         return
       }
       guard Preference.bool(for: .enableThumbnailPreview) else {
         log.verbose("Thumbnails reload stopped because thumbnails are disabled by user")
+        clearExistingThumbnails()
         return
       }
       if !Preference.bool(for: .enableThumbnailForRemoteFiles) && info.isMediaOnRemoteDrive {
         log.debug("Thumbnails reload stopped because file is on a mounted remote drive")
+        clearExistingThumbnails()
         return
       }
-      guard !isInMiniPlayer || Preference.bool(for: .enableThumbnailForMusicMode) else {
+      if isInMiniPlayer && !Preference.bool(for: .enableThumbnailForMusicMode) {
         log.verbose("Thumbnails reload stopped because user has not enabled for music mode")
+        clearExistingThumbnails()
         return
       }
 
@@ -2292,13 +2289,38 @@ class PlayerCore: NSObject {
         let videoRawSize = videoParams.videoRawSize
         guard videoRawSize.height > 0, videoRawSize.width > 0  else {
           log.error("Failed to generate thumbnails: video height and/or width is zero")
+          clearExistingThumbnails()
           return
         }
 
-        let newMediaThumbnailLoader = SingleMediaThumbnailsLoader(self, mediaFilePath: url.path, mediaFilePathMD5: mpvMD5, videoRawSize: videoRawSize, rotationDegrees: videoParams.totalRotation)
+        let thumbnailWidth = SingleMediaThumbnailsLoader.determineWidthOfThumbnail(from: videoRawSize, log: log)
+
+        if let oldThumbs = info.currentMediaThumbnails {
+          if oldThumbs.mediaFilePath == url.path
+                  && thumbnailWidth == oldThumbs.thumbnailWidth
+                  && videoParams.totalRotation == oldThumbs.rotationDegrees {
+            log.debug("Already loaded \(oldThumbs.thumbnails.count) thumbnails for file @ \(thumbnailWidth)px, \(videoParams.totalRotation)°; nothing to do")
+            return
+          } else {
+            clearExistingThumbnails()
+          }
+        }
+
+        let newMediaThumbnailLoader = SingleMediaThumbnailsLoader(self, mediaFilePath: url.path, mediaFilePathMD5: mpvMD5,
+                                                                  thumbnailWidth: thumbnailWidth, rotationDegrees: videoParams.totalRotation)
         info.currentMediaThumbnails = newMediaThumbnailLoader
         newMediaThumbnailLoader.loadThumbnails()
       }
+    }
+  }
+
+  private func clearExistingThumbnails() {
+    if let oldThumbnailSet = info.currentMediaThumbnails {
+      oldThumbnailSet.isCancelled = true
+      info.currentMediaThumbnails = nil
+    }
+    if #available(macOS 10.12.2, *) {
+      self.touchBarSupport.touchBarPlaySlider?.resetCachedThumbnails()
     }
   }
 

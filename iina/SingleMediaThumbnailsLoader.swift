@@ -36,23 +36,23 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
     return player.log
   }
 
-  init(_ player: PlayerCore, mediaFilePath: String, mediaFilePathMD5: String, videoRawSize: NSSize, rotationDegrees: Int) {
+  init(_ player: PlayerCore, mediaFilePath: String, mediaFilePathMD5: String, thumbnailWidth: Int, rotationDegrees: Int) {
     self.player = player
     self.mediaFilePath = mediaFilePath
     self.mediaFilePathMD5 = mediaFilePathMD5
-    self.thumbnailWidth = SingleMediaThumbnailsLoader.determineWidthOfThumbnail(from: videoRawSize, log: player.log)
+    self.thumbnailWidth = thumbnailWidth
     self.rotationDegrees = rotationDegrees
   }
 
   /// We want the requested length of thumbnail to correspond to whichever video dimension is longer, and then get the corresponding width.
   /// Example: if video's native size is 600 W x 800 H and requested thumbnail size is 100, then `thumbWidth` should be 75.
-  private static func determineWidthOfThumbnail(from videoRawSize: NSSize, log: Logger.Subsystem) -> Int {
+  static func determineWidthOfThumbnail(from videoRawSize: NSSize, log: Logger.Subsystem) -> Int {
     let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
     switch sizeOption {
     case .scaleWithViewport:
       let rawSizePercentage = CGFloat(min(max(0, Preference.integer(for: .thumbnailRawSizePercentage)), 100))
       let thumbWidth = Int(round(videoRawSize.width * rawSizePercentage / 100))
-      log.verbose("Thumbnail native width will be \(thumbWidth)px (\(rawSizePercentage)% of video's \(Int(videoRawSize.width))px)")
+      log.verbose("Thumbnail native width will be \(thumbWidth)px (\(Int(rawSizePercentage))% of video's \(Int(videoRawSize.width))px)")
       return thumbWidth
     case .fixedSize:
       let requestedLength = CGFloat(Preference.integer(for: .thumbnailFixedLength))
