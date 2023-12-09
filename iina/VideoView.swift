@@ -180,9 +180,6 @@ class VideoView: NSView {
 
   func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, trailing: CGFloat = 0, bottom: CGFloat = 0, leading: CGFloat = -2,
                                          eqPriority: NSLayoutConstraint.Priority = .required) {
-//    let isTitled = window?.styleMask.contains(.titled) ?? false
-//    let top = isTitled ? top - 2 : top
-//    let leading = isTitled ? leading - 2 : leading
     log.verbose("Constraining videoView for fixed offsets only: \(top) \(trailing) \(bottom) \(leading)")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: top, trailing: trailing, bottom: bottom, leading: leading,

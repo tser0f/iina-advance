@@ -1312,10 +1312,6 @@ extension PlayerWindowController {
   /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
   /// Also updates cached `windowedModeGeometry` and saves updated state.
   func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry) {
-    log.verbose("ApplyWindowGeometry windowFrame: \(newGeometry.windowFrame), videoAspectRatio: \(newGeometry.videoAspectRatio)")
-    // Update video aspect ratio always
-    player.info.videoAspectRatio = newGeometry.videoAspectRatio
-
     var ticket: Int = 0
     $geoUpdateTicketCounter.withLock {
       $0 += 1
@@ -1326,7 +1322,9 @@ extension PlayerWindowController {
       guard ticket == geoUpdateTicketCounter else {
         return
       }
-      log.verbose("Applying geoUpdate \(ticket)")
+      log.verbose("ApplyWindowGeometry (tkt \(ticket)) windowFrame: \(newGeometry.windowFrame), videoAspectRatio: \(newGeometry.videoAspectRatio)")
+      // Update video aspect ratio always
+      player.info.videoAspectRatio = newGeometry.videoAspectRatio
       let currentLayout = currentLayout
       switch currentLayout.spec.mode {
 
@@ -1338,7 +1336,7 @@ extension PlayerWindowController {
         let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID, 
                                                           videoAspectRatio: newGeometry.videoAspectRatio)
         videoView.apply(fsGeo)
-        log.verbose("Calling updateMPVWindowScale from applyWindowGeometry (FS) videoSize: \(newGeometry.videoSize)")
+        log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale (FS), videoSize: \(newGeometry.videoSize)")
         player.updateMPVWindowScale(using: fsGeo)
 
       case .windowed:
@@ -1348,7 +1346,7 @@ extension PlayerWindowController {
         // Make sure this is up-to-date
         videoView.apply(newGeometry)
         windowedModeGeometry = newGeometry
-        log.verbose("Calling updateMPVWindowScale from applyWindowGeometry, videoSize: \(newGeometry.videoSize)")
+        log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale, videoSize: \(newGeometry.videoSize)")
         player.updateMPVWindowScale(using: newGeometry)
         player.saveState()
       }

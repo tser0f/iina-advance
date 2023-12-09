@@ -934,12 +934,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    addObserver(to: .default, forName: .iinaVIDChanged, object: player) { [self] note in
-      guard !player.info.fileLoading && player.info.fileLoaded && !player.info.justStartedFile else { return }
-      log.verbose("Got iinaVIDChanged notification")
-      refreshAlbumArtDisplay()
-    }
-
     // This observer handles when the user connected a new screen or removed a screen, or shows/hides the Dock.
     NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main, using: self.windowDidChangeScreenParameters)
 
@@ -1020,7 +1014,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let oldAspectRatio = player.info.videoAspectRatio
     let newAspectRatio: CGFloat
-    if showDefaultArt || player.currentMediaIsAudio == .isAudio {
+    if showDefaultArt || player.info.currentMediaAudioStatus == .isAudio {
       newAspectRatio = 1
     } else {
       // This can also equal 1 if not found
@@ -2052,6 +2046,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard !isClosing, !isAnimating, !isMagnifying else { return }
 
     animationPipeline.submitZeroDuration({ [self] in
+      let currentLayout = currentLayout
       log.verbose("WindowDidEndLiveResize mode: \(currentLayout.mode)")
 
       switch currentLayout.mode {
@@ -3096,17 +3091,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded, !isClosing, !player.isStopping, !player.isStopped, !player.isShuttingDown else { return }
 
-    if let volumeSlider = isInMiniPlayer ? player.windowController.miniPlayer.volumeSlider : volumeSlider {
-      volumeSlider.isEnabled = (player.info.aid != 0)
-      volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
-      volumeSlider.doubleValue = player.info.volume
-    }
-    if let muteButton = isInMiniPlayer ? player.windowController.miniPlayer.muteButton : muteButton {
-      muteButton.isEnabled = (player.info.aid != 0)
-      muteButton.state = player.info.isMuted ? .on : .off
-    }
+    let volume = player.info.volume
+    let isMuted = player.info.isMuted
+    let hasAudio = player.info.isAudioTrackSelected
+
+    volumeSlider.isEnabled = hasAudio
+    volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
+    volumeSlider.doubleValue = volume
+    muteButton.isEnabled = hasAudio
+    muteButton.state = isMuted ? .on : .off
+
     if isInMiniPlayer {
-      miniPlayer.updateVolumeUI()
+      miniPlayer.updateVolumeUI(volume: volume, isMuted: isMuted, hasAudio: hasAudio)
     }
   }
 

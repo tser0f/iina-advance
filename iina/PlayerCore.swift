@@ -868,21 +868,18 @@ class PlayerCore: NSObject {
     // See comments in resetViewsForModeTransition for details.
     guard !windowController.isClosing else { return }
 
-    mpv.queue.async { [self] in
+    guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
+      log.verbose("Skipping update to mpv window-scale")
+      return
+    }
+    let prevVideoScale = info.cachedWindowScale
 
-      guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
-        log.verbose("Skipping update to mpv window-scale")
-        return
-      }
-      let prevVideoScale = info.cachedWindowScale
-
-      if actualVideoScale != info.cachedWindowScale {
-        // Setting the window-scale property seems to result in a small hiccup during playback.
-        // Not sure if this is an mpv limitation
-        log.verbose("Updating mpv window-scale from videoSize \(windowGeo.videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
-        info.cachedWindowScale = actualVideoScale
-        mpv.setDouble(MPVProperty.windowScale, actualVideoScale)
-      }
+    if actualVideoScale != info.cachedWindowScale {
+      // Setting the window-scale property seems to result in a small hiccup during playback.
+      // Not sure if this is an mpv limitation
+      log.verbose("Updating mpv window-scale from videoSize \(windowGeo.videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
+      info.cachedWindowScale = actualVideoScale
+      mpv.setDouble(MPVProperty.windowScale, actualVideoScale)
     }
   }
 
@@ -1751,9 +1748,10 @@ class PlayerCore: NSObject {
     sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
-  func playbackRestarted() {
-    log.debug("Playback restarted (justStartedFile: \(info.justStartedFile))")
+  func playbackRestarted(currentMediaAudioStatus: PlaybackInfo.CurrentMediaAudioStatus) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    log.debug("Playback restarted (justStartedFile: \(info.justStartedFile.yn))")
+
     info.isIdle = false
     info.isSeeking = false
     // When playback is paused the display link may be shutdown in order to not waste energy.
@@ -1764,14 +1762,11 @@ class PlayerCore: NSObject {
     }
 
     reloadSavedIINAfilters()
-    windowController.forceDraw()
 
     syncUITime()
 
-    let audioStatus = currentMediaIsAudio
-
     // Update art & aspect *before* switching to/from music mode for more pleasant animation
-    if audioStatus == .isAudio || !info.isVideoTrackSelected {
+    if info.currentMediaAudioStatus == .isAudio || !info.isVideoTrackSelected {
       log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
       windowController.refreshAlbumArtDisplay()
     }
@@ -1780,10 +1775,10 @@ class PlayerCore: NSObject {
     if Preference.bool(for: .autoSwitchToMusicMode) {
       if overrideAutoMusicMode {
         log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
-      } else if audioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
+      } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
         log.debug("Current media is audio: auto-switching to music mode")
         enterMusicMode(automatically: true)
-      } else if audioStatus == .notAudio && isInMiniPlayer {
+      } else if currentMediaAudioStatus == .notAudio && isInMiniPlayer {
         log.debug("Current media is not audio: auto-switching to normal window")
         exitMusicMode(automatically: true)
       }
@@ -1884,6 +1879,9 @@ class PlayerCore: NSObject {
     let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
     info.vid = vid
     log.verbose("Video track changed to: \(vid)")
+    DispatchQueue.main.async{ [self] in
+      windowController.refreshAlbumArtDisplay()
+    }
     postNotification(.iinaVIDChanged)
     sendOSD(.track(info.currentTrack(.video) ?? .noneVideoTrack))
   }
@@ -2091,13 +2089,14 @@ class PlayerCore: NSObject {
         }
 
         // don't let play/pause icon fall out of sync
-        windowController.playButton.state = info.isPaused ? .off : .on
+        let isPaused = info.isPaused
+        windowController.playButton.state = isPaused ? .off : .on
         windowController.updatePlayTime(withDuration: isNetworkStream)
         windowController.updateAdditionalInfo()
         if isInMiniPlayer {
           windowController.miniPlayer.loadIfNeeded()
           windowController.miniPlayer.updateScrollingLabels()
-          windowController.miniPlayer.playButton.state = info.isPaused ? .off : .on
+          windowController.miniPlayer.playButton.state = isPaused ? .off : .on
         }
         if isNetworkStream {
           self.windowController.updateNetworkState()
@@ -2346,9 +2345,10 @@ class PlayerCore: NSObject {
   // MARK: - Getting info
 
   func reloadTrackInfo() {
-    info.audioTracks.removeAll(keepingCapacity: true)
-    info.videoTracks.removeAll(keepingCapacity: true)
-    info.subTracks.removeAll(keepingCapacity: true)
+    var audioTracks: [MPVTrack] = []
+    var videoTracks: [MPVTrack] = []
+    var subTracks: [MPVTrack] = []
+
     let trackCount = mpv.getInt(MPVProperty.trackListCount)
     for index in 0..<trackCount {
       // get info for each track
@@ -2376,15 +2376,17 @@ class PlayerCore: NSObject {
       // add to lists
       switch track.type {
       case .audio:
-        info.audioTracks.append(track)
+        audioTracks.append(track)
       case .video:
-        info.videoTracks.append(track)
+        videoTracks.append(track)
       case .sub:
-        info.subTracks.append(track)
+        subTracks.append(track)
       default:
         break
       }
     }
+
+    info.replaceTracks(audio: audioTracks, video: videoTracks, sub: subTracks)
     log.debug("Reloaded tracklist from mpv (\(trackCount) tracks)")
   }
 
@@ -2566,26 +2568,6 @@ class PlayerCore: NSObject {
     self.info.setCachedMetadata(path, result)
   }
 
-  enum CurrentMediaIsAudioStatus {
-    case unknown
-    case isAudio
-    case notAudio
-  }
-
-  var currentMediaIsAudio: CurrentMediaIsAudioStatus {
-    guard !info.isNetworkResource else { return .notAudio }
-    let noVideoTrack = info.videoTracks.isEmpty
-    let noAudioTrack = info.audioTracks.isEmpty
-    if noVideoTrack && noAudioTrack {
-      return .unknown
-    }
-    if noVideoTrack {
-      return .isAudio
-    }
-    let allVideoTracksAreAlbumCover = !info.videoTracks.contains { !$0.isAlbumart }
-    return allVideoTracksAreAlbumCover ? .isAudio : .notAudio
-  }
-
   static func checkStatusForSleep() {
     for player in playing {
       if player.info.isPlaying {
@@ -2620,7 +2602,7 @@ class NowPlayingInfoManager {
     guard !activePlayer.isShuttingDown else { return }
 
     if withTitle {
-      if activePlayer.currentMediaIsAudio == .isAudio {
+      if activePlayer.info.currentMediaAudioStatus == .isAudio {
         info[MPMediaItemPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
         let (title, album, artist) = activePlayer.getMusicMetadata()
         info[MPMediaItemPropertyTitle] = title

@@ -1016,12 +1016,14 @@ not applying FFmpeg 9599 workaround
       player.seeking()
 
     case MPV_EVENT_PLAYBACK_RESTART:
+      let currentMediaAudioStatus = player.info.currentMediaAudioStatus
+
       DispatchQueue.main.async { [self] in
         if needRecordSeekTime {
           recordedSeekTimeListener?(CACurrentMediaTime() - recordedSeekStartTime)
           recordedSeekTimeListener = nil
         }
-        player.playbackRestarted()
+        player.playbackRestarted(currentMediaAudioStatus: currentMediaAudioStatus)
       }
 
     case MPV_EVENT_END_FILE:

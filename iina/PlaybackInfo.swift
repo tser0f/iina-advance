@@ -201,6 +201,13 @@ class PlaybackInfo {
   var vid: Int?
   var secondSid: Int?
 
+  var isAudioTrackSelected: Bool {
+    if let aid {
+      return aid != 0
+    }
+    return false
+  }
+
   var isVideoTrackSelected: Bool {
     if let vid {
       return vid != 0
@@ -211,16 +218,47 @@ class PlaybackInfo {
   var isSubVisible = true
   var isSecondSubVisible = true
 
+  enum CurrentMediaAudioStatus {
+    case unknown
+    case isAudio
+    case notAudio
+  }
+
+  var currentMediaAudioStatus: CurrentMediaAudioStatus {
+    guard !isNetworkResource else { return .notAudio }
+    let noVideoTrack = videoTracks.isEmpty
+    let noAudioTrack = audioTracks.isEmpty
+    if noVideoTrack && noAudioTrack {
+      return .unknown
+    }
+    if noVideoTrack {
+      return .isAudio
+    }
+    let allVideoTracksAreAlbumCover = !videoTracks.contains { !$0.isAlbumart }
+    if allVideoTracksAreAlbumCover {
+      return .isAudio
+    }
+    return .notAudio
+  }
+
   // -- PERSISTENT PROPERTIES END --
 
   var currentMediaThumbnails: SingleMediaThumbnailsLoader? = nil
 
   var chapter = 0
-
   var chapters: [MPVChapter] = []
+
   var audioTracks: [MPVTrack] = []
   var videoTracks: [MPVTrack] = []
   var subTracks: [MPVTrack] = []
+
+  func replaceTracks(audio: [MPVTrack], video: [MPVTrack], sub: [MPVTrack]) {
+    infoLock.withLock {
+      audioTracks = audio
+      videoTracks = video
+      subTracks = sub
+    }
+  }
 
   func trackList(_ type: MPVTrack.TrackType) -> [MPVTrack] {
     switch type {
@@ -289,13 +327,10 @@ class PlaybackInfo {
   private var cachedVideoDurationAndProgress: [String: (duration: Double?, progress: Double?)] = [:]
   private var cachedMetadata: [String: (title: String?, album: String?, artist: String?)] = [:]
 
-  // Queue dedicated to providing serialized access to class data shared between threads.
-  // Data is accessed by the main thread, therefore the QOS for the queue must not be too low
-  // to avoid blocking the main thread for an extended period of time.
-  private let lockQueue = DispatchQueue(label: "IINAPlaybackInfoLock", qos: .userInitiated)
+  private let infoLock = Lock()
 
   func calculateTotalDuration() -> Double? {
-    lockQueue.sync {
+    infoLock.withLock {
       var totalDuration: Double? = 0
       for p in playlist {
         if let duration = cachedVideoDurationAndProgress[p.filename]?.duration {
@@ -310,7 +345,7 @@ class PlaybackInfo {
   }
 
   func calculateTotalDuration(_ indexes: IndexSet) -> Double {
-    lockQueue.sync {
+    infoLock.withLock {
       indexes
         .compactMap { cachedVideoDurationAndProgress[playlist[$0].filename]?.duration }
         .compactMap { $0 > 0 ? $0 : 0 }
@@ -319,31 +354,31 @@ class PlaybackInfo {
   }
 
   func getCachedVideoDurationAndProgress(_ file: String) -> (duration: Double?, progress: Double?)? {
-    lockQueue.sync {
+    infoLock.withLock {
       cachedVideoDurationAndProgress[file]
     }
   }
 
   func setCachedVideoDuration(_ file: String, _ duration: Double) {
-    lockQueue.sync {
+    infoLock.withLock {
       cachedVideoDurationAndProgress[file]?.duration = duration
     }
   }
 
   func setCachedVideoDurationAndProgress(_ file: String, _ value: (duration: Double?, progress: Double?)) {
-    lockQueue.sync {
+    infoLock.withLock {
       cachedVideoDurationAndProgress[file] = value
     }
   }
 
   func getCachedMetadata(_ file: String) -> (title: String?, album: String?, artist: String?)? {
-    lockQueue.sync {
+    infoLock.withLock {
       cachedMetadata[file]
     }
   }
 
   func setCachedMetadata(_ file: String, _ value: (title: String?, album: String?, artist: String?)) {
-    lockQueue.sync {
+    infoLock.withLock {
       cachedMetadata[file] = value
     }
   }

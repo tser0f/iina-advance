@@ -208,11 +208,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
   }
 
-  func updateVolumeUI() {
-    let vol = player.info.volume
-    volumeSlider.doubleValue = vol
-    volumeLabel.intValue = Int32(vol)
-    if player.info.isMuted {
+  func updateVolumeUI(volume: Double, isMuted: Bool, hasAudio: Bool) {
+    volumeSlider.isEnabled = hasAudio
+    volumeSlider.doubleValue = volume
+    volumeLabel.intValue = Int32(volume)
+    if isMuted {
       volumeButton.image = NSImage(named: "mute")
     } else {
       switch volumeLabel.intValue {
@@ -287,7 +287,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     if volumePopover.isShown {
       volumePopover.performClose(self)
     } else {
-      updateVolumeUI()
+      windowController.updateVolumeUI()
       volumePopover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }
   }
