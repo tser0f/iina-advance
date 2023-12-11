@@ -1,5 +1,5 @@
 //
-//  ViewLayer.swift
+//  GLVideoLayer.swift
 //  iina
 //
 //  Created by lhc on 27/1/2017.
@@ -10,7 +10,7 @@ import Cocoa
 import OpenGL.GL
 import OpenGL.GL3
 
-class ViewLayer: CAOpenGLLayer {
+class GLVideoLayer: CAOpenGLLayer {
 
   weak var videoView: VideoView!
 
@@ -69,7 +69,7 @@ class ViewLayer: CAOpenGLLayer {
   override convenience init(layer: Any) {
     self.init()
 
-    let previousLayer = layer as! ViewLayer
+    let previousLayer = layer as! GLVideoLayer
 
     videoView = previousLayer.videoView
   }

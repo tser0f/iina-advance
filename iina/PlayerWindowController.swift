@@ -1140,7 +1140,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if isInMiniPlayer {
       miniPlayer.loadIfNeeded()
 
-      for view in [miniPlayer.backgroundView, closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
+      for view in [miniPlayer.musicModeControlBarView, closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
         view?.appearance = appearance
         view?.material = material
       }

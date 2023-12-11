@@ -18,8 +18,8 @@ class VideoView: NSView {
     return player.log
   }
 
-  var videoLayer: ViewLayer {
-    return layer as! ViewLayer
+  var videoLayer: GLVideoLayer {
+    return layer as! GLVideoLayer
   }
 
   @Atomic var isUninited = false
@@ -94,7 +94,7 @@ class VideoView: NSView {
   }
 
   override func makeBackingLayer() -> CALayer {
-    let layer = ViewLayer()
+    let layer = GLVideoLayer()
     layer.videoView = self
     layer.colorspace = VideoView.SRGB
     return layer

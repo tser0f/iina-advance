@@ -498,13 +498,13 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
   }
 
   class WatchTableColumnHeaderCell: NSTableHeaderCell {
-    override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
+    override func draw(withFrame cellFrame: NSRect, in controllerButtonsPanelView: NSView) {
       // Override background color
       self.drawsBackground = false
       watchTableColumnHeaderColor.set()
       cellFrame.fill(using: .sourceOver)
 
-      super.draw(withFrame: cellFrame, in: controlView)
+      super.draw(withFrame: cellFrame, in: controllerButtonsPanelView)
     }
   }
 }

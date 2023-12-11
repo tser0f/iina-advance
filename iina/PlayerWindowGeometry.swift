@@ -1117,21 +1117,21 @@ extension PlayerWindowController {
   func resizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> PlayerWindowGeometry {
     let currentLayout = currentLayout
     assert(currentLayout.isWindowed, "Trying to resize in windowed mode but current mode is unexpected: \(currentLayout.mode)")
-    let currentGeo: PlayerWindowGeometry
+    let currentGeometry: PlayerWindowGeometry
     switch currentLayout.spec.mode {
     case .windowed:
-      currentGeo = windowedModeGeometry
+      currentGeometry = windowedModeGeometry
     case .windowedInteractive:
       // FIXME: need to account for margins in viewport around video. Window size will go weird if made too small!
       if let interactiveModeGeometry {
-        currentGeo = interactiveModeGeometry.toPlayerWindowGeometry()
+        currentGeometry = interactiveModeGeometry.toPlayerWindowGeometry()
       } else {
         log.error("WindowWillResize: could not find interactiveModeGeometry; will substitute windowedModeGeometry")
-        currentGeo = windowedModeGeometry
+        currentGeometry = windowedModeGeometry.clone(windowFrame: window.frame)
       }
       if requestedSize.width < InteractiveModeGeometry.minWindowWidth {
         log.verbose("WindowWillResize: requested width (\(requestedSize.width)) is less than min width for interactive mode (\(InteractiveModeGeometry.minWindowWidth)). Denying resize")
-        return currentGeo
+        return currentGeometry
       }
     default:
       log.error("WindowWillResize: requested mode is invalid: \(currentLayout.spec.mode). Will fall back to windowedModeGeometry")
@@ -1139,14 +1139,13 @@ extension PlayerWindowController {
     }
 
     if denyNextWindowResize {
-      let currentFrame = window.frame
-      log.verbose("WindowWillResize: denying this resize; will stay at \(currentFrame.size)")
+      log.verbose("WindowWillResize: denying this resize; will stay at \(currentGeometry.windowFrame.size)")
       denyNextWindowResize = false
-      return currentGeo.clone(windowFrame: currentFrame)
+      return currentGeometry
     }
 
     if player.info.isRestoring {
-      guard let savedState = player.info.priorState else { return currentGeo.clone(windowFrame: window.frame) }
+      guard let savedState = player.info.priorState else { return currentGeometry }
 
       if let savedLayoutSpec = savedState.layoutSpec {
         // If getting here, restore is in progress. Don't allow size changes, but don't worry
@@ -1159,47 +1158,46 @@ extension PlayerWindowController {
           return savedWindowedModeGeo
         }
       }
-      log.error("WindowWillResize: failed to restore window frame; returning existing: \(window.frame.size)")
-      return currentGeo.clone(windowFrame: window.frame)
+      log.error("WindowWillResize: failed to restore window frame; returning existing: \(currentGeometry.windowFrame.size)")
+      return currentGeometry
     }
 
-    let outsideBarsTotalSize = currentGeo.outsideBarsTotalSize
+    let outsideBarsTotalSize = currentGeometry.outsideBarsTotalSize
 
-    if !window.inLiveResize && ((requestedSize.height < currentGeo.minVideoHeight + outsideBarsTotalSize.height)
-                                || (requestedSize.width < currentGeo.minVideoWidth + outsideBarsTotalSize.width)) {
+    if !window.inLiveResize && ((requestedSize.height < currentGeometry.minVideoHeight + outsideBarsTotalSize.height)
+                                || (requestedSize.width < currentGeometry.minVideoWidth + outsideBarsTotalSize.width)) {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
-      log.verbose("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(window.frame.size)")
-      return currentGeo.clone(windowFrame: window.frame)
+      log.verbose("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(currentGeometry.windowFrame.size)")
+      return currentGeometry
     }
 
     // Need to resize window to match video aspect ratio, while taking into account any outside panels.
     let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || currentLayout.isInteractiveMode
     if !lockViewportToVideoSize {
       // No need to resize window to match video aspect ratio.
-      let intendedGeo = currentGeo.scaleWindow(to: requestedSize, fitOption: .noConstraints)
+      let intendedGeo = currentGeometry.scaleWindow(to: requestedSize, fitOption: .noConstraints)
 
       if currentLayout.mode == .windowed && window.inLiveResize {
         // User has resized the video. Assume this is the new preferred resolution until told otherwise. Do not constrain.
         player.info.intendedViewportSize = intendedGeo.viewportSize
       }
-      let newGeo = intendedGeo.refit(.keepInVisibleScreen)
-      return newGeo
+      return intendedGeo.refit(.keepInVisibleScreen)
     }
 
     // Option A: resize height based on requested width
     let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth,
-                                                   height: requestedVideoWidth / currentGeo.videoAspectRatio)
-    let resizeFromWidthGeo = currentGeo.scaleVideo(to: resizeFromWidthRequestedVideoSize,
-                                                   lockViewportToVideoSize: lockViewportToVideoSize)
+                                                   height: requestedVideoWidth / currentGeometry.videoAspectRatio)
+    let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize,
+                                                        lockViewportToVideoSize: lockViewportToVideoSize)
 
     // Option B: resize width based on requested height
     let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height
-    let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeo.videoAspectRatio,
+    let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeometry.videoAspectRatio,
                                                     height: requestedVideoHeight)
-    let resizeFromHeightGeo = currentGeo.scaleVideo(to: resizeFromHeightRequestedVideoSize,
-                                                    lockViewportToVideoSize: lockViewportToVideoSize)
+    let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize,
+                                                         lockViewportToVideoSize: lockViewportToVideoSize)
 
     let chosenGeometry: PlayerWindowGeometry
     if window.inLiveResize {
@@ -1243,9 +1241,17 @@ extension PlayerWindowController {
     if excessSpace < 0 {
       // FIXME: maybe try to include sidebars in the resize viewport calculations
       // At least prevent the window from jumping off the screen, which is what can happen if we try to resize in this situation
-      log.error("WindowWillResize: not enough space for interior sidebars (\(-excessSpace) more needed)! Returning existing size: \(window.frame.size)")
-      return currentGeo.clone(windowFrame: window.frame)
+      log.error("WindowWillResize: not enough space for interior sidebars (\(-excessSpace) more needed)! Returning existing size: \(currentGeometry.windowFrame.size)")
+      return currentGeometry
     }
+
+    if excessSpace < 0 {
+      // FIXME: maybe try to include sidebars in the resize viewport calculations
+      // At least prevent the window from jumping off the screen, which is what can happen if we try to resize in this situation
+      log.error("WindowWillResize: not enough space for interior sidebars (\(-excessSpace) more needed)! Returning existing size: \(currentGeometry.windowFrame.size)")
+      return currentGeometry
+    }
+    // TODO: validate
     return chosenGeometry
   }
 

@@ -502,7 +502,7 @@ extension PlayerWindowController {
     } else { // No OSC
       if outputLayout.isMusicMode {
         miniPlayer.loadIfNeeded()
-        currentControlBar = miniPlayer.backgroundView
+        currentControlBar = miniPlayer.musicModeControlBarView
       } else {
         currentControlBar = nil
       }

@@ -9,9 +9,9 @@
         <customObject id="-2" userLabel="File's Owner" customClass="MiniPlayerController" customModule="IINA" customModuleProvider="target">
             <connections>
                 <outlet property="artistAlbumLabel" destination="qHK-Ae-PRZ" id="3LX-ZY-yPR"/>
-                <outlet property="backgroundView" destination="Q6R-eL-qkW" id="2OU-bR-LVG"/>
-                <outlet property="controlView" destination="Wxl-Ex-FWV" id="Qyk-3u-ay1"/>
+                <outlet property="controllerButtonsPanelView" destination="Wxl-Ex-FWV" id="Qyk-3u-ay1"/>
                 <outlet property="mediaInfoView" destination="Cef-Fd-eDH" id="ngB-gq-f49"/>
+                <outlet property="musicModeControlBarView" destination="Q6R-eL-qkW" id="2OU-bR-LVG"/>
                 <outlet property="muteButton" destination="5Og-lg-qvH" id="9dA-7h-PGA"/>
                 <outlet property="playButton" destination="28c-iK-4mT" id="EHU-TG-NZt"/>
                 <outlet property="playlistWrapperView" destination="2bL-q1-qry" id="acd-8i-uDw"/>
@@ -32,7 +32,7 @@
         <view translatesAutoresizingMaskIntoConstraints="NO" id="98Q-Fi-3N5" userLabel="MiniPlayerPanel View">
             <rect key="frame" x="0.0" y="0.0" width="300" height="164"/>
             <subviews>
-                <visualEffectView wantsLayer="YES" blendingMode="behindWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Q6R-eL-qkW" userLabel="Background View">
+                <visualEffectView wantsLayer="YES" blendingMode="behindWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Q6R-eL-qkW" userLabel="MusicModeController View">
                     <rect key="frame" x="8" y="92" width="284" height="72"/>
                     <subviews>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Cef-Fd-eDH" userLabel="MediaInfo View">
@@ -61,7 +61,7 @@
                                 <constraint firstItem="jAX-WD-i2a" firstAttribute="top" secondItem="Cef-Fd-eDH" secondAttribute="top" constant="6" id="gHa-e1-bbE"/>
                             </constraints>
                         </customView>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Wxl-Ex-FWV" userLabel="Control View">
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Wxl-Ex-FWV" userLabel="ControllerButtonsPanel View">
                             <rect key="frame" x="0.0" y="24" width="284" height="48"/>
                             <subviews>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="BS3-lV-sRn" userLabel="Volume Button">
@@ -203,7 +203,6 @@
                 <constraint firstItem="Q6R-eL-qkW" firstAttribute="top" secondItem="98Q-Fi-3N5" secondAttribute="top" id="HKs-Rq-hwV"/>
                 <constraint firstAttribute="trailing" relation="lessThanOrEqual" secondItem="qHK-Ae-PRZ" secondAttribute="trailing" priority="501" id="I7R-Jj-KYD"/>
                 <constraint firstAttribute="trailing" secondItem="2bL-q1-qry" secondAttribute="trailing" id="J3U-a2-f9B"/>
-                <constraint firstItem="Q6R-eL-qkW" firstAttribute="top" secondItem="98Q-Fi-3N5" secondAttribute="top" id="QBe-bE-7zY"/>
                 <constraint firstAttribute="trailing" relation="lessThanOrEqual" secondItem="jAX-WD-i2a" secondAttribute="trailing" priority="501" id="aAr-pk-xUd"/>
                 <constraint firstAttribute="trailing" secondItem="Q6R-eL-qkW" secondAttribute="trailing" constant="8" id="aFO-ag-c2T"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="qHK-Ae-PRZ" secondAttribute="trailing" priority="499" id="mvA-Hm-ujy"/>

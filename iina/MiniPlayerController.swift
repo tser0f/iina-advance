@@ -9,7 +9,7 @@
 import Cocoa
 
 class MiniPlayerController: NSViewController, NSPopoverDelegate {
-  static let controlViewHeight: CGFloat = 72
+  static let musicModeOSCHeight: CGFloat = 72
   static let defaultWindowWidth: CGFloat = 280
   static let minWindowWidth: CGFloat = 260
   // Hide playlist if its height is too small to display at least 3 items:
@@ -34,10 +34,10 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var volumeButton: NSButton!
   @IBOutlet var volumePopover: NSPopover!
   @IBOutlet weak var volumeSliderView: NSView!
-  @IBOutlet weak var backgroundView: NSVisualEffectView!
+  @IBOutlet weak var musicModeControlBarView: NSVisualEffectView!
   @IBOutlet weak var playlistWrapperView: NSVisualEffectView!
   @IBOutlet weak var mediaInfoView: NSView!
-  @IBOutlet weak var controlView: NSView!
+  @IBOutlet weak var controllerButtonsPanelView: NSView!
   @IBOutlet weak var titleLabel: ScrollingTextField!
   @IBOutlet weak var titleLabelTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var artistAlbumLabel: ScrollingTextField!
@@ -84,7 +84,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   var currentDisplayedPlaylistHeight: CGFloat {
     // most reliable first-hand source for this is a constraint:
     let bottomBarHeight = -windowController.viewportBottomOffsetFromBottomBarBottomConstraint.constant
-    return bottomBarHeight - MiniPlayerController.controlViewHeight
+    return bottomBarHeight - MiniPlayerController.musicModeOSCHeight
   }
 
   // MARK: - Initialization
@@ -98,11 +98,12 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    backgroundView.heightAnchor.constraint(equalToConstant: MiniPlayerController.controlViewHeight).isActive = true
+    /// `musicModeControlBarView` is always the same height
+    musicModeControlBarView.heightAnchor.constraint(equalToConstant: MiniPlayerController.musicModeOSCHeight).isActive = true
 
     /// Set up tracking area to show controller when hovering over it
     windowController.viewportView.addTrackingArea(NSTrackingArea(rect: windowController.viewportView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
-    backgroundView.addTrackingArea(NSTrackingArea(rect: backgroundView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
+    musicModeControlBarView.addTrackingArea(NSTrackingArea(rect: musicModeControlBarView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
 
     // close button
     windowController.closeButtonVE.action = #selector(windowController.close)
@@ -110,8 +111,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
 
     // hide controls initially
-    controlView.alphaValue = 0
-    
+    musicModeControlBarView.alphaValue = 0
+
     // tool tips
     togglePlaylistButton.toolTip = Preference.ToolBarButton.playlist.description()
     toggleAlbumArtButton.toolTip = NSLocalizedString("mini_player.album_art", comment: "album_art")
@@ -137,7 +138,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     /// The goal is to always show the control when the cursor is hovering over either of the 2 tracking areas.
     /// Although they are adjacent to each other, `mouseExited` can still be called when moving from one to the other.
     /// Detect and ignore this case.
-    guard !windowController.isMouseEvent(event, inAnyOf: [backgroundView, windowController.viewportView]) else {
+    guard !windowController.isMouseEvent(event, inAnyOf: [musicModeControlBarView, windowController.viewportView]) else {
       return
     }
 
@@ -151,7 +152,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .required
       windowController.closeButtonView.isHidden = false
       windowController.closeButtonView.animator().alphaValue = 1
-      controlView.animator().alphaValue = 1
+      controllerButtonsPanelView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
     }))
   }
@@ -166,7 +167,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .defaultLow
 
     windowController.closeButtonView.animator().alphaValue = 0
-    controlView.animator().alphaValue = 0
+    controllerButtonsPanelView.animator().alphaValue = 0
     mediaInfoView.animator().alphaValue = 1
   }
 
@@ -322,7 +323,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
       // If video is also hidden, do not try to shrink smaller than the control view, which would cause
       // a constraint violation. This is possible due to small imprecisions in various layout calculations.
-      newWindowFrame.size.height = max(MiniPlayerController.controlViewHeight, newWindowFrame.size.height - currentDisplayedPlaylistHeight)
+      newWindowFrame.size.height = max(MiniPlayerController.musicModeOSCHeight, newWindowFrame.size.height - currentDisplayedPlaylistHeight)
     }
 
     let heightDifference = newWindowFrame.height - window.frame.height
@@ -351,7 +352,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     } else {
       // If playlist is also hidden, do not try to shrink smaller than the control view, which would cause
       // a constraint violation. This is possible due to small imprecisions in various layout calculations.
-      newWindowFrame.size.height = max(MiniPlayerController.controlViewHeight, newWindowFrame.size.height - oldGeometry.videoHeightIfVisible)
+      newWindowFrame.size.height = max(MiniPlayerController.musicModeOSCHeight, newWindowFrame.size.height - oldGeometry.videoHeightIfVisible)
     }
     let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
 
@@ -484,7 +485,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let videoAspectRatio = player.info.videoAspectRatio
     let desiredWindowWidth = MiniPlayerController.defaultWindowWidth
     let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
-    let desiredWindowHeight = desiredVideoHeight + MiniPlayerController.controlViewHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
+    let desiredWindowHeight = desiredVideoHeight + MiniPlayerController.musicModeOSCHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
 
     let screen = windowController.bestScreen
     let screenFrame = screen.visibleFrame
