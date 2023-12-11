@@ -853,14 +853,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       cv.addSubview(view)
     }
 
-    // default album art
-    defaultAlbumArtView.translatesAutoresizingMaskIntoConstraints = false
+    // Default album art
     defaultAlbumArtView.wantsLayer = true
     defaultAlbumArtView.alphaValue = 1
     defaultAlbumArtView.isHidden = true
     defaultAlbumArtView.layer?.contents = #imageLiteral(resourceName: "default-album-art")
     viewportView.addSubview(defaultAlbumArtView)
-    defaultAlbumArtView.addConstraintsToFillSuperview()
+    defaultAlbumArtView.translatesAutoresizingMaskIntoConstraints = false
+    // Add 1:1 aspect ratio constraint
+    defaultAlbumArtView.widthAnchor.constraint(equalTo: defaultAlbumArtView.heightAnchor, multiplier: 1).isActive = true
+    // Always fill superview
+    defaultAlbumArtView.leadingAnchor.constraint(lessThanOrEqualTo: defaultAlbumArtView.superview!.leadingAnchor).isActive = true
+    defaultAlbumArtView.trailingAnchor.constraint(greaterThanOrEqualTo: defaultAlbumArtView.superview!.trailingAnchor).isActive = true
+    defaultAlbumArtView.topAnchor.constraint(lessThanOrEqualTo: defaultAlbumArtView.superview!.topAnchor).isActive = true
+    defaultAlbumArtView.bottomAnchor.constraint(greaterThanOrEqualTo: defaultAlbumArtView.superview!.bottomAnchor).isActive = true
+    // Center in superview
+    defaultAlbumArtView.centerXAnchor.constraint(equalTo: defaultAlbumArtView.superview!.centerXAnchor).isActive = true
+    defaultAlbumArtView.centerYAnchor.constraint(equalTo: defaultAlbumArtView.superview!.centerYAnchor).isActive = true
 
     // init quick setting view now
     let _ = quickSettingView
@@ -2649,8 +2658,42 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   private func setOSDViews(fromMessage message: OSDMessage) {
     osdLastMessage = message
 
-    let (osdString, osdType) = message.message()
-    osdLabel.stringValue = osdString
+    let (osdText, osdType) = message.message()
+
+    if #available(macOS 11.0, *), message.isSoundRelated {
+      // Add sound icon which indicates current audio status.
+      // Gray color == disabled. Slash == muted. Can be combined
+
+      let isAudioDisabled = !player.info.isAudioTrackSelected
+      let currentVolume = player.info.volume
+      let isMuted = player.info.isMuted
+      let image: NSImage
+      if isMuted {
+        image = NSImage(systemSymbolName: "speaker.slash.fill", accessibilityDescription: "Audio is muted")!
+      } else if isAudioDisabled {
+        image = NSImage(systemSymbolName: "speaker.fill", accessibilityDescription: "No audio track is selected")!
+      } else {
+        if #available(macOS 13.0, *) {
+          // Vary icon slightly based on volume level
+          image = NSImage(systemSymbolName: "speaker.wave.3.fill", variableValue: currentVolume, accessibilityDescription: "Sound is enabled")!
+        } else {
+          image = NSImage(systemSymbolName: "speaker.wave.3.fill", accessibilityDescription: "Sound is enabled")!
+        }
+      }
+
+      let attachment = NSTextAttachment()
+      attachment.image = image
+      let imageString = NSMutableAttributedString(attachment: attachment)
+      if isAudioDisabled {
+        imageString.addAttributes([.foregroundColor: NSColor.disabledControlTextColor], range: NSMakeRange(0, imageString.length))
+      }
+      let textString = NSAttributedString(string: " \(osdText)")
+      imageString.append(textString)
+      osdLabel.attributedStringValue = imageString
+    } else {
+      // No icon
+      osdLabel.stringValue = osdText
+    }
 
     switch osdType {
     case .normal:
@@ -2689,9 +2732,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else {
       osdAnimationState = .shown
     }
-    let osdTextSize = Preference.float(for: .osdTextSize)
-    osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize), weight: .regular)
-    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: CGFloat(osdTextSize * 0.5).clamped(to: 11...25), weight: .regular)
+    let osdTextSize = CGFloat(Preference.float(for: .osdTextSize))
+    osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
+    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.5).clamped(to: 11...25), weight: .regular)
+    if #available(macOS 11.0, *) {
+      osdAccessoryProgress.controlSize = osdTextSize > 16 ? .large : .regular
+    }
 
     setOSDViews(fromMessage: message)
 
@@ -2699,7 +2745,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     osdVisualEffectView.isHidden = false
     fadeableViews.remove(osdVisualEffectView)
 
-    osdVisualEffectView.layoutSubtreeIfNeeded()
     if autoHide {
       let timeout: Double
       if let forcedTimeout = forcedTimeout {
@@ -2712,8 +2757,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
     }
 
-    osdStackView.views(in: .bottom).forEach {
-      osdStackView.removeView($0)
+    for subview in osdStackView.views(in: .bottom) {
+      osdStackView.removeView(subview)
     }
     if let accessoryView = accessoryView {
       isShowingPersistentOSD = true
@@ -2736,11 +2781,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       IINAAnimation.runAsync(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration, { [self] in
         osdVisualEffectView.layoutSubtreeIfNeeded()
+        osdVisualEffectView.display()
       }), then: {
         accessoryView.layer?.opacity = 1
       })
     }
-
   }
 
   @objc

@@ -86,6 +86,17 @@ enum OSDMessage {
   case custom(String)
   case customWithDetail(String, String)
 
+  var isSoundRelated: Bool {
+    switch self {
+    case .volume, .audioDelay, .mute, .unMute:
+      return true
+    case .track(let track):
+      return track.type == .audio
+    default:
+      return false
+    }
+  }
+
   func message() -> (String, OSDType) {
     switch self {
     case .fileStart(let filename):
