@@ -203,8 +203,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // - OSD
 
-  /** Whether current osd needs user interaction to be dismissed */
-  var isShowingPersistentOSD = false
+  /// Whether current osd needs user interaction to be dismissed.
+  private var isShowingPersistentOSD = false
+  /// If using the mpv OSD, disable the IINA OSD
+  var isUsingMpvOSD: Bool = false
   var osdContext: Any?
   private var osdLastMessage: OSDMessage? = nil
   var osdAnimationState: UIAnimationState = .hidden
@@ -2720,7 +2722,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
-    guard player.enableOSD && !isShowingPersistentOSD && !isInInteractiveMode else { return }
+    guard !isShowingPersistentOSD else { return }
 
     if let hideOSDTimer = self.hideOSDTimer {
       hideOSDTimer.invalidate()
@@ -2789,7 +2791,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   @objc
-  func hideOSD() {
+  func hideOSD(immediately: Bool = false) {
     osdAnimationState = .willHide
     isShowingPersistentOSD = false
     osdContext = nil
@@ -2800,7 +2802,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     player.refreshSyncUITimer()
 
-    IINAAnimation.runAsync(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration, { [self] in
+    IINAAnimation.runAsync(IINAAnimation.Task(duration: immediately ? 0 : IINAAnimation.OSDAnimationDuration, { [self] in
       osdVisualEffectView.alphaValue = 0
     }), then: {
       if self.osdAnimationState == .willHide {

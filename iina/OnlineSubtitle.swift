@@ -162,9 +162,7 @@ class OnlineSubtitle {
         callback(result)
       }
     }.ensure {
-      DispatchQueue.main.async {
-        player.hideOSD()
-      }
+      player.hideOSD()
     }.catch { err in
       let osdMessage: OSDMessage
       let prefix = "Failed to obtain subtitles for \(url) from \(provider.name). "

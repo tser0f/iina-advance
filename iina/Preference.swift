@@ -168,6 +168,9 @@ struct Preference {
 
     /// OSD
     static let enableOSD = Key("enableOSD")
+    /// Only valid if `enableOSD` is `true`:
+    static let enableOSDInMusicMode = Key("enableOSDInMusicMode")
+
     static let osdPosition = Key("osdPosition")
     static let osdAutoHideTimeout = Key("osdAutoHideTimeout")
     static let osdTextSize = Key("osdTextSize")
@@ -1028,6 +1031,7 @@ struct Preference {
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
+    .enableOSDInMusicMode: true,
     .osdPosition: OSDPosition.topLeading.rawValue,
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(20),

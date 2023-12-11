@@ -358,8 +358,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     var tasks: [IINAAnimation.Task] = []
     tasks.append(IINAAnimation.zeroDurationTask{ [self] in
       // Hide OSD during animation
-      player.enableOSD = false
-      player.hideOSD()
+      windowController.hideOSD(immediately: true)
 
       /// Temporarily hide window buttons. Using `isHidden` will conveniently override its alpha value
       windowController.closeButtonView.isHidden = true
@@ -379,7 +378,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }))
 
     tasks.append(IINAAnimation.Task{ [self] in
-      player.enableOSD = true
       // Swap window buttons
       windowController.updateMusicModeButtonsVisibility()
 

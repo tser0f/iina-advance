@@ -126,7 +126,7 @@ class PlayerCore: NSObject {
   var syncUITimer: Timer?
 
   // OSD
-  var enableOSD: Bool = true
+  var isUsingMpvOSD: Bool = false
   private var osdLastPosition: Double? = nil
   private var osdLastDuration: Double? = nil
 
@@ -2168,7 +2168,10 @@ class PlayerCore: NSObject {
 
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
     /// Note: use `windowController.loaded` (querying `windowController.isWindowLoaded` will initialize windowController unexpectedly)
-    guard windowController.loaded && Preference.bool(for: .enableOSD) else { return }
+    guard windowController.loaded,
+          Preference.bool(for: .enableOSD),
+          !isUsingMpvOSD, !isInInteractiveMode else { return }
+    guard !isInMiniPlayer || Preference.bool(for: .enableOSDInMusicMode) else { return }
 
     // Many redundant messages are sent from mpv. Try to filter them out here
     switch osd {

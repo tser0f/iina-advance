@@ -215,13 +215,13 @@ not applying FFmpeg 9599 workaround
     // - Advanced
 
     // disable internal OSD
-    let useMpvOsd = Preference.bool(for: .enableAdvancedSettings) && Preference.bool(for: .useMpvOsd)
-    if !useMpvOsd {
-      chkErr(mpv_set_option_string(mpv, MPVOption.OSD.osdLevel, "0"))
-    } else {
-      // FIXME: need to keep this synced with useMpvOsd during run
-      player.enableOSD = false
+    let useMpvOSD = Preference.bool(for: .enableAdvancedSettings) && Preference.bool(for: .useMpvOsd)
+    // FIXME: need to keep this synced with useMpvOsd during run
+    player.isUsingMpvOSD = useMpvOSD
+    if useMpvOSD {
       player.hideOSD()
+    } else {
+      chkErr(mpv_set_option_string(mpv, MPVOption.OSD.osdLevel, "0"))
     }
 
     // log
