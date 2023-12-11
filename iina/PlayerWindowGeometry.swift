@@ -1163,10 +1163,10 @@ extension PlayerWindowController {
       return currentGeo.clone(windowFrame: window.frame)
     }
 
-    let outsideBarsSize = currentGeo.outsideBarsTotalSize
+    let outsideBarsTotalSize = currentGeo.outsideBarsTotalSize
 
-    if !window.inLiveResize && ((requestedSize.height < currentGeo.minVideoHeight + outsideBarsSize.height)
-                                || (requestedSize.width < currentGeo.minVideoWidth + outsideBarsSize.width)) {
+    if !window.inLiveResize && ((requestedSize.height < currentGeo.minVideoHeight + outsideBarsTotalSize.height)
+                                || (requestedSize.width < currentGeo.minVideoWidth + outsideBarsTotalSize.width)) {
       // Sending the current size seems to work much better with accessibilty requests
       // than trying to change to the min size
       log.verbose("WindowWillResize: requested smaller than min \(AppData.minVideoSize); returning existing \(window.frame.size)")
@@ -1186,8 +1186,6 @@ extension PlayerWindowController {
       let newGeo = intendedGeo.refit(.keepInVisibleScreen)
       return newGeo
     }
-
-    let outsideBarsTotalSize = currentGeo.outsideBarsTotalSize
 
     // Option A: resize height based on requested width
     let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width
@@ -1240,6 +1238,14 @@ extension PlayerWindowController {
       }
     }
     log.verbose("WindowWillResize isLive:\(window.inLiveResize.yn) req:\(requestedSize) returning:\(chosenGeometry.windowFrame.size)")
+
+    let excessSpace = currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: chosenGeometry.insideLeadingBarWidth, trailingSidebarWidth: chosenGeometry.insideTrailingBarWidth, in: chosenGeometry.viewportSize.width)
+    if excessSpace < 0 {
+      // FIXME: maybe try to include sidebars in the resize viewport calculations
+      // At least prevent the window from jumping off the screen, which is what can happen if we try to resize in this situation
+      log.error("WindowWillResize: not enough space for interior sidebars (\(-excessSpace) more needed)! Returning existing size: \(window.frame.size)")
+      return currentGeo.clone(windowFrame: window.frame)
+    }
     return chosenGeometry
   }
 

@@ -889,11 +889,11 @@ extension PlayerWindowController {
 
     if currentLayout.leadingSidebar.placement == .insideViewport {
       // Stop sidebar from resizing when the viewportView is not wide enough to fit it.
-      let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
+      let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: oldGeo.viewportSize.width))
       newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
       if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
         // should not happen in theory, because playlist shouldn't have been shown when resize started
-        log.error("Cannot resize playlist! Width is below minimum value: \(desiredPlaylistWidth)!")
+        log.error("Cannot resize playlist: desired width \(desiredPlaylistWidth) is below minimum!")
         return nil
       }
     } else {  /// `placement == .outsideViewport`
@@ -930,14 +930,15 @@ extension PlayerWindowController {
     let newPlaylistWidth: CGFloat
     let newGeo: PlayerWindowGeometry
     let currentLayout = currentLayout
+    let viewportSize = oldGeo.viewportSize
     let desiredPlaylistWidth = clampPlaylistWidth(oldGeo.windowFrame.width - dragLocationX - 2)
 
     if currentLayout.trailingSidebar.placement == .insideViewport {
-      let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
+      let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: viewportSize.width))
 
       newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
       if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
-        log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
+        log.error("Cannot resize playlist: desired width \(desiredPlaylistWidth) is below minimum!")
         return nil
       }
     } else {  /// `placement == .outsideViewport`
@@ -948,7 +949,6 @@ extension PlayerWindowController {
     /// See comments in `resizeLeadingSidebar()` above
     if currentLayout.trailingSidebar.placement == .outsideViewport {
       let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideTrailingBarWidth
-      let viewportSize = oldGeo.viewportSize
       let newViewportWidth = viewportSize.width - playlistWidthDifference
       let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
 
