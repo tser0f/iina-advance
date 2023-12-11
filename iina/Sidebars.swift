@@ -897,8 +897,12 @@ extension PlayerWindowController {
           let viewportSize = oldGeo.viewportSize
           let newViewportWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
-          let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
-          newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
+          if Preference.bool(for: .lockViewportToVideoSize) {
+            let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+            newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
+          } else {
+            newGeo = resizedPlaylistGeo.refit()  // may need to recalculate videoSize or other internal vars
+          }
         } else {
           newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
         }
@@ -924,8 +928,12 @@ extension PlayerWindowController {
           let viewportSize = oldGeo.viewportSize
           let newViewportWidth = viewportSize.width - playlistWidthDifference
           let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
-          let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
-          newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
+          if Preference.bool(for: .lockViewportToVideoSize) {
+            let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+            newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
+          } else {
+            newGeo = resizedPlaylistGeo.refit()  // may need to recalculate videoSize or other internal vars
+          }
         } else {
           newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)
         }
@@ -935,7 +943,7 @@ extension PlayerWindowController {
       }
 
       Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
-      updateSpacingForTitleBarAccessories(windowWidth: oldGeo.windowFrame.width)
+      updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
       applyWindowGeometryForSpecialResize(newGeo)
       return true
     }
