@@ -3323,7 +3323,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @IBAction func muteButtonAction(_ sender: NSButton) {
     player.toggleMute()
-    player.sendOSD(player.info.isMuted ? .mute : .unMute)
   }
 
   @IBAction func leftArrowButtonAction(_ sender: NSButton) {

@@ -49,8 +49,8 @@ enum OSDMessage {
   case secondSubHidden
   case secondSubVisible
   case subPos(Double)
-  case mute
-  case unMute
+  case mute(Int)
+  case unMute(Int)
   case screenshot
   case abLoop(PlaybackInfo.LoopStatus)
   case abLoopUpdate(PlaybackInfo.LoopStatus, String)
@@ -203,11 +203,13 @@ enum OSDMessage {
     case .secondSubVisible:
       return (NSLocalizedString("osd.sub_second_visible", comment: "Second Subtitles Visible"), .normal)
 
-    case .mute:
-      return (NSLocalizedString("osd.mute", comment: "Mute"), .normal)
+    case .mute(let volume):
+      return (NSLocalizedString("osd.mute", comment: "Mute"),
+        .withProgress(Double(volume) / Double(Preference.integer(for: .maxVolume))))
 
-    case .unMute:
-      return (NSLocalizedString("osd.unmute", comment: "Unmute"), .normal)
+    case .unMute(let volume):
+      return (NSLocalizedString("osd.unmute", comment: "Unmute"),
+              .withProgress(Double(volume) / Double(Preference.integer(for: .maxVolume))))
 
     case .screenshot:
       return (NSLocalizedString("osd.screenshot", comment: "Screenshot Captured"), .normal)

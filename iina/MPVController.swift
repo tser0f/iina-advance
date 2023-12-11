@@ -1246,7 +1246,8 @@ not applying FFmpeg 9599 workaround
       if let data = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee {
         player.info.isMuted = data
         player.syncUI(.muteButton)
-        player.sendOSD(data ? OSDMessage.mute : OSDMessage.unMute)
+        let volume = Int(player.info.volume)
+        player.sendOSD(data ? OSDMessage.mute(volume) : OSDMessage.unMute(volume))
       }
 
     case MPVOption.Audio.volume:

@@ -583,7 +583,6 @@ class PlayerCore: NSObject {
 
   func toggleMute(_ set: Bool? = nil) {
     let newState = set ?? !mpv.getFlag(MPVOption.Audio.mute)
-    info.isMuted = newState
     mpv.setFlag(MPVOption.Audio.mute, newState)
   }
 
