@@ -1353,15 +1353,11 @@ extension PlayerWindowController {
     }))
   }
 
-  /// For pinch-to-zoom or resizing outside sidebars when the whole window needs to be resized or moved.
-  /// Not animated. Can be used in either windowed mode, or music mode if the playlist is hidden.
+  /// For (1) pinch-to-zoom, (2) resizing outside sidebars when the whole window needs to be resized or moved.
+  /// Not animated. Can be used in windowed mode or full screen modes. Can be used in music mode only if the playlist is hidden.
   func applyWindowGeometryForSpecialResize(_ newGeometry: PlayerWindowGeometry) {
-    log.verbose("ApplySpecial \(newGeometry)")
+    log.verbose("ApplySpecialGeo: \(newGeometry)")
     let currentLayout = currentLayout
-    guard currentLayout.spec.mode == .windowed || (currentLayout.spec.mode == .musicMode) else {
-      log.error("ApplySpecial: cannot be used in \(currentLayout.spec.mode) mode!")
-      return
-    }
     // Need this if video is playing
     videoView.videoLayer.enterAsynchronousMode()
 

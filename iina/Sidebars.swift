@@ -851,7 +851,6 @@ extension PlayerWindowController {
   /// Returns new or existing `PlayerWindowGeometry` if handled; `nil` if not
   func resizeSidebar(with dragEvent: NSEvent) -> Bool {
     guard leadingSidebarIsResizing || trailingSidebarIsResizing else { return false }
-    guard let window else { return false }
 
     let oldGeo: PlayerWindowGeometry
     switch currentLayout.mode {
@@ -863,90 +862,107 @@ extension PlayerWindowController {
       Logger.fatal("ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
     }
 
-    return IINAAnimation.disableAnimation {
-      let currentLocation = dragEvent.locationInWindow
-      let layout = currentLayout
-
-      let newGeo: PlayerWindowGeometry
-      let newPlaylistWidth: CGFloat
+    return IINAAnimation.disableAnimation { [self] in
+      let newGeo: PlayerWindowGeometry?
 
       if leadingSidebarIsResizing {
-        let desiredPlaylistWidth = clampPlaylistWidth(currentLocation.x + 2)
-        if layout.leadingSidebar.placement == .insideViewport {
-          // Stop sidebar from resizing when the viewportView is not wide enough to fit it.
-          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
-          newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
-          if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
-            // should not happen in theory, because playlist shouldn't have been shown when resize started
-            log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
-            return true
-          }
-        } else {
-          newPlaylistWidth = desiredPlaylistWidth
-        }
-        updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.leadingSidebarPlacement)
-
-        /// Updating the sidebar width when it is in "outside" mode will cause the video width to
-        /// grow or shrink, which will require its height to change according to its aspectRatio.
-        /// If `lockViewportToVideoSize` is `true`, it is necessary to resize the window to
-        /// accomodate the change in height to avoid black bars. But even if it is `true`, it
-        /// seems more useful to scale the whole viewport, which will avoid creating
-        /// new horizontal black bars where they don't exist.
-        if layout.leadingSidebar.placement == .outsideViewport {
-          let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideLeadingBarWidth
-          let viewportSize = oldGeo.viewportSize
-          let newViewportWidth = viewportSize.width - playlistWidthDifference
-          let resizedPlaylistGeo = oldGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
-          if Preference.bool(for: .lockViewportToVideoSize) {
-            let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
-            newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
-          } else {
-            newGeo = resizedPlaylistGeo.refit()  // may need to recalculate videoSize or other internal vars
-          }
-        } else {
-          newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
-        }
-
+        newGeo = resizeLeadingSidebar(from: oldGeo, dragLocationX: dragEvent.locationInWindow.x)
       } else if trailingSidebarIsResizing {
-        let desiredPlaylistWidth = clampPlaylistWidth(window.frame.width - currentLocation.x - 2)
-        if layout.trailingSidebar.placement == .insideViewport {
-          let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
-
-          newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
-          if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
-            log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
-            return true
-          }
-        } else {
-          newPlaylistWidth = desiredPlaylistWidth
-        }
-        updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: layout.trailingSidebarPlacement)
-
-        // See comments for leading sidebar above
-        if layout.trailingSidebar.placement == .outsideViewport {
-          let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideTrailingBarWidth
-          let viewportSize = oldGeo.viewportSize
-          let newViewportWidth = viewportSize.width - playlistWidthDifference
-          let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
-          if Preference.bool(for: .lockViewportToVideoSize) {
-            let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
-            newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
-          } else {
-            newGeo = resizedPlaylistGeo.refit()  // may need to recalculate videoSize or other internal vars
-          }
-        } else {
-          newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)
-        }
-
+        newGeo = resizeTrailingSidebar(from: oldGeo, dragLocationX: dragEvent.locationInWindow.x)
       } else {
         return false
       }
 
-      Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
-      updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
-      applyWindowGeometryForSpecialResize(newGeo)
+      if let newGeo {
+        updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
+        applyWindowGeometryForSpecialResize(newGeo)
+      }
       return true
     }
+  }
+
+  private func resizeLeadingSidebar(from oldGeo: PlayerWindowGeometry, dragLocationX: CGFloat) -> PlayerWindowGeometry? {
+    let newPlaylistWidth: CGFloat
+    let newGeo: PlayerWindowGeometry
+    let currentLayout = currentLayout
+    let desiredPlaylistWidth = clampPlaylistWidth(dragLocationX + 2)
+
+    if currentLayout.leadingSidebar.placement == .insideViewport {
+      // Stop sidebar from resizing when the viewportView is not wide enough to fit it.
+      let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
+      newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
+      if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
+        // should not happen in theory, because playlist shouldn't have been shown when resize started
+        log.error("Cannot resize playlist! Width is below minimum value: \(desiredPlaylistWidth)!")
+        return nil
+      }
+    } else {  /// `placement == .outsideViewport`
+      newPlaylistWidth = desiredPlaylistWidth
+    }
+    updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: currentLayout.leadingSidebarPlacement)
+
+    /// Updating the sidebar width when it is in "outside" mode will cause the video width to
+    /// grow or shrink, which will require its height to change according to its aspectRatio.
+    if currentLayout.leadingSidebar.placement == .outsideViewport {
+      let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideLeadingBarWidth
+      let viewportSize = oldGeo.viewportSize
+      let newViewportWidth = viewportSize.width - playlistWidthDifference
+      let resizedPlaylistGeo = oldGeo.clone(outsideLeadingBarWidth: newPlaylistWidth)
+
+      /// If `lockViewportToVideoSize` is `true`, it is necessary to resize the window's height to
+      /// accomodate the change in video height.
+      if Preference.bool(for: .lockViewportToVideoSize) {
+        let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+        newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
+      } else {
+        /// If `lockViewportToVideoSize` is `false`, window size won't change.
+        /// But call `refit` to recalculate videoSize or other internal vars
+        newGeo = resizedPlaylistGeo.refit()
+      }
+    } else {  /// `.insideViewport`
+      newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
+    }
+    Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
+    return newGeo
+  }
+
+  private func resizeTrailingSidebar(from oldGeo: PlayerWindowGeometry, dragLocationX: CGFloat) -> PlayerWindowGeometry? {
+    let newPlaylistWidth: CGFloat
+    let newGeo: PlayerWindowGeometry
+    let currentLayout = currentLayout
+    let desiredPlaylistWidth = clampPlaylistWidth(oldGeo.windowFrame.width - dragLocationX - 2)
+
+    if currentLayout.trailingSidebar.placement == .insideViewport {
+      let negativeDeficit = min(0, currentLayout.spec.getExcessSpaceBetweenInsideSidebars(trailingSidebarWidth: desiredPlaylistWidth, in: windowedModeGeometry.viewportSize.width))
+
+      newPlaylistWidth = desiredPlaylistWidth + negativeDeficit
+      if newPlaylistWidth < Constants.Sidebar.minPlaylistWidth {
+        log.error("Cannot resize playlist! Width is below minimum value: \(newPlaylistWidth)!")
+        return nil
+      }
+    } else {  /// `placement == .outsideViewport`
+      newPlaylistWidth = desiredPlaylistWidth
+    }
+    updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: currentLayout.trailingSidebarPlacement)
+
+    /// See comments in `resizeLeadingSidebar()` above
+    if currentLayout.trailingSidebar.placement == .outsideViewport {
+      let playlistWidthDifference = newPlaylistWidth - oldGeo.outsideTrailingBarWidth
+      let viewportSize = oldGeo.viewportSize
+      let newViewportWidth = viewportSize.width - playlistWidthDifference
+      let resizedPlaylistGeo = oldGeo.clone(outsideTrailingBarWidth: newPlaylistWidth)
+
+      if Preference.bool(for: .lockViewportToVideoSize) {
+        let desiredViewportSize = NSSize(width: newViewportWidth, height: newViewportWidth / viewportSize.aspect)
+        newGeo = resizedPlaylistGeo.scaleViewport(to: desiredViewportSize)
+      } else {
+        newGeo = resizedPlaylistGeo.refit()
+      }
+    } else {  /// `.insideViewport`
+      newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)
+    }
+    Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
+    return newGeo
   }
 
   func finishResizingSidebar(with dragEvent: NSEvent) -> Bool {
