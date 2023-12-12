@@ -1714,7 +1714,7 @@ class PlayerCore: NSObject {
     info.aid = aid
     log.verbose("Audio track changed to: \(aid)")
     guard windowController.loaded else { return }
-    DispatchQueue.main.sync {
+    DispatchQueue.main.async { [self] in
       windowController.updateVolumeUI()
     }
     postNotification(.iinaAIDChanged)
@@ -1735,7 +1735,7 @@ class PlayerCore: NSObject {
   }
 
   func seeking() {
-    DispatchQueue.main.sync { [self] in
+    DispatchQueue.main.async { [self] in
       info.isSeeking = true
       // When playback is paused the display link may be shutdown in order to not waste energy.
       // It must be running when seeking to avoid slowdowns caused by mpv waiting for IINA to call
@@ -2089,13 +2089,12 @@ class PlayerCore: NSObject {
 
         // don't let play/pause icon fall out of sync
         let isPaused = info.isPaused
-        windowController.playButton.state = isPaused ? .off : .on
+        windowController.updatePlayButtonState(isPaused ? .off : .on)
         windowController.updatePlayTime(withDuration: isNetworkStream)
         windowController.updateAdditionalInfo()
         if isInMiniPlayer {
           windowController.miniPlayer.loadIfNeeded()
           windowController.miniPlayer.updateScrollingLabels()
-          windowController.miniPlayer.playButton.state = isPaused ? .off : .on
         }
         if isNetworkStream {
           self.windowController.updateNetworkState()
@@ -2175,7 +2174,6 @@ class PlayerCore: NSObject {
     // Many redundant messages are sent from mpv. Try to filter them out here
     switch osd {
     case .seek(_, _):
-      syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
       // Try to avoid duplicate seek messages which are emitted when changing video settings while paused
       guard let position = info.videoPosition?.second, let duration = info.videoDuration?.second else {
         log.verbose("Ignoring request to show OSD seek: position or duration is missing")

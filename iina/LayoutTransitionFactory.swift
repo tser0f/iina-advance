@@ -351,10 +351,10 @@ extension PlayerWindowController {
       return inputLayout.buildFullScreenGeometry(inside: windowedModeScreen, videoAspectRatio: player.info.videoAspectRatio)
     case .windowedInteractive:
       if let interactiveModeGeometry {
-        return interactiveModeGeometry.toPlayerWindowGeometry()
+        return interactiveModeGeometry
       } else {
         log.warn("[\(transitionName)] Failed to find interactiveModeGeometry! Will change from windowedModeGeometry (may be wrong)")
-        return InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry).toPlayerWindowGeometry()
+        return InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
       }
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
@@ -380,11 +380,11 @@ extension PlayerWindowController {
     case .windowedInteractive:
       if let cachedInteractiveModeGeometry = interactiveModeGeometry {
         log.verbose("Using cached interactiveModeGeometry for outputGeo: \(cachedInteractiveModeGeometry)")
-        return cachedInteractiveModeGeometry.toPlayerWindowGeometry()
+        return cachedInteractiveModeGeometry
       }
       let imGeo = InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
-      log.verbose("Calculated entry into interactiveModeGeometry from windowedModeGeometry for outputGeo: \(imGeo)")
-      return imGeo.toPlayerWindowGeometry()
+      log.verbose("Derived interactiveModeGeometry from windowedModeGeometry for outputGeo: \(imGeo)")
+      return imGeo
 
     case .windowed:
       let outputGeo = outputLayout.convertWindowedModeGeometry(from: windowedModeGeometry, videoAspectRatio: inputGeometry.videoAspectRatio)
@@ -439,7 +439,8 @@ extension PlayerWindowController {
       if transition.isEnteringInteractiveMode {
         return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
       } else if transition.isExitingInteractiveMode {
-        // This will scale video up to viewport size (or close enough - we are removing videobox which won't 100% match the video aspect)
+        // This will scale video up to viewport size (or close enough - we are removing
+        // viewportMargins, and then we won't 100% match the video aspect)
         return resizedGeo.scaleViewport(lockViewportToVideoSize: true)
       }
     }

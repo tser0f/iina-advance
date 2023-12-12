@@ -111,7 +111,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.closeButtonBackgroundViewVE.roundCorners(withRadius: 8)
 
     // hide controls initially
-    musicModeControlBarView.alphaValue = 0
+    controllerButtonsPanelView.alphaValue = 0
 
     // tool tips
     togglePlaylistButton.toolTip = Preference.ToolBarButton.playlist.description()
@@ -142,7 +142,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       return
     }
 
-    hideControl()
+    hideControllerButtonsInPipeline()
   }
 
   // MARK: - UI: Show / Hide
@@ -157,13 +157,13 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }))
   }
 
-  private func hideControl() {
+  private func hideControllerButtonsInPipeline() {
     windowController.animationPipeline.submit(IINAAnimation.Task(duration: MiniPlayerController.animationDurationShowControl, { [self] in
-      hideControlInternal()
+      hideControllerButtons()
     }))
   }
 
-  private func hideControlInternal() {
+  private func hideControllerButtons() {
     windowController.osdLeadingToMiniPlayerButtonsTrailingConstraint.priority = .defaultLow
 
     windowController.closeButtonView.animator().alphaValue = 0
@@ -235,7 +235,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   func popoverWillClose(_ notification: Notification) {
     if NSWindow.windowNumber(at: NSEvent.mouseLocation, belowWindowWithWindowNumber: 0) != window!.windowNumber {
-      hideControl()
+      hideControllerButtonsInPipeline()
     }
   }
 
@@ -451,7 +451,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.fragPositionSliderView.removeFromSuperview()
 
     // Make sure to reset constraints for OSD
-    hideControlInternal()
+    hideControllerButtons()
   }
 
   func applyVideoViewVisibilityConstraints(isVideoVisible: Bool) {

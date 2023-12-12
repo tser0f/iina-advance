@@ -100,7 +100,7 @@ class GuideWindowButtonCell: NSButtonCell {
     )
   }
 
-  override func drawBezel(withFrame frame: NSRect, in controllerButtonsPanelView: NSView) {
+  override func drawBezel(withFrame frame: NSRect, in controlView: NSView) {
     NSGraphicsContext.saveGraphicsState()
     let rectPath = NSBezierPath(
       roundedRect: NSRect(x: 2, y: 2, width: frame.width - 4, height: frame.height - 4),

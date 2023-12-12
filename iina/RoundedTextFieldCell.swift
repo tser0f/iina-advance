@@ -17,8 +17,8 @@ class RoundedTextFieldCell: NSTextFieldCell {
     bezelStyle = .roundedBezel
   }
 
-  override func draw(withFrame cellFrame: NSRect, in controllerButtonsPanelView: NSView) {
-    super.draw(withFrame: cellFrame, in: controllerButtonsPanelView)
+  override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
+    super.draw(withFrame: cellFrame, in: controlView)
   }
 
   override func drawingRect(forBounds rect: NSRect) -> NSRect {

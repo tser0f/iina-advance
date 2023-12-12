@@ -241,7 +241,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.
-  var interactiveModeGeometry: InteractiveModeGeometry? = nil
+  var interactiveModeGeometry: PlayerWindowGeometry? = nil
 
   // MARK: - Enums
 
@@ -2557,6 +2557,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
+    // OSD
     if osdAnimationState == .shown, let osdLastMessage = self.osdLastMessage {
       let message: OSDMessage?
       switch osdLastMessage {
@@ -2573,9 +2574,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
+    // OSC
     let percentage = (pos.second / duration.second) * 100
     [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
     playSlider.updateTo(percentage: percentage)
+
     // Touch bar
     if #available(macOS 10.12.2, *) {
       player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)

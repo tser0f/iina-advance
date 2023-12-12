@@ -178,11 +178,11 @@ class VideoView: NSView {
     newConstraints.setActive(eq: eqIsActive, center: centerIsActive)
   }
 
-  func constrainLayoutToEqualsOffsetOnly(top: CGFloat = -2, trailing: CGFloat = 0, bottom: CGFloat = 0, leading: CGFloat = -2,
+  func constrainLayoutToEqualsOffsetOnly(margins: BoxQuad,
                                          eqPriority: NSLayoutConstraint.Priority = .required) {
-    log.verbose("Constraining videoView for fixed offsets only: \(top) \(trailing) \(bottom) \(leading)")
+    log.verbose("Constraining videoView for fixed offsets only: \(margins.top) \(margins.trailing) \(margins.bottom) \(margins.leading)")
     // Use only EQ. Remove all other constraints
-    rebuildConstraints(top: top, trailing: trailing, bottom: bottom, leading: leading,
+    rebuildConstraints(top: margins.top, trailing: -margins.trailing, bottom: -margins.bottom, leading: margins.leading,
                        eqIsActive: true, eqPriority: eqPriority,
                        centerIsActive: false, centerPriority: .required)
 

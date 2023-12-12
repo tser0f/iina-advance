@@ -299,6 +299,29 @@ extension PlayerWindowController {
     var insideTrailingBarWidth: CGFloat {
       return spec.trailingSidebar.insideWidth
     }
+    
+
+    var bottomBarHeight: CGFloat {
+      if isInteractiveMode {
+        return InteractiveModeGeometry.outsideBottomBarHeight
+      }
+      if enableOSC && oscPosition == .bottom {
+        return OSCToolbarButton.oscBarHeight
+      }
+      return 0
+    }
+
+    var insideBottomBarHeight: CGFloat {
+      return bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
+    }
+
+    var outsideBottomBarHeight: CGFloat {
+      return bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
+    }
+
+    var viewportMargins: BoxQuad {
+      return isInteractiveMode ? InteractiveModeGeometry.videobox : BoxQuad.zero
+    }
 
     // Derived properties & convenience accessors
 
@@ -507,8 +530,14 @@ extension PlayerWindowController {
       if isInteractiveMode {
         let windowFrame = PlayerWindowGeometry.fullScreenWindowFrame(in: screen, legacy: spec.isLegacyStyle)
         let fitOption: ScreenFitOption = spec.isLegacyStyle ? .legacyFullScreen : .nativeFullScreen
-        let imGeo = InteractiveModeGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption, videoAspectRatio: videoAspectRatio)
-        return imGeo.toPlayerWindowGeometry()
+        let topMarginHeight = screen.cameraHousingHeight ?? 0
+        return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
+                                    topMarginHeight: topMarginHeight, 
+                                    outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
+                                    outsideBottomBarHeight: InteractiveModeGeometry.outsideBottomBarHeight,
+                                    outsideLeadingBarWidth: 0, insideTopBarHeight: 0, 
+                                    insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
+                                    viewportMargins: InteractiveModeGeometry.videobox, videoAspectRatio: videoAspectRatio)
       }
       
       let bottomBarHeight: CGFloat

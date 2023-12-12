@@ -54,7 +54,7 @@ extension PlayerWindowController {
     case .musicMode:
       musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspectRatio: transition.outputGeometry.videoAspectRatio)
     case .windowedInteractive:
-      interactiveModeGeometry = InteractiveModeGeometry.from(transition.outputGeometry)
+      interactiveModeGeometry = transition.outputGeometry
     case .fullScreen, .fullScreenInteractive:
       // Not applicable when entering full screen
       break
@@ -275,7 +275,7 @@ extension PlayerWindowController {
       videoView.apply(transition.outputGeometry)
     } else if transition.isExitingInteractiveMode && !transition.outputLayout.isFullScreen {
       // Animate closed:
-      videoView.constrainLayoutToEqualsOffsetOnly(top: 0, trailing: 0, bottom: 0, leading: 0)
+      videoView.constrainLayoutToEqualsOffsetOnly(margins: .zero)
     }
 
     // Update heights of top & bottom bars
@@ -585,7 +585,7 @@ extension PlayerWindowController {
 
         if !transition.outputLayout.isFullScreen {
           // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
-          videoView.constrainLayoutToEqualsOffsetOnly(top: 0, trailing: 0, bottom: 0, leading: 0)
+          videoView.constrainLayoutToEqualsOffsetOnly(margins: .zero)
           videoView.apply(nil)
         }
       } else if transition.isExitingInteractiveMode {
@@ -780,13 +780,8 @@ extension PlayerWindowController {
     if transition.isEnteringInteractiveMode {
       if !transition.outputLayout.isFullScreen {
         // Already set fixed constraints. Now set new values to animate into place
-        let videobox = InteractiveModeGeometry.videobox
-        videoView.constrainLayoutToEqualsOffsetOnly(
-          top: videobox.top,
-          trailing: -videobox.trailing,
-          bottom: -videobox.bottom,
-          leading: videobox.leading
-        )
+        let viewportMargins = transition.outputGeometry.viewportMargins
+        videoView.constrainLayoutToEqualsOffsetOnly(margins: viewportMargins)
       }
 
       if let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize, let cropController = cropSettingsView {

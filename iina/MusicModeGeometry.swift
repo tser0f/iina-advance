@@ -63,8 +63,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
                                 insideTrailingBarWidth: 0,
                                 insideBottomBarHeight: 0,
                                 insideLeadingBarWidth: 0,
-                                videoAspectRatio: videoAspectRatio,
-                                videoSize: videoSize ?? NSSize(width: windowFrame.width, height: 0))
+                                videoAspectRatio: videoAspectRatio)
   }
 
   var videoHeightIfVisible: CGFloat {
