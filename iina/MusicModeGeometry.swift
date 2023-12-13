@@ -54,6 +54,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     return PlayerWindowGeometry(windowFrame: windowFrame,
                                 screenID: screenID,
                                 fitOption: .keepInVisibleScreen,
+                                mode: .musicMode,
                                 topMarginHeight: 0,
                                 outsideTopBarHeight: 0,
                                 outsideTrailingBarWidth: 0,

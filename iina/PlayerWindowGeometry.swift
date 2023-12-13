@@ -110,6 +110,8 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
   // The ID of the screen on which this window is displayed
   let screenID: String
   let fitOption: ScreenFitOption
+  // The mode affects lockViewportToVideo behavior and minimum sizes
+  let mode: PlayerWindowMode
 
   /// The size & position (`window.frame`) of an IINA player `NSWindow`.
   let windowFrame: NSRect
@@ -135,7 +137,8 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
 
   // MARK: - Initializers
 
-  init(windowFrame: NSRect, screenID: String, fitOption: ScreenFitOption, topMarginHeight: CGFloat,
+  /// Derives `viewportSize` and `videoSize` from `windowFrame`, `viewportMargins` and `videoAspectRatio`
+  init(windowFrame: NSRect, screenID: String, fitOption: ScreenFitOption, mode: PlayerWindowMode, topMarginHeight: CGFloat,
        outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
        insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
        viewportMargins: BoxQuad? = nil, videoAspectRatio: CGFloat) {
@@ -143,6 +146,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
     self.windowFrame = windowFrame
     self.screenID = screenID
     self.fitOption = fitOption
+    self.mode = mode
 
     assert(topMarginHeight >= 0, "Expected topMarginHeight >= 0, found \(topMarginHeight)")
     self.topMarginHeight = topMarginHeight
@@ -185,8 +189,8 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   /// See also `LayoutState.buildFullScreenGeometry()`.
-  static func forFullScreen(in screen: NSScreen, legacy: Bool,
-                            outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat, 
+  static func forFullScreen(in screen: NSScreen, legacy: Bool, mode: PlayerWindowMode,
+                            outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat,
                             outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
                             insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, 
                             insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
@@ -204,7 +208,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
     }
 
     return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption, 
-                                topMarginHeight: topMarginHeight,
+                                mode: mode, topMarginHeight: topMarginHeight,
                                 outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                                 outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
                                 insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
@@ -213,7 +217,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   func clone(windowFrame: NSRect? = nil, screenID: String? = nil, fitOption: ScreenFitOption? = nil,
-             topMarginHeight: CGFloat? = nil,
+             mode: PlayerWindowMode? = nil, topMarginHeight: CGFloat? = nil,
              outsideTopBarHeight: CGFloat? = nil, outsideTrailingBarWidth: CGFloat? = nil,
              outsideBottomBarHeight: CGFloat? = nil, outsideLeadingBarWidth: CGFloat? = nil,
              insideTopBarHeight: CGFloat? = nil, insideTrailingBarWidth: CGFloat? = nil,
@@ -224,6 +228,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
     return PlayerWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
                                 screenID: screenID ?? self.screenID,
                                 fitOption: fitOption ?? self.fitOption,
+                                mode: mode ?? self.mode,
                                 topMarginHeight: topMarginHeight ?? self.topMarginHeight,
                                 outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
                                 outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
@@ -248,7 +253,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   var description: String {
-    return "PWGeometry (screenID: \(screenID.quoted), fit: \(fitOption), topMargin: \(topMarginHeight), outsideBars: \(outsideBars), insideBars: \(insideBars) videoAspectRatio: \(videoAspectRatio), videoSize: \(videoSize) windowFrame: \(windowFrame))"
+    return "PlayerWindowGeometry (screenID: \(screenID.quoted), fit: \(fitOption), topMargin: \(topMarginHeight), outsideBars: \(outsideBars), insideBars: \(insideBars), viewportMargins: \(viewportMargins), videoAspectRatio: \(videoAspectRatio), videoSize: \(videoSize) windowFrame: \(windowFrame))"
   }
 
   /// Calculated from `windowFrame`.
@@ -300,33 +305,33 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
     return NSSize(width: outsideBarsTotalWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
   }
 
-  func getMinVideoWidth(isInteractiveMode: Bool) -> CGFloat {
-    if isInteractiveMode {
-      return InteractiveModeGeometry.minWindowWidth - viewportMargins.totalWidth
+  func getMinVideoWidth(mode: PlayerWindowMode) -> CGFloat {
+    if mode.isInteractiveMode {
+      return Constants.InteractiveMode.minWindowWidth - viewportMargins.totalWidth
     } else {
       return AppData.minVideoSize.width
     }
   }
 
-  func getMinVideoHeight(isInteractiveMode: Bool) -> CGFloat {
-    return round(getMinVideoWidth(isInteractiveMode: isInteractiveMode) / videoAspectRatio)
+  func getMinVideoHeight(mode: PlayerWindowMode) -> CGFloat {
+    return round(getMinVideoWidth(mode: mode) / videoAspectRatio)
   }
 
-  func getMinViewportWidth(isInteractiveMode: Bool) -> CGFloat {
-    return max(getMinVideoWidth(isInteractiveMode: isInteractiveMode) + viewportMargins.totalWidth,
+  func getMinViewportWidth(mode: PlayerWindowMode) -> CGFloat {
+    return max(getMinVideoWidth(mode: mode) + viewportMargins.totalWidth,
                insideLeadingBarWidth + insideTrailingBarWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars)
   }
 
-  func getMinViewportHeight(isInteractiveMode: Bool) -> CGFloat {
-    return getMinVideoHeight(isInteractiveMode: isInteractiveMode) + viewportMargins.totalHeight
+  func getMinViewportHeight(mode: PlayerWindowMode) -> CGFloat {
+    return getMinVideoHeight(mode: mode) + viewportMargins.totalHeight
   }
 
-  func getMinWindowWidth(isInteractiveMode: Bool) -> CGFloat {
-    return getMinViewportWidth(isInteractiveMode: isInteractiveMode) + outsideBarsTotalSize.width
+  func getMinWindowWidth(mode: PlayerWindowMode) -> CGFloat {
+    return getMinViewportWidth(mode: mode) + outsideBarsTotalSize.width
   }
 
-  func getMinWindowHeight(isInteractiveMode: Bool) -> CGFloat {
-    return getMinViewportHeight(isInteractiveMode: isInteractiveMode) + outsideBarsTotalSize.height
+  func getMinWindowHeight(mode: PlayerWindowMode) -> CGFloat {
+    return getMinViewportHeight(mode: mode) + outsideBarsTotalSize.height
   }
 
   var hasTopPaddingForCameraHousing: Bool {
@@ -431,7 +436,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   func refit(_ newFit: ScreenFitOption? = nil, lockViewportToVideoSize: Bool? = nil) -> PlayerWindowGeometry {
-    return scaleViewport(fitOption: newFit, lockViewportToVideoSize: lockViewportToVideoSize)
+    return scaleViewport(fitOption: newFit)
   }
 
   func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
@@ -457,25 +462,25 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
   /// Computes a new `PlayerWindowGeometry` from this one:
   /// • If `desiredSize` is given, the `windowFrame` will be shrunk or grown as needed, as will the `videoSize` which will
   /// be resized to fit in the new `viewportSize` based on `videoAspectRatio`.
-  /// • If `lockViewportToVideoSize` is provided, it will be applied to the resulting `PlayerWindowGeometry`;
-  /// otherwise `Preference.bool(for: .lockViewportToVideoSize)` will be used. If `true`, `viewportSize` will be shrunk to the
-  /// same size as `videoSize`, and `windowFrame` will be resized accordingly.
+  /// • If `mode` is provided, it will be applied to the resulting `PlayerWindowGeometry`.
+  /// • If `mode.alwaysLockViewportToVideoSize==true`, then `viewportSize` will be shrunk to the same size as `videoSize`, and `windowFrame`
+  /// will be resized accordingly. If it is `false`, then `Preference.bool(for: .lockViewportToVideoSize)` will be used.
   /// • If `screenID` is provided, it will be associated with the resulting `PlayerWindowGeometry`; otherwise `self.screenID` will be used.
   /// • If `fitOption` is provided, it will be applied to the resulting `PlayerWindowGeometry`; otherwise `self.fitOption` will be used.
   func scaleViewport(to desiredSize: NSSize? = nil,
                      screenID: String? = nil,
                      fitOption: ScreenFitOption? = nil,
-                     lockViewportToVideoSize: Bool? = nil,
-                     isInteractiveMode: Bool = false) -> PlayerWindowGeometry {
+                     mode: PlayerWindowMode? = nil) -> PlayerWindowGeometry {
 
-    let lockViewportToVideoSize = lockViewportToVideoSize ?? Preference.bool(for: .lockViewportToVideoSize)
+    let mode = mode ?? self.mode
+    let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
 
     var newViewportSize = desiredSize ?? viewportSize
     Logger.log("[geo] ScaleViewport start, newViewportSize: \(newViewportSize), lockViewportToVideoSize: \(lockViewportToVideoSize.yn)", level: .verbose)
 
     /// Make sure viewport size is at least as large as min
-    newViewportSize = NSSize(width: max(getMinViewportWidth(isInteractiveMode: isInteractiveMode), newViewportSize.width),
-                             height: max(getMinViewportHeight(isInteractiveMode: isInteractiveMode), newViewportSize.height))
+    newViewportSize = NSSize(width: max(getMinViewportWidth(mode: mode), newViewportSize.width),
+                             height: max(getMinViewportHeight(mode: mode), newViewportSize.height))
 
     let newScreenID = screenID ?? self.screenID
     // do not center in screen again unless explicitly requested
@@ -524,20 +529,20 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
     }
 
     Logger.log("[geo] ScaleViewport done. New windowFrame: \(newWindowFrame), videoSize: \(newVideoSize)", level: .verbose)
-    return self.clone(windowFrame: newWindowFrame, screenID: newScreenID, fitOption: newFitOption)
+    return self.clone(windowFrame: newWindowFrame, screenID: newScreenID, fitOption: newFitOption, mode: mode)
   }
 
   func scaleVideo(to desiredVideoSize: NSSize,
                   screenID: String? = nil,
                   fitOption: ScreenFitOption? = nil,
-                  lockViewportToVideoSize: Bool? = nil,
-                  isInteractiveMode: Bool = false) -> PlayerWindowGeometry {
+                  mode: PlayerWindowMode? = nil) -> PlayerWindowGeometry {
 
-    let lockViewportToVideoSize = lockViewportToVideoSize ?? Preference.bool(for: .lockViewportToVideoSize)
+    let mode = mode ?? self.mode
+    let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
     Logger.log("[geo] ScaleVideo start, desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), lockViewportToVideoSize: \(lockViewportToVideoSize)", level: .debug)
     var newVideoSize = desiredVideoSize
 
-    let newWidth = max(getMinVideoWidth(isInteractiveMode: isInteractiveMode), desiredVideoSize.width)
+    let newWidth = max(getMinVideoWidth(mode: mode), desiredVideoSize.width)
     /// Enforce `videoView` aspectRatio: Recalculate height using width
     newVideoSize = NSSize(width: newWidth, height: (newWidth / videoAspectRatio))
     if newVideoSize.height != desiredVideoSize.height {
@@ -557,7 +562,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
                                height: scaledViewportWithoutMargins.height + viewportMargins.totalHeight)
     }
 
-    return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption, lockViewportToVideoSize: lockViewportToVideoSize)
+    return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption, mode: mode)
   }
 
   // Resizes the window appropriately
@@ -638,7 +643,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
       } else {
         w = CGFloat(Int(strw)!)
       }
-      w = max(getMinVideoWidth(isInteractiveMode: false), w)
+      w = max(getMinVideoWidth(mode: .windowed), w)
       newVideoSize.width = w
       newVideoSize.height = w / videoAspectRatio
       widthOrHeightIsSet = true
@@ -649,7 +654,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
       } else {
         h = CGFloat(Int(strh)!)
       }
-      h = max(getMinVideoHeight(isInteractiveMode: false), h)
+      h = max(getMinVideoHeight(mode: .windowed), h)
       newVideoSize.height = h
       newVideoSize.width = h * videoAspectRatio
       widthOrHeightIsSet = true
@@ -698,6 +703,35 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
                                height: newVideoSize.height + outsideBarsTotalSize.height)
     let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
     return self.clone(windowFrame: newWindowFrame)
+  }
+
+  // MARK: Interactive mode
+
+  // Transition windowed mode geometry to Interactive Mode geometry. Note that this is not a direct conversion; it will modify the view sizes
+  func toInteractiveMode() -> PlayerWindowGeometry {
+    assert(self.fitOption != .legacyFullScreen && self.fitOption != .nativeFullScreen)
+    // Close sidebars. Top and bottom bars are resized for interactive mode controls
+    let newGeo = self.withResizedOutsideBars(newOutsideTopBarHeight: Constants.InteractiveMode.outsideTopBarHeight,
+                                             newOutsideTrailingBarWidth: 0,
+                                             newOutsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
+                                             newOutsideLeadingBarWidth: 0)
+
+    let viewportMargins = Constants.InteractiveMode.viewportMargins
+    // Desired viewport is current one but shrunk with fixed margin around video
+    var newVideoSize = PlayerWindowGeometry.computeVideoSize(withAspectRatio: self.videoAspectRatio, toFillIn: self.viewportSize, excludingMargins: viewportMargins)
+
+    // Enforce min width for interactive mode window
+    let minVideoWidth = Constants.InteractiveMode.minWindowWidth - viewportMargins.totalWidth
+    if newVideoSize.width < minVideoWidth {
+      newVideoSize = NSSize(width: minVideoWidth, height: round(minVideoWidth / self.videoAspectRatio))
+    }
+
+    let desiredViewportSize = NSSize(width: newVideoSize.width + viewportMargins.totalWidth,
+                                     height: newVideoSize.height + viewportMargins.totalHeight)
+    // This will constrain in screen
+    return newGeo.clone(insideTopBarHeight: 0, insideTrailingBarWidth: 0,
+                        insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
+                        viewportMargins: viewportMargins).scaleViewport(to: desiredViewportSize, mode: .windowedInteractive)
   }
 
   /// Here, `videoSizeUnscaled` and `cropbox` must be the same scale, which may be different than `self.videoSize`.
@@ -752,6 +786,7 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
 // MARK: - PlayerWindowController geometry functions
 
 extension PlayerWindowController {
+  
 
   /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
   func mpvVideoDidReconfig() {
@@ -770,46 +805,15 @@ extension PlayerWindowController {
     let currentLayout = currentLayout
 
     if isInInteractiveMode, let cropController = self.cropSettingsView, cropController.cropBoxView.didSubmit {
-      /// Interactive mode after submit: finish crop submission and exit
+      /// Interactive mode after submit: finish crop submission and exit interactive mode
       cropController.cropBoxView.didSubmit = false
-      let originalVideoSize = cropController.cropBoxView.actualSize
-      let newVideoFrameUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
-                                         width: cropController.cropw, height: cropController.croph)
+      let uncroppedVideoSize = cropController.cropBoxView.actualSize
+      let cropboxUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
+                                   width: cropController.cropw, height: cropController.croph)
 
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.CropAnimationDuration, { [self] in
-        log.verbose("[MPVVideoReconfig] Cropping video from origVideoSize: \(originalVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropResult: \(newVideoFrameUnscaled)")
-        /// Updated `windowedModeGeometry` even if in full screen - we are not prepared to look for changes later
-        let croppedGeometry = windowedModeGeometry.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
-        windowedModeGeometry = croppedGeometry
-        player.info.videoAspectRatio = croppedGeometry.videoAspectRatio
-        player.info.intendedViewportSize = croppedGeometry.viewportSize
+      exitInteractiveMode(cropVideoFrom: uncroppedVideoSize, to: cropboxUnscaled)
 
-        // fade out all this stuff before crop
-        cropController.view.alphaValue = 0
-        cropController.view.isHidden = true
-        cropController.cropBoxView.isHidden = true
-        cropController.cropBoxView.alphaValue = 0
-        cropController.view.removeFromSuperview()
-        cropController.cropBoxView.removeFromSuperview()
-
-        if currentLayout.isFullScreen {
-          let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: croppedGeometry.videoAspectRatio)
-          videoView.apply(fsInteractiveModeGeo)
-          interactiveModeGeometry = fsInteractiveModeGeo
-        } else {
-          let imGeoPrev = interactiveModeGeometry ?? InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
-          let imGeoNew = imGeoPrev.cropVideo(from: originalVideoSize, to: newVideoFrameUnscaled)
-          interactiveModeGeometry = imGeoNew
-          player.window.setFrameImmediately(imGeoNew.windowFrame)
-        }
-
-        animationPipeline.submitZeroDuration({ [self] in
-          forceDraw()
-          exitInteractiveMode()
-        })
-      }))
-
-    } else if !isInInteractiveMode, let prevCrop = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
+    } else if currentLayout.canEnterInteractiveMode, let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       // Not yet in interactive mode, but the active crop was just disabled prior to entering it,
       // so that full video can be seen during interactive mode
 
@@ -818,32 +822,38 @@ extension PlayerWindowController {
       let videoDisplaySize = videoParams.videoDisplaySize
       // FIXME: this is a junk fix. Find a better way to trigger this
       guard abs(videoDisplaySize.width - videoFullSize.width) <= 1 && abs(videoDisplaySize.height - videoFullSize.height) <= 1 else {
-        log.verbose("[MPVVideoReconfig] Found a disabled crop filter \(prevCrop.stringFormat.quoted), but videoRawSize \(videoParams.videoRawSize) does not yet match videoDisplaySize \(videoParams.videoDisplaySize); ignoring")
+        log.verbose("[MPVVideoReconfig] Found a disabled crop filter \(prevCropFilter.stringFormat.quoted), but videoRawSize \(videoParams.videoRawSize) does not yet match videoDisplaySize \(videoParams.videoDisplaySize); ignoring")
         return
       }
 
-      let prevCropRect = prevCrop.cropRect(origVideoSize: videoDisplayRotatedSize, flipY: true)
-      log.verbose("[MPVVideoReconfig] Found a disabled crop filter: \(prevCrop.stringFormat.quoted). Will enter interactive crop.")
-      log.verbose("[MPVVideoReconfig] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropRect: \(prevCropRect)")
+      let prevCropbox = prevCropFilter.cropRect(origVideoSize: videoDisplayRotatedSize, flipY: true)
+      log.verbose("[MPVVideoReconfig] Found a disabled crop filter: \(prevCropFilter.stringFormat.quoted). Will enter interactive crop.")
+      log.verbose("[MPVVideoReconfig] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropbox: \(prevCropbox)")
 
       animationPipeline.submit(IINAAnimation.Task({ [self] in
-        let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropRect,
+        let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
                                                                     videoScale: player.info.cachedWindowScale)
         // Update the cached objects even if not in windowed mode
         player.info.videoAspectRatio = uncroppedWindowedGeo.videoAspectRatio
         windowedModeGeometry = uncroppedWindowedGeo
 
         if currentLayout.mode == .fullScreen {
-          let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: uncroppedWindowedGeo.videoAspectRatio)
-          videoView.apply(fsInteractiveModeGeo)
-          interactiveModeGeometry = fsInteractiveModeGeo
-          forceDraw()
-          enterInteractiveMode(.crop)
+//          animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration * 0.5, { [self] in
+//            let uncroppedFullScreenGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: uncroppedWindowedGeo.videoAspectRatio)
+//            videoView.apply(uncroppedFullScreenGeo)
+////            interactiveModeGeometry = uncroppedFullScreenGeo
+//            forceDraw()
+//          }))
 
         } else if currentLayout.mode == .windowed {
+          let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
+                                                                      videoScale: player.info.cachedWindowScale)
           applyWindowGeometry(uncroppedWindowedGeo)
-          enterInteractiveMode(.crop)
+        } else {
+          assert(false, "Bad state! Invalid mode: \(currentLayout.spec.mode)")
+          return
         }
+        enterInteractiveMode(.crop)
       }))
 
     } else if player.info.isRestoring {
@@ -871,7 +881,7 @@ extension PlayerWindowController {
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
-      applyMusicModeGeometryInAnimationTask(newGeometry)
+      applyMusicModeGeometryInAnimationPipeline(newGeometry)
 
     } else {
       let windowGeo = windowedModeGeometry.clone(videoAspectRatio: videoDisplayRotatedSize.aspect)
@@ -892,7 +902,7 @@ extension PlayerWindowController {
       if currentLayout.mode == .windowed {
         /// Finally call `setFrame()`
         log.debug("[MPVVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-        applyWindowGeometry(newWindowGeo)
+        applyWindowGeometryInAnimationPipeline(newWindowGeo)
       } else {
         // Update this for later use if not currently in windowed mode
         windowedModeGeometry = newWindowGeo
@@ -997,6 +1007,7 @@ extension PlayerWindowController {
 
   func setVideoScale(_ desiredVideoScale: CGFloat) {
     guard let window = window else { return }
+    let currentLayout = currentLayout
     guard currentLayout.mode == .windowed || currentLayout.mode == .musicMode else { return }
 
     guard let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize else {
@@ -1017,18 +1028,18 @@ extension PlayerWindowController {
 
     switch currentLayout.mode {
     case .windowed:
-      let newGeoUnconstrained = windowedModeGeometry.scaleVideo(to: desiredVideoSize, fitOption: .noConstraints)
+      let newGeoUnconstrained = windowedModeGeometry.scaleVideo(to: desiredVideoSize, fitOption: .noConstraints, mode: currentLayout.mode)
       // User has actively resized the video. Assume this is the new preferred resolution
       player.info.intendedViewportSize = newGeoUnconstrained.viewportSize
 
       let newGeometry = newGeoUnconstrained.refit(.keepInVisibleScreen)
       log.verbose("SetVideoScale: calling applyWindowGeometry")
-      applyWindowGeometry(newGeometry)
+      applyWindowGeometryInAnimationPipeline(newGeometry)
     case .musicMode:
       // will return nil if video is not visible
       guard let newMusicModeGeometry = musicModeGeometry.scaleVideo(to: desiredVideoSize) else { return }
       log.verbose("SetVideoScale: calling applyMusicModeGeometry")
-      applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
+      applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
     default:
       return
     }
@@ -1052,12 +1063,12 @@ extension PlayerWindowController {
       let fitOption: ScreenFitOption = centerOnScreen ? .centerInVisibleScreen : .keepInVisibleScreen
       let newGeometry = newGeoUnconstrained.refit(fitOption)
       log.verbose("Calling applyWindowGeometry from resizeViewport (center=\(centerOnScreen.yn)), to: \(newGeometry.windowFrame)")
-      applyWindowGeometry(newGeometry)
+      applyWindowGeometryInAnimationPipeline(newGeometry)
     case .musicMode:
       /// In music mode, `viewportSize==videoSize` always. Will get `nil` here if video is not visible
       guard let newMusicModeGeometry = musicModeGeometry.scaleVideo(to: desiredViewportSize) else { return }
       log.verbose("Calling applyMusicModeGeometry from resizeViewport, to: \(newMusicModeGeometry.windowFrame)")
-      applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
+      applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
     default:
       return
     }
@@ -1132,6 +1143,7 @@ extension PlayerWindowController {
     let geo = PlayerWindowGeometry(windowFrame: window!.frame,
                                    screenID: bestScreen.screenID,
                                    fitOption: .keepInVisibleScreen,
+                                   mode: layout.mode,
                                    topMarginHeight: 0,  // is only nonzero when in legacy FS
                                    outsideTopBarHeight: layout.outsideTopBarHeight,
                                    outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
@@ -1160,10 +1172,10 @@ extension PlayerWindowController {
       } else {
         log.error("WindowWillResize: could not find interactiveModeGeometry; will substitute windowedModeGeometry")
         let updatedWindowedModeGeometry = windowedModeGeometry.clone(windowFrame: window.frame)
-        currentGeometry = InteractiveModeGeometry.enterInteractiveMode(from: updatedWindowedModeGeometry)
+        currentGeometry = updatedWindowedModeGeometry.toInteractiveMode()
       }
-      if requestedSize.width < InteractiveModeGeometry.minWindowWidth {
-        log.verbose("WindowWillResize: requested width (\(requestedSize.width)) is less than min width for interactive mode (\(InteractiveModeGeometry.minWindowWidth)). Denying resize")
+      if requestedSize.width < Constants.InteractiveMode.minWindowWidth {
+        log.verbose("WindowWillResize: requested width (\(requestedSize.width)) is less than min width for interactive mode (\(Constants.InteractiveMode.minWindowWidth)). Denying resize")
         return currentGeometry
       }
     default:
@@ -1198,8 +1210,8 @@ extension PlayerWindowController {
     let outsideBarsTotalSize = currentGeometry.outsideBarsTotalSize
 
     if !window.inLiveResize {  // Only applies to system requests to resize (not user resize)
-      let minWindowWidth = currentGeometry.getMinWindowWidth(isInteractiveMode: currentLayout.isInteractiveMode)
-      let minWindowHeight = currentGeometry.getMinWindowHeight(isInteractiveMode: currentLayout.isInteractiveMode)
+      let minWindowWidth = currentGeometry.getMinWindowWidth(mode: currentLayout.mode)
+      let minWindowHeight = currentGeometry.getMinWindowHeight(mode: currentLayout.mode)
       if (requestedSize.width < minWindowWidth) || (requestedSize.height < minWindowHeight) {
         // Sending the current size seems to work much better with accessibilty requests
         // than trying to change to the min size
@@ -1209,7 +1221,7 @@ extension PlayerWindowController {
     }
 
     // Need to resize window to match video aspect ratio, while taking into account any outside panels.
-    let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || currentLayout.isInteractiveMode
+    let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || currentLayout.mode.alwaysLockViewportToVideoSize
     if !lockViewportToVideoSize {
       // No need to resize window to match video aspect ratio.
       let intendedGeo = currentGeometry.scaleWindow(to: requestedSize, fitOption: .noConstraints)
@@ -1226,16 +1238,14 @@ extension PlayerWindowController {
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth,
                                                    height: requestedVideoWidth / currentGeometry.videoAspectRatio)
     let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize,
-                                                        lockViewportToVideoSize: lockViewportToVideoSize,
-                                                        isInteractiveMode: currentLayout.isInteractiveMode)
+                                                        mode: currentLayout.mode)
 
     // Option B: resize width based on requested height
     let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeometry.videoAspectRatio,
                                                     height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize,
-                                                         lockViewportToVideoSize: lockViewportToVideoSize,
-                                                         isInteractiveMode: currentLayout.isInteractiveMode)
+                                                         mode: currentLayout.mode)
 
     let chosenGeometry: PlayerWindowGeometry
     if window.inLiveResize {
@@ -1361,7 +1371,7 @@ extension PlayerWindowController {
 
   /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
   /// Also updates cached `windowedModeGeometry` and saves updated state.
-  func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry) {
+  func applyWindowGeometryInAnimationPipeline(_ newGeometry: PlayerWindowGeometry) {
     var ticket: Int = 0
     $geoUpdateTicketCounter.withLock {
       $0 += 1
@@ -1373,34 +1383,38 @@ extension PlayerWindowController {
         return
       }
       log.verbose("ApplyWindowGeometry (tkt \(ticket)) windowFrame: \(newGeometry.windowFrame), videoAspectRatio: \(newGeometry.videoAspectRatio)")
-      // Update video aspect ratio always
-      player.info.videoAspectRatio = newGeometry.videoAspectRatio
-      let currentLayout = currentLayout
-      switch currentLayout.spec.mode {
-
-      case .musicMode, .windowedInteractive, .fullScreenInteractive:
-        log.error("ApplyWindowGeometry is not used for \(currentLayout.spec.mode) mode")
-
-      case .fullScreen:
-        // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
-        let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID, 
-                                                          videoAspectRatio: newGeometry.videoAspectRatio)
-        videoView.apply(fsGeo)
-        log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale (FS), videoSize: \(newGeometry.videoSize)")
-        player.updateMPVWindowScale(using: fsGeo)
-
-      case .windowed:
-        if !isWindowHidden {
-          player.window.setFrameImmediately(newGeometry.windowFrame)
-        }
-        // Make sure this is up-to-date
-        videoView.apply(newGeometry)
-        windowedModeGeometry = newGeometry
-        log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale, videoSize: \(newGeometry.videoSize)")
-        player.updateMPVWindowScale(using: newGeometry)
-        player.saveState()
-      }
+      applyWindowGeometry(newGeometry)
     }))
+  }
+
+  private func applyWindowGeometry(_ newGeometry: PlayerWindowGeometry) {
+    // Update video aspect ratio always
+    player.info.videoAspectRatio = newGeometry.videoAspectRatio
+    let currentLayout = currentLayout
+    switch currentLayout.spec.mode {
+
+    case .musicMode, .windowedInteractive, .fullScreenInteractive:
+      log.error("ApplyWindowGeometry is not used for \(currentLayout.spec.mode) mode")
+
+    case .fullScreen:
+      // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
+      let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID,
+                                                        videoAspectRatio: newGeometry.videoAspectRatio)
+      videoView.apply(fsGeo)
+      log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale (FS), videoSize: \(newGeometry.videoSize)")
+      player.updateMPVWindowScale(using: fsGeo)
+
+    case .windowed:
+      if !isWindowHidden {
+        player.window.setFrameImmediately(newGeometry.windowFrame)
+      }
+      // Make sure this is up-to-date
+      videoView.apply(newGeometry)
+      windowedModeGeometry = newGeometry
+      log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale, videoSize: \(newGeometry.videoSize)")
+      player.updateMPVWindowScale(using: newGeometry)
+      player.saveState()
+    }
   }
 
   /// For (1) pinch-to-zoom, (2) resizing outside sidebars when the whole window needs to be resized or moved.
@@ -1431,13 +1445,14 @@ extension PlayerWindowController {
   }
 
   /// Same as `applyMusicModeGeometry()`, but enqueues inside an `IINAAnimation.Task` for a nice smooth animation
-  func applyMusicModeGeometryInAnimationTask(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
+  func applyMusicModeGeometryInAnimationPipeline(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) {
     animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
       applyMusicModeGeometry(geometry)
     }))
   }
 
-  /// Updates the current window and its subviews to match the given `MusicModeGeometry`, and caches it.
+  /// Updates the current window and its subviews to match the given `MusicModeGeometry`.
+  /// If `updateCache` is true, updates `musicModeGeometry` and saves player state.
   @discardableResult
   func applyMusicModeGeometry(_ geometry: MusicModeGeometry, setFrame: Bool = true, animate: Bool = true, updateCache: Bool = true) -> MusicModeGeometry {
     let geometry = geometry.refit()  // enforces internal constraints, and constrains to screen

@@ -118,7 +118,8 @@ struct PlayerSaveState {
             geo.windowFrame.width.string2f,
             geo.windowFrame.height.string2f,
             String(geo.fitOption.rawValue),
-            geo.screenID
+            geo.screenID,
+            String(geo.mode.rawValue)
     ].joined(separator: ",")
   }
 
@@ -435,7 +436,7 @@ struct PlayerSaveState {
       let leadingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
       let traillingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
 
-      guard let modeInt = Int(iter.next()!), let mode = PlayerWindowController.WindowMode(rawValue: modeInt),
+      guard let modeInt = Int(iter.next()!), let mode = PlayerWindowMode(rawValue: modeInt),
             let isLegacyStyle = Bool.yn(iter.next()) else {
         Logger.log("\(errPreamble) could not parse mode or isLegacyStyle", level: .error)
         return nil
@@ -485,7 +486,7 @@ struct PlayerSaveState {
   /// String -> `PlayerWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> PlayerWindowGeometry? {
     return deserializeCSV(.windowedModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 17,
+                          expectedTokenCount: 18,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
@@ -504,18 +505,23 @@ struct PlayerSaveState {
             let winWidth = Double(iter.next()!),
             let winHeight = Double(iter.next()!),
             let fitOptionRawValue = Int(iter.next()!),
-            let screenID = iter.next()
+            let screenID = iter.next(),
+            let modeRawValue = Int(iter.next()!)
       else {
         Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
         return nil
       }
 
+      guard let mode = PlayerWindowMode(rawValue: modeRawValue) else {
+        Logger.log("\(errPreamble) unrecognized PlayerWindowMode: \(modeRawValue)", level: .error)
+        return nil
+      }
       guard let fitOption = ScreenFitOption(rawValue: fitOptionRawValue) else {
         Logger.log("\(errPreamble) unrecognized ScreenFitOption: \(fitOptionRawValue)", level: .error)
         return nil
       }
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, topMarginHeight: topMarginHeight,
+      return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
                                   outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                                   outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
                                   insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,

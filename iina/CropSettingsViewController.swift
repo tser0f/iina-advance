@@ -27,6 +27,14 @@ class CropSettingsViewController: CropBoxViewController {
     // FIXME: update predefinedAspectSegment selection
   }
 
+  private func animateHideCropSelection() {
+    windowController.animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration * 0.5, { [self] in
+      // Fade out cropbox selection rect
+      cropBoxView.isHidden = true
+      cropBoxView.alphaValue = 0
+    }))
+  }
+
   @IBAction func doneBtnAction(_ sender: AnyObject) {
     let player = windowController.player
 
@@ -36,6 +44,8 @@ class CropSettingsViewController: CropBoxViewController {
       player.log.error("User chose Done button from interactive mode, but could not original video size!")
       return
     }
+    animateHideCropSelection()
+
     // Use <=, >= to account for imprecision
     let isAllSelected = cropx <= 0 && cropy <= 0 && cropw >= totalWidth && croph >= totalHeight
     let isNoSelection = cropw <= 0 || croph <= 0
@@ -50,32 +60,34 @@ class CropSettingsViewController: CropBoxViewController {
       windowController.exitInteractiveMode()
     } else {
       player.log.verbose("User chose Done button from interactive mode with new crop")
-      cropBoxView.didSubmit = true
+      let newCropFilter = MPVFilter.crop(w: self.cropw, h: self.croph, x: self.cropx, y: self.cropy)
 
       /// Set the filter and wait for mpv to respond with a `video-reconfig` before exiting interactive mode
-      let filter = MPVFilter.crop(w: self.cropw, h: self.croph, x: self.cropx, y: self.cropy)
-      player.setCrop(fromFilter: filter)
+      cropBoxView.didSubmit = true
+      player.setCrop(fromFilter: newCropFilter)
     }
   }
 
   @IBAction func cancelBtnAction(_ sender: AnyObject) {
+    animateHideCropSelection()
+    
     let player = windowController.player
     if let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       /// Prev filter exists. Re-apply it
       player.log.verbose("User chose Cancel button from interactive mode: restoring prev crop")
       let cropboxRect = prevCropFilter.cropRect(origVideoSize: cropBoxView.actualSize)
+      /// Need to update these because they will be read when `video-reconfig` is received
       cropw = Int(cropboxRect.width)
       croph = Int(cropboxRect.height)
       cropx = Int(cropboxRect.origin.x)
       cropy = Int(cropboxRect.origin.y)
 
-      // Remove saved crop (if any)
+      // Remove filter from disabled list
       player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
 
-      // Re-activate filter and wait for mpv to respond with a `video-reconfig` before exiting interactive mode
+      /// Re-activate filter and wait for mpv to respond with a `video-reconfig` before exiting interactive mode
       cropBoxView.didSubmit = true
       player.setCrop(fromFilter: prevCropFilter)
-      return
     } else {
       player.log.verbose("User chose Cancel button from interactive mode; exiting")
       // No prev filter.

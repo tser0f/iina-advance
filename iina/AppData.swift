@@ -184,6 +184,17 @@ struct Constants {
     static let minTabHeight: CGFloat = 16
     static let maxTabHeight: CGFloat = 70
   }
+  struct InteractiveMode {
+    // Need enough space to display all the buttons at the bottom:
+    static let minWindowWidth: CGFloat = 450
+    static let outsideBottomBarHeight: CGFloat = 68
+    // Show title bar only in windowed mode
+    static let outsideTopBarHeight = PlayerWindowController.standardTitleBarHeight
+
+    // Window's top bezel must be at least as large as the title bar so that dragging the top of crop doesn't drag the window too
+    static let viewportMargins = BoxQuad(top: PlayerWindowController.standardTitleBarHeight, trailing: 24,
+                                         bottom: PlayerWindowController.standardTitleBarHeight, leading: 24)
+  }
   struct Distance {
     // TODO: change to % of screen width
     static let floatingControllerSnapToCenterThreshold = 20.0

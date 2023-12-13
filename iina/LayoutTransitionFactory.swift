@@ -65,7 +65,7 @@ extension PlayerWindowController {
       log.verbose("Transitioning to initial layout from app prefs")
       isRestoringFromPrevLaunch = false
 
-      let mode: WindowMode
+      let mode: PlayerWindowMode
       if Preference.bool(for: .fullScreenWhenOpen) {
         log.debug("Changing to fullscreen because \(Preference.Key.fullScreenWhenOpen.rawValue) == true")
         mode = .fullScreen
@@ -354,7 +354,7 @@ extension PlayerWindowController {
         return interactiveModeGeometry
       } else {
         log.warn("[\(transitionName)] Failed to find interactiveModeGeometry! Will change from windowedModeGeometry (may be wrong)")
-        return InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
+        return windowedModeGeometry.toInteractiveMode()
       }
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
@@ -382,7 +382,7 @@ extension PlayerWindowController {
         log.verbose("Using cached interactiveModeGeometry for outputGeo: \(cachedInteractiveModeGeometry)")
         return cachedInteractiveModeGeometry
       }
-      let imGeo = InteractiveModeGeometry.enterInteractiveMode(from: windowedModeGeometry)
+      let imGeo = windowedModeGeometry.toInteractiveMode()
       log.verbose("Derived interactiveModeGeometry from windowedModeGeometry for outputGeo: \(imGeo)")
       return imGeo
 
@@ -403,7 +403,7 @@ extension PlayerWindowController {
            !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
            windowedModeGeometry.videoAspectRatio.aspectNormalDecimalString == inputGeometry.videoAspectRatio.aspectNormalDecimalString {
           log.verbose("Instead of shrinking window by \(ΔOutsideWidth) W & \(ΔOutsideHeight) H, will restore prev intendedViewportSize (\(prevIntendedViewportSize))")
-          return outputGeo.scaleViewport(to: prevIntendedViewportSize)
+          return outputGeo.scaleViewport(to: prevIntendedViewportSize, mode: outputLayout.mode)
         }
       }
       return outputGeo
@@ -437,11 +437,11 @@ extension PlayerWindowController {
                                                                 insideTopBarHeight: 0, insideTrailingBarWidth: 0,
                                                                 insideBottomBarHeight: 0, insideLeadingBarWidth: 0)
       if transition.isEnteringInteractiveMode {
-        return resizedGeo.scaleViewport(to: resizedGeo.videoSize)
+        return resizedGeo.scaleViewport(to: resizedGeo.videoSize, mode: transition.inputLayout.mode)
       } else if transition.isExitingInteractiveMode {
         // This will scale video up to viewport size (or close enough - we are removing
         // viewportMargins, and then we won't 100% match the video aspect)
-        return resizedGeo.scaleViewport(lockViewportToVideoSize: true)
+        return resizedGeo.scaleViewport(mode: transition.inputLayout.mode)
       }
     }
     // TOP
@@ -498,8 +498,8 @@ extension PlayerWindowController {
 
     if transition.outputLayout.isFullScreen {
       let screen = NSScreen.getScreenOrDefault(screenID: transition.inputGeometry.screenID)
-      return PlayerWindowGeometry.forFullScreen(in: screen,
-                                                legacy: transition.outputLayout.isLegacyFullScreen,
+      return PlayerWindowGeometry.forFullScreen(in: screen, legacy: transition.outputLayout.isLegacyFullScreen,
+                                                mode: transition.outputLayout.mode,
                                                 outsideTopBarHeight: outsideTopBarHeight,
                                                 outsideTrailingBarWidth: outsideTrailingBarWidth,
                                                 outsideBottomBarHeight: outsideBottomBarHeight,

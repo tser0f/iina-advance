@@ -8,15 +8,28 @@
 
 import Foundation
 
-extension PlayerWindowController {
+enum PlayerWindowMode: Int {
+  case windowed = 1
+  case fullScreen
+  case musicMode
+  case windowedInteractive
+  case fullScreenInteractive
 
-  enum WindowMode: Int {
-    case windowed = 1
-    case fullScreen
-    case musicMode
-    case windowedInteractive
-    case fullScreenInteractive
+  var alwaysLockViewportToVideoSize: Bool {
+    switch self {
+    case .musicMode, .windowedInteractive, .fullScreenInteractive:
+      return true
+    case .fullScreen, .windowed:
+      return false
+    }
   }
+
+  var isInteractiveMode: Bool {
+    return self == .windowedInteractive || self == .fullScreenInteractive
+  }
+}
+
+extension PlayerWindowController {
 
   /// `LayoutSpec`: data structure containing a player window's layout configuration, and contains all the info needed to build a `LayoutState`.
   /// (`LayoutSpec` is more compact & convenient for state storage, but `LayoutState` contains extra derived data which is more useful for
@@ -33,7 +46,7 @@ extension PlayerWindowController {
     let leadingSidebar: Sidebar
     let trailingSidebar: Sidebar
 
-    let mode: WindowMode
+    let mode: PlayerWindowMode
     let isLegacyStyle: Bool
 
     let topBarPlacement: Preference.PanelPlacement
@@ -47,7 +60,7 @@ extension PlayerWindowController {
     /// The mode of the interactive mode. ONLY used if `mode==.windowedInteractive || mode==.fullScreenInteractive`
     let interactiveMode: InteractiveMode?
 
-    init(leadingSidebar: Sidebar, trailingSidebar: Sidebar, mode: WindowMode, isLegacyStyle: Bool,
+    init(leadingSidebar: Sidebar, trailingSidebar: Sidebar, mode: PlayerWindowMode, isLegacyStyle: Bool,
          topBarPlacement: Preference.PanelPlacement, bottomBarPlacement: Preference.PanelPlacement,
          enableOSC: Bool, oscPosition: Preference.OSCPosition, interactiveMode: InteractiveMode?) {
 
@@ -101,7 +114,7 @@ extension PlayerWindowController {
     }
 
     /// Factory method. Init from preferences, except for `mode` and tab params
-    static func fromPreferences(andMode newMode: WindowMode? = nil,
+    static func fromPreferences(andMode newMode: PlayerWindowMode? = nil,
                                 interactiveMode: InteractiveMode? = nil,
                                 isLegacyStyle: Bool? = nil,
                                 fillingInFrom oldSpec: LayoutSpec) -> LayoutSpec {
@@ -137,7 +150,7 @@ extension PlayerWindowController {
     // Specify any properties to override; if nil, will use self's property values.
     func clone(leadingSidebar: Sidebar? = nil,
                trailingSidebar: Sidebar? = nil,
-               mode: WindowMode? = nil,
+               mode: PlayerWindowMode? = nil,
                topBarPlacement: Preference.PanelPlacement? = nil,
                bottomBarPlacement: Preference.PanelPlacement? = nil,
                enableOSC: Bool? = nil,
@@ -156,7 +169,7 @@ extension PlayerWindowController {
     }
 
     var isInteractiveMode: Bool {
-      return mode == .windowedInteractive || mode == .fullScreenInteractive
+      return mode.isInteractiveMode
     }
 
     var isFullScreen: Bool {
@@ -303,7 +316,7 @@ extension PlayerWindowController {
 
     var bottomBarHeight: CGFloat {
       if isInteractiveMode {
-        return InteractiveModeGeometry.outsideBottomBarHeight
+        return Constants.InteractiveMode.outsideBottomBarHeight
       }
       if enableOSC && oscPosition == .bottom {
         return OSCToolbarButton.oscBarHeight
@@ -320,13 +333,17 @@ extension PlayerWindowController {
     }
 
     var viewportMargins: BoxQuad {
-      return isInteractiveMode ? InteractiveModeGeometry.videobox : BoxQuad.zero
+      return isInteractiveMode ? Constants.InteractiveMode.viewportMargins : BoxQuad.zero
     }
 
     // Derived properties & convenience accessors
 
     var isInteractiveMode: Bool {
       return spec.isInteractiveMode
+    }
+
+    var canEnterInteractiveMode: Bool {
+      return spec.mode == .windowed || spec.mode == .fullScreen
     }
 
     var isFullScreen: Bool {
@@ -398,7 +415,7 @@ extension PlayerWindowController {
                            (oscPosition == .bottom && bottomBarPlacement == .outsideViewport))
     }
 
-    var mode: WindowMode {
+    var mode: PlayerWindowMode {
       return spec.mode
     }
 
@@ -532,12 +549,12 @@ extension PlayerWindowController {
         let fitOption: ScreenFitOption = spec.isLegacyStyle ? .legacyFullScreen : .nativeFullScreen
         let topMarginHeight = screen.cameraHousingHeight ?? 0
         return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
-                                    topMarginHeight: topMarginHeight, 
+                                    mode: mode, topMarginHeight: topMarginHeight,
                                     outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
-                                    outsideBottomBarHeight: InteractiveModeGeometry.outsideBottomBarHeight,
+                                    outsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
                                     outsideLeadingBarWidth: 0, insideTopBarHeight: 0, 
                                     insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
-                                    viewportMargins: InteractiveModeGeometry.videobox, videoAspectRatio: videoAspectRatio)
+                                    viewportMargins: Constants.InteractiveMode.viewportMargins, videoAspectRatio: videoAspectRatio)
       }
       
       let bottomBarHeight: CGFloat
@@ -550,7 +567,7 @@ extension PlayerWindowController {
       let insideBottomBarHeight = bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
       let outsideBottomBarHeight = bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
 
-      return PlayerWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle,
+      return PlayerWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle, mode: mode,
                                                 outsideTopBarHeight: outsideTopBarHeight,
                                                 outsideTrailingBarWidth: outsideTrailingBarWidth,
                                                 outsideBottomBarHeight: outsideBottomBarHeight,

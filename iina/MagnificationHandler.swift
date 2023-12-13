@@ -61,7 +61,6 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         } else {
           windowController.log.verbose("Updating windowedModeGeometry from magnification gesture state \(recognizer.state.rawValue)")
           windowController.windowedModeGeometry = newWindowGeometry
-          windowController.player.updateMPVWindowScale(using: newWindowGeometry)
         }
         windowController.player.saveState()
       }
@@ -73,10 +72,11 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     // avoid zero and negative numbers because they will cause problems
     let scale = max(0.0001, magnification + 1.0)
     windowController.log.verbose("Scaling pinched video, target scale: \(scale)")
+    let currentLayout = windowController.currentLayout
 
     // If in music mode but playlist is not visible, allow scaling up to screen size like regular windowed mode.
     // If playlist is visible, do not resize window beyond current window height
-    if windowController.currentLayout.isMusicMode {
+    if currentLayout.isMusicMode {
       windowController.miniPlayer.loadIfNeeded()
 
       let originalGeometry = windowController.musicModeGeometry.toPlayerWindowGeometry()
@@ -101,7 +101,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         let newViewportSize = originalGeometry.viewportSize.multiplyThenRound(scale)
 
         // TODO: modify this to keep either leading or trailing edge fixed (as above)
-        let newGeometry = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .keepInVisibleScreen, lockViewportToVideoSize: true)
+        let newGeometry = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .keepInVisibleScreen, mode: .musicMode)
         windowController.applyWindowGeometryForSpecialResize(newGeometry)
         return newGeometry
       }
@@ -112,7 +112,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
 
     let newViewportSize = originalGeometry.viewportSize.multiplyThenRound(scale)
 
-    let intendedGeo = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .noConstraints)
+    let intendedGeo = originalGeometry.scaleViewport(to: newViewportSize, fitOption: .noConstraints, mode: currentLayout.mode)
     // User has actively resized the video. Assume this is the new intended resolution, even if it is outside the current screen size.
     // This is useful for various features such as resizing without "lockViewportToVideoSize", or toggling visibility of outside bars.
     windowController.player.info.intendedViewportSize = intendedGeo.viewportSize

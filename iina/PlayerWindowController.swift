@@ -138,7 +138,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var isMagnifying = false
   var denyNextWindowResize = false
-  var modeToSetAfterExitingFullScreen: WindowMode? = nil
+  var modeToSetAfterExitingFullScreen: PlayerWindowMode? = nil
 
   var isPausedDueToInactive: Bool = false
   var isPausedDueToMiniaturization: Bool = false
@@ -241,7 +241,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.
-  var interactiveModeGeometry: PlayerWindowGeometry? = nil
+  var interactiveModeGeometry: PlayerWindowGeometry? = nil {
+    didSet {
+      if let geo = interactiveModeGeometry {
+        log.verbose("Updated interactiveModeGeometry to \(geo)")
+      } else {
+        log.verbose("Updated interactiveModeGeometry to nil")
+      }
+    }
+  }
 
   // MARK: - Enums
 
@@ -1042,7 +1050,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     switch layout.mode {
     case .musicMode:
       let newMusicModeGeometry = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
-      applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
+      applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
     case .windowed:
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
@@ -1053,7 +1061,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
       var newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio)
       newGeo = newGeo.scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
-      applyWindowGeometry(newGeo)
+      applyWindowGeometryInAnimationPipeline(newGeo)
     case .fullScreen:
       player.info.videoAspectRatio = newAspectRatio
       guard let screen = window?.screen else { return }
@@ -2863,7 +2871,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           log.error("Failed to remove prev crop filter: (\(vf.stringFormat.quoted)) for some reason. Will ignore and try to proceed anyway")
         }
       }
-      let newMode: WindowMode = currentLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
+      let newMode: PlayerWindowMode = currentLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
       let interactiveModeLayout = currentLayout.spec.clone(mode: newMode, interactiveMode: mode)
       let startDuration = IINAAnimation.CropAnimationDuration
       let endDuration = currentLayout.mode == .fullScreen ? startDuration * 0.5 : startDuration
@@ -2875,30 +2883,63 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /// Use `immediately: true` to exit without animation.
   /// This method can be run safely even if not in interactive mode
-  func exitInteractiveMode(immediately: Bool = false, then doAfter: (() -> Void)? = nil) {
+  func exitInteractiveMode(immediately: Bool = false, cropVideoFrom uncroppedVideoSize: NSSize? = nil, to cropbox: NSRect? = nil, then doAfter: (() -> Void)? = nil) {
     animationPipeline.submitZeroDuration({ [self] in
-      let oldLayout = currentLayout
+      let currentLayout = currentLayout
 
-      if !oldLayout.isInteractiveMode {
-        if let doAfter {
-          doAfter()
+      var animationTasks: [IINAAnimation.Task] = []
+
+      if currentLayout.isInteractiveMode {
+        // If these params are present and valid, then need to apply a crop
+        if let uncroppedVideoSize, let cropbox, let cropController = cropSettingsView {
+          // Do this very fast because at present the crop animation is not great
+          animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.CropAnimationDuration * 0.2, { [self] in
+            let screen = bestScreen
+            log.verbose("[MPVVideoReconfig] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
+
+            /// Updated `windowedModeGeometry` even if in full screen - we are not prepared to look for changes later
+            let croppedGeometry = windowedModeGeometry.cropVideo(from: uncroppedVideoSize, to: cropbox)
+            windowedModeGeometry = croppedGeometry
+            player.info.videoAspectRatio = croppedGeometry.videoAspectRatio
+            player.info.intendedViewportSize = croppedGeometry.viewportSize
+
+            // fade out all this stuff before crop
+            cropController.view.alphaValue = 0
+            cropController.view.isHidden = true
+            cropController.cropBoxView.isHidden = true
+            cropController.cropBoxView.alphaValue = 0
+
+            if currentLayout.isFullScreen {
+              let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: croppedGeometry.videoAspectRatio)
+              videoView.apply(fsInteractiveModeGeo)
+              interactiveModeGeometry = fsInteractiveModeGeo
+            } else {
+
+              let imGeoPrev = interactiveModeGeometry ?? windowedModeGeometry.toInteractiveMode()
+              let imGeoNew = imGeoPrev.cropVideo(from: uncroppedVideoSize, to: cropbox)
+
+              interactiveModeGeometry = imGeoNew
+              player.window.setFrameImmediately(imGeoNew.windowFrame)
+            }
+          }))
+
         }
-        return
+
+        let newMode: PlayerWindowMode = currentLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
+        log.verbose("Exiting interactive mode, newMode: \(newMode)")
+        let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: currentLayout.spec)
+        let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
+        let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: currentLayout, to: newLayoutSpec,
+                                               totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
+        animationTasks.append(contentsOf: transition.animationTasks)
       }
 
-      let newMode: WindowMode = oldLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
-      log.verbose("Exiting interactive mode, newMode: \(newMode)")
-      let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: oldLayout.spec)
-      let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
-      let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: oldLayout, to: newLayoutSpec,
-                                             totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
-
-      var animationTasks = transition.animationTasks
       if let doAfter {
         animationTasks.append(IINAAnimation.Task({
           doAfter()
         }))
       }
+      
       animationPipeline.submit(animationTasks)
     })
   }

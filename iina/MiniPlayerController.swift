@@ -332,7 +332,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
     // Constrain window so that it doesn't expand below bottom of screen, or fall offscreen
     let newMusicModeGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isPlaylistVisible: showPlaylist)
-    windowController.applyMusicModeGeometryInAnimationTask(newMusicModeGeometry)
+    windowController.applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
   }
 
   @IBAction func toggleVideoView(_ sender: Any) {
