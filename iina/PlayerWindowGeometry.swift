@@ -908,6 +908,14 @@ extension PlayerWindowController {
         windowedModeGeometry = newWindowGeo
       }
 
+      if currentLayout.isLegacyFullScreen {
+        animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+          let fsGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: newVideoAspectRatio)
+          log.debug("[MPVVideoReconfig] Applying legacyFSGeo videoSize: \(fsGeo.videoSize), windowFrame: \(fsGeo.windowFrame)")
+          applyLegacyFullScreenGeometry(fsGeo)
+        }))
+      }
+
       // UI and slider
       player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
     }
@@ -972,7 +980,7 @@ extension PlayerWindowController {
         log.verbose("[MPVVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
         return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
       } else {
-        log.verbose("[MPVVideoReconfig C-7] Using prev windowFrame \(windowGeo.windowFrame) with new video aspect")
+        log.verbose("[MPVVideoReconfig C-7] Using prev windowFrame \(windowGeo.windowFrame) with new video aspect (\(windowGeo.videoAspectRatio))")
         return windowGeo
       }
     }

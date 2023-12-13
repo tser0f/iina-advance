@@ -805,10 +805,6 @@ class PlayerCore: NSObject {
 
     let videoParams = mpv.queryForVideoParams()
     info.videoParams = videoParams
-    guard videoParams.videoRawWidth > 0, videoParams.videoRawHeight > 0 else {
-      log.verbose("Cannot set requested aspect: videoParams not available")
-      return
-    }
 
     let aspectDisplay: String
     if Aspect(string: aspect) != nil {
@@ -1187,6 +1183,10 @@ class PlayerCore: NSObject {
     let heightNorm = cropRect.height / videoRawSize.height
     let normRect = NSRect(x: xNorm, y: yNorm, width: widthNorm, height: heightNorm)
     log.verbose("Normalized cropRect \(cropRect) → \(normRect)")
+    guard widthNorm > 0, heightNorm > 0 else {
+      log.warn("Invalid cropRect! Returning nil")
+      return nil
+    }
     return normRect
   }
 
@@ -1196,6 +1196,11 @@ class PlayerCore: NSObject {
     if let aspect = Aspect(string: str) {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
       log.verbose("Setting crop from requested string \(str.quoted) to: \(cropped.width)x\(cropped.height) (origSize: \(vwidth)x\(vheight))")
+      if cropped.width <= 0 || cropped.height <= 0 {
+        log.error("Cannot set crop to \(cropped); width or height is <= 0")
+        updateCropUI(to: AppData.cropNone)
+        return
+      }
       let vf = MPVFilter.crop(w: Int(cropped.width), h: Int(cropped.height), x: nil, y: nil)
       vf.label = Constants.FilterLabel.crop
       if setCrop(fromFilter: vf) {
@@ -1205,6 +1210,7 @@ class PlayerCore: NSObject {
     } else {
       if str != AppData.cropNone {
         log.error("Requested crop string is invalid: \(str.quoted)")
+        updateCropUI(to: AppData.cropNone)
       }
       if let filter = info.cropFilter {
         log.verbose("Setting crop to \(AppData.cropNone.quoted) and removing crop filter")
@@ -1215,11 +1221,12 @@ class PlayerCore: NSObject {
   }
 
   private func updateCropUI(to newCropLabel: String) {
-    guard info.selectedCropLabel != newCropLabel else { return }
-    info.selectedCropLabel = newCropLabel
+    if info.selectedCropLabel != newCropLabel {
+      info.selectedCropLabel = newCropLabel
 
-    let osdLabel = newCropLabel.isEmpty ? "Custom" : newCropLabel
-    sendOSD(.crop(osdLabel))
+      let osdLabel = newCropLabel.isEmpty ? "Custom" : newCropLabel
+      sendOSD(.crop(osdLabel))
+    }
     reloadQuickSettingsView()
   }
 
@@ -2474,6 +2481,10 @@ class PlayerCore: NSObject {
       info.cropFilter = filter
       if let p = filter.params, let wStr = p["w"], let hStr = p["h"], p["x"] == nil && p["y"] == nil, let w = Double(wStr), let h = Double(hStr) {
         // Probably a selection from the Quick Settings panel. See if there are any matches.
+        guard w != 0, h != 0 else {
+          log.error("Cannot set filter \(filter.label ?? ""): w or h is 0")
+          return
+        }
         // Truncate to 2 decimal places precision for comparison.
         let selectedAspect = Int((w / h) * 100)
         for cropLabel in AppData.cropsInPanel {

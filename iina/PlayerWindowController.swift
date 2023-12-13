@@ -2189,7 +2189,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           log.verbose("Updating legacy full screen window in response to ScreenParametersNotification")
           let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
           applyLegacyFullScreenGeometry(fsGeo)
-        } else if currentLayout.isWindowed {
+        } else if currentLayout.mode == .windowed {
           /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
           /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
           /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
