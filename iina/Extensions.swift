@@ -889,7 +889,7 @@ extension NSPasteboard.PasteboardType {
 
 
 extension NSWindow.Level {
-  static let iinaFloating = NSWindow.Level(NSWindow.Level.normal.rawValue)
+  static let iinaFloating = NSWindow.Level(NSWindow.Level.floating.rawValue - 1)
   static let iinaBlackScreen = NSWindow.Level(NSWindow.Level.mainMenu.rawValue + 1)
 }
 

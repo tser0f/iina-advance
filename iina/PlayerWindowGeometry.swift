@@ -838,12 +838,6 @@ extension PlayerWindowController {
         windowedModeGeometry = uncroppedWindowedGeo
 
         if currentLayout.mode == .fullScreen {
-//          animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration * 0.5, { [self] in
-//            let uncroppedFullScreenGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: uncroppedWindowedGeo.videoAspectRatio)
-//            videoView.apply(uncroppedFullScreenGeo)
-////            interactiveModeGeometry = uncroppedFullScreenGeo
-//            forceDraw()
-//          }))
 
         } else if currentLayout.mode == .windowed {
           let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
@@ -899,22 +893,16 @@ extension PlayerWindowController {
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
 
-      if currentLayout.mode == .windowed {
+      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`
         log.debug("[MPVVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-        applyWindowGeometryInAnimationPipeline(newWindowGeo)
-      } else {
-        // Update this for later use if not currently in windowed mode
-        windowedModeGeometry = newWindowGeo
-      }
+        applyWindowGeometry(newWindowGeo)
 
-      if currentLayout.isLegacyFullScreen {
-        animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
-          let fsGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: newVideoAspectRatio)
-          log.debug("[MPVVideoReconfig] Applying legacyFSGeo videoSize: \(fsGeo.videoSize), windowFrame: \(fsGeo.windowFrame)")
-          applyLegacyFullScreenGeometry(fsGeo)
-        }))
-      }
+        if currentLayout.mode != .windowed {
+          // Update this for later use if not currently in windowed mode
+          windowedModeGeometry = newWindowGeo
+        }
+      }))
 
       // UI and slider
       player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)

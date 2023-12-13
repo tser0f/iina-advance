@@ -111,8 +111,6 @@ extension PlayerWindowController {
       }
       if !isClosing {
         player.mpv.setFlag(MPVOption.Window.fullscreen, true)
-        // Let mpv decide the correct render region in full screen
-        player.mpv.setFlag(MPVOption.Window.keepaspect, true)
       }
 
       resetViewsForModeTransition()
@@ -131,7 +129,6 @@ extension PlayerWindowController {
 
       if !isClosing {
         player.mpv.setFlag(MPVOption.Window.fullscreen, false)
-        player.mpv.setFlag(MPVOption.Window.keepaspect, false)
       }
     }
 
