@@ -476,7 +476,9 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
     let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
 
     var newViewportSize = desiredSize ?? viewportSize
-    Logger.log("[geo] ScaleViewport start, newViewportSize: \(newViewportSize), lockViewportToVideoSize: \(lockViewportToVideoSize.yn)", level: .verbose)
+    if Logger.isTraceEnabled {
+      Logger.log("[geo] ScaleViewport start, newViewportSize=\(newViewportSize), lockViewport=\(lockViewportToVideoSize.yn)", level: .verbose)
+    }
 
     /// Make sure viewport size is at least as large as min
     newViewportSize = NSSize(width: max(getMinViewportWidth(mode: mode), newViewportSize.width),
@@ -521,14 +523,15 @@ struct PlayerWindowGeometry: Equatable, CustomStringConvertible {
     // Move window if needed to make sure the window is not offscreen
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
     if let containerFrame = containerFrame {
-      Logger.log("[geo] Constraining in containerFrame: \(containerFrame)", level: .verbose)
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
       if newFitOption == .centerInVisibleScreen {
         newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)
       }
+      Logger.log("[geo] ScaleViewport: constrainedIn=\(containerFrame) → windowFrame=\(newWindowFrame) videoSize=\(newVideoSize)", level: .verbose)
+    } else {
+      Logger.log("[geo] ScaleViewport: → windowFrame=\(newWindowFrame) videoSize=\(newVideoSize)", level: .verbose)
     }
 
-    Logger.log("[geo] ScaleViewport done. New windowFrame: \(newWindowFrame), videoSize: \(newVideoSize)", level: .verbose)
     return self.clone(windowFrame: newWindowFrame, screenID: newScreenID, fitOption: newFitOption, mode: mode)
   }
 

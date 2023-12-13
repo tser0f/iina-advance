@@ -837,8 +837,10 @@ class PlayerCore: NSObject {
     }
 
     DispatchQueue.main.async { [self] in
-      // Make sure window geometry is up to date
-      windowController.mpvVideoDidReconfig()
+      if videoParams.hasValidSize {
+        // Make sure window geometry is up to date
+        windowController.mpvVideoDidReconfig()
+      }
 
       // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
       // immediately changes the selection to "Default".
@@ -1182,7 +1184,9 @@ class PlayerCore: NSObject {
     let widthNorm = cropRect.width / videoRawSize.width
     let heightNorm = cropRect.height / videoRawSize.height
     let normRect = NSRect(x: xNorm, y: yNorm, width: widthNorm, height: heightNorm)
-    log.verbose("Normalized cropRect \(cropRect) → \(normRect)")
+    if log.isTraceEnabled {
+      log.trace("Normalized cropRect \(cropRect) → \(normRect)")
+    }
     guard widthNorm > 0, heightNorm > 0 else {
       log.warn("Invalid cropRect! Returning nil")
       return nil

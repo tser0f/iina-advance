@@ -72,8 +72,18 @@ class FloatingControlBarView: NSVisualEffectView {
   // MARK: - Positioning
 
   func moveTo(centerRatioH ratioH: CGFloat, originRatioV ratioV: CGFloat, layout: PlayerWindowController.LayoutState, viewportSize: CGSize) {
-    assert(ratioH >= 0 && ratioH <= 1, "centerRatioH is invalid: \(ratioH)")
-    assert(ratioV >= 0 && ratioV <= 1, "originRatioV is invalid: \(ratioV)")
+    guard ratioH >= 0 && ratioH <= 1 else {
+      if let playerWindowController {
+        playerWindowController.log.error("FloatingOSC: cannot update position; centerRatioH is invalid: \(ratioH)")
+      }
+      return
+    }
+    guard ratioV >= 0 && ratioV <= 1 else {
+      if let playerWindowController {
+        playerWindowController.log.error("FloatingOSC: cannot update position; originRatioV is invalid: \(ratioV)")
+      }
+      return
+    }
 
     let geometry = FloatingControllerGeometry(windowLayout: layout, viewportSize: viewportSize)
     let availableWidth = geometry.availableWidth

@@ -113,6 +113,10 @@ struct MPVVideoParams: CustomStringConvertible {
     return CGSize(width: drW, height: drH)
   }
 
+  var hasValidSize: Bool {
+    return videoDisplayRotatedWidth > 0 && videoDisplayRotatedHeight > 0
+  }
+
   var videoDisplayRotatedAspect: CGFloat {
     guard let videoDisplayRotatedSize else { return 1 }
     return videoDisplayRotatedSize.aspect

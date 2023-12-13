@@ -794,7 +794,9 @@ extension NSImage {
     let cropSize = NSSize(width: round(size.width * normalizedCropRect.size.width), height: round(size.height * normalizedCropRect.size.height))
     let cropRect = CGRect(origin: cropOrigin, size: cropSize)
 
-    Logger.log("Cropping image size \(size) using cropRect \(cropRect)", level: .verbose)
+    if Logger.isTraceEnabled {
+      Logger.log("Cropping image size \(size) using cropRect \(cropRect)", level: .verbose)
+    }
     let croppedImage = self.cgImage!.cropping(to: cropRect)!
     return NSImage(cgImage: croppedImage, size: cropSize)
   }
