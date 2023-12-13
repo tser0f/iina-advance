@@ -230,6 +230,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var windowedModeGeometry: PWindowGeometry! {
     didSet {
       log.verbose("Updated windowedModeGeometry to \(windowedModeGeometry!)")
+      assert(windowedModeGeometry.mode == .windowed, "windowedModeGeometry has unexpected mode: \(windowedModeGeometry.mode) (expected: \(PlayerWindowMode.windowed)")
       assert(!windowedModeGeometry.fitOption.isFullScreen, "windowedModeGeometry has invalid fitOption: \(windowedModeGeometry.fitOption)")
     }
   }
@@ -245,6 +246,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     didSet {
       if let geo = interactiveModeGeometry {
         log.verbose("Updated interactiveModeGeometry to \(geo)")
+        assert(geo.mode == .windowedInteractive || geo.mode == .fullScreenInteractive, "unexpected mode for interactiveModeGeometry: \(geo.mode)")
       } else {
         log.verbose("Updated interactiveModeGeometry to nil")
       }
@@ -1052,14 +1054,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newMusicModeGeometry = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
       applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
     case .windowed:
+      var newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio)
+
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
          let intendedViewportSize = player.info.intendedViewportSize {
         viewportSize = intendedViewportSize
       } else {
-        viewportSize = windowedModeGeometry.viewportSize
+        viewportSize = newGeo.viewportSize
       }
-      var newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio)
       newGeo = newGeo.scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
       applyWindowGeometryInAnimationPipeline(newGeo)
     case .fullScreen:
@@ -2673,36 +2676,48 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let (osdText, osdType) = message.message()
 
-    if #available(macOS 11.0, *), message.isSoundRelated {
-      // Add sound icon which indicates current audio status.
-      // Gray color == disabled. Slash == muted. Can be combined
+    var icon: NSImage? = nil
+    var isImageDisabled = false
+    if #available(macOS 11.0, *) {
+      if message.isSoundRelated {
+        // Add sound icon which indicates current audio status.
+        // Gray color == disabled. Slash == muted. Can be combined
 
-      let isAudioDisabled = !player.info.isAudioTrackSelected
-      let currentVolume = player.info.volume
-      let isMuted = player.info.isMuted
-      let image: NSImage
-      if isMuted {
-        image = NSImage(systemSymbolName: "speaker.slash.fill", accessibilityDescription: "Audio is muted")!
-      } else if isAudioDisabled {
-        image = NSImage(systemSymbolName: "speaker.fill", accessibilityDescription: "No audio track is selected")!
-      } else {
-        if #available(macOS 13.0, *) {
-          // Vary icon slightly based on volume level
-          image = NSImage(systemSymbolName: "speaker.wave.3.fill", variableValue: currentVolume, accessibilityDescription: "Sound is enabled")!
+        let isAudioDisabled = !player.info.isAudioTrackSelected
+        let currentVolume = player.info.volume
+        let isMuted = player.info.isMuted
+        isImageDisabled = isAudioDisabled
+        if isMuted {
+          icon = NSImage(systemSymbolName: "speaker.slash.fill", accessibilityDescription: "Audio is muted")!
+        } else if isAudioDisabled {
+          icon = NSImage(systemSymbolName: "speaker.fill", accessibilityDescription: "No audio track is selected")!
         } else {
-          image = NSImage(systemSymbolName: "speaker.wave.3.fill", accessibilityDescription: "Sound is enabled")!
+          if #available(macOS 13.0, *) {
+            // Vary icon slightly based on volume level
+            icon = NSImage(systemSymbolName: "speaker.wave.3.fill", variableValue: currentVolume, accessibilityDescription: "Sound is enabled")!
+          } else {
+            icon = NSImage(systemSymbolName: "speaker.wave.3.fill", accessibilityDescription: "Sound is enabled")!
+          }
         }
-      }
 
+      } else if case .resume = message {
+        icon = NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play")!
+      } else if case .pause = message {
+        icon = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "Pause")!
+      }
+      // TODO: goforward.5, forward.frame.fill, etc
+    }
+
+    if let icon {
       let attachment = NSTextAttachment()
-      attachment.image = image
-      let imageString = NSMutableAttributedString(attachment: attachment)
-      if isAudioDisabled {
-        imageString.addAttributes([.foregroundColor: NSColor.disabledControlTextColor], range: NSMakeRange(0, imageString.length))
+      attachment.image = icon
+      let iconString = NSMutableAttributedString(attachment: attachment)
+      if isImageDisabled {
+        iconString.addAttributes([.foregroundColor: NSColor.disabledControlTextColor], range: NSMakeRange(0, iconString.length))
       }
       let textString = NSAttributedString(string: " \(osdText)")
-      imageString.append(textString)
-      osdLabel.attributedStringValue = imageString
+      iconString.append(textString)
+      osdLabel.attributedStringValue = iconString
     } else {
       // No icon
       osdLabel.stringValue = osdText
@@ -2747,7 +2762,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     let osdTextSize = CGFloat(Preference.float(for: .osdTextSize))
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
-    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.5).clamped(to: 11...25), weight: .regular)
+    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.6).clamped(to: 11...25), weight: .regular)
     if #available(macOS 11.0, *) {
       osdAccessoryProgress.controlSize = osdTextSize > 16 ? .large : .regular
     }

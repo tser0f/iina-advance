@@ -119,9 +119,13 @@ extension PlayerWindowController {
       animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`
         log.debug("[MPVVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
-        applyWindowGeometry(newWindowGeo)
 
-        if currentLayout.mode != .windowed {
+        if currentLayout.mode == .windowed {
+          applyWindowGeometry(newWindowGeo)
+        } else if currentLayout.mode == .fullScreen {
+          // TODO: break FS into separate function
+          applyWindowGeometry(newWindowGeo)
+        } else {
           // Update this for later use if not currently in windowed mode
           windowedModeGeometry = newWindowGeo
         }
@@ -357,23 +361,23 @@ extension PlayerWindowController {
 
   func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> PWindowGeometry {
     assert(layout.mode == .windowed || layout.mode == .windowedInteractive,
-           "buildWindowGeometryFromCurrentFrame(): unexpected mode: \(layout.mode)")
+           "buildWindowGeometryFromCurrentFrame: unexpected mode: \(layout.mode)")
 
     let geo = PWindowGeometry(windowFrame: window!.frame,
-                                   screenID: bestScreen.screenID,
-                                   fitOption: .keepInVisibleScreen,
-                                   mode: layout.mode,
-                                   topMarginHeight: 0,  // is only nonzero when in legacy FS
-                                   outsideTopBarHeight: layout.outsideTopBarHeight,
-                                   outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
-                                   outsideBottomBarHeight: layout.outsideBottomBarHeight,
-                                   outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
-                                   insideTopBarHeight: layout.insideTopBarHeight,
-                                   insideTrailingBarWidth: layout.insideTrailingBarWidth,
-                                   insideBottomBarHeight: layout.insideBottomBarHeight,
-                                   insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                                   viewportMargins: layout.viewportMargins,
-                                   videoAspectRatio: player.info.videoAspectRatio)
+                              screenID: bestScreen.screenID,
+                              fitOption: .keepInVisibleScreen,
+                              mode: layout.mode,
+                              topMarginHeight: 0,  // is only nonzero when in legacy FS
+                              outsideTopBarHeight: layout.outsideTopBarHeight,
+                              outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
+                              outsideBottomBarHeight: layout.outsideBottomBarHeight,
+                              outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
+                              insideTopBarHeight: layout.insideTopBarHeight,
+                              insideTrailingBarWidth: layout.insideTrailingBarWidth,
+                              insideBottomBarHeight: layout.insideBottomBarHeight,
+                              insideLeadingBarWidth: layout.insideLeadingBarWidth,
+                              viewportMargins: layout.viewportMargins,
+                              videoAspectRatio: player.info.videoAspectRatio)
     return geo.scaleViewport()
   }
 
@@ -606,6 +610,7 @@ extension PlayerWindowController {
     }))
   }
 
+  // TODO: split this into separate windowed & FS
   private func applyWindowGeometry(_ newGeometry: PWindowGeometry) {
     // Update video aspect ratio always
     player.info.videoAspectRatio = newGeometry.videoAspectRatio
