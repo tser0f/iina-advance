@@ -10,7 +10,7 @@ import Foundation
 
 extension PlayerWindowController {
   /// `LayoutTransition`: data structure which holds metadata needed to execute a series of animations which transition
-  /// a single `PlayerWindow` from one layout (`inputLayout`) to another (`outputLayout`). Instances of `PlayerWindowGeometry`
+  /// a single `PlayerWindow` from one layout (`inputLayout`) to another (`outputLayout`). Instances of `PWindowGeometry`
   /// are also used along the way to dictate window location/size, viewport size, sidebar sizes, & other geometry.
   ///
   /// See `buildLayoutTransition()`, where an instance of this class is assembled.
@@ -21,18 +21,18 @@ extension PlayerWindowController {
     let inputLayout: LayoutState
     let outputLayout: LayoutState
 
-    let inputGeometry: PlayerWindowGeometry
-    var middleGeometry: PlayerWindowGeometry?
-    let outputGeometry: PlayerWindowGeometry
+    let inputGeometry: PWindowGeometry
+    var middleGeometry: PWindowGeometry?
+    let outputGeometry: PWindowGeometry
 
     /// Should only be true when setting layout on window open. See `setInitialWindowLayout()` in `PlayerWindowController`.
     let isInitialLayout: Bool
 
     var animationTasks: [IINAAnimation.Task] = []
 
-    init(name: String, from inputLayout: LayoutState, from inputGeometry: PlayerWindowGeometry,
-         to outputLayout: LayoutState, to outputGeometry: PlayerWindowGeometry,
-         middleGeometry: PlayerWindowGeometry? = nil,
+    init(name: String, from inputLayout: LayoutState, from inputGeometry: PWindowGeometry,
+         to outputLayout: LayoutState, to outputGeometry: PWindowGeometry,
+         middleGeometry: PWindowGeometry? = nil,
          isInitialLayout: Bool = false) {
       self.name = name
       self.inputLayout = inputLayout

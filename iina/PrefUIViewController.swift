@@ -323,7 +323,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   private func setupGeometryRelatedControls() {
     let geometryString = Preference.string(for: .initialWindowSizePosition) ?? ""
-    if let geometry = GeometryDef.parse(geometryString) {
+    if let geometry = MPVGeometryDef.parse(geometryString) {
       // size
       if let h = geometry.h {
         windowSizeCheckBox.state = .on

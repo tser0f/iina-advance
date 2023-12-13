@@ -85,7 +85,7 @@ struct PlayerSaveState {
   /// See `setInitialWindowLayout()` in `PlayerWindowLayout.swift`.
   let layoutSpec: PlayerWindowController.LayoutSpec?
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
-  let windowedModeGeometry: PlayerWindowGeometry?
+  let windowedModeGeometry: PWindowGeometry?
   let musicModeGeometry: MusicModeGeometry?
   let screens: [ScreenMeta]
 
@@ -100,8 +100,8 @@ struct PlayerSaveState {
 
   // MARK: - Save State / Serialize to prefs strings
 
-  /// `PlayerWindowGeometry` -> String
-  private static func toCSV(_ geo: PlayerWindowGeometry) -> String {
+  /// `PWindowGeometry` -> String
+  private static func toCSV(_ geo: PWindowGeometry) -> String {
     return [windowGeometryPrefStringVersion,
             geo.videoAspectRatio.aspectNormalDecimalString,
             geo.topMarginHeight.string2f,
@@ -483,8 +483,8 @@ struct PlayerSaveState {
     })
   }
 
-  /// String -> `PlayerWindowGeometry`
-  static private func deserializeWindowGeometry(from properties: [String: Any]) -> PlayerWindowGeometry? {
+  /// String -> `PWindowGeometry`
+  static private func deserializeWindowGeometry(from properties: [String: Any]) -> PWindowGeometry? {
     return deserializeCSV(.windowedModeGeometry, fromProperties: properties,
                           expectedTokenCount: 18,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
@@ -521,7 +521,7 @@ struct PlayerSaveState {
         return nil
       }
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
+      return PWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
                                   outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                                   outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
                                   insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,

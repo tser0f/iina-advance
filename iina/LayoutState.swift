@@ -536,19 +536,19 @@ extension PlayerWindowController {
       return outputLayout
     }
 
-    func buildFullScreenGeometry(inScreenID screenID: String, videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
+    func buildFullScreenGeometry(inScreenID screenID: String, videoAspectRatio: CGFloat) -> PWindowGeometry {
       let screen = NSScreen.getScreenOrDefault(screenID: screenID)
       return buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
     }
 
-    func buildFullScreenGeometry(inside screen: NSScreen, videoAspectRatio: CGFloat) -> PlayerWindowGeometry {
+    func buildFullScreenGeometry(inside screen: NSScreen, videoAspectRatio: CGFloat) -> PWindowGeometry {
       assert(isFullScreen)
 
       if isInteractiveMode {
-        let windowFrame = PlayerWindowGeometry.fullScreenWindowFrame(in: screen, legacy: spec.isLegacyStyle)
+        let windowFrame = PWindowGeometry.fullScreenWindowFrame(in: screen, legacy: spec.isLegacyStyle)
         let fitOption: ScreenFitOption = spec.isLegacyStyle ? .legacyFullScreen : .nativeFullScreen
         let topMarginHeight = screen.cameraHousingHeight ?? 0
-        return PlayerWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
+        return PWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
                                     mode: mode, topMarginHeight: topMarginHeight,
                                     outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
                                     outsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
@@ -567,7 +567,7 @@ extension PlayerWindowController {
       let insideBottomBarHeight = bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
       let outsideBottomBarHeight = bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
 
-      return PlayerWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle, mode: mode,
+      return PWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle, mode: mode,
                                                 outsideTopBarHeight: outsideTopBarHeight,
                                                 outsideTrailingBarWidth: outsideTrailingBarWidth,
                                                 outsideBottomBarHeight: outsideBottomBarHeight,
@@ -580,7 +580,7 @@ extension PlayerWindowController {
     }
 
     // Converts & updates existing geometry to this layout
-    func convertWindowedModeGeometry(from existingGeometry: PlayerWindowGeometry, videoAspectRatio: CGFloat? = nil) -> PlayerWindowGeometry {
+    func convertWindowedModeGeometry(from existingGeometry: PWindowGeometry, videoAspectRatio: CGFloat? = nil) -> PWindowGeometry {
       let bottomBarHeight: CGFloat
       if enableOSC && oscPosition == .bottom {
         bottomBarHeight = OSCToolbarButton.oscBarHeight

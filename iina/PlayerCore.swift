@@ -860,7 +860,7 @@ class PlayerCore: NSObject {
     return nil
   }
 
-  func updateMPVWindowScale(using windowGeo: PlayerWindowGeometry) {
+  func updateMPVWindowScale(using windowGeo: PWindowGeometry) {
     // Must not access mpv while it is asynchronously processing stop and quit commands.
     // See comments in resetViewsForModeTransition for details.
     guard !windowController.isClosing else { return }
@@ -880,7 +880,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  private func deriveVideoScale(from windowGeometry: PlayerWindowGeometry) -> CGFloat? {
+  private func deriveVideoScale(from windowGeometry: PWindowGeometry) -> CGFloat? {
     let videoWidthScaled = windowGeometry.videoSize.width
 
     let videoParams = mpv.queryForVideoParams()
@@ -1575,9 +1575,9 @@ class PlayerCore: NSObject {
     }
   }
 
-  func getGeometry() -> GeometryDef? {
+  func getMPVGeometry() -> MPVGeometryDef? {
     let geometry = mpv.getString(MPVOption.Window.geometry) ?? ""
-    let parsed = GeometryDef.parse(geometry)
+    let parsed = MPVGeometryDef.parse(geometry)
     if let parsed = parsed {
       Logger.log("Got geometry from mpv: \(parsed)", level: .verbose, subsystem: subsystem)
     } else {

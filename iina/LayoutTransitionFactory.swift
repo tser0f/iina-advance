@@ -161,11 +161,11 @@ extension PlayerWindowController {
     // - Build geometries
 
     // InputGeometry
-    let inputGeometry: PlayerWindowGeometry = buildInputGeometry(from: inputLayout, transitionName: transitionName, windowedModeScreen: windowedModeScreen)
+    let inputGeometry: PWindowGeometry = buildInputGeometry(from: inputLayout, transitionName: transitionName, windowedModeScreen: windowedModeScreen)
     log.verbose("[\(transitionName)] InputGeometry: \(inputGeometry)")
 
     // OutputGeometry
-    let outputGeometry: PlayerWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry, 
+    let outputGeometry: PWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry, 
                                                                    outputLayout: outputLayout, isInitialLayout: isInitialLayout)
     log.verbose("[\(transitionName)] OutputGeometry: \(outputGeometry)")
 
@@ -342,7 +342,7 @@ extension PlayerWindowController {
 
   // MARK: - Geometry
 
-  private func buildInputGeometry(from inputLayout: LayoutState, transitionName: String, windowedModeScreen: NSScreen) -> PlayerWindowGeometry {
+  private func buildInputGeometry(from inputLayout: LayoutState, transitionName: String, windowedModeScreen: NSScreen) -> PWindowGeometry {
     // Restore window size & position
     switch inputLayout.mode {
     case .windowed:
@@ -359,19 +359,19 @@ extension PlayerWindowController {
     case .musicMode:
       /// `musicModeGeometry` should have already been deserialized and set.
       /// But make sure we correct any size problems
-      return musicModeGeometry.refit().toPlayerWindowGeometry()
+      return musicModeGeometry.refit().toPWindowGeometry()
     }
   }
 
   /// Note that the result should not necessarily overrite `windowedModeGeometry`. It is used by the transition animations.
-  private func buildOutputGeometry(inputLayout: LayoutState, inputGeometry: PlayerWindowGeometry, 
-                                   outputLayout: LayoutState, isInitialLayout: Bool) -> PlayerWindowGeometry {
+  private func buildOutputGeometry(inputLayout: LayoutState, inputGeometry: PWindowGeometry, 
+                                   outputLayout: LayoutState, isInitialLayout: Bool) -> PWindowGeometry {
 
     switch outputLayout.mode {
     case .musicMode:
       /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
       let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: player.info.videoAspectRatio).refit()
-      return musicModeGeometryCorrected.toPlayerWindowGeometry()
+      return musicModeGeometryCorrected.toPWindowGeometry()
 
     case .fullScreen, .fullScreenInteractive:
       // Full screen always uses same screen as windowed mode
@@ -411,7 +411,7 @@ extension PlayerWindowController {
   }
 
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
-  func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PlayerWindowGeometry? {
+  func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PWindowGeometry? {
     if transition.isEnteringMusicMode {
       if transition.inputLayout.isFullScreen {
         // "ExitFullScreen" animation does not use the Close Panels step currently. May want to enhance it in the future
@@ -498,7 +498,7 @@ extension PlayerWindowController {
 
     if transition.outputLayout.isFullScreen {
       let screen = NSScreen.getScreenOrDefault(screenID: transition.inputGeometry.screenID)
-      return PlayerWindowGeometry.forFullScreen(in: screen, legacy: transition.outputLayout.isLegacyFullScreen,
+      return PWindowGeometry.forFullScreen(in: screen, legacy: transition.outputLayout.isLegacyFullScreen,
                                                 mode: transition.outputLayout.mode,
                                                 outsideTopBarHeight: outsideTopBarHeight,
                                                 outsideTrailingBarWidth: outsideTrailingBarWidth,

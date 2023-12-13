@@ -738,7 +738,7 @@ extension PlayerWindowController {
         }
       } else if transition.outputLayout.isLegacyFullScreen {
         let screen = NSScreen.getScreenOrDefault(screenID: transition.outputGeometry.screenID)
-        let newGeo: PlayerWindowGeometry
+        let newGeo: PWindowGeometry
         if transition.isEnteringLegacyFullScreen {
           // Deal with possible top margin needed to hide camera housing
           if transition.isInitialLayout {

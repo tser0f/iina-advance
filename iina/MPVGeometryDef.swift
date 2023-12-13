@@ -1,5 +1,5 @@
 //
-//  GeometryDef.swift
+//  MPVGeometryDef.swift
 //  iina
 //
 //  Created by Collider LI on 20/12/2017.
@@ -8,10 +8,10 @@
 
 import Foundation
 
-struct GeometryDef: CustomStringConvertible {
+struct MPVGeometryDef: CustomStringConvertible {
   var x: String?, y: String?, w: String?, h: String?, xSign: String?, ySign: String?
 
-  static func parse(_ geometryString: String) -> GeometryDef? {
+  static func parse(_ geometryString: String) -> MPVGeometryDef? {
     // guard option value
     guard !geometryString.isEmpty else { return nil }
     // match the string, replace empty group by nil
@@ -19,7 +19,7 @@ struct GeometryDef: CustomStringConvertible {
     // guard matches
     guard captures.count == 10 else { return nil }
     // return struct
-    return GeometryDef(x: captures[7],
+    return MPVGeometryDef(x: captures[7],
                        y: captures[9],
                        w: captures[2],
                        h: captures[4],

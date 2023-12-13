@@ -199,7 +199,7 @@ class VideoView: NSView {
     window?.layoutIfNeeded()
   }
 
-  func apply(_ geometry: PlayerWindowGeometry?) {
+  func apply(_ geometry: PWindowGeometry?) {
     // Do not set constraints for PIP. It will be handled by the PIP window
     if let geometry = geometry, player.windowController.pipStatus == .notInPIP {
       let size = geometry.videoSize

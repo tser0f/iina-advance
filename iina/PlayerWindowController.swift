@@ -227,7 +227,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @Atomic var screenParamsChangedTicketCounter: Int = 0
   @Atomic var updateCachedGeometryTicketCounter: Int = 0
 
-  var windowedModeGeometry: PlayerWindowGeometry! {
+  var windowedModeGeometry: PWindowGeometry! {
     didSet {
       log.verbose("Updated windowedModeGeometry to \(windowedModeGeometry!)")
       assert(!windowedModeGeometry.fitOption.isFullScreen, "windowedModeGeometry has invalid fitOption: \(windowedModeGeometry.fitOption)")
@@ -241,7 +241,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.
-  var interactiveModeGeometry: PlayerWindowGeometry? = nil {
+  var interactiveModeGeometry: PWindowGeometry? = nil {
     didSet {
       if let geo = interactiveModeGeometry {
         log.verbose("Updated interactiveModeGeometry to \(geo)")
@@ -1983,7 +1983,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     /// This method only provides the desired size for the window, but we don't have access to the  desired origin.
     /// So we need to be careful not to make assumptions about which directions the window is expanding toward.
-    /// It's OK to use `PlayerWindowGeometry` for size calculations, but do not save the geometry objects.
+    /// It's OK to use `PWindowGeometry` for size calculations, but do not save the geometry objects.
     /// After the window frame is updated, `updateCachedGeometry()` will query the window for its location & size,
     /// and will save that.
     defer {
@@ -3683,7 +3683,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     }
 
     // Set frame to animate back to
-    let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPlayerWindowGeometry() : windowedModeGeometry!
+    let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry!
     pip.replacementRect = geo.videoFrameInWindowCoords
     pip.replacementWindow = window
 
@@ -3721,7 +3721,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
-      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPlayerWindowGeometry() : windowedModeGeometry
+      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
       addVideoViewToWindow()
       videoView.apply(geo)
 
