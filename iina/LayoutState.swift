@@ -201,10 +201,16 @@ extension PlayerWindowController {
       && otherSpec.trailingSidebar.tabGroups == trailingSidebar.tabGroups
     }
 
-    func getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: CGFloat? = nil, trailingSidebarWidth: CGFloat? = nil, in viewportWidth: CGFloat) -> CGFloat {
+    func getWidthBetweenInsideSidebars(leadingSidebarWidth: CGFloat? = nil, trailingSidebarWidth: CGFloat? = nil, 
+                                             in viewportWidth: CGFloat) -> CGFloat {
       let lead = leadingSidebarWidth ?? leadingSidebar.insideWidth
       let trail = trailingSidebarWidth ?? trailingSidebar.insideWidth
-      return viewportWidth - (lead + trail + Constants.Sidebar.minSpaceBetweenInsideSidebars)
+      return viewportWidth - lead - trail
+    }
+
+    func getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: CGFloat? = nil, trailingSidebarWidth: CGFloat? = nil,
+                                             in viewportWidth: CGFloat) -> CGFloat {
+      return getWidthBetweenInsideSidebars(leadingSidebarWidth: leadingSidebarWidth, trailingSidebarWidth: trailingSidebarWidth, in: viewportWidth) - Constants.Sidebar.minSpaceBetweenInsideSidebars
     }
 
     /// Returns `(shouldCloseLeadingSidebar, shouldCloseTrailingSidebar)`, indicating which sidebars should be hidden
@@ -217,7 +223,8 @@ extension PlayerWindowController {
       var shouldCloseLeadingSidebar = false
       var shouldCloseTrailingSidebar = false
       if leadingSidebarSpace + trailingSidebarSpace > 0 {
-        while getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: leadingSidebarSpace, trailingSidebarWidth: trailingSidebarSpace, in: vidConSpace) < 0 {
+        while getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: leadingSidebarSpace, trailingSidebarWidth: trailingSidebarSpace,
+                                                  in: vidConSpace) < 0 {
           if leadingSidebarSpace > 0 && leadingSidebarSpace >= trailingSidebarSpace {
             shouldCloseLeadingSidebar = true
             leadingSidebarSpace = 0

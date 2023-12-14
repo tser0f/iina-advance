@@ -60,8 +60,8 @@ enum ScreenFitOption: Int {
  For `let wc = PlayerWindowController()`, an instance of this class describes:
  1. The size & position (`windowFrame`) of an IINA player `NSWindow`.
  2. The size of the window's viewport (`viewportView` in a `PlayerWindowController` instance).
-    The viewport contains the `videoView` and all of the `Preference.PanelPlacement.inside` views (`viewportSize`). size is inferred by subtracting the bar sizes
- from `windowFrame`.
+    The viewport contains the `videoView` and all of the `Preference.PanelPlacement.inside` views (`viewportSize`).
+    Size is inferred by subtracting the bar sizes from `windowFrame`.
  3. Either the height or width of each of the 4 `outsideViewport` bars, measured as the distance between the
     outside edge of `viewportView` and the outermost edge of the bar. This is the minimum needed to determine
     its size & position; the rest can be inferred from `windowFrame` and `viewportSize`.
@@ -174,7 +174,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let viewportSize = PWindowGeometry.deriveViewportSize(from: windowFrame, topMarginHeight: topMarginHeight, outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth, outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth)
     let viewportMargins = viewportMargins ?? BoxQuad.zero
     self.videoSize = PWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize,
-                                                           excludingMargins: viewportMargins)
+                                                      excludingMargins: viewportMargins)
     self.viewportMargins = viewportMargins
 
     assert(insideLeadingBarWidth >= 0, "Expected insideLeadingBarWidth >= 0, found \(insideLeadingBarWidth)")
@@ -192,7 +192,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   static func forFullScreen(in screen: NSScreen, legacy: Bool, mode: PlayerWindowMode,
                             outsideTopBarHeight: CGFloat, outsideTrailingBarWidth: CGFloat,
                             outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
-                            insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat, 
+                            insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat,
                             insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
                             videoAspectRatio: CGFloat) -> PWindowGeometry {
 
@@ -207,13 +207,13 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       fitOption = .nativeFullScreen
     }
 
-    return PWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption, 
-                                mode: mode, topMarginHeight: topMarginHeight,
-                                outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
-                                outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
-                                insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
-                                videoAspectRatio: videoAspectRatio)
+    return PWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
+                           mode: mode, topMarginHeight: topMarginHeight,
+                           outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
+                           outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
+                           insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
+                           insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
+                           videoAspectRatio: videoAspectRatio)
   }
 
   func clone(windowFrame: NSRect? = nil, screenID: String? = nil, fitOption: ScreenFitOption? = nil,
@@ -226,20 +226,20 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
              videoAspectRatio: CGFloat? = nil) -> PWindowGeometry {
 
     return PWindowGeometry(windowFrame: windowFrame ?? self.windowFrame,
-                                screenID: screenID ?? self.screenID,
-                                fitOption: fitOption ?? self.fitOption,
-                                mode: mode ?? self.mode,
-                                topMarginHeight: topMarginHeight ?? self.topMarginHeight,
-                                outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
-                                outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
-                                outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
-                                outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
-                                insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
-                                insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
-                                insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
-                                insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
-                                viewportMargins: viewportMargins ?? self.viewportMargins,
-                                videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
+                           screenID: screenID ?? self.screenID,
+                           fitOption: fitOption ?? self.fitOption,
+                           mode: mode ?? self.mode,
+                           topMarginHeight: topMarginHeight ?? self.topMarginHeight,
+                           outsideTopBarHeight: outsideTopBarHeight ?? self.outsideTopBarHeight,
+                           outsideTrailingBarWidth: outsideTrailingBarWidth ?? self.outsideTrailingBarWidth,
+                           outsideBottomBarHeight: outsideBottomBarHeight ?? self.outsideBottomBarHeight,
+                           outsideLeadingBarWidth: outsideLeadingBarWidth ?? self.outsideLeadingBarWidth,
+                           insideTopBarHeight: insideTopBarHeight ?? self.insideTopBarHeight,
+                           insideTrailingBarWidth: insideTrailingBarWidth ?? self.insideTrailingBarWidth,
+                           insideBottomBarHeight: insideBottomBarHeight ?? self.insideBottomBarHeight,
+                           insideLeadingBarWidth: insideLeadingBarWidth ?? self.insideLeadingBarWidth,
+                           viewportMargins: viewportMargins ?? self.viewportMargins,
+                           videoAspectRatio: videoAspectRatio ?? self.videoAspectRatio)
   }
 
   // MARK: - Computed properties
@@ -270,7 +270,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   var viewportFrameInScreenCoords: NSRect {
-    let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth, 
+    let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth,
                          y: windowFrame.origin.y + outsideBottomBarHeight)
     return NSRect(origin: origin, size: viewportSize)
   }
@@ -431,8 +431,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   // Computes & returns the max video size with proper aspect ratio which can fit in the given container, after subtracting outside bars
   fileprivate func computeMaxVideoSize(in containerSize: NSSize) -> NSSize {
     let maxViewportSize = computeMaxViewportSize(in: containerSize)
-    return PWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: maxViewportSize,
-                                                 excludingMargins: viewportMargins)
+    return PWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: maxViewportSize, excludingMargins: viewportMargins)
   }
 
   func refit(_ newFit: ScreenFitOption? = nil, lockViewportToVideoSize: Bool? = nil) -> PWindowGeometry {
@@ -440,8 +439,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
-    return PWindowGeometry.areEqual(windowFrame1: windowFrame, windowFrame2: windowFrame2, 
-                                         videoSize1: videoSize, videoSize2: videoSize2)
+    return PWindowGeometry.areEqual(windowFrame1: windowFrame, windowFrame2: windowFrame2, videoSize1: videoSize, videoSize2: videoSize2)
   }
 
   /// Computes a new `PWindowGeometry`, attempting to attain the given window size.
@@ -505,7 +503,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     /// Compute `videoSize` to fit within `viewportSize` (minus `viewportMargins`) while maintaining `videoAspectRatio`:
     let newVideoSize = PWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio,
-                                                             toFillIn: newViewportSize, excludingMargins: viewportMargins)
+                                                        toFillIn: newViewportSize, excludingMargins: viewportMargins)
     if lockViewportToVideoSize {
       newViewportSize = NSSize(width: newVideoSize.width + viewportMargins.totalWidth,
                                height: newVideoSize.height + viewportMargins.totalHeight)
@@ -625,7 +623,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                                            newOutsideLeadingBarWidth: outsideLeadingBarWidth)
     return newGeo.scaleViewport()
   }
-  
+
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
   func apply(mpvGeometry: MPVGeometryDef, andDesiredVideoSize desiredVideoSize: NSSize? = nil) -> PWindowGeometry {
     assert(fitOption != .noConstraints)

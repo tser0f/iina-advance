@@ -2029,6 +2029,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         log.trace("WindowDIDResize mode=\(currentLayout.mode) frame=\(window.frame)")
       }
 
+      // These may no longer be aligned correctly. Just hide them
+      thumbnailPeekView.isHidden = true
+      timePositionHoverLabel.isHidden = true
+
       switch currentLayout.mode {
       case .musicMode:
         // Re-evaluate space requirements for labels. May need to start scrolling.
@@ -2761,17 +2765,26 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       osdAnimationState = .shown
     }
     // Reduce text size if horizontal space is tight
-    var osdTextSize = CGFloat(Preference.float(for: .osdTextSize))
-    let availableSpaceForOSD = currentLayout.spec.getExcessSpaceBetweenInsideSidebars(in: viewportView.frame.size.width)
-    if availableSpaceForOSD < 20 {
+    var osdTextSize = max(8.0, CGFloat(Preference.float(for: .osdTextSize)))
+    let availableSpaceForOSD = currentLayout.spec.getWidthBetweenInsideSidebars(in: viewportView.frame.size.width)
+    if availableSpaceForOSD < 240 {
       osdTextSize = min(osdTextSize, 18)
-    } else if availableSpaceForOSD < 80 {
-      osdTextSize = min(osdTextSize, 24)
+    } else if availableSpaceForOSD < 360 {
+      osdTextSize = min(osdTextSize, 28)
+    } else if availableSpaceForOSD < 500 {
+      osdTextSize = min(osdTextSize, 36)
     }
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
     osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.6).clamped(to: 11...25), weight: .regular)
     if #available(macOS 11.0, *) {
-      osdAccessoryProgress.controlSize = osdTextSize > 16 ? .large : .regular
+      switch osdTextSize {
+      case 50...:
+        osdAccessoryProgress.controlSize = .large
+      case 32..<50:
+        osdAccessoryProgress.controlSize = .regular
+      default:
+        osdAccessoryProgress.controlSize = .small
+      }
     }
 
     setOSDViews(fromMessage: message)

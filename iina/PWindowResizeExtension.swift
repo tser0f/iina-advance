@@ -508,7 +508,9 @@ extension PlayerWindowController {
     }
     log.verbose("WindowWillResize isLive:\(window.inLiveResize.yn) req:\(requestedSize) returning:\(chosenGeometry.windowFrame.size)")
 
-    let excessSpace = currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: chosenGeometry.insideLeadingBarWidth, trailingSidebarWidth: chosenGeometry.insideTrailingBarWidth, in: chosenGeometry.viewportSize.width)
+    let excessSpace = currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: chosenGeometry.insideLeadingBarWidth,
+                                                                             trailingSidebarWidth: chosenGeometry.insideTrailingBarWidth,
+                                                                             in: chosenGeometry.viewportSize.width)
     if excessSpace < 0 {
       // FIXME: maybe try to include sidebars in the resize viewport calculations
       // At least prevent the window from jumping off the screen, which is what can happen if we try to resize in this situation
@@ -659,6 +661,10 @@ extension PlayerWindowController {
 
       // Make sure this is up-to-date
       videoView.apply(newGeometry)
+
+      // These will no longer be aligned correctly. Just hide them
+      thumbnailPeekView.isHidden = true
+      timePositionHoverLabel.isHidden = true
 
       if currentLayout.hasFloatingOSC {
         // Update floating control bar position
