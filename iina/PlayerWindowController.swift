@@ -2760,7 +2760,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else {
       osdAnimationState = .shown
     }
-    let osdTextSize = CGFloat(Preference.float(for: .osdTextSize))
+    // Reduce text size if horizontal space is tight
+    var osdTextSize = CGFloat(Preference.float(for: .osdTextSize))
+    let availableSpaceForOSD = currentLayout.spec.getExcessSpaceBetweenInsideSidebars(in: viewportView.frame.size.width)
+    if availableSpaceForOSD < 20 {
+      osdTextSize = min(osdTextSize, 18)
+    } else if availableSpaceForOSD < 80 {
+      osdTextSize = min(osdTextSize, 24)
+    }
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
     osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.6).clamped(to: 11...25), weight: .regular)
     if #available(macOS 11.0, *) {
@@ -3075,8 +3082,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     thumbWidth = thumbHeight * thumbAspect
 
+    let leadingSidebarWidth = currentLayout.leadingSidebar.currentWidth
+    let trailingSidebarWidth = currentLayout.trailingSidebar.currentWidth
     // Also scale down thumbnail if it's wider than the viewport
-    let availableWidth = viewportView.frame.width - thumbnailExtraOffsetX - thumbnailExtraOffsetX
+    let availableWidth = viewportView.frame.width - leadingSidebarWidth - trailingSidebarWidth - thumbnailExtraOffsetX - thumbnailExtraOffsetX
     if thumbWidth > availableWidth {
       thumbWidth = availableWidth
       thumbHeight = thumbWidth / thumbAspect
@@ -3123,8 +3132,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbOriginY = max(thumbnailExtraOffsetY, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
     }
     // Constrain X origin so that it stays entirely inside the viewport (and not inside the outside sidebars)
-    let minX = currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
-    let maxX = availableWidth + currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
+    let minX = leadingSidebarWidth + thumbnailExtraOffsetX
+    let maxX = availableWidth + leadingSidebarWidth + thumbnailExtraOffsetX
     let thumbOriginX = min(max(minX, round(originalPosX - thumbWidth / 2)), maxX - thumbWidth)
     thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
 
