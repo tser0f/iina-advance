@@ -207,13 +207,17 @@ class VideoView: NSView {
               || (size.width != widthConstraint.constant) || (size.height != heightConstraint.constant) else {
         return
       }
-      log.verbose("VideoView: updating size constraints to \(size)")
+      if log.isTraceEnabled {
+        log.verbose("VideoView: updating size constraints to \(size)")
+      }
       widthConstraint.isActive = true
       widthConstraint.animateToConstant(size.width)
       heightConstraint.isActive = true
       heightConstraint.animateToConstant(size.height)
     } else {
-      log.verbose("VideoView: removing size constraints")
+      if log.isTraceEnabled {
+        log.verbose("VideoView: removing size constraints")
+      }
       widthConstraint.isActive = false
       heightConstraint.isActive = false
     }

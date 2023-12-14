@@ -191,7 +191,7 @@ extension PlayerWindowController {
     } else {  // File is already playing. There was a config change
       if Preference.bool(for: .lockViewportToVideoSize) {
         // Try to match existing scale
-        newVideoSize = newVideoSize.multiply(player.info.cachedWindowScale)
+        newVideoSize = newVideoSize.multiplyThenRound(player.info.cachedWindowScale)
         log.verbose("[MPVVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
         return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
       } else {

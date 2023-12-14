@@ -570,6 +570,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   @IBAction func aspectChangedAction(_ sender: NSSegmentedControl) {
     let aspect = AppData.aspectsInPanel[sender.selectedSegment]
+    player.log.verbose("Setting aspect ratio from segmented control: \(aspect)")
     player.setVideoAspectOverride(aspect)
   }
 

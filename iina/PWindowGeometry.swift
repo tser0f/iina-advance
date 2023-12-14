@@ -537,8 +537,10 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       if newFitOption == .centerInVisibleScreen {
         newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)
       }
-      Logger.log("[geo] ScaleViewport: constrainedIn=\(containerFrame) → windowFrame=\(newWindowFrame) videoSize=\(newVideoSize)", level: .verbose)
-    } else {
+      if Logger.isTraceEnabled {
+        Logger.log("[geo] ScaleViewport: constrainedIn=\(containerFrame) → windowFrame=\(newWindowFrame) videoSize=\(newVideoSize)", level: .verbose)
+      }
+    } else if Logger.isTraceEnabled {
       Logger.log("[geo] ScaleViewport: → windowFrame=\(newWindowFrame) videoSize=\(newVideoSize)", level: .verbose)
     }
 
@@ -552,12 +554,14 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     let mode = mode ?? self.mode
     let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
-    Logger.log("[geo] ScaleVideo start, desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), lockViewportToVideoSize: \(lockViewportToVideoSize)", level: .debug)
+    if Logger.isTraceEnabled {
+      Logger.log("[geo] ScaleVideo start, desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), lockViewportToVideoSize: \(lockViewportToVideoSize)", level: .debug)
+    }
     var newVideoSize = desiredVideoSize
 
     let newWidth = max(getMinVideoWidth(mode: mode), desiredVideoSize.width)
     /// Enforce `videoView` aspectRatio: Recalculate height using width
-    newVideoSize = NSSize(width: newWidth, height: (newWidth / videoAspectRatio))
+    newVideoSize = NSSize(width: newWidth, height: round(newWidth / videoAspectRatio))
     if newVideoSize.height != desiredVideoSize.height {
       // We don't want to see too much of this ideally
       Logger.log("[geo] ScaleVideo applied aspectRatio (\(videoAspectRatio)): changed newVideoSize.height by \(newVideoSize.height - desiredVideoSize.height)", level: .debug)

@@ -27,6 +27,7 @@ struct PlayerSaveState {
     case miscWindowBools = "miscWindowBools"
     case overrideAutoMusicMode = "overrideAutoMusicMode"
     case isOnTop = "onTop"
+    case windowScale = "windowScale"  /// `MPVProperty.windowScale`
 
     case url = "url"
     case playPosition = "playPosition"/// `MPVOption.PlaybackControl.start`
@@ -103,7 +104,6 @@ struct PlayerSaveState {
   /// `PWindowGeometry` -> String
   private static func toCSV(_ geo: PWindowGeometry) -> String {
     return [windowGeometryPrefStringVersion,
-            geo.videoAspectRatio.aspectNormalDecimalString,
             geo.topMarginHeight.string2f,
             geo.outsideTopBarHeight.string2f,
             geo.outsideTrailingBarWidth.string2f,
@@ -113,6 +113,11 @@ struct PlayerSaveState {
             geo.insideTrailingBarWidth.string2f,
             geo.insideBottomBarHeight.string2f,
             geo.insideLeadingBarWidth.string2f,
+            geo.viewportMargins.top.string2f,
+            geo.viewportMargins.trailing.string2f,
+            geo.viewportMargins.bottom.string2f,
+            geo.viewportMargins.leading.string2f,
+            geo.videoAspectRatio.aspectNormalDecimalString,
             geo.windowFrame.origin.x.string2f,
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
@@ -190,6 +195,8 @@ struct PlayerSaveState {
     if player.windowController.isOnTop {
       props[PropName.isOnTop.rawValue] = true.yn
     }
+
+    props[PropName.windowScale.rawValue] = player.info.cachedWindowScale.string6f
 
     if Preference.bool(for: .autoSwitchToMusicMode) {
       var overrideAutoMusicMode = player.overrideAutoMusicMode
@@ -486,12 +493,11 @@ struct PlayerSaveState {
   /// String -> `PWindowGeometry`
   static private func deserializeWindowGeometry(from properties: [String: Any]) -> PWindowGeometry? {
     return deserializeCSV(.windowedModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 18,
+                          expectedTokenCount: 22,
                           expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                           errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
 
-      guard let videoAspectRatio = Double(iter.next()!),
-            let topMarginHeight = Double(iter.next()!),
+      guard let topMarginHeight = Double(iter.next()!),
             let outsideTopBarHeight = Double(iter.next()!),
             let outsideTrailingBarWidth = Double(iter.next()!),
             let outsideBottomBarHeight = Double(iter.next()!),
@@ -500,6 +506,11 @@ struct PlayerSaveState {
             let insideTrailingBarWidth = Double(iter.next()!),
             let insideBottomBarHeight = Double(iter.next()!),
             let insideLeadingBarWidth = Double(iter.next()!),
+            let viewportMarginTop = Double(iter.next()!),
+            let viewportMarginTrailing = Double(iter.next()!),
+            let viewportMarginBottom = Double(iter.next()!),
+            let viewportMarginLeading = Double(iter.next()!),
+            let videoAspectRatio = Double(iter.next()!),
             let winOriginX = Double(iter.next()!),
             let winOriginY = Double(iter.next()!),
             let winWidth = Double(iter.next()!),
@@ -521,12 +532,14 @@ struct PlayerSaveState {
         return nil
       }
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+      let viewportMargins = BoxQuad(top: viewportMarginTop, trailing: viewportMarginTrailing, bottom: viewportMarginBottom, leading: viewportMarginLeading)
       return PWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
-                                  outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
-                                  outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                  insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
-                                  insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
-                                  videoAspectRatio: videoAspectRatio)
+                             outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
+                             outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
+                             insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
+                             insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
+                             viewportMargins: viewportMargins,
+                             videoAspectRatio: videoAspectRatio)
     })
   }
 
@@ -822,6 +835,10 @@ struct PlayerSaveState {
         mpv.setDouble(MPVOption.PlaybackControl.abLoopB, abLoopB)
       }
       mpv.setDouble(MPVOption.PlaybackControl.abLoopA, abLoopA)
+    }
+    if let windowScale = double(for: .windowScale) {
+      info.cachedWindowScale = windowScale
+      mpv.setDouble(MPVProperty.windowScale, windowScale)
     }
     if let videoRotation = int(for: .videoRotation) {
       mpv.setInt(MPVOption.Video.videoRotate, videoRotation)

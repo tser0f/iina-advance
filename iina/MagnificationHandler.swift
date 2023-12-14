@@ -63,6 +63,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
           windowController.log.verbose("Updating windowedModeGeometry from magnification gesture state \(recognizer.state.rawValue)")
           windowController.windowedModeGeometry = finalGeometry
           windowController.player.updateMPVWindowScale(using: finalGeometry)
+          windowController.player.saveState()
         }
       }
     }
