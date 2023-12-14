@@ -456,16 +456,17 @@ extension PlayerWindowController {
       return intendedGeo.refit(.keepInVisibleScreen)
     }
 
-    // FIXME: investigate scaling viewport instead
     // Option A: resize height based on requested width
-    let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width - currentGeometry.viewportMargins.totalWidth
+    let widthDiff = requestedSize.width - currentGeometry.windowFrame.width
+    let requestedVideoWidth = currentGeometry.videoSize.width + widthDiff
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth,
                                                    height: requestedVideoWidth / currentGeometry.videoAspectRatio)
     let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize,
                                                         mode: currentLayout.mode)
 
     // Option B: resize width based on requested height
-    let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height - currentGeometry.viewportMargins.totalHeight
+    let heightDiff = requestedSize.height - currentGeometry.windowFrame.height
+    let requestedVideoHeight = currentGeometry.videoSize.height + heightDiff
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeometry.videoAspectRatio,
                                                     height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize,
