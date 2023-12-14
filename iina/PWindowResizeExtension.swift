@@ -599,7 +599,7 @@ extension PlayerWindowController {
   }
 
   // TODO: split this into separate windowed & FS
-  private func applyWindowGeometry(_ newGeometry: PWindowGeometry) {
+  private func applyWindowGeometry(_ newGeometry: PWindowGeometry, setFrame: Bool = true) {
     // Update video aspect ratio always
     player.info.videoAspectRatio = newGeometry.videoAspectRatio
     let currentLayout = currentLayout
@@ -612,17 +612,21 @@ extension PlayerWindowController {
       // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
       let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID,
                                                         videoAspectRatio: newGeometry.videoAspectRatio)
-      videoView.apply(fsGeo)
+      if setFrame {
+        videoView.apply(fsGeo)
+      }
       log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale (FS), videoSize: \(newGeometry.videoSize)")
       player.updateMPVWindowScale(using: fsGeo)
 
     case .windowed:
-      if !isWindowHidden {
-        player.window.setFrameImmediately(newGeometry.windowFrame)
+      if setFrame {
+        if !isWindowHidden {
+          player.window.setFrameImmediately(newGeometry.windowFrame)
+        }
+        // Make sure this is up-to-date
+        videoView.apply(newGeometry)
+        windowedModeGeometry = newGeometry
       }
-      // Make sure this is up-to-date
-      videoView.apply(newGeometry)
-      windowedModeGeometry = newGeometry
       log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale, videoSize: \(newGeometry.videoSize)")
       player.updateMPVWindowScale(using: newGeometry)
       player.saveState()

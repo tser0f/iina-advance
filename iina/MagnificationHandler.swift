@@ -36,7 +36,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     case .windowSize:
       if windowController.isFullScreen { return }
 
-      var newWindowGeometry: PWindowGeometry? = nil
+      var finalGeometry: PWindowGeometry? = nil
       // adjust window size
       switch recognizer.state {
       case .began:
@@ -45,24 +45,25 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .ended:
-        newWindowGeometry = scaleVideoFromPinchGesture(to: recognizer.magnification)
+        finalGeometry = scaleVideoFromPinchGesture(to: recognizer.magnification)
         windowController.isMagnifying = false
       case .cancelled, .failed:
-        newWindowGeometry = scaleVideoFromPinchGesture(to: 1.0)
+        finalGeometry = scaleVideoFromPinchGesture(to: 1.0)
         windowController.isMagnifying = false
       default:
         return
       }
 
-      if let newWindowGeometry = newWindowGeometry {
+      if let finalGeometry {
         if windowController.currentLayout.isMusicMode {
           windowController.log.verbose("Updating musicModeGeometry from magnification gesture state \(recognizer.state.rawValue)")
-          windowController.musicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: newWindowGeometry.windowFrame)
+          let musicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: finalGeometry.windowFrame)
+          windowController.applyMusicModeGeometry(musicModeGeometry, setFrame: false, updateCache: true)
         } else {
           windowController.log.verbose("Updating windowedModeGeometry from magnification gesture state \(recognizer.state.rawValue)")
-          windowController.windowedModeGeometry = newWindowGeometry
+          windowController.windowedModeGeometry = finalGeometry
+          windowController.player.updateMPVWindowScale(using: finalGeometry)
         }
-        windowController.player.saveState()
       }
     }
   }
