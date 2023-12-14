@@ -115,7 +115,7 @@ struct AppData {
   static let sizeWhenNoVideo = NSSize(width: widthWhenNoVideo, height: heightWhenNoVideo)
 
   /// Minimum allowed video size. Does not include any panels which are outside the video.
-  static let minVideoSize = NSMakeSize(285, 120)
+  static let minVideoSize = NSMakeSize(260, 120)
 }
 
 struct Constants {
@@ -206,8 +206,8 @@ struct Constants {
 
     struct MusicMode {
       static let oscHeight: CGFloat = 72
-      static let minWindowWidth: CGFloat = 260
-      static let defaultWindowWidth: CGFloat = 280
+      static let minWindowWidth: CGFloat = AppData.minVideoSize.width
+      static let defaultWindowWidth: CGFloat = minWindowWidth
       // Hide playlist if its height is too small to display at least 3 items:
       static let minPlaylistHeight: CGFloat = 138
 

@@ -125,7 +125,6 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     }
     maxWidth = min(maxWidth, containerFrame.width)
 
-    // FIXME: min width calculation is incorrect and doesn't match pinch-to-zoom result
     // Determine width first
     let newWidth: CGFloat
     let requestedSize = windowFrame.size
