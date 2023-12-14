@@ -204,6 +204,16 @@ struct Constants {
     static let minOSCBarHeight: CGFloat = 24
     static let minThumbnailHeight: CGFloat = 24
 
+    struct MusicMode {
+      static let oscHeight: CGFloat = 72
+      static let minWindowWidth: CGFloat = 260
+      static let defaultWindowWidth: CGFloat = 280
+      // Hide playlist if its height is too small to display at least 3 items:
+      static let minPlaylistHeight: CGFloat = 138
+
+      static let playSliderKnobHeight: CGFloat = 12
+    }
+
     static let musicModePlaySliderKnobHeight: CGFloat = 12
     static let floatingOSCPlaySliderKnobHeight: CGFloat = 15
   }

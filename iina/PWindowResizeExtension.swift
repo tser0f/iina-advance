@@ -456,15 +456,16 @@ extension PlayerWindowController {
       return intendedGeo.refit(.keepInVisibleScreen)
     }
 
+    // FIXME: investigate scaling viewport instead
     // Option A: resize height based on requested width
-    let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width
+    let requestedVideoWidth = requestedSize.width - outsideBarsTotalSize.width - currentGeometry.viewportMargins.totalWidth
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth,
                                                    height: requestedVideoWidth / currentGeometry.videoAspectRatio)
     let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize,
                                                         mode: currentLayout.mode)
 
     // Option B: resize width based on requested height
-    let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height
+    let requestedVideoHeight = requestedSize.height - outsideBarsTotalSize.height - currentGeometry.viewportMargins.totalHeight
     let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeometry.videoAspectRatio,
                                                     height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize,
@@ -508,23 +509,7 @@ extension PlayerWindowController {
     }
     log.verbose("WindowWillResize isLive:\(window.inLiveResize.yn) req:\(requestedSize) returning:\(chosenGeometry.windowFrame.size)")
 
-    let excessSpace = currentLayout.spec.getExcessSpaceBetweenInsideSidebars(leadingSidebarWidth: chosenGeometry.insideLeadingBarWidth,
-                                                                             trailingSidebarWidth: chosenGeometry.insideTrailingBarWidth,
-                                                                             in: chosenGeometry.viewportSize.width)
-    if excessSpace < 0 {
-      // FIXME: maybe try to include sidebars in the resize viewport calculations
-      // At least prevent the window from jumping off the screen, which is what can happen if we try to resize in this situation
-      log.error("WindowWillResize: not enough space for interior sidebars (\(-excessSpace) more needed)! Returning existing size: \(currentGeometry.windowFrame.size)")
-      return currentGeometry
-    }
-
-    if excessSpace < 0 {
-      // FIXME: maybe try to include sidebars in the resize viewport calculations
-      // At least prevent the window from jumping off the screen, which is what can happen if we try to resize in this situation
-      log.error("WindowWillResize: not enough space for interior sidebars (\(-excessSpace) more needed)! Returning existing size: \(currentGeometry.windowFrame.size)")
-      return currentGeometry
-    }
-    // TODO: validate
+    // TODO: validate geometry
     return chosenGeometry
   }
 

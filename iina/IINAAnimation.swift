@@ -27,6 +27,7 @@ class IINAAnimation {
   static var CropAnimationDuration: CGFloat {
     CGFloat(Preference.float(for: .animationDurationCrop))
   }
+  static var MusicModeShowButtonsDuration: CGFloat = 0.2
 
   // MARK: "Disable all" override switch
 

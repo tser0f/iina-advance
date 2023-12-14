@@ -3230,6 +3230,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     muteButton.state = isMuted ? .on : .off
 
     if isInMiniPlayer {
+      miniPlayer.loadIfNeeded()
       miniPlayer.updateVolumeUI(volume: volume, isMuted: isMuted, hasAudio: hasAudio)
     }
   }
