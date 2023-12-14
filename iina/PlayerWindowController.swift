@@ -2968,30 +2968,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - UI: Thumbnail Preview
 
-  /// - Returns: `true` if the thumbnail showld be shown above the slider, `false` if it should be shown below.
-  private func shouldShowThumbnailAbove(oscOriginInWindowY: Double, oscHeight: Double, thumbnailHeight: Double) -> Bool {
-    if currentLayout.isMusicMode {
-      return true  // always show above in music mode
-    }
-
-    switch currentLayout.oscPosition {
-    case .top:
-      return false
-    case .bottom:
-      return true
-    case .floating:
-      let totalMargin = thumbnailExtraOffsetY + thumbnailExtraOffsetY
-      let availableHeightBelow = oscOriginInWindowY - totalMargin
-      if availableHeightBelow > thumbnailHeight {
-        // Show below by default, if there is space for the desired size
-        return false
-      }
-      // If not enough space to show the full-size thumb below, then show above if it has more space
-      let availableHeightAbove = viewportView.frame.height - (oscOriginInWindowY + oscHeight + totalMargin)
-      return availableHeightAbove > availableHeightBelow
-    }
-  }
-
   /// Display time label & thumbnail when mouse over slider
   private func refreshSeekTimeAndThumnail(from event: NSEvent) {
     thumbDisplayCounter += 1
@@ -3059,9 +3035,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     /// Calculate `availableHeight` (viewport height, minus top & bottom bars)
-    /// Easy to get `insideTopBarHeight`, but need to work a bit to get `insideBottomBarHeight`
-    let insideBottomBarHeight = currentLayout.bottomBarPlacement == .insideViewport ? bottomBarView.frame.height : 0
-    let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - insideBottomBarHeight - thumbnailExtraOffsetY - thumbnailExtraOffsetY
+    let availableHeight = viewportView.frame.height - currentLayout.insideTopBarHeight - currentLayout.insideBottomBarHeight - thumbnailExtraOffsetY - thumbnailExtraOffsetY
 
     let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
     switch sizeOption {
@@ -3074,21 +3048,59 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbHeight = availableHeight * percentage
     }
 
+    // Thumb too small?
+    if thumbHeight < Constants.Distance.minThumbnailHeight {
+      thumbHeight = Constants.Distance.minThumbnailHeight
+    }
+
     // Thumb too tall?
     if thumbHeight > availableHeight {
       // Scale down thumbnail so it doesn't overlap top or bottom bars
       thumbHeight = availableHeight
     }
-
     thumbWidth = thumbHeight * thumbAspect
 
-    let leadingSidebarWidth = currentLayout.leadingSidebar.currentWidth
-    let trailingSidebarWidth = currentLayout.trailingSidebar.currentWidth
     // Also scale down thumbnail if it's wider than the viewport
-    let availableWidth = viewportView.frame.width - leadingSidebarWidth - trailingSidebarWidth - thumbnailExtraOffsetX - thumbnailExtraOffsetX
+    let availableWidth = viewportView.frame.width - thumbnailExtraOffsetX - thumbnailExtraOffsetX
     if thumbWidth > availableWidth {
       thumbWidth = availableWidth
       thumbHeight = thumbWidth / thumbAspect
+    }
+
+    let oscOriginInWindowY = currentControlBar.superview!.convert(currentControlBar.frame.origin, to: nil).y
+    let oscHeight = currentControlBar.frame.size.height
+
+    let showAbove: Bool
+    if currentLayout.isMusicMode {
+      showAbove = true  // always show above in music mode
+    } else {
+      switch currentLayout.oscPosition {
+      case .top:
+        showAbove = false
+      case .bottom:
+        showAbove = true
+      case .floating:
+        let totalMargin = thumbnailExtraOffsetY + thumbnailExtraOffsetY
+        let availableHeightBelow = oscOriginInWindowY - currentLayout.insideBottomBarHeight - totalMargin
+        if availableHeightBelow > thumbHeight {
+          // Show below by default, if there is space for the desired size
+          showAbove = false
+        } else {
+          // If not enough space to show the full-size thumb below, then show above if it has more space
+          let availableHeightAbove = viewportView.frame.height - (oscOriginInWindowY + oscHeight + totalMargin + currentLayout.insideTopBarHeight)
+          showAbove = availableHeightAbove > availableHeightBelow
+          if showAbove, thumbHeight > availableHeightAbove {
+            // Scale down thumbnail so it doesn't get clipped by the side of the window
+            thumbHeight = availableHeightAbove
+            thumbWidth = thumbHeight * thumbAspect
+          }
+        }
+
+        if !showAbove, thumbHeight > availableHeightBelow {
+          thumbHeight = availableHeightBelow
+          thumbWidth = thumbHeight * thumbAspect
+        }
+      }
     }
 
     // Need integers below.
@@ -3111,18 +3123,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbnailPeekView.frame.size = finalImage.size
     }
 
-    let contentView = window!.contentView!
-    if currentLayout.oscPosition != .top && currentLayout.topBarPlacement == .outsideViewport {
-      // If top bar is "outside", do not allow thumbnail to overlap onto it
-      contentView.addSubview(thumbnailPeekView, positioned: .below, relativeTo: topBarView)
-    } else {
-      // Otherwise allow thumbnail to occlude top bar (could find a clean look otherwise which works with sidebars and various options)
-      contentView.addSubview(thumbnailPeekView, positioned: .above, relativeTo: topBarView)
-    }
-
-    let oscOriginInWindowY = currentControlBar.superview!.convert(currentControlBar.frame.origin, to: nil).y
-    let oscHeight = currentControlBar.frame.size.height
-    let showAbove = shouldShowThumbnailAbove(oscOriginInWindowY: oscOriginInWindowY, oscHeight: oscHeight, thumbnailHeight: thumbHeight)
     let thumbOriginY: CGFloat
     if showAbove {
       // Show thumbnail above seek time, which is above slider
@@ -3132,8 +3132,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbOriginY = max(thumbnailExtraOffsetY, oscOriginInWindowY - thumbHeight - thumbnailExtraOffsetY)
     }
     // Constrain X origin so that it stays entirely inside the viewport (and not inside the outside sidebars)
-    let minX = leadingSidebarWidth + thumbnailExtraOffsetX
-    let maxX = availableWidth + leadingSidebarWidth + thumbnailExtraOffsetX
+    let minX = currentLayout.outsideLeadingBarWidth + thumbnailExtraOffsetX
+    let maxX = minX + availableWidth
     let thumbOriginX = min(max(minX, round(originalPosX - thumbWidth / 2)), maxX - thumbWidth)
     thumbnailPeekView.frame.origin = NSPoint(x: thumbOriginX, y: thumbOriginY)
 

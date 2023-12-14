@@ -202,6 +202,7 @@ struct Constants {
     static let windowControllerMinInitialDragThreshold: CGFloat = 4.0
 
     static let minOSCBarHeight: CGFloat = 24
+    static let minThumbnailHeight: CGFloat = 24
 
     static let musicModePlaySliderKnobHeight: CGFloat = 12
     static let floatingOSCPlaySliderKnobHeight: CGFloat = 15
