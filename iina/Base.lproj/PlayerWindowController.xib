@@ -492,7 +492,7 @@
                         <constraints>
                             <constraint firstItem="g0j-zS-jKv" firstAttribute="leading" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="12" id="GPP-lz-cVX"/>
                             <constraint firstAttribute="bottom" secondItem="g0j-zS-jKv" secondAttribute="bottom" constant="8" id="M2F-DM-xCw"/>
-                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="115" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>
+                            <constraint firstAttribute="width" relation="greaterThanOrEqual" priority="900" constant="115" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>
                             <constraint firstItem="g0j-zS-jKv" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" constant="8" id="VaD-8L-o9X"/>
                             <constraint firstAttribute="trailing" secondItem="g0j-zS-jKv" secondAttribute="trailing" constant="12" id="ZCD-op-700"/>
                         </constraints>

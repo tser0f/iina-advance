@@ -865,18 +865,20 @@ class PlayerCore: NSObject {
     // See comments in resetViewsForModeTransition for details.
     guard !windowController.isClosing else { return }
 
-    guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
-      log.verbose("Skipping update to mpv window-scale")
-      return
-    }
-    let prevVideoScale = info.cachedWindowScale
+    mpv.queue.async { [self] in
+      guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
+        log.verbose("Skipping update to mpv window-scale")
+        return
+      }
+      let prevVideoScale = info.cachedWindowScale
 
-    if actualVideoScale != info.cachedWindowScale {
-      // Setting the window-scale property seems to result in a small hiccup during playback.
-      // Not sure if this is an mpv limitation
-      log.verbose("Updating mpv window-scale from videoSize \(windowGeo.videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
-      info.cachedWindowScale = actualVideoScale
-      mpv.setDouble(MPVProperty.windowScale, actualVideoScale)
+      if actualVideoScale != info.cachedWindowScale {
+        // Setting the window-scale property seems to result in a small hiccup during playback.
+        // Not sure if this is an mpv limitation
+        log.verbose("Updating mpv window-scale from videoSize \(windowGeo.videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
+        info.cachedWindowScale = actualVideoScale
+        mpv.setDouble(MPVProperty.windowScale, actualVideoScale)
+      }
     }
   }
 

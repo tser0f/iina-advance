@@ -317,7 +317,12 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   func getMinVideoHeight(mode: PlayerWindowMode) -> CGFloat {
-    return round(getMinVideoWidth(mode: mode) / videoAspectRatio)
+    switch mode {
+    case .musicMode:
+      return 0
+    default:
+      return AppData.minVideoSize.height
+    }
   }
 
   func getMinViewportWidth(mode: PlayerWindowMode) -> CGFloat {
@@ -511,8 +516,10 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     /// Make sure viewport size is at least as large as min.
     /// This is especially important when inside sidebars are taking up most of the space & `lockViewportToVideoSize` is `true`.
-    newViewportSize = NSSize(width: max(getMinViewportWidth(mode: mode), newViewportSize.width),
-                             height: max(getMinViewportHeight(mode: mode), newViewportSize.height))
+    let minViewportWidth = getMinViewportWidth(mode: mode)
+    let minViewportHeight = getMinViewportHeight(mode: mode)
+    newViewportSize = NSSize(width: max(minViewportWidth, newViewportSize.width),
+                             height: max(minViewportHeight, newViewportSize.height))
 
     let newWindowSize = NSSize(width: round(newViewportSize.width + outsideBarsSize.width),
                                height: round(newViewportSize.height + outsideBarsSize.height))
