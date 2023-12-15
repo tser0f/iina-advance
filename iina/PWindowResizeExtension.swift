@@ -406,6 +406,8 @@ extension PlayerWindowController {
       return windowedModeGeometry
     }
 
+    assert(currentGeometry.mode == currentLayout.mode)
+
     if denyNextWindowResize {
       log.verbose("WindowWillResize: denying this resize; will stay at \(currentGeometry.windowFrame.size)")
       denyNextWindowResize = false
@@ -459,16 +461,16 @@ extension PlayerWindowController {
     let requestedVideoWidth = currentGeometry.videoSize.width + widthDiff
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth,
                                                    height: round(requestedVideoWidth / currentGeometry.videoAspectRatio))
-    let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize,
-                                                        mode: currentLayout.mode)
+    let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize)
 
     // Option B: resize width based on requested height
     let heightDiff = requestedSize.height - currentGeometry.windowFrame.height
     let requestedVideoHeight = currentGeometry.videoSize.height + heightDiff
     let resizeFromHeightRequestedVideoSize = NSSize(width: round(requestedVideoHeight * currentGeometry.videoAspectRatio),
                                                     height: requestedVideoHeight)
-    let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize,
-                                                         mode: currentLayout.mode)
+    let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize)
+
+    log.verbose("WindowWillResize: PREV:\(currentGeometry), WIDTH:\(resizeFromWidthGeo), HEIGHT:\(resizeFromHeightGeo)")
 
     let chosenGeometry: PWindowGeometry
     if window.inLiveResize {
@@ -506,7 +508,7 @@ extension PlayerWindowController {
         chosenGeometry = resizeFromHeightGeo
       }
     }
-    log.verbose("WindowWillResize isLive:\(window.inLiveResize.yn) req:\(requestedSize) returning:\(chosenGeometry.windowFrame.size)")
+    log.verbose("WindowWillResize isLive:\(window.inLiveResize.yn) req:\(requestedSize) lockViewport:Y prevVideoSize:\(currentGeometry.videoSize) returning:\(chosenGeometry.windowFrame.size)")
 
     // TODO: validate geometry
     return chosenGeometry
@@ -608,14 +610,13 @@ extension PlayerWindowController {
       log.error("ApplyWindowGeometry is not used for \(currentLayout.spec.mode) mode")
 
     case .fullScreen:
-      // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
-      let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID,
-                                                        videoAspectRatio: newGeometry.videoAspectRatio)
       if setFrame {
+        // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
+        let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID,
+                                                          videoAspectRatio: newGeometry.videoAspectRatio)
+        log.verbose("ApplyWindowGeometry: Updating videoView (FS), videoSize: \(fsGeo.videoSize)")
         videoView.apply(fsGeo)
       }
-      log.verbose("ApplyWindowGeometry: Calling updateMPVWindowScale (FS), videoSize: \(newGeometry.videoSize)")
-      player.updateMPVWindowScale(using: fsGeo)
 
     case .windowed:
       if setFrame {

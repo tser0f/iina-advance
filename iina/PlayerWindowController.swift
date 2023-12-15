@@ -2009,8 +2009,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     case .windowed, .windowedInteractive:
       let newGeometry = resizeWindow(window, to: requestedSize)
-      videoView.apply(newGeometry)
-      updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
+      IINAAnimation.disableAnimation { [self] in
+        videoView.apply(newGeometry)
+        updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
+      }
       return newGeometry.windowFrame.size
     }
   }
@@ -2041,11 +2043,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         miniPlayer.windowDidResize()
         return
       case .windowed:
-        let viewportSize = viewportView.frame.size
-        let resizedGeo = windowedModeGeometry.scaleViewport(to: viewportSize)
-        // Need to update this always when resizing window:
-        videoView.apply(resizedGeo)
-
         if currentLayout.oscPosition == .floating {
           // Update floating control bar position
           updateFloatingOSCAfterWindowDidResize()

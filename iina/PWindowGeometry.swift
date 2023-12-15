@@ -178,7 +178,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       self.viewportMargins = viewportMargins
     } else {
       let insideBars = BoxQuad(top: insideTopBarHeight, trailing: insideTrailingBarWidth, bottom: insideBottomBarHeight, leading: insideLeadingBarWidth)
-      self.viewportMargins = PWindowGeometry.computeBestViewportMargins(viewportSize: viewportSize, videoSize: videoSize, insideBars: insideBars)
+      self.viewportMargins = PWindowGeometry.computeBestViewportMargins(viewportSize: viewportSize, videoSize: videoSize, insideBars: insideBars, mode: mode)
     }
 
     assert(insideLeadingBarWidth >= 0, "Expected insideLeadingBarWidth >= 0, found \(insideLeadingBarWidth)")
@@ -449,12 +449,12 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     return videoSize
   }
 
-  static func computeBestViewportMargins(viewportSize: NSSize, videoSize: NSSize, insideBars: BoxQuad) -> BoxQuad {
+  static func computeBestViewportMargins(viewportSize: NSSize, videoSize: NSSize, insideBars: BoxQuad, mode: PlayerWindowMode) -> BoxQuad {
     var unusedWidth = viewportSize.width - videoSize.width
     var leadingMargin: CGFloat = 0
     var trailingMargin: CGFloat = 0
 
-    if insideBars.totalWidth > 0, viewportSize.width >= insideBars.totalWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars {
+    if mode != .fullScreen, insideBars.totalWidth > 0, viewportSize.width >= insideBars.totalWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars {
       // Allocate available horizontal space to each inside sidebar, proportionate to its size.
       // This will minimize the amount of video which is occluded by the sidebars, and should match the centering
       // behavior of the floating OSC.
@@ -537,11 +537,6 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     let mode = mode ?? self.mode
     let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
-    var newViewportSize = desiredSize ?? viewportSize
-    if Logger.isTraceEnabled {
-      Logger.log("[geo] ScaleViewport start, newViewportSize=\(newViewportSize), lockViewport=\(lockViewportToVideoSize.yn)", level: .verbose)
-    }
-
     // do not center in screen again unless explicitly requested
     var newFitOption = fitOption ?? (self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption)
     if newFitOption == .legacyFullScreen || newFitOption == .nativeFullScreen {
@@ -553,6 +548,11 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let newScreenID = screenID ?? self.screenID
     let containerFrame: NSRect? = PWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: newFitOption)
 
+    var newViewportSize = desiredSize ?? viewportSize
+    if Logger.isTraceEnabled {
+      Logger.log("[geo] ScaleViewport start, newViewportSize=\(newViewportSize), lockViewport=\(lockViewportToVideoSize.yn)", level: .verbose)
+    }
+
     // -- Viewport size calculation
 
     /// Make sure viewport size is at least as large as min.
@@ -561,6 +561,23 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let minVideoSize = PWindowGeometry.minVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
     newViewportSize = NSSize(width: max(minVideoSize.width, newViewportSize.width),
                              height: max(minVideoSize.height, newViewportSize.height))
+
+    if lockViewportToVideoSize {
+      /// Constrain `viewportSize` within `containerFrame`. Gotta do this BEFORE computing videoSize.
+      /// So we do it again below. Big deal. Been mucking with this code way too long. It's fine.
+      if let containerFrame {
+        let maxSize = NSSize(width: containerFrame.size.width - outsideBarsSize.width,
+                             height: containerFrame.size.height - outsideBarsSize.height)
+        newViewportSize = NSSize(width: min(newViewportSize.width, maxSize.width),
+                                 height: min(newViewportSize.height, maxSize.height))
+      }
+
+      /// Compute `videoSize` to fit within `viewportSize` (minus `viewportMargins`) while maintaining `videoAspectRatio`:
+      let newVideoSize = PWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newViewportSize, mode: mode)
+      let minViewportMargins = PWindowGeometry.minViewportMargins(forMode: mode)
+      newViewportSize = NSSize(width: newVideoSize.width + minViewportMargins.totalWidth,
+                               height: newVideoSize.height + minViewportMargins.totalHeight)
+    }
 
     let minViewportWidth = minViewportWidth(mode: mode)
     let minViewportHeight = minViewportHeight(mode: mode)
@@ -573,14 +590,6 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                            height: containerFrame.size.height - outsideBarsSize.height)
       newViewportSize = NSSize(width: min(newViewportSize.width, maxSize.width),
                                height: min(newViewportSize.height, maxSize.height))
-    }
-
-    if lockViewportToVideoSize {
-      /// Compute `videoSize` to fit within `viewportSize` (minus `viewportMargins`) while maintaining `videoAspectRatio`:
-      let newVideoSize = PWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: newViewportSize, mode: mode)
-      let minViewportMargins = PWindowGeometry.minViewportMargins(forMode: mode)
-      newViewportSize = NSSize(width: newVideoSize.width + minViewportMargins.totalWidth,
-                               height: newVideoSize.height + minViewportMargins.totalHeight)
     }
 
     // -- Window size calculation
@@ -622,15 +631,33 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     if Logger.isTraceEnabled {
       Logger.log("[geo] ScaleVideo start, desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspectRatio), lockViewportToVideoSize: \(lockViewportToVideoSize)", level: .debug)
     }
+
+    // do not center in screen again unless explicitly requested
+    var newFitOption = fitOption ?? (self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption)
+    if newFitOption == .legacyFullScreen || newFitOption == .nativeFullScreen {
+      // Programmer screwed up
+      Logger.log("[geo] ScaleVideo: invalid fit option: \(newFitOption). Defaulting to 'none'", level: .error)
+      newFitOption = .noConstraints
+    }
+    let newScreenID = screenID ?? self.screenID
+    let containerFrame: NSRect? = PWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: newFitOption)
+
     var newVideoSize = desiredVideoSize
 
     let minVideoSize = PWindowGeometry.minVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
     let newWidth = max(minVideoSize.width, desiredVideoSize.width)
     /// Enforce `videoView` aspectRatio: Recalculate height using width
     newVideoSize = NSSize(width: newWidth, height: round(newWidth / videoAspectRatio))
-    if newVideoSize.height != desiredVideoSize.height {
-      // We don't want to see too much of this ideally
-      Logger.log("[geo] ScaleVideo applied aspectRatio (\(videoAspectRatio)): changed newVideoSize.height by \(newVideoSize.height - desiredVideoSize.height)", level: .debug)
+
+    if let containerFrame {
+      // Scale down to fit in bounds of container
+      if newVideoSize.width > containerFrame.width {
+        newVideoSize = NSSize(width: containerFrame.width, height: round(containerFrame.width / videoAspectRatio))
+      }
+
+      if newVideoSize.height > containerFrame.height {
+        newVideoSize = NSSize(width: round(containerFrame.height * videoAspectRatio), height: containerFrame.height)
+      }
     }
 
     let minViewportMargins = PWindowGeometry.minViewportMargins(forMode: mode)
@@ -640,7 +667,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       newViewportSize = NSSize(width: newVideoSize.width + minViewportMargins.totalWidth,
                                height: newVideoSize.height + minViewportMargins.totalHeight)
     } else {
-      let scaleRatio = newWidth / videoSize.width
+      // Scale existing viewport
+      let scaleRatio = newVideoSize.width / videoSize.width
       let viewportSizeWithoutMinMargins = NSSize(width: viewportSize.width - minViewportMargins.totalWidth,
                                                  height: viewportSize.height - minViewportMargins.totalHeight)
       let scaledViewportWithoutMargins = viewportSizeWithoutMinMargins.multiply(scaleRatio)
