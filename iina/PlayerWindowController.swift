@@ -797,8 +797,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     viewportView.player = player
 
     // Build default window geometries from preferences and default frame
-    windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
-    musicModeGeometry = miniPlayer.buildMusicModeGeometryFromPrefs()
+    windowedModeGeometry = player.info.priorState?.windowedModeGeometry ?? buildWindowGeometryFromCurrentFrame(using: currentLayout)
+    musicModeGeometry = player.info.priorState?.musicModeGeometry ?? miniPlayer.buildMusicModeGeometryFromPrefs()
 
     loaded = true
 
@@ -1100,7 +1100,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /// When entering "windowed" mode (either from initial load, PIP, or music mode), call this to add/return `videoView`
   /// to this window. Will do nothing if it's already there.
-  func addVideoViewToWindow() {
+  func addVideoViewToWindow(_ geometry: PWindowGeometry) {
     guard let window else { return }
     guard !viewportView.subviews.contains(videoView) else { return }
     player.log.verbose("Adding videoView to viewportView, screenScaleFactor: \(window.screenScaleFactor)")
@@ -1111,7 +1111,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     videoView.refreshContentsScale()
     // add constraints
     videoView.translatesAutoresizingMaskIntoConstraints = false
-    videoView.constrainForNormalLayout()
+    videoView.apply(geometry)
   }
 
   /** Set material for OSC and title bar */
@@ -1787,7 +1787,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     resetCollectionBehavior()
     updateBufferIndicatorView()
     updateOSDPosition()
-    addVideoViewToWindow()
+    addVideoViewToWindow(windowedModeGeometry)
 
     // Restore layout from last launch or configure from prefs. Do not animate.
     setInitialWindowLayout()
@@ -3759,8 +3759,8 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
-      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
-      addVideoViewToWindow()
+      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry!
+      addVideoViewToWindow(geo)
       videoView.apply(geo)
 
       // If using legacy windowed mode, need to manually add title to Window menu & Dock

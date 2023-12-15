@@ -430,8 +430,6 @@ extension PlayerWindowController {
       return currentGeometry
     }
 
-    let outsideBarsTotalSize = currentGeometry.outsideBarsTotalSize
-
     if !window.inLiveResize {  // Only applies to system requests to resize (not user resize)
       let minWindowWidth = currentGeometry.getMinWindowWidth(mode: currentLayout.mode)
       let minWindowHeight = currentGeometry.getMinWindowHeight(mode: currentLayout.mode)
@@ -460,14 +458,14 @@ extension PlayerWindowController {
     let widthDiff = requestedSize.width - currentGeometry.windowFrame.width
     let requestedVideoWidth = currentGeometry.videoSize.width + widthDiff
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth,
-                                                   height: requestedVideoWidth / currentGeometry.videoAspectRatio)
+                                                   height: round(requestedVideoWidth / currentGeometry.videoAspectRatio))
     let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize,
                                                         mode: currentLayout.mode)
 
     // Option B: resize width based on requested height
     let heightDiff = requestedSize.height - currentGeometry.windowFrame.height
     let requestedVideoHeight = currentGeometry.videoSize.height + heightDiff
-    let resizeFromHeightRequestedVideoSize = NSSize(width: requestedVideoHeight * currentGeometry.videoAspectRatio,
+    let resizeFromHeightRequestedVideoSize = NSSize(width: round(requestedVideoHeight * currentGeometry.videoAspectRatio),
                                                     height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize,
                                                          mode: currentLayout.mode)
@@ -690,12 +688,7 @@ extension PlayerWindowController {
 
     /// Try to detect & remove unnecessary constraint updates - `updateBottomBarHeight()` may cause animation glitches if called twice
     let isVideoVisible = !(viewportViewHeightContraint?.isActive ?? false)
-    let hasVideoVisChange = geometry.isVideoVisible != isVideoVisible
-    var hasChange: Bool = !geometry.windowFrame.equalTo(window!.frame) || hasVideoVisChange
-    if let newVideoSize = geometry.videoSize, let currentVideoSize = videoView.lastSetVideoSize,
-       !newVideoSize.equalTo(currentVideoSize) {
-      hasChange = true
-    }
+    let hasChange: Bool = !geometry.windowFrame.equalTo(window!.frame) || geometry.isVideoVisible != isVideoVisible
     if hasChange {
       if setFrame {
         player.window.setFrameImmediately(geometry.windowFrame, animate: animate)

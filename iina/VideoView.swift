@@ -30,14 +30,6 @@ class VideoView: NSView {
   private var displayIdleTimer: Timer?
 
   var videoViewConstraints: VideoViewConstraints? = nil
-  var widthConstraint: NSLayoutConstraint!
-  var heightConstraint: NSLayoutConstraint!
-  var lastSetVideoSize: NSSize? {
-    if let widthConstraint, let heightConstraint, widthConstraint.isActive && heightConstraint.isActive {
-      return NSSize(width: widthConstraint.constant, height: heightConstraint.constant)
-    }
-    return nil
-  }
 
   lazy var hdrSubsystem = Logger.makeSubsystem("hdr")
 
@@ -52,10 +44,6 @@ class VideoView: NSView {
     wantsLayer = true
 
     translatesAutoresizingMaskIntoConstraints = false
-    widthConstraint = widthAnchor.constraint(equalToConstant: CGFloat(AppData.widthWhenNoVideo))
-    widthConstraint.isActive = true
-    heightConstraint = heightAnchor.constraint(equalToConstant: CGFloat(AppData.heightWhenNoVideo))
-    heightConstraint.isActive = true
 
     // other settings
     wantsBestResolutionOpenGLSurface = true
@@ -126,6 +114,7 @@ class VideoView: NSView {
     let eqOffsetBottom: NSLayoutConstraint
     let eqOffsetLeading: NSLayoutConstraint
 
+    // Shouldn't really need these anymore. But leave them in at low priority as a backup if something unexpected comes up
     let centerX: NSLayoutConstraint
     let centerY: NSLayoutConstraint
 
@@ -178,48 +167,28 @@ class VideoView: NSView {
     newConstraints.setActive(eq: eqIsActive, center: centerIsActive)
   }
 
-  func constrainLayoutToEqualsOffsetOnly(margins: BoxQuad,
-                                         eqPriority: NSLayoutConstraint.Priority = .required) {
+  func constrainLayoutToEqualsOffsetOnly(margins: BoxQuad) {
     log.verbose("Constraining videoView for fixed offsets only: \(margins.top) \(margins.trailing) \(margins.bottom) \(margins.leading)")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: margins.top, trailing: -margins.trailing, bottom: -margins.bottom, leading: margins.leading,
-                       eqIsActive: true, eqPriority: eqPriority,
-                       centerIsActive: false, centerPriority: .required)
-
-    window?.layoutIfNeeded()
-  }
-
-  func constrainForNormalLayout() {
-    log.verbose("Constraining videoView for normal layout")
-    /// GT + center constraints are main priority, but include EQ as hint for ideal placement
-    /// Set center priority to `.defaultHigh` instead of `.required` to avoid constraint error when toggling music mode with no video...
-    rebuildConstraints(eqIsActive: true, eqPriority: .defaultLow,
-                       centerIsActive: true, centerPriority: .required)
+                       eqIsActive: true, eqPriority: .required,
+                       centerIsActive: true, centerPriority: .defaultLow)
 
     window?.layoutIfNeeded()
   }
 
   func apply(_ geometry: PWindowGeometry?) {
-    // Do not set constraints for PIP. It will be handled by the PIP window
+    // Do not set constraints for PIP. It will be handled by the PIP window.
+    // Do not use if locking viewport as these are redundant in that case
     if let geometry = geometry, player.windowController.pipStatus == .notInPIP {
-      let size = geometry.videoSize
-      guard !widthConstraint.isActive || !heightConstraint.isActive
-              || (size.width != widthConstraint.constant) || (size.height != heightConstraint.constant) else {
-        return
-      }
       if log.isTraceEnabled {
-        log.verbose("VideoView: updating size constraints to \(size)")
+        log.verbose("VideoView: updating viewportMargin constraints to \(geometry.viewportMargins)")
       }
-      widthConstraint.isActive = true
-      widthConstraint.animateToConstant(size.width)
-      heightConstraint.isActive = true
-      heightConstraint.animateToConstant(size.height)
+      constrainLayoutToEqualsOffsetOnly(margins: geometry.viewportMargins)
     } else {
       if log.isTraceEnabled {
         log.verbose("VideoView: removing size constraints")
       }
-      widthConstraint.isActive = false
-      heightConstraint.isActive = false
     }
     layoutSubtreeIfNeeded()
   }
@@ -266,7 +235,7 @@ class VideoView: NSView {
     }
   }
 
-  // MARK: Drag and drop
+  // MARK: - Drag and drop
 
   override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
     return player.acceptFromPasteboard(sender)
@@ -276,7 +245,7 @@ class VideoView: NSView {
     return player.openFromPasteboard(sender)
   }
 
-  // MARK: Display link
+  // MARK: - Display link
 
   func startDisplayLink() {
     log.verbose("Starting DisplayLink")
@@ -380,6 +349,8 @@ class VideoView: NSView {
     displayIdleTimer?.tolerance = 0.5
     RunLoop.current.add(displayIdleTimer!, forMode: .default)
   }
+
+  // MARK: - Color
 
   func setICCProfile(_ displayId: UInt32) {
     if !Preference.bool(for: .loadIccProfile) {

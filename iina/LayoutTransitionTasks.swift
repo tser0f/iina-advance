@@ -60,13 +60,6 @@ extension PlayerWindowController {
       break
     }
 
-    if !transition.isInitialLayout && (transition.inputLayout.mode == .windowedInteractive && transition.outputLayout.mode != .windowedInteractive) {
-      // Need to have these required almost always or else these often aren't honored during animations
-      videoView.widthConstraint.priority = .required
-      videoView.heightConstraint.priority = .required
-    }
-
-
     guard let window = window else { return }
 
     if transition.isEnteringFullScreen {
@@ -268,10 +261,10 @@ extension PlayerWindowController {
       osdMinOffsetFromTopConstraint.animateToConstant(0)
     }
     
-    if transition.isEnteringInteractiveMode && transition.outputLayout.isFullScreen {
+    if transition.isEnteringInteractiveMode {
+      // Animate the close of viewport margins:
       videoView.apply(transition.outputGeometry)
-    } else if transition.isExitingInteractiveMode && !transition.outputLayout.isFullScreen {
-      // Animate closed:
+    } else if transition.isExitingInteractiveMode {
       videoView.constrainLayoutToEqualsOffsetOnly(margins: .zero)
     }
 
@@ -583,23 +576,15 @@ extension PlayerWindowController {
         if !transition.outputLayout.isFullScreen {
           // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
           videoView.constrainLayoutToEqualsOffsetOnly(margins: .zero)
-          videoView.apply(nil)
         }
       } else if transition.isExitingInteractiveMode {
         // Exiting interactive mode
         viewportView.layer?.backgroundColor = .black
 
-        // Restore prev constraints:
-        videoView.constrainForNormalLayout()
-
         if let cropController = self.cropSettingsView {
           cropController.cropBoxView.removeFromSuperview()
           cropController.view.removeFromSuperview()
           self.cropSettingsView = nil
-        }
-
-        if transition.outputLayout.isWindowed, let middleGeometry = transition.middleGeometry {
-          videoView.apply(middleGeometry)
         }
       }
     }
@@ -733,9 +718,7 @@ extension PlayerWindowController {
         // Native Full Screen: set frame not including camera housing because it looks better with the native animation
         log.verbose("[\(transition.name)] Calling setFrame to animate into nativeFS, to: \(transition.outputGeometry.windowFrame)")
         player.window.setFrameImmediately(transition.outputGeometry.windowFrame)
-        if transition.outputLayout.mode != .fullScreenInteractive {
-          videoView.apply(transition.outputGeometry)
-        }
+        videoView.apply(transition.outputGeometry)
       } else if transition.outputLayout.isLegacyFullScreen {
         let screen = NSScreen.getScreenOrDefault(screenID: transition.outputGeometry.screenID)
         let newGeo: PWindowGeometry
@@ -769,9 +752,7 @@ extension PlayerWindowController {
       let newWindowFrame = transition.outputGeometry.windowFrame
       log.verbose("[\(transition.name)] Calling setFrame from OpenNewPanels with \(newWindowFrame)")
       player.window.setFrameImmediately(newWindowFrame)
-      if !transition.outputLayout.isInteractiveMode {
-        videoView.apply(transition.outputGeometry)
-      }
+      videoView.apply(transition.outputGeometry)
     }
 
     if transition.isEnteringInteractiveMode {
@@ -888,12 +869,6 @@ extension PlayerWindowController {
     resetFadeTimer()
 
     guard let window = window else { return }
-
-    if transition.inputLayout.mode != .windowedInteractive && transition.outputLayout.mode == .windowedInteractive {
-      // Need to set the priorities to low, or else interactive mode window can't be resized
-      videoView.widthConstraint.priority = .defaultLow
-      videoView.heightConstraint.priority = .defaultLow
-    }
 
     if transition.isEnteringFullScreen {
       // Entered FullScreen

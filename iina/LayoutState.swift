@@ -24,8 +24,27 @@ enum PlayerWindowMode: Int {
     }
   }
 
+  var neverLockViewportToVideoSize: Bool {
+    switch self {
+    case .fullScreen:
+      return true
+    case .musicMode, .windowedInteractive, .fullScreenInteractive, .windowed:
+      return false
+    }
+  }
+
   var isInteractiveMode: Bool {
     return self == .windowedInteractive || self == .fullScreenInteractive
+  }
+
+  var lockViewportToVideoSize: Bool {
+    if alwaysLockViewportToVideoSize {
+      return true
+    }
+    if neverLockViewportToVideoSize {
+      return false
+    }
+    return Preference.bool(for: .lockViewportToVideoSize)
   }
 }
 
