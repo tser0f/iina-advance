@@ -29,7 +29,7 @@ class VideoView: NSView {
 
   private var displayIdleTimer: Timer?
 
-  var videoViewConstraints: VideoViewConstraints? = nil
+  private var videoViewConstraints: VideoViewConstraints? = nil
 
   lazy var hdrSubsystem = Logger.makeSubsystem("hdr")
 
@@ -133,12 +133,12 @@ class VideoView: NSView {
                    _ attr: NSLayoutConstraint.Attribute, _ relation: NSLayoutConstraint.Relation, _ constant: CGFloat,
                    _ priority: NSLayoutConstraint.Priority) -> NSLayoutConstraint {
     let constraint: NSLayoutConstraint
-    if let existing = existingConstraint {
-      constraint = existing
+    if let existingConstraint {
+      constraint = existingConstraint
       constraint.animateToConstant(constant)
     } else {
       constraint = existingConstraint ?? NSLayoutConstraint(item: self, attribute: attr, relatedBy: relation, toItem: superview!,
-                                                                     attribute: attr, multiplier: 1, constant: constant)
+                                                            attribute: attr, multiplier: 1, constant: constant)
     }
     constraint.priority = priority
     return constraint
@@ -167,7 +167,7 @@ class VideoView: NSView {
     newConstraints.setActive(eq: eqIsActive, center: centerIsActive)
   }
 
-  func constrainLayoutToEqualsOffsetOnly(margins: BoxQuad) {
+  private func setFixedOffsetConstraints(margins: BoxQuad) {
     log.verbose("Constraining videoView for fixed offsets only: \(margins.top) \(margins.trailing) \(margins.bottom) \(margins.leading)")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: margins.top, trailing: -margins.trailing, bottom: -margins.bottom, leading: margins.leading,
@@ -178,17 +178,16 @@ class VideoView: NSView {
   }
 
   func apply(_ geometry: PWindowGeometry?) {
-    // Do not set constraints for PIP. It will be handled by the PIP window.
-    // Do not use if locking viewport as these are redundant in that case
-    if let geometry = geometry, player.windowController.pipStatus == .notInPIP {
+    if let geometry = geometry {
       if log.isTraceEnabled {
         log.verbose("VideoView: updating viewportMargin constraints to \(geometry.viewportMargins)")
       }
-      constrainLayoutToEqualsOffsetOnly(margins: geometry.viewportMargins)
+      setFixedOffsetConstraints(margins: geometry.viewportMargins)
     } else {
       if log.isTraceEnabled {
-        log.verbose("VideoView: removing size constraints")
+        log.verbose("VideoView: zeroing out viewportMargin constraints")
       }
+      setFixedOffsetConstraints(margins: .zero)
     }
     layoutSubtreeIfNeeded()
   }

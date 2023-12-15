@@ -265,7 +265,7 @@ extension PlayerWindowController {
       // Animate the close of viewport margins:
       videoView.apply(transition.outputGeometry)
     } else if transition.isExitingInteractiveMode {
-      videoView.constrainLayoutToEqualsOffsetOnly(margins: .zero)
+      videoView.apply(nil)
     }
 
     // Update heights of top & bottom bars
@@ -575,7 +575,7 @@ extension PlayerWindowController {
 
         if !transition.outputLayout.isFullScreen {
           // Need to hug the walls of viewport to match existing layout. Will animate with updated constraints in next stage
-          videoView.constrainLayoutToEqualsOffsetOnly(margins: .zero)
+          videoView.apply(nil)
         }
       } else if transition.isExitingInteractiveMode {
         // Exiting interactive mode
@@ -758,8 +758,7 @@ extension PlayerWindowController {
     if transition.isEnteringInteractiveMode {
       if !transition.outputLayout.isFullScreen {
         // Already set fixed constraints. Now set new values to animate into place
-        let viewportMargins = transition.outputGeometry.viewportMargins
-        videoView.constrainLayoutToEqualsOffsetOnly(margins: viewportMargins)
+        videoView.apply(transition.outputGeometry)
       }
 
       if let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize, let cropController = cropSettingsView {

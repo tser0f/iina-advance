@@ -575,49 +575,28 @@ extension PlayerWindowController {
         let fitOption: ScreenFitOption = spec.isLegacyStyle ? .legacyFullScreen : .nativeFullScreen
         let topMarginHeight = screen.cameraHousingHeight ?? 0
         return PWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
-                                    mode: mode, topMarginHeight: topMarginHeight,
-                                    outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
-                                    outsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
-                                    outsideLeadingBarWidth: 0, insideTopBarHeight: 0, 
-                                    insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
-                                    viewportMargins: Constants.InteractiveMode.viewportMargins, videoAspectRatio: videoAspectRatio)
+                               mode: mode, topMarginHeight: topMarginHeight,
+                               outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
+                               outsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
+                               outsideLeadingBarWidth: 0, insideTopBarHeight: 0,
+                               insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
+                               viewportMargins: Constants.InteractiveMode.viewportMargins, videoAspectRatio: videoAspectRatio)
       }
-      
-      let bottomBarHeight: CGFloat
-      if enableOSC && oscPosition == .bottom {
-        bottomBarHeight = OSCToolbarButton.oscBarHeight
-      } else {
-        bottomBarHeight = 0
-      }
-      let insideTopBarHeight = topBarPlacement == .insideViewport ? topBarHeight : 0
-      let insideBottomBarHeight = bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
-      let outsideBottomBarHeight = bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
 
       return PWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle, mode: mode,
-                                                outsideTopBarHeight: outsideTopBarHeight,
-                                                outsideTrailingBarWidth: outsideTrailingBarWidth,
-                                                outsideBottomBarHeight: outsideBottomBarHeight,
-                                                outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                                insideTopBarHeight: insideTopBarHeight,
-                                                insideTrailingBarWidth: insideTrailingBarWidth,
-                                                insideBottomBarHeight: insideBottomBarHeight,
-                                                insideLeadingBarWidth: insideLeadingBarWidth,
-                                                videoAspectRatio: videoAspectRatio)
+                                           outsideTopBarHeight: outsideTopBarHeight,
+                                           outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                           outsideBottomBarHeight: outsideBottomBarHeight,
+                                           outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                           insideTopBarHeight: insideTopBarHeight,
+                                           insideTrailingBarWidth: insideTrailingBarWidth,
+                                           insideBottomBarHeight: insideBottomBarHeight,
+                                           insideLeadingBarWidth: insideLeadingBarWidth,
+                                           videoAspectRatio: videoAspectRatio)
     }
 
     // Converts & updates existing geometry to this layout
     func convertWindowedModeGeometry(from existingGeometry: PWindowGeometry, videoAspectRatio: CGFloat? = nil) -> PWindowGeometry {
-      let bottomBarHeight: CGFloat
-      if enableOSC && oscPosition == .bottom {
-        bottomBarHeight = OSCToolbarButton.oscBarHeight
-      } else {
-        bottomBarHeight = 0
-      }
-
-      let insideTopBarHeight = topBarPlacement == .insideViewport ? topBarHeight : 0
-      let insideBottomBarHeight = bottomBarPlacement == .insideViewport ? bottomBarHeight : 0
-      let outsideBottomBarHeight = bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
-
       return existingGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
                                               outsideTrailingBarWidth: outsideTrailingBarWidth,
                                               outsideBottomBarHeight: outsideBottomBarHeight,
