@@ -2224,7 +2224,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func windowDidMove(_ notification: Notification) {
-    guard !isAnimating, !player.info.isRestoring else { return }
+    guard !isAnimating, !isMagnifying, !player.info.isRestoring else { return }
     guard let window = window else { return }
 
     animationPipeline.submitZeroDuration({ [self] in

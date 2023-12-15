@@ -346,6 +346,10 @@ extension CGFloat {
   var twoDigitHex: String {
     String(format: "%02X", self)
   }
+
+  func isWithin(_ threshold: CGFloat, of other: CGFloat) -> Bool {
+    return abs(self - other) <= threshold
+  }
 }
 
 extension Bool {
