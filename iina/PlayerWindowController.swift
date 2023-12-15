@@ -415,6 +415,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       PK.allowVideoToOverlapCameraHousing.rawValue,
       PK.useLegacyWindowedMode.rawValue:
 
+      log.verbose("Calling updateTitleBarAndOSC in response to pref change: \(keyPath.quoted)")
       updateTitleBarAndOSC()
     case PK.lockViewportToVideoSize.rawValue:
       if let isLocked = change[.newKey] as? Bool, isLocked {

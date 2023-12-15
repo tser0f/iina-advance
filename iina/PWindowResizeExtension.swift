@@ -431,8 +431,8 @@ extension PlayerWindowController {
     }
 
     if !window.inLiveResize {  // Only applies to system requests to resize (not user resize)
-      let minWindowWidth = currentGeometry.getMinWindowWidth(mode: currentLayout.mode)
-      let minWindowHeight = currentGeometry.getMinWindowHeight(mode: currentLayout.mode)
+      let minWindowWidth = currentGeometry.minWindowWidth(mode: currentLayout.mode)
+      let minWindowHeight = currentGeometry.minWindowHeight(mode: currentLayout.mode)
       if (requestedSize.width < minWindowWidth) || (requestedSize.height < minWindowHeight) {
         // Sending the current size seems to work much better with accessibilty requests
         // than trying to change to the min size

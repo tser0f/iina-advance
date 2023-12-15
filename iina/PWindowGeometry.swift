@@ -178,7 +178,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       self.viewportMargins = viewportMargins
     } else {
       let insideBars = BoxQuad(top: insideTopBarHeight, trailing: insideTrailingBarWidth, bottom: insideBottomBarHeight, leading: insideLeadingBarWidth)
-      self.viewportMargins = PWindowGeometry.computeOptimalViewportMargins(viewportSize: viewportSize, videoSize: videoSize, insideBars: insideBars)
+      self.viewportMargins = PWindowGeometry.computeBestViewportMargins(viewportSize: viewportSize, videoSize: videoSize, insideBars: insideBars)
     }
 
     assert(insideLeadingBarWidth >= 0, "Expected insideLeadingBarWidth >= 0, found \(insideLeadingBarWidth)")
@@ -268,11 +268,6 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                   height: windowFrame.height - outsideTopBarHeight - outsideBottomBarHeight)
   }
 
-  var viewportSizeSubtractingMargins: NSSize {
-    return NSSize(width: viewportSize.width - viewportMargins.totalWidth,
-                  height: viewportSize.height - viewportMargins.totalHeight)
-  }
-
   var viewportFrameInScreenCoords: NSRect {
     let origin = CGPoint(x: windowFrame.origin.x + outsideLeadingBarWidth,
                          y: windowFrame.origin.y + outsideBottomBarHeight)
@@ -318,7 +313,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
   }
 
-  func getMinVideoWidth(mode: PlayerWindowMode) -> CGFloat {
+  static func minVideoWidth(forMode mode: PlayerWindowMode) -> CGFloat {
     switch mode {
     case .windowedInteractive, .fullScreenInteractive:
       return Constants.InteractiveMode.minWindowWidth - PWindowGeometry.minViewportMargins(forMode: mode).totalWidth
@@ -329,7 +324,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
   }
 
-  func getMinVideoHeight(mode: PlayerWindowMode) -> CGFloat {
+  static func minVideoHeight(forMode mode: PlayerWindowMode) -> CGFloat {
     switch mode {
     case .musicMode:
       return 0
@@ -338,22 +333,34 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
   }
 
+  static func minVideoSize(forAspectRatio aspect: CGFloat, mode: PlayerWindowMode) -> CGSize {
+    let minWidth = minVideoWidth(forMode: mode)
+    let minHeight = minVideoHeight(forMode: mode)
+    let size1 = NSSize(width: minWidth, height: round(minWidth / aspect))
+    let size2 = NSSize(width: round(minHeight * aspect), height: minHeight)
+    if size1.height >= minHeight {
+      return size1
+    } else {
+      return size2
+    }
+  }
+
   // This also accounts for space needed by inside sidebars, if any
-  func getMinViewportWidth(mode: PlayerWindowMode) -> CGFloat {
-    return max(getMinVideoWidth(mode: mode) + PWindowGeometry.minViewportMargins(forMode: mode).totalWidth,
+  func minViewportWidth(mode: PlayerWindowMode) -> CGFloat {
+    return max(PWindowGeometry.minVideoWidth(forMode: mode) + PWindowGeometry.minViewportMargins(forMode: mode).totalWidth,
                insideLeadingBarWidth + insideTrailingBarWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars)
   }
 
-  func getMinViewportHeight(mode: PlayerWindowMode) -> CGFloat {
-    return getMinVideoHeight(mode: mode) + PWindowGeometry.minViewportMargins(forMode: mode).totalHeight
+  func minViewportHeight(mode: PlayerWindowMode) -> CGFloat {
+    return PWindowGeometry.minVideoHeight(forMode: mode) + PWindowGeometry.minViewportMargins(forMode: mode).totalHeight
   }
 
-  func getMinWindowWidth(mode: PlayerWindowMode) -> CGFloat {
-    return getMinViewportWidth(mode: mode) + outsideBarsTotalSize.width
+  func minWindowWidth(mode: PlayerWindowMode) -> CGFloat {
+    return minViewportWidth(mode: mode) + outsideBarsTotalSize.width
   }
 
-  func getMinWindowHeight(mode: PlayerWindowMode) -> CGFloat {
-    return getMinViewportHeight(mode: mode) + outsideBarsTotalSize.height
+  func minWindowHeight(mode: PlayerWindowMode) -> CGFloat {
+    return minViewportHeight(mode: mode) + outsideBarsTotalSize.height
   }
 
   var hasTopPaddingForCameraHousing: Bool {
@@ -442,7 +449,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     return videoSize
   }
 
-  static func computeOptimalViewportMargins(viewportSize: NSSize, videoSize: NSSize, insideBars: BoxQuad) -> BoxQuad {
+  static func computeBestViewportMargins(viewportSize: NSSize, videoSize: NSSize, insideBars: BoxQuad) -> BoxQuad {
     var unusedWidth = viewportSize.width - videoSize.width
     var leadingMargin: CGFloat = 0
     var trailingMargin: CGFloat = 0
@@ -526,7 +533,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                      fitOption: ScreenFitOption? = nil,
                      mode: PlayerWindowMode? = nil) -> PWindowGeometry {
 
-    // - Set up needed variables
+    // -- First, set up needed variables
 
     let mode = mode ?? self.mode
     let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
@@ -546,12 +553,17 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let newScreenID = screenID ?? self.screenID
     let containerFrame: NSRect? = PWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: newFitOption)
 
-    // - Viewport size calculation
+    // -- Viewport size calculation
 
     /// Make sure viewport size is at least as large as min.
     /// This is especially important when inside sidebars are taking up most of the space & `lockViewportToVideoSize` is `true`.
-    let minViewportWidth = getMinViewportWidth(mode: mode)
-    let minViewportHeight = getMinViewportHeight(mode: mode)
+
+    let minVideoSize = PWindowGeometry.minVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
+    newViewportSize = NSSize(width: max(minVideoSize.width, newViewportSize.width),
+                             height: max(minVideoSize.height, newViewportSize.height))
+
+    let minViewportWidth = minViewportWidth(mode: mode)
+    let minViewportHeight = minViewportHeight(mode: mode)
     newViewportSize = NSSize(width: max(minViewportWidth, newViewportSize.width),
                              height: max(minViewportHeight, newViewportSize.height))
 
@@ -571,7 +583,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                                height: newVideoSize.height + minViewportMargins.totalHeight)
     }
 
-    // - Window size calculation
+    // -- Window size calculation
 
     let newWindowSize = NSSize(width: round(newViewportSize.width + outsideBarsSize.width),
                                height: round(newViewportSize.height + outsideBarsSize.height))
@@ -612,7 +624,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
     var newVideoSize = desiredVideoSize
 
-    let newWidth = max(getMinVideoWidth(mode: mode), desiredVideoSize.width)
+    let minVideoSize = PWindowGeometry.minVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
+    let newWidth = max(minVideoSize.width, desiredVideoSize.width)
     /// Enforce `videoView` aspectRatio: Recalculate height using width
     newVideoSize = NSSize(width: newWidth, height: round(newWidth / videoAspectRatio))
     if newVideoSize.height != desiredVideoSize.height {
@@ -620,16 +633,19 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       Logger.log("[geo] ScaleVideo applied aspectRatio (\(videoAspectRatio)): changed newVideoSize.height by \(newVideoSize.height - desiredVideoSize.height)", level: .debug)
     }
 
+    let minViewportMargins = PWindowGeometry.minViewportMargins(forMode: mode)
     let newViewportSize: NSSize
     if lockViewportToVideoSize {
       /// Use `videoSize` for `desiredViewportSize`:
-      newViewportSize = NSSize(width: newVideoSize.width + viewportMargins.totalWidth,
-                               height: newVideoSize.height + viewportMargins.totalHeight)
+      newViewportSize = NSSize(width: newVideoSize.width + minViewportMargins.totalWidth,
+                               height: newVideoSize.height + minViewportMargins.totalHeight)
     } else {
       let scaleRatio = newWidth / videoSize.width
-      let scaledViewportWithoutMargins = viewportSizeSubtractingMargins.multiply(scaleRatio)
-      newViewportSize = NSSize(width: scaledViewportWithoutMargins.width + viewportMargins.totalWidth,
-                               height: scaledViewportWithoutMargins.height + viewportMargins.totalHeight)
+      let viewportSizeWithoutMinMargins = NSSize(width: viewportSize.width - minViewportMargins.totalWidth,
+                                                 height: viewportSize.height - minViewportMargins.totalHeight)
+      let scaledViewportWithoutMargins = viewportSizeWithoutMinMargins.multiply(scaleRatio)
+      newViewportSize = NSSize(width: scaledViewportWithoutMargins.width + minViewportMargins.totalWidth,
+                               height: scaledViewportWithoutMargins.height + minViewportMargins.totalHeight)
     }
 
     return scaleViewport(to: newViewportSize, screenID: screenID, fitOption: fitOption, mode: mode)
@@ -713,7 +729,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       } else {
         w = CGFloat(Int(strw)!)
       }
-      w = max(getMinVideoWidth(mode: .windowed), w)
+      w = max(PWindowGeometry.minVideoWidth(forMode: .windowed), w)
       newVideoSize.width = w
       newVideoSize.height = w / videoAspectRatio
       widthOrHeightIsSet = true
@@ -724,7 +740,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       } else {
         h = CGFloat(Int(strh)!)
       }
-      h = max(getMinVideoHeight(mode: .windowed), h)
+      h = max(PWindowGeometry.minVideoHeight(forMode: .windowed), h)
       newVideoSize.height = h
       newVideoSize.width = h * videoAspectRatio
       widthOrHeightIsSet = true
@@ -793,7 +809,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let viewportMargins = Constants.InteractiveMode.viewportMargins
 
     // Enforce min width for interactive mode window
-    let minVideoWidth = getMinVideoWidth(mode: newMode)
+    let minVideoWidth = PWindowGeometry.minVideoWidth(forMode: newMode)
     if newVideoSize.width < minVideoWidth {
       newVideoSize = NSSize(width: minVideoWidth, height: round(minVideoWidth / self.videoAspectRatio))
     }
