@@ -80,8 +80,8 @@
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jfj-IC-e3B" userLabel="Prev Button">
                                     <rect key="frame" x="56" y="8" width="28" height="28"/>
-                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextl" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="SZB-TX-yda">
-                                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextl" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="SZB-TX-yda">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>
                                     <constraints>
@@ -108,8 +108,8 @@
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="nwm-1g-9Dl" userLabel="Next Button">
                                     <rect key="frame" x="152" y="8" width="28" height="28"/>
-                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextr" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="OMQ-kW-mEi">
-                                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextr" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="OMQ-kW-mEi">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>
                                     <constraints>

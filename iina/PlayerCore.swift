@@ -1746,6 +1746,7 @@ class PlayerCore: NSObject {
     DispatchQueue.main.async { [self] in
       guard !isShuttingDown, !isShutdown else { return }
       windowController.quickSettingView.reload()
+      windowController.forceDraw()
     }
   }
 

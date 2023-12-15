@@ -271,11 +271,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   @IBAction func nextBtnAction(_ sender: NSButton) {
-    player.navigateInPlaylist(nextMedia: true)
+    windowController.rightArrowButtonAction(sender)
   }
 
   @IBAction func prevBtnAction(_ sender: NSButton) {
-    player.navigateInPlaylist(nextMedia: false)
+    windowController.leftArrowButtonAction(sender)
   }
 
   @IBAction func volumeBtnAction(_ sender: NSButton) {
