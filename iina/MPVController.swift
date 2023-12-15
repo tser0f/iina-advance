@@ -1007,7 +1007,22 @@ not applying FFmpeg 9599 workaround
 
     case MPV_EVENT_FILE_LOADED:
       Logger.log("Got mpv fileLoaded event", level: .verbose, subsystem: player.subsystem)
-      onFileLoaded()
+      // Get video size and set the initial window size
+      if !player.info.isRestoring {
+        let pause = Preference.bool(for: .pauseWhenOpen)
+        player.log.verbose("OnFileLoaded: setting playback to \(pause ? "paused" : "resume")")
+        setFlag(MPVOption.PlaybackControl.pause, pause)
+      }
+
+      let duration = getDouble(MPVProperty.duration)
+      player.info.videoDuration = VideoTime(duration)
+      if let filename = getString(MPVProperty.path) {
+        self.player.info.setCachedVideoDuration(filename, duration)
+      }
+      let position = getDouble(MPVProperty.timePos)
+      player.info.videoPosition = VideoTime(position)
+
+      player.fileLoaded()
 
     case MPV_EVENT_SEEK:
       if needRecordSeekTime {
@@ -1016,14 +1031,12 @@ not applying FFmpeg 9599 workaround
       player.seeking()
 
     case MPV_EVENT_PLAYBACK_RESTART:
-      let currentMediaAudioStatus = player.info.currentMediaAudioStatus
-
       DispatchQueue.main.async { [self] in
         if needRecordSeekTime {
           recordedSeekTimeListener?(CACurrentMediaTime() - recordedSeekStartTime)
           recordedSeekTimeListener = nil
         }
-        player.playbackRestarted(currentMediaAudioStatus: currentMediaAudioStatus)
+        player.playbackRestarted()
       }
 
     case MPV_EVENT_END_FILE:
@@ -1073,27 +1086,6 @@ not applying FFmpeg 9599 workaround
       let eventName = "mpv.\(String(cString: mpv_event_name(eventId)))"
       player.events.emit(.init(eventName))
     }
-  }
-
-  private func onFileLoaded() {
-    // Get video size and set the initial window size
-    if !player.info.isRestoring {
-      let pause = Preference.bool(for: .pauseWhenOpen)
-      player.log.verbose("OnFileLoaded: setting playback to \(pause ? "paused" : "resume")")
-      setFlag(MPVOption.PlaybackControl.pause, pause)
-    }
-
-    let duration = getDouble(MPVProperty.duration)
-    player.info.videoDuration = VideoTime(duration)
-    if let filename = getString(MPVProperty.path) {
-      self.player.info.setCachedVideoDuration(filename, duration)
-    }
-    let position = getDouble(MPVProperty.timePos)
-    player.info.videoPosition = VideoTime(position)
-
-    player.fileLoaded()
-
-    player.syncUI(.playlist)
   }
 
   // MARK: - Property listeners

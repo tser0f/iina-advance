@@ -1712,6 +1712,27 @@ class PlayerCore: NSObject {
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
       }
+
+      let currentMediaAudioStatus = info.currentMediaAudioStatus
+      // Update art & aspect *before* switching to/from music mode for more pleasant animation
+      if currentMediaAudioStatus == .isAudio || !info.isVideoTrackSelected {
+        log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
+        windowController.refreshAlbumArtDisplay()
+      }
+
+      // if need to switch to music mode
+      if info.justStartedFile && Preference.bool(for: .autoSwitchToMusicMode) {
+        if overrideAutoMusicMode {
+          log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
+        } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
+          log.debug("Current media is audio: auto-switching to music mode")
+          enterMusicMode(automatically: true)
+        } else if currentMediaAudioStatus == .notAudio && isInMiniPlayer {
+          log.debug("Current media is not audio: auto-switching to normal window")
+          exitMusicMode(automatically: true)
+        }
+      }
+
     }
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
@@ -1763,7 +1784,7 @@ class PlayerCore: NSObject {
     sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
-  func playbackRestarted(currentMediaAudioStatus: PlaybackInfo.CurrentMediaAudioStatus) {
+  func playbackRestarted() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     log.debug("Playback restarted (justStartedFile: \(info.justStartedFile.yn))")
 
@@ -1779,25 +1800,6 @@ class PlayerCore: NSObject {
     reloadSavedIINAfilters()
 
     syncUITime()
-
-    // Update art & aspect *before* switching to/from music mode for more pleasant animation
-    if info.currentMediaAudioStatus == .isAudio || !info.isVideoTrackSelected {
-      log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
-      windowController.refreshAlbumArtDisplay()
-    }
-
-    // if need to switch to music mode
-    if Preference.bool(for: .autoSwitchToMusicMode) {
-      if overrideAutoMusicMode {
-        log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
-      } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
-        log.debug("Current media is audio: auto-switching to music mode")
-        enterMusicMode(automatically: true)
-      } else if currentMediaAudioStatus == .notAudio && isInMiniPlayer {
-        log.debug("Current media is not audio: auto-switching to normal window")
-        exitMusicMode(automatically: true)
-      }
-    }
 
     /// The first "playback restart" msg after starting a file means that the file is
     /// officially done loading
@@ -2430,6 +2432,7 @@ class PlayerCore: NSObject {
                                          title: mpv.getString(MPVProperty.playlistNTitle(index)))
       info.playlist.append(playlistItem)
     }
+    syncUI(.playlist)
     saveState()  // save playlist URLs to prefs
   }
 
