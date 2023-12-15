@@ -3094,13 +3094,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         showAbove = true
       case .floating:
         let totalMargin = thumbnailExtraOffsetY + thumbnailExtraOffsetY
-        let availableHeightBelow = oscOriginInWindowY - currentLayout.insideBottomBarHeight - totalMargin
+        let availableHeightBelow = max(0, oscOriginInWindowY - currentLayout.insideBottomBarHeight - totalMargin)
         if availableHeightBelow > thumbHeight {
           // Show below by default, if there is space for the desired size
           showAbove = false
         } else {
           // If not enough space to show the full-size thumb below, then show above if it has more space
-          let availableHeightAbove = viewportView.frame.height - (oscOriginInWindowY + oscHeight + totalMargin + currentLayout.insideTopBarHeight)
+          let availableHeightAbove = max(0, viewportView.frame.height - (oscOriginInWindowY + oscHeight + totalMargin + currentLayout.insideTopBarHeight))
           showAbove = availableHeightAbove > availableHeightBelow
           if showAbove, thumbHeight > availableHeightAbove {
             // Scale down thumbnail so it doesn't get clipped by the side of the window
@@ -3119,6 +3119,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Need integers below.
     thumbWidth = round(thumbWidth)
     thumbHeight = round(thumbHeight)
+
+    guard thumbWidth >= Constants.Distance.minThumbnailHeight,
+          thumbHeight >= Constants.Distance.minThumbnailHeight else {
+      log.verbose("Not enough space to display thumbnail")
+      thumbnailPeekView.isHidden = true
+      return
+    }
 
     // Scaling is a potentially expensive operation, so reuse the last image if no change is needed
     if currentMediaThumbnails.currentDisplayedThumbFFTimestamp != ffThumbnail.timestamp {

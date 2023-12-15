@@ -562,14 +562,15 @@ extension PlayerWindowController {
     if !currentLayout.isInteractiveMode {
       videoView.apply(geometry)
     }
-    guard !geometry.windowFrame.equalTo(window.frame) else {
-      log.verbose("No need to update windowFrame for legacyFullScreen - no change")
-      return
-    }
 
     if currentLayout.hasFloatingOSC {
       controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV,
                                 layout: currentLayout, viewportSize: geometry.viewportSize)
+    }
+
+    guard !geometry.windowFrame.equalTo(window.frame) else {
+      log.verbose("No need to update windowFrame for legacyFullScreen - no change")
+      return
     }
 
     log.verbose("Calling setFrame for legacyFullScreen, to \(geometry)")

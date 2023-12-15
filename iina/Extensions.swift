@@ -806,6 +806,10 @@ extension NSImage {
       return self
     }
 
+    guard newWidth > 0, newHeight > 0 else {
+      Logger.fatal("NSImage.resized: invalid width (\(newWidth)) or height (\(newHeight)) - both must be greater than 0")
+    }
+
     // Use raw CoreGraphics calls instead of their NS equivalents. They are > 10x faster, and only downside is that the image's
     // dimensions must be integer values instead of decimals.
     let currentImage = self.cgImage!
