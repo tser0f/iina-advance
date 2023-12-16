@@ -455,13 +455,31 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     var trailingMargin: CGFloat = 0
 
     if mode != .fullScreen, insideBars.totalWidth > 0, viewportSize.width >= insideBars.totalWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars {
-      // Allocate available horizontal space to each inside sidebar, proportionate to its size.
-      // This will minimize the amount of video which is occluded by the sidebars, and should match the centering
-      // behavior of the floating OSC.
-      let spaceForBars = min(unusedWidth, insideBars.totalWidth)
-      leadingMargin = round(spaceForBars * (insideBars.leading / insideBars.totalWidth))
-      trailingMargin = round(spaceForBars * (insideBars.trailing / insideBars.totalWidth))
-      unusedWidth -= (leadingMargin + trailingMargin)
+      // Allocate available horizontal space to each inside sidebar, proportionate to its size
+      let smallerBarWidth = min(insideBars.leading, insideBars.trailing)
+      let largerBarWidthDifference = abs(insideBars.leading - insideBars.trailing)
+      let spaceForSmallerBars = min(unusedWidth, smallerBarWidth * 2)
+      let spaceForSmallerBar = spaceForSmallerBars * 0.5
+      leadingMargin += spaceForSmallerBar.rounded(.up)
+      trailingMargin += spaceForSmallerBar.rounded(.down)
+      unusedWidth -= spaceForSmallerBars
+
+      var remainingSpace = min(unusedWidth, largerBarWidthDifference)
+      if insideBars.leading > insideBars.trailing { /// give space to leading
+        leadingMargin += remainingSpace.rounded(.down)
+      } else {
+        trailingMargin += remainingSpace.rounded(.up)
+      }
+      unusedWidth -= remainingSpace
+
+      // If there is still space left to allocate, give it to the shorter bar so that the video approaches center of window
+      remainingSpace = min(unusedWidth, largerBarWidthDifference)
+      if insideBars.leading > insideBars.trailing {
+        trailingMargin += remainingSpace.rounded(.up)
+      } else {
+        leadingMargin += remainingSpace.rounded(.down)
+      }
+      unusedWidth -= remainingSpace
       if unusedWidth < 0 {
         // fix rounding error: take back from trailing
         trailingMargin += unusedWidth
