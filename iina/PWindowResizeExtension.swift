@@ -93,27 +93,26 @@ extension PlayerWindowController {
         log.verbose("[MPVVideoReconfig A] Restore is in progress; ignoring mpv video-reconfig")
       }
 
-    } else if player.isInMiniPlayer {
-      log.debug("[MPVVideoReconfig] Player is in music mode; will update its geometry")
+    } else if currentLayout.mode == .musicMode {
+      log.debug("[MPVVideoReconfig] Player is in music mode; calling applyMusicModeGeometry")
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
       applyMusicModeGeometryInAnimationPipeline(newGeometry)
 
     } else {
-      let windowGeo = windowedModeGeometry.clone(videoAspectRatio: videoDisplayRotatedSize.aspect)
+      var newWindowGeo = windowedModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
 
       // Will only change the video size & video container size. Panels outside the video do not change size
-      let newWindowGeo: PWindowGeometry
       if shouldResizeWindowAfterVideoReconfig() {
-        newWindowGeo = resizeWindowAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
+        newWindowGeo = resizeWindowAfterVideoReconfig(from: newWindowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
         if currentLayout.mode == .windowed {
           // Update intended viewport to new size.
           // FIXME: this mechanism barely works. Find a better solution
           player.info.intendedViewportSize = newWindowGeo.viewportSize
         }
       } else {
-        newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
+        newWindowGeo = resizeMinimallyAfterVideoReconfig(from: newWindowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
 
       animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
@@ -689,8 +688,15 @@ extension PlayerWindowController {
     updateMusicModeButtonsVisibility()
 
     /// Try to detect & remove unnecessary constraint updates - `updateBottomBarHeight()` may cause animation glitches if called twice
+    var hasChange: Bool = !geometry.windowFrame.equalTo(window!.frame)
     let isVideoVisible = !(viewportViewHeightContraint?.isActive ?? false)
-    let hasChange: Bool = !geometry.windowFrame.equalTo(window!.frame) || geometry.isVideoVisible != isVideoVisible
+    if geometry.isVideoVisible != isVideoVisible {
+      hasChange = true
+    }
+    if let newVideoSize = geometry.videoSize, let oldVideoSize = musicModeGeometry.videoSize, !oldVideoSize.equalTo(newVideoSize) {
+      hasChange = true
+    }
+
     if hasChange {
       if setFrame {
         player.window.setFrameImmediately(geometry.windowFrame, animate: animate)
