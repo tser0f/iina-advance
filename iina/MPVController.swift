@@ -850,7 +850,18 @@ not applying FFmpeg 9599 workaround
   }
 
   /// Makes calls to mpv to get the latest video params, then returns them.
-  func queryForVideoParams() -> MPVVideoParams {
+  func queryForVideoParams() -> MPVVideoParams? {
+    // If loading file, video reconfig can return 0 width and height
+    guard !player.info.fileLoading else {
+      player.log.verbose("Cannot get videoParams: fileLoading")
+      return nil
+    }
+    // Will crash if querying mpv after stop command started
+    guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else {
+      player.log.verbose("Cannot get videoParams: stopping or shutting down")
+      return nil
+    }
+
     let videoRawWidth = getInt(MPVProperty.width)
     let videoRawHeight = getInt(MPVProperty.height)
     let aspectRatio = getString(MPVProperty.videoParamsAspect)
@@ -863,6 +874,12 @@ not applying FFmpeg 9599 workaround
     let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight, aspectRatio: aspectRatio, 
                                 videoDisplayWidth: videoDisplayWidth, videoDisplayHeight: videoDisplayHeight,
                                 totalRotation: mpvParamRotate, userRotation: mpvVideoRotate, videoScale: windowScale)
+
+    // filter the last video-reconfig event before quit
+    if params.videoDisplayRotatedWidth == 0 && params.videoDisplayRotatedHeight == 0 && getFlag(MPVProperty.coreIdle) {
+      player.log.verbose("Cannot get videoParams: looks like core is shutting down")
+      return nil
+    }
 
     return params
   }
@@ -1380,8 +1397,7 @@ not applying FFmpeg 9599 workaround
       guard player.windowController.loaded else { break }
       // Ignore if magnifying - will mess up our animation. Will submit window-scale anyway at end of magnify
       guard !player.windowController.isMagnifying else { break }
-      let videoParams = queryForVideoParams()
-      player.info.videoParams = videoParams
+      guard let videoParams = queryForVideoParams() else { break }
       let videoScale = videoParams.videoScale
       let needsUpdate = fabs(videoScale - player.info.cachedWindowScale) > 10e-10
       if needsUpdate {

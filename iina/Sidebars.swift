@@ -836,11 +836,11 @@ extension PlayerWindowController {
   }
 
   func startResizingSidebar(with event: NSEvent) -> Bool {
-    if isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
+    if isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: event.locationInWindow) {
       Logger.log("User started resize of leading sidebar", level: .verbose, subsystem: player.subsystem)
       leadingSidebarIsResizing = true
       return true
-    } else if isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: mousePosRelatedToWindow!) {
+    } else if isMousePosWithinTrailingSidebarResizeRect(mousePositionInWindow: event.locationInWindow) {
       Logger.log("User started resize of trailing sidebar", level: .verbose, subsystem: player.subsystem)
       trailingSidebarIsResizing = true
       return true

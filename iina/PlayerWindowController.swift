@@ -131,7 +131,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   private(set) var isWindowHidden: Bool = false
 
   var isClosing = false
-  var shouldApplyInitialWindowSize = true
   var isWindowMiniturized = false
   var isWindowMiniaturizedDueToPip = false
   var isWindowPipDueToInactiveSpace = false
@@ -1012,11 +1011,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Check whether to show album art, which may require changing videoView aspect ratio to 1:1.
   // Also show or hide default album art if needed.
   func refreshAlbumArtDisplay() {
-    guard loaded, !isClosing, !player.isStopping, !player.isShuttingDown else { return }
+    guard loaded else { return }
 
     // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
-    let videoParams = player.mpv.queryForVideoParams()
-    player.info.videoParams = videoParams
+    guard let videoParams = player.mpv.queryForVideoParams() else { return }
 
     // Part 1: default album art
 
@@ -1353,8 +1351,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
       log.verbose("PlayerWindow mouseDown @ \(event.locationInWindow)")
     }
-    // do nothing if it's related to floating OSC
-    guard !controlBarFloating.isDragging else { return }
+    if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden, isMouseEvent(event, inAnyOf: [controlBarFloating]) {
+      controlBarFloating.mouseDown(with: event)
+      return
+    }
+    if let cropSettingsView, !cropSettingsView.cropBoxView.isHidden, isMouseEvent(event, inAnyOf: [cropSettingsView.cropBoxView]) {
+      return
+    }
     // record current mouse pos
     mousePosRelatedToWindow = event.locationInWindow
     // Start resize if applicable
@@ -1373,6 +1376,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   override func mouseDragged(with event: NSEvent) {
     hideCursorTimer?.invalidate()
+    if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden, controlBarFloating.isDragging {
+      controlBarFloating.mouseDragged(with: event)
+      return
+    }
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
+      cropSettingsView.mouseDragged(with: event)
+      return
+    }
     let didResizeSidebar = resizeSidebar(with: event)
     guard !didResizeSidebar else {
       return
@@ -1402,6 +1413,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   override func mouseUp(with event: NSEvent) {
     if Logger.enabled && Logger.Level.preferred >= .verbose {
       log.verbose("PlayerWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
+    }
+
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
+      return
+    }
+    if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden,
+        controlBarFloating.isDragging || isMouseEvent(event, inAnyOf: [controlBarFloating]) {
+      controlBarFloating.mouseUp(with: event)
+      return
     }
     restartHideCursorTimer()
     mousePosRelatedToWindow = nil
@@ -1438,6 +1458,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else {
         player.log.verbose("MouseUp: click occurred in a disabled view; ignoring")
+        super.mouseUp(with: event)
         return
       }
       PluginInputManager.handle(
@@ -1490,6 +1511,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// window controller. We are having to catch the event in the view. Because of that we do not call the super method and instead
   /// return to the view.`
   override func rightMouseDown(with event: NSEvent) {
+    log.verbose("PlayerWindow rightMouseDown!")
+
+    if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden, isMouseEvent(event, inAnyOf: [controlBarFloating]) {
+      controlBarFloating.rightMouseDown(with: event)
+      return
+    }
     restartHideCursorTimer()
     PluginInputManager.handle(
       input: PluginInputManager.Input.rightMouse, event: .mouseDown,
@@ -1832,7 +1859,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
 
     // Reset state flags
-    shouldApplyInitialWindowSize = true
     isWindowMiniturized = false
     player.overrideAutoMusicMode = false
 
@@ -2876,8 +2902,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func enterInteractiveMode(_ mode: InteractiveMode) {
     animationPipeline.submitZeroDuration({ [self] in
-
-      guard player.info.videoParams?.videoDisplayRotatedSize != nil else {
+      guard let videoParams = player.mpv.queryForVideoParams() else { return }
+      guard videoParams.videoDisplayRotatedSize != nil else {
         Utility.showAlert("no_video_track")
         return
       }
@@ -3128,9 +3154,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if currentMediaThumbnails.currentDisplayedThumbFFTimestamp != ffThumbnail.timestamp {
       currentMediaThumbnails.currentDisplayedThumbFFTimestamp = ffThumbnail.timestamp
       // Apply crop first. Then aspect
+      let videoRawSize = videoParams.videoRawSize
       let croppedImage: NSImage
-      if let videoRawSize = player.info.videoParams?.videoRawSize,
-         let normalizedCropRect = player.getCurrentCropRect(videoRawSize: videoRawSize, normalized: true, flipY: false) {
+      if let normalizedCropRect = player.getCurrentCropRect(videoRawSize: videoRawSize, normalized: true, flipY: false) {
         croppedImage = rotatedImage.cropped(normalizedCropRect: normalizedCropRect)
       } else {
         croppedImage = rotatedImage

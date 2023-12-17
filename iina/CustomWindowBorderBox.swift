@@ -18,110 +18,44 @@ class CustomWindowBorderBox: NSBox {
     return window?.windowController as? PlayerWindowController
   }
 
-  override var acceptsFirstResponder: Bool { false }
-
   // Need to send to either floating OSC or window, to patch holes when dragging OSC or resizing sidebar
   override func mouseDown(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-          playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-        controlBarFloating.mouseDown(with: event)
-      } else {
-        playerWindowController.mouseDown(with: event)
-      }
-    } else {
-      super.mouseDown(with: event)
-    }
+    super.mouseDown(with: event)
+    playerWindowController?.mouseDown(with: event)
   }
 
   override func mouseDragged(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-         controlBarFloating.isDragging {
-        controlBarFloating.mouseDragged(with: event)
-      } else {
-        playerWindowController.mouseDragged(with: event)
-      }
-    } else {
-      super.mouseDragged(with: event)
-    }
+    super.mouseDragged(with: event)
+    playerWindowController?.mouseDragged(with: event)
   }
 
   override func mouseUp(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-         controlBarFloating.isDragging || playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-        controlBarFloating.mouseUp(with: event)
-      } else {
-        playerWindowController.mouseUp(with: event)
-      }
-    } else {
-      super.mouseUp(with: event)
-    }
+    super.mouseUp(with: event)
+    playerWindowController?.mouseUp(with: event)
   }
 
   override func rightMouseDown(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-          playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-        controlBarFloating.rightMouseDown(with: event)
-      } else {
-        playerWindowController.rightMouseDown(with: event)
-      }
-    } else {
-      super.rightMouseDown(with: event)
-    }
+    super.rightMouseDown(with: event)
+    playerWindowController?.rightMouseDown(with: event)
   }
 
   override func rightMouseUp(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-         playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-        controlBarFloating.rightMouseUp(with: event)
-      } else {
-        playerWindowController.rightMouseUp(with: event)
-      }
-    } else {
-      super.rightMouseUp(with: event)
-    }
+    playerWindowController?.rightMouseUp(with: event)
+    super.rightMouseUp(with: event)
   }
 
   override func pressureChange(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-         playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-        controlBarFloating.pressureChange(with: event)
-      } else {
-        playerWindowController.pressureChange(with: event)
-      }
-    } else {
-      super.pressureChange(with: event)
-    }
+    playerWindowController?.pressureChange(with: event)
+    super.pressureChange(with: event)
   }
 
   override func otherMouseDown(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-         playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-        controlBarFloating.otherMouseDown(with: event)
-      } else {
-        playerWindowController.otherMouseDown(with: event)
-      }
-    } else {
-      super.otherMouseDown(with: event)
-    }
+    playerWindowController?.otherMouseDown(with: event)
+    super.otherMouseDown(with: event)
   }
 
   override func otherMouseUp(with event: NSEvent) {
-    if let playerWindowController {
-      if let controlBarFloating = playerWindowController.controlBarFloating, !controlBarFloating.isHidden,
-         playerWindowController.isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-        controlBarFloating.otherMouseUp(with: event)
-      } else {
-        playerWindowController.otherMouseUp(with: event)
-      }
-    } else {
-      super.otherMouseUp(with: event)
-    }
+    playerWindowController?.otherMouseUp(with: event)
+    super.otherMouseUp(with: event)
   }
 }

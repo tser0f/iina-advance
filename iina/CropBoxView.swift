@@ -44,7 +44,7 @@ class CropBoxView: NSView {
 
   var selectedRect: NSRect = NSRect()
 
-  private var isDragging = false
+  var isDragging = false
   private var dragSide: DragSide = .top
   private var isFreeSelecting = false
   private var lastMousePos: NSPoint?

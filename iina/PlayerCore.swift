@@ -803,8 +803,7 @@ class PlayerCore: NSObject {
     guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set videoAspectOverride to: \(aspect.quoted)")
 
-    let videoParams = mpv.queryForVideoParams()
-    info.videoParams = videoParams
+    guard let videoParams = mpv.queryForVideoParams() else { return }
 
     let aspectDisplay: String
     if Aspect(string: aspect) != nil {
@@ -839,7 +838,7 @@ class PlayerCore: NSObject {
     DispatchQueue.main.async { [self] in
       if videoParams.hasValidSize {
         // Make sure window geometry is up to date
-        windowController.mpvVideoDidReconfig()
+        windowController.mpvVideoDidReconfig(videoParams)
       }
 
       // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
@@ -887,10 +886,8 @@ class PlayerCore: NSObject {
   private func deriveVideoScale(from windowGeometry: PWindowGeometry) -> CGFloat? {
     let videoWidthScaled = windowGeometry.videoSize.width
 
-    let videoParams = mpv.queryForVideoParams()
-    info.videoParams = videoParams
     // This should take into account aspect override and/or crop already
-    guard let videoWidthUnscaled = videoParams.videoDisplayRotatedSize?.width else {
+    guard let videoWidthUnscaled = mpv.queryForVideoParams()?.videoDisplayRotatedSize?.width else {
       return nil
     }
 
@@ -1721,7 +1718,7 @@ class PlayerCore: NSObject {
       }
 
       // if need to switch to music mode
-      if info.justStartedFile && Preference.bool(for: .autoSwitchToMusicMode) {
+      if Preference.bool(for: .autoSwitchToMusicMode) {
         if overrideAutoMusicMode {
           log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
         } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
@@ -1786,7 +1783,7 @@ class PlayerCore: NSObject {
 
   func playbackRestarted() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    log.debug("Playback restarted (justStartedFile: \(info.justStartedFile.yn))")
+    log.debug("Playback restarted")
 
     info.isIdle = false
     info.isSeeking = false
@@ -1805,7 +1802,6 @@ class PlayerCore: NSObject {
     /// officially done loading
     info.justOpenedFile = false
     info.justStartedFile = false
-    windowController.shouldApplyInitialWindowSize = false
     if info.priorState != nil {
       info.priorState = nil
       log.debug("Done with restore")
@@ -1865,20 +1861,14 @@ class PlayerCore: NSObject {
   }
 
   func onVideoReconfig() {
-    // If loading file, video reconfig can return 0 width and height
-    guard !info.fileLoading, !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-
-    let videoParams = mpv.queryForVideoParams()
-
-    // filter the last video-reconfig event before quit
-    if videoParams.videoDisplayRotatedWidth == 0 && videoParams.videoDisplayRotatedHeight == 0 && mpv.getFlag(MPVProperty.coreIdle) { return }
+    guard let videoParams = mpv.queryForVideoParams() else { return }
 
     log.verbose("Got mpv `video-reconfig`; \(videoParams)")
 
     // Always send this to window controller. It should be smart enough to resize only when needed:
     DispatchQueue.main.async { [self] in
-      info.videoParams = videoParams
-      windowController.mpvVideoDidReconfig()
+      windowController.mpvVideoDidReconfig(videoParams)
+
       if videoParams.totalRotation != info.currentMediaThumbnails?.rotationDegrees {
         reloadThumbnails()
       }
@@ -2302,7 +2292,10 @@ class PlayerCore: NSObject {
 
         // Generate thumbnails using video's original dimensions, before aspect ratio correction.
         // We will adjust aspect ratio & rotation when we display the thumbnail, similar to how mpv works.
-        let videoParams = mpv.queryForVideoParams()
+        guard let videoParams = mpv.queryForVideoParams() else {
+          log.debug("Cannot generate thumbnails: could not get video params")
+          return
+        }
         let videoRawSize = videoParams.videoRawSize
         guard videoRawSize.height > 0, videoRawSize.width > 0  else {
           log.error("Cannot generate thumbnails: video height and/or width is zero")

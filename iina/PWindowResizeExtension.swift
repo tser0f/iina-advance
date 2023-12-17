@@ -12,14 +12,14 @@ import Foundation
 extension PlayerWindowController {
 
   /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
-  func mpvVideoDidReconfig() {
-    // Get "correct" video size from mpv
-    guard let videoParams = player.info.videoParams, let videoDisplayRotatedSize = videoParams.videoDisplayRotatedSize else {
+  func mpvVideoDidReconfig(_ videoParams: MPVVideoParams) {
+
+    guard let videoDisplayRotatedSize = videoParams.videoDisplayRotatedSize else {
       log.error("[MPVVideoReconfig] Could not get videoDisplayRotatedSize from mpv! Cancelling adjustment")
       return
     }
     let newVideoAspectRatio = videoDisplayRotatedSize.aspect
-    log.verbose("[MPVVideoReconfig] Start, videoRawSize: \(videoParams.videoRawSize), videoDRSize: \(videoDisplayRotatedSize), drAspect: \(newVideoAspectRatio)")
+    log.verbose("[MPVVideoReconfig Start] VideoRaw:\(videoParams.videoRawSize) VideoDR:\(videoDisplayRotatedSize) AspectDR:\(newVideoAspectRatio) Rotation:\(videoParams.totalRotation) Scale:\(videoParams.videoScale)")
 
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoDisplayRotatedSize
@@ -100,7 +100,7 @@ extension PlayerWindowController {
       let newGeometry = musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
       applyMusicModeGeometryInAnimationPipeline(newGeometry)
 
-    } else {
+    } else { // Windowed or full screen
       var newWindowGeo = windowedModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
 
       // Will only change the video size & video container size. Panels outside the video do not change size
@@ -112,12 +112,21 @@ extension PlayerWindowController {
           player.info.intendedViewportSize = newWindowGeo.viewportSize
         }
       } else {
+        if let oldParams = player.info.videoParams, oldParams.videoRawSize.equalTo(videoParams.videoRawSize),
+           let oldVideoDR = oldParams.videoDisplayRotatedSize, let newVideoDR = videoParams.videoDisplayRotatedSize,
+           oldVideoDR.equalTo(newVideoDR) {
+          log.debug("[MPVVideoReconfig Done] No change to prev video params. Taking no action")
+          return
+        }
+
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: newWindowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
 
+      player.info.videoParams = videoParams
+
       animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`
-        log.debug("[MPVVideoReconfig] Result from newVideoSize: \(newWindowGeo.videoSize), isFS:\(isFullScreen.yn) → setting newWindowFrame: \(newWindowGeo.windowFrame)")
+        log.debug("[MPVVideoReconfig Apply] Applying result (FS:\(isFullScreen.yn)) → videoSize:\(newWindowGeo.videoSize) newWindowFrame: \(newWindowGeo.windowFrame)")
 
         if currentLayout.mode == .windowed {
           applyWindowGeometry(newWindowGeo)
@@ -134,7 +143,7 @@ extension PlayerWindowController {
       player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
     }
 
-    log.debug("[MPVVideoReconfig] Done")
+    log.debug("[MPVVideoReconfig Done]")
   }
 
   private func shouldResizeWindowAfterVideoReconfig() -> Bool {
@@ -155,18 +164,19 @@ extension PlayerWindowController {
       }
     }
     // video size changed during playback
-    log.verbose("[MPVVideoReconfig C] JustStartedFile=NO → returning YES for shouldResize")
-    return true
+    log.verbose("[MPVVideoReconfig C] JustStartedFile=NO → returning NO for shouldResize")
+    return false
   }
 
   private func resizeWindowAfterVideoReconfig(from windowGeo: PWindowGeometry,
                                               videoDisplayRotatedSize: NSSize) -> PWindowGeometry {
+    assert(player.info.justStartedFile)
     // get videoSize on screen
     var newVideoSize: NSSize = videoDisplayRotatedSize
     log.verbose("[MPVVideoReconfig C-1]  Starting calc: set newVideoSize := videoDisplayRotatedSize → \(videoDisplayRotatedSize)")
 
-    let resizeWindowStrategy: Preference.ResizeWindowOption? = player.info.justStartedFile ? Preference.enum(for: .resizeWindowOption) : nil
-    if let resizeWindowStrategy, resizeWindowStrategy != .fitScreen {
+    let resizeWindowStrategy: Preference.ResizeWindowOption = Preference.enum(for: .resizeWindowOption)
+    if resizeWindowStrategy != .fitScreen {
       let resizeRatio = resizeWindowStrategy.ratio
       newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
       log.verbose("[MPVVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
@@ -176,28 +186,30 @@ extension PlayerWindowController {
     let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
 
     // check if have mpv geometry set (initial window position/size)
-    if shouldApplyInitialWindowSize, let mpvGeometry = player.getMPVGeometry() {
+    if let mpvGeometry = player.getMPVGeometry() {
       log.verbose("[MPVVideoReconfig C-3] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
       return windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
 
-    } else if let strategy = resizeWindowStrategy, strategy == .fitScreen {
-      log.verbose("[MPVVideoReconfig C-4] FitToScreen strategy. Using screenFrame \(screenVisibleFrame)")
+    } else if resizeWindowStrategy == .fitScreen {
+      log.verbose("[MPVVideoReconfig C-4] ResizeWindowOption=FitToScreen. Using screenFrame \(screenVisibleFrame)")
       return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
 
-    } else if player.info.justStartedFile {
-      log.verbose("[MPVVideoReconfig C-5] Resizing windowFrame \(windowGeo.windowFrame) to videoSize + outside panels → center windowFrame")
+    } else {
+      log.verbose("[MPVVideoReconfig C-5] ResizeWindow=\(resizeWindowStrategy). Resizing & centering windowFrame")
       return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
-    } else {  // File is already playing. There was a config change
-      if Preference.bool(for: .lockViewportToVideoSize) {
-        // Try to match existing scale
-        newVideoSize = newVideoSize.multiplyThenRound(player.info.cachedWindowScale)
-        log.verbose("[MPVVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
-        return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
-      } else {
-        log.verbose("[MPVVideoReconfig C-7] Using prev windowFrame \(windowGeo.windowFrame) with new video aspect (\(windowGeo.videoAspectRatio))")
-        return windowGeo
-      }
     }
+
+//    else {  // File is already playing. There was a config change
+//      if Preference.bool(for: .lockViewportToVideoSize) {
+//        // Try to match existing scale
+//        newVideoSize = newVideoSize.multiplyThenRound(player.info.cachedWindowScale)
+//        log.verbose("[MPVVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
+//        return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
+//      } else {
+//        log.verbose("[MPVVideoReconfig C-7] Using prev windowFrame \(windowGeo.windowFrame) with new video aspect (\(windowGeo.videoAspectRatio))")
+//        return windowGeo
+//      }
+//    }
   }
 
   private func resizeMinimallyAfterVideoReconfig(from windowGeo: PWindowGeometry,
@@ -231,8 +243,9 @@ extension PlayerWindowController {
     guard let window = window else { return }
     let currentLayout = currentLayout
     guard currentLayout.mode == .windowed || currentLayout.mode == .musicMode else { return }
+    guard let videoParams = player.mpv.queryForVideoParams() else { return }
 
-    guard let videoDisplayRotatedSize = player.info.videoParams?.videoDisplayRotatedSize else {
+    guard let videoDisplayRotatedSize = videoParams.videoDisplayRotatedSize else {
       log.error("SetWindowScale failed: could not get videoDisplayRotatedSize")
       return
     }
