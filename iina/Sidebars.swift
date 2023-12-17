@@ -971,11 +971,11 @@ extension PlayerWindowController {
     if leadingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       leadingSidebarIsResizing = false
-      log.verbose("New width of left sidebar playlist is \(currentLayout.leadingSidebar.currentWidth)")
+      log.verbose("Finished resize of leading sidebar; playlist is now \(currentLayout.leadingSidebar.currentWidth)")
     } else if trailingSidebarIsResizing {
       // if it's a mouseup after resizing sidebar
       trailingSidebarIsResizing = false
-      log.verbose("New width of right sidebar playlist is \(currentLayout.trailingSidebar.currentWidth)")
+      log.verbose("Finished resize of trailing sidebar; playlist is now \(currentLayout.trailingSidebar.currentWidth)")
     }
 
     return true
