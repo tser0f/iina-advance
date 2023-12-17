@@ -483,6 +483,16 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
           trailingMargin += unusedWidth
           unusedWidth = 0
         }
+      } else if leadingSidebarWidth == 0 {
+        // Not enough margin to fit both sidebar and video, + only trailing sidebar visible.
+        // Allocate all margin to trailing sidebar
+        trailingMargin += unusedWidth
+        unusedWidth = 0
+      } else if trailingSidebarWidth == 0 {
+        // Not enough margin to fit both sidebar and video, + only leading sidebar visible.
+        // Allocate all margin to leading sidebar
+        leadingMargin += unusedWidth
+        unusedWidth = 0
       } else {
         // Not enough space for everything. Just center video between sidebars
         let leadingSidebarTrailingX = leadingSidebarWidth
