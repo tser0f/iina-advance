@@ -358,10 +358,6 @@ extension PlayerWindowController {
       return bottomBarPlacement == .outsideViewport ? bottomBarHeight : 0
     }
 
-    var viewportMargins: BoxQuad {
-      return isInteractiveMode ? Constants.InteractiveMode.viewportMargins : BoxQuad.zero
-    }
-
     // Derived properties & convenience accessors
 
     var isInteractiveMode: Bool {

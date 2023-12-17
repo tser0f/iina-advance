@@ -1409,7 +1409,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // if it's a mouseup after dragging window
       isDragging = false
     } else if finishResizingSidebar(with: event) {
-      updateCachedGeometry()
       return
     } else {
       // if it's a mouseup after clicking
@@ -2219,7 +2218,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     animationPipeline.submitZeroDuration({ [self] in
       log.verbose("WindowWillMove frame: \(window.frame)")
       /// Sometimes there is a `windowWillMove` notification without a `windowDidMove`. So do the update here too:
-      updateCachedGeometry(updatePreferredSizeAlso: false)
+      updateCachedGeometry()
     })
   }
 
@@ -2238,7 +2237,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
         applyLegacyFullScreenGeometry(fsGeo)
       } else {
-        updateCachedGeometry(updatePreferredSizeAlso: false)
+        updateCachedGeometry()
         player.events.emit(.windowMoved, data: window.frame)
       }
     })

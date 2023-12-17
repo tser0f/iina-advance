@@ -455,41 +455,56 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     var trailingMargin: CGFloat = 0
 
     if mode != .fullScreen, insideBars.totalWidth > 0, viewportSize.width >= insideBars.totalWidth + Constants.Sidebar.minSpaceBetweenInsideSidebars {
-      // Allocate available horizontal space to each inside sidebar, proportionate to its size
-      let smallerBarWidth = min(insideBars.leading, insideBars.trailing)
-      let largerBarWidthDifference = abs(insideBars.leading - insideBars.trailing)
-      let spaceForSmallerBars = min(unusedWidth, smallerBarWidth * 2)
-      let spaceForSmallerBar = spaceForSmallerBars * 0.5
-      leadingMargin += spaceForSmallerBar.rounded(.up)
-      trailingMargin += spaceForSmallerBar.rounded(.down)
-      unusedWidth -= spaceForSmallerBars
+      let leadingSidebarWidth = insideBars.leading
+      let trailingSidebarWidth = insideBars.trailing
 
-      var remainingSpace = min(unusedWidth, largerBarWidthDifference)
-      if insideBars.leading > insideBars.trailing { /// give space to leading
-        leadingMargin += remainingSpace.rounded(.down)
-      } else {
-        trailingMargin += remainingSpace.rounded(.up)
-      }
-      unusedWidth -= remainingSpace
+      let viewportMidpointX = viewportSize.width * 0.5
+      let leadingVideoIdealX = viewportMidpointX - (videoSize.width * 0.5)
+      let trailingVideoIdealX = viewportMidpointX + (videoSize.width * 0.5)
 
-      // If there is still space left to allocate, give it to the shorter bar so that the video approaches center of window
-      remainingSpace = min(unusedWidth, largerBarWidthDifference)
-      if insideBars.leading > insideBars.trailing {
-        trailingMargin += remainingSpace.rounded(.up)
+      let leadingSidebarClearance = leadingVideoIdealX - leadingSidebarWidth
+      let trailingSidebarClearance = viewportSize.width - trailingVideoIdealX - trailingSidebarWidth
+      let freeViewportWidthTotal = viewportSize.width - videoSize.width - leadingSidebarWidth - trailingSidebarWidth
+
+      if leadingSidebarClearance >= 0 && trailingSidebarClearance >= 0 {
+        // Easy case: do nothing here. Fall through and center below
+      } else if freeViewportWidthTotal >= 0 {
+        // We have enough space to realign video to fit within sidebars
+        leadingMargin += leadingSidebarWidth
+        trailingMargin += trailingSidebarWidth
+        unusedWidth = unusedWidth - leadingSidebarWidth - trailingSidebarWidth
+        let leadingSidebarDeficit = leadingSidebarClearance > 0 ? 0 : -leadingSidebarClearance
+        let trailingSidebarDeficit = trailingSidebarClearance > 0 ? 0 : -trailingSidebarClearance
+
+        if trailingSidebarDeficit > 0 {
+          leadingMargin += unusedWidth
+          unusedWidth = 0
+        } else if leadingSidebarDeficit > 0 {
+          trailingMargin += unusedWidth
+          unusedWidth = 0
+        }
       } else {
-        leadingMargin += remainingSpace.rounded(.down)
-      }
-      unusedWidth -= remainingSpace
-      if unusedWidth < 0 {
-        // fix rounding error: take back from trailing
-        trailingMargin += unusedWidth
-        unusedWidth = 0
+        // Not enough space for everything. Just center video between sidebars
+        let leadingSidebarTrailingX = leadingSidebarWidth
+        let trailingSidebarLeadingX = viewportSize.width - trailingSidebarWidth
+        let midpointBetweenSidebarsX = ((trailingSidebarLeadingX - leadingSidebarTrailingX) * 0.5) + leadingSidebarTrailingX
+        let leadingOffsetX = midpointBetweenSidebarsX - (videoSize.width * 0.5)
+        leadingMargin += leadingOffsetX
+        unusedWidth -= leadingOffsetX
+
+        let offsetFromTraillingSide = viewportSize.width - (midpointBetweenSidebarsX + (videoSize.width * 0.5))
+        trailingMargin += offsetFromTraillingSide
+        unusedWidth -= offsetFromTraillingSide
       }
     }
 
     leadingMargin += (unusedWidth * 0.5).rounded(.down)
     trailingMargin += (unusedWidth * 0.5).rounded(.up)
 
+    if Logger.isTraceEnabled {
+      let remainingWidthForVideo = viewportSize.width - (leadingMargin + trailingMargin)
+      Logger.log("Viewport: leadingMargin: \(leadingMargin), trailingMargin: \(trailingMargin), remainingWidthForVideo: \(remainingWidthForVideo) == \(videoSize.width)")
+    }
     let unusedHeight = viewportSize.height - videoSize.height
     let computedMargins = BoxQuad(top: (unusedHeight * 0.5).rounded(.down), trailing: trailingMargin,
                                   bottom: (unusedHeight * 0.5).rounded(.up), leading: leadingMargin)
