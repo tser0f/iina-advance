@@ -278,4 +278,5 @@ extension Notification.Name {
   static let iinaPlayerStopped = Notification.Name("iinaPlayerStopped")
   static let iinaPlayerShutdown = Notification.Name("iinaPlayerShutdown")
   static let iinaPlaySliderLoopKnobChanged = Notification.Name("iinaPlaySliderLoopKnobChanged")
+  static let iinaLogoutCompleted = Notification.Name("iinaLoggedOutOfSubtitleProvider")
 }
