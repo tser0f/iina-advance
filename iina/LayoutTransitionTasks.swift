@@ -112,7 +112,6 @@ extension PlayerWindowController {
       // Exiting FullScreen
 
       resetViewsForModeTransition()
-
       apply(visibility: .hidden, to: additionalInfoView)
 
       if transition.inputLayout.isNativeFullScreen {
@@ -125,6 +124,8 @@ extension PlayerWindowController {
       }
     }
 
+    prepareDepthOrderOfOutsideSidebarsForToggle(transition)
+
     // Interactive mode
     if transition.isEnteringInteractiveMode {
       resetViewsForModeTransition()
@@ -133,6 +134,7 @@ extension PlayerWindowController {
       player.pause()
     }
 
+    // Music mode
     if transition.isTogglingMusicMode {
       resetViewsForModeTransition()
     }
@@ -636,6 +638,8 @@ extension PlayerWindowController {
     updateDepthOrderOfBars(topBar: outputLayout.topBarPlacement, bottomBar: outputLayout.bottomBarPlacement,
                            leadingSidebar: outputLayout.leadingSidebarPlacement, trailingSidebar: outputLayout.trailingSidebarPlacement)
 
+    prepareDepthOrderOfOutsideSidebarsForToggle(transition)
+
     // So that panels toggling between "inside" and "outside" don't change until they need to (different strategy than fullscreen)
     if !transition.isTogglingFullScreen {
       updatePanelBlendingModes(to: outputLayout)
@@ -650,6 +654,22 @@ extension PlayerWindowController {
       if transition.isTogglingLegacyStyle {
         forceDraw()
       }
+    }
+  }
+
+  /// This fixes an edge case when both sidebars are shown and are `.outsideViewport`. When one is toggled, and width of
+  /// `videoView` is smaller than that of the sidebar being toggled, must ensure that the sidebar being animated is below
+  /// the other one, otherwise it will be briefly seen popping out on top of the other one.
+  private func prepareDepthOrderOfOutsideSidebarsForToggle(_ transition: LayoutTransition) {
+    guard transition.isTogglingVisibilityOfAnySidebar,
+          transition.outputLayout.leadingSidebar.placement == .outsideViewport,
+          transition.outputLayout.trailingSidebar.placement == .outsideViewport else { return }
+    guard let contentView = window?.contentView else { return }
+
+    if transition.isShowingLeadingSidebar || transition.isHidingLeadingSidebar {
+      contentView.addSubview(leadingSidebarView, positioned: .below, relativeTo: trailingSidebarView)
+    } else if transition.isShowingTrailingSidebar || transition.isHidingTrailingSidebar {
+      contentView.addSubview(trailingSidebarView, positioned: .below, relativeTo: leadingSidebarView)
     }
   }
 

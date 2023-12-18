@@ -799,7 +799,7 @@ extension PlayerWindowController {
     playlistView.setVerticalConstraints(downshift: downshift, tabHeight: tabHeight)
   }
 
-  // MARK: - Resize via mouse drag
+  // MARK: - Sidebar resize via drag
 
   func isMousePosWithinLeadingSidebarResizeRect(mousePositionInWindow: NSPoint) -> Bool {
     if currentLayout.leadingSidebar.visibleTabGroup == .playlist {
