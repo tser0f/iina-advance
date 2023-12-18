@@ -876,6 +876,16 @@ extension PlayerWindowController {
       if let newGeo {
         updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
         applyWindowGeometryForSpecialResize(newGeo)
+
+        switch currentLayout.mode {
+        case .windowed:
+          // Need to update this for future operations
+          windowedModeGeometry = newGeo
+        case .fullScreen:
+          break
+        case .musicMode, .windowedInteractive, .fullScreenInteractive:
+          Logger.fatal("ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
+        }
       }
       return true
     }
