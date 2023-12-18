@@ -92,12 +92,17 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   ]
 
   fileprivate var isPlayingTextColor: NSColor = .textColor
+  fileprivate var cachedEffectiveAppearanceName: String? = nil
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath else { return }
 
     switch keyPath {
     case #keyPath(view.effectiveAppearance):
+      if let cachedEffectiveAppearanceName, cachedEffectiveAppearanceName == view.effectiveAppearance.name.rawValue {
+        return
+      }
+      cachedEffectiveAppearanceName = view.effectiveAppearance.name.rawValue
       // Need to use this closure for dark/light mode toggling to get picked up while running (not sure why...)
       view.effectiveAppearance.applyAppearanceFor {
         setCustomColors()
@@ -180,7 +185,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
 
     // notifications
-    playlistChangeObserver = NotificationCenter.default.addObserver(forName: .iinaPlaylistChanged, object: player, queue: OperationQueue.main) { [self] _ in
+    playlistChangeObserver = NotificationCenter.default.addObserver(forName: .iinaPlaylistChanged, object: player, queue: .main) { [self] _ in
       self.playlistTotalLengthIsReady = false
       self.reloadData(playlist: true, chapters: false)
     }
@@ -211,7 +216,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   }
 
   override func viewDidAppear() {
-    reloadData(playlist: true, chapters: true)
     scrollPlaylistToCurrentItem()
 
     let loopStatus = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
@@ -240,7 +244,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   func reloadData(playlist: Bool, chapters: Bool) {
     if playlist {
-      player.reloadPlaylist()
       player.log.verbose("Reloading playlist table")
       playlistTableView.reloadData()
     }

@@ -1701,9 +1701,9 @@
                                     <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showLeadingSidebarToggleButton" id="Csg-6V-fmS"/>
                                 </connections>
                             </button>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="ogu-q9-cqE" userLabel="Click on video to hide">
+                            <button translatesAutoresizingMaskIntoConstraints="NO" id="ogu-q9-cqE" userLabel="Click on video area to close">
                                 <rect key="frame" x="14" y="7" width="163" height="18"/>
-                                <buttonCell key="cell" type="check" title="Click on video to close" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Da2-Ew-ibb">
+                                <buttonCell key="cell" type="check" title="Click on video area to close" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Da2-Ew-ibb">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
@@ -1778,9 +1778,9 @@
                                     <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showTrailingSidebarToggleButton" id="7Wx-Ee-Ex2"/>
                                 </connections>
                             </button>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="zke-Iv-K9m" userLabel="Click on video to hide">
+                            <button translatesAutoresizingMaskIntoConstraints="NO" id="zke-Iv-K9m" userLabel="Click on video area to close">
                                 <rect key="frame" x="14" y="7" width="163" height="18"/>
-                                <buttonCell key="cell" type="check" title="Click on video to close" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="icA-2b-l8k">
+                                <buttonCell key="cell" type="check" title="Click on video area to close" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="icA-2b-l8k">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
@@ -1981,7 +1981,7 @@
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="501" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Qwh-Zf-0ZE" userLabel="SizeOption HStack View">
                             <rect key="frame" x="0.0" y="124" width="256" height="20"/>
                             <subviews>
-                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cdn-kt-RoQ" userLabel="Sizing: Label">
+                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cdn-kt-RoQ" userLabel="Scale: Label">
                                     <rect key="frame" x="-2" y="3" width="49" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Scale:" id="vkI-DO-KDn">
                                         <font key="font" metaFont="system"/>
@@ -1996,7 +1996,7 @@
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="kCy-K1-JTv">
                                             <items>
-                                                <menuItem title="Constant Size" tag="1" id="JME-H5-i3H"/>
+                                                <menuItem title="Constant" tag="1" id="JME-H5-i3H"/>
                                                 <menuItem title="Proportional to Window Size" state="on" tag="2" id="0ZO-LV-I0e"/>
                                             </items>
                                         </menu>
@@ -2026,7 +2026,7 @@
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="501" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="SOY-Cw-Lh1" userLabel="DisplayedSizePixels HStack View">
                             <rect key="frame" x="20" y="95" width="172" height="21"/>
                             <subviews>
-                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqQ-ue-KEO" userLabel="DisplayedSizePixels: Label">
+                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqQ-ue-KEO" userLabel="Displayed size: Label">
                                     <rect key="frame" x="-2" y="3" width="95" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Displayed size:" id="f0s-sH-rz8">
                                         <font key="font" metaFont="system"/>
@@ -2161,7 +2161,7 @@
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="501" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VjJ-JN-yzX" userLabel="DisplayedSizePercentage HStack View">
                             <rect key="frame" x="20" y="37" width="332" height="21"/>
                             <subviews>
-                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="PtB-UF-vT8" userLabel="Displayed Size: Label">
+                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="PtB-UF-vT8" userLabel="Displayed size: Label">
                                     <rect key="frame" x="-2" y="3" width="95" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Displayed size:" id="Qv4-g5-2wA">
                                         <font key="font" metaFont="system"/>

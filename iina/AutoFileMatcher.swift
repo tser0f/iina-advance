@@ -120,20 +120,25 @@ class AutoFileMatcher {
         addedCurrentVideo = true
       } else if addedCurrentVideo {
         try checkTicket()
-        player.addToPlaylist(video.path, silent: true)
+        player.mpv.queue.sync {
+          player._addToPlaylist(video.path)
+        }
       } else {
         let count = player.mpv.getInt(MPVProperty.playlistCount)
         let current = player.mpv.getInt(MPVProperty.playlistPos)
         try checkTicket()
-        player.addToPlaylist(video.path, silent: true)
-        let err = player.mpv.command(.playlistMove, args: ["\(count)", "\(current)"], checkError: false)
-        if err == MPV_ERROR_COMMAND.rawValue { needQuit = true }
-        if err != 0 {
-          Logger.log("Error \(err) when adding files to playlist", level: .error, subsystem: subsystem)
+        player.mpv.queue.sync {
+          player._addToPlaylist(video.path)
+          let err = player.mpv.command(.playlistMove, args: ["\(count)", "\(current)"], checkError: false)
+          if err == MPV_ERROR_COMMAND.rawValue { needQuit = true }
+          if err != 0 {
+            Logger.log("Error \(err) when adding files to playlist", level: .error, subsystem: subsystem)
+          }
         }
       }
       if needQuit { break }
     }
+    player.reloadPlaylist()
   }
 
   private func matchVideoAndSubSeries() -> [String: String] {
@@ -340,7 +345,6 @@ class AutoFileMatcher {
       // add files to playlist
       if shouldAutoLoad {
         try addFilesToPlaylist()
-        player.postNotification(.iinaPlaylistChanged)
       }
 
       // group video and sub files

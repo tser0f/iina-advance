@@ -331,6 +331,8 @@ class PlaybackInfo {
 
   func calculateTotalDuration() -> Double? {
     infoLock.withLock {
+      let playlist: [MPVPlaylistItem] = playlist
+
       var totalDuration: Double? = 0
       for p in playlist {
         if let duration = cachedVideoDurationAndProgress[p.filename]?.duration {
@@ -346,7 +348,8 @@ class PlaybackInfo {
 
   func calculateTotalDuration(_ indexes: IndexSet) -> Double {
     infoLock.withLock {
-      indexes
+      let playlist = playlist
+      return indexes
         .compactMap { cachedVideoDurationAndProgress[playlist[$0].filename]?.duration }
         .compactMap { $0 > 0 ? $0 : 0 }
         .reduce(0, +)

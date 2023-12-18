@@ -327,17 +327,8 @@ class PlayerCore: NSObject {
 
     // open the first file
     open(playableFiles[0])
-    // add the remaining to playlist
-    playableFiles[1..<count].forEach { url in
-      addToPlaylist(url.isFileURL ? url.path : url.absoluteString)
-    }
 
-    // refresh playlist
-    postNotification(.iinaPlaylistChanged)
-    // send OSD
-    if count > 1 {
-      sendOSD(.addToPlaylist(count))
-    }
+    addToPlaylist(urls: playableFiles[1..<count])
     return count
   }
 
@@ -374,29 +365,32 @@ class PlayerCore: NSObject {
       info.currentURL = URL(string: "stdin")!
       log.debug("Opening Player window for stdin")
     }
-    // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
-    info.currentFolder = nil
-
-    // Send load file command
-    info.fileLoading = true
-    info.justOpenedFile = true
-    // Reset state flags
-    isStopping = false
-    isStopped = false
 
     if !info.isRestoring {
       (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
     }
     windowController.openWindow()
 
-    mpv.command(.loadfile, args: [path])
+    mpv.queue.async { [self] in
+      // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
+      info.currentFolder = nil
 
-    if !info.isRestoring {  // restore state has higher precedence
-      if Preference.bool(for: .enablePlaylistLoop) {
-        mpv.setString(MPVOption.PlaybackControl.loopPlaylist, "inf")
-      }
-      if Preference.bool(for: .enableFileLoop) {
-        mpv.setString(MPVOption.PlaybackControl.loopFile, "inf")
+      // Send load file command
+      info.fileLoading = true
+      info.justOpenedFile = true
+      // Reset state flags
+      isStopping = false
+      isStopped = false
+
+      mpv.command(.loadfile, args: [path])
+
+      if !info.isRestoring {  // restore state has higher precedence
+        if Preference.bool(for: .enablePlaylistLoop) {
+          mpv.setString(MPVOption.PlaybackControl.loopPlaylist, "inf")
+        }
+        if Preference.bool(for: .enableFileLoop) {
+          mpv.setString(MPVOption.PlaybackControl.loopFile, "inf")
+        }
       }
     }
   }
@@ -560,15 +554,15 @@ class PlayerCore: NSObject {
 
     mpv.queue.sync {
       savePlaybackPosition()
+      info.currentFolder = nil
+      info.videoParams = nil
+      info.currentMediaThumbnails = nil
     }
 
     videoView.stopDisplayLink()
 
     refreshSyncUITimer()
 
-    info.currentFolder = nil
-    info.videoParams = nil
-    info.currentMediaThumbnails = nil
     info.$matchedSubs.withLock { $0.removeAll() }
 
     // Do not send a stop command to mpv if it is already stopped. This happens when quitting is
@@ -579,9 +573,8 @@ class PlayerCore: NSObject {
       sendOSD(.stop)
     }
 
-    isStopping = true
-
     mpv.queue.sync {
+      isStopping = true
       _ = mpv.command(.stop)
     }
   }
@@ -591,7 +584,9 @@ class PlayerCore: NSObject {
   /// This method is called by `MPVController` when mpv emits an event indicating the asynchronous mpv `stop` command
   /// has completed executing.
   func playbackStopped() {
-    Logger.log("Playback has stopped", subsystem: subsystem)
+    log.debug("Playback has stopped")
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+
     isStopped = true
     isStopping = false
     postNotification(.iinaPlayerStopped)
@@ -623,7 +618,7 @@ class PlayerCore: NSObject {
 
   func seek(relativeSecond: Double, option: Preference.SeekOption) {
     mpv.queue.async { [self] in
-      Logger.log("Seek \(relativeSecond)s (\(option.rawValue))", level: .verbose, subsystem: subsystem)
+      log.verbose("Seek \(relativeSecond)s (\(option.rawValue))")
       switch option {
 
       case .relative:
@@ -652,7 +647,8 @@ class PlayerCore: NSObject {
   func seek(absoluteSecond: Double) {
     mpv.queue.async { [self] in
       Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
-      mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"], checkError: false)
+      // FIXME: report error but exit window only (not app)
+      mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
     }
   }
 
@@ -856,7 +852,6 @@ class PlayerCore: NSObject {
   }
 
   func _setVideoAspectOverride(_ aspect: String) {
-    guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set videoAspectOverride to: \(aspect.quoted)")
     dispatchPrecondition(condition: .onQueue(mpv.queue))
 
@@ -917,10 +912,6 @@ class PlayerCore: NSObject {
   }
 
   func updateMPVWindowScale(using windowGeo: PWindowGeometry) {
-    // Must not access mpv while it is asynchronously processing stop and quit commands.
-    // See comments in resetViewsForModeTransition for details.
-    guard !windowController.isClosing else { return }
-
     mpv.queue.async { [self] in
       guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
         log.verbose("Skipping update to mpv window-scale: could not get size info")
@@ -1161,36 +1152,50 @@ class PlayerCore: NSObject {
           }
         }
       }
+      _reloadPlaylist()
+      saveState()  // save playlist URLs to prefs
     }
   }
 
-  private func _addToPlaylist(_ path: String) {
+  func _addToPlaylist(_ path: String) {
     mpv.command(.loadfile, args: [path, "append"])
   }
 
   func addToPlaylist(_ path: String, silent: Bool = false) {
     mpv.queue.async { [self] in
       _addToPlaylist(path)
-      if !silent {
-        postNotification(.iinaPlaylistChanged)
-      }
+      _reloadPlaylist(silent: silent)
     }
   }
 
   private func _playlistMove(_ from: Int, to: Int) {
-    mpv.queue.async { [self] in
-      mpv.command(.playlistMove, args: ["\(from)", "\(to)"])
-    }
+    mpv.command(.playlistMove, args: ["\(from)", "\(to)"])
   }
 
   func playlistMove(_ from: Int, to: Int) {
-    _playlistMove(from, to: to)
+    mpv.queue.async { [self] in
+      _playlistMove(from, to: to)
+    }
     postNotification(.iinaPlaylistChanged)
+  }
+
+  func addToPlaylist(urls: any Collection<URL>) {
+    guard !urls.isEmpty else { return }
+    mpv.queue.async { [self] in
+      for url in urls {
+        let path = url.isFileURL ? url.path : url.absoluteString
+        _addToPlaylist(path)
+      }
+
+      // refresh playlist UI
+      postNotification(.iinaPlaylistChanged)
+      sendOSD(.addToPlaylist(urls.count))
+    }
   }
 
   func addToPlaylist(paths: [String], at index: Int = -1) {
     mpv.queue.async { [self] in
-      _reloadPlaylist()
+      _reloadPlaylist(silent: true)
       for path in paths {
         _addToPlaylist(path)
       }
@@ -1200,7 +1205,8 @@ class PlayerCore: NSObject {
           _playlistMove(previousCount + i, to: index + i)
         }
       }
-      postNotification(.iinaPlaylistChanged)
+      _reloadPlaylist()
+      saveState()  // save playlist URLs to prefs
     }
   }
 
@@ -1242,6 +1248,7 @@ class PlayerCore: NSObject {
       info.shouldAutoLoadFiles = true
       mpv.command(.loadfile, args: [path, "replace"])
       _reloadPlaylist()
+      saveState()
     }
   }
 
@@ -1250,6 +1257,7 @@ class PlayerCore: NSObject {
       log.verbose("Changing mpv playlist-pos to \(pos)")
       mpv.setInt(MPVProperty.playlistPos, pos)
       _reloadPlaylist()
+      saveState()
     }
   }
 
@@ -1604,60 +1612,84 @@ class PlayerCore: NSObject {
   }
 
   func setAudioDevice(_ name: String) {
-    log.verbose("Seting mpv audioDevice to \(name.pii.quoted)")
-    mpv.setString(MPVProperty.audioDevice, name)
+    mpv.queue.async { [self] in
+      log.verbose("Seting mpv audioDevice to \(name.pii.quoted)")
+      mpv.setString(MPVProperty.audioDevice, name)
+    }
   }
 
   /** Scale is a double value in [-100, -1] + [1, 100] */
   func setSubScale(_ scale: Double) {
-    if scale > 0 {
-      mpv.setDouble(MPVOption.Subtitles.subScale, scale)
-    } else {
-      mpv.setDouble(MPVOption.Subtitles.subScale, -scale)
+    mpv.queue.async { [self] in
+      if scale > 0 {
+        mpv.setDouble(MPVOption.Subtitles.subScale, scale)
+      } else {
+        mpv.setDouble(MPVOption.Subtitles.subScale, -scale)
+      }
     }
   }
 
   func setSubPos(_ pos: Int) {
-    mpv.setInt(MPVOption.Subtitles.subPos, pos)
+    mpv.queue.async { [self] in
+      mpv.setInt(MPVOption.Subtitles.subPos, pos)
+    }
   }
 
   func setSubTextColor(_ colorString: String) {
-    mpv.setString("options/" + MPVOption.Subtitles.subColor, colorString)
+    mpv.queue.async { [self] in
+      mpv.setString("options/" + MPVOption.Subtitles.subColor, colorString)
+    }
   }
 
   func setSubTextSize(_ size: Double) {
-    mpv.setDouble("options/" + MPVOption.Subtitles.subFontSize, size)
+    mpv.queue.async { [self] in
+      mpv.setDouble("options/" + MPVOption.Subtitles.subFontSize, size)
+    }
   }
 
   func setSubTextBold(_ bold: Bool) {
-    mpv.setFlag("options/" + MPVOption.Subtitles.subBold, bold)
+    mpv.queue.async { [self] in
+      mpv.setFlag("options/" + MPVOption.Subtitles.subBold, bold)
+    }
   }
 
   func setSubTextBorderColor(_ colorString: String) {
-    mpv.setString("options/" + MPVOption.Subtitles.subBorderColor, colorString)
+    mpv.queue.async { [self] in
+      mpv.setString("options/" + MPVOption.Subtitles.subBorderColor, colorString)
+    }
   }
 
   func setSubTextBorderSize(_ size: Double) {
-    mpv.setDouble("options/" + MPVOption.Subtitles.subBorderSize, size)
+    mpv.queue.async { [self] in
+      mpv.setDouble("options/" + MPVOption.Subtitles.subBorderSize, size)
+    }
   }
 
   func setSubTextBgColor(_ colorString: String) {
-    mpv.setString("options/" + MPVOption.Subtitles.subBackColor, colorString)
+    mpv.queue.async { [self] in
+      mpv.setString("options/" + MPVOption.Subtitles.subBackColor, colorString)
+    }
   }
 
   func setSubEncoding(_ encoding: String) {
-    mpv.setString(MPVOption.Subtitles.subCodepage, encoding)
-    info.subEncoding = encoding
+    mpv.queue.async { [self] in
+      mpv.setString(MPVOption.Subtitles.subCodepage, encoding)
+      info.subEncoding = encoding
+    }
   }
 
   func setSubFont(_ font: String) {
-    mpv.setString(MPVOption.Subtitles.subFont, font)
+    mpv.queue.async { [self] in
+      mpv.setString(MPVOption.Subtitles.subFont, font)
+    }
   }
 
   func execKeyCode(_ code: String) {
-    let errCode = mpv.command(.keypress, args: [code], checkError: false)
-    if errCode < 0 {
-      Logger.log("Error when executing key code (\(errCode))", level: .error, subsystem: self.subsystem)
+    mpv.queue.async { [self] in
+      let errCode = mpv.command(.keypress, args: [code], checkError: false)
+      if errCode < 0 {
+        log.error("Error when executing key code (\(errCode))")
+      }
     }
   }
 
@@ -1815,13 +1847,13 @@ class PlayerCore: NSObject {
     trackListChanged()
     let currentMediaAudioStatus = info.currentMediaAudioStatus  // get this while in mpv queue
 
+    _reloadPlaylist()
+    _reloadChapters()
+    syncAbLoop()
+    saveState()
+
     // main thread stuff
     DispatchQueue.main.async { [self] in
-      mpv.queue.async { [self] in
-        _reloadPlaylist()
-        _reloadChapters()
-        syncAbLoop()
-      }
       refreshSyncUITimer()
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
@@ -2535,7 +2567,7 @@ class PlayerCore: NSObject {
   }
 
 
-  private func _reloadPlaylist() {
+  private func _reloadPlaylist(silent: Bool = false) {
     log.verbose("Removing all items from playlist")
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     var newPlaylist: [MPVPlaylistItem] = []
@@ -2549,13 +2581,15 @@ class PlayerCore: NSObject {
       newPlaylist.append(playlistItem)
     }
     info.playlist = newPlaylist
-    syncUI(.playlist)
-    saveState()  // save playlist URLs to prefs
+    if !silent {
+      postNotification(.iinaPlaylistChanged)
+    }
   }
 
   func reloadPlaylist() {
     mpv.queue.async { [self] in
       _reloadPlaylist()
+      saveState()  // save playlist URLs to prefs
     }
   }
 

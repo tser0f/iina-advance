@@ -33,6 +33,7 @@ class ConfTableViewController: NSObject {
     Preference.bool(for: .useInlineEditorInsteadOfDialogForNewInputConf)
   }
 
+  /// Can be overridden: see `PrefKeyBindingViewController.setCustomTableColors()`
   fileprivate var builtInConfTextColor: NSColor = .textColor
 
   func setCustomColors(builtInItemTextColor: NSColor) {

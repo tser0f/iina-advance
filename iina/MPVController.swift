@@ -858,7 +858,7 @@ not applying FFmpeg 9599 workaround
     }
     // Will crash if querying mpv after stop command started
     guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else {
-      player.log.verbose("Cannot get videoParams: stopping or shutting down")
+      player.log.verbose("Cannot get videoParams: stopping=\(player.isStopping), stopped=\(player.isStopped) shuttingDown=\(player.isShuttingDown)")
       return nil
     }
 
@@ -1070,9 +1070,7 @@ not applying FFmpeg 9599 workaround
         player.info.shouldAutoLoadFiles = false
       }
       if reason == MPV_END_FILE_REASON_STOP {
-        DispatchQueue.main.async {
-          self.player.playbackStopped()
-        }
+        player.playbackStopped()
       }
 
     case MPV_EVENT_COMMAND_REPLY:
@@ -1356,7 +1354,7 @@ not applying FFmpeg 9599 workaround
 
     case MPVProperty.playlistCount:
       player.log.verbose("Received mpv prop change: \(MPVProperty.playlistCount.quoted)")
-      player.postNotification(.iinaPlaylistChanged)
+      player.reloadPlaylist()
 
     case MPVProperty.trackList:
       player.log.verbose("Received mpv prop change: \(MPVProperty.trackList.quoted)")
