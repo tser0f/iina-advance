@@ -168,6 +168,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /** When the arrow buttons were last clicked. */
   var lastClick = Date()
 
+  /// Responder chain is a mess. Use this to prevent duplicate event processing
+  private var lastMouseDownEventID: Int = -1
+  private var lastMouseUpEventID: Int = -1
+  private var lastRightMouseDownEventID: Int = -1
+  private var lastRightMouseUpEventID: Int = -1
+
   /** The index of current speed in speed value array. */
   var speedValueIndex: Int = AppData.availableSpeedValues.count / 2 {
     didSet {
@@ -1348,6 +1354,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func mouseDown(with event: NSEvent) {
+    guard event.eventNumber != lastMouseDownEventID else { return }
+    lastMouseDownEventID = event.eventNumber
     if Logger.enabled && Logger.Level.preferred >= .verbose {
       log.verbose("PlayerWindow mouseDown @ \(event.locationInWindow)")
     }
@@ -1411,8 +1419,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func mouseUp(with event: NSEvent) {
+    guard event.eventNumber != lastMouseUpEventID else { return }
+    lastMouseUpEventID = event.eventNumber
     if Logger.enabled && Logger.Level.preferred >= .verbose {
-      log.verbose("PlayerWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount)")
+      log.verbose("PlayerWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount): eventNum: \(event.eventNumber)")
     }
 
     if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
@@ -1511,6 +1521,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// window controller. We are having to catch the event in the view. Because of that we do not call the super method and instead
   /// return to the view.`
   override func rightMouseDown(with event: NSEvent) {
+    guard event.eventNumber != lastRightMouseDownEventID else { return }
+    lastRightMouseDownEventID = event.eventNumber
     log.verbose("PlayerWindow rightMouseDown!")
 
     if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden, isMouseEvent(event, inAnyOf: [controlBarFloating]) {
@@ -1525,6 +1537,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   override func rightMouseUp(with event: NSEvent) {
+    guard event.eventNumber != lastRightMouseUpEventID else { return }
+    lastRightMouseUpEventID = event.eventNumber
     log.verbose("PlayerWindow rightMouseUp!")
     restartHideCursorTimer()
     guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else { return }
