@@ -1189,6 +1189,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - Key events
 
+  // Returns true if handled
   @discardableResult
   func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
     if keyBinding.isIINACommand {
@@ -1217,32 +1218,35 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         return true
       }
 
-      let returnValue: Int32
-      // execute the command
-      switch keyBinding.action.first! {
-        // TODO: replace this with a key binding interceptor
-      case MPVCommand.abLoop.rawValue:
-        returnValue = abLoop()
-      case MPVCommand.screenshot.rawValue:
-        returnValue = player.mpv.command(rawString: keyBinding.rawAction)
-        if returnValue == 0 {
-          player.sendOSD(.screenshot)
-        }
-      default:
-        returnValue = player.mpv.command(rawString: keyBinding.rawAction)
-      }
-
-      let success = returnValue == 0
-
-      if success {
-        if keyBinding.action.first == MPVCommand.screenshot.rawValue {
-          player.sendOSD(.screenshot)
+      player.mpv.queue.async { [self] in
+        let returnValue: Int32
+        // execute the command
+        switch keyBinding.action.first! {
+          // TODO: replace this with a key binding interceptor
+        case MPVCommand.abLoop.rawValue:
+          returnValue = _abLoop()
+        case MPVCommand.screenshot.rawValue:
+          returnValue = player.mpv.command(rawString: keyBinding.rawAction)
+          if returnValue == 0 {
+            player.sendOSD(.screenshot)
+          }
+        default:
+          returnValue = player.mpv.command(rawString: keyBinding.rawAction)
         }
 
-      } else {
-        log.error("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)")
+        let success = returnValue == 0
+
+        if success {
+          if keyBinding.action.first == MPVCommand.screenshot.rawValue {
+            player.sendOSD(.screenshot)
+          }
+
+        } else {
+          log.error("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)")
+        }
       }
-      return success
+
+      return true  // Was handled (even if not successful)
     }
   }
 
@@ -2745,6 +2749,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         icon = NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play")!
       } else if case .pause = message {
         icon = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "Pause")!
+      } else if case .stop = message {
+        icon = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: "Stop")!
       }
       // TODO: goforward.5, forward.frame.fill, etc
     }
@@ -3222,8 +3228,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     window.hidesOnDeactivate = currentLayout.isWindowed && Preference.bool(for: .hideWindowsWhenInactive)
   }
 
+  func abLoop() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
+    player.mpv.queue.async { [self] in
+      _abLoop()
+    }
+  }
+
   @discardableResult
-  func abLoop() -> Int32 {
+  func _abLoop() -> Int32 {
+    dispatchPrecondition(condition: .onQueue(player.mpv.queue))
+
     let returnValue = player.abLoop()
     if returnValue == 0 {
       syncPlaySliderABLoop()
@@ -3232,13 +3248,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func syncPlaySliderABLoop() {
+    dispatchPrecondition(condition: .onQueue(player.mpv.queue))
     let a = player.abLoopA
     let b = player.abLoopB
-    playSlider.abLoopA.isHidden = a == 0
-    playSlider.abLoopA.doubleValue = secondsToPercent(a)
-    playSlider.abLoopB.isHidden = b == 0
-    playSlider.abLoopB.doubleValue = secondsToPercent(b)
-    playSlider.needsDisplay = true
+
+    DispatchQueue.main.async { [self] in
+      playSlider.abLoopA.isHidden = a == 0
+      playSlider.abLoopA.doubleValue = secondsToPercent(a)
+      playSlider.abLoopB.isHidden = b == 0
+      playSlider.abLoopB.doubleValue = secondsToPercent(b)
+      playSlider.needsDisplay = true
+    }
   }
 
   /// Returns the percent of the total duration of the video the given position in seconds represents.

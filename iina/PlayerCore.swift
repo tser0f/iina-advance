@@ -487,9 +487,11 @@ class PlayerCore: NSObject {
   ///     until mpv finishes executing the quit command and shuts down.
   func shutdown() {
     guard !isShuttingDown else { return }
-    Logger.log("Shutting down", subsystem: subsystem)
-    savePlayerStateForShutdown()
-    mpv.mpvQuit()
+    mpv.queue.async { [self] in
+      Logger.log("Shutting down", subsystem: subsystem)
+      savePlayerStateForShutdown()
+      mpv.mpvQuit()
+    }
   }
 
   func mpvHasShutdown(isMPVInitiated: Bool = false) {
@@ -535,15 +537,19 @@ class PlayerCore: NSObject {
   }
 
   func pause() {
-    mpv.setFlag(MPVOption.PlaybackControl.pause, true)
+    mpv.queue.async { [self] in
+      mpv.setFlag(MPVOption.PlaybackControl.pause, true)
+    }
   }
 
   func resume() {
-    // Restart playback when reached EOF
-    if Preference.bool(for: .resumeFromEndRestartsPlayback) && mpv.getFlag(MPVProperty.eofReached) {
-      seek(absoluteSecond: 0)
+    mpv.queue.async { [self] in
+      // Restart playback when reached EOF
+      if Preference.bool(for: .resumeFromEndRestartsPlayback) && mpv.getFlag(MPVProperty.eofReached) {
+        seek(absoluteSecond: 0)
+      }
+      mpv.setFlag(MPVOption.PlaybackControl.pause, false)
     }
-    mpv.setFlag(MPVOption.PlaybackControl.pause, false)
   }
 
   /// Stop playback and unload the media.
@@ -552,7 +558,9 @@ class PlayerCore: NSObject {
     // be working to load subtitles. Invalidate the ticket to get that task to abandon the work.
     $backgroundQueueTicket.withLock { $0 += 1 }
 
-    savePlaybackPosition()
+    mpv.queue.sync {
+      savePlaybackPosition()
+    }
 
     videoView.stopDisplayLink()
 
@@ -560,14 +568,22 @@ class PlayerCore: NSObject {
 
     info.currentFolder = nil
     info.videoParams = nil
+    info.currentMediaThumbnails = nil
     info.$matchedSubs.withLock { $0.removeAll() }
 
     // Do not send a stop command to mpv if it is already stopped. This happens when quitting is
     // initiated directly through mpv.
     guard !isStopped else { return }
     Logger.log("Stopping playback", subsystem: subsystem)
+    DispatchQueue.main.async { [self] in
+      sendOSD(.stop)
+    }
+
     isStopping = true
-    mpv.command(.stop)
+
+    mpv.queue.sync {
+      _ = mpv.command(.stop)
+    }
   }
 
   /// Playback has stopped and the media has been unloaded.
@@ -582,66 +598,76 @@ class PlayerCore: NSObject {
   }
 
   func toggleMute(_ set: Bool? = nil) {
-    let newState = set ?? !mpv.getFlag(MPVOption.Audio.mute)
-    mpv.setFlag(MPVOption.Audio.mute, newState)
+    mpv.queue.async { [self] in
+      let newState = set ?? !mpv.getFlag(MPVOption.Audio.mute)
+      mpv.setFlag(MPVOption.Audio.mute, newState)
+    }
   }
 
   func seek(percent: Double, forceExact: Bool = false) {
-    var percent = percent
-    // mpv will play next file automatically when seek to EOF.
-    // We clamp to a Range to ensure that we don't try to seek to 100%.
-    // however, it still won't work for videos with large keyframe interval.
-    if let duration = info.videoDuration?.second,
-      duration > 0 {
-      percent = percent.clamped(to: 0..<100)
+    mpv.queue.async { [self] in
+      var percent = percent
+      // mpv will play next file automatically when seek to EOF.
+      // We clamp to a Range to ensure that we don't try to seek to 100%.
+      // however, it still won't work for videos with large keyframe interval.
+      if let duration = info.videoDuration?.second,
+         duration > 0 {
+        percent = percent.clamped(to: 0..<100)
+      }
+      let useExact = forceExact ? true : Preference.bool(for: .useExactSeek)
+      let seekMode = useExact ? "absolute-percent+exact" : "absolute-percent"
+      Logger.log("Seek \(percent) % (forceExact: \(forceExact), useExact: \(useExact) -> \(seekMode))", level: .verbose, subsystem: subsystem)
+      mpv.command(.seek, args: ["\(percent)", seekMode], checkError: false)
     }
-    let useExact = forceExact ? true : Preference.bool(for: .useExactSeek)
-    let seekMode = useExact ? "absolute-percent+exact" : "absolute-percent"
-    Logger.log("Seek \(percent) % (forceExact: \(forceExact), useExact: \(useExact) -> \(seekMode))", level: .verbose, subsystem: subsystem)
-    mpv.command(.seek, args: ["\(percent)", seekMode], checkError: false)
   }
 
   func seek(relativeSecond: Double, option: Preference.SeekOption) {
-    Logger.log("Seek \(relativeSecond)s (\(option.rawValue))", level: .verbose, subsystem: subsystem)
-    switch option {
+    mpv.queue.async { [self] in
+      Logger.log("Seek \(relativeSecond)s (\(option.rawValue))", level: .verbose, subsystem: subsystem)
+      switch option {
 
-    case .relative:
-      mpv.command(.seek, args: ["\(relativeSecond)", "relative"], checkError: false)
+      case .relative:
+        mpv.command(.seek, args: ["\(relativeSecond)", "relative"], checkError: false)
 
-    case .exact:
-      mpv.command(.seek, args: ["\(relativeSecond)", "relative+exact"], checkError: false)
+      case .exact:
+        mpv.command(.seek, args: ["\(relativeSecond)", "relative+exact"], checkError: false)
 
-    case .auto:
-      // for each file , try use exact and record interval first
-      if !triedUsingExactSeekForCurrentFile {
-        mpv.recordedSeekTimeListener = { [unowned self] interval in
-          // if seek time < 0.05, then can use exact
-          self.useExactSeekForCurrentFile = interval < 0.05
+      case .auto:
+        // for each file , try use exact and record interval first
+        if !triedUsingExactSeekForCurrentFile {
+          mpv.recordedSeekTimeListener = { [unowned self] interval in
+            // if seek time < 0.05, then can use exact
+            self.useExactSeekForCurrentFile = interval < 0.05
+          }
+          mpv.needRecordSeekTime = true
+          triedUsingExactSeekForCurrentFile = true
         }
-        mpv.needRecordSeekTime = true
-        triedUsingExactSeekForCurrentFile = true
-      }
-      let seekMode = useExactSeekForCurrentFile ? "relative+exact" : "relative"
-      mpv.command(.seek, args: ["\(relativeSecond)", seekMode], checkError: false)
+        let seekMode = useExactSeekForCurrentFile ? "relative+exact" : "relative"
+        mpv.command(.seek, args: ["\(relativeSecond)", seekMode], checkError: false)
 
+      }
     }
   }
 
   func seek(absoluteSecond: Double) {
-    Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
-    mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
+    mpv.queue.async { [self] in
+      Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
+      mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"], checkError: false)
+    }
   }
 
   func frameStep(backwards: Bool) {
-    Logger.log("FrameStep (\(backwards ? "-" : "+"))", level: .verbose, subsystem: subsystem)
-    // When playback is paused the display link is stopped in order to avoid wasting energy on
-    // It must be running when stepping to avoid slowdowns caused by mpv waiting for IINA to call
-    // mpv_render_report_swap.
-    videoView.displayActive()
-    if backwards {
-      mpv.command(.frameBackStep)
-    } else {
-      mpv.command(.frameStep)
+    mpv.queue.async { [self] in
+      Logger.log("FrameStep (\(backwards ? "-" : "+"))", level: .verbose, subsystem: subsystem)
+      // When playback is paused the display link is stopped in order to avoid wasting energy on
+      // It must be running when stepping to avoid slowdowns caused by mpv waiting for IINA to call
+      // mpv_render_report_swap.
+      videoView.displayActive()
+      if backwards {
+        mpv.command(.frameBackStep)
+      } else {
+        mpv.command(.frameStep)
+      }
     }
   }
 
@@ -653,7 +679,9 @@ class PlayerCore: NSObject {
 
     let option = Preference.bool(for: .screenshotIncludeSubtitle) ? "subtitles" : "video"
 
-    mpv.asyncCommand(.screenshot, args: [option], replyUserdata: MPVController.UserData.screenshot)
+    mpv.queue.async { [self] in
+      mpv.asyncCommand(.screenshot, args: [option], replyUserdata: MPVController.UserData.screenshot)
+    }
   }
 
   func screenshotCallback() {
@@ -701,6 +729,8 @@ class PlayerCore: NSObject {
   /// a second time it sets the B loop point to the timestamp of the current frame, activating looping and causing mpv to seek back to
   /// the A loop point. When the command is invoked again both loop points are cleared (set to zero) and looping stops.
   func abLoop() -> Int32 {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+
     // may subject to change
     let returnValue = mpv.command(.abLoop)
     if returnValue == 0 {
@@ -712,6 +742,8 @@ class PlayerCore: NSObject {
 
   /// Synchronize IINA with the state of the [mpv](https://mpv.io/manual/stable/) A-B loop command.
   func syncAbLoop() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+
     // Obtain the values of the ab-loop-a and ab-loop-b options representing the A & B loop points.
     let a = abLoopA
     let b = abLoopB
@@ -737,35 +769,45 @@ class PlayerCore: NSObject {
   }
 
   func toggleFileLoop() {
-    let isLoop = mpv.getString(MPVOption.PlaybackControl.loopFile) == "inf"
-    mpv.setString(MPVOption.PlaybackControl.loopFile, isLoop ? "no" : "inf")
-    sendOSD(.fileLoop(!isLoop))
+    mpv.queue.async { [self] in
+      let isLoop = mpv.getString(MPVOption.PlaybackControl.loopFile) == "inf"
+      mpv.setString(MPVOption.PlaybackControl.loopFile, isLoop ? "no" : "inf")
+      sendOSD(.fileLoop(!isLoop))
+    }
   }
 
   func togglePlaylistLoop() {
-    let loopStatus = mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
-    let isLoop = (loopStatus == "inf" || loopStatus == "force")
-    mpv.setString(MPVOption.PlaybackControl.loopPlaylist, isLoop ? "no" : "inf")
-    sendOSD(.playlistLoop(!isLoop))
+    mpv.queue.async { [self] in
+      let loopStatus = mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
+      let isLoop = (loopStatus == "inf" || loopStatus == "force")
+      mpv.setString(MPVOption.PlaybackControl.loopPlaylist, isLoop ? "no" : "inf")
+      sendOSD(.playlistLoop(!isLoop))
+    }
   }
 
   func toggleShuffle() {
-    mpv.command(.playlistShuffle)
-    postNotification(.iinaPlaylistChanged)
+    mpv.queue.async { [self] in
+      mpv.command(.playlistShuffle)
+      postNotification(.iinaPlaylistChanged)
+    }
   }
 
   func setVolume(_ volume: Double, constrain: Bool = true) {
-    let maxVolume = Preference.integer(for: .maxVolume)
-    let constrainedVolume = volume.clamped(to: 0...Double(maxVolume))
-    let appliedVolume = constrain ? constrainedVolume : volume
-    info.volume = appliedVolume
-    mpv.setDouble(MPVOption.Audio.volume, appliedVolume)
-    // Save default for future players:
-    Preference.set(constrainedVolume, for: .softVolume)
+    mpv.queue.async { [self] in
+      let maxVolume = Preference.integer(for: .maxVolume)
+      let constrainedVolume = volume.clamped(to: 0...Double(maxVolume))
+      let appliedVolume = constrain ? constrainedVolume : volume
+      info.volume = appliedVolume
+      mpv.setDouble(MPVOption.Audio.volume, appliedVolume)
+      // Save default for future players:
+      Preference.set(constrainedVolume, for: .softVolume)
+    }
   }
 
-  func setTrack(_ index: Int, forType: MPVTrack.TrackType) {
+  func _setTrack(_ index: Int, forType: MPVTrack.TrackType) {
     log.verbose("Setting track \(index) for type \(forType)")
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+
     let name: String
     switch forType {
     case .audio:
@@ -781,9 +823,17 @@ class PlayerCore: NSObject {
     reloadSelectedTracks()
   }
 
+  func setTrack(_ index: Int, forType: MPVTrack.TrackType) {
+    mpv.queue.async { [self] in
+      _setTrack(index, forType: forType)
+    }
+  }
+
   /** Set speed. */
   func setSpeed(_ speed: Double) {
-    mpv.setDouble(MPVOption.PlaybackControl.speed, speed)
+    mpv.queue.async { [self] in
+      mpv.setDouble(MPVOption.PlaybackControl.speed, speed)
+    }
   }
 
   /// Set video's aspect ratio. The param may be one of:
@@ -800,8 +850,15 @@ class PlayerCore: NSObject {
   ///
   /// To hopefully avoid precision problems, `aspectNormalDecimalString` is used for comparisons across data sources.
   func setVideoAspectOverride(_ aspect: String) {
+    mpv.queue.async { [self] in
+      _setVideoAspectOverride(aspect)
+    }
+  }
+
+  func _setVideoAspectOverride(_ aspect: String) {
     guard !windowController.isClosing, !isShuttingDown else { return }
     log.verbose("Got request to set videoAspectOverride to: \(aspect.quoted)")
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
 
     guard let videoParams = mpv.queryForVideoParams() else { return }
 
@@ -896,60 +953,70 @@ class PlayerCore: NSObject {
   }
 
   func setVideoRotate(_ degree: Int) {
-    guard AppData.rotations.firstIndex(of: degree)! >= 0 else {
-      Logger.log("Invalid value for videoRotate, ignoring: \(degree)", level: .error, subsystem: subsystem)
-      return
-    }
+    mpv.queue.async { [self] in
+      guard AppData.rotations.firstIndex(of: degree)! >= 0 else {
+        Logger.log("Invalid value for videoRotate, ignoring: \(degree)", level: .error, subsystem: subsystem)
+        return
+      }
 
-    Logger.log("Setting videoRotate to: \(degree)°", level: .verbose, subsystem: subsystem)
-    mpv.setInt(MPVOption.Video.videoRotate, degree)
+      Logger.log("Setting videoRotate to: \(degree)°", level: .verbose, subsystem: subsystem)
+      mpv.setInt(MPVOption.Video.videoRotate, degree)
+    }
   }
 
   func setFlip(_ enable: Bool) {
-    Logger.log("Setting flip to: \(enable)°", level: .verbose, subsystem: subsystem)
-    if enable {
-      guard info.flipFilter == nil else {
-        Logger.log("Cannot enable flip: there is already a filter present", level: .error, subsystem: subsystem)
-        return
+    mpv.queue.async { [self] in
+      Logger.log("Setting flip to: \(enable)°", level: .verbose, subsystem: subsystem)
+      if enable {
+        guard info.flipFilter == nil else {
+          Logger.log("Cannot enable flip: there is already a filter present", level: .error, subsystem: subsystem)
+          return
+        }
+        let vf = MPVFilter.flip()
+        vf.label = Constants.FilterLabel.flip
+        let _ = addVideoFilter(vf)
+      } else {
+        guard let vf = info.flipFilter else {
+          Logger.log("Cannot disable flip: no filter is present", level: .error, subsystem: subsystem)
+          return
+        }
+        let _ = removeVideoFilter(vf)
       }
-      let vf = MPVFilter.flip()
-      vf.label = Constants.FilterLabel.flip
-      let _ = addVideoFilter(vf)
-    } else {
-      guard let vf = info.flipFilter else {
-        Logger.log("Cannot disable flip: no filter is present", level: .error, subsystem: subsystem)
-        return
-      }
-      let _ = removeVideoFilter(vf)
     }
   }
 
   func setMirror(_ enable: Bool) {
-    Logger.log("Setting mirror to: \(enable)°", level: .verbose, subsystem: subsystem)
-    if enable {
-      guard info.mirrorFilter == nil else {
-        Logger.log("Cannot enable mirror: there is already a mirror filter present", level: .error, subsystem: subsystem)
-        return
+    mpv.queue.async { [self] in
+      Logger.log("Setting mirror to: \(enable)°", level: .verbose, subsystem: subsystem)
+      if enable {
+        guard info.mirrorFilter == nil else {
+          Logger.log("Cannot enable mirror: there is already a mirror filter present", level: .error, subsystem: subsystem)
+          return
+        }
+        let vf = MPVFilter.mirror()
+        vf.label = Constants.FilterLabel.mirror
+        let _ = addVideoFilter(vf)
+      } else {
+        guard let vf = info.mirrorFilter else {
+          Logger.log("Cannot disable mirror: no mirror filter is present", level: .error, subsystem: subsystem)
+          return
+        }
+        let _ = removeVideoFilter(vf)
       }
-      let vf = MPVFilter.mirror()
-      vf.label = Constants.FilterLabel.mirror
-      let _ = addVideoFilter(vf)
-    } else {
-      guard let vf = info.mirrorFilter else {
-        Logger.log("Cannot disable mirror: no mirror filter is present", level: .error, subsystem: subsystem)
-        return
-      }
-      let _ = removeVideoFilter(vf)
     }
   }
 
   func toggleDeinterlace(_ enable: Bool) {
-    mpv.setFlag(MPVOption.Video.deinterlace, enable)
+    mpv.queue.async { [self] in
+      mpv.setFlag(MPVOption.Video.deinterlace, enable)
+    }
   }
 
   func toggleHardwareDecoding(_ enable: Bool) {
     let value = Preference.HardwareDecoderOption(rawValue: Preference.integer(for: .hardwareDecoder))?.mpvString ?? "auto"
-    mpv.setString(MPVOption.Video.hwdec, enable ? value : "no")
+    mpv.queue.async { [self] in
+      mpv.setString(MPVOption.Video.hwdec, enable ? value : "no")
+    }
   }
 
   enum VideoEqualizerType {
@@ -970,80 +1037,101 @@ class PlayerCore: NSObject {
     case .hue:
       optionName = MPVOption.Equalizer.hue
     }
-    mpv.command(.set, args: [optionName, value.description])
+    mpv.queue.async { [self] in
+      mpv.command(.set, args: [optionName, value.description])
+    }
   }
 
   func loadExternalVideoFile(_ url: URL) {
-    let code = mpv.command(.videoAdd, args: [url.path], checkError: false)
-    if code < 0 {
-      Logger.log("Unsupported video: \(url.path)", level: .error, subsystem: self.subsystem)
-      DispatchQueue.main.async {
-        Utility.showAlert("unsupported_audio")
+    mpv.queue.async { [self] in
+      let code = mpv.command(.videoAdd, args: [url.path], checkError: false)
+      if code < 0 {
+        Logger.log("Unsupported video: \(url.path)", level: .error, subsystem: self.subsystem)
+        DispatchQueue.main.async {
+          Utility.showAlert("unsupported_audio")
+        }
       }
     }
   }
 
   func loadExternalAudioFile(_ url: URL) {
-    let code = mpv.command(.audioAdd, args: [url.path], checkError: false)
-    if code < 0 {
-      Logger.log("Unsupported audio: \(url.path)", level: .error, subsystem: self.subsystem)
-      DispatchQueue.main.async {
-        Utility.showAlert("unsupported_audio")
+    mpv.queue.async { [self] in
+      let code = mpv.command(.audioAdd, args: [url.path], checkError: false)
+      if code < 0 {
+        Logger.log("Unsupported audio: \(url.path)", level: .error, subsystem: self.subsystem)
+        DispatchQueue.main.async {
+          Utility.showAlert("unsupported_audio")
+        }
       }
     }
   }
 
   func toggleSubVisibility() {
-    mpv.setFlag(MPVOption.Subtitles.subVisibility, !info.isSubVisible)
+    mpv.queue.async { [self] in
+      mpv.setFlag(MPVOption.Subtitles.subVisibility, !info.isSubVisible)
+    }
   }
 
   func toggleSecondSubVisibility() {
-    mpv.setFlag(MPVOption.Subtitles.secondarySubVisibility, !info.isSecondSubVisible)
+    mpv.queue.async { [self] in
+      mpv.setFlag(MPVOption.Subtitles.secondarySubVisibility, !info.isSecondSubVisible)
+    }
   }
 
   func loadExternalSubFile(_ url: URL, delay: Bool = false) {
-    if let track = info.subTracks.first(where: { $0.externalFilename == url.path }) {
-      mpv.command(.subReload, args: [String(track.id)], checkError: false)
-      return
-    }
+    mpv.queue.async { [self] in
+      if let track = info.subTracks.first(where: { $0.externalFilename == url.path }) {
+        mpv.command(.subReload, args: [String(track.id)], checkError: false)
+        return
+      }
 
-    let code = mpv.command(.subAdd, args: [url.path], checkError: false)
-    if code < 0 {
-      Logger.log("Unsupported sub: \(url.path)", level: .error, subsystem: self.subsystem)
-      // if another modal panel is shown, popping up an alert now will cause some infinite loop.
-      if delay {
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
-          Utility.showAlert("unsupported_sub")
-        }
-      } else {
-        DispatchQueue.main.async {
-          Utility.showAlert("unsupported_sub")
+      let code = mpv.command(.subAdd, args: [url.path], checkError: false)
+      if code < 0 {
+        Logger.log("Unsupported sub: \(url.path)", level: .error, subsystem: self.subsystem)
+        // if another modal panel is shown, popping up an alert now will cause some infinite loop.
+        if delay {
+          DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
+            Utility.showAlert("unsupported_sub")
+          }
+        } else {
+          DispatchQueue.main.async {
+            Utility.showAlert("unsupported_sub")
+          }
         }
       }
     }
   }
 
   func reloadAllSubs() {
-    let currentSubName = info.currentTrack(.sub)?.externalFilename
-    for subTrack in info.subTracks {
-      let code = mpv.command(.subReload, args: ["\(subTrack.id)"], checkError: false)
-      if code < 0 {
-        Logger.log("Failed reloading subtitles: error code \(code)", level: .error, subsystem: self.subsystem)
+    mpv.queue.async { [self] in
+      let currentSubName = info.currentTrack(.sub)?.externalFilename
+      for subTrack in info.subTracks {
+        let code = mpv.command(.subReload, args: ["\(subTrack.id)"], checkError: false)
+        if code < 0 {
+          Logger.log("Failed reloading subtitles: error code \(code)", level: .error, subsystem: self.subsystem)
+        }
+      }
+      reloadTrackInfo()
+      if let currentSub = info.subTracks.first(where: {$0.externalFilename == currentSubName}) {
+        setTrack(currentSub.id, forType: .sub)
+      }
+
+      DispatchQueue.main.async { [self] in
+        windowController?.quickSettingView.reload()
       }
     }
-    reloadTrackInfo()
-    if let currentSub = info.subTracks.first(where: {$0.externalFilename == currentSubName}) {
-      setTrack(currentSub.id, forType: .sub)
-    }
-    windowController?.quickSettingView.reload()
   }
 
   func setAudioDelay(_ delay: Double) {
-    mpv.setDouble(MPVOption.Audio.audioDelay, delay)
+    mpv.queue.async { [self] in
+      mpv.setDouble(MPVOption.Audio.audioDelay, delay)
+    }
   }
 
   func setSubDelay(_ delay: Double) {
-    mpv.setDouble(MPVOption.Subtitles.subDelay, delay)
+    mpv.queue.async { [self] in
+      mpv.setDouble(MPVOption.Subtitles.subDelay, delay)
+    }
   }
 
   /// Adds all the media in `pathList` to the current playlist.
@@ -1051,23 +1139,25 @@ class PlayerCore: NSObject {
   /// Also note that each item in `pathList` may be either a file path or a
   /// network URl.
   func addFilesToPlaylist(pathList: [String]) {
-    var addedCurrentItem = false
+    mpv.queue.async { [self] in
+      var addedCurrentItem = false
 
-    log.debug("Adding \(pathList.count) files to playlist")
-    for path in pathList {
-      if path == info.currentURL?.path {
-        addedCurrentItem = true
-      } else if addedCurrentItem {
-        addToPlaylist(path, silent: true)
-      } else {
-        let count = mpv.getInt(MPVProperty.playlistCount)
-        let current = mpv.getInt(MPVProperty.playlistPos)
-        addToPlaylist(path, silent: true)
-        let err = mpv.command(.playlistMove, args: ["\(count)", "\(current)"], checkError: false)
-        if err != 0 {
-          log.error("Error \(err) when adding files to playlist")
-          if err == MPV_ERROR_COMMAND.rawValue {
-            return
+      log.debug("Adding \(pathList.count) files to playlist")
+      for path in pathList {
+        if path == info.currentURL?.path {
+          addedCurrentItem = true
+        } else if addedCurrentItem {
+          _addToPlaylist(path)
+        } else {
+          let count = mpv.getInt(MPVProperty.playlistCount)
+          let current = mpv.getInt(MPVProperty.playlistPos)
+          _addToPlaylist(path)
+          let err = mpv.command(.playlistMove, args: ["\(count)", "\(current)"], checkError: false)
+          if err != 0 {
+            log.error("Error \(err) when adding files to playlist")
+            if err == MPV_ERROR_COMMAND.rawValue {
+              return
+            }
           }
         }
       }
@@ -1079,14 +1169,18 @@ class PlayerCore: NSObject {
   }
 
   func addToPlaylist(_ path: String, silent: Bool = false) {
-    _addToPlaylist(path)
-    if !silent {
-      postNotification(.iinaPlaylistChanged)
+    mpv.queue.async { [self] in
+      _addToPlaylist(path)
+      if !silent {
+        postNotification(.iinaPlaylistChanged)
+      }
     }
   }
 
   private func _playlistMove(_ from: Int, to: Int) {
-    mpv.command(.playlistMove, args: ["\(from)", "\(to)"])
+    mpv.queue.async { [self] in
+      mpv.command(.playlistMove, args: ["\(from)", "\(to)"])
+    }
   }
 
   func playlistMove(_ from: Int, to: Int) {
@@ -1095,17 +1189,19 @@ class PlayerCore: NSObject {
   }
 
   func addToPlaylist(paths: [String], at index: Int = -1) {
-    reloadPlaylist()
-    for path in paths {
-      _addToPlaylist(path)
-    }
-    if index <= info.playlist.count && index >= 0 {
-      let previousCount = info.playlist.count
-      for i in 0..<paths.count {
-        playlistMove(previousCount + i, to: index + i)
+    mpv.queue.async { [self] in
+      _reloadPlaylist()
+      for path in paths {
+        _addToPlaylist(path)
       }
+      if index <= info.playlist.count && index >= 0 {
+        let previousCount = info.playlist.count
+        for i in 0..<paths.count {
+          _playlistMove(previousCount + i, to: index + i)
+        }
+      }
+      postNotification(.iinaPlaylistChanged)
     }
-    postNotification(.iinaPlaylistChanged)
   }
 
   private func _playlistRemove(_ index: Int) {
@@ -1114,41 +1210,53 @@ class PlayerCore: NSObject {
   }
 
   func playlistRemove(_ index: Int) {
-    subsystem.verbose("Will remove row \(index) from playlist")
-    _playlistRemove(index)
-    postNotification(.iinaPlaylistChanged)
+    mpv.queue.async { [self] in
+      subsystem.verbose("Will remove row \(index) from playlist")
+      _playlistRemove(index)
+      postNotification(.iinaPlaylistChanged)
+    }
   }
 
   func playlistRemove(_ indexSet: IndexSet) {
-    subsystem.verbose("Will remove rows \(indexSet.map{$0}) from playlist")
-    var count = 0
-    for i in indexSet {
-      _playlistRemove(i - count)
-      count += 1
+    mpv.queue.async { [self] in
+      subsystem.verbose("Will remove rows \(indexSet.map{$0}) from playlist")
+      var count = 0
+      for i in indexSet {
+        _playlistRemove(i - count)
+        count += 1
+      }
+      postNotification(.iinaPlaylistChanged)
     }
-    postNotification(.iinaPlaylistChanged)
   }
 
   func clearPlaylist() {
-    mpv.command(.playlistClear)
-    postNotification(.iinaPlaylistChanged)
+    mpv.queue.async { [self] in
+      mpv.command(.playlistClear)
+      postNotification(.iinaPlaylistChanged)
+    }
   }
 
   func playFile(_ path: String) {
-    info.justOpenedFile = true
-    info.shouldAutoLoadFiles = true
-    mpv.command(.loadfile, args: [path, "replace"])
-    reloadPlaylist()
+    mpv.queue.async { [self] in
+      info.justOpenedFile = true
+      info.shouldAutoLoadFiles = true
+      mpv.command(.loadfile, args: [path, "replace"])
+      _reloadPlaylist()
+    }
   }
 
   func playFileInPlaylist(_ pos: Int) {
-    log.verbose("Changing mpv playlist-pos to \(pos)")
-    mpv.setInt(MPVProperty.playlistPos, pos)
-    reloadPlaylist()
+    mpv.queue.async { [self] in
+      log.verbose("Changing mpv playlist-pos to \(pos)")
+      mpv.setInt(MPVProperty.playlistPos, pos)
+      _reloadPlaylist()
+    }
   }
 
   func navigateInPlaylist(nextMedia: Bool) {
-    mpv.command(nextMedia ? .playlistNext : .playlistPrev, checkError: false)
+    mpv.queue.async { [self] in
+      mpv.command(nextMedia ? .playlistNext : .playlistPrev, checkError: false)
+    }
   }
 
   @discardableResult
@@ -1159,8 +1267,10 @@ class PlayerCore: NSObject {
       return nil
     }
     let chapter = chapters[pos]
-    mpv.command(.seek, args: ["\(chapter.time.second)", "absolute"])
-    resume()
+    mpv.queue.async { [self] in
+      mpv.command(.seek, args: ["\(chapter.time.second)", "absolute"])
+      resume()
+    }
     return chapter
   }
 
@@ -1591,74 +1701,78 @@ class PlayerCore: NSObject {
   // MARK: - Listeners
 
   func fileStarted(path: String) {
-    guard !isStopping, !isShuttingDown else { return }
+    DispatchQueue.main.async { [self] in
+      guard !isStopping, !isShuttingDown else { return }
 
-    log.debug("File started")
-    info.justStartedFile = true
-    info.disableOSDForFileLoading = true
-    info.videoParams = nil
+      log.debug("File started")
+      info.justStartedFile = true
+      info.disableOSDForFileLoading = true
+      info.videoParams = nil
 
-    info.currentURL = path.contains("://") ?
+      info.currentURL = path.contains("://") ?
       URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
       URL(fileURLWithPath: path)
 
-    // set "date last opened" attribute
-    if let url = info.currentURL, url.isFileURL {
-      // the required data is a timespec struct
-      var ts = timespec()
-      let time = Date().timeIntervalSince1970
-      ts.tv_sec = Int(time)
-      ts.tv_nsec = Int(time.truncatingRemainder(dividingBy: 1) * 1_000_000_000)
-      let data = Data(bytesOf: ts)
-      // set the attribute; the key is undocumented
-      let name = "com.apple.lastuseddate#PS"
-      url.withUnsafeFileSystemRepresentation { fileSystemPath in
-        let _ = data.withUnsafeBytes {
-          setxattr(fileSystemPath, name, $0.baseAddress, data.count, 0, 0)
+      // set "date last opened" attribute
+      if let url = info.currentURL, url.isFileURL {
+        // the required data is a timespec struct
+        var ts = timespec()
+        let time = Date().timeIntervalSince1970
+        ts.tv_sec = Int(time)
+        ts.tv_nsec = Int(time.truncatingRemainder(dividingBy: 1) * 1_000_000_000)
+        let data = Data(bytesOf: ts)
+        // set the attribute; the key is undocumented
+        let name = "com.apple.lastuseddate#PS"
+        url.withUnsafeFileSystemRepresentation { fileSystemPath in
+          let _ = data.withUnsafeBytes {
+            setxattr(fileSystemPath, name, $0.baseAddress, data.count, 0, 0)
+          }
         }
       }
-    }
 
-    if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-      DispatchQueue.main.async {
-        NowPlayingInfoManager.updateInfo(state: .playing, withTitle: true)
-      }
-    }
-
-    // Auto load
-    $backgroundQueueTicket.withLock { $0 += 1 }
-    let shouldAutoLoadFiles = info.shouldAutoLoadFiles
-    let currentTicket = backgroundQueueTicket
-    PlayerCore.backgroundQueue.async { [self] in
-      // add files in same folder
-      if shouldAutoLoadFiles {
-        Logger.log("Started auto load", subsystem: self.subsystem)
-        self.autoLoadFilesInCurrentFolder(ticket: currentTicket)
-      }
-      // auto load matched subtitles
-      if let matchedSubs = self.info.getMatchedSubs(path) {
-        Logger.log("Found \(matchedSubs.count) subs for current file", subsystem: self.subsystem)
-        for sub in matchedSubs {
-          guard currentTicket == self.backgroundQueueTicket else { return }
-          self.loadExternalSubFile(sub)
+      if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
+        DispatchQueue.main.async {
+          NowPlayingInfoManager.updateInfo(state: .playing, withTitle: true)
         }
-        // set sub to the first one
-        guard currentTicket == self.backgroundQueueTicket, self.mpv.mpv != nil else { return }
-        self.setTrack(1, forType: .sub)
       }
-      PlayerCore.backgroundQueue.asyncAfter(deadline: .now() + 0.5) { [self] in
-        autoSearchOnlineSub()
-      }
-    }
-    events.emit(.fileStarted)
 
-    let url = info.currentURL
-    let message = (info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
-    sendOSD(.fileStart(message))
+      // Auto load
+      $backgroundQueueTicket.withLock { $0 += 1 }
+      let shouldAutoLoadFiles = info.shouldAutoLoadFiles
+      let currentTicket = backgroundQueueTicket
+      PlayerCore.backgroundQueue.async { [self] in
+        // add files in same folder
+        if shouldAutoLoadFiles {
+          Logger.log("Started auto load", subsystem: self.subsystem)
+          self.autoLoadFilesInCurrentFolder(ticket: currentTicket)
+        }
+        // auto load matched subtitles
+        if let matchedSubs = self.info.getMatchedSubs(path) {
+          Logger.log("Found \(matchedSubs.count) subs for current file", subsystem: self.subsystem)
+          for sub in matchedSubs {
+            guard currentTicket == self.backgroundQueueTicket else { return }
+            self.loadExternalSubFile(sub)
+          }
+          // set sub to the first one
+          guard currentTicket == self.backgroundQueueTicket, self.mpv.mpv != nil else { return }
+          self.setTrack(1, forType: .sub)
+        }
+        PlayerCore.backgroundQueue.asyncAfter(deadline: .now() + 0.5) { [self] in
+          autoSearchOnlineSub()
+        }
+      }
+      events.emit(.fileStarted)
+
+      let url = info.currentURL
+      let message = (info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
+      sendOSD(.fileStart(message))
+    }
   }
 
   /** This function is called right after file loaded. Should load all meta info here. */
   func fileLoaded() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+
     // note: player may be "stopped" here
     guard !isStopping, !isShuttingDown else { return }
 
@@ -1699,18 +1813,20 @@ class PlayerCore: NSObject {
     checkUnsyncedWindowOptions()
     // call `trackListChanged` to load tracks and check whether need to switch to music mode
     trackListChanged()
+    let currentMediaAudioStatus = info.currentMediaAudioStatus  // get this while in mpv queue
 
     // main thread stuff
     DispatchQueue.main.async { [self] in
-      reloadPlaylist()
-      reloadChapters()
-      syncAbLoop()
+      mpv.queue.async { [self] in
+        _reloadPlaylist()
+        _reloadChapters()
+        syncAbLoop()
+      }
       refreshSyncUITimer()
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
       }
 
-      let currentMediaAudioStatus = info.currentMediaAudioStatus
       // Update art & aspect *before* switching to/from music mode for more pleasant animation
       if currentMediaAudioStatus == .isAudio || !info.isVideoTrackSelected {
         log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
@@ -1794,8 +1910,6 @@ class PlayerCore: NSObject {
       videoView.displayIdle()
     }
 
-    reloadSavedIINAfilters()
-
     syncUITime()
 
     /// The first "playback restart" msg after starting a file means that the file is
@@ -1828,12 +1942,14 @@ class PlayerCore: NSObject {
   }
 
   func secondarySidChanged() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     info.secondSid = Int(mpv.getInt(MPVOption.Subtitles.secondarySid))
     postNotification(.iinaSIDChanged)
   }
 
   func sidChanged() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     info.sid = Int(mpv.getInt(MPVOption.TrackSelection.sid))
     postNotification(.iinaSIDChanged)
@@ -1841,6 +1957,7 @@ class PlayerCore: NSObject {
   }
 
   func trackListChanged() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     // No need to process track list changes if playback is being stopped. Must not process track
     // list changes if mpv is terminating as accessing mpv once shutdown has been initiated can
     // trigger a crash.
@@ -1861,6 +1978,7 @@ class PlayerCore: NSObject {
   }
 
   func onVideoReconfig() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard let videoParams = mpv.queryForVideoParams() else { return }
 
     log.verbose("Got mpv `video-reconfig`; \(videoParams)")
@@ -1882,6 +2000,7 @@ class PlayerCore: NSObject {
   }
 
   func vidChanged() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
     info.vid = vid
@@ -2356,6 +2475,7 @@ class PlayerCore: NSObject {
   // MARK: - Getting info
 
   func reloadTrackInfo() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     var audioTracks: [MPVTrack] = []
     var videoTracks: [MPVTrack] = []
     var subTracks: [MPVTrack] = []
@@ -2402,6 +2522,7 @@ class PlayerCore: NSObject {
   }
 
   private func reloadSelectedTracks() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     let aid = mpv.getInt(MPVOption.TrackSelection.aid)
     let vid = mpv.getInt(MPVOption.TrackSelection.vid)
     let sid = mpv.getInt(MPVOption.TrackSelection.sid)
@@ -2413,9 +2534,11 @@ class PlayerCore: NSObject {
     log.verbose("Reloaded selected tracks. Vid:\(vid) Aid:\(aid) Sid:\(sid) Sid2:\(secondSid)")
   }
 
-  func reloadPlaylist() {
+
+  private func _reloadPlaylist() {
     log.verbose("Removing all items from playlist")
-    info.playlist.removeAll()
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+    var newPlaylist: [MPVPlaylistItem] = []
     let playlistCount = mpv.getInt(MPVProperty.playlistCount)
     log.verbose("Adding \(playlistCount) items to playlist")
     for index in 0..<playlistCount {
@@ -2423,14 +2546,22 @@ class PlayerCore: NSObject {
                                          isCurrent: mpv.getFlag(MPVProperty.playlistNCurrent(index)),
                                          isPlaying: mpv.getFlag(MPVProperty.playlistNPlaying(index)),
                                          title: mpv.getString(MPVProperty.playlistNTitle(index)))
-      info.playlist.append(playlistItem)
+      newPlaylist.append(playlistItem)
     }
+    info.playlist = newPlaylist
     syncUI(.playlist)
     saveState()  // save playlist URLs to prefs
   }
 
-  func reloadChapters() {
+  func reloadPlaylist() {
+    mpv.queue.async { [self] in
+      _reloadPlaylist()
+    }
+  }
+
+  func _reloadChapters() {
     Logger.log("Reloading chapter list", level: .verbose, subsystem: subsystem)
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     var chapters: [MPVChapter] = []
     let chapterCount = mpv.getInt(MPVProperty.chapterListCount)
     for index in 0..<chapterCount {
@@ -2444,6 +2575,12 @@ class PlayerCore: NSObject {
     info.chapters = chapters
 
     syncUI(.chapterList)
+  }
+
+  func reloadChapters() {
+    mpv.queue.async { [self] in
+      _reloadChapters()
+    }
   }
 
   // MARK: - Notifications

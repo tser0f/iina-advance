@@ -1048,11 +1048,13 @@ not applying FFmpeg 9599 workaround
       player.seeking()
 
     case MPV_EVENT_PLAYBACK_RESTART:
+      if needRecordSeekTime {
+        recordedSeekTimeListener?(CACurrentMediaTime() - recordedSeekStartTime)
+        recordedSeekTimeListener = nil
+      }
+      player.reloadSavedIINAfilters()
+
       DispatchQueue.main.async { [self] in
-        if needRecordSeekTime {
-          recordedSeekTimeListener?(CACurrentMediaTime() - recordedSeekStartTime)
-          recordedSeekTimeListener = nil
-        }
         player.playbackRestarted()
       }
 
@@ -1194,7 +1196,7 @@ not applying FFmpeg 9599 workaround
       player.log.verbose("Received mpv prop: \(MPVOption.PlaybackControl.pause.quoted) = \(paused)")
       if player.info.isPaused != paused {
         player.sendOSD(paused ? .pause : .resume)
-        DispatchQueue.main.sync {
+        DispatchQueue.main.async { [self] in
           player.info.isPaused = paused
           player.saveState()  // record the pause state
           player.refreshSyncUITimer()
@@ -1210,9 +1212,9 @@ not applying FFmpeg 9599 workaround
           if player.windowController.loaded && Preference.bool(for: .alwaysFloatOnTop) {
             player.windowController.setWindowFloatingOnTop(!paused)
           }
+          player.syncUI(.playButton)
         }
       }
-      player.syncUI(.playButton)
 
     case MPVProperty.chapter:
       player.info.chapter = Int(getInt(MPVProperty.chapter))
@@ -1373,7 +1375,7 @@ not applying FFmpeg 9599 workaround
       guard player.windowController.loaded, !player.isShuttingDown else { break }
       guard let aspect = getString(MPVOption.Video.videoAspectOverride) else { break }
       player.log.verbose("Received mpv prop: \(MPVOption.Video.videoAspectOverride.quoted) = \(aspect.quoted)")
-      player.setVideoAspectOverride(aspect)
+      player._setVideoAspectOverride(aspect)
 
     case MPVOption.Window.fullscreen:
       let fs = getFlag(MPVOption.Window.fullscreen)

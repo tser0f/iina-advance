@@ -15,10 +15,11 @@ extension PlayerWindowController {
   }
 
   @objc func menuSavePlaylist(_ sender: NSMenuItem) {
-    Utility.quickSavePanel(title: "Save to playlist", types: ["m3u8"], sheetWindow: player.window) { (url) in
+    Utility.quickSavePanel(title: "Save to playlist", types: ["m3u8"], sheetWindow: player.window) { [self] (url) in
       if url.isFileURL {
+        let playlistItems = player.info.playlist
         var playlist = ""
-        for item in self.player.info.playlist {
+        for item in playlistItems {
           playlist.append((item.filename + "\n"))
         }
 
@@ -68,7 +69,6 @@ extension PlayerWindowController {
 
   @objc func menuStop(_ sender: NSMenuItem) {
     player.stop()
-    player.sendOSD(.stop)
   }
 
   @objc func menuStep(_ sender: NSMenuItem) {
@@ -164,11 +164,15 @@ extension PlayerWindowController {
   }
 
   @objc func menuNextChapter(_ sender: NSMenuItem) {
-    player.mpv.command(.add, args: ["chapter", "1"], checkError: false)
+    player.mpv.queue.async { [self] in
+      player.mpv.command(.add, args: ["chapter", "1"], checkError: false)
+    }
   }
 
   @objc func menuPreviousChapter(_ sender: NSMenuItem) {
-    player.mpv.command(.add, args: ["chapter", "-1"], checkError: false)
+    player.mpv.queue.async { [self] in
+      player.mpv.command(.add, args: ["chapter", "-1"], checkError: false)
+    }
   }
 
 // MARK: - Video
