@@ -2306,10 +2306,10 @@ class PlayerCore: NSObject {
         let thumbnailWidth = SingleMediaThumbnailsLoader.determineWidthOfThumbnail(from: videoRawSize, log: log)
 
         if let oldThumbs = info.currentMediaThumbnails {
-          if oldThumbs.mediaFilePath == url.path
-                  && thumbnailWidth == oldThumbs.thumbnailWidth
-                  && videoParams.totalRotation == oldThumbs.rotationDegrees {
-            log.debug("Already loaded \(oldThumbs.thumbnails.count) thumbnails for file @ \(thumbnailWidth)px, \(videoParams.totalRotation)°; nothing to do")
+          if !oldThumbs.isCancelled, oldThumbs.mediaFilePath == url.path,
+             thumbnailWidth == oldThumbs.thumbnailWidth,
+             videoParams.totalRotation == oldThumbs.rotationDegrees {
+            log.debug("Already loaded \(oldThumbs.thumbnails.count) thumbnails (\(oldThumbs.thumbnailsProgress * 100.0)%) for file (\(thumbnailWidth)px, \(videoParams.totalRotation)°). Nothing to do")
             return
           } else {
             clearExistingThumbnails()

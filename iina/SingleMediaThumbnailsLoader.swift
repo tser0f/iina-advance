@@ -181,19 +181,22 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
       log.error("Ignoring generated thumbnails (\(width)px width): either filePath or thumbnailWidth does not match expected")
       return
     }
-    log.debug("Done generating thumbnails: success=\(succeeded) count=\(thumbnails.count) width=\(width)px")
-    if succeeded {
-      player.refreshTouchBarSlider()
 
-      PlayerCore.thumbnailQueue.async { [self] in
-        guard !ffThumbnails.isEmpty else {
-          log.verbose("No thumbnails to write")
-          return
-        }
-        ThumbnailCache.write(ffThumbnails, forName: mediaFilePathMD5, forVideo: mediaFilePath, forWidth: Int(width))
-        ffThumbnails = []  // free the memory - not needed anymore
+    PlayerCore.thumbnailQueue.async { [self] in
+      if thumbnails.count > 0 {
+        addThumbnails(thumbnails)
       }
-      player.events.emit(.thumbnailsReady)
+      log.debug("Done generating thumbnails, success=\(succeeded) count=\(self.thumbnails.count) width=\(width)px")
+      guard succeeded else { return }
+
+      player.refreshTouchBarSlider()
+      guard !ffThumbnails.isEmpty else {
+        log.verbose("No thumbnails to write")
+        return
+      }
+      ThumbnailCache.write(ffThumbnails, forName: mediaFilePathMD5, forVideo: mediaFilePath, forWidth: Int(width))
+      ffThumbnails = []  // free the memory - not needed anymore
     }
+    player.events.emit(.thumbnailsReady)
   }
 }
