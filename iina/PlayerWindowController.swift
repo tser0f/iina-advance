@@ -3453,8 +3453,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   @IBAction func playButtonAction(_ sender: NSButton) {
-    player.info.isPaused ? player.resume() : player.pause()
-    if (player.info.isPaused) {
+    let isPaused = player.info.isPaused
+    isPaused ? player.resume() : player.pause()
+    if isPaused {
       // speed is already reset by playerCore
       speedValueIndex = AppData.availableSpeedValues.count / 2
       leftArrowLabel.isHidden = true

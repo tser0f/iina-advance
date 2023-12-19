@@ -753,10 +753,6 @@ struct PlayerSaveState {
     /// `MPVOption.PlaybackControl.start` will skip any files in the playlist which have durations shorter than its start time).
     let mpv: MPVController = player.mpv
 
-    if let wasPaused = bool(for: .paused) {
-      mpv.setFlag(MPVOption.PlaybackControl.pause, wasPaused)
-    }
-
     if let vid = int(for: .vid) {
       mpv.setInt(MPVOption.TrackSelection.vid, vid)
     }

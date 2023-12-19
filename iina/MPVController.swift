@@ -1024,12 +1024,20 @@ not applying FFmpeg 9599 workaround
 
     case MPV_EVENT_FILE_LOADED:
       Logger.log("Got mpv fileLoaded event", level: .verbose, subsystem: player.subsystem)
-      // Get video size and set the initial window size
-      if !player.info.isRestoring {
-        let pause = Preference.bool(for: .pauseWhenOpen)
-        player.log.verbose("OnFileLoaded: setting playback to \(pause ? "paused" : "resume")")
-        setFlag(MPVOption.PlaybackControl.pause, pause)
+      let pause: Bool
+      if let priorState = player.info.priorState {
+        if Preference.bool(for: .alwaysPauseMediaWhenRestoringAtLaunch) {
+          pause = true
+        } else if let wasPaused = priorState.bool(for: .paused) {
+          pause = wasPaused
+        } else {
+          pause = Preference.bool(for: .pauseWhenOpen)
+        }
+      } else {
+        pause = Preference.bool(for: .pauseWhenOpen)
       }
+      player.log.verbose("OnFileLoaded: setting playback to \(pause ? "paused" : "resume")")
+      setFlag(MPVOption.PlaybackControl.pause, pause)
 
       let duration = getDouble(MPVProperty.duration)
       player.info.videoDuration = VideoTime(duration)

@@ -536,13 +536,17 @@ class PlayerCore: NSObject {
     }
   }
 
+  private func _resume() {
+    // Restart playback when reached EOF
+    if Preference.bool(for: .resumeFromEndRestartsPlayback) && mpv.getFlag(MPVProperty.eofReached) {
+      seek(absoluteSecond: 0)
+    }
+    mpv.setFlag(MPVOption.PlaybackControl.pause, false)
+  }
+
   func resume() {
     mpv.queue.async { [self] in
-      // Restart playback when reached EOF
-      if Preference.bool(for: .resumeFromEndRestartsPlayback) && mpv.getFlag(MPVProperty.eofReached) {
-        seek(absoluteSecond: 0)
-      }
-      mpv.setFlag(MPVOption.PlaybackControl.pause, false)
+      _resume()
     }
   }
 
@@ -1277,7 +1281,7 @@ class PlayerCore: NSObject {
     let chapter = chapters[pos]
     mpv.queue.async { [self] in
       mpv.command(.seek, args: ["\(chapter.time.second)", "absolute"])
-      resume()
+      _resume()
     }
     return chapter
   }

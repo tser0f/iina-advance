@@ -24,33 +24,33 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="392"/>
             <point key="canvasLocation" x="-1607" y="64"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="550" height="537"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior" propertyAccessControl="all">
+            <rect key="frame" x="0.0" y="0.0" width="550" height="558"/>
             <subviews>
                 <textField identifier="SectionTitleBehavior" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="38y-2I-MGs">
-                    <rect key="frame" x="-2" y="513" width="66" height="16"/>
+                    <rect key="frame" x="-2" y="534" width="66" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Behavior:" id="uQR-Fx-oEm">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <stackView distribution="equalCentering" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="WFe-Uj-CJG" userLabel="AtLaunch-RightColumn Stack View">
-                    <rect key="frame" x="120" y="454" width="423" height="76"/>
+                <stackView distribution="fillEqually" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="251" verticalStackHuggingPriority="251" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="WFe-Uj-CJG" userLabel="AtLaunch-RightColumn Stack View">
+                    <rect key="frame" x="120" y="454" width="430" height="97"/>
                     <subviews>
-                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="501" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5Nu-WP-fyV" userLabel="AtLaunch-HStack View">
-                            <rect key="frame" x="0.0" y="56" width="289" height="20"/>
+                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="750" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5Nu-WP-fyV" userLabel="AtLaunch-HStack View">
+                            <rect key="frame" x="0.0" y="80" width="289" height="17"/>
                             <subviews>
-                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OXi-vL-mzp">
-                                    <rect key="frame" x="-2" y="3" width="65" height="16"/>
+                                <textField focusRingType="none" horizontalHuggingPriority="1000" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OXi-vL-mzp">
+                                    <rect key="frame" x="-2" y="0.0" width="65" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="At launch:" id="gqT-CB-Puw">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
-                                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bV8-LP-cwH">
-                                    <rect key="frame" x="66" y="-4" width="227" height="25"/>
+                                <popUpButton horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bV8-LP-cwH">
+                                    <rect key="frame" x="66" y="-4" width="227" height="22"/>
                                     <popUpButtonCell key="cell" type="push" title="Show welcome window" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="z9T-8h-1T0" id="6y1-KS-0tJ">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -70,6 +70,7 @@
                             </subviews>
                             <constraints>
                                 <constraint firstItem="bV8-LP-cwH" firstAttribute="firstBaseline" secondItem="OXi-vL-mzp" secondAttribute="firstBaseline" id="NRl-Lu-XB1"/>
+                                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="bV8-LP-cwH" secondAttribute="trailing" id="wgN-7H-Izj"/>
                             </constraints>
                             <visibilityPriorities>
                                 <integer value="1000"/>
@@ -81,15 +82,15 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Xfd-La-Ryk" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="52" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="76" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="1" id="ZEL-lZ-2wA"/>
                                 <constraint firstAttribute="height" id="e8R-xd-kYm"/>
                             </constraints>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="tRO-oH-MAp">
-                            <rect key="frame" x="-2" y="31" width="425" height="18"/>
-                            <buttonCell key="cell" type="check" title="Restore open windows and playback state from previous launches" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="izA-YX-std">
+                            <rect key="frame" x="-2" y="55" width="432" height="18"/>
+                            <buttonCell key="cell" type="check" title="Restore open windows &amp; playback state from previous launches" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="izA-YX-std">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
@@ -101,14 +102,21 @@
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="N4H-We-bZ1" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="28" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="52" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="1" id="TMk-jc-Fyz"/>
                                 <constraint firstAttribute="height" id="kh2-tK-GIy"/>
                             </constraints>
+                            <connections>
+                                <binding destination="IBP-Mz-Maa" name="hidden" keyPath="values.enableRestoreUIState" id="KtY-LU-HVz">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Tdv-Vn-5EA">
-                            <rect key="frame" x="18" y="7" width="194" height="18"/>
+                            <rect key="frame" x="18" y="31" width="412" height="18"/>
                             <buttonCell key="cell" type="check" title="Always ask before restoring" bezelStyle="regularSquare" imagePosition="left" inset="2" id="10H-I3-TYU">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -116,6 +124,35 @@
                             <connections>
                                 <binding destination="IBP-Mz-Maa" name="value" keyPath="values.alwaysAskBeforeRestoreAtLaunch" id="Dpt-nk-Mqg"/>
                                 <binding destination="IBP-Mz-Maa" name="hidden" keyPath="values.enableRestoreUIState" id="yBM-Pr-bd2">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
+                        </button>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="u2h-Hl-SuS" userLabel="0pt Spacer">
+                            <rect key="frame" x="0.0" y="28" width="1" height="0.0"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="1" id="Orn-Rc-LTZ"/>
+                                <constraint firstAttribute="height" id="rdN-Cy-KYb"/>
+                            </constraints>
+                            <connections>
+                                <binding destination="IBP-Mz-Maa" name="hidden" keyPath="values.enableRestoreUIState" id="C9S-qC-FUq">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
+                        </customView>
+                        <button translatesAutoresizingMaskIntoConstraints="NO" id="jbO-3r-Bpr">
+                            <rect key="frame" x="18" y="7" width="412" height="18"/>
+                            <buttonCell key="cell" type="check" title="Always pause all media when restoring" bezelStyle="regularSquare" imagePosition="left" inset="2" id="VyR-vg-q4E">
+                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                <font key="font" metaFont="system"/>
+                            </buttonCell>
+                            <connections>
+                                <binding destination="IBP-Mz-Maa" name="value" keyPath="values.alwaysPauseMediaWhenRestoringAtLaunch" id="5CU-aI-onm"/>
+                                <binding destination="IBP-Mz-Maa" name="hidden" keyPath="values.enableRestoreUIState" id="yjm-Hh-fOc">
                                     <dictionary key="options">
                                         <string key="NSValueTransformerName">NSNegateBoolean</string>
                                     </dictionary>
@@ -131,6 +168,9 @@
                         </customView>
                     </subviews>
                     <constraints>
+                        <constraint firstItem="jbO-3r-Bpr" firstAttribute="leading" secondItem="tRO-oH-MAp" secondAttribute="leading" constant="20" id="LpL-Ht-t1c"/>
+                        <constraint firstItem="tRO-oH-MAp" firstAttribute="leading" secondItem="WFe-Uj-CJG" secondAttribute="leading" id="atS-T5-ChS"/>
+                        <constraint firstItem="jbO-3r-Bpr" firstAttribute="height" secondItem="tRO-oH-MAp" secondAttribute="height" id="foS-bL-Zux"/>
                         <constraint firstItem="Tdv-Vn-5EA" firstAttribute="height" secondItem="tRO-oH-MAp" secondAttribute="height" id="lF0-qU-fh7"/>
                         <constraint firstItem="Tdv-Vn-5EA" firstAttribute="leading" secondItem="tRO-oH-MAp" secondAttribute="leading" constant="20" id="q2I-4N-PZr"/>
                     </constraints>
@@ -141,8 +181,12 @@
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
                     </visibilityPriorities>
                     <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
@@ -607,6 +651,7 @@
                 <constraint firstItem="SsM-Tv-8AZ" firstAttribute="firstBaseline" secondItem="hgu-y0-ExB" secondAttribute="firstBaseline" id="MHh-gW-uyI"/>
                 <constraint firstItem="UJm-0c-3Ha" firstAttribute="leading" secondItem="aKH-Me-5XB" secondAttribute="leading" id="Mnr-T6-0Nd"/>
                 <constraint firstItem="Xi9-i5-9V4" firstAttribute="top" secondItem="8iE-FU-0g0" secondAttribute="bottom" constant="12" id="PRi-bP-Yjs"/>
+                <constraint firstAttribute="trailing" secondItem="WFe-Uj-CJG" secondAttribute="trailing" id="RIm-fC-vfN"/>
                 <constraint firstItem="y2l-T9-GFV" firstAttribute="height" secondItem="Xi9-i5-9V4" secondAttribute="height" id="SMX-C1-Cc4"/>
                 <constraint firstItem="8iE-FU-0g0" firstAttribute="leading" secondItem="aKH-Me-5XB" secondAttribute="leading" id="SRe-Ue-ubz"/>
                 <constraint firstItem="hgu-y0-ExB" firstAttribute="leading" secondItem="SsM-Tv-8AZ" secondAttribute="trailing" constant="8" id="Wfd-Dl-hWc"/>

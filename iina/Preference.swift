@@ -432,6 +432,7 @@ struct Preference {
     static let enableRestoreUIState = Key("enableRestoreUIState")
 
     static let alwaysAskBeforeRestoreAtLaunch = Key("alwaysAskBeforeRestoreAtLaunch")
+    static let alwaysPauseMediaWhenRestoringAtLaunch = Key("alwaysPauseMediaWhenRestoringAtLaunch")
     static let isRestoreInProgress = Key("isRestoreInProgress")
 
     // Index of currently selected tab in Navigator table
@@ -1177,6 +1178,7 @@ struct Preference {
     .enableSaveUIState: true,
     .enableRestoreUIState: true,
     .alwaysAskBeforeRestoreAtLaunch: false,
+    .alwaysPauseMediaWhenRestoringAtLaunch: false,
     .isRestoreInProgress: false,
     .uiPrefWindowNavTableSelectionIndex: 0,
     .uiPrefDetailViewScrollOffsetY: 0.0,

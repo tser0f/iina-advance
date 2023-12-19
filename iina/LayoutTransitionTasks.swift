@@ -906,7 +906,7 @@ extension PlayerWindowController {
       }
 
       if player.info.isPaused {
-        if Preference.bool(for: .playWhenEnteringFullScreen) {
+        if !player.info.isRestoring && Preference.bool(for: .playWhenEnteringFullScreen) {
           player.resume()
         } else {
           // When playback is paused the display link is stopped in order to avoid wasting energy on
