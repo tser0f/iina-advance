@@ -168,6 +168,7 @@ class VideoView: NSView {
   }
 
   private func setFixedOffsetConstraints(margins: BoxQuad) {
+
     log.verbose("Constraining videoView for fixed offsets only: \(margins.top) \(margins.trailing) \(margins.bottom) \(margins.leading)")
     // Use only EQ. Remove all other constraints
     rebuildConstraints(top: margins.top, trailing: -margins.trailing, bottom: -margins.bottom, leading: margins.leading,
@@ -178,6 +179,10 @@ class VideoView: NSView {
   }
 
   func apply(_ geometry: PWindowGeometry?) {
+    guard player.windowController.pipStatus == .notInPIP else {
+      log.verbose("VideoView: currently in PiP; ignoring request to set viewportMargin constraints")
+      return
+    }
     if let geometry = geometry {
       if log.isTraceEnabled {
         log.verbose("VideoView: updating viewportMargin constraints to \(geometry.viewportMargins)")

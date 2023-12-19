@@ -12,6 +12,7 @@ class VideoRotationHandler {
 
   // Current rotation of videoView
   private var cgCurrentRotationDegrees: CGFloat = 0
+  private var videoParams: MPVVideoParams? = nil
 
   unowned var windowControllerController: PlayerWindowController! = nil
   private var player: PlayerCore { windowControllerController.player }
@@ -26,6 +27,10 @@ class VideoRotationHandler {
 
     switch recognizer.state {
     case .began, .changed:
+      guard let videoParams = player.mpv.queryForVideoParams() else {
+        return
+      }
+      self.videoParams = videoParams
       let cgNewRotationDegrees = recognizer.rotationInDegrees
       IINAAnimation.disableAnimation {
         rotateVideoView(toDegrees: cgNewRotationDegrees)
@@ -46,12 +51,18 @@ class VideoRotationHandler {
         cgCurrentRotationDegrees -= completeCircleDegrees(of: cgCurrentRotationDegrees)
         Logger.log("Rotation gesture of \(recognizer.rotationInDegrees)° will not change video rotation. Snapping back from: \(cgCurrentRotationDegrees)°")
         rotateVideoView(toDegrees: 0)
+        self.videoParams = nil
+        return
+      }
+
+      guard let videoParams = self.videoParams else {
+        player.log.error("Cannot rotate video. No videoParams!")
         return
       }
 
       // Snap to one of the 4 quarter circle rotations
-      let mpvNewRotation = (player.info.userRotation + mpvClosestQuarterRotation) %% 360
-      Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(player.info.userRotation)°) → new rotation will be \(mpvNewRotation)°")
+      let mpvNewRotation = (videoParams.userRotation + mpvClosestQuarterRotation) %% 360
+      Logger.log("User's gesture of \(recognizer.rotationInDegrees)° is equivalent to mpv \(mpvNormalizedRotationDegrees)°, which is closest to \(mpvClosestQuarterRotation)°. Adding it to current mpv rotation (\(videoParams.userRotation)°) → new rotation will be \(mpvNewRotation)°")
       // Need to convert snap-to location back to CG, to feed to animation
       let cgSnapToDegrees = findNearestCGQuarterRotation(forCGRotation: recognizer.rotationInDegrees,
                                                          equalToMpvRotation: mpvClosestQuarterRotation)

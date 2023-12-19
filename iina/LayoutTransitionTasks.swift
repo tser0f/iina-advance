@@ -139,10 +139,8 @@ extension PlayerWindowController {
       resetViewsForModeTransition()
     }
 
-    if !transition.isInitialLayout {
-      if transition.isTogglingLegacyStyle {
-        forceDraw()
-      }
+    if !transition.isInitialLayout && transition.isTogglingLegacyStyle {
+      forceDraw()
     }
   }
 
@@ -316,11 +314,8 @@ extension PlayerWindowController {
       }
     }
 
-    if !transition.isInitialLayout {
-      videoView.layoutSubtreeIfNeeded()
-      if transition.isTogglingLegacyStyle {
-        forceDraw()
-      }
+    if !transition.isInitialLayout && transition.isTogglingLegacyStyle {
+      forceDraw()
     }
   }
 
@@ -649,11 +644,8 @@ extension PlayerWindowController {
     updateVolumeUI()
     player.syncUITime()
 
-    if !transition.isInitialLayout {
-      window.contentView?.layoutSubtreeIfNeeded()
-      if transition.isTogglingLegacyStyle {
-        forceDraw()
-      }
+    if !transition.isInitialLayout && transition.isTogglingLegacyStyle {
+      forceDraw()
     }
   }
 
@@ -794,10 +786,8 @@ extension PlayerWindowController {
       videoView.apply(transition.outputGeometry)
     }
 
-    if !transition.isInitialLayout {
-      if transition.isTogglingLegacyStyle {
-        forceDraw()
-      }
+    if !transition.isInitialLayout && transition.isTogglingLegacyStyle {
+      forceDraw()
     }
   }
 

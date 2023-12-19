@@ -1137,7 +1137,8 @@ not applying FFmpeg 9599 workaround
          Do not confuse with the user-configured `video-rotate` (below) */
       if let totalRotation = UnsafePointer<Int>(OpaquePointer(property.data))?.pointee {
         player.log.verbose("Received mpv prop: 'video-params/rotate' = \(totalRotation)")
-        /// Nothing to do here. Everything will be handled by `video-reconfig` callback
+        player.saveState()
+        /// Any necessary resizing will be handled by `video-reconfig` callback
       }
 
     case MPVOption.Video.videoRotate:
