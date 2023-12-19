@@ -929,9 +929,10 @@ extension PlayerWindowController {
         /// But call `refit` to recalculate videoSize or other internal vars
         newGeo = resizedPlaylistGeo.refit()
       }
-    } else {  /// `.insideViewport`
-      newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth)
+    } else {  /// `.insideViewport`: needs to refit in case window is so small that the viewport is larger than the video
+      newGeo = oldGeo.clone(insideLeadingBarWidth: newPlaylistWidth).refit()
     }
+
     Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
     return newGeo
   }
@@ -969,7 +970,7 @@ extension PlayerWindowController {
         newGeo = resizedPlaylistGeo.refit()
       }
     } else {  /// `.insideViewport`
-      newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth)
+      newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth).refit()
     }
     Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
     return newGeo
