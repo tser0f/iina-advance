@@ -1142,31 +1142,29 @@ not applying FFmpeg 9599 workaround
       }
 
     case MPVOption.Video.videoRotate:
-      guard let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee else {
-        break
-      }
+      guard player.windowController.loaded else { break }
+      guard let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee else { break }
       let userRotation = Int(data)
-      if userRotation != player.info.selectedRotation {
-        player.log.verbose("Received mpv prop: 'video-rotate' ≔ \(userRotation)")
-        player.info.selectedRotation = userRotation
-        needReloadQuickSettingsView = true
+      guard userRotation != player.info.selectedRotation else { break }
 
-        if self.player.windowController.loaded {
-          player.sendOSD(.rotation(userRotation))
-          // Thumb rotation needs updating:
-          player.reloadThumbnails()
+      player.log.verbose("Received mpv prop: 'video-rotate' ≔ \(userRotation)")
+      player.info.selectedRotation = userRotation
+      needReloadQuickSettingsView = true
 
-          DispatchQueue.main.async { [self] in
-            // FIXME: this isn't perfect - a bad frame briefly appears during transition
-            player.log.verbose("Resetting videoView")
-            IINAAnimation.disableAnimation {
-              self.player.windowController.rotationHandler.rotateVideoView(toDegrees: 0)
-            }
+      player.sendOSD(.rotation(userRotation))
+      // Thumb rotation needs updating:
+      player.reloadThumbnails()
+      player.saveState()
+
+      if player.windowController.pipStatus == .notInPIP {
+        DispatchQueue.main.async { [self] in
+          // FIXME: this isn't perfect - a bad frame briefly appears during transition
+          player.log.verbose("Resetting videoView rotation")
+          IINAAnimation.disableAnimation {
+            player.windowController.rotationHandler.rotateVideoView(toDegrees: 0)
           }
         }
-        player.saveState()
       }
-
 
     case MPVProperty.videoParamsPrimaries:
       fallthrough
