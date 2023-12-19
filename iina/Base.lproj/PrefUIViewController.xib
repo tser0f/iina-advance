@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22155" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22155"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -717,7 +717,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UhD-Lf-aPQ">
-                                <rect key="frame" x="15" y="31" width="137" height="15"/>
+                                <rect key="frame" x="15" y="29.5" width="137" height="15"/>
                                 <buttonCell key="cell" type="radio" title="When media is loaded" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="yIN-jg-MxS">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -727,7 +727,7 @@
                                 </connections>
                             </button>
                             <button tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Wn6-zz-utQ">
-                                <rect key="frame" x="15" y="49" width="215" height="15"/>
+                                <rect key="frame" x="15" y="47.5" width="215" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Only when media is opened manually" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="CJE-ap-IH8">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -737,7 +737,7 @@
                                 </connections>
                             </button>
                             <button tag="2" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="z5X-oj-MdV">
-                                <rect key="frame" x="15" y="67" width="67" height="15"/>
+                                <rect key="frame" x="15" y="65.5" width="67" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Disabled" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="duf-3s-3bL">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -1424,10 +1424,10 @@
             <point key="canvasLocation" x="-26" y="29"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="c8m-G4-or8" userLabel="Prefs &gt; UI &gt; OSD" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="550" height="118"/>
+            <rect key="frame" x="0.0" y="0.0" width="550" height="120"/>
             <subviews>
                 <textField identifier="SectionTitleOSD" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zyi-J3-lSp">
-                    <rect key="frame" x="-2" y="78" width="124" height="32"/>
+                    <rect key="frame" x="-2" y="80" width="124" height="32"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="On Screen Display:" id="F2e-CS-KXl">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1435,7 +1435,7 @@
                     </textFieldCell>
                 </textField>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MU2-yF-bjd">
-                    <rect key="frame" x="118" y="93" width="98" height="18"/>
+                    <rect key="frame" x="118" y="95" width="98" height="18"/>
                     <buttonCell key="cell" type="check" title="Enable OSD" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="xMh-SP-nkc">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -1445,7 +1445,7 @@
                     </connections>
                 </button>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="AuL-MP-Wlj">
-                    <rect key="frame" x="230" y="93" width="57" height="16"/>
+                    <rect key="frame" x="230" y="96" width="57" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Position:" id="vaT-Rf-wZg">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1453,7 +1453,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ttu-Y8-S4Y" userLabel="OSD-Position Popup">
-                    <rect key="frame" x="290" y="86" width="97" height="25"/>
+                    <rect key="frame" x="290" y="89" width="97" height="25"/>
                     <popUpButtonCell key="cell" type="push" title="Top Left" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="JXw-5D-T1X" id="s8S-bm-lNY" userLabel="OSD-Position Popup Button Cell">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -1470,7 +1470,7 @@
                     </connections>
                 </popUpButton>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bGH-kO-7Rd">
-                    <rect key="frame" x="138" y="64" width="98" height="16"/>
+                    <rect key="frame" x="138" y="67" width="98" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Auto hide after:" id="NUr-hY-gfo">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1478,7 +1478,7 @@
                     </textFieldCell>
                 </textField>
                 <textField focusRingType="none" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qNv-Yk-nvp" userLabel="AutoHideAfter Text Field">
-                    <rect key="frame" x="242" y="61" width="58" height="21"/>
+                    <rect key="frame" x="242" y="64" width="58" height="21"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="58" id="J5e-Bd-2ub"/>
                     </constraints>
@@ -1500,7 +1500,7 @@
                     </connections>
                 </textField>
                 <textField identifier="AccessoryLabelOSDAutoHide" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="oz1-yC-uZC">
-                    <rect key="frame" x="306" y="64" width="11" height="16"/>
+                    <rect key="frame" x="306" y="67" width="11" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="s" id="ObY-7B-NTO">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1561,7 +1561,6 @@
                 <constraint firstItem="MU2-yF-bjd" firstAttribute="firstBaseline" secondItem="zyi-J3-lSp" secondAttribute="firstBaseline" id="2eq-3z-2lT"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="2xg-kt-Cz4" secondAttribute="trailing" id="3Pn-CJ-ep7"/>
                 <constraint firstItem="wDT-XM-dyY" firstAttribute="baseline" secondItem="63o-gu-DxA" secondAttribute="baseline" id="4Eq-8k-nZJ"/>
-                <constraint firstItem="63o-gu-DxA" firstAttribute="top" secondItem="bGH-kO-7Rd" secondAttribute="bottom" constant="8" id="5yo-ce-1gz"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="oz1-yC-uZC" secondAttribute="trailing" constant="20" symbolic="YES" id="6ma-8v-e5l"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="MU2-yF-bjd" secondAttribute="trailing" id="9b3-gv-LEl"/>
                 <constraint firstItem="bGH-kO-7Rd" firstAttribute="leading" secondItem="MU2-yF-bjd" secondAttribute="leading" constant="20" id="BDy-8a-1G2"/>
@@ -1572,6 +1571,7 @@
                 <constraint firstItem="wDT-XM-dyY" firstAttribute="leading" secondItem="qNv-Yk-nvp" secondAttribute="leading" id="Sl9-5L-eII"/>
                 <constraint firstItem="2xg-kt-Cz4" firstAttribute="leading" secondItem="63o-gu-DxA" secondAttribute="leading" id="T4S-0z-tzx"/>
                 <constraint firstItem="HcO-CN-3qi" firstAttribute="baseline" secondItem="63o-gu-DxA" secondAttribute="baseline" id="VQQ-1l-vxW"/>
+                <constraint firstItem="wDT-XM-dyY" firstAttribute="top" secondItem="qNv-Yk-nvp" secondAttribute="bottom" constant="6" id="VSg-od-XMT"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Ttu-Y8-S4Y" secondAttribute="trailing" id="WWf-6T-gho"/>
                 <constraint firstItem="MU2-yF-bjd" firstAttribute="leading" secondItem="c8m-G4-or8" secondAttribute="leading" constant="120" id="XOy-xv-UQT"/>
                 <constraint firstItem="wDT-XM-dyY" firstAttribute="leading" secondItem="63o-gu-DxA" secondAttribute="trailing" constant="8" id="Yas-Qc-aZh"/>
@@ -1579,7 +1579,7 @@
                 <constraint firstItem="MU2-yF-bjd" firstAttribute="top" secondItem="c8m-G4-or8" secondAttribute="top" constant="8" id="Z6R-Ey-JnO"/>
                 <constraint firstItem="qNv-Yk-nvp" firstAttribute="leading" secondItem="bGH-kO-7Rd" secondAttribute="trailing" constant="8" id="ZTP-CX-Nq5"/>
                 <constraint firstAttribute="bottom" secondItem="2xg-kt-Cz4" secondAttribute="bottom" constant="8" id="d5A-Ct-HNP"/>
-                <constraint firstItem="AuL-MP-Wlj" firstAttribute="firstBaseline" secondItem="MU2-yF-bjd" secondAttribute="firstBaseline" constant="1" id="eXB-14-MDh"/>
+                <constraint firstItem="AuL-MP-Wlj" firstAttribute="firstBaseline" secondItem="MU2-yF-bjd" secondAttribute="firstBaseline" id="eXB-14-MDh"/>
                 <constraint firstItem="AuL-MP-Wlj" firstAttribute="leading" secondItem="MU2-yF-bjd" secondAttribute="trailing" constant="16" id="ekS-gs-4db"/>
                 <constraint firstItem="oz1-yC-uZC" firstAttribute="leading" secondItem="qNv-Yk-nvp" secondAttribute="trailing" constant="8" id="gNU-dG-Iah"/>
                 <constraint firstItem="oz1-yC-uZC" firstAttribute="baseline" secondItem="qNv-Yk-nvp" secondAttribute="baseline" id="t2c-O7-ORF"/>
@@ -1589,10 +1589,10 @@
                 <constraint firstItem="Ttu-Y8-S4Y" firstAttribute="firstBaseline" secondItem="AuL-MP-Wlj" secondAttribute="firstBaseline" id="v0N-nd-a8d"/>
                 <constraint firstItem="63o-gu-DxA" firstAttribute="leading" secondItem="bGH-kO-7Rd" secondAttribute="leading" id="yem-Xi-Hum"/>
             </constraints>
-            <point key="canvasLocation" x="7" y="472"/>
+            <point key="canvasLocation" x="7" y="471.5"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="646" height="185"/>
+        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="all">
+            <rect key="frame" x="0.0" y="0.0" width="666" height="185"/>
             <subviews>
                 <textField identifier="SectionTitleSidebars" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E6K-jW-Lzn">
                     <rect key="frame" x="-2" y="161" width="124" height="16"/>
@@ -1662,9 +1662,9 @@
                     </textFieldCell>
                 </textField>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="jiM-84-6ud" userLabel="Leading-Sidebar Box">
-                    <rect key="frame" x="117" y="4" width="265" height="92"/>
+                    <rect key="frame" x="117" y="4" width="275" height="92"/>
                     <view key="contentView" id="aFh-mF-xhE" userLabel="Leading-Sidebar-Box View">
-                        <rect key="frame" x="4" y="5" width="257" height="84"/>
+                        <rect key="frame" x="4" y="5" width="267" height="84"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hz5-Bh-Bzv" userLabel="Placement:">
@@ -1676,7 +1676,7 @@
                                 </textFieldCell>
                             </textField>
                             <popUpButton tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="wiB-Tv-9cY" userLabel="Leading-Sidebar-Placement Popup">
-                                <rect key="frame" x="89" y="52" width="156" height="25"/>
+                                <rect key="frame" x="89" y="52" width="166" height="25"/>
                                 <popUpButtonCell key="cell" type="push" title="Inside Video Area" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="Cdh-wM-gMg" id="hXh-l5-uZk" userLabel="Leading-Sidebar-Placement-Popup Button Cell">
                                     <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="menu"/>
@@ -1691,9 +1691,9 @@
                                     <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.leadingSidebarPlacement" id="kPZ-Yv-pWR"/>
                                 </connections>
                             </popUpButton>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="H5W-Uo-D64" userLabel="Show open/close button">
-                                <rect key="frame" x="14" y="31" width="173" height="18"/>
-                                <buttonCell key="cell" type="check" title="Show open/close button" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="HRJ-kL-GUh" userLabel="Show open/close button">
+                            <button translatesAutoresizingMaskIntoConstraints="NO" id="H5W-Uo-D64" userLabel="Show open/close button in title bar">
+                                <rect key="frame" x="14" y="31" width="237" height="18"/>
+                                <buttonCell key="cell" type="check" title="Show open/close button in title bar" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="HRJ-kL-GUh" userLabel="Show open/close button in title bar">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
@@ -1701,9 +1701,9 @@
                                     <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showLeadingSidebarToggleButton" id="Csg-6V-fmS"/>
                                 </connections>
                             </button>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="ogu-q9-cqE" userLabel="Click on video area to close">
-                                <rect key="frame" x="14" y="7" width="163" height="18"/>
-                                <buttonCell key="cell" type="check" title="Click on video area to close" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Da2-Ew-ibb">
+                            <button translatesAutoresizingMaskIntoConstraints="NO" id="ogu-q9-cqE" userLabel="Close when video area is clicked">
+                                <rect key="frame" x="14" y="7" width="223" height="18"/>
+                                <buttonCell key="cell" type="check" title="Close when video area is clicked" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Da2-Ew-ibb">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
@@ -1731,7 +1731,7 @@
                     </view>
                 </box>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6mM-VC-jd0">
-                    <rect key="frame" x="385" y="98" width="88" height="16"/>
+                    <rect key="frame" x="395" y="98" width="88" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Right sidebar:" id="Msi-a9-5mJ">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1739,9 +1739,9 @@
                     </textFieldCell>
                 </textField>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="4b0-vT-JOG" userLabel="Trailing-Sidebar Box">
-                    <rect key="frame" x="384" y="4" width="265" height="92"/>
+                    <rect key="frame" x="394" y="4" width="275" height="92"/>
                     <view key="contentView" id="bxF-0O-DOu" userLabel="Trailing-Sidebar-Box View">
-                        <rect key="frame" x="4" y="5" width="257" height="84"/>
+                        <rect key="frame" x="4" y="5" width="267" height="84"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qi3-uT-vzk" userLabel="Placement:">
@@ -1753,7 +1753,7 @@
                                 </textFieldCell>
                             </textField>
                             <popUpButton tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Zie-x0-OWg" userLabel="Trailing-Sidebar-Placement Popup">
-                                <rect key="frame" x="89" y="52" width="156" height="25"/>
+                                <rect key="frame" x="89" y="52" width="166" height="25"/>
                                 <popUpButtonCell key="cell" type="push" title="Inside Video Area" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="qKa-t2-wft" id="Eyg-Hz-xY8" userLabel="Leading-Sidebar-Placement-Popup Button Cell">
                                     <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="menu"/>
@@ -1768,9 +1768,9 @@
                                     <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.trailingSidebarPlacement" id="jhI-sX-1Bc"/>
                                 </connections>
                             </popUpButton>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="esN-qM-PXI" userLabel="Show open/close button">
-                                <rect key="frame" x="14" y="31" width="173" height="18"/>
-                                <buttonCell key="cell" type="check" title="Show open/close button" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9lH-Oi-1Xp" userLabel="Show open/close button">
+                            <button translatesAutoresizingMaskIntoConstraints="NO" id="esN-qM-PXI" userLabel="Show open/close button in title bar">
+                                <rect key="frame" x="14" y="31" width="237" height="18"/>
+                                <buttonCell key="cell" type="check" title="Show open/close button in title bar" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9lH-Oi-1Xp" userLabel="Show open/close button in title bar">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
@@ -1778,9 +1778,9 @@
                                     <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showTrailingSidebarToggleButton" id="7Wx-Ee-Ex2"/>
                                 </connections>
                             </button>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="zke-Iv-K9m" userLabel="Click on video area to close">
-                                <rect key="frame" x="14" y="7" width="163" height="18"/>
-                                <buttonCell key="cell" type="check" title="Click on video area to close" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="icA-2b-l8k">
+                            <button translatesAutoresizingMaskIntoConstraints="NO" id="zke-Iv-K9m" userLabel="Close when video area is clicked">
+                                <rect key="frame" x="14" y="7" width="223" height="18"/>
+                                <buttonCell key="cell" type="check" title="Close when video area is clicked" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="icA-2b-l8k">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
@@ -1879,13 +1879,13 @@
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                             <connections>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.enableThumbnailForRemoteFiles" id="gje-G2-RzV"/>
+                                <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.enableThumbnailPreview" id="QnO-oW-DaG"/>
                                 <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.enableThumbnailPreview" previousBinding="QnO-oW-DaG" id="yhR-k2-uwe">
                                     <dictionary key="options">
                                         <string key="NSValueTransformerName">NSNegateBoolean</string>
                                     </dictionary>
                                 </binding>
-                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.enableThumbnailForRemoteFiles" id="gje-G2-RzV"/>
-                                <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.enableThumbnailPreview" id="QnO-oW-DaG"/>
                             </connections>
                         </button>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="4GJ-sd-vQm" userLabel="Enable for music mode also Checkbox">
@@ -1898,13 +1898,13 @@
                                 <constraint firstAttribute="height" constant="18" id="CJP-rj-E0h"/>
                             </constraints>
                             <connections>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.enableThumbnailForMusicMode" id="MYg-Dk-WNc"/>
                                 <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.enableThumbnailPreview" id="UUh-m7-1QS"/>
                                 <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.enableThumbnailPreview" previousBinding="UUh-m7-1QS" id="god-bj-7lB">
                                     <dictionary key="options">
                                         <string key="NSValueTransformerName">NSNegateBoolean</string>
                                     </dictionary>
                                 </binding>
-                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.enableThumbnailForMusicMode" id="MYg-Dk-WNc"/>
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="TKl-lp-bgR" userLabel="0pt Spacer">
@@ -2405,7 +2405,7 @@ Picture:</string>
                                 </textFieldCell>
                             </textField>
                             <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="o7N-Tm-Aly">
-                                <rect key="frame" x="69" y="31" width="79" height="15"/>
+                                <rect key="frame" x="69" y="29.5" width="79" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Do nothing" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="Zc7-sP-Rdp">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -2415,7 +2415,7 @@ Picture:</string>
                                 </connections>
                             </button>
                             <button tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BMA-ed-2gf">
-                                <rect key="frame" x="155" y="31" width="46" height="15"/>
+                                <rect key="frame" x="155" y="29.5" width="46" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Hide" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="xtL-XT-xzb">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>
@@ -2425,7 +2425,7 @@ Picture:</string>
                                 </connections>
                             </button>
                             <button tag="2" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="YWw-1J-3Gr">
-                                <rect key="frame" x="208" y="31" width="68" height="15"/>
+                                <rect key="frame" x="208" y="29.5" width="68" height="15"/>
                                 <buttonCell key="cell" type="radio" title="Minimize" bezelStyle="regularSquare" imagePosition="left" alignment="left" controlSize="small" inset="2" id="H1F-mm-Saq">
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="message" size="11"/>

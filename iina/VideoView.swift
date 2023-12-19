@@ -270,6 +270,7 @@ class VideoView: NSView {
 
     videoLayer.suspend()
     checkResult(CVDisplayLinkStop(link), "CVDisplayLinkStop")
+    log.verbose("DisplayLink stopped")
   }
 
   /// This should be called at start or if the window has changed displays
