@@ -388,9 +388,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   /// `windowWillResize`, but specfically applied when in music mode
   func resizeWindow(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
-    log.verbose("REQ SIZE: \(requestedSize)")
     resetScrollingLabels()
-    let oldGeometry = windowController.musicModeGeometry!
 
     if requestedSize.width < Constants.Distance.MusicMode.minWindowWidth {
       // Responding with the current size seems to work much better with certain window management tools
@@ -403,11 +401,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       return window.frame.size
     }
 
-    let requestedWindowFrame = NSRect(origin: oldGeometry.windowFrame.origin, size: requestedSize)
+    let oldGeometry = windowController.musicModeGeometry!
+    let requestedWindowFrame = NSRect(origin: window.frame.origin, size: requestedSize)
     var newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
     IINAAnimation.disableAnimation{
-      // FIXME: this is super jittery when resizing via the bottom of the window. Possible imprecision?
-      /// this will set `windowController.musicModeGeometry` after applying any necessary constraints
+      /// This will set `windowController.musicModeGeometry` after applying any necessary constraints
       newGeometry = windowController.applyMusicModeGeometry(newGeometry, setFrame: false, animate: false, updateCache: false)
     }
 
@@ -468,8 +466,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
         windowController.viewportViewHeightContraint = heightConstraint
       }
     }
-
-    windowController.forceDraw()
   }
 
   func buildMusicModeGeometryFromPrefs() -> MusicModeGeometry {

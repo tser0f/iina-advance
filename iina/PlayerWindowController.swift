@@ -1116,7 +1116,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     videoView.refreshContentsScale()
     // add constraints
     videoView.translatesAutoresizingMaskIntoConstraints = false
-    videoView.apply(geometry)
+    if !player.info.isRestoring {  // this can mess up music mode restore
+      videoView.apply(geometry)
+    }
   }
 
   /** Set material for OSC and title bar */

@@ -165,8 +165,8 @@ extension PlayerWindowController {
     log.verbose("[\(transitionName)] InputGeometry: \(inputGeometry)")
 
     // OutputGeometry
-    let outputGeometry: PWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry, 
-                                                                   outputLayout: outputLayout, isInitialLayout: isInitialLayout)
+    let outputGeometry: PWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry,
+                                                              outputLayout: outputLayout, isInitialLayout: isInitialLayout)
     log.verbose("[\(transitionName)] OutputGeometry: \(outputGeometry)")
 
     let transition = LayoutTransition(name: transitionName,
@@ -280,10 +280,8 @@ extension PlayerWindowController {
         log.verbose("[\(transition.name)] Moving & resizing window")
 
         player.window.setFrameImmediately(transition.outputGeometry.videoFrameInScreenCoords)
-        if musicModeGeometry.isVideoVisible {
-          // Entering music mode when album art is visible
-          videoView.apply(transition.outputGeometry)
-        } else {
+        videoView.apply(transition.outputGeometry)
+        if !musicModeGeometry.isVideoVisible {
           // Entering music mode when album art is hidden
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
         }
@@ -418,10 +416,11 @@ extension PlayerWindowController {
         return nil
       }
 
-      return transition.inputGeometry.withResizedBars(outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
-                                                      outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
-                                                      insideTopBarHeight: 0, insideTrailingBarWidth: 0,
-                                                      insideBottomBarHeight: 0, insideLeadingBarWidth: 0)
+      return PWindowGeometry(windowFrame: transition.inputGeometry.videoFrameInScreenCoords, screenID: transition.inputGeometry.screenID,
+                             fitOption: transition.inputGeometry.fitOption, mode: .musicMode, topMarginHeight: 0,
+                             outsideTopBarHeight: 0, outsideTrailingBarWidth: 0, outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
+                             insideTopBarHeight: 0, insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
+                             videoAspectRatio: transition.inputGeometry.videoAspectRatio)
     } else if transition.isExitingMusicMode {
       // Only bottom bar needs to be closed. No need to constrain in screen
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)

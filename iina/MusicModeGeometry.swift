@@ -25,9 +25,9 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     self.screenID = screenID
     if isPlaylistVisible {
       /// Ignore given `playlistHeight` and calculate it from the other params
-      let videoHeight = isVideoVisible ? round(windowFrame.width / videoAspectRatio) : 0
+      let videoHeight = isVideoVisible ? windowFrame.width / videoAspectRatio : 0
       let musicModeOSCHeight = Constants.Distance.MusicMode.oscHeight
-      self.playlistHeight = windowFrame.height - musicModeOSCHeight - videoHeight
+      self.playlistHeight = round(windowFrame.height - musicModeOSCHeight - videoHeight)
     } else {
       /// Sometimes `playlistHeight` can fall slightly below due to rounding errors. Just correct it:
       self.playlistHeight = max(playlistHeight, Constants.Distance.MusicMode.minPlaylistHeight)
