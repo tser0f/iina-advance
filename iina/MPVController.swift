@@ -953,11 +953,7 @@ not applying FFmpeg 9599 workaround
         // now that mpv has shut down. This is not needed when IINA sends the quit command to mpv
         // as in that case the observers are removed before the quit command is sent.
         removeOptionObservers()
-        // Submit the following task synchronously to ensure it is done before application
-        // termination is started.
-        DispatchQueue.main.sync {
-          self.player.mpvHasShutdown(isMPVInitiated: true)
-        }
+        player.mpvHasShutdown(isMPVInitiated: true)
         // Initiate application termination. AppKit requires this be done from the main thread,
         // however the main dispatch queue must not be used to avoid blocking the queue as per
         // instructions from Apple.
@@ -972,9 +968,7 @@ not applying FFmpeg 9599 workaround
       } else {
         mpv_destroy(mpv)
         mpv = nil
-        DispatchQueue.main.async {
-          self.player.mpvHasShutdown()
-        }
+        player.mpvHasShutdown()
       }
 
     case MPV_EVENT_LOG_MESSAGE:

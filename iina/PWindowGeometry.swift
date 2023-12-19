@@ -313,7 +313,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
   }
 
-  static func minVideoWidth(forMode mode: PlayerWindowMode) -> CGFloat {
+  /// Note: this does not preserve aspect ratio
+  private static func minVideoWidth(forMode mode: PlayerWindowMode) -> CGFloat {
     switch mode {
     case .windowedInteractive, .fullScreenInteractive:
       return Constants.InteractiveMode.minWindowWidth - PWindowGeometry.minViewportMargins(forMode: mode).totalWidth
@@ -324,7 +325,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
   }
 
-  static func minVideoHeight(forMode mode: PlayerWindowMode) -> CGFloat {
+  /// Note: this does not preserve aspect ratio
+  private static func minVideoHeight(forMode mode: PlayerWindowMode) -> CGFloat {
     switch mode {
     case .musicMode:
       return 0
@@ -333,7 +335,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
   }
 
-  static func minVideoSize(forAspectRatio aspect: CGFloat, mode: PlayerWindowMode) -> CGSize {
+  static func computeMinVideoSize(forAspectRatio aspect: CGFloat, mode: PlayerWindowMode) -> CGSize {
     let minWidth = minVideoWidth(forMode: mode)
     let minHeight = minVideoHeight(forMode: mode)
     let size1 = NSSize(width: minWidth, height: round(minWidth / aspect))
@@ -613,7 +615,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     /// Make sure viewport size is at least as large as min.
     /// This is especially important when inside sidebars are taking up most of the space & `lockViewportToVideoSize` is `true`.
 
-    let minVideoSize = PWindowGeometry.minVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
+    let minVideoSize = PWindowGeometry.computeMinVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
     newViewportSize = NSSize(width: max(minVideoSize.width, newViewportSize.width),
                              height: max(minVideoSize.height, newViewportSize.height))
 
@@ -699,7 +701,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     var newVideoSize = desiredVideoSize
 
-    let minVideoSize = PWindowGeometry.minVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
+    let minVideoSize = PWindowGeometry.computeMinVideoSize(forAspectRatio: videoAspectRatio, mode: mode)
     let newWidth = max(minVideoSize.width, desiredVideoSize.width)
     /// Enforce `videoView` aspectRatio: Recalculate height using width
     newVideoSize = NSSize(width: newWidth, height: round(newWidth / videoAspectRatio))
@@ -793,16 +795,15 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
-  func apply(mpvGeometry: MPVGeometryDef, andDesiredVideoSize desiredVideoSize: NSSize? = nil) -> PWindowGeometry {
-    assert(fitOption != .noConstraints)
-    let screenFrame: NSRect = getContainerFrame()!
-    let maxVideoSize = computeMaxVideoSize(in: screenFrame.size)
-
-    var newVideoSize = videoSize
-    if let desiredVideoSize = desiredVideoSize {
-      newVideoSize.width = desiredVideoSize.width
-      newVideoSize.height = desiredVideoSize.height
+  func apply(mpvGeometry: MPVGeometryDef, andDesiredVideoSize desiredVideoSize: NSSize) -> PWindowGeometry {
+    guard let screenFrame: NSRect = getContainerFrame() else {
+      Logger.log("Cannot apply mpv geometry: no container frame found (fitOption: \(fitOption))")
+      return self
     }
+    let maxVideoSize = computeMaxVideoSize(in: screenFrame.size)
+    let minVideoSize = PWindowGeometry.computeMinVideoSize(forAspectRatio: videoAspectRatio, mode: .windowed)
+
+    var newVideoSize = desiredVideoSize
     var widthOrHeightIsSet = false
     // w and h can't take effect at same time
     if let strw = mpvGeometry.w, strw != "0" {
@@ -812,7 +813,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       } else {
         w = CGFloat(Int(strw)!)
       }
-      w = max(PWindowGeometry.minVideoWidth(forMode: .windowed), w)
+      w = max(minVideoSize.width, w)
       newVideoSize.width = w
       newVideoSize.height = w / videoAspectRatio
       widthOrHeightIsSet = true
@@ -823,7 +824,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       } else {
         h = CGFloat(Int(strh)!)
       }
-      h = max(PWindowGeometry.minVideoHeight(forMode: .windowed), h)
+      h = max(minVideoSize.height, h)
       newVideoSize.height = h
       newVideoSize.width = h * videoAspectRatio
       widthOrHeightIsSet = true
