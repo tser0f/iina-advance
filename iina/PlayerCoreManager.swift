@@ -161,4 +161,9 @@ class PlayerCoreManager {
     return idleCore
   }
 
+  func removePlayer(withLabel label: String) {
+    lock.withLock {
+      playerCores.removeAll(where: { (player) in player.label == label })
+    }
+  }
 }

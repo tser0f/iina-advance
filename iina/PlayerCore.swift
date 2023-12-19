@@ -483,11 +483,16 @@ class PlayerCore: NSObject {
   /// - Important: As a part of shutting down the player this method sends a quit command to mpv. Even though the command is
   ///     sent to mpv using the synchronous API mpv executes the quit command asynchronously. The player is not fully shutdown
   ///     until mpv finishes executing the quit command and shuts down.
-  func shutdown() {
+  func shutdown(saveIfEnabled: Bool = true) {
     DispatchQueue.main.async { [self] in
       guard !isShuttingDown else { return }
       Logger.log("Shutting down", subsystem: subsystem)
-      savePlayerStateForShutdown()
+      if saveIfEnabled {
+        savePlayerStateForShutdown()
+      } else {
+        log.debug("Removing player \(label)")
+        PlayerCore.manager.removePlayer(withLabel: label)
+      }
       mpv.queue.async { [self] in
         mpv.mpvQuit()
       }

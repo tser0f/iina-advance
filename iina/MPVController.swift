@@ -1615,8 +1615,11 @@ not applying FFmpeg 9599 workaround
    */
   private func chkErr(_ status: Int32!) {
     guard status < 0 else { return }
-    DispatchQueue.main.async {
-      Logger.fatal("mpv API error: \"\(String(cString: mpv_error_string(status)))\", Return value: \(status!).")
+    DispatchQueue.main.async { [self] in
+      let message = "mpv API error: \"\(String(cString: mpv_error_string(status)))\", Return value: \(status!)."
+      player.log.error(message)
+      Utility.showAlert("fatal_error", arguments: [message])
+      player.shutdown(saveIfEnabled: false)
     }
   }
 }
