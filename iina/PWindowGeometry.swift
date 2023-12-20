@@ -257,7 +257,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   var description: String {
-    return "PWindowGeometry (screenID: \(screenID.quoted), fit: \(fitOption), topMargin: \(topMarginHeight), outsideBars: \(outsideBars), insideBars: \(insideBars), viewportMargins: \(viewportMargins), videoAspectRatio: \(videoAspectRatio), videoSize: \(videoSize) windowFrame: \(windowFrame))"
+    return "PWindowGeometry (screenID: \(screenID.quoted), mode: \(mode) fit: \(fitOption), topMargin: \(topMarginHeight), outsideBars: \(outsideBars), insideBars: \(insideBars), viewportMargins: \(viewportMargins), videoAspectRatio: \(videoAspectRatio), videoSize: \(videoSize) windowFrame: \(windowFrame))"
   }
 
   /// Calculated from `windowFrame`.
@@ -530,7 +530,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       leadingMargin = leadingMargin.rounded(.down)
       trailingMargin = trailingMargin.rounded(.up)
     }
-    
+
     if Logger.isTraceEnabled {
       let remainingWidthForVideo = viewportSize.width - (leadingMargin + trailingMargin)
       Logger.log("Viewport: Sidebars=[lead:\(insideBars.leading), trail:\(insideBars.trailing)] leadMargin: \(leadingMargin), trailMargin: \(trailingMargin), remainingWidthForVideo: \(remainingWidthForVideo), videoWidth: \(videoSize.width)")
@@ -601,12 +601,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let mode = mode ?? self.mode
     let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
     // do not center in screen again unless explicitly requested
-    var newFitOption = fitOption ?? (self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption)
-    if newFitOption == .legacyFullScreen || newFitOption == .nativeFullScreen {
-      // Programmer screwed up
-      Logger.log("[geo] ScaleViewport: invalid fit option: \(newFitOption). Defaulting to 'none'", level: .error)
-      newFitOption = .noConstraints
-    }
+    let newFitOption = fitOption ?? (self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption)
     let outsideBarsSize = self.outsideBarsTotalSize
     let newScreenID = screenID ?? self.screenID
     let containerFrame: NSRect? = PWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: newFitOption)

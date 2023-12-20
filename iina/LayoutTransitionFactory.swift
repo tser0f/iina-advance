@@ -385,25 +385,39 @@ extension PlayerWindowController {
       return imGeo
 
     case .windowed:
-      let outputGeo = outputLayout.convertWindowedModeGeometry(from: windowedModeGeometry, videoAspectRatio: inputGeometry.videoAspectRatio)
+      let prevWindowedGeo = windowedModeGeometry!
+      let outputGeo = outputLayout.convertWindowedModeGeometry(from: prevWindowedGeo, videoAspectRatio: inputGeometry.videoAspectRatio)
       if isInitialLayout {
         return outputGeo
       }
 
       let ΔOutsideWidth = outputGeo.outsideBarsTotalWidth - inputGeometry.outsideBarsTotalWidth
       let ΔOutsideHeight = outputGeo.outsideBarsTotalHeight - inputGeometry.outsideBarsTotalHeight
-      // Shrinking window width, or keeping width the same but shrinking height?
-      if ΔOutsideWidth < 0 || (ΔOutsideWidth == 0 && ΔOutsideHeight < 0) {
-        // If opening an outside bar causes the video to be shrunk to fit everything on screen, we want to be able to restore
-        // its previous size when the bar is closed again, instead of leaving the window in a smaller size.
-        // Add check for aspect ratio & interactive mode so that we don't enable this when cropping or other things:
-        if let prevIntendedViewportSize = player.info.intendedViewportSize,
-           !inputLayout.spec.isInteractiveMode && !outputLayout.spec.isInteractiveMode,
-           windowedModeGeometry.videoAspectRatio.aspectNormalDecimalString == inputGeometry.videoAspectRatio.aspectNormalDecimalString {
-          log.verbose("Instead of shrinking window by \(ΔOutsideWidth) W & \(ΔOutsideHeight) H, will restore prev intendedViewportSize (\(prevIntendedViewportSize))")
-          return outputGeo.scaleViewport(to: prevIntendedViewportSize, mode: outputLayout.mode)
+
+      if let screenFrame = PWindowGeometry.getContainerFrame(forScreenID: prevWindowedGeo.screenID, fitOption: prevWindowedGeo.fitOption) {
+        // If window already fills screen width, do not shrink window width when collapsing outside sidebars.
+        // So it will seem to "stick" to the screen edges when filling the screen but if already smaller, will allow the window to shrink.
+        // This should be more intuitive to the user than trying to keep track of the user's past intent.
+        if ΔOutsideWidth != 0, prevWindowedGeo.windowFrame.width == screenFrame.width {
+          let newViewportWidth = screenFrame.width - outputGeo.outsideBarsTotalWidth
+          let widthRatio = newViewportWidth / inputGeometry.viewportSize.width
+          let heightFillsScreen = prevWindowedGeo.windowFrame.height == screenFrame.height
+          let newViewportHeight = heightFillsScreen ? inputGeometry.viewportSize.height : round(inputGeometry.viewportSize.height * widthRatio)
+          let resizedViewport = NSSize(width: newViewportWidth, height: newViewportHeight)
+          return outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
+        }
+
+        // If window already fills screen height, keep window height (do not shrink window) when collapsing outside bars.
+        if ΔOutsideHeight != 0, prevWindowedGeo.windowFrame.height == screenFrame.height {
+          let newViewportHeight = screenFrame.height - outputGeo.outsideBarsTotalHeight
+          let heightRatio = newViewportHeight / inputGeometry.viewportSize.height
+          let widthFillsScreen = prevWindowedGeo.windowFrame.width == screenFrame.width
+          let newViewportWidth = widthFillsScreen ? inputGeometry.viewportSize.width : round(inputGeometry.viewportSize.width * heightRatio)
+          let resizedViewport = NSSize(width: newViewportWidth, height: newViewportHeight)
+          return outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
         }
       }
+
       return outputGeo
     }
   }

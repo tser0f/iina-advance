@@ -1354,7 +1354,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @objc private func hideCursor() {
     guard !currentLayout.isInteractiveMode, !currentLayout.isMusicMode else { return }
-    log.verbose("Hiding cursor")
+    if log.isTraceEnabled {
+      log.verbose("Hiding cursor")
+    }
     hideCursorTimer = nil
     NSCursor.setHiddenUntilMouseMoves(true)
   }

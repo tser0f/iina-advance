@@ -124,7 +124,7 @@ extension PlayerWindowController {
 
       player.info.videoParams = videoParams
 
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.VideoReconfigDuration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`
         log.debug("[MPVVideoReconfig Apply] Applying result (FS:\(isFullScreen.yn)) → videoSize:\(newWindowGeo.videoSize) newWindowFrame: \(newWindowGeo.windowFrame)")
 
