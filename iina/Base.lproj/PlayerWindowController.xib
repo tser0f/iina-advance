@@ -318,7 +318,7 @@
                             <outlet property="yConstraint" destination="cRP-R4-zYY" id="kxT-61-1SZ"/>
                         </connections>
                     </visualEffectView>
-                    <visualEffectView identifier="TopBarView" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="TopBar View">
+                    <visualEffectView identifier="TopBarView" blendingMode="withinWindow" material="titlebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="TopBar View">
                         <rect key="frame" x="0.0" y="372" width="640" height="28"/>
                         <subviews>
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="Title-Bar View">
@@ -362,7 +362,7 @@
                             <constraint firstItem="pgt-r3-Vbf" firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="bottom" id="xMQ-WC-fps"/>
                         </constraints>
                     </visualEffectView>
-                    <visualEffectView identifier="BottomBarView" hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="BottomBar View">
+                    <visualEffectView identifier="BottomBarView" hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="BottomBar View">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="0.0"/>
                         <subviews>
                             <box identifier="ControlBarBottomTopBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="EJf-SX-YpP" userLabel="BottomBar-Top-Border Box">

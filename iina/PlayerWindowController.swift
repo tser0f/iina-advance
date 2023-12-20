@@ -831,8 +831,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
 
-    window.backgroundColor = .black
-
     /// Set `viewportView`'s background to black so that the windows behind this one don't bleed through
     /// when `lockViewportToVideoSize` is disabled.
     viewportView.wantsLayer = true
