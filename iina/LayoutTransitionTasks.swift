@@ -304,8 +304,9 @@ extension PlayerWindowController {
                                 setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
 
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
-      // Also do not apply when toggling fullscreen because it is not relevant at this stage and will cause glitches in the animation.
-      if !transition.isInitialLayout && !transition.isTogglingFullScreen {
+      // Also do not apply when toggling fullscreen because it is not relevant at this stage and will look glitchy because the
+      // animation has zero duration.
+      if !transition.isInitialLayout && (transition.isTogglingMusicMode || !transition.isTogglingFullScreen) {
         log.debug("[\(transition.name)] Calling setFrame from closeOldPanels with \(middleGeo.windowFrame)")
         player.window.setFrameImmediately(middleGeo.windowFrame)
         if !transition.isExitingInteractiveMode {
@@ -990,7 +991,7 @@ extension PlayerWindowController {
     // Need to make sure this executes after styleMask is .titled
     addTitleBarAccessoryViews()
 
-    if !transition.isInitialLayout {
+    if !transition.isInitialLayout && !transition.isTogglingMusicMode {
       videoView.layoutSubtreeIfNeeded()
       forceDraw()
     }

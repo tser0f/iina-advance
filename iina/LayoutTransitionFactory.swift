@@ -391,8 +391,8 @@ extension PlayerWindowController {
         return outputGeo
       }
 
-      let ΔOutsideWidth = outputGeo.outsideBarsTotalWidth - inputGeometry.outsideBarsTotalWidth
-      let ΔOutsideHeight = outputGeo.outsideBarsTotalHeight - inputGeometry.outsideBarsTotalHeight
+      let ΔOutsideWidth = outputGeo.outsideBarsTotalWidth - prevWindowedGeo.outsideBarsTotalWidth
+      let ΔOutsideHeight = outputGeo.outsideBarsTotalHeight - prevWindowedGeo.outsideBarsTotalHeight
 
       if let screenFrame = PWindowGeometry.getContainerFrame(forScreenID: prevWindowedGeo.screenID, fitOption: prevWindowedGeo.fitOption) {
         // If window already fills screen width, do not shrink window width when collapsing outside sidebars.
@@ -400,9 +400,9 @@ extension PlayerWindowController {
         // This should be more intuitive to the user than trying to keep track of the user's past intent.
         if ΔOutsideWidth != 0, prevWindowedGeo.windowFrame.width == screenFrame.width {
           let newViewportWidth = screenFrame.width - outputGeo.outsideBarsTotalWidth
-          let widthRatio = newViewportWidth / inputGeometry.viewportSize.width
+          let widthRatio = newViewportWidth / prevWindowedGeo.viewportSize.width
           let heightFillsScreen = prevWindowedGeo.windowFrame.height == screenFrame.height
-          let newViewportHeight = heightFillsScreen ? inputGeometry.viewportSize.height : round(inputGeometry.viewportSize.height * widthRatio)
+          let newViewportHeight = heightFillsScreen ? prevWindowedGeo.viewportSize.height : round(prevWindowedGeo.viewportSize.height * widthRatio)
           let resizedViewport = NSSize(width: newViewportWidth, height: newViewportHeight)
           return outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
         }
@@ -410,9 +410,9 @@ extension PlayerWindowController {
         // If window already fills screen height, keep window height (do not shrink window) when collapsing outside bars.
         if ΔOutsideHeight != 0, prevWindowedGeo.windowFrame.height == screenFrame.height {
           let newViewportHeight = screenFrame.height - outputGeo.outsideBarsTotalHeight
-          let heightRatio = newViewportHeight / inputGeometry.viewportSize.height
+          let heightRatio = newViewportHeight / prevWindowedGeo.viewportSize.height
           let widthFillsScreen = prevWindowedGeo.windowFrame.width == screenFrame.width
-          let newViewportWidth = widthFillsScreen ? inputGeometry.viewportSize.width : round(inputGeometry.viewportSize.width * heightRatio)
+          let newViewportWidth = widthFillsScreen ? prevWindowedGeo.viewportSize.width : round(prevWindowedGeo.viewportSize.width * heightRatio)
           let resizedViewport = NSSize(width: newViewportWidth, height: newViewportHeight)
           return outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
         }
@@ -425,12 +425,15 @@ extension PlayerWindowController {
   // Currently there are 4 bars. Each can be either inside or outside, exclusively.
   func buildMiddleGeometry(forTransition transition: LayoutTransition) -> PWindowGeometry? {
     if transition.isEnteringMusicMode {
+      let middleWindowFrame: NSRect
       if transition.inputLayout.isFullScreen {
-        // "ExitFullScreen" animation does not use the Close Panels step currently. May want to enhance it in the future
-        return nil
+        // Need middle geo so that sidebars get closed
+        middleWindowFrame = windowedModeGeometry.videoFrameInScreenCoords
+      } else {
+        middleWindowFrame = transition.inputGeometry.videoFrameInScreenCoords
       }
 
-      return PWindowGeometry(windowFrame: transition.inputGeometry.videoFrameInScreenCoords, screenID: transition.inputGeometry.screenID,
+      return PWindowGeometry(windowFrame: middleWindowFrame, screenID: transition.inputGeometry.screenID,
                              fitOption: transition.inputGeometry.fitOption, mode: .musicMode, topMarginHeight: 0,
                              outsideTopBarHeight: 0, outsideTrailingBarWidth: 0, outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
                              insideTopBarHeight: 0, insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
@@ -457,6 +460,7 @@ extension PlayerWindowController {
         return resizedGeo.scaleViewport(mode: transition.inputLayout.mode)
       }
     }
+
     // TOP
     let topBarHeight: CGFloat
     if !transition.isInitialLayout && transition.isTopBarPlacementChanging {

@@ -257,7 +257,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   var description: String {
-    return "PWindowGeometry (screenID: \(screenID.quoted), mode: \(mode) fit: \(fitOption), topMargin: \(topMarginHeight), outsideBars: \(outsideBars), insideBars: \(insideBars), viewportMargins: \(viewportMargins), videoAspectRatio: \(videoAspectRatio), videoSize: \(videoSize) windowFrame: \(windowFrame))"
+    return "PWindowGeometry (screenID: \(screenID.quoted), mode: \(mode), fit: \(fitOption), topMargin: \(topMarginHeight), outsideBars: \(outsideBars), insideBars: \(insideBars), viewportMargins: \(viewportMargins), videoAspectRatio: \(videoAspectRatio), videoSize: \(videoSize) windowFrame: \(windowFrame))"
   }
 
   /// Calculated from `windowFrame`.
