@@ -145,7 +145,7 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     // Make sure height is within acceptable values
     var newHeight = max(requestedSize.height, minWindowHeight)
     let maxHeight = isPlaylistVisible ? containerFrame.height : minWindowHeight
-    newHeight = min(newHeight, maxHeight)
+    newHeight = min(round(newHeight), maxHeight)
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
 
     let newWindowFrame = NSRect(origin: windowFrame.origin, size: newWindowSize).constrain(in: containerFrame)

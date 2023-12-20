@@ -455,6 +455,10 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     guard viewportSize.width > 0 && viewportSize.height > 0 else {
       return BoxQuad.zero
     }
+    if mode == .musicMode {
+      // Viewport size is always equal to video size in music mode
+      return BoxQuad.zero
+    }
     var leadingMargin: CGFloat = 0
     var trailingMargin: CGFloat = 0
 

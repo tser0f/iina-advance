@@ -2055,6 +2055,7 @@ class PlayerCore: NSObject {
     info.vid = vid
     log.verbose("Video track changed to: \(vid)")
     DispatchQueue.main.async{ [self] in
+      windowController.forceDraw()
       windowController.refreshAlbumArtDisplay()
     }
     postNotification(.iinaVIDChanged)

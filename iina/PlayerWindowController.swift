@@ -1038,6 +1038,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Part 2: default audio aspect ratio
 
+    // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
+    guard let videoParams = player.mpv.queryForVideoParams() else { return }
+
     let oldAspectRatio = player.info.videoAspectRatio
     let newAspectRatio: CGFloat
     if showDefaultArt || player.info.currentMediaAudioStatus == .isAudio {
