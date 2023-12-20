@@ -558,12 +558,12 @@ extension PlayerWindowController {
       return outputLayout
     }
 
-    func buildFullScreenGeometry(inScreenID screenID: String, videoAspectRatio: CGFloat) -> PWindowGeometry {
+    func buildFullScreenGeometry(inScreenID screenID: String, videoAspect: CGFloat) -> PWindowGeometry {
       let screen = NSScreen.getScreenOrDefault(screenID: screenID)
-      return buildFullScreenGeometry(inside: screen, videoAspectRatio: videoAspectRatio)
+      return buildFullScreenGeometry(inside: screen, videoAspect: videoAspect)
     }
 
-    func buildFullScreenGeometry(inside screen: NSScreen, videoAspectRatio: CGFloat) -> PWindowGeometry {
+    func buildFullScreenGeometry(inside screen: NSScreen, videoAspect: CGFloat) -> PWindowGeometry {
       assert(isFullScreen)
 
       if isInteractiveMode {
@@ -576,7 +576,7 @@ extension PlayerWindowController {
                                outsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
                                outsideLeadingBarWidth: 0, insideTopBarHeight: 0,
                                insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
-                               viewportMargins: Constants.InteractiveMode.viewportMargins, videoAspectRatio: videoAspectRatio)
+                               viewportMargins: Constants.InteractiveMode.viewportMargins, videoAspect: videoAspect)
       }
 
       return PWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle, mode: mode,
@@ -588,11 +588,11 @@ extension PlayerWindowController {
                                            insideTrailingBarWidth: insideTrailingBarWidth,
                                            insideBottomBarHeight: insideBottomBarHeight,
                                            insideLeadingBarWidth: insideLeadingBarWidth,
-                                           videoAspectRatio: videoAspectRatio)
+                                           videoAspect: videoAspect)
     }
 
     // Converts & updates existing geometry to this layout
-    func convertWindowedModeGeometry(from existingGeometry: PWindowGeometry, videoAspectRatio: CGFloat? = nil) -> PWindowGeometry {
+    func convertWindowedModeGeometry(from existingGeometry: PWindowGeometry, videoAspect: CGFloat? = nil) -> PWindowGeometry {
       return existingGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
                                               outsideTrailingBarWidth: outsideTrailingBarWidth,
                                               outsideBottomBarHeight: outsideBottomBarHeight,
@@ -601,7 +601,7 @@ extension PlayerWindowController {
                                               insideTrailingBarWidth: insideTrailingBarWidth,
                                               insideBottomBarHeight: insideBottomBarHeight,
                                               insideLeadingBarWidth: insideLeadingBarWidth,
-                                              videoAspectRatio: videoAspectRatio)
+                                              videoAspect: videoAspect)
     }
 
   }  // end class LayoutState

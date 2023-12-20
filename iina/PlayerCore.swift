@@ -853,7 +853,7 @@ class PlayerCore: NSObject {
   /// Set video's aspect ratio. The param may be one of:
   /// 1. Target aspect ratio. This came from user input, either from a button, menu, or text entry.
   /// This can be either in colon notation (e.g., "16:10") or decimal ("2.333333").
-  /// 2. Actual aspect ratio (like `info.videoAspectRatio`, but that is applied *after* video rotation). After the target aspect
+  /// 2. Actual aspect ratio (like `info.videoAspect`, but that is applied *after* video rotation). After the target aspect
   /// is applied to the raw video dimensions, the resulting dimensions must be rounded to their nearest integer values
   /// (because of reasons). So when the aspect is recalculated from the new dimensions, the result may be slightly different.
   ///

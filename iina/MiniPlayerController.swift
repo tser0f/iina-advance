@@ -473,9 +473,9 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
     let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
-    let videoAspectRatio = player.info.videoAspectRatio
+    let videoAspect = player.info.videoAspect
     let desiredWindowWidth = Constants.Distance.MusicMode.defaultWindowWidth
-    let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspectRatio : 0
+    let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspect : 0
     let desiredWindowHeight = desiredVideoHeight + Constants.Distance.MusicMode.oscHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
 
     let screen = windowController.bestScreen
@@ -485,7 +485,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     let windowFrame = NSRect(origin: windowOrigin, size: windowSize)
     let desiredGeo = MusicModeGeometry(windowFrame: windowFrame, screenID: screen.screenID, playlistHeight: desiredPlaylistHeight,
                                        isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
-                                       videoAspectRatio: videoAspectRatio)
+                                       videoAspect: videoAspect)
     // Resize as needed to fit on screen:
     return desiredGeo.refit()
   }

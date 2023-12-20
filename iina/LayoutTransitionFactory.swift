@@ -28,10 +28,10 @@ extension PlayerWindowController {
       if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
         log.verbose("Setting windowedModeGeometry from prior state")
         windowedModeGeometry = priorWindowedModeGeometry
-        // Restore primary videoAspectRatio
+        // Restore primary videoAspect
         if priorLayoutSpec.mode != .musicMode {
-          log.verbose("Setting videoAspectRatio from prior windowedModeGeometry (\(windowedModeGeometry.videoAspectRatio))")
-          player.info.videoAspectRatio = windowedModeGeometry.videoAspectRatio
+          log.verbose("Setting videoAspect from prior windowedModeGeometry (\(windowedModeGeometry.videoAspect))")
+          player.info.videoAspect = windowedModeGeometry.videoAspect
           videoView.apply(windowedModeGeometry)
         }
       } else {
@@ -40,10 +40,10 @@ extension PlayerWindowController {
 
       if let priorMusicModeGeometry = priorState.musicModeGeometry {
         musicModeGeometry = priorMusicModeGeometry
-        // Restore primary videoAspectRatio
+        // Restore primary videoAspect
         if priorLayoutSpec.mode == .musicMode {
-          log.verbose("Setting videoAspectRatio from prior musicModeGeometry (\(musicModeGeometry.videoAspectRatio))")
-          player.info.videoAspectRatio = musicModeGeometry.videoAspectRatio
+          log.verbose("Setting videoAspect from prior musicModeGeometry (\(musicModeGeometry.videoAspect))")
+          player.info.videoAspect = musicModeGeometry.videoAspect
         }
       } else {
         log.error("Failed to get player window layout and/or geometry from prefs")
@@ -346,7 +346,7 @@ extension PlayerWindowController {
     case .windowed:
       return windowedModeGeometry
     case .fullScreen, .fullScreenInteractive:
-      return inputLayout.buildFullScreenGeometry(inside: windowedModeScreen, videoAspectRatio: player.info.videoAspectRatio)
+      return inputLayout.buildFullScreenGeometry(inside: windowedModeScreen, videoAspect: player.info.videoAspect)
     case .windowedInteractive:
       if let interactiveModeGeometry {
         return interactiveModeGeometry
@@ -367,13 +367,13 @@ extension PlayerWindowController {
 
     switch outputLayout.mode {
     case .musicMode:
-      /// `videoAspectRatio` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
-      let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspectRatio: player.info.videoAspectRatio).refit()
+      /// `videoAspect` may have gone stale while not in music mode. Update it (playlist height will be recalculated if needed):
+      let musicModeGeometryCorrected = musicModeGeometry.clone(videoAspect: player.info.videoAspect).refit()
       return musicModeGeometryCorrected.toPWindowGeometry()
 
     case .fullScreen, .fullScreenInteractive:
       // Full screen always uses same screen as windowed mode
-      return outputLayout.buildFullScreenGeometry(inScreenID: inputGeometry.screenID, videoAspectRatio: player.info.videoAspectRatio)
+      return outputLayout.buildFullScreenGeometry(inScreenID: inputGeometry.screenID, videoAspect: player.info.videoAspect)
 
     case .windowedInteractive:
       if let cachedInteractiveModeGeometry = interactiveModeGeometry {
@@ -386,7 +386,7 @@ extension PlayerWindowController {
 
     case .windowed:
       let prevWindowedGeo = windowedModeGeometry!
-      let outputGeo = outputLayout.convertWindowedModeGeometry(from: prevWindowedGeo, videoAspectRatio: inputGeometry.videoAspectRatio)
+      let outputGeo = outputLayout.convertWindowedModeGeometry(from: prevWindowedGeo, videoAspect: inputGeometry.videoAspect)
       if isInitialLayout {
         return outputGeo
       }
@@ -437,7 +437,7 @@ extension PlayerWindowController {
                              fitOption: transition.inputGeometry.fitOption, mode: .musicMode, topMarginHeight: 0,
                              outsideTopBarHeight: 0, outsideTrailingBarWidth: 0, outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
                              insideTopBarHeight: 0, insideTrailingBarWidth: 0, insideBottomBarHeight: 0, insideLeadingBarWidth: 0,
-                             videoAspectRatio: transition.inputGeometry.videoAspectRatio)
+                             videoAspect: transition.inputGeometry.videoAspect)
     } else if transition.isExitingMusicMode {
       // Only bottom bar needs to be closed. No need to constrain in screen
       return transition.inputGeometry.withResizedOutsideBars(newOutsideBottomBarHeight: 0)
@@ -525,7 +525,7 @@ extension PlayerWindowController {
                                                 insideTrailingBarWidth: insideTrailingBarWidth,
                                                 insideBottomBarHeight: insideBottomBarHeight,
                                                 insideLeadingBarWidth: insideLeadingBarWidth,
-                                                videoAspectRatio: transition.outputGeometry.videoAspectRatio)
+                                                videoAspect: transition.outputGeometry.videoAspect)
     }
 
     return transition.outputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,

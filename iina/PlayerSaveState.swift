@@ -117,7 +117,7 @@ struct PlayerSaveState {
             geo.viewportMargins.trailing.string2f,
             geo.viewportMargins.bottom.string2f,
             geo.viewportMargins.leading.string2f,
-            geo.videoAspectRatio.aspectNormalDecimalString,
+            geo.videoAspect.aspectNormalDecimalString,
             geo.windowFrame.origin.x.string2f,
             geo.windowFrame.origin.y.string2f,
             geo.windowFrame.width.string2f,
@@ -138,7 +138,7 @@ struct PlayerSaveState {
             geo.playlistHeight.string2f,
             geo.isVideoVisible.yn,
             geo.isPlaylistVisible.yn,
-            geo.videoAspectRatio.aspectNormalDecimalString,
+            geo.videoAspect.aspectNormalDecimalString,
             geo.screenID
     ].joined(separator: ",")
   }
@@ -510,7 +510,7 @@ struct PlayerSaveState {
             let viewportMarginTrailing = Double(iter.next()!),
             let viewportMarginBottom = Double(iter.next()!),
             let viewportMarginLeading = Double(iter.next()!),
-            let videoAspectRatio = Double(iter.next()!),
+            let videoAspect = Double(iter.next()!),
             let winOriginX = Double(iter.next()!),
             let winOriginY = Double(iter.next()!),
             let winWidth = Double(iter.next()!),
@@ -539,7 +539,7 @@ struct PlayerSaveState {
                              insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
                              insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
                              viewportMargins: viewportMargins,
-                             videoAspectRatio: videoAspectRatio)
+                             videoAspect: videoAspect)
     })
   }
 
@@ -559,7 +559,7 @@ struct PlayerSaveState {
             let playlistHeight = Double(iter.next()!),
             let isVideoVisible = Bool.yn(iter.next()!),
             let isPlaylistVisible = Bool.yn(iter.next()!),
-            let videoAspectRatio = Double(iter.next()!),
+            let videoAspect = Double(iter.next()!),
             let screenID = iter.next()
       else {
         Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
@@ -571,7 +571,7 @@ struct PlayerSaveState {
                                screenID: screenID,
                                playlistHeight: playlistHeight,
                                isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
-                               videoAspectRatio: videoAspectRatio)
+                               videoAspect: videoAspect)
     })
   }
 
@@ -752,6 +752,9 @@ struct PlayerSaveState {
     /// Otherwise the mpv core will keep the options for the lifetime of the player, which is often undesirable (for example,
     /// `MPVOption.PlaybackControl.start` will skip any files in the playlist which have durations shorter than its start time).
     let mpv: MPVController = player.mpv
+
+    // Better to always pause when starting, because there may be a slight delay before it can be enforced later
+    mpv.setFlag(MPVOption.PlaybackControl.pause, true)
 
     if let vid = int(for: .vid) {
       mpv.setInt(MPVOption.TrackSelection.vid, vid)

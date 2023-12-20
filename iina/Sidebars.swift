@@ -857,7 +857,7 @@ extension PlayerWindowController {
     case .windowed:
       oldGeo = windowedModeGeometry
     case .fullScreen:
-      oldGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: player.info.videoAspectRatio)
+      oldGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspect: player.info.videoAspect)
     case .musicMode, .windowedInteractive, .fullScreenInteractive:
       Logger.fatal("ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
     }

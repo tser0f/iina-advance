@@ -18,8 +18,8 @@ extension PlayerWindowController {
       log.error("[MPVVideoReconfig] Could not get videoDisplayRotatedSize from mpv! Cancelling adjustment")
       return
     }
-    let newVideoAspectRatio = videoDisplayRotatedSize.mpvAspect
-    log.verbose("[MPVVideoReconfig Start] VideoRaw:\(videoParams.videoRawSize) VideoDR:\(videoDisplayRotatedSize) AspectDR:\(newVideoAspectRatio) Rotation:\(videoParams.totalRotation) Scale:\(videoParams.videoScale)")
+    let newVideoAspect = videoDisplayRotatedSize.mpvAspect
+    log.verbose("[MPVVideoReconfig Start] VideoRaw:\(videoParams.videoRawSize) VideoDR:\(videoDisplayRotatedSize) AspectDR:\(newVideoAspect) Rotation:\(videoParams.totalRotation) Scale:\(videoParams.videoScale)")
 
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoDisplayRotatedSize
@@ -57,7 +57,7 @@ extension PlayerWindowController {
         let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
                                                                     videoScale: player.info.cachedWindowScale)
         // Update the cached objects even if not in windowed mode
-        player.info.videoAspectRatio = uncroppedWindowedGeo.videoAspectRatio
+        player.info.videoAspect = uncroppedWindowedGeo.videoAspect
         windowedModeGeometry = uncroppedWindowedGeo
 
         if currentLayout.mode == .fullScreen {
@@ -79,7 +79,7 @@ extension PlayerWindowController {
         animationPipeline.submitZeroDuration({ [self] in
           let videoSize: NSSize
           if currentLayout.isFullScreen {
-            let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: newVideoAspectRatio)
+            let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspect: newVideoAspect)
             videoSize = fsInteractiveModeGeo.videoSize
             interactiveModeGeometry = fsInteractiveModeGeo
           } else { // windowed
@@ -97,11 +97,11 @@ extension PlayerWindowController {
       log.debug("[MPVVideoReconfig] Player is in music mode; calling applyMusicModeGeometry")
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
-      let newGeometry = musicModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
+      let newGeometry = musicModeGeometry.clone(videoAspect: newVideoAspect)
       applyMusicModeGeometryInAnimationPipeline(newGeometry)
 
     } else { // Windowed or full screen
-      var newWindowGeo = windowedModeGeometry.clone(videoAspectRatio: newVideoAspectRatio)
+      var newWindowGeo = windowedModeGeometry.clone(videoAspect: newVideoAspect)
 
       // Will only change the video size & video container size. Panels outside the video do not change size
       if shouldResizeWindowAfterVideoReconfig() {
@@ -376,7 +376,7 @@ extension PlayerWindowController {
                               insideTrailingBarWidth: layout.insideTrailingBarWidth,
                               insideBottomBarHeight: layout.insideBottomBarHeight,
                               insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                              videoAspectRatio: player.info.videoAspectRatio)
+                              videoAspect: player.info.videoAspect)
     return geo.scaleViewport()
   }
 
@@ -459,13 +459,13 @@ extension PlayerWindowController {
     let widthDiff = requestedSize.width - currentGeometry.windowFrame.width
     let requestedVideoWidth = currentGeometry.videoSize.width + widthDiff
     let resizeFromWidthRequestedVideoSize = NSSize(width: requestedVideoWidth,
-                                                   height: round(requestedVideoWidth / currentGeometry.videoAspectRatio))
+                                                   height: round(requestedVideoWidth / currentGeometry.videoAspect))
     let resizeFromWidthGeo = currentGeometry.scaleVideo(to: resizeFromWidthRequestedVideoSize)
 
     // Option B: resize width based on requested height
     let heightDiff = requestedSize.height - currentGeometry.windowFrame.height
     let requestedVideoHeight = currentGeometry.videoSize.height + heightDiff
-    let resizeFromHeightRequestedVideoSize = NSSize(width: round(requestedVideoHeight * currentGeometry.videoAspectRatio),
+    let resizeFromHeightRequestedVideoSize = NSSize(width: round(requestedVideoHeight * currentGeometry.videoAspect),
                                                     height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize)
 
@@ -593,7 +593,7 @@ extension PlayerWindowController {
       guard ticket == geoUpdateTicketCounter else {
         return
       }
-      log.verbose("ApplyWindowGeometry (tkt \(ticket)) windowFrame: \(newGeometry.windowFrame), videoAspectRatio: \(newGeometry.videoAspectRatio)")
+      log.verbose("ApplyWindowGeometry (tkt \(ticket)) windowFrame: \(newGeometry.windowFrame), videoAspect: \(newGeometry.videoAspect)")
       applyWindowGeometry(newGeometry)
     }))
   }
@@ -601,7 +601,7 @@ extension PlayerWindowController {
   // TODO: split this into separate windowed & FS
   private func applyWindowGeometry(_ newGeometry: PWindowGeometry, setFrame: Bool = true) {
     // Update video aspect ratio always
-    player.info.videoAspectRatio = newGeometry.videoAspectRatio
+    player.info.videoAspect = newGeometry.videoAspect
     let currentLayout = currentLayout
     switch currentLayout.spec.mode {
 
@@ -612,7 +612,7 @@ extension PlayerWindowController {
       if setFrame {
         // Make sure video constraints are up to date, even in full screen. Also remember that FS & windowed mode share same screen.
         let fsGeo = currentLayout.buildFullScreenGeometry(inScreenID: newGeometry.screenID,
-                                                          videoAspectRatio: newGeometry.videoAspectRatio)
+                                                          videoAspect: newGeometry.videoAspect)
         log.verbose("ApplyWindowGeometry: Updating videoView (FS), videoSize: \(fsGeo.videoSize)")
         videoView.apply(fsGeo)
       }
@@ -641,7 +641,7 @@ extension PlayerWindowController {
     videoView.videoLayer.enterAsynchronousMode()
 
     // Update video aspect ratio
-    player.info.videoAspectRatio = newGeometry.videoAspectRatio
+    player.info.videoAspect = newGeometry.videoAspect
 
     IINAAnimation.disableAnimation{
       if !isFullScreen {
@@ -683,7 +683,7 @@ extension PlayerWindowController {
     Preference.set(geometry.isVideoVisible, for: .musicModeShowAlbumArt)
     Preference.set(geometry.isPlaylistVisible, for: .musicModeShowPlaylist)
 
-    player.info.videoAspectRatio = geometry.videoAspectRatio
+    player.info.videoAspect = geometry.videoAspect
 
     updateMusicModeButtonsVisibility()
 

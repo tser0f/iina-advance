@@ -1038,7 +1038,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
     guard let videoParams = player.mpv.queryForVideoParams() else { return }
 
-    let oldAspectRatio = player.info.videoAspectRatio
+    let oldAspectRatio = player.info.videoAspect
     let newAspectRatio: CGFloat
     if showDefaultArt || player.info.currentMediaAudioStatus == .isAudio {
       newAspectRatio = 1.0
@@ -1048,18 +1048,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     guard newAspectRatio != oldAspectRatio else {
-      log.verbose("No change to videoAspectRatio; no update needed")
+      log.verbose("No change to videoAspect; no update needed")
       return
     }
-    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")
+    log.verbose("Updating videoAspect from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")
 
     let layout = currentLayout
     switch layout.mode {
     case .musicMode:
-      let newMusicModeGeometry = musicModeGeometry.clone(videoAspectRatio: newAspectRatio)
+      let newMusicModeGeometry = musicModeGeometry.clone(videoAspect: newAspectRatio)
       applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
     case .windowed:
-      var newGeo = windowedModeGeometry.clone(videoAspectRatio: newAspectRatio)
+      var newGeo = windowedModeGeometry.clone(videoAspect: newAspectRatio)
 
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
@@ -1071,9 +1071,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       newGeo = newGeo.scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
       applyWindowGeometryInAnimationPipeline(newGeo)
     case .fullScreen:
-      player.info.videoAspectRatio = newAspectRatio
+      player.info.videoAspect = newAspectRatio
       guard let screen = window?.screen else { return }
-      let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspectRatio: newAspectRatio)
+      let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
       if layout.isLegacyFullScreen {
         applyLegacyFullScreenGeometry(fsGeo)
       } else if layout.mode != .fullScreenInteractive {
@@ -2047,7 +2047,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     case .fullScreen, .fullScreenInteractive:
       if currentLayout.isLegacyFullScreen {
-        let newGeometry = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspectRatio: player.info.videoAspectRatio)
+        let newGeometry = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspect: player.info.videoAspect)
         return newGeometry.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
@@ -2189,7 +2189,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
           let screenID = bestScreen.screenID
-          let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspectRatio: player.info.videoAspectRatio)
+          let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspect: player.info.videoAspect)
           applyLegacyFullScreenGeometry(fsGeo)
           windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
           player.saveState()
@@ -2239,7 +2239,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
           log.verbose("Updating legacy full screen window in response to ScreenParametersNotification")
-          let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
+          let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspect: player.info.videoAspect)
           applyLegacyFullScreenGeometry(fsGeo)
         } else if currentLayout.mode == .windowed {
           /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
@@ -2282,7 +2282,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // and the user is changing focus between windows or apps. This can also happen if the user is using a third-party
         // window management app such as Amethyst. If this happens, move the window back to its proper place:
         log.verbose("Updating legacy full screen window in response to unexpected windowDidMove")
-        let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspectRatio: player.info.videoAspectRatio)
+        let fsGeo = layout.buildFullScreenGeometry(inside: bestScreen, videoAspect: player.info.videoAspect)
         applyLegacyFullScreenGeometry(fsGeo)
       } else {
         updateCachedGeometry()
@@ -2982,7 +2982,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             /// Updated `windowedModeGeometry` even if in full screen - we are not prepared to look for changes later
             let croppedGeometry = windowedModeGeometry.cropVideo(from: uncroppedVideoSize, to: cropbox)
             windowedModeGeometry = croppedGeometry
-            player.info.videoAspectRatio = croppedGeometry.videoAspectRatio
+            player.info.videoAspect = croppedGeometry.videoAspect
             player.info.intendedViewportSize = croppedGeometry.viewportSize
 
             // fade out all this stuff before crop
@@ -2992,7 +2992,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             cropController.cropBoxView.alphaValue = 0
 
             if currentLayout.isFullScreen {
-              let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: croppedGeometry.videoAspectRatio)
+              let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspect: croppedGeometry.videoAspect)
               videoView.apply(fsInteractiveModeGeo)
               interactiveModeGeometry = fsInteractiveModeGeo
             } else {
