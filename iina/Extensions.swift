@@ -64,6 +64,12 @@ extension NSSize {
     }
   }
 
+  var mpvAspect: CGFloat {
+    get {
+      return Aspect.mpvPrecision(of: aspect)
+    }
+  }
+
   /** Resize to no smaller than a min size while keeping same aspect */
   func satisfyMinSizeWithSameAspectRatio(_ minSize: NSSize) -> NSSize {
     if width >= minSize.width && height >= minSize.height {  // no need to resize if larger

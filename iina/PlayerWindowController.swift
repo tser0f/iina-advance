@@ -1019,9 +1019,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func refreshAlbumArtDisplay() {
     guard loaded else { return }
 
-    // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
-    guard let videoParams = player.mpv.queryForVideoParams() else { return }
-
     // Part 1: default album art
 
     let showDefaultArt: Bool
@@ -1044,17 +1041,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let oldAspectRatio = player.info.videoAspectRatio
     let newAspectRatio: CGFloat
     if showDefaultArt || player.info.currentMediaAudioStatus == .isAudio {
-      newAspectRatio = 1
+      newAspectRatio = 1.0
     } else {
       // This can also equal 1 if not found
       newAspectRatio = videoParams.videoDisplayRotatedAspect
     }
 
-    guard newAspectRatio.aspectNormalDecimalString != oldAspectRatio.aspectNormalDecimalString else {
+    guard newAspectRatio != oldAspectRatio else {
       log.verbose("No change to videoAspectRatio; no update needed")
       return
     }
-    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.string2f) to: \(newAspectRatio.aspectNormalDecimalString)")
+    log.verbose("Updating videoAspectRatio from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")
 
     let layout = currentLayout
     switch layout.mode {

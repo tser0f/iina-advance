@@ -425,8 +425,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
   }
 
-  static func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn viewportSize: NSSize,
-                               margins: BoxQuad? = nil, mode: PlayerWindowMode) -> NSSize {
+  private static func computeVideoSize(withAspectRatio videoAspectRatio: CGFloat, toFillIn viewportSize: NSSize,
+                                       margins: BoxQuad? = nil, mode: PlayerWindowMode) -> NSSize {
     if viewportSize.width == 0 || viewportSize.height == 0 {
       return NSSize.zero
     }
@@ -436,7 +436,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                                     height: viewportSize.height - minViewportMargins.totalHeight)
     let videoSize: NSSize
     /// Compute `videoSize` to fit within `viewportSize` while maintaining `videoAspectRatio`:
-    if videoAspectRatio < usableViewportSize.aspect {  // video is taller, shrink to meet height
+    if videoAspectRatio < usableViewportSize.mpvAspect {  // video is taller, shrink to meet height
       var videoWidth = usableViewportSize.height * videoAspectRatio
       videoWidth = snap(videoWidth, to: usableViewportSize.width)
       videoSize = NSSize(width: round(videoWidth), height: usableViewportSize.height)
@@ -884,23 +884,23 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
   // Transition windowed mode geometry to Interactive Mode geometry. Note that this is not a direct conversion; it will modify the view sizes
   func toInteractiveMode() -> PWindowGeometry {
-    assert(self.fitOption != .legacyFullScreen && self.fitOption != .nativeFullScreen)
-    assert(self.mode == .windowed)
+    assert(fitOption != .legacyFullScreen && fitOption != .nativeFullScreen)
+    assert(mode == .windowed)
     let newMode = PlayerWindowMode.windowedInteractive
     // Close sidebars. Top and bottom bars are resized for interactive mode controls
-    let newGeo = self.withResizedOutsideBars(newOutsideTopBarHeight: Constants.InteractiveMode.outsideTopBarHeight,
-                                             newOutsideTrailingBarWidth: 0,
-                                             newOutsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
-                                             newOutsideLeadingBarWidth: 0)
+    let newGeo = withResizedOutsideBars(newOutsideTopBarHeight: Constants.InteractiveMode.outsideTopBarHeight,
+                                        newOutsideTrailingBarWidth: 0,
+                                        newOutsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
+                                        newOutsideLeadingBarWidth: 0)
 
     // Desired viewport is current one but shrunk with fixed margin around video
-    var newVideoSize = PWindowGeometry.computeVideoSize(withAspectRatio: self.videoAspectRatio, toFillIn: self.viewportSize, mode: newMode)
+    var newVideoSize = PWindowGeometry.computeVideoSize(withAspectRatio: videoAspectRatio, toFillIn: viewportSize, mode: newMode)
     let viewportMargins = Constants.InteractiveMode.viewportMargins
 
     // Enforce min width for interactive mode window
     let minVideoWidth = PWindowGeometry.minVideoWidth(forMode: newMode)
     if newVideoSize.width < minVideoWidth {
-      newVideoSize = NSSize(width: minVideoWidth, height: round(minVideoWidth / self.videoAspectRatio))
+      newVideoSize = NSSize(width: minVideoWidth, height: round(minVideoWidth / videoAspectRatio))
     }
 
     let desiredViewportSize = NSSize(width: newVideoSize.width + viewportMargins.totalWidth,
@@ -935,7 +935,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                                 width: windowFrame.width - widthRemoved,
                                 height: windowFrame.height - heightRemoved)
 
-    let newVideoAspectRatio = cropbox.size.aspect
+    let newVideoAspectRatio = cropbox.size.mpvAspect
 
     let newFitOption = self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption
     Logger.log("[geo] Cropped to new windowFrame: \(newWindowFrame), videoAspectRatio: \(newVideoAspectRatio), screenID: \(screenID), fitOption: \(newFitOption)")
@@ -950,7 +950,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     // Figure out part which wasn't cropped:
     let antiCropboxSizeScaled = NSSize(width: (videoDisplayRotatedSize.width - cropbox.width) * videoScale,
                                        height: (videoDisplayRotatedSize.height - cropbox.height) * videoScale)
-    let newVideoAspectRatio = videoDisplayRotatedSize.aspect
+    let newVideoAspectRatio = videoDisplayRotatedSize.mpvAspect
     let newWindowFrame = NSRect(x: windowFrame.origin.x - cropboxScaled.origin.x,
                                 y: windowFrame.origin.y - cropboxScaled.origin.y,
                                 width: windowFrame.width + antiCropboxSizeScaled.width,

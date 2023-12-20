@@ -18,7 +18,7 @@ extension PlayerWindowController {
       log.error("[MPVVideoReconfig] Could not get videoDisplayRotatedSize from mpv! Cancelling adjustment")
       return
     }
-    let newVideoAspectRatio = videoDisplayRotatedSize.aspect
+    let newVideoAspectRatio = videoDisplayRotatedSize.mpvAspect
     log.verbose("[MPVVideoReconfig Start] VideoRaw:\(videoParams.videoRawSize) VideoDR:\(videoDisplayRotatedSize) AspectDR:\(newVideoAspectRatio) Rotation:\(videoParams.totalRotation) Scale:\(videoParams.videoScale)")
 
     if #available(macOS 10.12, *) {
@@ -79,7 +79,7 @@ extension PlayerWindowController {
         animationPipeline.submitZeroDuration({ [self] in
           let videoSize: NSSize
           if currentLayout.isFullScreen {
-            let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: videoDisplayRotatedSize.aspect)
+            let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspectRatio: newVideoAspectRatio)
             videoSize = fsInteractiveModeGeo.videoSize
             interactiveModeGeometry = fsInteractiveModeGeo
           } else { // windowed
@@ -198,18 +198,6 @@ extension PlayerWindowController {
       log.verbose("[MPVVideoReconfig C-5] ResizeWindow=\(resizeWindowStrategy). Resizing & centering windowFrame")
       return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
     }
-
-//    else {  // File is already playing. There was a config change
-//      if Preference.bool(for: .lockViewportToVideoSize) {
-//        // Try to match existing scale
-//        newVideoSize = newVideoSize.multiplyThenRound(player.info.cachedWindowScale)
-//        log.verbose("[MPVVideoReconfig C-6] Resizing windowFrame \(windowGeo.windowFrame) to prev scale (\(player.info.cachedWindowScale))")
-//        return windowGeo.scaleVideo(to: newVideoSize, fitOption: .keepInVisibleScreen)
-//      } else {
-//        log.verbose("[MPVVideoReconfig C-7] Using prev windowFrame \(windowGeo.windowFrame) with new video aspect (\(windowGeo.videoAspectRatio))")
-//        return windowGeo
-//      }
-//    }
   }
 
   private func resizeMinimallyAfterVideoReconfig(from windowGeo: PWindowGeometry,
@@ -226,10 +214,10 @@ extension PlayerWindowController {
         log.verbose("[MPVVideoReconfig D-1] Using intendedViewportSize \(intendedViewportSize)")
       }
 
-      let minNewVidConHeight = desiredViewportSize.width / videoDisplayRotatedSize.aspect
-      if desiredViewportSize.height < minNewVidConHeight {
+      let minNewViewportHeight = round(desiredViewportSize.width / videoDisplayRotatedSize.mpvAspect)
+      if desiredViewportSize.height < minNewViewportHeight {
         // Try to increase height if possible, though it may still be shrunk to fit screen
-        desiredViewportSize = NSSize(width: desiredViewportSize.width, height: minNewVidConHeight)
+        desiredViewportSize = NSSize(width: desiredViewportSize.width, height: minNewViewportHeight)
       }
     }
 
@@ -320,7 +308,7 @@ extension PlayerWindowController {
     default:
       return
     }
-    let heightStep = widthStep / currentViewportSize.aspect
+    let heightStep = widthStep / currentViewportSize.mpvAspect
     let desiredViewportSize = CGSize(width: currentViewportSize.width + widthStep, height: currentViewportSize.height + heightStep)
     log.verbose("Incrementing viewport width by \(widthStep), to desired size \(desiredViewportSize)")
     resizeViewport(to: desiredViewportSize)

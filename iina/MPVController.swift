@@ -877,7 +877,7 @@ not applying FFmpeg 9599 workaround
 
     // filter the last video-reconfig event before quit
     if params.videoDisplayRotatedWidth == 0 && params.videoDisplayRotatedHeight == 0 && getFlag(MPVProperty.coreIdle) {
-      player.log.verbose("Cannot get videoParams: looks like core is shutting down")
+      player.log.verbose("Cannot get videoParams: core idle & dheight or dwidth is 0")
       return nil
     }
 

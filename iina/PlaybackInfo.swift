@@ -140,11 +140,17 @@ class PlaybackInfo {
 
   /// The most up-to-date aspect ratio of the video (width/height), after `totalRotation` applied.
   /// Should match `videoParams.videoDisplayRotatedAspect`
-  var videoAspectRatio: CGFloat = CGFloat(AppData.widthWhenNoVideo) / CGFloat(AppData.heightWhenNoVideo) {
-    didSet {
-      log.verbose("Updated videoAspectRatio to \(videoAspectRatio.string6f)")
+  var videoAspectRatio: CGFloat {
+    set {
+      videoAspectRatioNormalized = Aspect.mpvPrecision(of: newValue)
+      log.verbose("Updated videoAspectRatio to \(videoAspectRatioNormalized.string6f)")
+    }
+    get {
+      return videoAspectRatioNormalized
     }
   }
+
+  private var videoAspectRatioNormalized: CGFloat = 1.0
 
   /// The currently applied aspect, used for finding current aspect in menu & sidebar segmented control. Does not include rotation(s)
   var selectedAspectRatioLabel: String = AppData.defaultAspectName

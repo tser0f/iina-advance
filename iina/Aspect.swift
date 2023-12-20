@@ -9,6 +9,9 @@
 import Cocoa
 
 class Aspect: NSObject {
+  static func mpvPrecision(of aspectRatio: CGFloat) -> CGFloat {
+    return CGFloat(round(aspectRatio * 100.0)) * 0.01
+  }
 
   private var size: NSSize!
 
@@ -32,7 +35,7 @@ class Aspect: NSObject {
 
   var value: CGFloat {
     get {
-      return size.width / size.height
+      return Aspect.mpvPrecision(of: size.width / size.height)
     }
   }
 

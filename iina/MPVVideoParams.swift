@@ -43,9 +43,12 @@ struct MPVVideoParams: CustomStringConvertible {
   /// Same as `videoRawSize` but with aspect ratio override applied. If no aspect ratio override, then identical to `videoRawSize`.
   var videoWithAspectOverrideSize: CGSize {
     let videoRawSize = videoRawSize
-    let rawAspectDouble = videoRawSize.aspect
-    guard let aspectRatio, let aspectRatioDouble = Double(aspectRatio),
-            aspectRatioDouble.aspectNormalDecimalString != rawAspectDouble.aspectNormalDecimalString else {
+    let rawAspectDouble = videoRawSize.mpvAspect
+    guard let aspectRatio, let aspectRatioNumber = Double(aspectRatio) else {
+      return videoRawSize
+    }
+    let aspectRatioDouble = Aspect.mpvPrecision(of: aspectRatioNumber)
+    guard aspectRatioDouble != rawAspectDouble else {
       return videoRawSize
     }
     if rawAspectDouble > aspectRatioDouble {
@@ -119,7 +122,7 @@ struct MPVVideoParams: CustomStringConvertible {
 
   var videoDisplayRotatedAspect: CGFloat {
     guard let videoDisplayRotatedSize else { return 1 }
-    return videoDisplayRotatedSize.aspect
+    return videoDisplayRotatedSize.mpvAspect
   }
 
   /// `MPVProperty.windowScale`:

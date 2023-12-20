@@ -883,11 +883,10 @@ class PlayerCore: NSObject {
       /// Aspect is a decimal number, but is not default (`-1` or video default)
       /// Try to match to known aspect by comparing their decimal values to the new aspect.
       /// Note that mpv seems to do its calculations to only 2 decimal places of precision, so use that for comparison.
-      let aspectNormalDecimalString = aspectDouble.aspectNormalDecimalString
       if let knownAspectRatio = findLabelForAspectRatio(aspectDouble) {
         aspectDisplay = knownAspectRatio
       } else {
-        aspectDisplay = aspectNormalDecimalString
+        aspectDisplay = aspectDouble.aspectNormalDecimalString
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
@@ -918,9 +917,9 @@ class PlayerCore: NSObject {
   }
 
   private func findLabelForAspectRatio(_ aspectRatioNumber: Double) -> String? {
-    let aspectNumberString2f = aspectRatioNumber.aspectNormalDecimalString
+    let mpvAspect = Aspect.mpvPrecision(of: aspectRatioNumber)
     for knownAspectRatio in AppData.aspects {
-      if let parsedAspect = Aspect(string: knownAspectRatio), parsedAspect.value.aspectNormalDecimalString == aspectNumberString2f {
+      if let parsedAspect = Aspect(string: knownAspectRatio), parsedAspect.value == mpvAspect {
         // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
         return knownAspectRatio
       }
