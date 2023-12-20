@@ -95,6 +95,9 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     /// `musicModeControlBarView` is always the same height
     musicModeControlBarView.heightAnchor.constraint(equalToConstant: Constants.Distance.MusicMode.oscHeight).isActive = true
 
+    // Clip scrolling text at the margins so it doesn't touch the sides of the window
+    mediaInfoView.clipsToBounds = true
+
     /// Set up tracking area to show controller when hovering over it
     windowController.viewportView.addTrackingArea(NSTrackingArea(rect: windowController.viewportView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
     musicModeControlBarView.addTrackingArea(NSTrackingArea(rect: musicModeControlBarView.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: self, userInfo: nil))
