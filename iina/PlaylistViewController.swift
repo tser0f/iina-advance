@@ -623,7 +623,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         }
         // playback progress and duration
         cellView.durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
-        cellView.durationLabel.setFormattedText(stringValue: "", textColor: item.isPlaying ? isPlayingTextColor : .textColor)
+        cellView.durationLabel.stringValue = ""
         PlayerCore.playlistQueue.async {
           if let (artist, title) = getCachedMetadata() {
             DispatchQueue.main.async {
@@ -638,7 +638,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
               // if FFmpeg got the duration successfully
               DispatchQueue.main.async { [self] in
                 let durationString = VideoTime(duration).stringRepresentation
-                cellView.durationLabel.setFormattedText(stringValue: durationString, textColor: item.isPlaying ? isPlayingTextColor : .textColor)
+                cellView.durationLabel.setFormattedText(stringValue: durationString, textColor: item.isPlaying ? isPlayingTextColor : .secondaryLabelColor)
                 if let progress = cached.progress {
                   cellView.playbackProgressView.percentage = progress / duration
                   cellView.playbackProgressView.needsDisplay = true

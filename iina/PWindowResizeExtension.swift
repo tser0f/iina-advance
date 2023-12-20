@@ -21,6 +21,10 @@ extension PlayerWindowController {
     let newVideoAspect = videoDisplayRotatedSize.mpvAspect
     log.verbose("[MPVVideoReconfig Start] VideoRaw:\(videoParams.videoRawSize) VideoDR:\(videoDisplayRotatedSize) AspectDR:\(newVideoAspect) Rotation:\(videoParams.totalRotation) Scale:\(videoParams.videoScale)")
 
+    let oldVideoParams = player.info.videoParams
+    // Update cached values for use elsewhere:
+    player.info.videoParams = videoParams
+
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoDisplayRotatedSize
     }
@@ -112,8 +116,8 @@ extension PlayerWindowController {
           player.info.intendedViewportSize = newWindowGeo.viewportSize
         }
       } else {
-        if let oldParams = player.info.videoParams, oldParams.videoRawSize.equalTo(videoParams.videoRawSize),
-           let oldVideoDR = oldParams.videoDisplayRotatedSize, let newVideoDR = videoParams.videoDisplayRotatedSize,
+        if let oldVideoParams, oldVideoParams.videoRawSize.equalTo(videoParams.videoRawSize),
+           let oldVideoDR = oldVideoParams.videoDisplayRotatedSize, let newVideoDR = videoParams.videoDisplayRotatedSize,
            oldVideoDR.equalTo(newVideoDR) {
           log.debug("[MPVVideoReconfig Done] No change to prev video params. Taking no action")
           return
@@ -121,8 +125,6 @@ extension PlayerWindowController {
 
         newWindowGeo = resizeMinimallyAfterVideoReconfig(from: newWindowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
       }
-
-      player.info.videoParams = videoParams
 
       animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.VideoReconfigDuration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`

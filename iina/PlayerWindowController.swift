@@ -3066,8 +3066,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     guard let currentMediaThumbnails = player.info.currentMediaThumbnails,
           let ffThumbnail = currentMediaThumbnails.getThumbnail(forSecond: previewTime.second),
-          let videoParams = player.info.videoParams, let currentControlBar,
-          (!currentLayout.isMusicMode || (Preference.bool(for: .enableThumbnailForMusicMode) && musicModeGeometry.isVideoVisible)) else {
+          let videoParams = player.info.videoParams, let currentControlBar else {
+      thumbnailPeekView.isHidden = true
+      return
+    }
+    guard !currentLayout.isMusicMode || (Preference.bool(for: .enableThumbnailForMusicMode) && musicModeGeometry.isVideoVisible) else {
       thumbnailPeekView.isHidden = true
       return
     }
