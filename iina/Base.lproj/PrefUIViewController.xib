@@ -975,12 +975,12 @@
                                 <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3vi-Iu-deL" userLabel="Bottom-Bar-Placement Segmented Control">
                                     <rect key="frame" x="158" y="-1" width="184" height="24"/>
                                     <constraints>
-                                        <constraint firstAttribute="width" constant="180" id="rlz-lq-9Sk"/>
+                                        <constraint firstAttribute="width" constant="190" id="rlz-lq-9Sk"/>
                                     </constraints>
                                     <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="K2B-JO-2IX">
                                         <font key="font" metaFont="system"/>
                                         <segments>
-                                            <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                            <segment label="Inside Video" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
                                             <segment label="Outside Video" tag="2"/>
                                         </segments>
                                     </segmentedCell>
@@ -1101,7 +1101,7 @@
                                     <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="TEO-g1-ffc">
                                         <font key="font" metaFont="system"/>
                                         <segments>
-                                            <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                            <segment label="Inside Video" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
                                             <segment label="Outside Video" tag="2"/>
                                         </segments>
                                     </segmentedCell>
@@ -1281,8 +1281,8 @@
                     </connections>
                 </button>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6ml-Xj-nVX">
-                    <rect key="frame" x="118" y="76" width="133" height="16"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="&quot;On-Screen&quot; bars:" id="SBZ-A7-Btg">
+                    <rect key="frame" x="118" y="76" width="125" height="16"/>
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="&quot;Inside Video&quot; bars:" id="SBZ-A7-Btg">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1670,12 +1670,12 @@
                             <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KIu-aG-mHw" userLabel="Leading-Sidebar-Placement Segmented Control">
                                 <rect key="frame" x="90" y="55" width="184" height="24"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="180" id="2D4-bp-E7M"/>
+                                    <constraint firstAttribute="width" constant="200" id="2D4-bp-E7M"/>
                                 </constraints>
                                 <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="sME-na-jHH">
                                     <font key="font" metaFont="system"/>
                                     <segments>
-                                        <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                        <segment label="Inside Video" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
                                         <segment label="Outside Video" tag="2"/>
                                     </segments>
                                 </segmentedCell>
@@ -1749,7 +1749,7 @@
                                 <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="0MZ-00-6fG">
                                     <font key="font" metaFont="system"/>
                                     <segments>
-                                        <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                        <segment label="Inside Video" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
                                         <segment label="Outside Video" tag="2"/>
                                     </segments>
                                 </segmentedCell>
@@ -1876,9 +1876,9 @@
                                 </binding>
                             </connections>
                         </button>
-                        <button translatesAutoresizingMaskIntoConstraints="NO" id="4GJ-sd-vQm" userLabel="Enable for music mode also Checkbox">
+                        <button translatesAutoresizingMaskIntoConstraints="NO" id="4GJ-sd-vQm" userLabel="Enable for music mode Checkbox">
                             <rect key="frame" x="18" y="187" width="159" height="20"/>
-                            <buttonCell key="cell" type="check" title="Enable in music mode" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="1bZ-wY-ysJ">
+                            <buttonCell key="cell" type="check" title="Enable in &quot;music mode&quot;" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="1bZ-wY-ysJ">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
