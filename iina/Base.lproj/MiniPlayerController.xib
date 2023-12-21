@@ -61,11 +61,11 @@
                                 <constraint firstItem="jAX-WD-i2a" firstAttribute="top" secondItem="Cef-Fd-eDH" secondAttribute="top" constant="6" id="gHa-e1-bbE"/>
                             </constraints>
                         </customView>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Wxl-Ex-FWV" userLabel="ControllerButtonsPanel View">
-                            <rect key="frame" x="0.0" y="24" width="260" height="48"/>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Wxl-Ex-FWV" userLabel="OSC-Buttons-Overlay View">
+                            <rect key="frame" x="10" y="24" width="240" height="48"/>
                             <subviews>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="BS3-lV-sRn" userLabel="Volume Button">
-                                    <rect key="frame" x="23" y="15" width="17" height="14"/>
+                                    <rect key="frame" x="13" y="15" width="17" height="14"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="volume" imagePosition="only" alignment="center" alternateImage="mute" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="qT2-lv-K6m">
                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -79,7 +79,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jfj-IC-e3B" userLabel="Prev Button">
-                                    <rect key="frame" x="64" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="54" y="8" width="28" height="28"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextl" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="SZB-TX-yda">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -93,7 +93,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="28c-iK-4mT" userLabel="Play Button">
-                                    <rect key="frame" x="112" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="102" y="8" width="28" height="28"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="play" imagePosition="only" alignment="center" alternateImage="pause" refusesFirstResponder="YES" state="on" imageScaling="proportionallyUpOrDown" inset="2" id="i7v-gt-XTX">
                                         <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -107,7 +107,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="nwm-1g-9Dl" userLabel="Next Button">
-                                    <rect key="frame" x="160" y="8" width="28" height="28"/>
+                                    <rect key="frame" x="150" y="8" width="28" height="28"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextr" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="OMQ-kW-mEi">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -121,7 +121,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jJt-GH-mJQ" userLabel="TogglePlaylist Button">
-                                    <rect key="frame" x="208" y="15" width="14" height="14"/>
+                                    <rect key="frame" x="198" y="15" width="14" height="14"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="playlist" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="uZU-1n-W8V">
                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -135,7 +135,7 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="6q3-fy-whD" userLabel="ToggleVideo Button">
-                                    <rect key="frame" x="234" y="15" width="14" height="14"/>
+                                    <rect key="frame" x="224" y="15" width="14" height="14"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="toggle-album-art" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="WBe-l8-whs">
                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -165,25 +165,25 @@
                                 <constraint firstItem="jJt-GH-mJQ" firstAttribute="leading" secondItem="nwm-1g-9Dl" secondAttribute="trailing" constant="20" id="xPp-5c-lrp"/>
                             </constraints>
                         </customView>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="e1r-vi-5HY" userLabel="PositionSliderWrapper View">
-                            <rect key="frame" x="0.0" y="0.0" width="260" height="32"/>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="e1r-vi-5HY" userLabel="PlaySlider-Wrapper View">
+                            <rect key="frame" x="10" y="0.0" width="240" height="32"/>
                         </customView>
                     </subviews>
                     <constraints>
                         <constraint firstAttribute="bottom" secondItem="Wxl-Ex-FWV" secondAttribute="bottom" constant="24" id="2TO-2y-vp5"/>
                         <constraint firstItem="Cef-Fd-eDH" firstAttribute="leading" secondItem="Q6R-eL-qkW" secondAttribute="leading" constant="10" id="8fE-Km-0Pi"/>
                         <constraint firstAttribute="trailing" secondItem="Cef-Fd-eDH" secondAttribute="trailing" constant="10" id="FnO-yn-yDx"/>
+                        <constraint firstItem="e1r-vi-5HY" firstAttribute="trailing" secondItem="Cef-Fd-eDH" secondAttribute="trailing" id="HCp-vY-HD0"/>
                         <constraint firstItem="Wxl-Ex-FWV" firstAttribute="top" secondItem="Q6R-eL-qkW" secondAttribute="top" id="IG4-gh-4wk"/>
-                        <constraint firstItem="e1r-vi-5HY" firstAttribute="leading" secondItem="Q6R-eL-qkW" secondAttribute="leading" id="MTS-H2-7tq"/>
                         <constraint firstItem="Cef-Fd-eDH" firstAttribute="top" secondItem="Q6R-eL-qkW" secondAttribute="top" id="U3A-nX-IWP"/>
-                        <constraint firstAttribute="trailing" secondItem="e1r-vi-5HY" secondAttribute="trailing" id="dYc-ey-vNU"/>
+                        <constraint firstItem="Cef-Fd-eDH" firstAttribute="leading" secondItem="Wxl-Ex-FWV" secondAttribute="leading" id="e7Y-Rx-6ZK"/>
+                        <constraint firstItem="e1r-vi-5HY" firstAttribute="leading" secondItem="Cef-Fd-eDH" secondAttribute="leading" id="foP-4g-0tA"/>
+                        <constraint firstItem="Cef-Fd-eDH" firstAttribute="trailing" secondItem="Wxl-Ex-FWV" secondAttribute="trailing" id="gzB-24-b08"/>
                         <constraint firstItem="e1r-vi-5HY" firstAttribute="top" secondItem="Q6R-eL-qkW" secondAttribute="top" constant="40" id="h01-z4-G52"/>
-                        <constraint firstItem="Wxl-Ex-FWV" firstAttribute="leading" secondItem="Q6R-eL-qkW" secondAttribute="leading" id="tNt-Id-EnH"/>
-                        <constraint firstAttribute="trailing" secondItem="Wxl-Ex-FWV" secondAttribute="trailing" id="vik-gq-xhw"/>
                         <constraint firstAttribute="bottom" secondItem="e1r-vi-5HY" secondAttribute="bottom" id="yds-qi-gcy"/>
                     </constraints>
                 </visualEffectView>
-                <visualEffectView wantsLayer="YES" blendingMode="behindWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="2bL-q1-qry" userLabel="PlaylistWrapper View">
+                <visualEffectView wantsLayer="YES" blendingMode="behindWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="2bL-q1-qry" userLabel="Playlist-Wrapper View">
                     <rect key="frame" x="0.0" y="0.0" width="260" height="92"/>
                     <subviews>
                         <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="9gg-yc-YXV">

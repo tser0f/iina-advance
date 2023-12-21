@@ -124,7 +124,12 @@ extension PlayerWindowController {
       }
     }
 
-    prepareDepthOrderOfOutsideSidebarsForToggle(transition)
+    // Apply workaround for edge case when both sidebars are "outside" and visible, then one is opened or closed.
+    // Need extra checks here so that the workaround isn't also applied when switching sidebar from "inside" to "outside".
+    if transition.inputLayout.leadingSidebar.isVisible, transition.inputLayout.leadingSidebar.placement == .outsideViewport,
+       transition.inputLayout.trailingSidebar.isVisible, transition.inputLayout.trailingSidebar.placement == .outsideViewport {
+      prepareDepthOrderOfOutsideSidebarsForToggle(transition)
+    }
 
     // Interactive mode
     if transition.isEnteringInteractiveMode {

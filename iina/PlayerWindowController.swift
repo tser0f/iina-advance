@@ -2424,13 +2424,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     var animationTasks: [IINAAnimation.Task] = []
 
     /// Default `showTopBarTrigger` setting to `.windowHover` if advanced settings not enabled
-    let showTopBar = forceShowTopBar || (!Preference.isAdvancedEnabled || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover)
+    let wantsTopBarVisible = forceShowTopBar || (!Preference.isAdvancedEnabled || Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.windowHover)
 
     guard !player.disableUI && !isInInteractiveMode else {
       return animationTasks
     }
 
-    guard showTopBar || fadeableViewsAnimationState == .hidden else {
+    guard wantsTopBarVisible || fadeableViewsAnimationState == .hidden else {
       if restartFadeTimer {
         resetFadeTimer()
       } else {
@@ -2451,7 +2451,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         v.animator().alphaValue = 1
       }
 
-      if showTopBar {
+      if wantsTopBarVisible {  // start top bar
         fadeableTopBarAnimationState = .willShow
         for v in fadeableViewsTopBar {
           v.animator().alphaValue = 1
@@ -2468,7 +2468,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             documentIconButton?.alphaValue = 1
           }
         }
-      }
+      }  // end top bar
     }))
 
     // Not animated, but needs to wait until after fade is done
@@ -2485,7 +2485,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       }
 
-      if showTopBar && fadeableTopBarAnimationState == .willShow {
+      if wantsTopBarVisible && fadeableTopBarAnimationState == .willShow {
         fadeableTopBarAnimationState = .shown
         for v in fadeableViewsTopBar {
           v.isHidden = false
@@ -2502,7 +2502,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             documentIconButton?.isHidden = false
           }
         }
-      }
+      }  // end top bar
     })
     return animationTasks
   }

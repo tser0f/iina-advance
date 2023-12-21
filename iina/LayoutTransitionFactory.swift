@@ -167,7 +167,6 @@ extension PlayerWindowController {
     // OutputGeometry
     let outputGeometry: PWindowGeometry = buildOutputGeometry(inputLayout: inputLayout, inputGeometry: inputGeometry,
                                                               outputLayout: outputLayout, isInitialLayout: isInitialLayout)
-    log.verbose("[\(transitionName)] OutputGeometry: \(outputGeometry)")
 
     let transition = LayoutTransition(name: transitionName,
                                       from: inputLayout, from: inputGeometry,
@@ -178,7 +177,11 @@ extension PlayerWindowController {
     transition.middleGeometry = buildMiddleGeometry(forTransition: transition)
     if let middleGeometry = transition.middleGeometry {
       log.verbose("[\(transitionName)] MiddleGeometry: \(middleGeometry)")
+    } else {
+      log.verbose("[\(transitionName)] MiddleGeometry: nil")
     }
+
+    log.verbose("[\(transitionName)] OutputGeometry: \(outputGeometry)")
 
     let panelTimingName: CAMediaTimingFunctionName
     if transition.isTogglingFullScreen {
@@ -225,7 +228,7 @@ extension PlayerWindowController {
       fadeInNewViewsDuration *= 0.5
     }
 
-    log.verbose("[\(transitionName)] Building transition. EachStartDuration: \(startingAnimationDuration), EachEndDuration: \(endingAnimationDuration), InputGeo: \(transition.inputGeometry), OuputGeo: \(transition.outputGeometry)")
+    log.verbose("[\(transitionName)] Building transition. Task durations: ShowOldFadeables=\(showFadeableViewsDuration), FadeOutOldViews:\(fadeOutOldViewsDuration), CloseOldPanels:\(closeOldPanelsDuration), FadeInNewViews:\(fadeInNewViewsDuration), OpenFinalPanels:\(openFinalPanelsDuration)")
 
     // - Starting animations:
 

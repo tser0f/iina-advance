@@ -38,7 +38,7 @@ class ScrollingTextField: NSTextField {
     }
   }
 
-  // Updates the text location based on time elapsed since the last scroll
+  /// Applies next quanta of animation. Calculates the label's new X offset based on `stepIndex`.
   func stepNext() {
     let stringWidth = attributedStringValue.size().width
     // Must use superview frame as a reference. NSTextField frame is poorly defined
@@ -54,10 +54,12 @@ class ScrollingTextField: NSTextField {
         // Initial pause
         return
       }
+      /// Loop back to `stepIndex` origin:
       if appendedStringCopyWidth - scrollOffset < 0 {
         reset()
         return
       } else {
+        /// Subtract from X to scroll leftwards:
         drawPoint.x = -scrollOffset + mediaInfoViewLeadingOffset
       }
     }
