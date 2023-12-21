@@ -16,7 +16,7 @@ fileprivate let MenuItemTagCopy = 602
 fileprivate let MenuItemTagPaste = 603
 fileprivate let MenuItemTagDelete = 604
 
-fileprivate let isPlayingTextBlendFraction: CGFloat = 0.5
+fileprivate let isPlayingTextBlendFraction: CGFloat = 0.3
 
 class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, SidebarTabGroupViewController, NSMenuItemValidation {
 

@@ -92,7 +92,7 @@
                                             <rect key="frame" x="0.0" y="0.0" width="241" height="255"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
-                                                <tableView focusRingType="none" verticalHuggingPriority="750" misplaced="YES" allowsExpansionToolTips="YES" tableStyle="fullWidth" columnResizing="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="28" viewBased="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xIa-sI-0Xn">
+                                                <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" tableStyle="fullWidth" columnResizing="NO" autosaveColumns="NO" typeSelect="NO" rowHeight="28" viewBased="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xIa-sI-0Xn">
                                                     <rect key="frame" x="0.0" y="0.0" width="241" height="255"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <size key="intercellSpacing" width="3" height="0.0"/>
@@ -397,7 +397,7 @@
                                         <rect key="frame" x="0.0" y="0.0" width="241" height="279"/>
                                         <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="6tr-hz-bdD">
                                             <rect key="frame" x="0.0" y="0.0" width="241" height="279"/>
-                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" tableStyle="fullWidth" columnReordering="NO" columnResizing="NO" multipleSelection="NO" autosaveColumns="NO" rowHeight="31" rowSizeStyle="automatic" viewBased="YES" id="BvG-MR-6LX">
                                                     <rect key="frame" x="0.0" y="0.0" width="241" height="279"/>
