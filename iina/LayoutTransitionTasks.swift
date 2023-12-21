@@ -97,8 +97,7 @@ extension PlayerWindowController {
         window.styleMask.remove(.resizable)
 
         // auto hide menubar and dock (this will freeze all other animations, so must do it last)
-        NSApp.presentationOptions.insert(.autoHideMenuBar)
-        NSApp.presentationOptions.insert(.autoHideDock)
+        updatePresentationOptions(legacyFullScreen: true)
 
         window.level = .iinaFloating
       }
@@ -964,7 +963,7 @@ extension PlayerWindowController {
       }
 
       if transition.isExitingLegacyFullScreen {
-        restoreDockSettings()
+        updatePresentationOptions(legacyFullScreen: false)
       }
 
       if Preference.bool(for: .blackOutMonitor) {

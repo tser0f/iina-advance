@@ -79,6 +79,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /** For blacking out other screens. */
   var cachedScreens: [UInt32: ScreenMeta] = PlayerWindowController.buildScreenMap()
   var blackWindows: [NSWindow] = []
+  /// For supporting legacy full screen with multiple players. Uses player label as key
+  private static var playersInLegacyFullScreen = Set<String>()
 
   /** The quick setting sidebar (video, audio, subtitles). */
   lazy var quickSettingView: QuickSettingViewController = {
@@ -1867,9 +1869,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         exitPIP()
       }
     }
+
     if currentLayout.isLegacyFullScreen {
-      restoreDockSettings()
+      updatePresentationOptions(legacyFullScreen: false)
     }
+
     // stop playing
     // This will save state if configured to do so
     player.stop()
@@ -1885,9 +1889,25 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     player.events.emit(.windowWillClose)
   }
 
-  func restoreDockSettings() {
-    NSApp.presentationOptions.remove(.autoHideMenuBar)
-    NSApp.presentationOptions.remove(.autoHideDock)
+  func updatePresentationOptions(legacyFullScreen: Bool) {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
+    // Keep track of which players are in legacy full screen.
+    // We want to hide the menu bar & dock if at least one window is in legacy full screen,
+    // and turn off auto-hide only after all have exited legacy full screen.
+    if legacyFullScreen {
+      if PlayerWindowController.playersInLegacyFullScreen.isEmpty {
+        NSApp.presentationOptions.insert(.autoHideMenuBar)
+        NSApp.presentationOptions.insert(.autoHideDock)
+      }
+      PlayerWindowController.playersInLegacyFullScreen.insert(player.label)
+    } else {
+      PlayerWindowController.playersInLegacyFullScreen.remove(player.label)
+      if PlayerWindowController.playersInLegacyFullScreen.isEmpty {
+        NSApp.presentationOptions.remove(.autoHideMenuBar)
+        NSApp.presentationOptions.remove(.autoHideDock)
+      }
+    }
   }
 
   // MARK: - Window delegate: Full screen
