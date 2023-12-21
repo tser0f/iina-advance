@@ -802,7 +802,7 @@ class PlayerCore: NSObject {
   func toggleShuffle() {
     mpv.queue.async { [self] in
       mpv.command(.playlistShuffle)
-      postNotification(.iinaPlaylistChanged)
+      _reloadPlaylist()
     }
   }
 
@@ -1196,6 +1196,25 @@ class PlayerCore: NSObject {
     postNotification(.iinaPlaylistChanged)
   }
 
+  func playNextInPlaylist(_ playlistItemIndexes: IndexSet) {
+    mpv.queue.async { [self] in
+      let current = mpv.getInt(MPVProperty.playlistPos)
+      var ob = 0  // index offset before current playing item
+      var mc = 1  // moved item count, +1 because move to next item of current played one
+      for item in playlistItemIndexes {
+        if item == current { continue }
+        if item < current {
+          _playlistMove(item + ob, to: current + mc + ob)
+          ob -= 1
+        } else {
+          _playlistMove(item, to: current + mc + ob)
+        }
+        mc += 1
+      }
+      _reloadPlaylist(silent: false)
+    }
+  }
+
   func addToPlaylist(urls: any Collection<URL>) {
     guard !urls.isEmpty else { return }
     mpv.queue.async { [self] in
@@ -1205,7 +1224,7 @@ class PlayerCore: NSObject {
       }
 
       // refresh playlist UI
-      postNotification(.iinaPlaylistChanged)
+      _reloadPlaylist()
       sendOSD(.addToPlaylist(urls.count))
     }
   }
@@ -1236,7 +1255,7 @@ class PlayerCore: NSObject {
     mpv.queue.async { [self] in
       subsystem.verbose("Will remove row \(index) from playlist")
       _playlistRemove(index)
-      postNotification(.iinaPlaylistChanged)
+      _reloadPlaylist()
     }
   }
 
@@ -1248,14 +1267,14 @@ class PlayerCore: NSObject {
         _playlistRemove(i - count)
         count += 1
       }
-      postNotification(.iinaPlaylistChanged)
+      _reloadPlaylist()
     }
   }
 
   func clearPlaylist() {
     mpv.queue.async { [self] in
       mpv.command(.playlistClear)
-      postNotification(.iinaPlaylistChanged)
+      _reloadPlaylist()
     }
   }
 

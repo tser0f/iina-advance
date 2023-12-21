@@ -206,7 +206,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     var viewHidePairs: [(NSView, Bool)] = []
     // Use animation where possible to make the transition less jarring
     NSAnimationContext.runAnimationGroup({context in
-      context.duration = 0 // TODO animate ? AccessibilityPreferences.adjustedDuration(IINAAnimation.defaultDuration) : 0
+      context.duration = 0
       context.allowsImplicitAnimation = animate ? !AccessibilityPreferences.motionReductionEnabled : false
       context.timingFunction = CAMediaTimingFunction(name: .linear)
 

@@ -917,7 +917,7 @@
             </constraints>
             <point key="canvasLocation" x="8" y="-737"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="none">
             <rect key="frame" x="0.0" y="0.0" width="487" height="662"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
@@ -962,10 +962,10 @@
                             </constraints>
                         </customView>
                         <stackView distribution="fill" orientation="horizontal" alignment="top" horizontalStackHuggingPriority="500" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="SbE-ox-wl1" userLabel="Top-Bar-Placement HStack View">
-                            <rect key="frame" x="0.0" y="118" width="360" height="22"/>
+                            <rect key="frame" x="20" y="118" width="340" height="22"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="BTX-tO-uhL">
-                                    <rect key="frame" x="-2" y="6" width="176" height="16"/>
+                                    <rect key="frame" x="-2" y="6" width="156" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Top bar placement:" id="EvR-Ml-f7d">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -973,15 +973,15 @@
                                     </textFieldCell>
                                 </textField>
                                 <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3vi-Iu-deL" userLabel="Bottom-Bar-Placement Segmented Control">
-                                    <rect key="frame" x="178" y="-1" width="184" height="24"/>
+                                    <rect key="frame" x="158" y="-1" width="184" height="24"/>
                                     <constraints>
-                                        <constraint firstAttribute="width" constant="180" id="MTb-IT-Ndw"/>
+                                        <constraint firstAttribute="width" constant="180" id="rlz-lq-9Sk"/>
                                     </constraints>
                                     <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="K2B-JO-2IX">
                                         <font key="font" metaFont="system"/>
                                         <segments>
-                                            <segment label="On Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
-                                            <segment label="Outside" tag="2"/>
+                                            <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                            <segment label="Outside Video" tag="2"/>
                                         </segments>
                                     </segmentedCell>
                                     <connections>
@@ -1098,14 +1098,11 @@
                                 </textField>
                                 <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="oZp-7o-wcg" userLabel="Bottom-Bar-Placement Segmented Control">
                                     <rect key="frame" x="158" y="-1" width="184" height="24"/>
-                                    <constraints>
-                                        <constraint firstAttribute="width" constant="180" id="IQL-hj-LE4"/>
-                                    </constraints>
                                     <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="TEO-g1-ffc">
                                         <font key="font" metaFont="system"/>
                                         <segments>
-                                            <segment label="On Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
-                                            <segment label="Outside" tag="2"/>
+                                            <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                            <segment label="Outside Video" tag="2"/>
                                         </segments>
                                     </segmentedCell>
                                     <connections>
@@ -1150,13 +1147,15 @@
                     <constraints>
                         <constraint firstItem="PrI-KL-aZn" firstAttribute="leading" secondItem="mJq-OS-xid" secondAttribute="leading" constant="20" id="5tT-06-ukJ"/>
                         <constraint firstItem="GbG-nw-ict" firstAttribute="trailing" secondItem="HbB-K7-G5g" secondAttribute="trailing" id="BDZ-k0-Ofy"/>
-                        <constraint firstItem="GbG-nw-ict" firstAttribute="trailing" secondItem="oZp-7o-wcg" secondAttribute="trailing" id="Ou7-B1-OQ6"/>
-                        <constraint firstItem="3vi-Iu-deL" firstAttribute="trailing" secondItem="HbB-K7-G5g" secondAttribute="trailing" id="QTv-Sa-hdx"/>
+                        <constraint firstItem="BTX-tO-uhL" firstAttribute="leading" secondItem="HbB-K7-G5g" secondAttribute="leading" constant="20" id="MoA-n7-O4e"/>
+                        <constraint firstItem="3vi-Iu-deL" firstAttribute="trailing" secondItem="HbB-K7-G5g" secondAttribute="trailing" id="QDQ-8o-oKd"/>
                         <constraint firstItem="bVg-yv-fOx" firstAttribute="leading" secondItem="HbB-K7-G5g" secondAttribute="leading" id="bHH-mu-TP3"/>
-                        <constraint firstItem="KXy-D0-Irg" firstAttribute="leading" secondItem="BTX-tO-uhL" secondAttribute="leading" constant="20" id="d0r-hr-Kxw"/>
+                        <constraint firstItem="KXy-D0-Irg" firstAttribute="leading" secondItem="BTX-tO-uhL" secondAttribute="leading" id="d0r-hr-Kxw"/>
+                        <constraint firstItem="3vi-Iu-deL" firstAttribute="trailing" secondItem="EaM-oZ-jJO" secondAttribute="trailing" id="eMh-x3-AVw"/>
                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="mJq-OS-xid" secondAttribute="trailing" id="fFi-Ww-FyN"/>
                         <constraint firstItem="NhM-9L-Wss" firstAttribute="leading" secondItem="mJq-OS-xid" secondAttribute="leading" constant="20" id="hEA-ie-DOV"/>
-                        <constraint firstItem="67g-AK-VP6" firstAttribute="trailing" secondItem="3vi-Iu-deL" secondAttribute="trailing" id="z4W-o3-MiT"/>
+                        <constraint firstItem="oZp-7o-wcg" firstAttribute="width" secondItem="3vi-Iu-deL" secondAttribute="width" id="jag-Iv-1m0"/>
+                        <constraint firstItem="oZp-7o-wcg" firstAttribute="trailing" secondItem="3vi-Iu-deL" secondAttribute="trailing" id="shJ-1G-vjb"/>
                     </constraints>
                     <visibilityPriorities>
                         <integer value="1000"/>
@@ -1282,8 +1281,8 @@
                     </connections>
                 </button>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6ml-Xj-nVX">
-                    <rect key="frame" x="118" y="76" width="156" height="16"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="&quot;Inside Video Area&quot; bars:" id="SBZ-A7-Btg">
+                    <rect key="frame" x="118" y="76" width="133" height="16"/>
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="&quot;On-Screen&quot; bars:" id="SBZ-A7-Btg">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1390,11 +1389,11 @@
                 <constraint firstItem="gVR-so-xgt" firstAttribute="top" secondItem="4SE-r9-OnD" secondAttribute="bottom" constant="8" id="TAm-p2-Hv6"/>
                 <constraint firstItem="OMM-mG-Uts" firstAttribute="height" secondItem="nDu-Yq-tPI" secondAttribute="height" id="TCG-3o-gTV"/>
                 <constraint firstItem="q8D-b2-H0y" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="gjB-It-iFS" secondAttribute="leading" priority="499" constant="120" id="TML-nx-KjJ"/>
-                <constraint firstItem="gVR-so-xgt" firstAttribute="trailing" secondItem="oZp-7o-wcg" secondAttribute="trailing" id="ThB-By-g9m"/>
                 <constraint firstItem="q8D-b2-H0y" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="gjB-It-iFS" secondAttribute="leading" id="V4u-kf-cdn"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="4SE-r9-OnD" secondAttribute="trailing" id="YVV-Zk-8Iw"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="OMM-mG-Uts" secondAttribute="trailing" id="Yxo-AW-upP"/>
                 <constraint firstItem="vC3-U1-cHH" firstAttribute="centerY" secondItem="2Fc-2d-hIJ" secondAttribute="centerY" id="ZIt-uS-S1A"/>
+                <constraint firstItem="gVR-so-xgt" firstAttribute="trailing" secondItem="3vi-Iu-deL" secondAttribute="trailing" id="dPb-h2-YIZ"/>
                 <constraint firstAttribute="bottom" secondItem="0eU-xI-byi" secondAttribute="bottom" constant="8" id="dsz-0o-3UL"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="gVR-so-xgt" secondAttribute="trailing" priority="900" id="f0U-Y7-QR7"/>
                 <constraint firstItem="2Fc-2d-hIJ" firstAttribute="leading" secondItem="vC3-U1-cHH" secondAttribute="trailing" constant="8" id="fPX-XY-3Lq"/>
@@ -1420,8 +1419,8 @@
             <rect key="frame" x="0.0" y="0.0" width="550" height="120"/>
             <subviews>
                 <textField identifier="SectionTitleOSD" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zyi-J3-lSp">
-                    <rect key="frame" x="-2" y="80" width="124" height="32"/>
-                    <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="On Screen Display:" id="F2e-CS-KXl">
+                    <rect key="frame" x="-2" y="96" width="124" height="16"/>
+                    <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Inside Display:" id="F2e-CS-KXl">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -1655,9 +1654,9 @@
                     </textFieldCell>
                 </textField>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="jiM-84-6ud" userLabel="Leading-Sidebar Box">
-                    <rect key="frame" x="117" y="4" width="316" height="94"/>
+                    <rect key="frame" x="117" y="4" width="296" height="94"/>
                     <view key="contentView" id="aFh-mF-xhE" userLabel="Leading-Sidebar-Box View">
-                        <rect key="frame" x="4" y="5" width="308" height="86"/>
+                        <rect key="frame" x="4" y="5" width="288" height="86"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hz5-Bh-Bzv">
@@ -1669,15 +1668,15 @@
                                 </textFieldCell>
                             </textField>
                             <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KIu-aG-mHw" userLabel="Leading-Sidebar-Placement Segmented Control">
-                                <rect key="frame" x="90" y="55" width="204" height="24"/>
+                                <rect key="frame" x="90" y="55" width="184" height="24"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="200" id="KdZ-ej-XIn"/>
+                                    <constraint firstAttribute="width" constant="180" id="2D4-bp-E7M"/>
                                 </constraints>
                                 <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="sME-na-jHH">
                                     <font key="font" metaFont="system"/>
                                     <segments>
-                                        <segment label="On Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
-                                        <segment label="Outside" tag="2"/>
+                                        <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                        <segment label="Outside Video" tag="2"/>
                                     </segments>
                                 </segmentedCell>
                                 <connections>
@@ -1724,7 +1723,7 @@
                     </view>
                 </box>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6mM-VC-jd0">
-                    <rect key="frame" x="436" y="100" width="88" height="16"/>
+                    <rect key="frame" x="416" y="100" width="88" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Right sidebar:" id="Msi-a9-5mJ">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1732,9 +1731,9 @@
                     </textFieldCell>
                 </textField>
                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="4b0-vT-JOG" userLabel="Trailing-Sidebar Box">
-                    <rect key="frame" x="435" y="4" width="316" height="94"/>
+                    <rect key="frame" x="415" y="4" width="296" height="94"/>
                     <view key="contentView" id="bxF-0O-DOu" userLabel="Trailing-Sidebar-Box View">
-                        <rect key="frame" x="4" y="5" width="308" height="86"/>
+                        <rect key="frame" x="4" y="5" width="288" height="86"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qi3-uT-vzk">
@@ -1746,15 +1745,12 @@
                                 </textFieldCell>
                             </textField>
                             <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9fG-Qe-ZAx" userLabel="Trailing-Sidebar-Placement Segmented Control">
-                                <rect key="frame" x="90" y="55" width="204" height="24"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="200" id="NMP-hX-cN0"/>
-                                </constraints>
+                                <rect key="frame" x="90" y="55" width="184" height="24"/>
                                 <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="0MZ-00-6fG">
                                     <font key="font" metaFont="system"/>
                                     <segments>
-                                        <segment label="On Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
-                                        <segment label="Outside" tag="2"/>
+                                        <segment label="On-Screen" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                        <segment label="Outside Video" tag="2"/>
                                     </segments>
                                 </segmentedCell>
                                 <connections>
@@ -1816,6 +1812,7 @@
                 <constraint firstItem="Olt-EL-hAU" firstAttribute="trailing" secondItem="ouj-w5-wOb" secondAttribute="trailing" id="Nfs-GM-fWx"/>
                 <constraint firstItem="RnR-6d-fTg" firstAttribute="firstBaseline" secondItem="E6K-jW-Lzn" secondAttribute="firstBaseline" id="PIf-8c-VIJ"/>
                 <constraint firstItem="qi3-uT-vzk" firstAttribute="height" secondItem="hz5-Bh-Bzv" secondAttribute="height" id="Rp9-AO-oKh"/>
+                <constraint firstItem="9fG-Qe-ZAx" firstAttribute="width" secondItem="KIu-aG-mHw" secondAttribute="width" id="SbD-hC-bbk"/>
                 <constraint firstItem="E6K-jW-Lzn" firstAttribute="leading" secondItem="iZa-Jl-fXs" secondAttribute="leading" id="Tj4-o9-IqL"/>
                 <constraint firstItem="Olt-EL-hAU" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="oaX-Ob-hdd" secondAttribute="trailing" constant="8" id="VeB-6Q-6Tp"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="4b0-vT-JOG" secondAttribute="trailing" id="Wnp-in-f8x"/>
