@@ -198,25 +198,28 @@ extension PlayerWindowController {
     if transition.isTogglingFullScreen {
       startingAnimationDuration = 0
     } else if transition.isEnteringMusicMode {
-      startingAnimationDuration = IINAAnimation.DefaultDuration * 0.3
+      startingAnimationDuration = IINAAnimation.DefaultDuration
     } else if let totalStartingDuration = totalStartingDuration {
-      startingAnimationDuration = totalStartingDuration * 0.3
+      startingAnimationDuration = totalStartingDuration / 3
     }
 
     var showFadeableViewsDuration: CGFloat = startingAnimationDuration
     var fadeOutOldViewsDuration: CGFloat = startingAnimationDuration
-    if transition.isExitingMusicMode {
+    let closeOldPanelsDuration = startingAnimationDuration
+    if transition.isEnteringMusicMode {
+      showFadeableViewsDuration = startingAnimationDuration * 0.5
+      fadeOutOldViewsDuration = startingAnimationDuration * 0.5
+    } else if transition.isExitingMusicMode {
       showFadeableViewsDuration = 0
       fadeOutOldViewsDuration = 0
     }
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? IINAAnimation.DefaultDuration
 
-    // Extra animation for exiting legacy full screen: remove camera housing with black bar
-    let closeOldPanelsDuration = startingAnimationDuration
+    // Extra animation when exiting legacy full screen: remove camera housing with black bar
     let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && windowedModeScreen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
 
-    // Extra animation for entering legacy full screen: cover camera housing with black bar
+    // Extra animation when entering legacy full screen: cover camera housing with black bar
     let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && windowedModeScreen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
 
     var fadeInNewViewsDuration = endingAnimationDuration * 0.5
@@ -278,7 +281,7 @@ extension PlayerWindowController {
 
     // Extra task when entering music mode: move & resize window
     if transition.isEnteringMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
-      transition.animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+      transition.animationTasks.append(IINAAnimation.Task(duration: closeOldPanelsDuration, timing: .easeInEaseOut, { [self] in
         // TODO: develop a nice sliding animation if possible
         log.verbose("[\(transition.name)] Moving & resizing window")
 
