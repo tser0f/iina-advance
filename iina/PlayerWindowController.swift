@@ -834,6 +834,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     cv.wantsLayer = true
     cv.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
 
+    // Need this to be black also, for sidebar animations
+    viewportView.wantsLayer = true
+    viewportView.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
+
     applyThemeMaterial()
 
     leftLabel.mode = .current

@@ -1172,7 +1172,6 @@ class PlayerCore: NSObject {
         }
       }
       _reloadPlaylist()
-      saveState()  // save playlist URLs to prefs
     }
   }
 
@@ -1195,7 +1194,25 @@ class PlayerCore: NSObject {
     mpv.queue.async { [self] in
       _playlistMove(from, to: to)
     }
-    postNotification(.iinaPlaylistChanged)
+    _reloadPlaylist()
+  }
+
+  func playlistMove(_ srcRows: IndexSet, to dstRow: Int) {
+    mpv.queue.async { [self] in
+      log.debug("Playlist Drag & Drop: \(srcRows) → \(dstRow)")
+      // Drag & drop within playlistTableView
+      var oldIndexOffset = 0, newIndexOffset = 0
+      for oldIndex in srcRows {
+        if oldIndex < dstRow {
+          _playlistMove(oldIndex + oldIndexOffset, to: dstRow)
+          oldIndexOffset -= 1
+        } else {
+          _playlistMove(oldIndex, to: dstRow + newIndexOffset)
+          newIndexOffset += 1
+        }
+      }
+      _reloadPlaylist()
+    }
   }
 
   func playNextInPlaylist(_ playlistItemIndexes: IndexSet) {
@@ -2662,6 +2679,7 @@ class PlayerCore: NSObject {
       newPlaylist.append(playlistItem)
     }
     info.playlist = newPlaylist
+    saveState()  // save playlist URLs to prefs
     if !silent {
       postNotification(.iinaPlaylistChanged)
     }

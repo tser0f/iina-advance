@@ -390,7 +390,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     } else {
       return false
     }
-    player.postNotification(.iinaPlaylistChanged)
     return true
   }
 
@@ -415,19 +414,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     if info.draggingSource as? NSTableView === tableView,
       let rowData = info.draggingPasteboard.data(forType: .iinaPlaylistItem),
       let indexSet = NSKeyedUnarchiver.unarchiveObject(with: rowData) as? IndexSet {
-      // Drag & drop within playlistTableView
-      var oldIndexOffset = 0, newIndexOffset = 0
-      for oldIndex in indexSet {
-        if oldIndex < row {
-          player.playlistMove(oldIndex + oldIndexOffset, to: row)
-          oldIndexOffset -= 1
-        } else {
-          player.playlistMove(oldIndex, to: row + newIndexOffset)
-          newIndexOffset += 1
-        }
-        Logger.log("Playlist Drag & Drop from \(oldIndex) to \(row)")
-      }
-      player.postNotification(.iinaPlaylistChanged)
+
+      player.playlistMove(indexSet, to: row)
       return true
     }
     // Otherwise, could be copy/cut & paste within playlistTableView

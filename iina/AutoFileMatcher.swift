@@ -367,7 +367,6 @@ class AutoFileMatcher {
       }
 
       player.info.isMatchingSubtitles = false
-      player.postNotification(.iinaPlaylistChanged)
       Logger.log("**Finished matching", subsystem: subsystem)
     } catch let err {
       player.info.isMatchingSubtitles = false
