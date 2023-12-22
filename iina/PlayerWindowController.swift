@@ -828,6 +828,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     topBarView.clipsToBounds = true
     bottomBarView.clipsToBounds = true
 
+    /// Set `window.contentView`'s background to black so that the windows behind this one don't bleed through
+    /// when `lockViewportToVideoSize` is disabled, or when in legacy full screen on a Macbook screen  with a
+    /// notch and the preference `allowVideoToOverlapCameraHousing` is false.
+    cv.wantsLayer = true
+    cv.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
+
     applyThemeMaterial()
 
     leftLabel.mode = .current
@@ -840,11 +846,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // need to deal with control bar, so we handle it manually
     window.isMovableByWindowBackground  = false
-
-    /// Set `viewportView`'s background to black so that the windows behind this one don't bleed through
-    /// when `lockViewportToVideoSize` is disabled.
-    viewportView.wantsLayer = true
-    viewportView.layer?.backgroundColor = .black
 
     // Titlebar accessories
 
@@ -874,7 +875,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if #available(macOS 13, *) {
       let view = NSView(frame: NSRect(origin: .zero, size: NSSize(width: 0.1, height: 0.1)))
       view.wantsLayer = true
-      view.layer?.backgroundColor = NSColor.black.cgColor
+      view.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
       view.layer?.opacity = 0.01
       cv.addSubview(view)
     }

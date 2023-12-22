@@ -218,6 +218,10 @@ struct Constants {
     static let musicModePlaySliderKnobHeight: CGFloat = 12
     static let floatingOSCPlaySliderKnobHeight: CGFloat = 15
   }
+  struct Color {
+    static let defaultWindowBackgroundColor = CGColor.black
+    static let interactiveModeBackground = NSColor.windowBackgroundColor.cgColor
+  }
 }
 
 struct Unit {
