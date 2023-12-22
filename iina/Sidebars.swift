@@ -881,7 +881,6 @@ extension PlayerWindowController {
       }
 
       if let newGeo {
-        updateSpacingForTitleBarAccessories(windowWidth: newGeo.windowFrame.width)
         applyWindowGeometryForSpecialResize(newGeo)
 
         switch currentLayout.mode {

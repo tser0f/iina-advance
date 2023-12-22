@@ -299,9 +299,6 @@ extension PlayerWindowController {
       let bottomBarHeight = transition.inputLayout.bottomBarPlacement == .insideViewport ? middleGeo.insideBottomBarHeight : middleGeo.outsideBottomBarHeight
       updateBottomBarHeight(to: bottomBarHeight, bottomBarPlacement: transition.inputLayout.bottomBarPlacement)
 
-      // Update title bar item spacing to align with sidebars
-      updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
-
       if !transition.isExitingFullScreen {
         controlBarFloating.moveTo(centerRatioH: floatingOSCCenterRatioH, originRatioV: floatingOSCOriginRatioV,
                                   layout: transition.outputLayout, viewportSize: middleGeo.viewportSize)
@@ -711,7 +708,7 @@ extension PlayerWindowController {
                               setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
                               setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil,
                               ΔWindowWidth: ΔWindowWidth)
-    updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
+
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(tabHeight: outputLayout.sidebarTabHeight, downshift: outputLayout.sidebarDownshift)
 
@@ -1044,25 +1041,17 @@ extension PlayerWindowController {
    └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
    */
   private func updateTopBarPlacement(placement: Preference.PanelPlacement) {
-    log.verbose("Updating topBar placement to: \(placement)")
-    guard let window = window, let contentView = window.contentView else { return }
-    contentView.removeConstraint(topBarLeadingSpaceConstraint)
-    contentView.removeConstraint(topBarTrailingSpaceConstraint)
-
-    switch placement {
-    case .insideViewport:
-      // Align left & right sides with sidebars (top bar will squeeze to make space for sidebars)
-      topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: leadingSidebarView.trailingAnchor, constant: 0)
-      topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: trailingSidebarView.leadingAnchor, constant: 0)
-
-    case .outsideViewport:
-      // Align left & right sides with window (sidebars go below top bar)
-      topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
-      topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
-
-    }
-    topBarLeadingSpaceConstraint.isActive = true
-    topBarTrailingSpaceConstraint.isActive = true
+//    log.verbose("Updating topBar placement to: \(placement)")
+//    guard let window = window, let contentView = window.contentView else { return }
+//    contentView.removeConstraint(topBarLeadingSpaceConstraint)
+//    contentView.removeConstraint(topBarTrailingSpaceConstraint)
+//
+//    // Align left & right sides with window (sidebars go below top bar)
+//    topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
+//    topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
+//
+//    topBarLeadingSpaceConstraint.isActive = true
+//    topBarTrailingSpaceConstraint.isActive = true
   }
 
   func updateTopBarHeight(to topBarHeight: CGFloat, topBarPlacement: Preference.PanelPlacement, cameraHousingOffset: CGFloat) {
@@ -1141,9 +1130,6 @@ extension PlayerWindowController {
     if leadingSidebar == .insideViewport {
       contentView.addSubview(leadingSidebarView, positioned: .above, relativeTo: viewportView)
 
-      if topBar == .insideViewport {
-        contentView.addSubview(topBarView, positioned: .below, relativeTo: leadingSidebarView)
-      }
       if bottomBar == .insideViewport {
         contentView.addSubview(bottomBarView, positioned: .below, relativeTo: leadingSidebarView)
       }
@@ -1152,9 +1138,6 @@ extension PlayerWindowController {
     if trailingSidebar == .insideViewport {
       contentView.addSubview(trailingSidebarView, positioned: .above, relativeTo: viewportView)
 
-      if topBar == .insideViewport {
-        contentView.addSubview(topBarView, positioned: .below, relativeTo: trailingSidebarView)
-      }
       if bottomBar == .insideViewport {
         contentView.addSubview(bottomBarView, positioned: .below, relativeTo: trailingSidebarView)
       }
@@ -1190,53 +1173,6 @@ extension PlayerWindowController {
       trailingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
       leadingTitleBarAccessoryView.translatesAutoresizingMaskIntoConstraints = false
     }
-  }
-
-  func updateSpacingForTitleBarAccessories(_ layout: LayoutState? = nil, windowWidth: CGFloat) {
-    let layout = layout ?? self.currentLayout
-
-    updateSpacingForLeadingTitleBarAccessory(layout)
-    updateSpacingForTrailingTitleBarAccessory(layout, windowWidth: windowWidth)
-  }
-
-  // Updates visibility of buttons on the left side of the title bar. Also when the left sidebar is visible,
-  // sets the horizontal space needed to push the title bar right, so that it doesn't overlap onto the left sidebar.
-  private func updateSpacingForLeadingTitleBarAccessory(_ layout: LayoutState) {
-    let sidebarButtonSpace: CGFloat = layout.leadingSidebarToggleButton.isShowable ? leadingSidebarToggleButton.frame.width : 0
-
-    // Subtract space taken by the 3 standard buttons + other visible buttons
-    // Add standard space before title text by default
-    let trailingSpace: CGFloat = layout.topBarPlacement == .outsideViewport ? 8 : max(8, layout.leadingSidebar.insideWidth - trafficLightButtonsWidth - sidebarButtonSpace)
-    leadingTitleBarTrailingSpaceConstraint.animateToConstant(trailingSpace)
-
-    leadingTitleBarAccessoryView.layoutSubtreeIfNeeded()
-  }
-
-  // Updates visibility of buttons on the right side of the title bar. Also when the right sidebar is visible,
-  // sets the horizontal space needed to push the title bar left, so that it doesn't overlap onto the right sidebar.
-  private func updateSpacingForTrailingTitleBarAccessory(_ layout: LayoutState, windowWidth: CGFloat) {
-    var spaceForButtons: CGFloat = 0
-    let isOnTopButtonShowable = layout.computeOnTopButtonVisibility(isOnTop: isOnTop).isShowable
-
-    if layout.trailingSidebarToggleButton.isShowable {
-      spaceForButtons += trailingSidebarToggleButton.frame.width
-    }
-    if isOnTopButtonShowable {
-      spaceForButtons += onTopButton.frame.width
-    }
-
-    let leadingSpaceNeeded: CGFloat = layout.topBarPlacement == .outsideViewport ? 0 : max(0, layout.trailingSidebar.currentWidth - spaceForButtons)
-    // The title icon & text looks very bad if we try to push it too far to the left. Try to detect this and just remove the offset in this case
-    let maxSpaceAllowed: CGFloat = max(0, windowWidth * 0.5 - 20)
-    let leadingSpace = leadingSpaceNeeded > maxSpaceAllowed ? 0 : leadingSpaceNeeded
-    trailingTitleBarLeadingSpaceConstraint.animateToConstant(leadingSpace)
-
-    // Add padding to the side for buttons
-    let isAnyButtonVisible = layout.trailingSidebarToggleButton.isShowable || isOnTopButtonShowable
-    let buttonMargin: CGFloat = isAnyButtonVisible ? 8 : 0
-    trailingTitleBarTrailingSpaceConstraint.animateToConstant(buttonMargin)
-
-    trailingTitleBarAccessoryView.layoutSubtreeIfNeeded()
   }
 
   func hideBuiltInTitleBarViews(setAlpha: Bool = false) {
@@ -1284,9 +1220,6 @@ extension PlayerWindowController {
 
     if onTopButtonVisibility == .showFadeableTopBar {
       showFadeableViews()
-    }
-    if let window = window {
-      updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
     }
     player.saveState()
   }

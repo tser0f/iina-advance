@@ -319,50 +319,6 @@
                             <outlet property="yConstraint" destination="cRP-R4-zYY" id="kxT-61-1SZ"/>
                         </connections>
                     </visualEffectView>
-                    <visualEffectView identifier="TopBarView" blendingMode="withinWindow" material="titlebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="TopBar View">
-                        <rect key="frame" x="0.0" y="372" width="640" height="28"/>
-                        <subviews>
-                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="Title-Bar View">
-                                <rect key="frame" x="0.0" y="0.0" width="640" height="28"/>
-                            </customView>
-                            <customView identifier="OSC-Top-View" translatesAutoresizingMaskIntoConstraints="NO" id="pgt-r3-Vbf" userLabel="ControlBarTop View" customClass="ClickThroughView" customModule="IINA" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="0.0" width="640" height="0.0"/>
-                                <subviews>
-                                    <stackView identifier="OSC-Top-Stack-View" distribution="equalSpacing" orientation="horizontal" alignment="centerY" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="fDY-vk-Ylv" userLabel="OSC-Top Horizontal Stack View" customClass="ClickThroughStackView" customModule="IINA" customModuleProvider="target">
-                                        <rect key="frame" x="8" y="0.0" width="624" height="0.0"/>
-                                    </stackView>
-                                </subviews>
-                                <constraints>
-                                    <constraint firstAttribute="bottom" secondItem="fDY-vk-Ylv" secondAttribute="bottom" id="XcG-Qs-KDA"/>
-                                    <constraint firstAttribute="trailing" secondItem="fDY-vk-Ylv" secondAttribute="trailing" constant="8" identifier="oscTopStackViewTrailingConstraint" id="fUQ-Rf-uYa"/>
-                                    <constraint firstItem="fDY-vk-Ylv" firstAttribute="leading" secondItem="pgt-r3-Vbf" secondAttribute="leading" constant="8" identifier="oscTopStackViewLeadingConstraint" id="tfY-Gh-Uv1"/>
-                                    <constraint firstItem="fDY-vk-Ylv" firstAttribute="top" secondItem="pgt-r3-Vbf" secondAttribute="top" id="xOA-fC-WYr"/>
-                                </constraints>
-                            </customView>
-                            <box identifier="TopBarBottomBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="TopBar-BottomBorder Box">
-                                <rect key="frame" x="0.0" y="0.0" width="640" height="1"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="1" id="YtK-mf-czn"/>
-                                </constraints>
-                                <color key="borderColor" red="0.48627450980392156" green="0.48627450980392156" blue="0.48627450980392156" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                <color key="fillColor" name="quaternaryLabelColor" catalog="System" colorSpace="catalog"/>
-                            </box>
-                        </subviews>
-                        <constraints>
-                            <constraint firstItem="WaC-08-utU" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="A1u-FZ-Pxw"/>
-                            <constraint firstItem="WaC-08-utU" firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="top" id="GU9-GL-ESy"/>
-                            <constraint firstItem="WaC-08-utU" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" id="HhT-1Z-HEk"/>
-                            <constraint firstItem="pgt-r3-Vbf" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="OHy-Ue-y7h"/>
-                            <constraint firstAttribute="trailing" secondItem="pgt-r3-Vbf" secondAttribute="trailing" id="UeQ-hc-umE"/>
-                            <constraint firstAttribute="trailing" secondItem="iA3-pt-6Jm" secondAttribute="trailing" id="e9D-au-sdb"/>
-                            <constraint firstItem="WaC-08-utU" firstAttribute="bottom" secondItem="TRx-2V-Gr3" secondAttribute="top" priority="900" constant="20" identifier="titleBarHeightConstraint" id="fcC-MX-fmN"/>
-                            <constraint firstItem="iA3-pt-6Jm" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="jIX-sE-wsj"/>
-                            <constraint firstAttribute="trailing" secondItem="WaC-08-utU" secondAttribute="trailing" id="oz7-qR-Dzc"/>
-                            <constraint firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="bottom" id="vSX-sI-hHU"/>
-                            <constraint firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="top" priority="900" identifier="topOSCHeightConstraint" id="wwB-Bd-YpC"/>
-                            <constraint firstItem="pgt-r3-Vbf" firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="bottom" id="xMQ-WC-fps"/>
-                        </constraints>
-                    </visualEffectView>
                     <visualEffectView identifier="BottomBarView" hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="sidebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="DFb-1L-U9o" userLabel="BottomBar View">
                         <rect key="frame" x="0.0" y="0.0" width="640" height="0.0"/>
                         <subviews>
@@ -496,6 +452,50 @@
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" priority="900" constant="115" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>
                             <constraint firstItem="g0j-zS-jKv" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" constant="8" id="VaD-8L-o9X"/>
                             <constraint firstAttribute="trailing" secondItem="g0j-zS-jKv" secondAttribute="trailing" constant="12" id="ZCD-op-700"/>
+                        </constraints>
+                    </visualEffectView>
+                    <visualEffectView identifier="TopBarView" blendingMode="withinWindow" material="titlebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="TopBar View">
+                        <rect key="frame" x="0.0" y="372" width="640" height="28"/>
+                        <subviews>
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="WaC-08-utU" userLabel="Title-Bar View">
+                                <rect key="frame" x="0.0" y="0.0" width="640" height="28"/>
+                            </customView>
+                            <customView identifier="OSC-Top-View" translatesAutoresizingMaskIntoConstraints="NO" id="pgt-r3-Vbf" userLabel="ControlBarTop View" customClass="ClickThroughView" customModule="IINA" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="0.0" width="640" height="0.0"/>
+                                <subviews>
+                                    <stackView identifier="OSC-Top-Stack-View" distribution="equalSpacing" orientation="horizontal" alignment="centerY" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="fDY-vk-Ylv" userLabel="OSC-Top Horizontal Stack View" customClass="ClickThroughStackView" customModule="IINA" customModuleProvider="target">
+                                        <rect key="frame" x="8" y="0.0" width="624" height="0.0"/>
+                                    </stackView>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="bottom" secondItem="fDY-vk-Ylv" secondAttribute="bottom" id="XcG-Qs-KDA"/>
+                                    <constraint firstAttribute="trailing" secondItem="fDY-vk-Ylv" secondAttribute="trailing" constant="8" identifier="oscTopStackViewTrailingConstraint" id="fUQ-Rf-uYa"/>
+                                    <constraint firstItem="fDY-vk-Ylv" firstAttribute="leading" secondItem="pgt-r3-Vbf" secondAttribute="leading" constant="8" identifier="oscTopStackViewLeadingConstraint" id="tfY-Gh-Uv1"/>
+                                    <constraint firstItem="fDY-vk-Ylv" firstAttribute="top" secondItem="pgt-r3-Vbf" secondAttribute="top" id="xOA-fC-WYr"/>
+                                </constraints>
+                            </customView>
+                            <box identifier="TopBarBottomBorder" verticalHuggingPriority="750" boxType="custom" borderType="line" borderWidth="0.0" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="iA3-pt-6Jm" userLabel="TopBar-BottomBorder Box">
+                                <rect key="frame" x="0.0" y="0.0" width="640" height="1"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="1" id="YtK-mf-czn"/>
+                                </constraints>
+                                <color key="borderColor" red="0.48627450980392156" green="0.48627450980392156" blue="0.48627450980392156" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="fillColor" name="quaternaryLabelColor" catalog="System" colorSpace="catalog"/>
+                            </box>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="WaC-08-utU" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="A1u-FZ-Pxw"/>
+                            <constraint firstItem="WaC-08-utU" firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="top" id="GU9-GL-ESy"/>
+                            <constraint firstItem="WaC-08-utU" firstAttribute="top" secondItem="TRx-2V-Gr3" secondAttribute="top" id="HhT-1Z-HEk"/>
+                            <constraint firstItem="pgt-r3-Vbf" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="OHy-Ue-y7h"/>
+                            <constraint firstAttribute="trailing" secondItem="pgt-r3-Vbf" secondAttribute="trailing" id="UeQ-hc-umE"/>
+                            <constraint firstAttribute="trailing" secondItem="iA3-pt-6Jm" secondAttribute="trailing" id="e9D-au-sdb"/>
+                            <constraint firstItem="WaC-08-utU" firstAttribute="bottom" secondItem="TRx-2V-Gr3" secondAttribute="top" priority="900" constant="20" identifier="titleBarHeightConstraint" id="fcC-MX-fmN"/>
+                            <constraint firstItem="iA3-pt-6Jm" firstAttribute="leading" secondItem="TRx-2V-Gr3" secondAttribute="leading" id="jIX-sE-wsj"/>
+                            <constraint firstAttribute="trailing" secondItem="WaC-08-utU" secondAttribute="trailing" id="oz7-qR-Dzc"/>
+                            <constraint firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="bottom" id="vSX-sI-hHU"/>
+                            <constraint firstAttribute="bottom" secondItem="pgt-r3-Vbf" secondAttribute="top" priority="900" identifier="topOSCHeightConstraint" id="wwB-Bd-YpC"/>
+                            <constraint firstItem="pgt-r3-Vbf" firstAttribute="bottom" secondItem="iA3-pt-6Jm" secondAttribute="bottom" id="xMQ-WC-fps"/>
                         </constraints>
                     </visualEffectView>
                     <visualEffectView identifier="PiP-Overlay-View" hidden="YES" wantsLayer="YES" blendingMode="behindWindow" material="underWindowBackground" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="Nrz-jZ-Luf" userLabel="PIP-Overlay View">
@@ -681,11 +681,11 @@
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="Nrz-jZ-Luf" secondAttribute="trailing" id="mJs-PF-Ex5"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="3nL-Ky-Hfa" secondAttribute="top" id="n2d-ys-qVW"/>
                     <constraint firstAttribute="bottom" secondItem="xqX-4W-gdw" secondAttribute="bottom" priority="900" constant="-0.5" id="nax-8a-6v3"/>
-                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="topBarLeadingSpaceConstraint" id="ofB-WP-9dW"/>
+                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" identifier="topBarLeadingSpaceConstraint" id="ofB-WP-9dW"/>
                     <constraint firstItem="Qbi-jx-9pO" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" priority="900" id="r5V-EL-YbE"/>
                     <constraint firstItem="g0O-v5-RQj" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="epo-S6-QVB" secondAttribute="leading" constant="-8" id="rQT-Vg-6uB"/>
                     <constraint firstItem="epo-S6-QVB" firstAttribute="top" secondItem="XBs-34-TIm" secondAttribute="top" id="tWp-dA-I4y"/>
-                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="trailing" secondItem="epo-S6-QVB" secondAttribute="leading" identifier="topBarTrailingSpaceConstraint" id="te1-wi-BbH"/>
+                    <constraint firstItem="TRx-2V-Gr3" firstAttribute="trailing" secondItem="se5-gp-TjO" secondAttribute="trailing" identifier="topBarTrailingSpaceConstraint" id="te1-wi-BbH"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="trailing" secondItem="se5-gp-TjO" secondAttribute="trailing" identifier="viewportlViewTrailing-ContentViewTrailing-Constraint" id="v5S-lZ-agU"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="se5-gp-TjO" secondAttribute="leading" identifier="viewportlViewLeading-ContentViewLeading-Constraint" id="vZs-ut-z4j"/>
                     <constraint firstItem="3nL-Ky-Hfa" firstAttribute="leading" secondItem="XBs-34-TIm" secondAttribute="trailing" identifier="viewportLeadingToLeadingSidebarCropTrailingConstraint" id="wAv-zI-fJc"/>
@@ -920,7 +920,7 @@
                             </constraints>
                         </customView>
                         <button identifier="LeadingSidebarToggleButton" translatesAutoresizingMaskIntoConstraints="NO" id="zkB-jk-l3c" userLabel="ToggleLeadingSidebar Square Button">
-                            <rect key="frame" x="0.0" y="11" width="28" height="28"/>
+                            <rect key="frame" x="0.0" y="15" width="20" height="20"/>
                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" imagePosition="only" alignment="center" refusesFirstResponder="YES" state="on" inset="2" id="htR-nK-U9W">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="system" size="17"/>
@@ -934,9 +934,9 @@
                             </connections>
                         </button>
                         <customView identifier="LeadingTitleBarAcc-TrailingSpacer" translatesAutoresizingMaskIntoConstraints="NO" id="7ck-d3-1hv" userLabel="Trailing Spacer View">
-                            <rect key="frame" x="28" y="0.0" width="0.0" height="50"/>
+                            <rect key="frame" x="20" y="0.0" width="8" height="50"/>
                             <constraints>
-                                <constraint firstAttribute="width" identifier="leadingTitleBarTrailingSpaceConstraint" id="ckY-Xn-Az9"/>
+                                <constraint firstAttribute="width" constant="8" identifier="leadingTitleBarTrailingSpaceConstraint" id="ckY-Xn-Az9"/>
                             </constraints>
                         </customView>
                     </subviews>
@@ -973,7 +973,7 @@
                             </constraints>
                         </customView>
                         <button identifier="TrailoingSidebarToggleButton" translatesAutoresizingMaskIntoConstraints="NO" id="VTu-Ac-dgn" userLabel="ToggleTrailingSidebar Square Button">
-                            <rect key="frame" x="0.0" y="11" width="28" height="28"/>
+                            <rect key="frame" x="0.0" y="15" width="20" height="20"/>
                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" imagePosition="only" alignment="center" refusesFirstResponder="YES" state="on" inset="2" id="WJX-cV-vij">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="system" size="17"/>
@@ -987,7 +987,7 @@
                             </connections>
                         </button>
                         <button identifier="OnTop-Square-Button" hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI" userLabel="OnTop Square Button">
-                            <rect key="frame" x="0.0" y="22" width="28" height="28"/>
+                            <rect key="frame" x="0.0" y="30" width="20" height="20"/>
                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="ontop_off" imagePosition="only" alignment="center" alternateImage="ontop" refusesFirstResponder="YES" state="on" inset="2" id="jAf-Be-kY3">
                                 <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -1000,9 +1000,9 @@
                             </connections>
                         </button>
                         <customView identifier="TrailingTitleBarAcc-TrailingSpacer" translatesAutoresizingMaskIntoConstraints="NO" id="Pu6-TO-IhT" userLabel="Trailing Spacer View">
-                            <rect key="frame" x="28" y="0.0" width="0.0" height="50"/>
+                            <rect key="frame" x="20" y="0.0" width="8" height="50"/>
                             <constraints>
-                                <constraint firstAttribute="width" identifier="trailingTitleBarTrailingSpaceConstraint" id="Tf8-XK-IVw"/>
+                                <constraint firstAttribute="width" constant="8" identifier="trailingTitleBarTrailingSpaceConstraint" id="Tf8-XK-IVw"/>
                             </constraints>
                         </customView>
                     </subviews>

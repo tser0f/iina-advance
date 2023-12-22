@@ -90,8 +90,6 @@ class CustomTitleBarViewController: NSViewController {
     titleText.defaultParagraphStyle = pStyle
     titleText.alignment = .center
     titleText.heightAnchor.constraint(equalToConstant: 16).isActive = true
-//    titleTextWidthConstraint = titleText.widthAnchor.constraint(equalToConstant: 0)
-//    titleTextWidthConstraint.isActive = true
 
     centerTitleBarView = NSStackView(views: [titleText])
     centerTitleBarView.wantsLayer = true
@@ -100,13 +98,13 @@ class CustomTitleBarViewController: NSViewController {
     centerTitleBarView.detachesHiddenViews = true
     centerTitleBarView.alignment = .centerY
     centerTitleBarView.spacing = 0
-
-    titleText.centerYAnchor.constraint(equalTo: centerTitleBarView.centerYAnchor).isActive = true
+    centerTitleBarView.setHuggingPriority(.defaultHigh, for: .horizontal)
+    centerTitleBarView.setHuggingPriority(.defaultHigh, for: .vertical)
 
     view.addSubview(centerTitleBarView)
     centerTitleBarView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
     centerTitleBarView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-    titleText.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+    centerTitleBarView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
     // - Trailing views
 
@@ -130,7 +128,7 @@ class CustomTitleBarViewController: NSViewController {
     trailingStackView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
     trailingStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
     trailingStackView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-    trailingStackView.setHuggingPriority(.required, for: .horizontal)
+    trailingStackView.setHuggingPriority(.defaultHigh, for: .horizontal)
     trailingTitleBarView = trailingStackView
 
     // make it expand to fill all available space

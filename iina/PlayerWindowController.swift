@@ -2089,7 +2089,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let newGeometry = resizeWindow(window, to: requestedSize)
       IINAAnimation.disableAnimation { [self] in
         videoView.apply(newGeometry)
-        updateSpacingForTitleBarAccessories(windowWidth: newGeometry.windowFrame.width)
       }
       return newGeometry.windowFrame.size
     }
@@ -2131,10 +2130,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         cropSettingsView?.cropBoxView.resized(with: selectableRect)
       case .fullScreen:
         return
-      }
-
-      if currentLayout.isWindowed {
-        updateSpacingForTitleBarAccessories(windowWidth: window.frame.width)
       }
     }
 
