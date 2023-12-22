@@ -347,6 +347,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     })
   }
 
+  // TODO: develop a nice sliding animation if possible
   func applyVideoViewVisibility(showVideo: Bool) {
     var tasks: [IINAAnimation.Task] = []
     tasks.append(IINAAnimation.zeroDurationTask{ [self] in

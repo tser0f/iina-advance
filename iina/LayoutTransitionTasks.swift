@@ -996,7 +996,11 @@ extension PlayerWindowController {
     }
 
     if transition.isTogglingFullScreen || transition.isTogglingMusicMode {
-      player.updateMPVWindowScale(using: transition.outputGeometry)
+      if transition.outputLayout.isMusicMode && !musicModeGeometry.isVideoVisible {
+        player.setVideoTrackEnabled(false)
+      } else {
+        player.updateMPVWindowScale(using: transition.outputGeometry)
+      }
     }
 
     if transition.isExitingInteractiveMode {

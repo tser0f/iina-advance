@@ -2446,8 +2446,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
                          forceShowTopBar: Bool = false) {
     guard !player.disableUI && !isInInteractiveMode else { return }
     let animationTasks: [IINAAnimation.Task] = buildAnimationToShowFadeableViews(restartFadeTimer: restartFadeTimer,
-                                                                                  duration: duration,
-                                                                                  forceShowTopBar: forceShowTopBar)
+                                                                                 duration: duration,
+                                                                                 forceShowTopBar: forceShowTopBar)
     animationPipeline.submit(animationTasks)
   }
 
