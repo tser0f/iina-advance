@@ -223,7 +223,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var pipStatus = PIPStatus.notInPIP
 
-  var currentLayout: LayoutState = LayoutState(spec: LayoutSpec.defaultLayout())
+  var currentLayout: LayoutState = LayoutState(spec: LayoutSpec.defaultLayout()) {
+    didSet {
+      if currentLayout.mode == .windowed {
+        lastWindowedLayoutSpec = currentLayout.spec
+      }
+    }
+  }
+  // For restoring windowed mode layout from music mode or other mode which does not support sidebars
+  var lastWindowedLayoutSpec: LayoutSpec = LayoutSpec.defaultLayout()
 
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
@@ -3031,8 +3039,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
 
         let newMode: PlayerWindowMode = currentLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
+        let lastSpec = currentLayout.mode == .fullScreenInteractive ? currentLayout.spec : lastWindowedLayoutSpec
         log.verbose("Exiting interactive mode, newMode: \(newMode)")
-        let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: currentLayout.spec)
+        let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: lastSpec)
         let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
         let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: currentLayout, to: newLayoutSpec,
                                                totalStartingDuration: halfDuration, totalEndingDuration: halfDuration)
@@ -3351,7 +3360,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       /// Start by hiding OSC and/or "outside" panels, which aren't needed and might mess up the layout.
       /// We can do this by creating a `LayoutSpec`, then using it to build a `LayoutTransition` and executing its animation.
       let oldLayout = currentLayout
-      let windowedLayout = LayoutSpec.fromPreferences(andMode: .windowed, fillingInFrom: oldLayout.spec)
+      let windowedLayout = LayoutSpec.fromPreferences(andMode: .windowed, fillingInFrom: lastWindowedLayoutSpec)
       buildLayoutTransition(named: "ExitMusicMode", from: oldLayout, to: windowedLayout, thenRun: true)
     }
   }
