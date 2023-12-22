@@ -279,18 +279,25 @@ extension PlayerWindowController {
       updateHiddenViewsAndConstraints(transition)
     })
 
-    // Extra task when entering music mode: move & resize window
-    if transition.isEnteringMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
+    // Extra task when entering or exiting music mode: move & resize video frame
+    if transition.isTogglingMusicMode && !transition.isInitialLayout && !transition.isTogglingFullScreen {
       transition.animationTasks.append(IINAAnimation.Task(duration: closeOldPanelsDuration, timing: .easeInEaseOut, { [self] in
         // TODO: develop a nice sliding animation if possible
         log.verbose("[\(transition.name)] Moving & resizing window")
 
-        player.window.setFrameImmediately(transition.outputGeometry.videoFrameInScreenCoords)
-        videoView.apply(transition.outputGeometry)
-        if !musicModeGeometry.isVideoVisible {
-          // Entering music mode when album art is hidden
-          miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
-          player.setTrack(0, forType: .video)
+        let intermediateGeo = transition.outputGeometry.clone(windowFrame: transition.outputGeometry.videoFrameInScreenCoords, topMarginHeight: 0,
+                                                              outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
+                                                              outsideBottomBarHeight: 0, outsideLeadingBarWidth: 0,
+                                                              insideTopBarHeight: 0, insideTrailingBarWidth: 0,
+                                                              insideBottomBarHeight: 0, insideLeadingBarWidth: 0)
+        player.window.setFrameImmediately(intermediateGeo.windowFrame)
+        videoView.apply(intermediateGeo)
+        if transition.isEnteringMusicMode {
+          if !musicModeGeometry.isVideoVisible {
+            // Entering music mode when album art is hidden
+            miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
+            player.setTrack(0, forType: .video)
+          }
         }
       }))
     }
