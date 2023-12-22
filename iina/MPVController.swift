@@ -65,7 +65,11 @@ class MPVController: NSObject {
   var mpvClientName: UnsafePointer<CChar>!
   var mpvVersion: String!
 
-  lazy var queue = DispatchQueue(label: "com.colliderli.iina.controller", qos: .userInitiated)
+  var queue: DispatchQueue
+
+  static func createQueue(playerLabel: String) -> DispatchQueue {
+    return DispatchQueue(label: "com.colliderli.iina.controller.\(playerLabel)", qos: .userInitiated)
+  }
 
   unowned let player: PlayerCore
 
@@ -123,6 +127,7 @@ class MPVController: NSObject {
 
   init(playerCore: PlayerCore) {
     self.player = playerCore
+    self.queue = MPVController.createQueue(playerLabel: playerCore.label)
     self.inputSectionLogScanner = MPVInputSectionLogScanner(player: playerCore)
     super.init()
   }

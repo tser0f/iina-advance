@@ -14,9 +14,9 @@ import Foundation
 struct MusicModeGeometry: Equatable, CustomStringConvertible {
   let windowFrame: NSRect
   let screenID: String
-  let playlistHeight: CGFloat  /// indicates playlist height whether or not `isPlaylistVisible`
+  let playlistHeight: CGFloat  /// indicates playlist height when visible, even if not currently visible
   let isVideoVisible: Bool
-  let isPlaylistVisible: Bool
+  let isPlaylistVisible: Bool  /// indicates if playlist is currently visible
   let videoAspect: CGFloat
 
   init(windowFrame: NSRect, screenID: String, playlistHeight: CGFloat, 
@@ -97,6 +97,18 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
 
   func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
     return PWindowGeometry.areEqual(windowFrame1: windowFrame, windowFrame2: windowFrame2, videoSize1: videoSize, videoSize2: videoSize2)
+  }
+
+  func withVideoViewVisible(_ visible: Bool) -> MusicModeGeometry {
+    var newWindowFrame = windowFrame
+    if visible {
+      newWindowFrame.size.height += videoHeightIfVisible
+    } else {
+      // If playlist is also hidden, do not try to shrink smaller than the control view, which would cause
+      // a constraint violation. This is possible due to small imprecisions in various layout calculations.
+      newWindowFrame.size.height = max(Constants.Distance.MusicMode.oscHeight, newWindowFrame.size.height - videoHeightIfVisible)
+    }
+    return clone(windowFrame: newWindowFrame, isVideoVisible: visible)
   }
 
   /// The MiniPlayerWindow's width must be between `MiniPlayerMinWidth` and `Preference.musicModeMaxWidth`.

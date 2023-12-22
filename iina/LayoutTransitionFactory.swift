@@ -290,6 +290,7 @@ extension PlayerWindowController {
         if !musicModeGeometry.isVideoVisible {
           // Entering music mode when album art is hidden
           miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: false)
+          player.setTrack(0, forType: .video)
         }
       }))
     }

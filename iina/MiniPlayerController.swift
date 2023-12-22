@@ -334,25 +334,20 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   @IBAction func toggleVideoView(_ sender: Any) {
     windowController.animationPipeline.submitZeroDuration({ [self] in
-      doToggleVideoView()
+      let showVideo = !isVideoVisible
+      log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
+
+      /// If showing video, call `setVideoTrackEnabled(true)`, then do animations.
+      if showVideo {
+        player.setVideoTrackEnabled(true, showMiniPlayerVideo: true)
+      } else {
+        /// If hiding video, do animations first, then call `setVideoTrackEnabled(false)`.
+        applyVideoViewVisibility(showVideo: showVideo)
+      }
     })
   }
 
-  private func doToggleVideoView() {
-    let showVideo = !isVideoVisible
-    log.verbose("Toggling videoView visibility from \((!showVideo).yn) to \(showVideo.yn)")
-
-    let oldGeometry = windowController.musicModeGeometry!
-    var newWindowFrame = oldGeometry.windowFrame
-    if showVideo {
-      newWindowFrame.size.height += oldGeometry.videoHeightIfVisible
-    } else {
-      // If playlist is also hidden, do not try to shrink smaller than the control view, which would cause
-      // a constraint violation. This is possible due to small imprecisions in various layout calculations.
-      newWindowFrame.size.height = max(Constants.Distance.MusicMode.oscHeight, newWindowFrame.size.height - oldGeometry.videoHeightIfVisible)
-    }
-    let newGeometry = oldGeometry.clone(windowFrame: newWindowFrame, isVideoVisible: showVideo)
-
+  func applyVideoViewVisibility(showVideo: Bool) {
     var tasks: [IINAAnimation.Task] = []
     tasks.append(IINAAnimation.zeroDurationTask{ [self] in
       // Hide OSD during animation
@@ -371,6 +366,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     })
 
     tasks.append(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
+      let newGeometry = windowController.musicModeGeometry!.withVideoViewVisible(showVideo)
       log.verbose("VideoView setting videoViewVisible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
       windowController.applyMusicModeGeometry(newGeometry)
     }))
@@ -382,6 +378,10 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       /// Allow it to show again
       windowController.closeButtonView.isHidden = false
       windowController.videoView.display()
+
+      if !showVideo {
+        player.setVideoTrackEnabled(false)
+      }
     })
 
     windowController.animationPipeline.submit(tasks)

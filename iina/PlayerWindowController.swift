@@ -1048,7 +1048,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     guard newAspectRatio != oldAspectRatio else {
-      log.verbose("No change to videoAspect; no update needed")
+      log.verbose("After updating default album art: no change to videoAspect; no more work needed")
       return
     }
     log.verbose("Updating videoAspect from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")
@@ -1057,7 +1057,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     switch layout.mode {
     case .musicMode:
       let newMusicModeGeometry = musicModeGeometry.clone(videoAspect: newAspectRatio)
-      applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
+      /// If `isMiniPlayerWaitingToShowVideo` is true, need to update the cached geometry & other state vars,
+      /// but do not update frame because that will be handled right after
+      applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry, setFrame: !player.isMiniPlayerWaitingToShowVideo)
     case .windowed:
       var newGeo = windowedModeGeometry.clone(videoAspect: newAspectRatio)
 
@@ -1071,14 +1073,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       newGeo = newGeo.scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
       applyWindowGeometryInAnimationPipeline(newGeo)
     case .fullScreen:
-      player.info.videoAspect = newAspectRatio
-      guard let screen = window?.screen else { return }
-      let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
-      if layout.isLegacyFullScreen {
-        applyLegacyFullScreenGeometry(fsGeo)
-      } else if layout.mode != .fullScreenInteractive {
-        videoView.apply(fsGeo)
-      }
+      animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
+        player.info.videoAspect = newAspectRatio
+        guard let screen = window?.screen else { return }
+        let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
+        if layout.isLegacyFullScreen {
+          applyLegacyFullScreenGeometry(fsGeo)
+        } else if layout.mode != .fullScreenInteractive {
+          videoView.apply(fsGeo)
+        }
+      }))
       break
     case .fullScreenInteractive, .windowedInteractive:
       break

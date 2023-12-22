@@ -161,6 +161,8 @@ class PlayerCore: NSObject {
 
   var isSearchingOnlineSubtitle = false
 
+  var isMiniPlayerWaitingToShowVideo: Bool = false
+
   // test seeking
   var triedUsingExactSeekForCurrentFile: Bool = false
   var useExactSeekForCurrentFile: Bool = true
@@ -2074,10 +2076,44 @@ class PlayerCore: NSObject {
     log.verbose("Video track changed to: \(vid)")
     DispatchQueue.main.async{ [self] in
       windowController.forceDraw()
+      /// Do this first, before `applyVideoViewVisibility`, for a nicer animation`
       windowController.refreshAlbumArtDisplay()
+
+      if isMiniPlayerWaitingToShowVideo {
+        isMiniPlayerWaitingToShowVideo = false
+        windowController.miniPlayer.applyVideoViewVisibility(showVideo: true)
+      }
     }
     postNotification(.iinaVIDChanged)
+    if isInMiniPlayer && (isMiniPlayerWaitingToShowVideo || !windowController.miniPlayer.isVideoVisible) {
+      return
+    }
     sendOSD(.track(info.currentTrack(.video) ?? .noneVideoTrack))
+  }
+
+  ///  `showMiniPlayerVideo` is only used if `enable` is true
+  func setVideoTrackEnabled(_ enable: Bool, showMiniPlayerVideo: Bool = false) {
+    mpv.queue.async { [self] in
+      if enable {
+        // Go to first video track found (unless one is already selected):
+        if !info.isVideoTrackSelected {
+          if showMiniPlayerVideo {
+            isMiniPlayerWaitingToShowVideo = true
+          }
+          log.verbose("Sending request to mpv to cycle video track")
+          mpv.command(.cycle, args: ["video"])
+        } else {
+          if showMiniPlayerVideo {
+            // Don't wait; execute now
+            windowController.miniPlayer.applyVideoViewVisibility(showVideo: true)
+          }
+        }
+      } else {
+        // Change video track to None
+        log.verbose("Sending request to mpv: set video track to 0")
+        _setTrack(0, forType: .video)
+      }
+    }
   }
 
   @objc
@@ -2485,7 +2521,7 @@ class PlayerCore: NSObject {
         }
         let videoRawSize = videoParams.videoRawSize
         guard videoRawSize.height > 0, videoRawSize.width > 0  else {
-          log.error("Cannot generate thumbnails: video height and/or width is zero")
+          log.debug("Cannot generate thumbnails: video height and/or width is zero")
           clearExistingThumbnails()
           return
         }

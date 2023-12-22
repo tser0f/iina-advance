@@ -141,6 +141,11 @@ extension PlayerWindowController {
     // Music mode
     if transition.isTogglingMusicMode {
       resetViewsForModeTransition()
+
+      if transition.isExitingMusicMode {
+        // Restore video if needed
+        player.setVideoTrackEnabled(true)
+      }
     }
 
     if !transition.isInitialLayout && transition.isTogglingLegacyStyle {
@@ -547,6 +552,10 @@ extension PlayerWindowController {
       // Update music mode UI
       updateTitle()
       applyThemeMaterial()
+
+      if !miniPlayer.isVideoVisible, player.info.isVideoTrackSelected {
+        player.setVideoTrackEnabled(false)
+      }
     }
     // Need to call this for initial layout also:
     updateMusicModeButtonsVisibility()

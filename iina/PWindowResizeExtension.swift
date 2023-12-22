@@ -13,11 +13,17 @@ extension PlayerWindowController {
 
   /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
   func mpvVideoDidReconfig(_ videoParams: MPVVideoParams) {
+    if !videoParams.hasValidSize && (player.isMiniPlayerWaitingToShowVideo ||
+                                     (!musicModeGeometry.isVideoVisible && !player.info.isVideoTrackSelected)) {
+      log.verbose("[MPVVideoReconfig] Ignoring reconfig because music mode is enabled and video is off")
+      return
+    }
 
     guard let videoDisplayRotatedSize = videoParams.videoDisplayRotatedSize else {
       log.error("[MPVVideoReconfig] Could not get videoDisplayRotatedSize from mpv! Cancelling adjustment")
       return
     }
+
     let newVideoAspect = videoDisplayRotatedSize.mpvAspect
     log.verbose("[MPVVideoReconfig Start] VideoRaw:\(videoParams.videoRawSize) VideoDR:\(videoDisplayRotatedSize) AspectDR:\(newVideoAspect) Rotation:\(videoParams.totalRotation) Scale:\(videoParams.videoScale)")
 
@@ -589,7 +595,7 @@ extension PlayerWindowController {
       ticket = $0
     }
 
-    animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.DefaultDuration, timing: .easeInEaseOut, { [self] in
+    animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
       guard ticket == geoUpdateTicketCounter else {
         return
       }
