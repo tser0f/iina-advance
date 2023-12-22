@@ -226,6 +226,10 @@ extension PlayerWindowController {
       }
       return false
     }
+
+    var ΔWindowWidth: CGFloat {
+      return outputGeometry.windowFrame.width - inputGeometry.windowFrame.width
+    }
   }
   
 }

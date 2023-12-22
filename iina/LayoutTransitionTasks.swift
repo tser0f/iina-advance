@@ -308,9 +308,11 @@ extension PlayerWindowController {
       }
 
       // Sidebars (if closing)
+      let ΔWindowWidth = middleGeo.windowFrame.width - transition.inputGeometry.windowFrame.width
       animateShowOrHideSidebars(transition: transition, layout: transition.inputLayout,
                                 setLeadingTo: transition.isHidingLeadingSidebar ? .hide : nil,
-                                setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil)
+                                setTrailingTo: transition.isHidingTrailingSidebar ? .hide : nil,
+                                ΔWindowWidth: ΔWindowWidth)
 
       // Do not do this when first opening the window though, because it will cause the window location restore to be incorrect.
       // Also do not apply when toggling fullscreen because it is not relevant at this stage and will look glitchy because the
@@ -603,7 +605,7 @@ extension PlayerWindowController {
     // Sidebars: if (re)opening
     if let tabToShow = transition.outputLayout.leadingSidebar.visibleTab {
       if transition.isShowingLeadingSidebar {
-        prepareLayoutForOpening(leadingSidebar: transition.outputLayout.leadingSidebar)
+        prepareLayoutForOpening(leadingSidebar: transition.outputLayout.leadingSidebar, ΔWindowWidth: transition.ΔWindowWidth)
       } else if transition.inputLayout.leadingSidebar.visibleTabGroup == transition.outputLayout.leadingSidebar.visibleTabGroup {
         // Tab group is already showing, but just need to switch tab
         switchToTabInTabGroup(tab: tabToShow)
@@ -611,7 +613,7 @@ extension PlayerWindowController {
     }
     if let tabToShow = transition.outputLayout.trailingSidebar.visibleTab {
       if transition.isShowingTrailingSidebar {
-        prepareLayoutForOpening(trailingSidebar: transition.outputLayout.trailingSidebar)
+        prepareLayoutForOpening(trailingSidebar: transition.outputLayout.trailingSidebar, ΔWindowWidth: transition.ΔWindowWidth)
       } else if transition.inputLayout.trailingSidebar.visibleTabGroup == transition.outputLayout.trailingSidebar.visibleTabGroup {
         // Tab group is already showing, but just need to switch tab
         switchToTabInTabGroup(tab: tabToShow)
@@ -703,10 +705,12 @@ extension PlayerWindowController {
     // Sidebars (if opening)
     let leadingSidebar = transition.outputLayout.leadingSidebar
     let trailingSidebar = transition.outputLayout.trailingSidebar
+    let ΔWindowWidth = transition.ΔWindowWidth
     animateShowOrHideSidebars(transition: transition,
                               layout: transition.outputLayout,
                               setLeadingTo: transition.isShowingLeadingSidebar ? leadingSidebar.visibility : nil,
-                              setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil)
+                              setTrailingTo: transition.isShowingTrailingSidebar ? trailingSidebar.visibility : nil,
+                              ΔWindowWidth: ΔWindowWidth)
     updateSpacingForTitleBarAccessories(transition.outputLayout, windowWidth: transition.outputGeometry.windowFrame.width)
     // Update sidebar vertical alignments
     updateSidebarVerticalConstraints(tabHeight: outputLayout.sidebarTabHeight, downshift: outputLayout.sidebarDownshift)

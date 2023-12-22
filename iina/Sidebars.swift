@@ -403,7 +403,8 @@ extension PlayerWindowController {
   func animateShowOrHideSidebars(transition: LayoutTransition,
                                  layout: LayoutState,
                                  setLeadingTo leadingGoal: Sidebar.Visibility? = nil,
-                                 setTrailingTo trailingGoal: Sidebar.Visibility? = nil) {
+                                 setTrailingTo trailingGoal: Sidebar.Visibility? = nil,
+                                 ΔWindowWidth: CGFloat) {
 
     guard leadingGoal != nil || trailingGoal != nil else { return }
 
@@ -426,7 +427,8 @@ extension PlayerWindowController {
           sidebarWidth = 0
         }
       }
-      updateLeadingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: leadingSidebar.placement)
+      updateLeadingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: leadingSidebar.placement,
+                                ΔWindowWidth: ΔWindowWidth)
       if leadingSidebar.placement == .outsideViewport {
         leadingSidebarTrailingBorder.isHidden = !shouldShow
       }
@@ -448,7 +450,8 @@ extension PlayerWindowController {
           sidebarWidth = 0
         }
       }
-      updateTrailingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: trailingSidebar.placement)
+      updateTrailingSidebarWidth(to: sidebarWidth, visible: shouldShow, placement: trailingSidebar.placement,
+                                 ΔWindowWidth: ΔWindowWidth)
       if trailingSidebar.placement == .outsideViewport {
         trailingSidebarLeadingBorder.isHidden = !shouldShow
       }
@@ -457,7 +460,7 @@ extension PlayerWindowController {
 
   /// Executed prior to opening `leadingSidebar` to the given tab.
   /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
-  func prepareLayoutForOpening(leadingSidebar: Sidebar) {
+  func prepareLayoutForOpening(leadingSidebar: Sidebar, ΔWindowWidth: CGFloat) {
     guard let window = window else { return }
     let tabToShow: Sidebar.Tab = leadingSidebar.visibleTab!
 
@@ -501,7 +504,7 @@ extension PlayerWindowController {
       viewportLeadingToLeadingSidebarCropTrailingConstraint.isActive = true
     }
 
-    let coefficients = getLeadingSidebarWidthCoefficients(visible: false, placement: leadingSidebar.placement)
+    let coefficients = getLeadingSidebarWidthCoefficients(visible: false, placement: leadingSidebar.placement, ΔWindowWidth: ΔWindowWidth)
 
     viewportLeadingOffsetFromLeadingSidebarLeadingConstraint = viewportView.leadingAnchor.constraint(
       equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
@@ -516,7 +519,7 @@ extension PlayerWindowController {
 
   /// Executed prior to opening `trailingSidebar` to the given tab.
   /// Do not call directly. Will be called by `LayoutTransition` via animation tasks.
-  func prepareLayoutForOpening(trailingSidebar: Sidebar) {
+  func prepareLayoutForOpening(trailingSidebar: Sidebar, ΔWindowWidth: CGFloat) {
     guard let window = window else { return }
     let tabToShow: Sidebar.Tab = trailingSidebar.visibleTab!
 
@@ -560,7 +563,7 @@ extension PlayerWindowController {
       viewportTrailingToTrailingSidebarCropLeadingConstraint.isActive = true
     }
 
-    let coefficients = getTrailingSidebarWidthCoefficients(visible: false, placement: trailingSidebar.placement)
+    let coefficients = getTrailingSidebarWidthCoefficients(visible: false, placement: trailingSidebar.placement, ΔWindowWidth: ΔWindowWidth)
 
     viewportTrailingOffsetFromTrailingSidebarLeadingConstraint = viewportView.trailingAnchor.constraint(
       equalTo: tabContainerView.leadingAnchor, constant: coefficients.0 * sidebarWidth)
@@ -605,7 +608,8 @@ extension PlayerWindowController {
    `viewportLeadingOffsetFromLeadingSidebarTrailingConstraint`,
    `viewportLeadingOffsetFromContentViewLeadingConstraint`)
    */
-  private func getLeadingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
+  private func getLeadingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement,
+                                                  ΔWindowWidth: CGFloat) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
     case .insideViewport:
       if visible {
@@ -617,7 +621,7 @@ extension PlayerWindowController {
       if visible {
         return (1, 0, 1)
       } else {
-        if isFullScreen {
+        if ΔWindowWidth == 0 {
           return (1, 0, 0)
         } else {
           return (0, -1, 0)
@@ -626,10 +630,11 @@ extension PlayerWindowController {
     }
   }
 
-  private func updateLeadingSidebarWidth(to newWidth: CGFloat, visible: Bool, placement: Preference.PanelPlacement) {
-    Logger.log("\(visible ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
+  private func updateLeadingSidebarWidth(to newWidth: CGFloat, visible: Bool, placement: Preference.PanelPlacement,
+                                         ΔWindowWidth: CGFloat) {
+    Logger.log("\(visible ? "Showing" : "Hiding") leadingSidebar, width=\(newWidth) placement=\(placement), ΔWindowWidth=\(ΔWindowWidth)", level: .verbose, subsystem: player.subsystem)
 
-    let coefficients = getLeadingSidebarWidthCoefficients(visible: visible, placement: placement)
+    let coefficients = getLeadingSidebarWidthCoefficients(visible: visible, placement: placement, ΔWindowWidth: ΔWindowWidth)
     viewportLeadingOffsetFromLeadingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
     viewportLeadingOffsetFromLeadingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
     viewportLeadingOffsetFromContentViewLeadingConstraint.animateToConstant(coefficients.2 * newWidth)
@@ -642,7 +647,8 @@ extension PlayerWindowController {
    `viewportTrailingOffsetFromTrailingSidebarTrailingConstraint`,
    `viewportTrailingOffsetFromContentViewTrailingConstraint`)
    */
-  private func getTrailingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement) -> (CGFloat, CGFloat, CGFloat) {
+  private func getTrailingSidebarWidthCoefficients(visible: Bool, placement: Preference.PanelPlacement,
+                                                   ΔWindowWidth: CGFloat) -> (CGFloat, CGFloat, CGFloat) {
     switch placement {
     case .insideViewport:
       if visible {
@@ -654,7 +660,7 @@ extension PlayerWindowController {
       if visible {
         return (0, -1, -1)
       } else {
-        if isFullScreen {
+        if ΔWindowWidth == 0 {
           return (0, -1, 0)
         } else {
           return (1, 0, 0)
@@ -663,9 +669,10 @@ extension PlayerWindowController {
     }
   }
 
-  private func updateTrailingSidebarWidth(to newWidth: CGFloat, visible: Bool, placement: Preference.PanelPlacement) {
-    Logger.log("\(visible ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement)", level: .verbose, subsystem: player.subsystem)
-    let coefficients = getTrailingSidebarWidthCoefficients(visible: visible, placement: placement)
+  private func updateTrailingSidebarWidth(to newWidth: CGFloat, visible: Bool, placement: Preference.PanelPlacement,
+                                          ΔWindowWidth: CGFloat) {
+    Logger.log("\(visible ? "Showing" : "Hiding") trailingSidebar, width=\(newWidth) placement=\(placement), ΔWindowWidth=\(ΔWindowWidth)", level: .verbose, subsystem: player.subsystem)
+    let coefficients = getTrailingSidebarWidthCoefficients(visible: visible, placement: placement, ΔWindowWidth: ΔWindowWidth)
     viewportTrailingOffsetFromTrailingSidebarLeadingConstraint.animateToConstant(coefficients.0 * newWidth)
     viewportTrailingOffsetFromTrailingSidebarTrailingConstraint.animateToConstant(coefficients.1 * newWidth)
     viewportTrailingOffsetFromContentViewTrailingConstraint.animateToConstant(coefficients.2 * newWidth)
@@ -909,7 +916,6 @@ extension PlayerWindowController {
     } else {  /// `placement == .outsideViewport`
       newPlaylistWidth = desiredPlaylistWidth
     }
-    updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: currentLayout.leadingSidebarPlacement)
 
     /// Updating the sidebar width when it is in "outside" mode will cause the video width to
     /// grow or shrink, which will require its height to change according to its aspectRatio.
@@ -934,6 +940,9 @@ extension PlayerWindowController {
     }
 
     Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
+
+    updateLeadingSidebarWidth(to: newPlaylistWidth, visible: true, placement: currentLayout.leadingSidebarPlacement,
+                              ΔWindowWidth: newGeo.windowFrame.width - oldGeo.windowFrame.width)
     return newGeo
   }
 
@@ -955,7 +964,6 @@ extension PlayerWindowController {
     } else {  /// `placement == .outsideViewport`
       newPlaylistWidth = desiredPlaylistWidth
     }
-    updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: currentLayout.trailingSidebarPlacement)
 
     /// See comments in `resizeLeadingSidebar()` above
     if currentLayout.trailingSidebar.placement == .outsideViewport {
@@ -972,7 +980,12 @@ extension PlayerWindowController {
     } else {  /// `.insideViewport`
       newGeo = oldGeo.clone(insideTrailingBarWidth: newPlaylistWidth).refit()
     }
+
     Preference.set(Int(newPlaylistWidth), for: .playlistWidth)
+
+    updateTrailingSidebarWidth(to: newPlaylistWidth, visible: true, placement: currentLayout.trailingSidebarPlacement,
+                               ΔWindowWidth: newGeo.windowFrame.width - oldGeo.windowFrame.width)
+
     return newGeo
   }
 
