@@ -1016,14 +1016,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Check whether to show album art, which may require changing videoView aspect ratio to 1:1.
   // Also show or hide default album art if needed.
-  func refreshAlbumArtDisplay() {
+  func refreshAlbumArtDisplay(_ videoParams: MPVVideoParams?, isVideoTrackSelected: Bool,
+                              _ currentMediaAudioStatus: PlaybackInfo.CurrentMediaAudioStatus) {
     guard loaded else { return }
 
     // Part 1: default album art
 
     let showDefaultArt: Bool
     // if received video size before switching to music mode, hide default album art
-    if player.info.isVideoTrackSelected {
+    if isVideoTrackSelected {
       log.verbose("Hiding defaultAlbumArt because vid != 0")
       showDefaultArt = false
     } else {
@@ -1036,11 +1037,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Part 2: default audio aspect ratio
 
     // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
-    guard let videoParams = player.mpv.queryForVideoParams() else { return }
+    guard let videoParams else { return }
 
     let oldAspectRatio = player.info.videoAspect
     let newAspectRatio: CGFloat
-    if showDefaultArt || player.info.currentMediaAudioStatus == .isAudio {
+    if showDefaultArt || currentMediaAudioStatus == .isAudio {
       newAspectRatio = 1.0
     } else {
       // This can also equal 1 if not found
@@ -3403,8 +3404,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func forceDraw() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    guard loaded, player.info.isPaused || player.info.currentTrack(.video)?.isAlbumart ?? false else { return }
-    log.verbose("Forcing redraw")
+    guard let currentVideoTrack = player.info.currentTrack(.video), currentVideoTrack.id != 0 else {
+      log.verbose("Will not force video redraw: no video track selected")
+      return
+    }
+    guard loaded, player.info.isPaused || currentVideoTrack.isAlbumart else { return }
+    log.verbose("Forcing video redraw")
     player.videoView.displayActive()  // does nothing if already active
     videoView.videoLayer.draw(forced: true)
     if player.info.isPaused {

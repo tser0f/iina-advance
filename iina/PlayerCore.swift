@@ -1883,12 +1883,16 @@ class PlayerCore: NSObject {
     checkUnsyncedWindowOptions()
     // call `trackListChanged` to load tracks and check whether need to switch to music mode
     trackListChanged()
-    let currentMediaAudioStatus = info.currentMediaAudioStatus  // get this while in mpv queue
 
     _reloadPlaylist()
     _reloadChapters()
     syncAbLoop()
     saveState()
+
+    // Get these while in mpv queue
+    let videoParams = mpv.queryForVideoParams()
+    let isVideoTrackSelected = info.isVideoTrackSelected
+    let currentMediaAudioStatus = info.currentMediaAudioStatus
 
     // main thread stuff
     DispatchQueue.main.async { [self] in
@@ -1898,9 +1902,9 @@ class PlayerCore: NSObject {
       }
 
       // Update art & aspect *before* switching to/from music mode for more pleasant animation
-      if currentMediaAudioStatus == .isAudio || !info.isVideoTrackSelected {
+      if currentMediaAudioStatus == .isAudio || !isVideoTrackSelected {
         log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
-        windowController.refreshAlbumArtDisplay()
+        windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
       }
 
       // if need to switch to music mode
@@ -2074,10 +2078,15 @@ class PlayerCore: NSObject {
     let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
     info.vid = vid
     log.verbose("Video track changed to: \(vid)")
+    // Get these while in mpv queue
+    let videoParams = mpv.queryForVideoParams()
+    let isVideoTrackSelected = info.isVideoTrackSelected
+    let currentMediaAudioStatus = info.currentMediaAudioStatus
+
     DispatchQueue.main.async{ [self] in
       windowController.forceDraw()
       /// Do this first, before `applyVideoViewVisibility`, for a nicer animation`
-      windowController.refreshAlbumArtDisplay()
+      windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
 
       if isMiniPlayerWaitingToShowVideo {
         isMiniPlayerWaitingToShowVideo = false
