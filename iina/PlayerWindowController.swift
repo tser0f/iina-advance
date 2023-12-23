@@ -1894,8 +1894,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       updatePresentationOptions(legacyFullScreen: false)
     }
 
-    // stop playing
-    // This will save state if configured to do so
+    // Stop playing. This will save state if configured to do so:
     player.stop()
     // stop tracking mouse event
     guard let w = self.window, let cv = w.contentView else { return }

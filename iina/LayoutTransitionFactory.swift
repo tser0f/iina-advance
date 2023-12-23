@@ -230,9 +230,6 @@ extension PlayerWindowController {
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? IINAAnimation.DefaultDuration
 
-    // Extra animation when exiting legacy full screen: remove camera housing with black bar
-    let useExtraAnimationForExitingLegacyFullScreen = transition.isExitingLegacyFullScreen && windowedModeScreen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
-
     // Extra animation when entering legacy full screen: cover camera housing with black bar
     let useExtraAnimationForEnteringLegacyFullScreen = transition.isEnteringLegacyFullScreen && windowedModeScreen.hasCameraHousing && !transition.isInitialLayout && endingAnimationDuration > 0.0
 
@@ -273,15 +270,6 @@ extension PlayerWindowController {
       }))
     }
 
-    // Extra animation for exiting legacy full screen (to Native Windowed Mode)
-    if useExtraAnimationForExitingLegacyFullScreen && !transition.outputLayout.spec.isLegacyStyle {
-      transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let newGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
-        log.verbose("[\(transition.name)] Updating legacy FS window to show camera housing prior to entering native windowed mode")
-        applyLegacyFullScreenGeometry(newGeo)
-      }))
-    }
-
     // StartingAnimation 3: Close/Minimize panels which are no longer needed. Applies middleGeometry if it exists.
     // Not enabled for fullScreen transitions.
     if transition.needsCloseOldPanels {
@@ -318,15 +306,6 @@ extension PlayerWindowController {
     }
 
     // - Ending animations:
-
-    // Extra animation for exiting legacy full screen to legacy windowed mode, if black space around camera housing
-    if useExtraAnimationForExitingLegacyFullScreen && transition.outputLayout.spec.isLegacyStyle {
-      transition.animationTasks.append(IINAAnimation.Task(duration: endingAnimationDuration * 0.2, timing: .easeIn, { [self] in
-        let extraGeo = transition.inputGeometry.clone(windowFrame: windowedModeScreen.frameWithoutCameraHousing, topMarginHeight: 0)
-        log.verbose("[\(transition.name)] Updating legacy FS window to show camera housing prior to entering legacy windowed mode")
-        applyLegacyFullScreenGeometry(extraGeo)
-      }))
-    }
 
     // EndingAnimation: Open new panels and fade in new views
     transition.animationTasks.append(IINAAnimation.Task(duration: openFinalPanelsDuration, timing: panelTimingName, { [self] in
