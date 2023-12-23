@@ -1956,9 +1956,7 @@ class PlayerCore: NSObject {
     info.aid = aid
     log.verbose("Audio track changed to: \(aid)")
     guard windowController.loaded else { return }
-    DispatchQueue.main.async { [self] in
-      windowController.updateVolumeUI()
-    }
+    syncUI(.volume)
     postNotification(.iinaAIDChanged)
     sendOSD(.track(info.currentTrack(.audio) ?? .noneAudioTrack))
   }
@@ -2376,7 +2374,7 @@ class PlayerCore: NSObject {
   func syncUI(_ option: SyncUIOption) {
     // if window not loaded, ignore
     guard windowController.loaded else { return }
-    Logger.log("Syncing UI \(option)", level: .verbose, subsystem: subsystem)
+    log.verbose("Syncing UI \(option)")
 
     switch option {
 
@@ -2428,6 +2426,7 @@ class PlayerCore: NSObject {
     guard windowController.loaded,
           Preference.bool(for: .enableOSD),
           !isUsingMpvOSD, !isInInteractiveMode else { return }
+    guard !info.isRestoring else { return }
     guard !isInMiniPlayer || Preference.bool(for: .enableOSDInMusicMode) else { return }
 
     // Many redundant messages are sent from mpv. Try to filter them out here

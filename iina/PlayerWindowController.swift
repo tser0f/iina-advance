@@ -232,7 +232,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // For restoring windowed mode layout from music mode or other mode which does not support sidebars
   var lastWindowedLayoutSpec: LayoutSpec = LayoutSpec.defaultLayout()
 
-  private var thumbDisplayCounter: Int = 0
+  // Only used for debug logging:
+  @Atomic var layoutTransitionCounter: Int = 0
+
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
   @Atomic var geoUpdateTicketCounter: Int = 0
@@ -241,7 +243,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// For throttling `windowDidChangeScreenParameters` notifications. MacOS 14 often sends hundreds in short bursts
   @Atomic var screenParamsChangedTicketCounter: Int = 0
   @Atomic var updateCachedGeometryTicketCounter: Int = 0
-  @Atomic var layoutTransitionCounter: Int = 0
+  @Atomic var thumbDisplayCounter: Int = 0
 
   var windowedModeGeometry: PWindowGeometry! {
     didSet {
@@ -843,8 +845,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     leftLabel.mode = .current
     rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
-
-    updateVolumeUI()
 
     // size
     window.minSize = AppData.minVideoSize
@@ -3326,6 +3326,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let volume = player.info.volume
     let isMuted = player.info.isMuted
     let hasAudio = player.info.isAudioTrackSelected
+    log.verbose("Updating volume UI: vol=\(volume), muted=\(isMuted.yn), hasAudio=\(hasAudio.yn)")
 
     volumeSlider.isEnabled = hasAudio
     volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
