@@ -47,14 +47,19 @@ extension PlayerWindowController {
       return (inputLayout.enableOSC != outputLayout.enableOSC) || (inputLayout.oscPosition != outputLayout.oscPosition)
     }
 
+    var needsShowFadeables: Bool {
+      return !outputLayout.isInteractiveMode && needsFadeOutOldViews
+    }
+
     var needsFadeOutOldViews: Bool {
-      return isTogglingLegacyStyle || isTopBarPlacementChanging
+      return !isExitingMusicMode && 
+      (isTogglingLegacyStyle || isTopBarPlacementChanging
       || (inputLayout.mode != outputLayout.mode)
       || (inputLayout.bottomBarPlacement == .insideViewport && outputLayout.bottomBarPlacement == .outsideViewport)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
       || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
       || (inputLayout.leadingSidebarToggleButton.isShowable && !outputLayout.leadingSidebarToggleButton.isShowable)
-      || (inputLayout.trailingSidebarToggleButton.isShowable && !outputLayout.trailingSidebarToggleButton.isShowable)
+      || (inputLayout.trailingSidebarToggleButton.isShowable && !outputLayout.trailingSidebarToggleButton.isShowable))
     }
 
     var needsFadeInNewViews: Bool {
@@ -75,6 +80,17 @@ extension PlayerWindowController {
       return isHidingLeadingSidebar || isHidingTrailingSidebar || isTopBarPlacementChanging || isBottomBarPlacementChanging
       || (inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle)
       || (inputLayout.mode != outputLayout.mode)
+      || (inputLayout.enableOSC != outputLayout.enableOSC)
+      || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
+    }
+
+    // Always need to execute this step. But may not need to use an animation
+    var needsAnimationForOpenFinalPanels: Bool {
+      return isShowingLeadingSidebar || isShowingTrailingSidebar || isTopBarPlacementChanging || isBottomBarPlacementChanging
+      || (inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle)
+      || (inputLayout.mode != outputLayout.mode)
+      || (inputLayout.topBarHeight != outputLayout.topBarHeight)
+      || (inputLayout.bottomBarHeight != outputLayout.bottomBarHeight)
       || (inputLayout.enableOSC != outputLayout.enableOSC)
       || (inputLayout.enableOSC && (inputLayout.oscPosition != outputLayout.oscPosition))
     }

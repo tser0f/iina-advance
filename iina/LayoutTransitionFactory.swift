@@ -151,6 +151,13 @@ extension PlayerWindowController {
                              totalEndingDuration: CGFloat? = nil,
                              thenRun: Bool = false) -> LayoutTransition {
 
+    var transitionID: Int = 0
+    $layoutTransitionCounter.withLock {
+      $0 += 1
+      transitionID = $0
+    }
+    let transitionName = "\(transitionName)-\(transitionID)"
+
     // This also applies to full screen, because full screen always uses the same screen as windowed.
     // Does not apply to music mode, which can be a different screen.
     let windowedModeScreen = NSScreen.getScreenOrDefault(screenID: windowedModeGeometry.screenID)
@@ -205,13 +212,20 @@ extension PlayerWindowController {
 
     var showFadeableViewsDuration: CGFloat = startingAnimationDuration
     var fadeOutOldViewsDuration: CGFloat = startingAnimationDuration
-    let closeOldPanelsDuration = startingAnimationDuration
+    var closeOldPanelsDuration: CGFloat = startingAnimationDuration
     if transition.isEnteringMusicMode {
       showFadeableViewsDuration = startingAnimationDuration * 0.5
       fadeOutOldViewsDuration = startingAnimationDuration * 0.5
-    } else if transition.isExitingMusicMode {
-      showFadeableViewsDuration = 0
-      fadeOutOldViewsDuration = 0
+    } else {
+      if !transition.needsShowFadeables {
+        showFadeableViewsDuration = 0
+      }
+      if !transition.needsFadeOutOldViews {
+        fadeOutOldViewsDuration = 0
+      }
+      if !transition.needsCloseOldPanels {
+        closeOldPanelsDuration = 0
+      }
     }
 
     let endingAnimationDuration: CGFloat = totalEndingDuration ?? IINAAnimation.DefaultDuration
@@ -229,9 +243,16 @@ extension PlayerWindowController {
     } else if transition.isEnteringInteractiveMode {
       openFinalPanelsDuration *= 0.5
       fadeInNewViewsDuration *= 0.5
+    } else {
+      if !transition.needsFadeInNewViews {
+        fadeInNewViewsDuration = 0
+      }
+      if !transition.needsAnimationForOpenFinalPanels {
+        openFinalPanelsDuration = 0
+      }
     }
 
-    log.verbose("[\(transitionName)] Building transition. Task durations: ShowOldFadeables=\(showFadeableViewsDuration), FadeOutOldViews:\(fadeOutOldViewsDuration), CloseOldPanels:\(closeOldPanelsDuration), FadeInNewViews:\(fadeInNewViewsDuration), OpenFinalPanels:\(openFinalPanelsDuration)")
+    log.verbose("[\(transitionName)] Task durations: ShowOldFadeables=\(showFadeableViewsDuration), FadeOutOldViews:\(fadeOutOldViewsDuration), CloseOldPanels:\(closeOldPanelsDuration), FadeInNewViews:\(fadeInNewViewsDuration), OpenFinalPanels:\(openFinalPanelsDuration)")
 
     // - Starting animations:
 
@@ -240,7 +261,7 @@ extension PlayerWindowController {
       doPreTransitionWork(transition)
     })
 
-    if !outputLayout.isInteractiveMode {
+    if transition.needsShowFadeables {
       // StartingAnimation 1: Show fadeable views from current layout
       for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: showFadeableViewsDuration, forceShowTopBar: true) {
         transition.animationTasks.append(fadeAnimation)

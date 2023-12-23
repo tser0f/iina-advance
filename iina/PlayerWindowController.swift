@@ -40,7 +40,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   var loaded = false
-  private var thumbDisplayCounter: Int = 0
 
   @objc let monospacedFont: NSFont = {
     let fontSize = NSFont.systemFontSize(for: .small)
@@ -233,6 +232,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // For restoring windowed mode layout from music mode or other mode which does not support sidebars
   var lastWindowedLayoutSpec: LayoutSpec = LayoutSpec.defaultLayout()
 
+  private var thumbDisplayCounter: Int = 0
   // Used to assign an incrementing unique ID to each geometry update animation request, so that frequent requests don't
   // build up and result in weird freezes or short episodes of "wandering window"
   @Atomic var geoUpdateTicketCounter: Int = 0
@@ -241,6 +241,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// For throttling `windowDidChangeScreenParameters` notifications. MacOS 14 often sends hundreds in short bursts
   @Atomic var screenParamsChangedTicketCounter: Int = 0
   @Atomic var updateCachedGeometryTicketCounter: Int = 0
+  @Atomic var layoutTransitionCounter: Int = 0
 
   var windowedModeGeometry: PWindowGeometry! {
     didSet {
