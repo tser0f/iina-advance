@@ -229,7 +229,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
   }
-  // For restoring windowed mode layout from music mode or other mode which does not support sidebars
+  /// For restoring windowed mode layout from music mode or other mode which does not support sidebars.
+  /// Also used to preserve layout if a new file is dragged & dropped into this window
   var lastWindowedLayoutSpec: LayoutSpec = LayoutSpec.defaultLayout()
 
   // Only used for debug logging:
@@ -1904,6 +1905,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Reset state flags
     isWindowMiniturized = false
     player.overrideAutoMusicMode = false
+
+    // Close sidebars, etc. if this window is reused
+    lastWindowedLayoutSpec = LayoutSpec.defaultLayout()
 
     player.events.emit(.windowWillClose)
   }

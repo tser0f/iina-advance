@@ -74,7 +74,7 @@ extension PlayerWindowController {
       }
 
       // Set to default layout, but use existing aspect ratio & video size for now, because we don't have that info yet for the new video
-      initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: LayoutSpec.defaultLayout())
+      initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: lastWindowedLayoutSpec)
     }
 
     log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry!), musicModeGeometry: \(musicModeGeometry!)")
@@ -217,7 +217,7 @@ extension PlayerWindowController {
       showFadeableViewsDuration = startingAnimationDuration * 0.5
       fadeOutOldViewsDuration = startingAnimationDuration * 0.5
     } else {
-      if !transition.needsShowFadeables {
+      if !transition.needsAnimationForShowFadeables {
         showFadeableViewsDuration = 0
       }
       if !transition.needsFadeOutOldViews {
@@ -261,11 +261,9 @@ extension PlayerWindowController {
       doPreTransitionWork(transition)
     })
 
-    if transition.needsShowFadeables {
-      // StartingAnimation 1: Show fadeable views from current layout
-      for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: showFadeableViewsDuration, forceShowTopBar: true) {
-        transition.animationTasks.append(fadeAnimation)
-      }
+    // StartingAnimation 1: Show fadeable views from current layout
+    for fadeAnimation in buildAnimationToShowFadeableViews(restartFadeTimer: false, duration: showFadeableViewsDuration, forceShowTopBar: true) {
+      transition.animationTasks.append(fadeAnimation)
     }
 
     // StartingAnimation 2: Fade out views which no longer will be shown but aren't enclosed in a panel.

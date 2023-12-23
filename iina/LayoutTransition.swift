@@ -47,7 +47,8 @@ extension PlayerWindowController {
       return (inputLayout.enableOSC != outputLayout.enableOSC) || (inputLayout.oscPosition != outputLayout.oscPosition)
     }
 
-    var needsShowFadeables: Bool {
+    // Always need to execute this step. But may not need to use an animation
+    var needsAnimationForShowFadeables: Bool {
       return !outputLayout.isInteractiveMode && needsFadeOutOldViews
     }
 
