@@ -1884,15 +1884,6 @@ class PlayerCore: NSObject {
     isStopped = false
     info.haveDownloadedSub = false
 
-    /// The `--start` param, if set before mpv init, will be reused for every file in the playlist,
-    /// but if set after mpv init, it is ignored. Also, we want to override mpv's `watch-later` (if it is enabled),
-    /// because it is not reliable for certain cases (e.g. when restoring 2 windows which are both playing the
-    /// same file). So, resort to using an explicit seek after file loaded.
-    if let priorPlayPosition = info.priorState?.double(for: .playPosition) {
-      log.verbose("Restoring playback time via seek: \(priorPlayPosition)")
-      seek(absoluteSecond: priorPlayPosition)
-    }
-
     // Kick off thumbnails load/gen - it can happen in background
     reloadThumbnails()
 
