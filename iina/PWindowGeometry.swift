@@ -198,13 +198,14 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                             outsideBottomBarHeight: CGFloat, outsideLeadingBarWidth: CGFloat,
                             insideTopBarHeight: CGFloat, insideTrailingBarWidth: CGFloat,
                             insideBottomBarHeight: CGFloat, insideLeadingBarWidth: CGFloat,
-                            videoAspect: CGFloat) -> PWindowGeometry {
+                            videoAspect: CGFloat,
+                            allowVideoToOverlapCameraHousing: Bool) -> PWindowGeometry {
 
     let windowFrame = fullScreenWindowFrame(in: screen, legacy: legacy)
     let fitOption: ScreenFitOption
     let topMarginHeight: CGFloat
     if legacy {
-      topMarginHeight = Preference.bool(for: .allowVideoToOverlapCameraHousing) ? 0 : screen.cameraHousingHeight ?? 0
+      topMarginHeight = allowVideoToOverlapCameraHousing ? 0 : screen.cameraHousingHeight ?? 0
       fitOption = .legacyFullScreen
     } else {
       topMarginHeight = 0

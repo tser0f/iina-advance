@@ -274,7 +274,7 @@ extension PlayerWindowController {
       self.spec = spec
     }
 
-    // All other variables in this class are derived from this spec:
+    // All other variables in this class are derived from this spec, or from stored prefs:
     let spec: LayoutSpec
 
     // Visibility of views/categories
@@ -290,6 +290,9 @@ extension PlayerWindowController {
 
     var bottomBarView: Visibility = .hidden
     var topBarView: Visibility = .hidden
+
+    // Only applies for legacy full screen:
+    var hasTopPaddingForCameraHousing = false
 
     // Sizes / offsets
 
@@ -472,7 +475,9 @@ extension PlayerWindowController {
       // Title bar & title bar accessories:
 
       if outputLayout.isFullScreen {
-        if !layoutSpec.isLegacyStyle {
+        if layoutSpec.isLegacyStyle {
+          outputLayout.hasTopPaddingForCameraHousing = Preference.bool(for: .allowVideoToOverlapCameraHousing)
+        } else {
           outputLayout.titleIconAndText = .showAlways
           outputLayout.trafficLightButtons = .showAlways
         }
@@ -588,7 +593,8 @@ extension PlayerWindowController {
                                            insideTrailingBarWidth: insideTrailingBarWidth,
                                            insideBottomBarHeight: insideBottomBarHeight,
                                            insideLeadingBarWidth: insideLeadingBarWidth,
-                                           videoAspect: videoAspect)
+                                           videoAspect: videoAspect,
+                                           allowVideoToOverlapCameraHousing: hasTopPaddingForCameraHousing)
     }
 
     // Converts & updates existing geometry to this layout

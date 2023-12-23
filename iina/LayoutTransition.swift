@@ -87,7 +87,8 @@ extension PlayerWindowController {
 
     // Always need to execute this step. But may not need to use an animation
     var needsAnimationForOpenFinalPanels: Bool {
-      return isShowingLeadingSidebar || isShowingTrailingSidebar || isTopBarPlacementChanging || isBottomBarPlacementChanging
+      return (inputGeometry.topMarginHeight != outputGeometry.topMarginHeight)
+      || isShowingLeadingSidebar || isShowingTrailingSidebar || isTopBarPlacementChanging || isBottomBarPlacementChanging
       || (inputLayout.spec.isLegacyStyle != outputLayout.spec.isLegacyStyle)
       || (inputLayout.mode != outputLayout.mode)
       || (inputLayout.topBarHeight != outputLayout.topBarHeight)

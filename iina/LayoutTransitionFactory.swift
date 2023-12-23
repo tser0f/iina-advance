@@ -524,16 +524,17 @@ extension PlayerWindowController {
     if transition.outputLayout.isFullScreen {
       let screen = NSScreen.getScreenOrDefault(screenID: transition.inputGeometry.screenID)
       return PWindowGeometry.forFullScreen(in: screen, legacy: transition.outputLayout.isLegacyFullScreen,
-                                                mode: transition.outputLayout.mode,
-                                                outsideTopBarHeight: outsideTopBarHeight,
-                                                outsideTrailingBarWidth: outsideTrailingBarWidth,
-                                                outsideBottomBarHeight: outsideBottomBarHeight,
-                                                outsideLeadingBarWidth: outsideLeadingBarWidth,
-                                                insideTopBarHeight: insideTopBarHeight,
-                                                insideTrailingBarWidth: insideTrailingBarWidth,
-                                                insideBottomBarHeight: insideBottomBarHeight,
-                                                insideLeadingBarWidth: insideLeadingBarWidth,
-                                                videoAspect: transition.outputGeometry.videoAspect)
+                                           mode: transition.outputLayout.mode,
+                                           outsideTopBarHeight: outsideTopBarHeight,
+                                           outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                           outsideBottomBarHeight: outsideBottomBarHeight,
+                                           outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                           insideTopBarHeight: insideTopBarHeight,
+                                           insideTrailingBarWidth: insideTrailingBarWidth,
+                                           insideBottomBarHeight: insideBottomBarHeight,
+                                           insideLeadingBarWidth: insideLeadingBarWidth,
+                                           videoAspect: transition.outputGeometry.videoAspect,
+                                           allowVideoToOverlapCameraHousing: transition.outputLayout.hasTopPaddingForCameraHousing)
     }
 
     return transition.outputGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
