@@ -31,6 +31,7 @@ struct PlayerSaveState {
 
     case url = "url"
     case playPosition = "playPosition"/// `MPVOption.PlaybackControl.start`
+    case playDuration = "playDuration"/// `MPVProperty.duration`
     case paused = "paused"            /// `MPVOption.PlaybackControl.pause`
 
     case vid = "vid"                  /// `MPVOption.TrackSelection.vid`
@@ -230,6 +231,9 @@ struct PlayerSaveState {
 
     if let videoPosition = info.videoPosition?.second {
       props[PropName.playPosition.rawValue] = videoPosition.string6f
+    }
+    if let videoDuration = info.videoDuration?.second {
+      props[PropName.playDuration.rawValue] = videoDuration.string6f
     }
     props[PropName.paused.rawValue] = info.isPaused.yn
 
@@ -657,6 +661,17 @@ struct PlayerSaveState {
       info.hdrEnabled = hdrEnabled
     }
 
+    // Set these here so that play position slider can be restored to prev position when the window is opened - not after
+    if let videoPosition = double(for: .playPosition) {
+      info.videoPosition = VideoTime(videoPosition)
+    }
+    if let videoDuration = double(for: .playDuration) {
+      info.videoDuration = VideoTime(videoDuration)
+    }
+    if let paused = bool(for: .paused) {
+      info.isPaused = paused
+    }
+
     if let size = nsSize(for: .intendedViewportSize) {
       info.intendedViewportSize = size
     }
@@ -753,24 +768,28 @@ struct PlayerSaveState {
     /// `MPVOption.PlaybackControl.start` will skip any files in the playlist which have durations shorter than its start time).
     let mpv: MPVController = player.mpv
 
-    if let priorPlayPosition = string(for: .playPosition) {
-      log.verbose("Restoring playback position: \(priorPlayPosition)")
-      mpv.setString(MPVOption.PlaybackControl.start, priorPlayPosition)
+    if let videoPosition = string(for: .playPosition) {
+      log.verbose("Restoring playback position: \(videoPosition)")
+      mpv.setString(MPVOption.PlaybackControl.start, videoPosition)
     }
 
     // Better to always pause when starting, because there may be a slight delay before it can be enforced later
     mpv.setFlag(MPVOption.PlaybackControl.pause, true)
 
     if let vid = int(for: .vid) {
+      info.vid = vid
       mpv.setInt(MPVOption.TrackSelection.vid, vid)
     }
     if let aid = int(for: .aid) {
+      info.aid = aid
       mpv.setInt(MPVOption.TrackSelection.aid, aid)
     }
     if let sid = int(for: .sid) {
+      info.sid = sid
       mpv.setInt(MPVOption.TrackSelection.sid, sid)
     }
     if let sid2 = int(for: .sid2) {
+      info.secondSid = sid2
       mpv.setInt(MPVOption.Subtitles.secondarySid, sid2)
     }
 
@@ -802,9 +821,11 @@ struct PlayerSaveState {
       mpv.setDouble(MPVOption.PlaybackControl.speed, playSpeed)
     }
     if let volume = double(for: .volume) {
+      info.volume = volume
       mpv.setDouble(MPVOption.Audio.volume, volume)
     }
     if let isMuted = bool(for: .isMuted) {
+      info.isMuted = isMuted
       mpv.setFlag(MPVOption.Audio.mute, isMuted)
     }
     if let maxVolume = int(for: .maxVolume) {

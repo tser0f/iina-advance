@@ -2638,7 +2638,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func updatePlayTime(withDuration duration: Bool) {
+  func updatePlayTime() {
     // IINA listens for changes to mpv properties such as chapter that can occur during file loading
     // resulting in this function being called before mpv has set its position and duration
     // properties. Confirm the window and file have been loaded.
@@ -2670,7 +2670,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         setOSDViews(fromMessage: message)
       }
     }
+    updatePlaySlider()
+  }
 
+  func updatePlaySlider() {
+    guard let pos = player.info.videoPosition, let duration = player.info.videoDuration else {
+      log.verbose("Cannot update play slider: video position or duration not available")
+      return
+    }
     // OSC
     let percentage = (pos.second / duration.second) * 100
     [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
@@ -3326,12 +3333,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updateVolumeUI() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    guard loaded, !isClosing, !player.isStopping, !player.isStopped, !player.isShuttingDown else { return }
+    guard loaded, !isClosing, !player.isShuttingDown else { return }
 
     let volume = player.info.volume
     let isMuted = player.info.isMuted
     let hasAudio = player.info.isAudioTrackSelected
-    log.verbose("Updating volume UI: vol=\(volume), muted=\(isMuted.yn), hasAudio=\(hasAudio.yn)")
+    log.verbose("Updating volume UI. HasAudio:\(hasAudio.yn) Muted:\(isMuted.yn) Vol:\(volume)")
 
     volumeSlider.isEnabled = hasAudio
     volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
@@ -3435,9 +3442,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
     guard loaded else { return }
-    if let playButton = isInMiniPlayer ? player.windowController.miniPlayer.playButton : playButton {
-      playButton.state = state
+    if isInMiniPlayer {
+      player.windowController.miniPlayer.playButton.state = state
     }
+    playButton.state = state
 
     if state == .off {
       speedValueIndex = AppData.availableSpeedValues.count / 2

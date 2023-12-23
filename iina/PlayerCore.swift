@@ -588,6 +588,8 @@ class PlayerCore: NSObject {
       info.currentFolder = nil
       info.videoParams = nil
       info.currentMediaThumbnails = nil
+      info.videoPosition = nil
+      info.videoDuration = nil
     }
 
     videoView.stopDisplayLink()
@@ -1955,7 +1957,6 @@ class PlayerCore: NSObject {
     let aid = Int(mpv.getInt(MPVOption.TrackSelection.aid))
     info.aid = aid
     log.verbose("Audio track changed to: \(aid)")
-    guard windowController.loaded else { return }
     syncUI(.volume)
     postNotification(.iinaAIDChanged)
     sendOSD(.track(info.currentTrack(.audio) ?? .noneAudioTrack))
@@ -2347,7 +2348,7 @@ class PlayerCore: NSObject {
         // don't let play/pause icon fall out of sync
         let isPaused = info.isPaused
         windowController.updatePlayButtonState(isPaused ? .off : .on)
-        windowController.updatePlayTime(withDuration: isNetworkStream)
+        windowController.updatePlayTime()
         windowController.updateAdditionalInfo()
         if isInMiniPlayer {
           windowController.miniPlayer.loadIfNeeded()
@@ -2379,8 +2380,8 @@ class PlayerCore: NSObject {
     switch option {
 
     case .playButton:
-      DispatchQueue.main.async {
-        self.windowController.updatePlayButtonState(self.info.isPaused ? .off : .on)
+      DispatchQueue.main.async { [self] in
+        windowController.updatePlayButtonState(info.isPaused ? .off : .on)
         if #available(macOS 10.12.2, *) {
           self.touchBarSupport.updateTouchBarPlayBtn()
         }

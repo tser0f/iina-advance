@@ -1197,13 +1197,14 @@ not applying FFmpeg 9599 workaround
         break
       }
 
-      player.log.verbose("Received mpv prop: \(MPVOption.PlaybackControl.pause.quoted) = \(paused)")
+      player.log.verbose("Received mpv prop: 'pause' = \(paused)")
       if player.info.isPaused != paused {
+        player.info.isPaused = paused
         player.sendOSD(paused ? .pause : .resume)
+        player.syncUI(.playButton)
+        player.refreshSyncUITimer()
         DispatchQueue.main.async { [self] in
-          player.info.isPaused = paused
           player.saveState()  // record the pause state
-          player.refreshSyncUITimer()
           if paused {
             player.videoView.displayIdle()
           } else {  // resume
@@ -1216,13 +1217,12 @@ not applying FFmpeg 9599 workaround
           if player.windowController.loaded && Preference.bool(for: .alwaysFloatOnTop) {
             player.windowController.setWindowFloatingOnTop(!paused)
           }
-          player.syncUI(.playButton)
         }
       }
 
     case MPVProperty.chapter:
       player.info.chapter = Int(getInt(MPVProperty.chapter))
-      player.log.verbose("Notified by mpv: chapter changed to \(player.info.chapter)")
+      player.log.verbose("Received mpv prop: `chapter` = \(player.info.chapter)")
       player.syncUI(.chapterList)
       player.postNotification(.iinaMediaTitleChanged)
 
@@ -1244,6 +1244,7 @@ not applying FFmpeg 9599 workaround
       if let data = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee {
         // this property will fire a change event at file start
         if player.info.deinterlace != data {
+          player.log.verbose("Received mpv prop: `deinterlace` = \(data)")
           player.info.deinterlace = data
           player.sendOSD(.deinterlace(data))
         }
@@ -1359,7 +1360,7 @@ not applying FFmpeg 9599 workaround
     // following properties may change before file loaded
 
     case MPVProperty.playlistCount:
-      player.log.verbose("Received mpv prop change: \(MPVProperty.playlistCount.quoted)")
+      player.log.verbose("Received mpv prop: 'playlist-count'")
       player.reloadPlaylist()
 
     case MPVProperty.trackList:

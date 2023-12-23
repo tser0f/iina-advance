@@ -646,9 +646,10 @@ extension PlayerWindowController {
       updatePanelBlendingModes(to: outputLayout)
     }
 
-    // Refresh volume & play time in UI
+    updatePlaySlider()
     updateVolumeUI()
-    player.syncUITime()
+    let isPaused = player.info.isPaused
+    updatePlayButtonState(isPaused ? .off : .on)
 
     if !transition.isInitialLayout && transition.isTogglingLegacyStyle {
       forceDraw()
