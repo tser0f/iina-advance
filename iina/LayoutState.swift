@@ -296,10 +296,6 @@ extension PlayerWindowController {
 
     // Sizes / offsets
 
-    /// This exists as a fallback for the case where the title bar has a transparent background but still shows its items.
-    /// For most cases, spacing between OSD and top of `viewportView` >= 8pts
-    var osdMinOffsetFromTop: CGFloat = 0
-
     var sidebarDownshift: CGFloat = Constants.Sidebar.defaultDownshift
     var sidebarTabHeight: CGFloat = Constants.Sidebar.defaultTabHeight
 
@@ -507,10 +503,6 @@ extension PlayerWindowController {
           if hasTrailingSidebar && Preference.bool(for: .showTrailingSidebarToggleButton) {
             outputLayout.trailingSidebarToggleButton = visibleState
           }
-        }
-
-        if outputLayout.topBarPlacement == .insideViewport {
-          outputLayout.osdMinOffsetFromTop = outputLayout.titleBarHeight + 8
         }
 
       }

@@ -568,9 +568,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
    */
   @IBOutlet weak var leadingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
-
-  // The OSD should always be below the top bar + 8. But if top bar/title bar is transparent, we need this constraint
-  @IBOutlet weak var osdMinOffsetFromTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdTopToTopBarConstraint: NSLayoutConstraint!
   @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
 
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:

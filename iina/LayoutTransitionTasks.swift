@@ -266,9 +266,6 @@ extension PlayerWindowController {
     if transition.inputLayout.topOSCHeight > 0 && outputLayout.topOSCHeight == 0 {
       topOSCHeightConstraint.animateToConstant(0)
     }
-    if transition.inputLayout.osdMinOffsetFromTop > 0 && outputLayout.osdMinOffsetFromTop == 0 {
-      osdMinOffsetFromTopConstraint.animateToConstant(0)
-    }
     
     if transition.isEnteringInteractiveMode {
       // Animate the close of viewport margins:
@@ -400,10 +397,6 @@ extension PlayerWindowController {
 
     if !outputLayout.enableOSC && !outputLayout.isMusicMode {
       fragPositionSliderView?.removeFromSuperview()
-    }
-
-    if transition.isTopBarPlacementChanging {
-      updateTopBarPlacement(placement: outputLayout.topBarPlacement)
     }
 
     if transition.isBottomBarPlacementChanging {
@@ -691,7 +684,8 @@ extension PlayerWindowController {
     // Update heights to their final values:
     topOSCHeightConstraint.animateToConstant(outputLayout.topOSCHeight)
     titleBarHeightConstraint.animateToConstant(outputLayout.titleBarHeight)
-    osdMinOffsetFromTopConstraint.animateToConstant(outputLayout.osdMinOffsetFromTop)
+
+    updateOSDTopOffset(transition.outputGeometry, isLegacyFullScreen: transition.outputLayout.isLegacyFullScreen)
 
     // Update heights of top & bottom bars:
     updateTopBarHeight(to: outputLayout.topBarHeight, topBarPlacement: transition.outputLayout.topBarPlacement, cameraHousingOffset: transition.outputGeometry.topMarginHeight)
@@ -1024,36 +1018,6 @@ extension PlayerWindowController {
 
   // - Top bar
 
-  /**
-   This ONLY updates the constraints to toggle between `inside` and `outside` placement types.
-   Whether it is actually shown is a concern for somewhere else.
-   "Outside"
-   *     ┌─────────────┐
-   *     │  Title Bar  │   Top of    Top of
-   *     ├─────────────┤    Video    Video
-   *     │   Top OSC   │        │    │            "Inside"
-   ┌─────┼─────────────┼─────┐◄─┘    └─►┌─────┬─────────────┬─────┐
-   │     │            V│     │          │     │  Title Bar V│     │
-   │ Left│            I│Right│          │ Left├────────────I│Right│
-   │ Side│            D│Side │          │ Side│   Top OSC  D│Side │
-   │  bar│            E│bar  │          │  bar├────────────E│bar  │
-   │     │  VIDEO     O│     │          │     │  VIDEO     O│     │
-   └─────┴─────────────┴─────┘          └─────┴─────────────┴─────┘
-   */
-  private func updateTopBarPlacement(placement: Preference.PanelPlacement) {
-//    log.verbose("Updating topBar placement to: \(placement)")
-//    guard let window = window, let contentView = window.contentView else { return }
-//    contentView.removeConstraint(topBarLeadingSpaceConstraint)
-//    contentView.removeConstraint(topBarTrailingSpaceConstraint)
-//
-//    // Align left & right sides with window (sidebars go below top bar)
-//    topBarLeadingSpaceConstraint = topBarView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
-//    topBarTrailingSpaceConstraint = topBarView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0)
-//
-//    topBarLeadingSpaceConstraint.isActive = true
-//    topBarTrailingSpaceConstraint.isActive = true
-  }
-
   func updateTopBarHeight(to topBarHeight: CGFloat, topBarPlacement: Preference.PanelPlacement, cameraHousingOffset: CGFloat) {
     log.verbose("Updating topBar height: \(topBarHeight), placement: \(topBarPlacement), cameraOffset: \(cameraHousingOffset)")
 
@@ -1066,6 +1030,18 @@ extension PlayerWindowController {
       viewportTopOffsetFromTopBarBottomConstraint.animateToConstant(0)
       viewportTopOffsetFromTopBarTopConstraint.animateToConstant(topBarHeight)
       viewportTopOffsetFromContentViewTopConstraint.animateToConstant(topBarHeight + cameraHousingOffset)
+    }
+  }
+
+  func updateOSDTopOffset(_ geometry: PWindowGeometry, isLegacyFullScreen: Bool) {
+    if isLegacyFullScreen {
+      // Make sure OSD (& Additional Info) does not overlap camera housing
+      let cameraHousingHeight =  NSScreen.forScreenID(geometry.screenID)?.cameraHousingHeight ?? 0
+      let paddingForCameraHousing =  geometry.topMarginHeight
+      let usedSpaceAbove = paddingForCameraHousing + geometry.outsideTopBarHeight + geometry.insideTopBarHeight
+      osdTopToTopBarConstraint.animateToConstant(8 + max(0, cameraHousingHeight - usedSpaceAbove))
+    } else {
+      osdTopToTopBarConstraint.animateToConstant(8)
     }
   }
 

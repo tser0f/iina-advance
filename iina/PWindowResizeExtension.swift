@@ -575,6 +575,8 @@ extension PlayerWindowController {
                                 layout: currentLayout, viewportSize: geometry.viewportSize)
     }
 
+    updateOSDTopOffset(geometry, isLegacyFullScreen: true)
+
     guard !geometry.windowFrame.equalTo(window.frame) else {
       log.verbose("No need to update windowFrame for legacyFullScreen - no change")
       return

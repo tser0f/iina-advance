@@ -12,7 +12,7 @@ import OpenGL.GL3
 
 class GLVideoLayer: CAOpenGLLayer {
 
-  weak var videoView: VideoView!
+  unowned var videoView: VideoView!
 
   // Use semaphore to prevent more than 2 frames enqueued at any given time. Any more is wasted resources
   private let mpvGLSemaphore = DispatchSemaphore(value: 2)
@@ -61,6 +61,12 @@ class GLVideoLayer: CAOpenGLLayer {
     }
   }
 #endif
+
+  init(videoView: VideoView) {
+    super.init()
+
+    self.videoView = videoView
+  }
 
   override init() {
     super.init()
