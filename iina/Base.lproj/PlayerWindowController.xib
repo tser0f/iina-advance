@@ -330,7 +330,7 @@
                                 <color key="borderColor" red="0.48627450979999998" green="0.48627450979999998" blue="0.48627450979999998" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
                                 <color key="fillColor" name="separatorColor" catalog="System" colorSpace="catalog"/>
                             </box>
-                            <stackView identifier="OSC-Bottom-Horizontal-Stack-View" distribution="equalSpacing" orientation="horizontal" alignment="centerY" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Qmi-hb-0aM" userLabel="OSC-Bottom Horizontal Stack View" customClass="ClickThroughStackView" customModule="IINA" customModuleProvider="target">
+                            <stackView identifier="OSC-Bottom-Horizontal-Stack-View" distribution="fill" orientation="horizontal" alignment="centerY" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Qmi-hb-0aM" userLabel="OSC-Bottom Horizontal Stack View" customClass="ClickThroughStackView" customModule="IINA" customModuleProvider="target">
                                 <rect key="frame" x="8" y="0.0" width="624" height="0.0"/>
                             </stackView>
                         </subviews>

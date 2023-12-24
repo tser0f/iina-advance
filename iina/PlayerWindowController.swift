@@ -261,6 +261,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
+  static var windowedModeGeometryLastClosed: PWindowGeometry =  LayoutState.buildFrom(LayoutSpec.defaultLayout()).buildDefaultInitialGeometry(screen: NSScreen.screens[0])
+
   private var windowedModeGeometryDefault: PWindowGeometry {
     return LayoutState.buildFrom(lastWindowedLayoutSpec).buildDefaultInitialGeometry(screen: bestScreen)
   }
@@ -1916,6 +1918,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
     lastWindowedLayoutSpec = LayoutSpec.defaultLayout()
+    PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
     windowedModeGeometry = windowedModeGeometryDefault
     musicModeGeometry = musicModeGeometryDefault
 

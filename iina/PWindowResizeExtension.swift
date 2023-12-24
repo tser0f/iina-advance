@@ -172,7 +172,6 @@ extension PlayerWindowController {
 
     guard shouldResizeWindowAfterVideoReconfig() else {
       // video size changed during playback
-      log.verbose("[MPVVideoReconfig C] JustStartedFile=NO → returning NO for shouldResize")
       return resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
     }
 
@@ -208,6 +207,11 @@ extension PlayerWindowController {
 
   private func resizeMinimallyAfterVideoReconfig(from windowGeo: PWindowGeometry,
                                                  videoDisplayRotatedSize: NSSize) -> PWindowGeometry {
+    if player.info.justOpenedFile {
+      log.verbose("[MPVVideoReconfig D-1] Just opened file with no resize strategy. Using windowedModeGeometryLastClosed: \(PlayerWindowController.windowedModeGeometryLastClosed)")
+      return currentLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed,
+                                                       videoAspect: videoDisplayRotatedSize.mpvAspect)
+    }
     // User is navigating in playlist. retain same window width.
     // This often isn't possible for vertical videos, which will end up shrinking the width.
     // So try to remember the preferred width so it can be restored when possible
@@ -217,7 +221,7 @@ extension PlayerWindowController {
       if let intendedViewportSize = player.info.intendedViewportSize  {
         // Just use existing size in this case:
         desiredViewportSize = intendedViewportSize
-        log.verbose("[MPVVideoReconfig D-1] Using intendedViewportSize \(intendedViewportSize)")
+        log.verbose("[MPVVideoReconfig D-2] Using intendedViewportSize \(intendedViewportSize)")
       }
 
       let minNewViewportHeight = round(desiredViewportSize.width / videoDisplayRotatedSize.mpvAspect)
