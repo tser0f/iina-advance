@@ -207,8 +207,9 @@ extension PlayerWindowController {
 
   private func resizeMinimallyAfterVideoReconfig(from windowGeo: PWindowGeometry,
                                                  videoDisplayRotatedSize: NSSize) -> PWindowGeometry {
-    if player.info.justOpenedFile {
+    if player.info.justOpenedFile && !isInitialSizeDone {
       log.verbose("[MPVVideoReconfig D-1] Just opened file with no resize strategy. Using windowedModeGeometryLastClosed: \(PlayerWindowController.windowedModeGeometryLastClosed)")
+      isInitialSizeDone = true
       return currentLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed,
                                                        videoAspect: videoDisplayRotatedSize.mpvAspect)
     }
@@ -343,9 +344,13 @@ extension PlayerWindowController {
       log.verbose("Updating cached \(currentLayout.mode) geometry from current window (tkt \(ticket))")
       let currentLayout = currentLayout
 
+      guard let window else { return }
+
       switch currentLayout.mode {
       case .windowed, .windowedInteractive:
-        let geo = currentLayout.buildGeometry(windowFrame: window!.frame, screenID: bestScreen.screenID, videoAspect: player.info.videoAspect)
+        // Use previous geometry's aspect. This method should never be called if aspect is changing - that should be set elsewhere.
+        // This method should only be called for changes to windowFrame (origin or size)
+        let geo = currentLayout.buildGeometry(windowFrame: window.frame, screenID: bestScreen.screenID, videoAspect: windowedModeGeometry.videoAspect)
         if currentLayout.mode == .windowedInteractive {
           assert(interactiveModeGeometry?.videoAspect == geo.videoAspect)
           interactiveModeGeometry = geo
@@ -359,8 +364,7 @@ extension PlayerWindowController {
         }
         player.saveState()
       case .musicMode:
-        musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame,
-                                                    screenID: bestScreen.screenID)
+        musicModeGeometry = musicModeGeometry.clone(windowFrame: window.frame, screenID: bestScreen.screenID)
         if updateMPVWindowScale {
           player.updateMPVWindowScale(using: musicModeGeometry.toPWindowGeometry())
         }

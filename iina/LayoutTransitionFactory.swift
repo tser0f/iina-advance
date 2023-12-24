@@ -78,6 +78,13 @@ extension PlayerWindowController {
 
       // Set to default layout, but use existing aspect ratio & video size for now, because we don't have that info yet for the new video
       initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: lastWindowedLayoutSpec)
+
+      // Should only be here if window is a new window or was previously closed. Copy layout from the last closed window
+      assert(!isOpen)
+      assert(!isInitialSizeDone)
+      let initialLayout = LayoutState.buildFrom(initialLayoutSpec)
+      windowedModeGeometry = initialLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed)
+      musicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed
     }
 
     log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")

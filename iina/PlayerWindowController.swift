@@ -137,6 +137,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   private(set) var isWindowHidden: Bool = false
 
   var isClosing = false
+  var isInitialSizeDone = false
   var isWindowMiniturized = false
   var isWindowMiniaturizedDueToPip = false
   var isWindowPipDueToInactiveSpace = false
@@ -253,7 +254,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - Window geometry vars
 
-  lazy var windowedModeGeometry: PWindowGeometry = windowedModeGeometryDefault {
+  lazy var windowedModeGeometry: PWindowGeometry = PlayerWindowController.windowedModeGeometryLastClosed {
     didSet {
       log.verbose("Updated windowedModeGeometry := \(windowedModeGeometry)")
       assert(windowedModeGeometry.mode == .windowed, "windowedModeGeometry has unexpected mode: \(windowedModeGeometry.mode) (expected: \(PlayerWindowMode.windowed)")
@@ -261,20 +262,33 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  static var windowedModeGeometryLastClosed: PWindowGeometry =  LayoutState.buildFrom(LayoutSpec.defaultLayout()).buildDefaultInitialGeometry(screen: NSScreen.screens[0])
-
-  private var windowedModeGeometryDefault: PWindowGeometry {
-    return LayoutState.buildFrom(lastWindowedLayoutSpec).buildDefaultInitialGeometry(screen: bestScreen)
+  // TODO: persist this in Preferences to reuse between launches
+  static var windowedModeGeometryLastClosed: PWindowGeometry = PlayerWindowController.windowedModeGeometryDefault(screen: NSScreen.screens[0]) {
+    didSet {
+      Logger.log("Updated windowedModeGeometryLastClosed := \(windowedModeGeometryLastClosed)", level: .verbose)
+    }
   }
 
-  lazy var musicModeGeometry: MusicModeGeometry = musicModeGeometryDefault {
+  static private func windowedModeGeometryDefault(screen: NSScreen) -> PWindowGeometry {
+    return LayoutState.buildFrom(LayoutSpec.defaultLayout()).buildDefaultInitialGeometry(screen: screen)
+  }
+
+  lazy var musicModeGeometry: MusicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed {
     didSet {
       log.verbose("Updated musicModeGeometry := \(musicModeGeometry)")
     }
   }
 
-  private var musicModeGeometryDefault: MusicModeGeometry {
-    MiniPlayerController.buildMusicModeGeometryFromPrefs(screen: bestScreen, videoAspect: player.info.videoAspect)
+  // TODO: persist this in Preferences to reuse between launches
+  static var musicModeGeometryLastClosed: MusicModeGeometry = PlayerWindowController.musicModeGeometryDefault(screen: NSScreen.screens[0],
+                                                                                                              videoAspect: AppData.minVideoSize.mpvAspect) {
+    didSet {
+      Logger.log("Updated musicModeGeometryLastClosed := \(musicModeGeometryLastClosed)", level: .verbose)
+    }
+  }
+
+  static private func musicModeGeometryDefault(screen: NSScreen, videoAspect: CGFloat) -> MusicModeGeometry {
+    return MiniPlayerController.buildMusicModeGeometryFromPrefs(screen: screen, videoAspect: videoAspect)
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.
@@ -1869,8 +1883,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     updateOSDPosition()
     addVideoViewToWindow(windowedModeGeometry)
 
-    // Restore layout from last launch or configure from prefs. Do not animate.
-    setInitialWindowLayout()
+    /// `isOpen==true` if opening a new file in an already open window
+    if isOpen {
+      /// `windowFrame` may be slightly off; update it
+      if currentLayout.mode == .windowed {
+        windowedModeGeometry = currentLayout.buildGeometry(windowFrame: window.frame, screenID: bestScreen.screenID, videoAspect: windowedModeGeometry.videoAspect)
+      } else if currentLayout.mode == .musicMode {
+        musicModeGeometry = musicModeGeometry.clone(windowFrame: window.frame, screenID: bestScreen.screenID)
+      }
+    } else {
+      // Restore layout from last launch or configure from prefs. Do not animate.
+      setInitialWindowLayout()
+    }
 
     // Unfortunately, seems that window must be visible for mpv init, or it will crash...
     // TODO: find way to delay until after fileLoaded. We don't know the video dimensions yet!
@@ -1894,6 +1918,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("Window will close")
 
     isClosing = true
+    isInitialSizeDone = false  // reset for reopen
+
     // Close PIP
     if pipStatus == .inPIP {
       if #available(macOS 10.12, *) {
@@ -1917,10 +1943,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     player.overrideAutoMusicMode = false
 
     /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
+    if currentLayout.mode == .musicMode {
+      PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry
+    } else {
+      PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
+    }
     lastWindowedLayoutSpec = LayoutSpec.defaultLayout()
-    PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
-    windowedModeGeometry = windowedModeGeometryDefault
-    musicModeGeometry = musicModeGeometryDefault
 
     player.events.emit(.windowWillClose)
   }
