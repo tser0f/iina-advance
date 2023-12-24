@@ -72,12 +72,12 @@ struct PlayerSaveState {
     case loopFile = "loopFile"        /// `MPVOption.PlaybackControl.loopFile`
   }
 
-  static private let specPrefStringVersion = "1"
-  static private let windowGeometryPrefStringVersion = "1"
-  static private let musicModeGeometryPrefStringVersion = "1"
-  static private let playlistVideosCSVVersion = "1"
-  static private let specErrPre = "Failed to parse LayoutSpec from string:"
-  static private let geoErrPre = "Failed to parse WindowGeometry from string:"
+  static fileprivate let specPrefStringVersion = "1"
+  static fileprivate let windowGeometryPrefStringVersion = "1"
+  static fileprivate let musicModeGeometryPrefStringVersion = "1"
+  static fileprivate let playlistVideosCSVVersion = "1"
+  static fileprivate let specErrPre = "Failed to parse LayoutSpec from string:"
+  static fileprivate let geoErrPre = "Failed to parse WindowGeometry from string:"
 
   let properties: [String: Any]
 
@@ -94,74 +94,16 @@ struct PlayerSaveState {
   init(_ props: [String: Any]) {
     self.properties = props
 
-    self.layoutSpec = PlayerSaveState.deserializeLayoutSpec(from: props)
-    self.windowedModeGeometry = PlayerSaveState.deserializeWindowGeometry(from: props)
-    self.musicModeGeometry = PlayerSaveState.deserializeMusicModeGeometry(from: props)
+    let layoutSpecCSV = PlayerSaveState.string(for: .layoutSpec, properties)
+    self.layoutSpec = PlayerWindowController.LayoutSpec.fromCSV(layoutSpecCSV)
+    let windowdModeCSV = PlayerSaveState.string(for: .windowedModeGeometry, properties)
+    self.windowedModeGeometry = PWindowGeometry.fromCSV(windowdModeCSV)
+    let musicModeCSV = PlayerSaveState.string(for: .musicModeGeometry, properties)
+    self.musicModeGeometry = MusicModeGeometry.fromCSV(musicModeCSV)
     self.screens = (props[PropName.screens.rawValue] as? [String] ?? []).compactMap({ScreenMeta.from($0)})
   }
 
   // MARK: - Save State / Serialize to prefs strings
-
-  /// `PWindowGeometry` -> String
-  private static func toCSV(_ geo: PWindowGeometry) -> String {
-    return [windowGeometryPrefStringVersion,
-            geo.topMarginHeight.string2f,
-            geo.outsideTopBarHeight.string2f,
-            geo.outsideTrailingBarWidth.string2f,
-            geo.outsideBottomBarHeight.string2f,
-            geo.outsideLeadingBarWidth.string2f,
-            geo.insideTopBarHeight.string2f,
-            geo.insideTrailingBarWidth.string2f,
-            geo.insideBottomBarHeight.string2f,
-            geo.insideLeadingBarWidth.string2f,
-            geo.viewportMargins.top.string2f,
-            geo.viewportMargins.trailing.string2f,
-            geo.viewportMargins.bottom.string2f,
-            geo.viewportMargins.leading.string2f,
-            geo.videoAspect.aspectNormalDecimalString,
-            geo.windowFrame.origin.x.string2f,
-            geo.windowFrame.origin.y.string2f,
-            geo.windowFrame.width.string2f,
-            geo.windowFrame.height.string2f,
-            String(geo.fitOption.rawValue),
-            geo.screenID,
-            String(geo.mode.rawValue)
-    ].joined(separator: ",")
-  }
-
-  /// `MusicModeGeometry` -> String
-  private static func toCSV(_ geo: MusicModeGeometry) -> String {
-    return [musicModeGeometryPrefStringVersion,
-            geo.windowFrame.origin.x.string2f,
-            geo.windowFrame.origin.y.string2f,
-            geo.windowFrame.width.string2f,
-            geo.windowFrame.height.string2f,
-            geo.playlistHeight.string2f,
-            geo.isVideoVisible.yn,
-            geo.isPlaylistVisible.yn,
-            geo.videoAspect.aspectNormalDecimalString,
-            geo.screenID
-    ].joined(separator: ",")
-  }
-
-  /// `LayoutSpec` -> String
-  private static func toCSV(_ spec: PlayerWindowController.LayoutSpec) -> String {
-    let leadingSidebarTab: String = spec.leadingSidebar.visibleTab?.name ?? "nil"
-    let trailingSidebarTab: String = spec.trailingSidebar.visibleTab?.name ?? "nil"
-    return [specPrefStringVersion,
-            leadingSidebarTab,
-            trailingSidebarTab,
-            String(spec.mode.rawValue),
-            spec.isLegacyStyle.yn,
-            String(spec.topBarPlacement.rawValue),
-            String(spec.trailingSidebarPlacement.rawValue),
-            String(spec.bottomBarPlacement.rawValue),
-            String(spec.leadingSidebarPlacement.rawValue),
-            spec.enableOSC.yn,
-            String(spec.oscPosition.rawValue),
-            String(spec.interactiveMode?.rawValue ?? 0)
-    ].joined(separator: ",")
-  }
 
   /// Generates a Dictionary of properties for storage into a Preference entry
   static private func generatePropDict(from player: PlayerCore) -> [String: Any] {
@@ -176,14 +118,14 @@ struct PlayerSaveState {
     // - Window Layout & Geometry
 
     /// `layoutSpec`
-    props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
+    props[PropName.layoutSpec.rawValue] = layout.spec.toCSV()
 
     /// `windowedModeGeometry`
     let windowedModeGeometry = wc.windowedModeGeometry
-    props[PropName.windowedModeGeometry.rawValue] = toCSV(windowedModeGeometry)
+    props[PropName.windowedModeGeometry.rawValue] = windowedModeGeometry.toCSV()
 
     /// `musicModeGeometry`
-    props[PropName.musicModeGeometry.rawValue] = toCSV(wc.musicModeGeometry)
+    props[PropName.musicModeGeometry.rawValue] = wc.musicModeGeometry.toCSV()
 
     let screenMetaCSVList: [String] = wc.cachedScreens.values.map{$0.toCSV()}
     props[PropName.screens.rawValue] = screenMetaCSVList
@@ -415,13 +357,12 @@ struct PlayerSaveState {
   }
 
   // Utility function for parsing complex object from CSV
-  static private func deserializeCSV<T>(_ propName: PropName, fromProperties properties: [String: Any], expectedTokenCount: Int, expectedVersion: String,
-                                        errPreamble: String, _ parseFunc: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
-    guard let csvString = string(for: propName, properties) else {
-      return nil
-    }
-    Logger.log("PlayerSaveState: restoring. Read pref \(propName.rawValue.quoted) → \(csvString.quoted)", level: .verbose)
-    let tokens = csvString.split(separator: ",").map{String($0)}
+  static fileprivate func parseCSV<T>(_ csvString: String?, expectedTokenCount: Int, expectedVersion: String,
+                                      errPreamble: String, 
+                                      _ parseFunc: (String, inout IndexingIterator<[String]>) throws -> T?) rethrows -> T? {
+    guard let csv = csvString else { return nil }
+    Logger.log("Parsing CSV: \(csv.quoted)", level: .verbose)
+    let tokens = csv.split(separator: ",").map{String($0)}
     guard tokens.count == expectedTokenCount else {
       Logger.log("\(errPreamble) wrong token count (expected \(expectedTokenCount) but found \(tokens.count))", level: .error)
       return nil
@@ -437,150 +378,7 @@ struct PlayerSaveState {
     return try parseFunc(errPreamble, &iter)
   }
 
-  /// String -> `LayoutSpec`
-  static private func deserializeLayoutSpec(from properties: [String: Any]) -> PlayerWindowController.LayoutSpec? {
-    return deserializeCSV(.layoutSpec, fromProperties: properties,
-                          expectedTokenCount: 12,
-                          expectedVersion: PlayerSaveState.specPrefStringVersion,
-                          errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
-
-      let leadingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
-      let traillingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
-
-      guard let modeInt = Int(iter.next()!), let mode = PlayerWindowMode(rawValue: modeInt),
-            let isLegacyStyle = Bool.yn(iter.next()) else {
-        Logger.log("\(errPreamble) could not parse mode or isLegacyStyle", level: .error)
-        return nil
-      }
-
-      guard let topBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
-            let trailingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
-            let bottomBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
-            let leadingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)) else {
-        Logger.log("\(errPreamble) could not parse bar placements", level: .error)
-        return nil
-      }
-
-      guard let enableOSC = Bool.yn(iter.next()),
-            let oscPositionInt = Int(iter.next()!),
-            let oscPosition = Preference.OSCPosition(rawValue: oscPositionInt) else {
-        Logger.log("\(errPreamble) could not parse enableOSC or oscPosition", level: .error)
-        return nil
-      }
-
-      let interactModeInt = Int(iter.next()!)
-      let interactiveMode = PlayerWindowController.InteractiveMode(rawValue: interactModeInt ?? 0) ?? nil  /// `0` === `nil` value
-
-      var leadingTabGroups = PlayerWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
-      let leadVis: PlayerWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
-      // If the tab groups prefs changed somehow since the last run, just add it for now so that the geometry can be restored.
-      // Will correct this at the end of restore.
-      if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
-        Logger.log("Restore state is invalid: leadingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
-        leadingTabGroups.insert(visibleTab.group)
-      }
-      let leadingSidebar = PlayerWindowController.Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
-
-      var trailingTabGroups = PlayerWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
-      let trailVis: PlayerWindowController.Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
-      // Account for invalid visible tab (see note above)
-      if let visibleTab = trailVis.visibleTab, !trailingTabGroups.contains(visibleTab.group) {
-        Logger.log("Restore state is invalid: trailingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
-        trailingTabGroups.insert(visibleTab.group)
-      }
-      let trailingSidebar = PlayerWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
-
-      return PlayerWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition, interactiveMode: interactiveMode)
-    })
-  }
-
-  /// String -> `PWindowGeometry`
-  static private func deserializeWindowGeometry(from properties: [String: Any]) -> PWindowGeometry? {
-    return deserializeCSV(.windowedModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 22,
-                          expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
-                          errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
-
-      guard let topMarginHeight = Double(iter.next()!),
-            let outsideTopBarHeight = Double(iter.next()!),
-            let outsideTrailingBarWidth = Double(iter.next()!),
-            let outsideBottomBarHeight = Double(iter.next()!),
-            let outsideLeadingBarWidth = Double(iter.next()!),
-            let insideTopBarHeight = Double(iter.next()!),
-            let insideTrailingBarWidth = Double(iter.next()!),
-            let insideBottomBarHeight = Double(iter.next()!),
-            let insideLeadingBarWidth = Double(iter.next()!),
-            let viewportMarginTop = Double(iter.next()!),
-            let viewportMarginTrailing = Double(iter.next()!),
-            let viewportMarginBottom = Double(iter.next()!),
-            let viewportMarginLeading = Double(iter.next()!),
-            let videoAspect = Double(iter.next()!),
-            let winOriginX = Double(iter.next()!),
-            let winOriginY = Double(iter.next()!),
-            let winWidth = Double(iter.next()!),
-            let winHeight = Double(iter.next()!),
-            let fitOptionRawValue = Int(iter.next()!),
-            let screenID = iter.next(),
-            let modeRawValue = Int(iter.next()!)
-      else {
-        Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
-        return nil
-      }
-
-      guard let mode = PlayerWindowMode(rawValue: modeRawValue) else {
-        Logger.log("\(errPreamble) unrecognized PlayerWindowMode: \(modeRawValue)", level: .error)
-        return nil
-      }
-      guard let fitOption = ScreenFitOption(rawValue: fitOptionRawValue) else {
-        Logger.log("\(errPreamble) unrecognized ScreenFitOption: \(fitOptionRawValue)", level: .error)
-        return nil
-      }
-      let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      let viewportMargins = BoxQuad(top: viewportMarginTop, trailing: viewportMarginTrailing, 
-                                    bottom: viewportMarginBottom, leading: viewportMarginLeading)
-      return PWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
-                             outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
-                             outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
-                             insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
-                             insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
-                             viewportMargins: viewportMargins,
-                             videoAspect: videoAspect)
-    })
-  }
-
-  /// String -> `MusicModeGeometry`
-  /// Note to maintainers: if compiler is complaining with the message "nil is not compatible with closure result type MusicModeGeometry",
-  /// check the arguments to the `MusicModeGeometry` constructor. For some reason the error lands in the wrong place.
-  static private func deserializeMusicModeGeometry(from properties: [String: Any]) -> MusicModeGeometry? {
-    return deserializeCSV(.musicModeGeometry, fromProperties: properties,
-                          expectedTokenCount: 10,
-                          expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
-                          errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
-
-      guard let winOriginX = Double(iter.next()!),
-            let winOriginY = Double(iter.next()!),
-            let winWidth = Double(iter.next()!),
-            let winHeight = Double(iter.next()!),
-            let playlistHeight = Double(iter.next()!),
-            let isVideoVisible = Bool.yn(iter.next()!),
-            let isPlaylistVisible = Bool.yn(iter.next()!),
-            let videoAspect = Double(iter.next()!),
-            let screenID = iter.next()
-      else {
-        Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
-        return nil
-      }
-
-      let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
-      return MusicModeGeometry(windowFrame: windowFrame,
-                               screenID: screenID,
-                               playlistHeight: playlistHeight,
-                               isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
-                               videoAspect: videoAspect)
-    })
-  }
-
-  static private func deserializePlaylistVideoInfo(from entryString: String) -> [FileInfo] {
+  static private func parsePlaylistVideos(from entryString: String) -> [FileInfo] {
     var videos: [FileInfo] = []
 
     // Each entry cannot contain spaces, so use that for the first delimiter:
@@ -678,7 +476,7 @@ struct PlayerSaveState {
     }
 
     if let videoURLListString = string(for: .playlistVideos) {
-      let currentVideosInfo = PlayerSaveState.deserializePlaylistVideoInfo(from: videoURLListString)
+      let currentVideosInfo = PlayerSaveState.parsePlaylistVideos(from: videoURLListString)
       info.currentVideosInfo = currentVideosInfo
     }
 
@@ -952,4 +750,214 @@ struct ScreenMeta {
     let nativeResolution = NSSize(width: nativeResW, height: nativeResH)
     return ScreenMeta(displayID: displayID, name: name, frame: frame, visibleFrame: visibleFrame, nativeResolution: nativeResolution, cameraHousingHeight: cameraHousingHeight)
   }
+}
+
+extension MusicModeGeometry {
+
+  /// String -> `MusicModeGeometry`
+  /// Note to maintainers: if compiler is complaining with the message "nil is not compatible with closure result type MusicModeGeometry",
+  /// check the arguments to the `MusicModeGeometry` constructor. For some reason the error lands in the wrong place.
+  static func fromCSV(_ csv: String?) -> MusicModeGeometry? {
+    return PlayerSaveState.parseCSV(csv, expectedTokenCount: 10,
+                                    expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
+                                    errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
+
+      guard let winOriginX = Double(iter.next()!),
+            let winOriginY = Double(iter.next()!),
+            let winWidth = Double(iter.next()!),
+            let winHeight = Double(iter.next()!),
+            let playlistHeight = Double(iter.next()!),
+            let isVideoVisible = Bool.yn(iter.next()!),
+            let isPlaylistVisible = Bool.yn(iter.next()!),
+            let videoAspect = Double(iter.next()!),
+            let screenID = iter.next()
+      else {
+        Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
+        return nil
+      }
+
+      let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+      return MusicModeGeometry(windowFrame: windowFrame,
+                               screenID: screenID,
+                               playlistHeight: playlistHeight,
+                               isVideoVisible: isVideoVisible, isPlaylistVisible: isPlaylistVisible,
+                               videoAspect: videoAspect)
+    })
+  }
+
+  /// `MusicModeGeometry` -> String
+  func toCSV() -> String {
+    return [PlayerSaveState.musicModeGeometryPrefStringVersion,
+            self.windowFrame.origin.x.string2f,
+            self.windowFrame.origin.y.string2f,
+            self.windowFrame.width.string2f,
+            self.windowFrame.height.string2f,
+            self.playlistHeight.string2f,
+            self.isVideoVisible.yn,
+            self.isPlaylistVisible.yn,
+            self.videoAspect.aspectNormalDecimalString,
+            self.screenID
+    ].joined(separator: ",")
+  }
+}
+
+extension PWindowGeometry {
+
+  /// `PWindowGeometry` -> String
+  func toCSV() -> String {
+    return [PlayerSaveState.windowGeometryPrefStringVersion,
+            self.topMarginHeight.string2f,
+            self.outsideTopBarHeight.string2f,
+            self.outsideTrailingBarWidth.string2f,
+            self.outsideBottomBarHeight.string2f,
+            self.outsideLeadingBarWidth.string2f,
+            self.insideTopBarHeight.string2f,
+            self.insideTrailingBarWidth.string2f,
+            self.insideBottomBarHeight.string2f,
+            self.insideLeadingBarWidth.string2f,
+            self.viewportMargins.top.string2f,
+            self.viewportMargins.trailing.string2f,
+            self.viewportMargins.bottom.string2f,
+            self.viewportMargins.leading.string2f,
+            self.videoAspect.aspectNormalDecimalString,
+            self.windowFrame.origin.x.string2f,
+            self.windowFrame.origin.y.string2f,
+            self.windowFrame.width.string2f,
+            self.windowFrame.height.string2f,
+            String(self.fitOption.rawValue),
+            self.screenID,
+            String(self.mode.rawValue)
+    ].joined(separator: ",")
+  }
+
+  /// String -> `PWindowGeometry`
+  static func fromCSV(_ csv: String?) -> PWindowGeometry? {
+    return PlayerSaveState.parseCSV(csv, expectedTokenCount: 22,
+                                    expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
+                                    errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
+
+      guard let topMarginHeight = Double(iter.next()!),
+            let outsideTopBarHeight = Double(iter.next()!),
+            let outsideTrailingBarWidth = Double(iter.next()!),
+            let outsideBottomBarHeight = Double(iter.next()!),
+            let outsideLeadingBarWidth = Double(iter.next()!),
+            let insideTopBarHeight = Double(iter.next()!),
+            let insideTrailingBarWidth = Double(iter.next()!),
+            let insideBottomBarHeight = Double(iter.next()!),
+            let insideLeadingBarWidth = Double(iter.next()!),
+            let viewportMarginTop = Double(iter.next()!),
+            let viewportMarginTrailing = Double(iter.next()!),
+            let viewportMarginBottom = Double(iter.next()!),
+            let viewportMarginLeading = Double(iter.next()!),
+            let videoAspect = Double(iter.next()!),
+            let winOriginX = Double(iter.next()!),
+            let winOriginY = Double(iter.next()!),
+            let winWidth = Double(iter.next()!),
+            let winHeight = Double(iter.next()!),
+            let fitOptionRawValue = Int(iter.next()!),
+            let screenID = iter.next(),
+            let modeRawValue = Int(iter.next()!)
+      else {
+        Logger.log("\(errPreamble) could not parse one or more tokens", level: .error)
+        return nil
+      }
+
+      guard let mode = PlayerWindowMode(rawValue: modeRawValue) else {
+        Logger.log("\(errPreamble) unrecognized PlayerWindowMode: \(modeRawValue)", level: .error)
+        return nil
+      }
+      guard let fitOption = ScreenFitOption(rawValue: fitOptionRawValue) else {
+        Logger.log("\(errPreamble) unrecognized ScreenFitOption: \(fitOptionRawValue)", level: .error)
+        return nil
+      }
+      let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
+      let viewportMargins = BoxQuad(top: viewportMarginTop, trailing: viewportMarginTrailing,
+                                    bottom: viewportMarginBottom, leading: viewportMarginLeading)
+      return PWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
+                             outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
+                             outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
+                             insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,
+                             insideBottomBarHeight: insideBottomBarHeight, insideLeadingBarWidth: insideLeadingBarWidth,
+                             viewportMargins: viewportMargins,
+                             videoAspect: videoAspect)
+    })
+  }
+
+}
+
+extension PlayerWindowController.LayoutSpec {
+  /// `LayoutSpec` -> String
+  func toCSV() -> String {
+    let leadingSidebarTab: String = self.leadingSidebar.visibleTab?.name ?? "nil"
+    let trailingSidebarTab: String = self.trailingSidebar.visibleTab?.name ?? "nil"
+    return [PlayerSaveState.specPrefStringVersion,
+            leadingSidebarTab,
+            trailingSidebarTab,
+            String(self.mode.rawValue),
+            self.isLegacyStyle.yn,
+            String(self.topBarPlacement.rawValue),
+            String(self.trailingSidebarPlacement.rawValue),
+            String(self.bottomBarPlacement.rawValue),
+            String(self.leadingSidebarPlacement.rawValue),
+            self.enableOSC.yn,
+            String(self.oscPosition.rawValue),
+            String(self.interactiveMode?.rawValue ?? 0)
+    ].joined(separator: ",")
+  }
+
+  /// String -> `LayoutSpec`
+  static func fromCSV(_ csv: String?) -> PlayerWindowController.LayoutSpec? {
+    return PlayerSaveState.parseCSV(csv, expectedTokenCount: 12,
+                                    expectedVersion: PlayerSaveState.specPrefStringVersion, errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
+
+      let leadingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
+      let traillingSidebarTab = PlayerWindowController.Sidebar.Tab(name: iter.next())
+
+      guard let modeInt = Int(iter.next()!), let mode = PlayerWindowMode(rawValue: modeInt),
+            let isLegacyStyle = Bool.yn(iter.next()) else {
+        Logger.log("\(errPreamble) could not parse mode or isLegacyStyle", level: .error)
+        return nil
+      }
+
+      guard let topBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+            let trailingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+            let bottomBarPlacement = Preference.PanelPlacement(Int(iter.next()!)),
+            let leadingSidebarPlacement = Preference.PanelPlacement(Int(iter.next()!)) else {
+        Logger.log("\(errPreamble) could not parse bar placements", level: .error)
+        return nil
+      }
+
+      guard let enableOSC = Bool.yn(iter.next()),
+            let oscPositionInt = Int(iter.next()!),
+            let oscPosition = Preference.OSCPosition(rawValue: oscPositionInt) else {
+        Logger.log("\(errPreamble) could not parse enableOSC or oscPosition", level: .error)
+        return nil
+      }
+
+      let interactModeInt = Int(iter.next()!)
+      let interactiveMode = PlayerWindowController.InteractiveMode(rawValue: interactModeInt ?? 0) ?? nil  /// `0` === `nil` value
+
+      var leadingTabGroups = PlayerWindowController.Sidebar.TabGroup.fromPrefs(for: .leadingSidebar)
+      let leadVis: PlayerWindowController.Sidebar.Visibility = leadingSidebarTab == nil ? .hide : .show(tabToShow: leadingSidebarTab!)
+      // If the tab groups prefs changed somehow since the last run, just add it for now so that the geometry can be restored.
+      // Will correct this at the end of restore.
+      if let visibleTab = leadVis.visibleTab, !leadingTabGroups.contains(visibleTab.group) {
+        Logger.log("Restore state is invalid: leadingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
+        leadingTabGroups.insert(visibleTab.group)
+      }
+      let leadingSidebar = PlayerWindowController.Sidebar(.leadingSidebar, tabGroups: leadingTabGroups, placement: leadingSidebarPlacement, visibility: leadVis)
+
+      var trailingTabGroups = PlayerWindowController.Sidebar.TabGroup.fromPrefs(for: .trailingSidebar)
+      let trailVis: PlayerWindowController.Sidebar.Visibility = traillingSidebarTab == nil ? .hide : .show(tabToShow: traillingSidebarTab!)
+      // Account for invalid visible tab (see note above)
+      if let visibleTab = trailVis.visibleTab, !trailingTabGroups.contains(visibleTab.group) {
+        Logger.log("Restore state is invalid: trailingSidebar has visibleTab \(visibleTab.name) which is outside its configured tab groups", level: .error)
+        trailingTabGroups.insert(visibleTab.group)
+      }
+      let trailingSidebar = PlayerWindowController.Sidebar(.trailingSidebar, tabGroups: trailingTabGroups, placement: trailingSidebarPlacement, visibility: trailVis)
+
+      return PlayerWindowController.LayoutSpec(leadingSidebar: leadingSidebar, trailingSidebar: trailingSidebar, mode: mode, isLegacyStyle: isLegacyStyle, topBarPlacement: topBarPlacement, bottomBarPlacement: bottomBarPlacement, enableOSC: enableOSC, oscPosition: oscPosition, interactiveMode: interactiveMode)
+    })
+  }
+
 }

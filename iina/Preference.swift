@@ -454,6 +454,9 @@ struct Preference {
     static let uiHistoryTableGroupBy = Key("uiHistoryTableGroupBy")
     static let uiHistoryTableSearchType = Key("uiHistoryTableSearchType")
     static let uiHistoryTableSearchString = Key("uiHistoryTableSearchString")
+
+    static let uiLastClosedWindowedModeGeometry = Key("uiLastClosedWindowedModeGeometry")
+    static let uiLastClosedMusicModeGeometry = Key("uiLastClosedMusicModeGeometry")
   }
 
   // MARK: - Enums
@@ -1193,6 +1196,8 @@ struct Preference {
     .uiHistoryTableGroupBy: HistoryGroupBy.lastPlayedDay.rawValue,
     .uiHistoryTableSearchType: HistorySearchType.fullPath.rawValue,
     .uiHistoryTableSearchString: "",
+    .uiLastClosedWindowedModeGeometry: "",
+    .uiLastClosedMusicModeGeometry: "",
     .userOptions: [[String]](),
     .useUserDefinedConfDir: false,
     .userDefinedConfDir: "~/.config/mpv/",

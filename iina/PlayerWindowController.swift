@@ -262,9 +262,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  // TODO: persist this in Preferences to reuse between launches
-  static var windowedModeGeometryLastClosed: PWindowGeometry = PlayerWindowController.windowedModeGeometryDefault(screen: NSScreen.screens[0]) {
+  // Remembers the geometry of the "last closed" window in windowed, so future windows will default to its layout.
+  // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
+  static var windowedModeGeometryLastClosed: PWindowGeometry = {
+    let csv = Preference.string(for: .uiLastClosedWindowedModeGeometry)
+    if let savedGeo = PWindowGeometry.fromCSV(csv) {
+      return savedGeo
+    }
+    return PlayerWindowController.windowedModeGeometryDefault(screen: NSScreen.screens[0])
+  }() {
     didSet {
+      Preference.set(windowedModeGeometryLastClosed.toCSV(), for: .uiLastClosedWindowedModeGeometry)
       Logger.log("Updated windowedModeGeometryLastClosed := \(windowedModeGeometryLastClosed)", level: .verbose)
     }
   }
@@ -279,10 +287,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  // TODO: persist this in Preferences to reuse between launches
-  static var musicModeGeometryLastClosed: MusicModeGeometry = PlayerWindowController.musicModeGeometryDefault(screen: NSScreen.screens[0],
-                                                                                                              videoAspect: AppData.minVideoSize.mpvAspect) {
+  // Remembers the geometry of the "last closed" music mode window, so future music mode windows will default to its layout.
+  // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
+  static var musicModeGeometryLastClosed: MusicModeGeometry = {
+    let csv = Preference.string(for: .uiLastClosedMusicModeGeometry)
+    if let savedGeo = MusicModeGeometry.fromCSV(csv) {
+      return savedGeo
+    }
+    return PlayerWindowController.musicModeGeometryDefault(screen: NSScreen.screens[0], videoAspect: AppData.minVideoSize.mpvAspect)
+  }() {
     didSet {
+      Preference.set(musicModeGeometryLastClosed.toCSV(), for: .uiLastClosedMusicModeGeometry)
       Logger.log("Updated musicModeGeometryLastClosed := \(musicModeGeometryLastClosed)", level: .verbose)
     }
   }
@@ -1942,11 +1957,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     isWindowMiniturized = false
     player.overrideAutoMusicMode = false
 
-    /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
-    if currentLayout.mode == .musicMode {
-      PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry
-    } else {
-      PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
+    if !(NSApp.delegate as! AppDelegate).isTerminating {
+      /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
+      if currentLayout.mode == .musicMode {
+        PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry
+      } else {
+        PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
+      }
     }
     lastWindowedLayoutSpec = LayoutSpec.defaultLayout()
 
