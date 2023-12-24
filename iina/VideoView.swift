@@ -322,10 +322,16 @@ class VideoView: NSView {
   // MARK: - Reducing Energy Use
 
   /// Starts the display link if it has been stopped in order to save energy.
-  func displayActive() {
-    log.verbose("VideoView displayActive")
-    displayIdleTimer?.invalidate()
+  func displayActive(temporary: Bool = false) {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    if !temporary {
+      log.verbose("VideoView displayActive")
+      displayIdleTimer?.invalidate()
+    }
     startDisplayLink()
+    if temporary {
+      displayIdle()
+    }
   }
 
   /// Reduces energy consumption when the display link does not need to be running.

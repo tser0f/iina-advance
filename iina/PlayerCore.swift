@@ -1968,9 +1968,11 @@ class PlayerCore: NSObject {
   }
 
   func reloadQuickSettingsView() {
-    saveState()
     DispatchQueue.main.async { [self] in
       guard !isShuttingDown, !isShutdown else { return }
+
+      // Easiest place to put this - need to call it when setting equalizers
+      videoView.displayActive(temporary: info.isPaused)
       windowController.quickSettingView.reload()
     }
   }

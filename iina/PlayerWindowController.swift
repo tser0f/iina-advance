@@ -3433,11 +3433,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     guard loaded, player.info.isPaused || currentVideoTrack.isAlbumart else { return }
     log.verbose("Forcing video redraw")
-    player.videoView.displayActive()  // does nothing if already active
+    // Does nothing if already active. Will restart idle timer if paused
+    player.videoView.displayActive(temporary: player.info.isPaused)
     videoView.videoLayer.draw(forced: true)
-    if player.info.isPaused {
-      player.videoView.displayIdle()  // restarts idle timer
-    }
   }
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
