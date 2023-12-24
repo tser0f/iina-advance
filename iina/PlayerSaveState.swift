@@ -179,7 +179,7 @@ struct PlayerSaveState {
     props[PropName.layoutSpec.rawValue] = toCSV(layout.spec)
 
     /// `windowedModeGeometry`
-    let windowedModeGeometry = wc.windowedModeGeometry!
+    let windowedModeGeometry = wc.windowedModeGeometry
     props[PropName.windowedModeGeometry.rawValue] = toCSV(windowedModeGeometry)
 
     /// `musicModeGeometry`

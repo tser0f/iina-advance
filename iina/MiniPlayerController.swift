@@ -297,7 +297,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   private func doTogglePlaylist() {
-    guard let window = windowController.window, let oldGeometry = windowController.musicModeGeometry else { return }
+    guard let window = windowController.window else { return }
+    let oldGeometry = windowController.musicModeGeometry
     let showPlaylist = !isPlaylistVisible
     log.verbose("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)")
     let currentDisplayedPlaylistHeight = currentDisplayedPlaylistHeight
@@ -367,7 +368,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     })
 
     tasks.append(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
-      let newGeometry = windowController.musicModeGeometry!.withVideoViewVisible(showVideo)
+      let newGeometry = windowController.musicModeGeometry.withVideoViewVisible(showVideo)
       log.verbose("VideoView setting videoViewVisible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
       windowController.applyMusicModeGeometry(newGeometry)
     }))
@@ -405,7 +406,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       return window.frame.size
     }
 
-    let oldGeometry = windowController.musicModeGeometry!
+    let oldGeometry = windowController.musicModeGeometry
     let requestedWindowFrame = NSRect(origin: window.frame.origin, size: requestedSize)
     var newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
     IINAAnimation.disableAnimation{
@@ -472,17 +473,15 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     }
   }
 
-  func buildMusicModeGeometryFromPrefs() -> MusicModeGeometry {
+  static func buildMusicModeGeometryFromPrefs(screen: NSScreen, videoAspect: CGFloat) -> MusicModeGeometry {
     // Default to left-top of screen. Try to use last-saved playlist height and visibility settings.
     let isPlaylistVisible = Preference.bool(for: .musicModeShowPlaylist)
     let isVideoVisible = Preference.bool(for: .musicModeShowAlbumArt)
     let desiredPlaylistHeight = CGFloat(Preference.float(for: .musicModePlaylistHeight))
-    let videoAspect = player.info.videoAspect
     let desiredWindowWidth = Constants.Distance.MusicMode.defaultWindowWidth
     let desiredVideoHeight = isVideoVisible ? desiredWindowWidth / videoAspect : 0
     let desiredWindowHeight = desiredVideoHeight + Constants.Distance.MusicMode.oscHeight + (isPlaylistVisible ? desiredPlaylistHeight : 0)
 
-    let screen = windowController.bestScreen
     let screenFrame = screen.visibleFrame
     let windowSize = NSSize(width: desiredWindowWidth, height: desiredWindowHeight)
     let windowOrigin = NSPoint(x: screenFrame.origin.x, y: screenFrame.maxY - windowSize.height)

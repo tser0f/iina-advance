@@ -20,6 +20,9 @@ extension PlayerWindowController {
     let isRestoringFromPrevLaunch: Bool
     var needsNativeFullScreen = false
 
+    // Don't want window resize/move listeners doing something untoward
+    isAnimatingLayoutTransition = true
+
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
       log.verbose("Transitioning to initial layout from prior window state")
       isRestoringFromPrevLaunch = true
@@ -77,11 +80,15 @@ extension PlayerWindowController {
       initialLayoutSpec = LayoutSpec.fromPreferences(andMode: mode, fillingInFrom: lastWindowedLayoutSpec)
     }
 
-    log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry!), musicModeGeometry: \(musicModeGeometry!)")
+    log.verbose("Opening window, setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")
 
     let transitionName = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
     let initialTransition = buildLayoutTransition(named: transitionName,
                                                   from: currentLayout, to: initialLayoutSpec, isInitialLayout: true)
+
+    if !isRestoringFromPrevLaunch && initialLayoutSpec.mode == .windowed {
+      player.info.intendedViewportSize = initialTransition.outputGeometry.viewportSize
+    }
 
     /// Although the animations in the `LayoutTransition` below will set the window layout, they
     /// mostly assume they are incrementally changing a previous layout, which can result in brief visual
@@ -97,16 +104,13 @@ extension PlayerWindowController {
       videoView.apply(initialTransition.outputGeometry)
     }
 
-    if !isRestoringFromPrevLaunch && initialLayoutSpec.mode == .windowed {
-      player.info.intendedViewportSize = initialTransition.outputGeometry.viewportSize
-    }
-
     // For initial layout (when window is first shown), to reduce jitteriness when drawing,
     // do all the layout in a single animation block
     IINAAnimation.disableAnimation{
       for task in initialTransition.animationTasks {
         task.runFunc()
       }
+      /// Note: `isAnimatingLayoutTransition` should be `false` now
       log.verbose("Done with transition to initial layout")
     }
 
@@ -393,7 +397,7 @@ extension PlayerWindowController {
       return imGeo
 
     case .windowed:
-      let prevWindowedGeo = windowedModeGeometry!
+      let prevWindowedGeo = windowedModeGeometry
       let outputGeo = outputLayout.convertWindowedModeGeometry(from: prevWindowedGeo, videoAspect: inputGeometry.videoAspect)
       if isInitialLayout {
         return outputGeo

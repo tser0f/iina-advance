@@ -111,7 +111,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     }
     // Else: not music mode
 
-    let originalGeometry = windowController.windowedModeGeometry!
+    let originalGeometry = windowController.windowedModeGeometry
 
     let newViewportSize = originalGeometry.viewportSize.multiplyThenRound(scale)
 

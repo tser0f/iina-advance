@@ -337,20 +337,23 @@ extension PlayerWindowController {
     animationPipeline.submitZeroDuration({ [self] in
       guard ticket == updateCachedGeometryTicketCounter else { return }
       log.verbose("Updating cached \(currentLayout.mode) geometry from current window (tkt \(ticket))")
+      let currentLayout = currentLayout
 
       switch currentLayout.mode {
-      case .windowed:
-        windowedModeGeometry = buildWindowGeometryFromCurrentFrame(using: currentLayout)
-        if updateMPVWindowScale {
-          player.updateMPVWindowScale(using: windowedModeGeometry)
+      case .windowed, .windowedInteractive:
+        let geo = currentLayout.buildGeometry(windowFrame: window!.frame, screenID: bestScreen.screenID, videoAspect: player.info.videoAspect)
+        if currentLayout.mode == .windowedInteractive {
+          assert(interactiveModeGeometry?.videoAspect == geo.videoAspect)
+          interactiveModeGeometry = geo
+        } else {
+          assert(currentLayout.mode == .windowed)
+          assert(windowedModeGeometry.videoAspect == geo.videoAspect)
+          windowedModeGeometry = geo
         }
-        player.saveState()
-      case .windowedInteractive:
-        let geo = buildWindowGeometryFromCurrentFrame(using: currentLayout)
-        interactiveModeGeometry = geo
         if updateMPVWindowScale {
           player.updateMPVWindowScale(using: geo)
         }
+        player.saveState()
       case .musicMode:
         musicModeGeometry = musicModeGeometry.clone(windowFrame: window!.frame,
                                                     screenID: bestScreen.screenID)
@@ -363,27 +366,6 @@ extension PlayerWindowController {
       }
 
     })
-  }
-
-  func buildWindowGeometryFromCurrentFrame(using layout: LayoutState) -> PWindowGeometry {
-    assert(layout.mode == .windowed || layout.mode == .windowedInteractive,
-           "buildWindowGeometryFromCurrentFrame: unexpected mode: \(layout.mode)")
-
-    let geo = PWindowGeometry(windowFrame: window!.frame,
-                              screenID: bestScreen.screenID,
-                              fitOption: .keepInVisibleScreen,
-                              mode: layout.mode,
-                              topMarginHeight: 0,  // is only nonzero when in legacy FS
-                              outsideTopBarHeight: layout.outsideTopBarHeight,
-                              outsideTrailingBarWidth: layout.outsideTrailingBarWidth,
-                              outsideBottomBarHeight: layout.outsideBottomBarHeight,
-                              outsideLeadingBarWidth: layout.outsideLeadingBarWidth,
-                              insideTopBarHeight: layout.insideTopBarHeight,
-                              insideTrailingBarWidth: layout.insideTrailingBarWidth,
-                              insideBottomBarHeight: layout.insideBottomBarHeight,
-                              insideLeadingBarWidth: layout.insideLeadingBarWidth,
-                              videoAspect: player.info.videoAspect)
-    return geo.scaleViewport()
   }
 
   /// Encapsulates logic for `windowWillResize`, but specfically for windowed modes

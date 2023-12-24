@@ -117,7 +117,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return animationPipeline.isRunning
   }
 
-  var isAnimatingLayoutTransition: Bool = false
+  // While true, disable window geometry listeners so they don't overwrite cache with intermediate data
+  var isAnimatingLayoutTransition: Bool = true {
+    didSet {
+      log.verbose("Updated isAnimatingLayoutTransition := \(isAnimatingLayoutTransition.yesno)")
+    }
+  }
 
   var isOnTop: Bool = false 
 
@@ -246,28 +251,38 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @Atomic var updateCachedGeometryTicketCounter: Int = 0
   @Atomic var thumbDisplayCounter: Int = 0
 
-  var windowedModeGeometry: PWindowGeometry! {
+  // MARK: - Window geometry vars
+
+  lazy var windowedModeGeometry: PWindowGeometry = windowedModeGeometryDefault {
     didSet {
-      log.verbose("Updated windowedModeGeometry to \(windowedModeGeometry!)")
+      log.verbose("Updated windowedModeGeometry := \(windowedModeGeometry)")
       assert(windowedModeGeometry.mode == .windowed, "windowedModeGeometry has unexpected mode: \(windowedModeGeometry.mode) (expected: \(PlayerWindowMode.windowed)")
       assert(!windowedModeGeometry.fitOption.isFullScreen, "windowedModeGeometry has invalid fitOption: \(windowedModeGeometry.fitOption)")
     }
   }
 
-  var musicModeGeometry: MusicModeGeometry! {
+  private var windowedModeGeometryDefault: PWindowGeometry {
+    return LayoutState.buildFrom(lastWindowedLayoutSpec).buildDefaultInitialGeometry(screen: bestScreen)
+  }
+
+  lazy var musicModeGeometry: MusicModeGeometry = musicModeGeometryDefault {
     didSet {
-      log.verbose("Updated musicModeGeometry to \(musicModeGeometry!)")
+      log.verbose("Updated musicModeGeometry := \(musicModeGeometry)")
     }
+  }
+
+  private var musicModeGeometryDefault: MusicModeGeometry {
+    MiniPlayerController.buildMusicModeGeometryFromPrefs(screen: bestScreen, videoAspect: player.info.videoAspect)
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.
   var interactiveModeGeometry: PWindowGeometry? = nil {
     didSet {
       if let geo = interactiveModeGeometry {
-        log.verbose("Updated interactiveModeGeometry to \(geo)")
+        log.verbose("Updated interactiveModeGeometry := \(geo)")
         assert(geo.mode == .windowedInteractive || geo.mode == .fullScreenInteractive, "unexpected mode for interactiveModeGeometry: \(geo.mode)")
       } else {
-        log.verbose("Updated interactiveModeGeometry to nil")
+        log.verbose("Updated interactiveModeGeometry := nil")
       }
     }
   }
@@ -814,10 +829,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     viewportView.player = player
 
-    // Build default window geometries from preferences and default frame
-    windowedModeGeometry = player.info.priorState?.windowedModeGeometry ?? buildWindowGeometryFromCurrentFrame(using: currentLayout)
-    musicModeGeometry = player.info.priorState?.musicModeGeometry ?? miniPlayer.buildMusicModeGeometryFromPrefs()
-
     loaded = true
 
     guard let window = window else { return }
@@ -1062,7 +1073,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     guard newAspectRatio != oldAspectRatio else {
-      log.verbose("After updating default album art: no change to videoAspect; no more work needed")
+      log.verbose("After updating default album art: no change to videoAspect (\(oldAspectRatio)); no more work needed")
       return
     }
     log.verbose("Updating videoAspect from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")
@@ -1903,8 +1914,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     isWindowMiniturized = false
     player.overrideAutoMusicMode = false
 
-    // Close sidebars, etc. if this window is reused
+    /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
     lastWindowedLayoutSpec = LayoutSpec.defaultLayout()
+    windowedModeGeometry = windowedModeGeometryDefault
+    musicModeGeometry = musicModeGeometryDefault
 
     player.events.emit(.windowWillClose)
   }
@@ -2278,7 +2291,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
           /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
           /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
-          let oldGeo = windowedModeGeometry!
+          let oldGeo = windowedModeGeometry
           let newGeo = oldGeo.refit()
           guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
             log.verbose("No need to update windowFrame in response to ScreenParametersNotification - no change")
@@ -2661,7 +2674,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       case .pause, .resume:
         message = osdLastMessage
       case .seek(_, _):
-        message = .seek(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration)
+        message = .seek(videoPosition: pos, videoDuration: duration)
       default:
         message = nil
       }
@@ -3842,7 +3855,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     }
 
     // Set frame to animate back to
-    let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry!
+    let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
     pip.replacementRect = geo.videoFrameInWindowCoords
     pip.replacementWindow = window
 
@@ -3880,7 +3893,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
-      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry!
+      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
       addVideoViewToWindow(geo)
       videoView.apply(geo)
 

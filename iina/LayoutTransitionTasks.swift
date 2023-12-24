@@ -64,7 +64,7 @@ extension PlayerWindowController {
 
     if transition.isEnteringFullScreen {
       /// `windowedModeGeometry` should already be kept up to date. Might be hard to track down bugs...
-      log.verbose("[\(transition.name)] Entering full screen; priorWindowedGeometry = \(windowedModeGeometry!)")
+      log.verbose("[\(transition.name)] Entering full screen; priorWindowedGeometry = \(windowedModeGeometry)")
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.

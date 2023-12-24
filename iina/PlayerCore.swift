@@ -585,6 +585,9 @@ class PlayerCore: NSObject {
 
     mpv.queue.sync {
       savePlaybackPosition()
+
+      // Reset playback state
+      info.currentURL = nil
       info.currentFolder = nil
       info.videoParams = nil
       info.currentMediaThumbnails = nil

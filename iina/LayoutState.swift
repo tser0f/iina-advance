@@ -602,6 +602,32 @@ extension PlayerWindowController {
                                               videoAspect: videoAspect)
     }
 
+    func buildGeometry(windowFrame: NSRect, screenID: String, videoAspect: CGFloat) -> PWindowGeometry {
+      assert(isWindowed, "buildGeometry(fromWindowFrame): unexpected mode: \(mode)")
+
+      let geo = PWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: .keepInVisibleScreen,
+                                mode: mode,
+                                topMarginHeight: 0,  // is only nonzero when in legacy FS
+                                outsideTopBarHeight: outsideTopBarHeight,
+                                outsideTrailingBarWidth: outsideTrailingBarWidth,
+                                outsideBottomBarHeight: outsideBottomBarHeight,
+                                outsideLeadingBarWidth: outsideLeadingBarWidth,
+                                insideTopBarHeight: insideTopBarHeight,
+                                insideTrailingBarWidth: insideTrailingBarWidth,
+                                insideBottomBarHeight: insideBottomBarHeight,
+                                insideLeadingBarWidth: insideLeadingBarWidth,
+                                videoAspect: videoAspect)
+      return geo.scaleViewport()
+    }
+
+    /// Only for windowed modes!
+    func buildDefaultInitialGeometry(screen: NSScreen) -> PWindowGeometry {
+      let windowFrame = NSRect(origin: CGPoint.zero, size: AppData.minVideoSize)
+      let geo = buildGeometry(windowFrame: windowFrame, screenID: screen.screenID, videoAspect: AppData.minVideoSize.mpvAspect)
+      return geo.refit(.centerInVisibleScreen)
+    }
+
+
   }  // end class LayoutState
 
   // MARK: - Visibility States
