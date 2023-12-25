@@ -305,8 +305,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     var newWindowFrame = window.frame
 
     if showPlaylist {
-      windowController.playlistView.reloadData(playlist: true, chapters: true)
-
       // Try to show playlist using previous height
       let desiredPlaylistHeight = oldGeometry.playlistHeight
       // The window may be in the middle of a previous toggle, so we can't just assume window's current frame

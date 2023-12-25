@@ -99,7 +99,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
     switch keyPath {
     case #keyPath(view.effectiveAppearance):
-      if let cachedEffectiveAppearanceName, cachedEffectiveAppearanceName == view.effectiveAppearance.name.rawValue {
+      if cachedEffectiveAppearanceName == view.effectiveAppearance.name.rawValue {
         return
       }
       cachedEffectiveAppearanceName = view.effectiveAppearance.name.rawValue
@@ -481,7 +481,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       let playableFiles = self.player.getPlayableFiles(in: urls)
       if playableFiles.count != 0 {
         self.player.addToPlaylist(paths: playableFiles.map { $0.path }, at: self.player.info.playlist.count)
-        self.player.windowController.playlistView.reloadData(playlist: true, chapters: false)
         self.player.sendOSD(.addToPlaylist(playableFiles.count))
       }
     }
@@ -491,7 +490,6 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     Utility.quickPromptPanel("add_url") { url in
       if Regex.url.matches(url) {
         self.player.addToPlaylist(url)
-        self.player.windowController.playlistView.reloadData(playlist: true, chapters: false)
         self.player.sendOSD(.addToPlaylist(1))
       } else {
         Utility.showAlert("wrong_url_format")
@@ -505,12 +503,10 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   }
 
   @IBAction func playlistBtnAction(_ sender: AnyObject) {
-    reloadData(playlist: true, chapters: false)
     switchToTab(.playlist)
   }
 
   @IBAction func chaptersBtnAction(_ sender: AnyObject) {
-    reloadData(playlist: false, chapters: true)
     switchToTab(.chapters)
   }
 

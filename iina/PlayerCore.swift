@@ -1308,6 +1308,7 @@ class PlayerCore: NSObject {
 
   func clearPlaylist() {
     mpv.queue.async { [self] in
+      log.verbose("Sending 'playlist-clear' cmd to mpv")
       mpv.command(.playlistClear)
       _reloadPlaylist()
     }
@@ -1873,7 +1874,7 @@ class PlayerCore: NSObject {
   }
 
   /** This function is called right after file loaded. Should load all meta info here. */
-  func fileLoaded() {
+  func fileDidLoad() {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
 
     // note: player may be "stopped" here
@@ -1905,7 +1906,7 @@ class PlayerCore: NSObject {
     }
 
     checkUnsyncedWindowOptions()
-    // call `trackListChanged` to load tracks and check whether need to switch to music mode
+    // Call `trackListChanged` to load tracks
     trackListChanged()
 
     _reloadPlaylist()
@@ -2670,7 +2671,6 @@ class PlayerCore: NSObject {
     info.secondSid = secondSid
     log.verbose("Reloaded selected tracks. Vid:\(vid) Aid:\(aid) Sid:\(sid) Sid2:\(secondSid)")
   }
-
 
   private func _reloadPlaylist(silent: Bool = false) {
     log.verbose("Removing all items from playlist")

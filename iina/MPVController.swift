@@ -1046,7 +1046,7 @@ not applying FFmpeg 9599 workaround
       let position = getDouble(MPVProperty.timePos)
       player.info.videoPosition = VideoTime(position)
 
-      player.fileLoaded()
+      player.fileDidLoad()
 
     case MPV_EVENT_SEEK:
       if needRecordSeekTime {
