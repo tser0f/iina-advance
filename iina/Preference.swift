@@ -178,6 +178,7 @@ struct Preference {
     /// Window geometry
     static let usePhysicalResolution = Key("usePhysicalResolution")
     static let initialWindowSizePosition = Key("initialWindowSizePosition")
+    static let resizeWindowScheme = Key("resizeWindowScheme")
     static let resizeWindowTiming = Key("resizeWindowTiming")
     static let resizeWindowOption = Key("resizeWindowOption")
 
@@ -883,6 +884,17 @@ struct Preference {
     }
   }
 
+  enum ResizeWindowScheme: Int, InitializingFromKey {
+    case simpleVideoSizeMultiple = 1
+    case mpvGeometry
+
+    static var defaultValue = ResizeWindowScheme.simpleVideoSizeMultiple
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
   enum ResizeWindowTiming: Int, InitializingFromKey {
     case always = 0
     case onlyWhenOpen
@@ -1068,6 +1080,7 @@ struct Preference {
 
       .usePhysicalResolution: false,
     .initialWindowSizePosition: "",
+    .resizeWindowScheme: ResizeWindowScheme.simpleVideoSizeMultiple.rawValue,
     .resizeWindowTiming: ResizeWindowTiming.onlyWhenOpen.rawValue,
     .resizeWindowOption: ResizeWindowOption.videoSize10.rawValue,
     .showRemainingTime: false,

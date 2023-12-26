@@ -10,7 +10,7 @@
             <connections>
                 <outlet property="hideFadeableViewsOutsideWindowCheckBox" destination="kw0-f3-qrz" id="gFU-Zd-LEb"/>
                 <outlet property="leadingSidebarBox" destination="jiM-84-6ud" id="GAC-XV-De5"/>
-                <outlet property="mpvGeometryConfigButton" destination="VqS-1r-k2A" id="V6d-3D-LCy"/>
+                <outlet property="mpvGeometryRadioButton" destination="VqS-1r-k2A" id="V6d-3D-LCy"/>
                 <outlet property="oscAutoHideTimeoutTextField" destination="Abq-vA-BcZ" id="NtQ-5B-PVy"/>
                 <outlet property="oscBottomPlacementContainerView" destination="PrI-KL-aZn" id="2q0-hp-otk"/>
                 <outlet property="oscSnapToCenterCheckboxContainerView" destination="NhM-9L-Wss" id="ehS-KQ-5Ba"/>
@@ -29,7 +29,8 @@
                 <outlet property="sectionThumbnailView" destination="3uJ-UU-1zw" id="Noy-VW-Uax"/>
                 <outlet property="sectionWindowView" destination="D77-Iw-nrY" id="qGB-hx-chL"/>
                 <outlet property="showTopBarTriggerContainerView" destination="EaM-oZ-jJO" id="vwd-nV-ra6"/>
-                <outlet property="simpleGeometryConfigButton" destination="VP5-cz-tSV" id="mQ5-Zf-djp"/>
+                <outlet property="simpleVideoSizeRadioButton" destination="VP5-cz-tSV" id="mQ5-Zf-djp"/>
+                <outlet property="spacer0" destination="KWh-Ak-RW7" id="vL5-Sj-sCo"/>
                 <outlet property="themeMenu" destination="Cpu-U2-hGC" id="jer-bS-DhW"/>
                 <outlet property="topBarPositionContainerView" destination="SbE-ox-wl1" id="QpJ-BV-qcB"/>
                 <outlet property="trailingSidebarBox" destination="4b0-vT-JOG" id="dyy-6J-QPV"/>
@@ -363,22 +364,22 @@
             <point key="canvasLocation" x="-5" y="-407"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="lH7-Vv-0M1"/>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window Geometry" propertyAccessControl="none">
+        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window Geometry" propertyAccessControl="none">
             <rect key="frame" x="0.0" y="0.0" width="609" height="418"/>
             <subviews>
                 <textField identifier="SectionTitleWindow" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RFk-nU-SGL">
-                    <rect key="frame" x="-2" y="394" width="61" height="16"/>
+                    <rect key="frame" x="-2" y="377" width="61" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Window:" id="GKy-3g-4MB">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3GV-dH-tZQ" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="489" height="402"/>
+                <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3GV-dH-tZQ" userLabel="RightColumn Stack View">
+                    <rect key="frame" x="120" y="8" width="489" height="385"/>
                     <subviews>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Xgb-im-tqO">
-                            <rect key="frame" x="-2" y="385" width="424" height="18"/>
+                            <rect key="frame" x="-2" y="368" width="424" height="18"/>
                             <buttonCell key="cell" type="check" title="Lock proportions of window to prevent empty space around video" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9Cn-gh-mtB">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -391,7 +392,7 @@
                             </connections>
                         </button>
                         <button hidden="YES" verticalHuggingPriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="RRL-GG-R45">
-                            <rect key="frame" x="-2" y="385" width="280" height="18"/>
+                            <rect key="frame" x="-2" y="368" width="280" height="18"/>
                             <buttonCell key="cell" type="check" title="Use physical resolution on Retina displays" bezelStyle="regularSquare" imagePosition="left" enabled="NO" inset="2" id="fsj-YE-OB7">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -401,18 +402,18 @@
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="yi9-Gz-dBO" userLabel="8pt Spacer">
-                            <rect key="frame" x="0.0" y="374" width="1" height="8"/>
+                            <rect key="frame" x="0.0" y="357" width="1" height="8"/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="8" id="FsU-Y7-icA"/>
                                 <constraint firstAttribute="width" constant="1" id="Vgw-CS-9j7"/>
                             </constraints>
                         </customView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="749" verticalStackHuggingPriority="749" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zQs-0g-sHV" userLabel="ResizeWindowScheme HStack View">
-                            <rect key="frame" x="0.0" y="350" width="449" height="20"/>
+                            <rect key="frame" x="0.0" y="333" width="387" height="20"/>
                             <subviews>
                                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MY4-AB-Orx" userLabel="ResizeWindowWhenOpeningFile Checkbox">
-                                    <rect key="frame" x="-2" y="2" width="254" height="18"/>
-                                    <buttonCell key="cell" type="check" title="Change window size &amp; position when:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="j0R-Tj-kBc">
+                                    <rect key="frame" x="-2" y="2" width="192" height="18"/>
+                                    <buttonCell key="cell" type="check" title="Resize/move window when:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="j0R-Tj-kBc">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>
@@ -421,7 +422,7 @@
                                     </connections>
                                 </button>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="HBJ-ip-LD2" userLabel="ResizeWindowScheme Popup Button">
-                                    <rect key="frame" x="257" y="-4" width="196" height="25"/>
+                                    <rect key="frame" x="195" y="-4" width="196" height="25"/>
                                     <popUpButtonCell key="cell" type="push" title="Media is opened manually" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" tag="1" imageScaling="proportionallyDown" inset="2" selectedItem="fav-pb-d7D" id="0C4-8u-eRP">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
@@ -455,7 +456,7 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="H2w-q5-ebC" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="346" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="329" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="1" id="gDI-lF-NTY"/>
                                 <constraint firstAttribute="height" id="gxO-aO-c3e"/>
@@ -469,14 +470,17 @@
                             </connections>
                         </customView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="501" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="rrv-sf-1sf" userLabel="CenterAndResizeWindow HStack View">
-                            <rect key="frame" x="20" y="322" width="317" height="20"/>
+                            <rect key="frame" x="20" y="305" width="317" height="20"/>
                             <subviews>
                                 <button tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VP5-cz-tSV" userLabel="CenterAndResizeWindow Radio Button">
                                     <rect key="frame" x="-2" y="2" width="189" height="18"/>
-                                    <buttonCell key="cell" type="radio" title="Center &amp; resize window to:" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="OU4-bO-rys">
+                                    <buttonCell key="cell" type="radio" title="Center &amp; resize window to:" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="OU4-bO-rys">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>
+                                    <connections>
+                                        <action selector="updateWindowResizeScheme:" target="-2" id="fOw-g6-bCr"/>
+                                    </connections>
                                 </button>
                                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="PxB-We-0Hu">
                                     <rect key="frame" x="192" y="-4" width="129" height="25"/>
@@ -513,7 +517,7 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="nE8-aY-yRU" userLabel="0pt Spacer">
-                            <rect key="frame" x="20" y="318" width="1" height="0.0"/>
+                            <rect key="frame" x="20" y="301" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="1iw-81-GmM"/>
                                 <constraint firstAttribute="width" constant="1" id="XpM-5I-krr"/>
@@ -526,13 +530,14 @@
                                 </binding>
                             </connections>
                         </customView>
-                        <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqS-1r-k2A" userLabel="MPVGeometryConfig Radio Button">
-                            <rect key="frame" x="18" y="297" width="126" height="18"/>
+                        <button tag="2" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqS-1r-k2A" userLabel="MPVGeometryConfig Radio Button">
+                            <rect key="frame" x="18" y="280" width="126" height="18"/>
                             <buttonCell key="cell" type="radio" title="Apply geometry:" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="p9b-od-Iyw">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
                             <connections>
+                                <action selector="updateWindowResizeScheme:" target="-2" id="9sP-AI-N5k"/>
                                 <binding destination="lH7-Vv-0M1" name="enabled" keyPath="values.resizeWindowTiming" id="u7g-tC-luz">
                                     <dictionary key="options">
                                         <string key="NSValueTransformerName">ResizeTimingTransformer</string>
@@ -541,31 +546,21 @@
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="KWh-Ak-RW7" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="294" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="277" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="4bq-c0-WMu"/>
                                 <constraint firstAttribute="width" constant="1" id="Ean-tK-yeE"/>
                             </constraints>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.resizeWindowTiming" id="K5g-k2-urr">
-                                    <dictionary key="options">
-                                        <string key="NSValueTransformerName">InverseResizeTimingTransformer</string>
-                                    </dictionary>
-                                </binding>
-                            </connections>
                         </customView>
                         <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" userLabel="InitialWindowSize Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                            <rect key="frame" x="40" y="226" width="449" height="64"/>
+                            <rect key="frame" x="40" y="209" width="449" height="64"/>
                             <subviews>
-                                <button identifier="Trigger0" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
-                                    <rect key="frame" x="-2" y="47" width="154" height="18"/>
+                                <button identifier="Trigger0" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
+                                    <rect key="frame" x="-2" y="47" width="451" height="18"/>
                                     <buttonCell key="cell" type="check" title="Change window size:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="zOq-Em-wUe">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>
-                                    <constraints>
-                                        <constraint firstAttribute="height" constant="16" id="A7s-tU-qXn"/>
-                                    </constraints>
                                     <connections>
                                         <action selector="updateGeometryValue:" target="-2" id="K9I-Dy-05e"/>
                                     </connections>
@@ -666,8 +661,7 @@
                                 </box>
                             </subviews>
                             <constraints>
-                                <constraint firstItem="L5c-uf-ged" firstAttribute="top" secondItem="dvv-kN-b5O" secondAttribute="bottom" constant="4" id="AeM-nG-wdS"/>
-                                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="dvv-kN-b5O" secondAttribute="trailing" id="CsA-YT-4oA"/>
+                                <constraint firstAttribute="trailing" secondItem="dvv-kN-b5O" secondAttribute="trailing" id="CsA-YT-4oA"/>
                                 <constraint firstAttribute="trailing" secondItem="L5c-uf-ged" secondAttribute="trailing" id="LSO-U5-qXB"/>
                                 <constraint firstItem="dvv-kN-b5O" firstAttribute="leading" secondItem="fnx-bb-tli" secondAttribute="leading" id="RiX-Ue-hXc"/>
                                 <constraint firstItem="dvv-kN-b5O" firstAttribute="top" secondItem="fnx-bb-tli" secondAttribute="top" id="o8A-Ca-rYd"/>
@@ -683,7 +677,7 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Pov-0Z-P1m" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="222" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="205" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="Hsa-iE-w47"/>
                                 <constraint firstAttribute="width" constant="1" id="sBn-7R-Sv7"/>
@@ -696,11 +690,11 @@
                                 </binding>
                             </connections>
                         </customView>
-                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="100" verticalStackHuggingPriority="249.99998474121094" horizontalHuggingPriority="100" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" userLabel="InitialWindowPosition Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                            <rect key="frame" x="40" y="56" width="449" height="162"/>
+                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" userLabel="InitialWindowPosition Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
+                            <rect key="frame" x="40" y="56" width="449" height="145"/>
                             <subviews>
-                                <button identifier="Trigger1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
-                                    <rect key="frame" x="-2" y="145" width="178" height="18"/>
+                                <button identifier="Trigger1" horizontalHuggingPriority="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
+                                    <rect key="frame" x="-2" y="128" width="451" height="18"/>
                                     <buttonCell key="cell" type="check" title="Change window position:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Ofm-qE-RgQ">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -709,14 +703,14 @@
                                         <action selector="updateGeometryValue:" target="-2" id="HFd-qO-18w"/>
                                     </connections>
                                 </button>
-                                <box identifier="Content1" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Mye-uz-WUr" userLabel="WindowPos Box">
-                                    <rect key="frame" x="-3" y="-4" width="455" height="148"/>
+                                <box identifier="Content1" horizontalHuggingPriority="249" horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="501" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Mye-uz-WUr" userLabel="WindowPos Box">
+                                    <rect key="frame" x="-3" y="-4" width="455" height="131"/>
                                     <view key="contentView" id="Z8T-H5-nff" userLabel="WindowPosBox View">
-                                        <rect key="frame" x="4" y="5" width="447" height="140"/>
+                                        <rect key="frame" x="4" y="5" width="447" height="123"/>
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                         <subviews>
-                                            <gridView horizontalHuggingPriority="749" verticalHuggingPriority="749" xPlacement="leading" yPlacement="bottom" rowAlignment="firstBaseline" rowSpacing="8" columnSpacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="577-7K-UVn">
-                                                <rect key="frame" x="12" y="12" width="423" height="116"/>
+                                            <gridView horizontalHuggingPriority="750" verticalHuggingPriority="749" horizontalCompressionResistancePriority="500" verticalCompressionResistancePriority="749" xPlacement="leading" yPlacement="bottom" rowAlignment="firstBaseline" rowSpacing="5" columnSpacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="577-7K-UVn">
+                                                <rect key="frame" x="12" y="8" width="423" height="107"/>
                                                 <constraints>
                                                     <constraint firstItem="HjX-1c-epS" firstAttribute="height" secondItem="KzF-13-Qfa" secondAttribute="height" id="zRk-lu-dxD"/>
                                                 </constraints>
@@ -735,7 +729,7 @@
                                                 <gridCells>
                                                     <gridCell row="4Q9-XY-6Mb" column="b6X-ZU-ujJ" id="vKB-d5-mP3">
                                                         <textField key="contentView" identifier="AccessoryLabelXOffset" focusRingType="none" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="tWO-yv-92d">
-                                                            <rect key="frame" x="-2" y="90" width="80" height="24"/>
+                                                            <rect key="frame" x="-2" y="81" width="80" height="24"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="X offset:" id="Ymw-tr-6rw">
                                                                 <font key="font" metaFont="system"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -745,7 +739,7 @@
                                                     </gridCell>
                                                     <gridCell row="4Q9-XY-6Mb" column="rBq-05-vqi" id="aXO-Ck-Tfs">
                                                         <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="KzF-13-Qfa">
-                                                            <rect key="frame" x="84" y="90" width="100" height="26"/>
+                                                            <rect key="frame" x="84" y="81" width="100" height="26"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="56" id="jvA-1X-Vaw"/>
                                                             </constraints>
@@ -764,7 +758,7 @@
                                                     </gridCell>
                                                     <gridCell row="4Q9-XY-6Mb" column="Xn2-cp-Gez" id="gbf-Sh-pXq">
                                                         <popUpButton key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="YAe-Ba-x1s">
-                                                            <rect key="frame" x="189" y="91" width="112" height="25"/>
+                                                            <rect key="frame" x="189" y="82" width="112" height="25"/>
                                                             <popUpButtonCell key="cell" type="push" title="point" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="UhG-bZ-2zY" id="m4d-5a-z57">
                                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                                 <font key="font" metaFont="menu"/>
@@ -784,7 +778,7 @@
                                                     <gridCell row="1lD-Yb-A1Y" column="b6X-ZU-ujJ" id="NJ4-eS-gwC"/>
                                                     <gridCell row="1lD-Yb-A1Y" column="rBq-05-vqi" id="92x-LP-fip">
                                                         <textField key="contentView" identifier="AccessoryLabelXL" focusRingType="none" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="HYE-ax-4VK">
-                                                            <rect key="frame" x="82" y="62" width="104" height="19"/>
+                                                            <rect key="frame" x="82" y="56" width="104" height="19"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="from the" id="qbc-CY-bdK">
                                                                 <font key="font" metaFont="system"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -794,7 +788,7 @@
                                                     </gridCell>
                                                     <gridCell row="1lD-Yb-A1Y" column="Xn2-cp-Gez" id="cYG-OR-xK6">
                                                         <popUpButton key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="IUQ-G3-u2E">
-                                                            <rect key="frame" x="189" y="58" width="112" height="25"/>
+                                                            <rect key="frame" x="189" y="52" width="112" height="25"/>
                                                             <popUpButtonCell key="cell" type="push" title="left" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="sJe-bK-eHi" id="76K-Jf-BLc">
                                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                                 <font key="font" metaFont="menu"/>
@@ -811,8 +805,8 @@
                                                         </popUpButton>
                                                     </gridCell>
                                                     <gridCell row="1lD-Yb-A1Y" column="RyJ-bm-Oln" id="pj5-b2-qYt">
-                                                        <textField key="contentView" identifier="AccessoryLabelXR" focusRingType="none" horizontalHuggingPriority="249" horizontalCompressionResistancePriority="251" verticalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Or6-45-6yM">
-                                                            <rect key="frame" x="303" y="62" width="122" height="19"/>
+                                                        <textField key="contentView" identifier="AccessoryLabelXR" focusRingType="none" horizontalHuggingPriority="1" horizontalCompressionResistancePriority="251" verticalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Or6-45-6yM">
+                                                            <rect key="frame" x="303" y="56" width="122" height="19"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="side of the screen" id="GXO-iT-BIr">
                                                                 <font key="font" metaFont="system"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -822,7 +816,7 @@
                                                     </gridCell>
                                                     <gridCell row="7Lw-7t-b1s" column="b6X-ZU-ujJ" id="mIo-fM-1p2">
                                                         <textField key="contentView" identifier="AccessoryLabelYOffset" focusRingType="none" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="T3Y-WV-w5X">
-                                                            <rect key="frame" x="-2" y="28" width="80" height="24"/>
+                                                            <rect key="frame" x="-2" y="25" width="80" height="24"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" title="Y offset:" id="KCL-Ki-A0p">
                                                                 <font key="font" metaFont="system"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -832,7 +826,7 @@
                                                     </gridCell>
                                                     <gridCell row="7Lw-7t-b1s" column="rBq-05-vqi" id="hz4-NY-QLp">
                                                         <textField key="contentView" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="HjX-1c-epS">
-                                                            <rect key="frame" x="84" y="28" width="100" height="26"/>
+                                                            <rect key="frame" x="84" y="25" width="100" height="26"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="20" drawsBackground="YES" id="WPh-0F-JGL">
                                                                 <numberFormatter key="formatter" formatterBehavior="default10_4" usesGroupingSeparator="NO" groupingSize="0" minimumIntegerDigits="0" maximumIntegerDigits="42" id="Mon-Nw-do1">
                                                                     <real key="minimum" value="0.0"/>
@@ -848,7 +842,7 @@
                                                     </gridCell>
                                                     <gridCell row="7Lw-7t-b1s" column="Xn2-cp-Gez" id="mjI-ao-QCd">
                                                         <popUpButton key="contentView" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="bnT-bC-1GM">
-                                                            <rect key="frame" x="189" y="29" width="112" height="25"/>
+                                                            <rect key="frame" x="189" y="26" width="112" height="25"/>
                                                             <popUpButtonCell key="cell" type="push" title="point" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="X5B-TZ-ISz" id="BVR-o1-t9c">
                                                                 <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                                                 <font key="font" metaFont="menu"/>
@@ -895,7 +889,7 @@
                                                         </popUpButton>
                                                     </gridCell>
                                                     <gridCell row="G6z-Cr-ME5" column="RyJ-bm-Oln" id="7jz-qy-b7z">
-                                                        <textField key="contentView" identifier="AccessoryLabelYR" focusRingType="none" horizontalHuggingPriority="249" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="wWi-dP-Ekg">
+                                                        <textField key="contentView" identifier="AccessoryLabelYR" focusRingType="none" horizontalHuggingPriority="1" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="wWi-dP-Ekg">
                                                             <rect key="frame" x="303" y="0.0" width="122" height="19"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="of the screen" id="iRn-3s-oQH">
                                                                 <font key="font" metaFont="system"/>
@@ -909,19 +903,18 @@
                                         </subviews>
                                         <constraints>
                                             <constraint firstAttribute="trailing" secondItem="577-7K-UVn" secondAttribute="trailing" constant="12" id="5eS-a1-ifT"/>
-                                            <constraint firstAttribute="bottom" secondItem="577-7K-UVn" secondAttribute="bottom" constant="12" id="bdp-wx-WTX"/>
+                                            <constraint firstAttribute="bottom" secondItem="577-7K-UVn" secondAttribute="bottom" constant="8" id="bdp-wx-WTX"/>
                                             <constraint firstItem="577-7K-UVn" firstAttribute="leading" secondItem="Z8T-H5-nff" secondAttribute="leading" constant="12" id="dhr-cS-xg6"/>
-                                            <constraint firstItem="577-7K-UVn" firstAttribute="top" secondItem="Z8T-H5-nff" secondAttribute="top" constant="12" id="m5i-zS-6VK"/>
+                                            <constraint firstItem="577-7K-UVn" firstAttribute="top" secondItem="Z8T-H5-nff" secondAttribute="top" constant="8" id="m5i-zS-6VK"/>
                                         </constraints>
                                     </view>
                                     <font key="titleFont" metaFont="system"/>
                                 </box>
                             </subviews>
                             <constraints>
-                                <constraint firstItem="Mye-uz-WUr" firstAttribute="top" secondItem="tLm-Qr-UNX" secondAttribute="bottom" constant="4" id="0Pi-2f-VYD"/>
                                 <constraint firstItem="Mye-uz-WUr" firstAttribute="leading" secondItem="5zT-kW-YFh" secondAttribute="leading" id="11n-Xz-XsA"/>
                                 <constraint firstItem="tLm-Qr-UNX" firstAttribute="leading" secondItem="5zT-kW-YFh" secondAttribute="leading" id="IHO-Pd-FmB"/>
-                                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="tLm-Qr-UNX" secondAttribute="trailing" id="eqd-nA-73p"/>
+                                <constraint firstAttribute="trailing" secondItem="tLm-Qr-UNX" secondAttribute="trailing" id="eqd-nA-73p"/>
                                 <constraint firstAttribute="trailing" secondItem="Mye-uz-WUr" secondAttribute="trailing" id="vJ7-IA-Ue9"/>
                             </constraints>
                             <visibilityPriorities>
@@ -940,9 +933,9 @@
                                 <constraint firstAttribute="height" constant="8" id="l6F-xX-nbV"/>
                             </constraints>
                             <connections>
-                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.resizeWindowTiming" id="MCB-or-Syg">
+                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.resizeWindowScheme" id="CdW-wm-L5a">
                                     <dictionary key="options">
-                                        <string key="NSValueTransformerName">InverseResizeTimingTransformer</string>
+                                        <string key="NSValueTransformerName">ResizeTimingTransformer</string>
                                     </dictionary>
                                 </binding>
                             </connections>

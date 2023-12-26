@@ -70,8 +70,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var resizeWindowWhenOpeningFileCheckbox: NSButton!
   @IBOutlet weak var resizeWindowTimingPopUpButton: NSPopUpButton!
   @IBOutlet weak var windowSizeCheckBox: NSButton!
-  @IBOutlet weak var simpleGeometryConfigButton: NSButton!
-  @IBOutlet weak var mpvGeometryConfigButton: NSButton!
+  @IBOutlet weak var simpleVideoSizeRadioButton: NSButton!
+  @IBOutlet weak var mpvGeometryRadioButton: NSButton!
+  @IBOutlet weak var spacer0: NSView!
   @IBOutlet weak var windowSizeTypePopUpButton: NSPopUpButton!
   @IBOutlet weak var windowSizeValueTextField: NSTextField!
   @IBOutlet weak var windowSizeUnitPopUpButton: NSPopUpButton!
@@ -137,8 +138,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     refreshSidebarSection()
     refreshTitleBarAndOSCSection(animate: false)
     updateOSCToolbarButtons()
-    setupGeometryControls()
-    setupPipBehaviorRelatedControls()
+    updateGeometryUI()
+    updatePipBehaviorRelatedControls()
 
     let removeThemeMenuItemWithTag = { (tag: Int) in
       if let item = self.themeMenu.item(withTag: tag) {
@@ -259,6 +260,52 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     })
   }
 
+  @IBAction func setupPipBehaviorRelatedControls(_ sender: NSButton) {
+    Preference.set(sender.tag, for: .windowBehaviorWhenPip)
+  }
+
+  private func updatePipBehaviorRelatedControls() {
+    let pipBehaviorOption = Preference.enum(for: .windowBehaviorWhenPip) as Preference.WindowBehaviorWhenPip
+    ([pipDoNothing, pipHideWindow, pipMinimizeWindow] as [NSButton])
+      .first { $0.tag == pipBehaviorOption.rawValue }?.state = .on
+  }
+
+  @IBAction func customizeOSCToolbarAction(_ sender: Any) {
+    toolbarSettingsSheetController.currentItemsView?.initItems(fromItems: PrefUIViewController.oscToolbarButtons)
+    toolbarSettingsSheetController.currentButtonTypes = PrefUIViewController.oscToolbarButtons
+    view.window?.beginSheet(toolbarSettingsSheetController.window!) { response in
+      guard response == .OK else { return }
+      let newItems = self.toolbarSettingsSheetController.currentButtonTypes
+      let array = newItems.map { $0.rawValue }
+      Preference.set(array, for: .controlBarToolbarButtons)
+    }
+  }
+
+  private func updateOSCToolbarButtons() {
+    oscToolbarStackView.views.forEach { oscToolbarStackView.removeView($0) }
+    for buttonType in PrefUIViewController.oscToolbarButtons {
+      let button = OSCToolbarButton()
+      button.setStyle(buttonType: buttonType)
+      oscToolbarStackView.addView(button, in: .trailing)
+      oscToolbarStackView.spacing = 2 * button.iconPadding
+      oscToolbarStackView.edgeInsets = .init(top: button.iconPadding, left: button.iconPadding, bottom: button.iconPadding, right: button.iconPadding)
+      // Button is actually disabled so that its mouseDown goes to its superview instead
+      button.isEnabled = false
+      // But don't gray it out
+      (button.cell! as! NSButtonCell).imageDimsWhenDisabled = false
+    }
+  }
+
+  @IBAction func updateWindowResizeScheme(_ sender: AnyObject) {
+    guard let scheme = Preference.ResizeWindowScheme(rawValue: sender.tag) else {
+      let tag: String = String(sender.tag ?? -1)
+      Logger.log("Could not find ResizeWindowScheme matching rawValue \(tag)", level: .error)
+      return
+    }
+    Preference.set(scheme.rawValue, for: .resizeWindowScheme)
+    updateGeometryUI()
+  }
+
   // Called by a UI control. Updates prefs + any dependent UI controls
   @IBAction func updateGeometryValue(_ sender: AnyObject) {
     if resizeWindowWhenOpeningFileCheckbox.state == .off {
@@ -290,80 +337,61 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       Preference.set(geometry, for: .initialWindowSizePosition)
     }
 
-    setupGeometryControls()
-  }
-
-  @IBAction func setupPipBehaviorRelatedControls(_ sender: NSButton) {
-    Preference.set(sender.tag, for: .windowBehaviorWhenPip)
-  }
-
-  @IBAction func customizeOSCToolbarAction(_ sender: Any) {
-    toolbarSettingsSheetController.currentItemsView?.initItems(fromItems: PrefUIViewController.oscToolbarButtons)
-    toolbarSettingsSheetController.currentButtonTypes = PrefUIViewController.oscToolbarButtons
-    view.window?.beginSheet(toolbarSettingsSheetController.window!) { response in
-      guard response == .OK else { return }
-      let newItems = self.toolbarSettingsSheetController.currentButtonTypes
-      let array = newItems.map { $0.rawValue }
-      Preference.set(array, for: .controlBarToolbarButtons)
-    }
-  }
-
-  private func updateOSCToolbarButtons() {
-    oscToolbarStackView.views.forEach { oscToolbarStackView.removeView($0) }
-    for buttonType in PrefUIViewController.oscToolbarButtons {
-      let button = OSCToolbarButton()
-      button.setStyle(buttonType: buttonType)
-      oscToolbarStackView.addView(button, in: .trailing)
-      oscToolbarStackView.spacing = 2 * button.iconPadding
-      oscToolbarStackView.edgeInsets = .init(top: button.iconPadding, left: button.iconPadding, bottom: button.iconPadding, right: button.iconPadding)
-      // Button is actually disabled so that its mouseDown goes to its superview instead
-      button.isEnabled = false
-      // But don't gray it out
-      (button.cell! as! NSButtonCell).imageDimsWhenDisabled = false
-    }
+    updateGeometryUI()
   }
 
   // Updates UI from prefs
-  private func setupGeometryControls() {
+  private func updateGeometryUI() {
     let resizeOption = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
-    let enableMpvGeometry: Bool
+    let scheme: Preference.ResizeWindowScheme = Preference.enum(for: .resizeWindowScheme)
+    let isAnyResizeEnabled: Bool
     switch resizeOption {
     case .never:
       resizeWindowWhenOpeningFileCheckbox.state = .off
-      enableMpvGeometry = false
+      isAnyResizeEnabled = false
     case .always, .onlyWhenOpen:
       resizeWindowWhenOpeningFileCheckbox.state = .on
-      enableMpvGeometry = true
+      isAnyResizeEnabled = true
       resizeWindowTimingPopUpButton.selectItem(withTag: resizeOption.rawValue)
+
+      switch scheme {
+      case .mpvGeometry:
+        mpvGeometryRadioButton.state = .on
+        simpleVideoSizeRadioButton.state = .off
+      case .simpleVideoSizeMultiple:
+        mpvGeometryRadioButton.state = .off
+        simpleVideoSizeRadioButton.state = .on
+      }
     }
 
-    windowSizeCheckBox.isHidden = !enableMpvGeometry
-    windowPosCheckBox.isHidden = !enableMpvGeometry
-    simpleGeometryConfigButton.superview?.isHidden = !enableMpvGeometry
-    mpvGeometryConfigButton.isHidden = !enableMpvGeometry
+    mpvGeometryRadioButton.isHidden = !isAnyResizeEnabled
+    simpleVideoSizeRadioButton.superview?.isHidden = !isAnyResizeEnabled
 
-    if enableMpvGeometry {
+    // mpv
+    let isMpvGeometryEnabled = isAnyResizeEnabled && scheme == .mpvGeometry
+    var isUsingMpvSize = false
+    var isUsingMpvPos = false
+
+    if isMpvGeometryEnabled {
       let geometryString = Preference.string(for: .initialWindowSizePosition) ?? ""
       if let geometry = MPVGeometryDef.parse(geometryString) {
         // size
         if let h = geometry.h {
-          windowSizeCheckBox.state = .on
+          isUsingMpvSize = true
           windowSizeTypePopUpButton.selectItem(withTag: SizeHeightTag)
           let isPercent = h.hasSuffix("%")
           windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
           windowSizeValueTextField.stringValue = isPercent ? String(h.dropLast()) : h
         } else if let w = geometry.w {
-          windowSizeCheckBox.state = .on
+          isUsingMpvSize = true
           windowSizeTypePopUpButton.selectItem(withTag: SizeWidthTag)
           let isPercent = w.hasSuffix("%")
           windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
           windowSizeValueTextField.stringValue = isPercent ? String(w.dropLast()) : w
-        } else {
-          windowSizeCheckBox.state = .off
         }
         // position
         if let x = geometry.x, let xSign = geometry.xSign, let y = geometry.y, let ySign = geometry.ySign {
-          windowPosCheckBox.state = .on
+          isUsingMpvPos = true
           let xIsPercent = x.hasSuffix("%")
           windowPosXAnchorPopUpButton.selectItem(withTag: xSign == "+" ? SideLeftTag : SideRightTag)
           windowPosXOffsetTextField.stringValue = xIsPercent ? String(x.dropLast()) : x
@@ -372,25 +400,17 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
           windowPosYAnchorPopUpButton.selectItem(withTag: ySign == "+" ? SideBottomTag : SideTopTag)
           windowPosYOffsetTextField.stringValue = yIsPercent ? String(y.dropLast()) : y
           windowPosYUnitPopUpButton.selectItem(withTag: yIsPercent ? UnitPercentTag : UnitPointTag)
-        } else {
-          windowPosCheckBox.state = .off
         }
-      } else {
-        windowSizeCheckBox.state = .off
-        windowPosCheckBox.state = .off
       }
-    } else {
-      windowSizeCheckBox.isHidden = true
-      windowPosCheckBox.isHidden = true
     }
-    windowSizeBox.isHidden = windowSizeCheckBox.isHidden || windowSizeCheckBox.state == .off
-    windowPosBox.isHidden = windowPosCheckBox.isHidden || windowPosCheckBox.state == .off
-  }
-
-  private func setupPipBehaviorRelatedControls() {
-    let pipBehaviorOption = Preference.enum(for: .windowBehaviorWhenPip) as Preference.WindowBehaviorWhenPip
-    ([pipDoNothing, pipHideWindow, pipMinimizeWindow] as [NSButton])
-        .first { $0.tag == pipBehaviorOption.rawValue }?.state = .on
+    spacer0.isHidden = !isMpvGeometryEnabled
+    windowSizeCheckBox.isHidden = !isMpvGeometryEnabled
+    windowSizeCheckBox.state = isUsingMpvSize ? .on : .off
+    windowSizeBox.isHidden = !isUsingMpvSize
+    
+    windowPosCheckBox.isHidden = !isMpvGeometryEnabled
+    windowPosCheckBox.state = isUsingMpvPos ? .on : .off
+    windowPosBox.isHidden = !isUsingMpvPos
   }
 
   private func setSubViews(of view: NSBox, enabled: Bool) {

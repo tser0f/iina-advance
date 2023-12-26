@@ -115,20 +115,20 @@
 /* Class = "NSMenuItem"; title = "Height:"; ObjectID = "Uc9-An-930"; */
 "Uc9-An-930.title" = "Height:";
 
-/* Class = "NSMenuItem"; title = "point"; ObjectID = "UhG-bZ-2zY"; */
-"UhG-bZ-2zY.title" = "point";
+/* Class = "NSMenuItem"; title = "points"; ObjectID = "UhG-bZ-2zY"; */
+"UhG-bZ-2zY.title" = "points";
 
 /* Class = "NSMenuItem"; title = "Dark"; ObjectID = "VvZ-mQ-wQB"; */
 "VvZ-mQ-wQB.title" = "Dark";
 
-/* Class = "NSMenuItem"; title = "point"; ObjectID = "X5B-TZ-ISz"; */
-"X5B-TZ-ISz.title" = "point";
+/* Class = "NSMenuItem"; title = "points"; ObjectID = "X5B-TZ-ISz"; */
+"X5B-TZ-ISz.title" = "points";
 
 /* Class = "NSButtonCell"; title = "Enable thumbnail preview"; ObjectID = "Xey-3m-f6G"; */
 "Xey-3m-f6G.title" = "Enable thumbnail preview";
 
-/* Class = "NSTextFieldCell"; title = "to the"; ObjectID = "Ydi-yB-FMe"; */
-"Ydi-yB-FMe.title" = "to the";
+/* Class = "NSTextFieldCell"; title = "from the"; ObjectID = "Ydi-yB-FMe"; */
+"Ydi-yB-FMe.title" = "from the";
 
 /* Class = "NSTextFieldCell"; title = "X offset:"; ObjectID = "Ymw-tr-6rw"; */
 "Ymw-tr-6rw.title" = "X offset:";
@@ -184,14 +184,14 @@
 /* Class = "NSMenuItem"; title = "Ultra Dark"; ObjectID = "pV2-12-PmM"; */
 "pV2-12-PmM.title" = "Ultra Dark";
 
-/* Class = "NSTextFieldCell"; title = "to the"; ObjectID = "qbc-CY-bdK"; */
-"qbc-CY-bdK.title" = "to the";
+/* Class = "NSTextFieldCell"; title = "from the"; ObjectID = "qbc-CY-bdK"; */
+"qbc-CY-bdK.title" = "from the";
 
 /* Class = "NSMenuItem"; title = "Match System Appearance"; ObjectID = "qn6-Bp-Mqp"; */
 "qn6-Bp-Mqp.title" = "Match System Appearance";
 
-/* Class = "NSMenuItem"; title = "point"; ObjectID = "s2E-9N-K86"; */
-"s2E-9N-K86.title" = "point";
+/* Class = "NSMenuItem"; title = "points"; ObjectID = "s2E-9N-K86"; */
+"s2E-9N-K86.title" = "points";
 
 /* Class = "NSMenuItem"; title = "left"; ObjectID = "sJe-bK-eHi"; */
 "sJe-bK-eHi.title" = "left";
