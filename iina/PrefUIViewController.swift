@@ -69,6 +69,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   @IBOutlet weak var resizeWindowWhenOpeningFileCheckbox: NSButton!
   @IBOutlet weak var resizeWindowTimingPopUpButton: NSPopUpButton!
+  @IBOutlet weak var mpvWindowSizeCollapseView: CollapseView!
+  @IBOutlet weak var mpvWindowPositionCollapseView: CollapseView!
   @IBOutlet weak var windowSizeCheckBox: NSButton!
   @IBOutlet weak var simpleVideoSizeRadioButton: NSButton!
   @IBOutlet weak var mpvGeometryRadioButton: NSButton!
@@ -404,13 +406,10 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       }
     }
     spacer0.isHidden = !isMpvGeometryEnabled
-    windowSizeCheckBox.isHidden = !isMpvGeometryEnabled
+    mpvWindowSizeCollapseView.isHidden = !isMpvGeometryEnabled
+    mpvWindowPositionCollapseView.isHidden = !isMpvGeometryEnabled
     windowSizeCheckBox.state = isUsingMpvSize ? .on : .off
-    windowSizeBox.isHidden = !isUsingMpvSize
-    
-    windowPosCheckBox.isHidden = !isMpvGeometryEnabled
     windowPosCheckBox.state = isUsingMpvPos ? .on : .off
-    windowPosBox.isHidden = !isUsingMpvPos
   }
 
   private func setSubViews(of view: NSBox, enabled: Bool) {

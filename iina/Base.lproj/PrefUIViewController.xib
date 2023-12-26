@@ -11,6 +11,8 @@
                 <outlet property="hideFadeableViewsOutsideWindowCheckBox" destination="kw0-f3-qrz" id="gFU-Zd-LEb"/>
                 <outlet property="leadingSidebarBox" destination="jiM-84-6ud" id="GAC-XV-De5"/>
                 <outlet property="mpvGeometryRadioButton" destination="VqS-1r-k2A" id="V6d-3D-LCy"/>
+                <outlet property="mpvWindowPositionCollapseView" destination="5zT-kW-YFh" id="EaP-nE-are"/>
+                <outlet property="mpvWindowSizeCollapseView" destination="fnx-bb-tli" id="5Rr-eb-18Y"/>
                 <outlet property="oscAutoHideTimeoutTextField" destination="Abq-vA-BcZ" id="NtQ-5B-PVy"/>
                 <outlet property="oscBottomPlacementContainerView" destination="PrI-KL-aZn" id="2q0-hp-otk"/>
                 <outlet property="oscSnapToCenterCheckboxContainerView" destination="NhM-9L-Wss" id="ehS-KQ-5Ba"/>
@@ -552,7 +554,7 @@
                                 <constraint firstAttribute="width" constant="1" id="Ean-tK-yeE"/>
                             </constraints>
                         </customView>
-                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" userLabel="InitialWindowSize Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
+                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" userLabel="MpvWindowSize Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
                             <rect key="frame" x="40" y="209" width="449" height="64"/>
                             <subviews>
                                 <button identifier="Trigger0" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
@@ -690,7 +692,7 @@
                                 </binding>
                             </connections>
                         </customView>
-                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" userLabel="InitialWindowPosition Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
+                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" userLabel="MpvWindowPosition Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
                             <rect key="frame" x="40" y="56" width="449" height="145"/>
                             <subviews>
                                 <button identifier="Trigger1" horizontalHuggingPriority="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
