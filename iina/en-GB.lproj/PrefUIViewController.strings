@@ -95,7 +95,7 @@
 "ObY-7B-NTO.title" = "s";
 
 /* Class = "NSButtonCell"; title = "Initial window position:"; ObjectID = "Ofm-qE-RgQ"; */
-"Ofm-qE-RgQ.title" = "Initial window position:";
+"Ofm-qE-RgQ.title" = "Change window position:";
 
 /* Class = "NSTextFieldCell"; title = "s"; ObjectID = "S8H-Xr-uVa"; */
 "S8H-Xr-uVa.title" = "s";
@@ -221,4 +221,4 @@
 "yLF-vu-1Gl.title" = "Theme:";
 
 /* Class = "NSButtonCell"; title = "Initial window size:"; ObjectID = "zOq-Em-wUe"; */
-"zOq-Em-wUe.title" = "Initial window size:";
+"zOq-Em-wUe.title" = "Change window size:";

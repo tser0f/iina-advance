@@ -67,7 +67,11 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet var leadingSidebarBox: NSBox!
   @IBOutlet var trailingSidebarBox: NSBox!
 
+  @IBOutlet weak var resizeWindowWhenOpeningFileCheckbox: NSButton!
+  @IBOutlet weak var resizeWindowTimingPopUpButton: NSPopUpButton!
   @IBOutlet weak var windowSizeCheckBox: NSButton!
+  @IBOutlet weak var simpleGeometryConfigButton: NSButton!
+  @IBOutlet weak var mpvGeometryConfigButton: NSButton!
   @IBOutlet weak var windowSizeTypePopUpButton: NSPopUpButton!
   @IBOutlet weak var windowSizeValueTextField: NSTextField!
   @IBOutlet weak var windowSizeUnitPopUpButton: NSPopUpButton!
@@ -80,10 +84,6 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var windowPosYUnitPopUpButton: NSPopUpButton!
   @IBOutlet weak var windowPosYAnchorPopUpButton: NSPopUpButton!
   @IBOutlet weak var windowPosBox: NSBox!
-
-  @IBOutlet weak var windowResizeAlwaysButton: NSButton!
-  @IBOutlet weak var windowResizeOnlyWhenOpenButton: NSButton!
-  @IBOutlet weak var windowResizeNeverButton: NSButton!
   
   @IBOutlet weak var pipDoNothing: NSButton!
   @IBOutlet weak var pipHideWindow: NSButton!
@@ -137,8 +137,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     refreshSidebarSection()
     refreshTitleBarAndOSCSection(animate: false)
     updateOSCToolbarButtons()
-    setupGeometryRelatedControls()
-    setupResizingRelatedControls()
+    setupGeometryControls()
     setupPipBehaviorRelatedControls()
 
     let removeThemeMenuItemWithTag = { (tag: Int) in
@@ -260,35 +259,38 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     })
   }
 
+  // Called by a UI control. Updates prefs + any dependent UI controls
   @IBAction func updateGeometryValue(_ sender: AnyObject) {
-    var geometry = ""
-    // size
-    if windowSizeCheckBox.state == .on {
-      setSubViews(of: windowSizeBox, enabled: true)
-      geometry += windowSizeTypePopUpButton.selectedTag() == SizeWidthTag ? "" : "x"
-      geometry += windowSizeValueTextField.stringValue
-      geometry += windowSizeUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
-    } else {
-      setSubViews(of: windowSizeBox, enabled: false)
-    }
-    // position
-    if windowPosCheckBox.state == .on {
-      setSubViews(of: windowPosBox, enabled: true)
-      geometry += windowPosXAnchorPopUpButton.selectedTag() == SideLeftTag ? "+" : "-"
-      geometry += windowPosXOffsetTextField.stringValue
-      geometry += windowPosXUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
-      geometry += windowPosYAnchorPopUpButton.selectedTag() == SideBottomTag ? "+" : "-"
-      geometry += windowPosYOffsetTextField.stringValue
-      geometry += windowPosYUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
-    } else {
-      setSubViews(of: windowPosBox, enabled: false)
-    }
-    Logger.log("Saving pref \(Preference.Key.initialWindowSizePosition.rawValue.quoted) with geometry: \(geometry.quoted)")
-    Preference.set(geometry, for: .initialWindowSizePosition)
-  }
+    if resizeWindowWhenOpeningFileCheckbox.state == .off {
+      Preference.set(Preference.ResizeWindowTiming.never.rawValue, for: .resizeWindowTiming)
+      Preference.set("", for: .initialWindowSizePosition)
 
-  @IBAction func setupResizingRelatedControls(_ sender: NSButton) {
-    Preference.set(sender.tag, for: .resizeWindowTiming)
+    } else {
+      if let timing = Preference.ResizeWindowTiming(rawValue: resizeWindowTimingPopUpButton.selectedTag()) {
+        Preference.set(timing.rawValue, for: .resizeWindowTiming)
+      }
+
+      var geometry = ""
+      // size
+      if windowSizeCheckBox.state == .on {
+        geometry += windowSizeTypePopUpButton.selectedTag() == SizeWidthTag ? "" : "x"
+        geometry += windowSizeValueTextField.stringValue
+        geometry += windowSizeUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
+      }
+      // position
+      if windowPosCheckBox.state == .on {
+        geometry += windowPosXAnchorPopUpButton.selectedTag() == SideLeftTag ? "+" : "-"
+        geometry += windowPosXOffsetTextField.stringValue
+        geometry += windowPosXUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
+        geometry += windowPosYAnchorPopUpButton.selectedTag() == SideBottomTag ? "+" : "-"
+        geometry += windowPosYOffsetTextField.stringValue
+        geometry += windowPosYUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
+      }
+      Logger.log("Saving pref \(Preference.Key.initialWindowSizePosition.rawValue.quoted) with geometry: \(geometry.quoted)")
+      Preference.set(geometry, for: .initialWindowSizePosition)
+    }
+
+    setupGeometryControls()
   }
 
   @IBAction func setupPipBehaviorRelatedControls(_ sender: NSButton) {
@@ -321,56 +323,68 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     }
   }
 
-  private func setupGeometryRelatedControls() {
-    let geometryString = Preference.string(for: .initialWindowSizePosition) ?? ""
-    if let geometry = MPVGeometryDef.parse(geometryString) {
-      // size
-      if let h = geometry.h {
-        windowSizeCheckBox.state = .on
-        setSubViews(of: windowSizeBox, enabled: true)
-        windowSizeTypePopUpButton.selectItem(withTag: SizeHeightTag)
-        let isPercent = h.hasSuffix("%")
-        windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
-        windowSizeValueTextField.stringValue = isPercent ? String(h.dropLast()) : h
-      } else if let w = geometry.w {
-        windowSizeCheckBox.state = .on
-        setSubViews(of: windowSizeBox, enabled: true)
-        windowSizeTypePopUpButton.selectItem(withTag: SizeWidthTag)
-        let isPercent = w.hasSuffix("%")
-        windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
-        windowSizeValueTextField.stringValue = isPercent ? String(w.dropLast()) : w
+  // Updates UI from prefs
+  private func setupGeometryControls() {
+    let resizeOption = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
+    let enableMpvGeometry: Bool
+    switch resizeOption {
+    case .never:
+      resizeWindowWhenOpeningFileCheckbox.state = .off
+      enableMpvGeometry = false
+    case .always, .onlyWhenOpen:
+      resizeWindowWhenOpeningFileCheckbox.state = .on
+      enableMpvGeometry = true
+      resizeWindowTimingPopUpButton.selectItem(withTag: resizeOption.rawValue)
+    }
+
+    windowSizeCheckBox.isHidden = !enableMpvGeometry
+    windowPosCheckBox.isHidden = !enableMpvGeometry
+    simpleGeometryConfigButton.superview?.isHidden = !enableMpvGeometry
+    mpvGeometryConfigButton.isHidden = !enableMpvGeometry
+
+    if enableMpvGeometry {
+      let geometryString = Preference.string(for: .initialWindowSizePosition) ?? ""
+      if let geometry = MPVGeometryDef.parse(geometryString) {
+        // size
+        if let h = geometry.h {
+          windowSizeCheckBox.state = .on
+          windowSizeTypePopUpButton.selectItem(withTag: SizeHeightTag)
+          let isPercent = h.hasSuffix("%")
+          windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
+          windowSizeValueTextField.stringValue = isPercent ? String(h.dropLast()) : h
+        } else if let w = geometry.w {
+          windowSizeCheckBox.state = .on
+          windowSizeTypePopUpButton.selectItem(withTag: SizeWidthTag)
+          let isPercent = w.hasSuffix("%")
+          windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
+          windowSizeValueTextField.stringValue = isPercent ? String(w.dropLast()) : w
+        } else {
+          windowSizeCheckBox.state = .off
+        }
+        // position
+        if let x = geometry.x, let xSign = geometry.xSign, let y = geometry.y, let ySign = geometry.ySign {
+          windowPosCheckBox.state = .on
+          let xIsPercent = x.hasSuffix("%")
+          windowPosXAnchorPopUpButton.selectItem(withTag: xSign == "+" ? SideLeftTag : SideRightTag)
+          windowPosXOffsetTextField.stringValue = xIsPercent ? String(x.dropLast()) : x
+          windowPosXUnitPopUpButton.selectItem(withTag: xIsPercent ? UnitPercentTag : UnitPointTag)
+          let yIsPercent = y.hasSuffix("%")
+          windowPosYAnchorPopUpButton.selectItem(withTag: ySign == "+" ? SideBottomTag : SideTopTag)
+          windowPosYOffsetTextField.stringValue = yIsPercent ? String(y.dropLast()) : y
+          windowPosYUnitPopUpButton.selectItem(withTag: yIsPercent ? UnitPercentTag : UnitPointTag)
+        } else {
+          windowPosCheckBox.state = .off
+        }
       } else {
         windowSizeCheckBox.state = .off
-        setSubViews(of: windowSizeBox, enabled: false)
-      }
-      // position
-      if let x = geometry.x, let xSign = geometry.xSign, let y = geometry.y, let ySign = geometry.ySign {
-        windowPosCheckBox.state = .on
-        setSubViews(of: windowPosBox, enabled: true)
-        let xIsPercent = x.hasSuffix("%")
-        windowPosXAnchorPopUpButton.selectItem(withTag: xSign == "+" ? SideLeftTag : SideRightTag)
-        windowPosXOffsetTextField.stringValue = xIsPercent ? String(x.dropLast()) : x
-        windowPosXUnitPopUpButton.selectItem(withTag: xIsPercent ? UnitPercentTag : UnitPointTag)
-        let yIsPercent = y.hasSuffix("%")
-        windowPosYAnchorPopUpButton.selectItem(withTag: ySign == "+" ? SideBottomTag : SideTopTag)
-        windowPosYOffsetTextField.stringValue = yIsPercent ? String(y.dropLast()) : y
-        windowPosYUnitPopUpButton.selectItem(withTag: yIsPercent ? UnitPercentTag : UnitPointTag)
-      } else {
         windowPosCheckBox.state = .off
-        setSubViews(of: windowPosBox, enabled: false)
       }
     } else {
-      windowSizeCheckBox.state = .off
-      windowPosCheckBox.state = .off
-      setSubViews(of: windowPosBox, enabled: false)
-      setSubViews(of: windowSizeBox, enabled: false)
+      windowSizeCheckBox.isHidden = true
+      windowPosCheckBox.isHidden = true
     }
-  }
-
-  private func setupResizingRelatedControls() {
-    let resizeOption = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
-    ([windowResizeNeverButton, windowResizeOnlyWhenOpenButton, windowResizeAlwaysButton] as [NSButton])
-      .first { $0.tag == resizeOption.rawValue }?.state = .on
+    windowSizeBox.isHidden = windowSizeCheckBox.isHidden || windowSizeCheckBox.state == .off
+    windowPosBox.isHidden = windowPosCheckBox.isHidden || windowPosCheckBox.state == .off
   }
 
   private func setupPipBehaviorRelatedControls() {
@@ -444,8 +458,24 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   }
 
   override func transformedValue(_ value: Any?) -> Any? {
-    guard let timing = value as? NSNumber else { return nil }
-    return timing != 2
+    guard let timing = value as? Int else { return nil }
+    return timing != Preference.ResizeWindowTiming.never.rawValue
+  }
+}
+
+@objc(InverseResizeTimingTransformer) class InverseResizeTimingTransformer: ValueTransformer {
+
+  static override func allowsReverseTransformation() -> Bool {
+    return false
+  }
+
+  static override func transformedValueClass() -> AnyClass {
+    return NSNumber.self
+  }
+
+  override func transformedValue(_ value: Any?) -> Any? {
+    guard let timing = value as? Int else { return nil }
+    return timing == Preference.ResizeWindowTiming.never.rawValue
   }
 }
 
