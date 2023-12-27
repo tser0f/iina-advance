@@ -220,7 +220,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// If using the mpv OSD, disable the IINA OSD
   var isUsingMpvOSD: Bool = false
   var osdContext: Any?
-  private var osdLastMessage: OSDMessage? = nil
   var osdAnimationState: UIAnimationState = .hidden
   var hideOSDTimer: Timer?
 
@@ -2722,7 +2721,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // OSD
-    if osdAnimationState == .shown, let osdLastMessage = self.osdLastMessage {
+    if osdAnimationState == .shown, let osdLastMessage = player.osdLastMessage {
       let message: OSDMessage?
       switch osdLastMessage {
       case .pause, .resume:
@@ -2832,7 +2831,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func setOSDViews(fromMessage message: OSDMessage) {
-    osdLastMessage = message
+    player.osdLastMessage = message
 
     let (osdText, osdType) = message.message()
 

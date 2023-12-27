@@ -30,7 +30,7 @@ fileprivate let mpvLogSubscriptionLevel: String = "debug"
  "debug" - very noisy technical information
  "trace" - extremely noisy
  */
-fileprivate let mpvSubsystem = Logger.makeSubsystem("mpv")
+let mpvSubsystem = Logger.makeSubsystem("mpv")
 fileprivate let logLevelMap: [String: Logger.Level] = ["fatal": .error,
                                                        "error": .error,
                                                        "warn": .warning,
@@ -79,7 +79,7 @@ class MPVController: NSObject {
 
   var receivedEndFileWhileLoading: Bool = false
 
-  let inputSectionLogScanner: MPVInputSectionLogScanner!
+  let mpvLogScanner: MPVLogScanner!
 
   private var hooks: [UInt64: MPVHookValue] = [:]
   private var hookCounter: UInt64 = 1
@@ -128,7 +128,7 @@ class MPVController: NSObject {
   init(playerCore: PlayerCore) {
     self.player = playerCore
     self.queue = MPVController.createQueue(playerLabel: playerCore.label)
-    self.inputSectionLogScanner = MPVInputSectionLogScanner(player: playerCore)
+    self.mpvLogScanner = MPVLogScanner(player: playerCore)
     super.init()
   }
 
@@ -989,7 +989,7 @@ not applying FFmpeg 9599 workaround
         Logger.log("[\(prefix)] \(level): \(text)", level: mpvIINALevel, subsystem: mpvSubsystem)
       }
 
-      inputSectionLogScanner.handleLogScanner(prefix: prefix, level: level, msg: text)
+      mpvLogScanner.processLogLine(prefix: prefix, level: level, msg: text)
 
     case MPV_EVENT_HOOK:
       let userData = event.pointee.reply_userdata

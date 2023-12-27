@@ -1,5 +1,5 @@
 //
-//  MPVInputSectionLogScanner.swift
+//  MPVLogScanner.swift
 //  iina
 //
 //  Created by Matt Svoboda on 2022.06.09.
@@ -21,11 +21,18 @@ private let FLAGS_REGEX = try! NSRegularExpression(
   pattern: #"[^\+]+"#, options: []
 )
 
+private let COMMAND_REGEX = try! NSRegularExpression(
+  pattern: #"Run command:\s+([^,]+),"#, options: []
+)
+
+
+
+
 private func all(_ string: String) -> NSRange {
   return NSRange(location: 0, length: string.count)
 }
 
-class MPVInputSectionLogScanner {
+class MPVLogScanner {
   private unowned let player: PlayerCore
 
   /*
@@ -42,25 +49,48 @@ class MPVInputSectionLogScanner {
    Looks for key binding sections set in scripts; extracts them if found & sends them to relevant `PlayerBindingController`.
    Expected to return `true` if parsed & handled, `false` otherwise
    */
-  func handleLogScanner(prefix: String, level: String, msg: String) {
-    guard prefix == "cplayer", level.starts(with: "d") else {
-      return
-    }
+  func processLogLine(prefix: String, level: String, msg: String) {
+    guard prefix == "cplayer", level.starts(with: "d") else { return }
+    guard msg.starts(with: "Run command:") else { return }
+    guard let cmdName = parseCommandName(from: msg) else { return }
 
-    if msg.starts(with: "Run command: define-section") {
+    switch cmdName {
+    case "define-section":
       // Contains key binding definitions
       handleDefineSection(msg)
-    } else if msg.starts(with: "Run command: enable-section") {
+    case "enable-section":
       // Enable key binding
       handleEnableSection(msg)
-    } else if msg.starts(with: "Run command: disable-section") {
+    case "disable-section":
       // Disable key binding
       handleDisableSection(msg)
+
+      // other commands:
+    case "frame-step":
+      player.sendOSD(.frameStep)
+    case "frame-back-step":
+      player.sendOSD(.frameStepBack)
+    default:
+      return
     }
   }
 
   private func matchRegex(_ regex: NSRegularExpression, _ msg: String) -> NSTextCheckingResult? {
     return regex.firstMatch(in: msg, options: [], range: all(msg))
+  }
+
+  private func parseCommandName(from msg: String) -> String? {
+    guard let match = matchRegex(COMMAND_REGEX, msg) else {
+      player.log.error("Found 'Run command' in mpv log msg but failed to parse it: \(msg)")
+      return nil
+    }
+
+    guard let cmdRange = Range(match.range(at: 1), in: msg) else {
+      player.log.error("Found 'Run command' in mpv log msg but failed to find capture groups in it: \(msg)")
+      return nil
+    }
+
+    return String(msg[cmdRange])
   }
 
   private func parseFlags(_ flagsUnparsed: String) -> [String] {

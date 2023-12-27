@@ -129,6 +129,13 @@ class PlayerCore: NSObject {
   var isUsingMpvOSD: Bool = false
   private var osdLastPosition: Double? = nil
   private var osdLastDuration: Double? = nil
+  var osdLastMessageDisplayTime: TimeInterval = 0
+  var osdLastMessage: OSDMessage? = nil {
+    didSet {
+      osdLastMessageDisplayTime = Date().timeIntervalSince1970
+    }
+  }
+
 
   /// Whether shutdown of this player has been initiated.
   @Atomic var isShuttingDown = false
@@ -2441,8 +2448,14 @@ class PlayerCore: NSObject {
     guard !isInMiniPlayer || Preference.bool(for: .enableOSDInMusicMode) else { return }
 
     // Many redundant messages are sent from mpv. Try to filter them out here
+    let timeSinceLastMsg = Date().timeIntervalSince1970 - osdLastMessageDisplayTime
+
     switch osd {
     case .seek(_, _):
+      if timeSinceLastMsg < 0.25 {
+        if case .frameStep = osdLastMessage { return }
+        if case .frameStepBack = osdLastMessage { return }
+      }
       // Try to avoid duplicate seek messages which are emitted when changing video settings while paused
       guard let position = info.videoPosition?.second, let duration = info.videoDuration?.second else {
         log.verbose("Ignoring request to show OSD seek: position or duration is missing")
@@ -2461,6 +2474,10 @@ class PlayerCore: NSObject {
       osdLastPosition = position
       osdLastDuration = duration
     case .pause, .resume:
+      if timeSinceLastMsg < 0.25 {
+        if case .frameStep = osdLastMessage { return }
+        if case .frameStepBack = osdLastMessage { return }
+      }
       syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
       osdLastPosition = info.videoPosition?.second
       osdLastDuration = info.videoDuration?.second
@@ -2482,11 +2499,7 @@ class PlayerCore: NSObject {
 
     DispatchQueue.main.async { [self] in
       log.verbose("Showing OSD: \(osd)")
-      windowController.displayOSD(osd,
-                                  autoHide: autoHide,
-                                  forcedTimeout: forcedTimeout,
-                                  accessoryView: accessoryView,
-                                  context: context)
+      windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView, context: context)
     }
   }
 

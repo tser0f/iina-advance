@@ -50,6 +50,8 @@
 // OSDMessage.swift
 "osd.pause" = "Pause";
 "osd.resume" = "Resume";
+"osd.frame_step" = "Next Frame";
+"osd.frame_step_back" = "Prev Frame";
 "osd.volume" = "Volume: %i";
 "osd.speed" = "Speed: %.2fx";
 "osd.aspect" = "Aspect Ratio: %@";
@@ -338,6 +340,7 @@
 "osc_toolbar.full_screen" = "Toggle full screen";
 "osc_toolbar.music_mode" = "Enter music mode";
 "osc_toolbar.sub_track" = "Choose subtitle track";
+"osc_toolbar.screenshot" = "Take a screenshot"; 
 
 "mini_player.album_art" = "Toggle album art";
 "mini_player.loop" = "Repeat playlist";

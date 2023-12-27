@@ -50,6 +50,8 @@
 // OSDMessage.swift
 "osd.pause" = "Pause";
 "osd.resume" = "Resume";
+"osd.frame_step" = "Next Frame";
+"osd.frame_step_back" = "Prev Frame";
 "osd.volume" = "Volume: %i";
 "osd.speed" = "Speed: %.2fx";
 "osd.aspect" = "Aspect Ratio: %@";
