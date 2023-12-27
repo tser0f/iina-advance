@@ -84,7 +84,8 @@ class CollapseView: NSStackView {
   }
 
   private func updateContentView(animated: Bool = true) {
-    setVisibilityPriority(folded ? .notVisible : .mustHold, for: contentView!)
+    guard let contentView else { return }
+    setVisibilityPriority(folded ? .notVisible : .mustHold, for: contentView)
     if animated {
       NSAnimationContext.runAnimationGroup({ context in
         context.duration = AccessibilityPreferences.adjustedDuration(0.25)

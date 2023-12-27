@@ -410,6 +410,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     mpvWindowPositionCollapseView.isHidden = !isMpvGeometryEnabled
     windowSizeCheckBox.state = isUsingMpvSize ? .on : .off
     windowPosCheckBox.state = isUsingMpvPos ? .on : .off
+    mpvWindowSizeCollapseView.setCollapsed(!isUsingMpvSize, animated: true)
+    mpvWindowPositionCollapseView.setCollapsed(!isUsingMpvPos, animated: true)
   }
 
   private func setSubViews(of view: NSBox, enabled: Bool) {
