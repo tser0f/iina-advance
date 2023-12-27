@@ -758,6 +758,10 @@ extension MusicModeGeometry {
   /// Note to maintainers: if compiler is complaining with the message "nil is not compatible with closure result type MusicModeGeometry",
   /// check the arguments to the `MusicModeGeometry` constructor. For some reason the error lands in the wrong place.
   static func fromCSV(_ csv: String?) -> MusicModeGeometry? {
+    guard !(csv?.isEmpty ?? true) else {
+      Logger.log("CSV is empty; returning nil for MusicModeGeometry", level: .debug)
+      return nil
+    }
     return PlayerSaveState.parseCSV(csv, expectedTokenCount: 10,
                                     expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                                     errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
@@ -832,6 +836,10 @@ extension PWindowGeometry {
 
   /// String -> `PWindowGeometry`
   static func fromCSV(_ csv: String?) -> PWindowGeometry? {
+    guard !(csv?.isEmpty ?? true) else {
+      Logger.log("CSV is empty; returning nil for geometry", level: .debug)
+      return nil
+    }
     return PlayerSaveState.parseCSV(csv, expectedTokenCount: 22,
                                     expectedVersion: PlayerSaveState.windowGeometryPrefStringVersion,
                                     errPreamble: PlayerSaveState.geoErrPre, { errPreamble, iter in
@@ -907,6 +915,10 @@ extension PlayerWindowController.LayoutSpec {
 
   /// String -> `LayoutSpec`
   static func fromCSV(_ csv: String?) -> PlayerWindowController.LayoutSpec? {
+    guard !(csv?.isEmpty ?? true) else {
+      Logger.log("CSV is empty; returning nil for LayoutSpec", level: .debug)
+      return nil
+    }
     return PlayerSaveState.parseCSV(csv, expectedTokenCount: 12,
                                     expectedVersion: PlayerSaveState.specPrefStringVersion, errPreamble: PlayerSaveState.specErrPre, { errPreamble, iter in
 

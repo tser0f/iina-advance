@@ -266,14 +266,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
   static var windowedModeGeometryLastClosed: PWindowGeometry = {
     let csv = Preference.string(for: .uiLastClosedWindowedModeGeometry)
-    if let savedGeo = PWindowGeometry.fromCSV(csv) {
+    if csv?.isEmpty ?? true {
+      Logger.log("Pref entry for \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) is empty. Will fall back to default geometry",
+                 level: .verbose)
+    } else if let savedGeo = PWindowGeometry.fromCSV(csv) {
       return savedGeo
     }
     return PlayerWindowController.windowedModeGeometryDefault(screen: NSScreen.screens[0])
   }() {
     didSet {
       Preference.set(windowedModeGeometryLastClosed.toCSV(), for: .uiLastClosedWindowedModeGeometry)
-      Logger.log("Updated windowedModeGeometryLastClosed := \(windowedModeGeometryLastClosed)", level: .verbose)
+      Logger.log("Updated pref \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) := \(windowedModeGeometryLastClosed)", level: .verbose)
     }
   }
 
@@ -291,7 +294,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
   static var musicModeGeometryLastClosed: MusicModeGeometry = {
     let csv = Preference.string(for: .uiLastClosedMusicModeGeometry)
-    if let savedGeo = MusicModeGeometry.fromCSV(csv) {
+    if csv?.isEmpty ?? true {
+      Logger.log("Pref entry for \(Preference.quoted(.uiLastClosedMusicModeGeometry)) is empty. Will fall back to default music mode geometry",
+                 level: .verbose)
+    } else if let savedGeo = MusicModeGeometry.fromCSV(csv) {
       return savedGeo
     }
     return PlayerWindowController.musicModeGeometryDefault(screen: NSScreen.screens[0], videoAspect: AppData.minVideoSize.mpvAspect)
@@ -3012,12 +3018,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func updateAdditionalInfo() {
-    guard isFullScreen && displayTimeAndBatteryInFullScreen && !additionalInfoView.isHidden else {
+    guard isFullScreen && displayTimeAndBatteryInFullScreen else {
       return
     }
 
     additionalInfoLabel.stringValue = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short)
-    additionalInfoTitle.stringValue = window?.representedURL?.lastPathComponent ?? window?.title ?? ""
+    let title = window?.representedURL?.lastPathComponent ?? window?.title ?? ""
+    additionalInfoTitle.stringValue = title
     if let capacity = PowerSource.getList().filter({ $0.type == "InternalBattery" }).first?.currentCapacity {
       additionalInfoBattery.stringValue = "\(capacity)%"
       additionalInfoStackView.setVisibilityPriority(.mustHold, for: additionalInfoBatteryView)

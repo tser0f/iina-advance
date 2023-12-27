@@ -18,6 +18,10 @@ protocol InitializingFromKey {
 
 struct Preference {
 
+  static func quoted(_ key: Key) -> String {
+    return key.rawValue.quoted
+  }
+
   // MARK: - Keys
 
   // consider using RawRepresentable, but also need to extend UserDefaults

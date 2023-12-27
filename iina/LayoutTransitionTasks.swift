@@ -650,6 +650,7 @@ extension PlayerWindowController {
     updateVolumeUI()
     let isPaused = player.info.isPaused
     updatePlayButtonState(isPaused ? .off : .on)
+    player.syncUITimeComponents()  // need this to update AdditionialInfo
 
     if !transition.isInitialLayout && transition.isTogglingLegacyStyle {
       forceDraw()

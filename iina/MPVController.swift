@@ -581,7 +581,7 @@ not applying FFmpeg 9599 workaround
         if (ptr != nil) {
           free(UnsafeMutablePointer(mutating: ptr!))
         }
-      }
+      } 
     }
     let returnValue = mpv_command(self.mpv, &cargs)
     if checkError {

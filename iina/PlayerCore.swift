@@ -689,12 +689,12 @@ class PlayerCore: NSObject {
   }
 
   func frameStep(backwards: Bool) {
+    Logger.log("FrameStep (\(backwards ? "-" : "+"))", level: .verbose, subsystem: subsystem)
+    // When playback is paused the display link is stopped in order to avoid wasting energy on
+    // It must be running when stepping to avoid slowdowns caused by mpv waiting for IINA to call
+    // mpv_render_report_swap.
+    videoView.displayActive()
     mpv.queue.async { [self] in
-      Logger.log("FrameStep (\(backwards ? "-" : "+"))", level: .verbose, subsystem: subsystem)
-      // When playback is paused the display link is stopped in order to avoid wasting energy on
-      // It must be running when stepping to avoid slowdowns caused by mpv waiting for IINA to call
-      // mpv_render_report_swap.
-      videoView.displayActive()
       if backwards {
         mpv.command(.frameBackStep)
       } else {
@@ -2350,20 +2350,24 @@ class PlayerCore: NSObject {
         guard syncUITicket == syncUITicketCount else {
           return
         }
-
-        // don't let play/pause icon fall out of sync
-        let isPaused = info.isPaused
-        windowController.updatePlayButtonState(isPaused ? .off : .on)
-        windowController.updatePlayTime()
-        windowController.updateAdditionalInfo()
-        if isInMiniPlayer {
-          windowController.miniPlayer.loadIfNeeded()
-          windowController.miniPlayer.updateScrollingLabels()
-        }
-        if isNetworkStream {
-          self.windowController.updateNetworkState()
-        }
+        syncUITimeComponents()
       }
+    }
+  }
+
+  func syncUITimeComponents() {
+    // don't let play/pause icon fall out of sync
+    let isPaused = info.isPaused
+    let isNetworkStream = info.isNetworkResource
+    windowController.updatePlayButtonState(isPaused ? .off : .on)
+    windowController.updatePlayTime()
+    windowController.updateAdditionalInfo()
+    if isInMiniPlayer {
+      windowController.miniPlayer.loadIfNeeded()
+      windowController.miniPlayer.updateScrollingLabels()
+    }
+    if isNetworkStream {
+      self.windowController.updateNetworkState()
     }
   }
 
