@@ -110,9 +110,8 @@ struct AppData {
   // Max allowed lines when reading a single input config file, or reading them from the Clipboard.
   static let maxConfFileLinesAccepted = 10000
 
-  static let widthWhenNoVideo = 640
-  static let heightWhenNoVideo = 360
-  static let sizeWhenNoVideo = NSSize(width: widthWhenNoVideo, height: heightWhenNoVideo)
+  /// Based on mpv default
+  static let defaultVideoSize = NSSize(width: 640, height: 480)
 
   /// Minimum allowed video size. Does not include any panels which are outside the video.
   static let minVideoSize = NSMakeSize(260, 120)

@@ -366,8 +366,8 @@
             <point key="canvasLocation" x="-5" y="-407"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="lH7-Vv-0M1"/>
-        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window Geometry" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="609" height="418"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window Geometry" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="613" height="401"/>
             <subviews>
                 <textField identifier="SectionTitleWindow" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RFk-nU-SGL">
                     <rect key="frame" x="-2" y="377" width="61" height="16"/>
@@ -378,7 +378,7 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3GV-dH-tZQ" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="489" height="385"/>
+                    <rect key="frame" x="120" y="8" width="493" height="385"/>
                     <subviews>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Xgb-im-tqO">
                             <rect key="frame" x="-2" y="368" width="424" height="18"/>
@@ -403,15 +403,15 @@
                                 <binding destination="lH7-Vv-0M1" name="value" keyPath="values.usePhysicalResolution" id="4m2-yQ-JzX"/>
                             </connections>
                         </button>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="yi9-Gz-dBO" userLabel="8pt Spacer">
-                            <rect key="frame" x="0.0" y="357" width="1" height="8"/>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="yi9-Gz-dBO" userLabel="10pt Spacer">
+                            <rect key="frame" x="0.0" y="355" width="1" height="10"/>
                             <constraints>
-                                <constraint firstAttribute="height" constant="8" id="FsU-Y7-icA"/>
+                                <constraint firstAttribute="height" constant="10" id="FsU-Y7-icA"/>
                                 <constraint firstAttribute="width" constant="1" id="Vgw-CS-9j7"/>
                             </constraints>
                         </customView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="749" verticalStackHuggingPriority="749" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zQs-0g-sHV" userLabel="ResizeWindowScheme HStack View">
-                            <rect key="frame" x="0.0" y="333" width="387" height="20"/>
+                            <rect key="frame" x="0.0" y="331" width="387" height="20"/>
                             <subviews>
                                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MY4-AB-Orx" userLabel="ResizeWindowWhenOpeningFile Checkbox">
                                     <rect key="frame" x="-2" y="2" width="192" height="18"/>
@@ -458,7 +458,7 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="H2w-q5-ebC" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="329" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="327" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="1" id="gDI-lF-NTY"/>
                                 <constraint firstAttribute="height" id="gxO-aO-c3e"/>
@@ -471,8 +471,8 @@
                                 </binding>
                             </connections>
                         </customView>
-                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="501" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="rrv-sf-1sf" userLabel="CenterAndResizeWindow HStack View">
-                            <rect key="frame" x="20" y="305" width="317" height="20"/>
+                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="749" verticalStackHuggingPriority="749" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="rrv-sf-1sf" userLabel="CenterAndResizeWindow HStack View">
+                            <rect key="frame" x="20" y="303" width="317" height="20"/>
                             <subviews>
                                 <button tag="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VP5-cz-tSV" userLabel="CenterAndResizeWindow Radio Button">
                                     <rect key="frame" x="-2" y="2" width="189" height="18"/>
@@ -519,7 +519,7 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="nE8-aY-yRU" userLabel="0pt Spacer">
-                            <rect key="frame" x="20" y="301" width="1" height="0.0"/>
+                            <rect key="frame" x="20" y="299" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="1iw-81-GmM"/>
                                 <constraint firstAttribute="width" constant="1" id="XpM-5I-krr"/>
@@ -533,7 +533,7 @@
                             </connections>
                         </customView>
                         <button tag="2" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqS-1r-k2A" userLabel="MPVGeometryConfig Radio Button">
-                            <rect key="frame" x="18" y="280" width="126" height="18"/>
+                            <rect key="frame" x="18" y="278" width="126" height="18"/>
                             <buttonCell key="cell" type="radio" title="Apply geometry:" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="p9b-od-Iyw">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -548,17 +548,17 @@
                             </connections>
                         </button>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="KWh-Ak-RW7" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="277" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="275" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="4bq-c0-WMu"/>
                                 <constraint firstAttribute="width" constant="1" id="Ean-tK-yeE"/>
                             </constraints>
                         </customView>
                         <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" userLabel="MpvWindowSize Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                            <rect key="frame" x="40" y="209" width="449" height="64"/>
+                            <rect key="frame" x="40" y="207" width="453" height="64"/>
                             <subviews>
                                 <button identifier="Trigger0" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
-                                    <rect key="frame" x="-2" y="47" width="451" height="18"/>
+                                    <rect key="frame" x="-2" y="47" width="455" height="18"/>
                                     <buttonCell key="cell" type="check" title="Change window size:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="zOq-Em-wUe">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -568,13 +568,13 @@
                                     </connections>
                                 </button>
                                 <box identifier="Content0" title="WindowSize Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="L5c-uf-ged" userLabel="WindowSize Box">
-                                    <rect key="frame" x="-3" y="-4" width="455" height="50"/>
+                                    <rect key="frame" x="-3" y="-4" width="459" height="50"/>
                                     <view key="contentView" id="dCZ-8R-c9z" userLabel="WindowSizeBox View">
-                                        <rect key="frame" x="4" y="5" width="447" height="42"/>
+                                        <rect key="frame" x="4" y="5" width="451" height="42"/>
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                         <subviews>
                                             <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="751" horizontalHuggingPriority="749" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Dla-SH-yH8" userLabel="WindowSize HStack View">
-                                                <rect key="frame" x="12" y="8" width="423" height="26"/>
+                                                <rect key="frame" x="12" y="8" width="427" height="26"/>
                                                 <subviews>
                                                     <popUpButton horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sCc-NR-e8c">
                                                         <rect key="frame" x="-3" y="-4" width="83" height="31"/>
@@ -630,7 +630,7 @@
                                                         </connections>
                                                     </popUpButton>
                                                     <textField identifier="DummySpacer" focusRingType="none" horizontalHuggingPriority="1" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="5mn-sJ-B5l" userLabel="Spacer">
-                                                        <rect key="frame" x="260" y="0.0" width="165" height="26"/>
+                                                        <rect key="frame" x="260" y="0.0" width="169" height="26"/>
                                                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="right" id="RI8-23-3fV">
                                                             <font key="font" metaFont="system"/>
                                                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -679,7 +679,7 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Pov-0Z-P1m" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="205" width="1" height="0.0"/>
+                            <rect key="frame" x="0.0" y="203" width="1" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="Hsa-iE-w47"/>
                                 <constraint firstAttribute="width" constant="1" id="sBn-7R-Sv7"/>
@@ -693,10 +693,10 @@
                             </connections>
                         </customView>
                         <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" userLabel="MpvWindowPosition Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
-                            <rect key="frame" x="40" y="56" width="449" height="145"/>
+                            <rect key="frame" x="40" y="54" width="453" height="145"/>
                             <subviews>
                                 <button identifier="Trigger1" horizontalHuggingPriority="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
-                                    <rect key="frame" x="-2" y="128" width="451" height="18"/>
+                                    <rect key="frame" x="-2" y="128" width="455" height="18"/>
                                     <buttonCell key="cell" type="check" title="Change window position:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Ofm-qE-RgQ">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -706,13 +706,13 @@
                                     </connections>
                                 </button>
                                 <box identifier="Content1" horizontalHuggingPriority="249" horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="501" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Mye-uz-WUr" userLabel="WindowPos Box">
-                                    <rect key="frame" x="-3" y="-4" width="455" height="131"/>
+                                    <rect key="frame" x="-3" y="-4" width="459" height="131"/>
                                     <view key="contentView" id="Z8T-H5-nff" userLabel="WindowPosBox View">
-                                        <rect key="frame" x="4" y="5" width="447" height="123"/>
+                                        <rect key="frame" x="4" y="5" width="451" height="123"/>
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                         <subviews>
                                             <gridView horizontalHuggingPriority="750" verticalHuggingPriority="749" horizontalCompressionResistancePriority="500" verticalCompressionResistancePriority="749" xPlacement="leading" yPlacement="bottom" rowAlignment="firstBaseline" rowSpacing="5" columnSpacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="577-7K-UVn">
-                                                <rect key="frame" x="12" y="8" width="423" height="107"/>
+                                                <rect key="frame" x="12" y="8" width="427" height="107"/>
                                                 <constraints>
                                                     <constraint firstItem="HjX-1c-epS" firstAttribute="height" secondItem="KzF-13-Qfa" secondAttribute="height" id="zRk-lu-dxD"/>
                                                 </constraints>
@@ -808,7 +808,7 @@
                                                     </gridCell>
                                                     <gridCell row="1lD-Yb-A1Y" column="RyJ-bm-Oln" id="pj5-b2-qYt">
                                                         <textField key="contentView" identifier="AccessoryLabelXR" focusRingType="none" horizontalHuggingPriority="1" horizontalCompressionResistancePriority="251" verticalCompressionResistancePriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Or6-45-6yM">
-                                                            <rect key="frame" x="303" y="56" width="122" height="19"/>
+                                                            <rect key="frame" x="303" y="56" width="126" height="19"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="side of the screen" id="GXO-iT-BIr">
                                                                 <font key="font" metaFont="system"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -892,7 +892,7 @@
                                                     </gridCell>
                                                     <gridCell row="G6z-Cr-ME5" column="RyJ-bm-Oln" id="7jz-qy-b7z">
                                                         <textField key="contentView" identifier="AccessoryLabelYR" focusRingType="none" horizontalHuggingPriority="1" horizontalCompressionResistancePriority="250" verticalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="wWi-dP-Ekg">
-                                                            <rect key="frame" x="303" y="0.0" width="122" height="19"/>
+                                                            <rect key="frame" x="303" y="0.0" width="126" height="19"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="of the screen" id="iRn-3s-oQH">
                                                                 <font key="font" metaFont="system"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -928,19 +928,12 @@
                                 <real value="3.4028234663852886e+38"/>
                             </customSpacing>
                         </stackView>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="9CF-7V-xlB" userLabel="8pt Spacer">
-                            <rect key="frame" x="0.0" y="44" width="1" height="8"/>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="9CF-7V-xlB" userLabel="6pt Spacer">
+                            <rect key="frame" x="0.0" y="44" width="1" height="6"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="1" id="PZ8-hh-qYF"/>
-                                <constraint firstAttribute="height" constant="8" id="l6F-xX-nbV"/>
+                                <constraint firstAttribute="height" constant="6" id="l6F-xX-nbV"/>
                             </constraints>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.resizeWindowScheme" id="CdW-wm-L5a">
-                                    <dictionary key="options">
-                                        <string key="NSValueTransformerName">ResizeTimingTransformer</string>
-                                    </dictionary>
-                                </binding>
-                            </connections>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Cut-Nf-Jsy">
                             <rect key="frame" x="-2" y="23" width="223" height="18"/>
@@ -983,6 +976,7 @@
                         <constraint firstItem="5zT-kW-YFh" firstAttribute="leading" secondItem="nE8-aY-yRU" secondAttribute="leading" constant="20" id="bgN-RO-lFT"/>
                         <constraint firstItem="VqS-1r-k2A" firstAttribute="leading" secondItem="VP5-cz-tSV" secondAttribute="leading" id="bt1-9T-lr4"/>
                         <constraint firstItem="KzF-13-Qfa" firstAttribute="height" secondItem="l8O-vd-QJ1" secondAttribute="height" id="eYA-fr-iUz"/>
+                        <constraint firstItem="MY4-AB-Orx" firstAttribute="height" secondItem="RRL-GG-R45" secondAttribute="height" id="hax-4b-haj"/>
                         <constraint firstItem="RRL-GG-R45" firstAttribute="height" secondItem="Cut-Nf-Jsy" secondAttribute="height" id="qxY-bR-Y2B"/>
                     </constraints>
                     <visibilityPriorities>

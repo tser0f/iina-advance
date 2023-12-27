@@ -271,16 +271,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else if let savedGeo = PWindowGeometry.fromCSV(csv) {
       return savedGeo
     }
-    return PlayerWindowController.windowedModeGeometryDefault(screen: NSScreen.screens[0])
+    // Compute default geometry for main screen
+    let defaultScreen = NSScreen.screens[0]
+    return LayoutState.buildFrom(LayoutSpec.defaultLayout()).buildDefaultInitialGeometry(screen: defaultScreen)
   }() {
     didSet {
       Preference.set(windowedModeGeometryLastClosed.toCSV(), for: .uiLastClosedWindowedModeGeometry)
       Logger.log("Updated pref \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) := \(windowedModeGeometryLastClosed)", level: .verbose)
     }
-  }
-
-  static private func windowedModeGeometryDefault(screen: NSScreen) -> PWindowGeometry {
-    return LayoutState.buildFrom(LayoutSpec.defaultLayout()).buildDefaultInitialGeometry(screen: screen)
   }
 
   lazy var musicModeGeometry: MusicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed {
@@ -299,16 +297,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else if let savedGeo = MusicModeGeometry.fromCSV(csv) {
       return savedGeo
     }
-    return PlayerWindowController.musicModeGeometryDefault(screen: NSScreen.screens[0], videoAspect: AppData.minVideoSize.mpvAspect)
+    let defaultScreen = NSScreen.screens[0]
+    let defaultGeo = MiniPlayerController.buildMusicModeGeometryFromPrefs(screen: defaultScreen,
+                                                                          videoAspect: AppData.defaultVideoSize.mpvAspect)
+    return defaultGeo
   }() {
     didSet {
       Preference.set(musicModeGeometryLastClosed.toCSV(), for: .uiLastClosedMusicModeGeometry)
       Logger.log("Updated musicModeGeometryLastClosed := \(musicModeGeometryLastClosed)", level: .verbose)
     }
-  }
-
-  static private func musicModeGeometryDefault(screen: NSScreen, videoAspect: CGFloat) -> MusicModeGeometry {
-    return MiniPlayerController.buildMusicModeGeometryFromPrefs(screen: screen, videoAspect: videoAspect)
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.

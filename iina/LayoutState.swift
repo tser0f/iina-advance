@@ -622,8 +622,7 @@ extension PlayerWindowController {
 
     /// Only for windowed modes!
     func buildDefaultInitialGeometry(screen: NSScreen) -> PWindowGeometry {
-      // Just use a very small size, for a nicer opening animation
-      let videoSize = AppData.minVideoSize
+      let videoSize = AppData.defaultVideoSize
       let windowFrame = NSRect(origin: CGPoint.zero, size: videoSize)
       let geo = buildGeometry(windowFrame: windowFrame, screenID: screen.screenID, videoAspect: videoSize.mpvAspect)
       return geo.refit(.centerInVisibleScreen)

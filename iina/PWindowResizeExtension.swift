@@ -174,22 +174,19 @@ extension PlayerWindowController {
       // video size changed during playback
       return resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
     }
-
     assert(player.info.justStartedFile)
-    // get videoSize on screen
-    var newVideoSize: NSSize = videoDisplayRotatedSize
-    log.verbose("[MPVVideoReconfig C-1]  Starting calc: set newVideoSize := videoDisplayRotatedSize → \(videoDisplayRotatedSize)")
 
     let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
     let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
+    var newVideoSize = windowGeo.videoSize
 
     let resizeScheme: Preference.ResizeWindowScheme = Preference.enum(for: .resizeWindowScheme)
     switch resizeScheme {
     case .mpvGeometry:
       // check if have mpv geometry set (initial window position/size)
       if let mpvGeometry = player.getMPVGeometry() {
-        log.verbose("[MPVVideoReconfig C-3] Applying mpv \(mpvGeometry) and constraining in screen \(screenVisibleFrame)")
-        return windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
+        log.verbose("[MPVVideoReconfig C-3] Applying mpv \(mpvGeometry) within screen \(screenVisibleFrame)")
+        return windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: windowGeo.videoSize)  // send existing size
       }
       log.warn("[MPVVideoReconfig C-3a] No mpv geometry found")
     case .simpleVideoSizeMultiple:
@@ -199,7 +196,7 @@ extension PlayerWindowController {
         return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
       } else {
         let resizeRatio = resizeWindowStrategy.ratio
-        newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
+        newVideoSize = videoDisplayRotatedSize.multiply(CGFloat(resizeRatio))
         log.verbose("[MPVVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
       }
     }

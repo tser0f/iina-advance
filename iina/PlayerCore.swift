@@ -586,11 +586,15 @@ class PlayerCore: NSObject {
 
   /// Stop playback and unload the media.
   func stop() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
     // If the user immediately closes the player window it is possible the background task may still
     // be working to load subtitles. Invalidate the ticket to get that task to abandon the work.
     $backgroundQueueTicket.withLock { $0 += 1 }
 
-    mpv.queue.sync {
+    videoView.stopDisplayLink()
+
+    mpv.queue.async { [self] in
       savePlaybackPosition()
 
       // Reset playback state
@@ -600,24 +604,17 @@ class PlayerCore: NSObject {
       info.currentMediaThumbnails = nil
       info.videoPosition = nil
       info.videoDuration = nil
-    }
 
-    videoView.stopDisplayLink()
+      info.$matchedSubs.withLock { $0.removeAll() }
 
-    refreshSyncUITimer()
+      // Do not send a stop command to mpv if it is already stopped. This happens when quitting is
+      // initiated directly through mpv.
+      guard !isStopped else { return }
+      Logger.log("Stopping playback", subsystem: subsystem)
 
-    info.$matchedSubs.withLock { $0.removeAll() }
-
-    // Do not send a stop command to mpv if it is already stopped. This happens when quitting is
-    // initiated directly through mpv.
-    guard !isStopped else { return }
-    Logger.log("Stopping playback", subsystem: subsystem)
-    DispatchQueue.main.async { [self] in
       sendOSD(.stop)
-    }
-
-    mpv.queue.sync {
       isStopping = true
+      refreshSyncUITimer()
       _ = mpv.command(.stop)
     }
   }
