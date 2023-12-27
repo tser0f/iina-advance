@@ -180,29 +180,32 @@ extension PlayerWindowController {
     var newVideoSize: NSSize = videoDisplayRotatedSize
     log.verbose("[MPVVideoReconfig C-1]  Starting calc: set newVideoSize := videoDisplayRotatedSize → \(videoDisplayRotatedSize)")
 
-    let resizeWindowStrategy: Preference.ResizeWindowOption = Preference.enum(for: .resizeWindowOption)
-    if resizeWindowStrategy != .fitScreen {
-      let resizeRatio = resizeWindowStrategy.ratio
-      newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
-      log.verbose("[MPVVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
-    }
-
     let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
     let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
 
-    // check if have mpv geometry set (initial window position/size)
-    if let mpvGeometry = player.getMPVGeometry() {
-      log.verbose("[MPVVideoReconfig C-3] shouldApplyInitialWindowSize=Y. Converting mpv \(mpvGeometry) and constraining by screen \(screenVisibleFrame)")
-      return windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
-
-    } else if resizeWindowStrategy == .fitScreen {
-      log.verbose("[MPVVideoReconfig C-4] ResizeWindowOption=FitToScreen. Using screenFrame \(screenVisibleFrame)")
-      return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
-
-    } else {
-      log.verbose("[MPVVideoReconfig C-5] ResizeWindow=\(resizeWindowStrategy). Resizing & centering windowFrame")
-      return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
+    let resizeScheme: Preference.ResizeWindowScheme = Preference.enum(for: .resizeWindowScheme)
+    switch resizeScheme {
+    case .mpvGeometry:
+      // check if have mpv geometry set (initial window position/size)
+      if let mpvGeometry = player.getMPVGeometry() {
+        log.verbose("[MPVVideoReconfig C-3] Applying mpv \(mpvGeometry) and constraining in screen \(screenVisibleFrame)")
+        return windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: newVideoSize)
+      }
+      log.warn("[MPVVideoReconfig C-3a] No mpv geometry found")
+    case .simpleVideoSizeMultiple:
+      let resizeWindowStrategy: Preference.ResizeWindowOption = Preference.enum(for: .resizeWindowOption)
+      if resizeWindowStrategy == .fitScreen {
+        log.verbose("[MPVVideoReconfig C-4] ResizeWindowOption=FitToScreen. Using screenFrame \(screenVisibleFrame)")
+        return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
+      } else {
+        let resizeRatio = resizeWindowStrategy.ratio
+        newVideoSize = newVideoSize.multiply(CGFloat(resizeRatio))
+        log.verbose("[MPVVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
+      }
     }
+
+    log.verbose("[MPVVideoReconfig C-5] ResizeSchem=\(resizeScheme). Resizing & centering windowFrame")
+    return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
   }
 
   private func resizeMinimallyAfterVideoReconfig(from windowGeo: PWindowGeometry,
