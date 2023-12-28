@@ -17,14 +17,14 @@ struct MPVGeometryDef: CustomStringConvertible {
     // match the string, replace empty group by nil
     let captures: [String?] = Regex.geometry.captures(in: geometryString).map { $0.isEmpty ? nil : $0 }
     // guard matches
-    guard captures.count == 10 else { return nil }
+    guard captures.count == 9 else { return nil }
     // return struct
-    return MPVGeometryDef(x: captures[7],
-                       y: captures[9],
+    return MPVGeometryDef(x: captures[6],
+                       y: captures[8],
                        w: captures[2],
                        h: captures[4],
-                       xSign: captures[6],
-                       ySign: captures[8])
+                       xSign: captures[5],
+                       ySign: captures[7])
   }
 
   var description: String {
@@ -32,7 +32,7 @@ struct MPVGeometryDef: CustomStringConvertible {
     let y0 = y == nil ? "nil" : String(y!)
     let w0 = w == nil ? "nil" : String(w!)
     let h0 = h == nil ? "nil" : String(h!)
-    let xSign0 = xSign == nil ? "nil" : String(ySign!)
+    let xSign0 = xSign == nil ? "nil" : String(xSign!)
     let ySign0 = ySign == nil ? "nil" : String(ySign!)
     return "Geometry(x: \(x0), y: \(y0), W: \(w0), H: \(h0), xSign=\(xSign0), ySign=\(ySign0))"
   }

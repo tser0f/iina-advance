@@ -46,6 +46,9 @@ class CollapseView: NSStackView {
       fatalError("FoldableView is not set up correctly.")
     }
 
+    // for better collapse animation
+    clipsToBounds = true
+
     // try to get the state of the control
     if let button = trigger as? NSButton {
 

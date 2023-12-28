@@ -322,18 +322,37 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       var geometry = ""
       // size
       if windowSizeCheckBox.state == .on {
-        geometry += windowSizeTypePopUpButton.selectedTag() == SizeWidthTag ? "" : "x"
-        geometry += windowSizeValueTextField.stringValue
-        geometry += windowSizeUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
+        // either width or height, but not both
+        if windowSizeTypePopUpButton.selectedTag() == SizeWidthTag {
+          geometry += "x"
+        }
+
+        let isPercentage = windowSizeUnitPopUpButton.selectedTag() == UnitPercentTag
+        if isPercentage {
+          geometry += normalizePercentage(windowSizeValueTextField.stringValue)
+        } else {
+          geometry += windowSizeValueTextField.stringValue
+        }
       }
       // position
       if windowPosCheckBox.state == .on {
+        // X
         geometry += windowPosXAnchorPopUpButton.selectedTag() == SideLeftTag ? "+" : "-"
-        geometry += windowPosXOffsetTextField.stringValue
-        geometry += windowPosXUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
+
+        if windowPosXUnitPopUpButton.selectedTag() == UnitPercentTag {
+          geometry += normalizePercentage(windowPosXOffsetTextField.stringValue)
+        } else {
+          geometry += normalizeSignedInteger(windowPosXOffsetTextField.stringValue)
+        }
+
+        // Y
         geometry += windowPosYAnchorPopUpButton.selectedTag() == SideBottomTag ? "+" : "-"
-        geometry += windowPosYOffsetTextField.stringValue
-        geometry += windowPosYUnitPopUpButton.selectedTag() == UnitPointTag ? "" : "%"
+
+        if windowPosYUnitPopUpButton.selectedTag() == UnitPercentTag {
+          geometry += normalizePercentage(windowPosYOffsetTextField.stringValue)
+        } else {
+          geometry += normalizeSignedInteger(windowPosYOffsetTextField.stringValue)
+        }
       }
       Logger.log("Saving pref \(Preference.Key.initialWindowSizePosition.rawValue.quoted) with geometry: \(geometry.quoted)")
       Preference.set(geometry, for: .initialWindowSizePosition)
@@ -342,10 +361,23 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     updateGeometryUI()
   }
 
+  private func normalizeSignedInteger(_ string: String) -> String {
+    let intValue = Int(string) ?? 0
+    return intValue < 0 ? "\(intValue)" : "+\(intValue)"
+  }
+
+  private func normalizePercentage(_ string: String) -> String {
+    var sizeInt = Int(string) ?? 100
+    sizeInt = max(0, sizeInt)
+    sizeInt = min(sizeInt, 100)
+    return "\(sizeInt)%"
+  }
+
   // Updates UI from prefs
   private func updateGeometryUI() {
     let resizeOption = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
     let scheme: Preference.ResizeWindowScheme = Preference.enum(for: .resizeWindowScheme)
+    
     let isAnyResizeEnabled: Bool
     switch resizeOption {
     case .never:
@@ -377,22 +409,37 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     if isMpvGeometryEnabled {
       let geometryString = Preference.string(for: .initialWindowSizePosition) ?? ""
       if let geometry = MPVGeometryDef.parse(geometryString) {
+        Logger.log("Parsed \(Preference.quoted(.initialWindowSizePosition)): \(geometry)")
         // size
-        if let h = geometry.h {
+        if var h = geometry.h {
           isUsingMpvSize = true
           windowSizeTypePopUpButton.selectItem(withTag: SizeHeightTag)
           let isPercent = h.hasSuffix("%")
           windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
-          windowSizeValueTextField.stringValue = isPercent ? String(h.dropLast()) : h
-        } else if let w = geometry.w {
+          if isPercent {
+            h = String(h.dropLast())
+          }
+          if let hInt = Int(h) {
+            windowSizeValueTextField.stringValue = String(hInt)
+          }
+        } else if var w = geometry.w {
           isUsingMpvSize = true
           windowSizeTypePopUpButton.selectItem(withTag: SizeWidthTag)
           let isPercent = w.hasSuffix("%")
           windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
-          windowSizeValueTextField.stringValue = isPercent ? String(w.dropLast()) : w
+          if isPercent {
+            w = String(w.dropLast())
+          }
+          if let wInt = Int(w) {
+            windowSizeValueTextField.stringValue = String(wInt)
+          }
         }
         // position
-        if let x = geometry.x, let xSign = geometry.xSign, let y = geometry.y, let ySign = geometry.ySign {
+        if var x = geometry.x, var y = geometry.y {
+          let xSign = geometry.xSign ?? "+"
+          let ySign = geometry.ySign ?? "+"
+          x = x.hasPrefix("+") ? String(x.dropFirst()) : x
+          y = y.hasPrefix("+") ? String(y.dropFirst()) : y
           isUsingMpvPos = true
           let xIsPercent = x.hasSuffix("%")
           windowPosXAnchorPopUpButton.selectItem(withTag: xSign == "+" ? SideLeftTag : SideRightTag)
