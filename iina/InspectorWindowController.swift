@@ -170,47 +170,6 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     observers = []
   }
 
-  func windowWillResize(_ sender: NSWindow, to newWindowSize: NSSize) -> NSSize {
-    if let window = window, window.inLiveResize {
-      /// Table size will change with window size, so need to find the new table width from `newWindowSize`.
-      /// We know that our window's width is composed of 2 things: the table width + all other fixed "non-table" stuff.
-      /// We first find the non-table width by subtracting current table size from current window size.
-      /// Note: `NSTableView` does not give an honest answer for its width, but can use its parent (`NSClipView`) width.
-      let oldTableWidth = watchTableView.superview!.frame.width
-      let nonTableWidth = window.frame.width - oldTableWidth
-      let newTableWidth = newWindowSize.width - nonTableWidth
-      resizeTableColumns(forTableWidth: newTableWidth)
-    }
-
-    return newWindowSize
-  }
-
-  func windowDidResize(_ notification: Notification) {
-    if let window = window, window.inLiveResize {
-      let tableWidth = watchTableView.superview!.frame.width
-      resizeTableColumns(forTableWidth: tableWidth)
-    }
-  }
-
-  private func resizeTableColumns(forTableWidth tableWidth: CGFloat) {
-    guard let keyColumn = watchTableView.tableColumn(withIdentifier: .key),
-          let valueColumn = watchTableView.tableColumn(withIdentifier: .value),
-          let tableScrollView = watchTableView.enclosingScrollView else {
-      return
-    }
-
-    let adjustedTableWidth = tableWidth - tableScrollView.verticalScroller!.frame.width
-    let keyColumnMaxWidth = adjustedTableWidth - valueColumn.minWidth
-    var newKeyColumnWidth = keyColumn.width
-    if keyColumn.width > keyColumnMaxWidth {
-      newKeyColumnWidth = keyColumnMaxWidth
-      keyColumn.width = newKeyColumnWidth
-    }
-    valueColumn.width = adjustedTableWidth - newKeyColumnWidth
-    tableScrollView.needsLayout = true
-    tableScrollView.needsDisplay = true
-  }
-
   // MARK: - Data updates
 
   func updateInfo(dynamic: Bool = false) {
@@ -437,6 +396,47 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     deleteButton.isEnabled = (watchTableView.selectedRow != -1)
   }
 
+  func resizeTableColumns(forTableWidth tableWidth: CGFloat) {
+    guard let keyColumn = watchTableView.tableColumn(withIdentifier: .key),
+          let valueColumn = watchTableView.tableColumn(withIdentifier: .value),
+          let tableScrollView = watchTableView.enclosingScrollView else {
+      return
+    }
+
+    let adjustedTableWidth = tableWidth - tableScrollView.verticalScroller!.frame.width
+    let keyColumnMaxWidth = adjustedTableWidth - valueColumn.minWidth
+    var newKeyColumnWidth = keyColumn.width
+    if keyColumn.width > keyColumnMaxWidth {
+      newKeyColumnWidth = keyColumnMaxWidth
+      keyColumn.width = newKeyColumnWidth
+    }
+    valueColumn.width = adjustedTableWidth - newKeyColumnWidth
+    tableScrollView.needsLayout = true
+    tableScrollView.needsDisplay = true
+  }
+
+  func windowWillResize(_ sender: NSWindow, to newWindowSize: NSSize) -> NSSize {
+    if let window = window, window.inLiveResize {
+      /// Table size will change with window size, so need to find the new table width from `newWindowSize`.
+      /// We know that our window's width is composed of 2 things: the table width + all other fixed "non-table" stuff.
+      /// We first find the non-table width by subtracting current table size from current window size.
+      /// Note: `NSTableView` does not give an honest answer for its width, but can use its parent (`NSClipView`) width.
+      let oldTableWidth = watchTableView.superview!.frame.width
+      let nonTableWidth = window.frame.width - oldTableWidth
+      let newTableWidth = newWindowSize.width - nonTableWidth
+      resizeTableColumns(forTableWidth: newTableWidth)
+    }
+
+    return newWindowSize
+  }
+
+  func windowDidResize(_ notification: Notification) {
+    if let window = window, window.inLiveResize {
+      let tableWidth = watchTableView.superview!.frame.width
+      resizeTableColumns(forTableWidth: tableWidth)
+    }
+  }
+
   @IBAction func addWatchAction(_ sender: AnyObject) {
     Utility.quickPromptPanel("add_watch", sheetWindow: window) { [self] str in
       self.watchProperties.append(str)
@@ -452,17 +452,20 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
   }
 
   @IBAction func removeWatchAction(_ sender: AnyObject) {
-    let rowIndex = watchTableView.selectedRow
-    guard rowIndex >= 0 && rowIndex < watchTableView.numberOfRows else { return }
-    let rowCountAfterRemove = watchTableView.numberOfRows - 1
-    watchProperties.remove(at: rowIndex)
+    let rowIndexes = watchTableView.selectedRowIndexes
+    guard !rowIndexes.isEmpty else { return }
+
+    let watchPropertiesOld = watchProperties
+    var watchPropertiesNew: [String] = []
+    for (index, property) in watchPropertiesOld.enumerated() {
+      if !rowIndexes.contains(index) {
+        watchPropertiesNew.append(property)
+      }
+    }
+    watchProperties = watchPropertiesNew
     saveWatchList()
 
-    watchTableView.removeRows(at: IndexSet(integer: rowIndex), withAnimation: AccessibilityPreferences.motionReductionEnabled ? [] : .slideUp)
-    // Select next row down so that user doesn't have to keep selecting if they want to delete multiple rows. If row was last row, select the one above it
-    if watchTableView.numberOfRows > 0 {
-      watchTableView.selectRowIndexes(IndexSet(integer: rowIndex >= rowCountAfterRemove ? rowIndex - 1 : rowIndex), byExtendingSelection: false)
-    }
+    watchTableView.removeRows(at: rowIndexes, withAnimation: AccessibilityPreferences.motionReductionEnabled ? [] : .slideUp)
     tableHeightConstraint?.constant = computeMinTableHeight()
   }
 
