@@ -1758,7 +1758,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       showFadeableViews(duration: 0)
     case .playSlider:
       if controlBarFloating.isDragging { return }
-      refreshSeekTimeAndThumnail(from: event)
+      refreshSeekTimeAndThumbnail(from: event)
     case .customTitleBar:
       customTitleBar?.leadingTitleBarView.mouseEntered(with: event)
     }
@@ -1783,7 +1783,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         resetFadeTimer()
       }
     case .playSlider:
-      refreshSeekTimeAndThumnail(from: event)
+      refreshSeekTimeAndThumbnail(from: event)
     case .customTitleBar:
       customTitleBar?.leadingTitleBarView.mouseExited(with: event)
     }
@@ -1807,7 +1807,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    refreshSeekTimeAndThumnail(from: event)
+    refreshSeekTimeAndThumbnail(from: event)
 
     if isMouseInWindow {
       let isTopBarHoverEnabled = Preference.isAdvancedEnabled && Preference.enum(for: .showTopBarTrigger) == Preference.ShowTopBarTrigger.topBarHover
@@ -3138,21 +3138,22 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - UI: Thumbnail Preview
 
   /// Display time label & thumbnail when mouse over slider
-  private func refreshSeekTimeAndThumnail(from event: NSEvent) {
+  private func refreshSeekTimeAndThumbnail(from event: NSEvent) {
     thumbDisplayCounter += 1
     let currentTicket = thumbDisplayCounter
 
     DispatchQueue.main.async { [self] in
       guard currentTicket == thumbDisplayCounter else { return }
-      refreshSeekTimeAndThumnailInternal(from: event)
+      refreshSeekTimeAndThumbnailInternal(from: event)
     }
   }
 
-  private func refreshSeekTimeAndThumnailInternal(from event: NSEvent) {
+  private func refreshSeekTimeAndThumbnailInternal(from event: NSEvent) {
     guard !currentLayout.isInteractiveMode else { return }
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
+    let isCoveredBySidebar = isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView])
     let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
-    guard isMouseInPlaySlider && !isCoveredByOSD && !isAnimatingLayoutTransition, let duration = player.info.videoDuration else {
+    guard isMouseInPlaySlider, !isCoveredByOSD, !isCoveredBySidebar, !isAnimatingLayoutTransition, let duration = player.info.videoDuration else {
       thumbnailPeekView.isHidden = true
       timePositionHoverLabel.isHidden = true
       return
