@@ -645,7 +645,6 @@ extension PlayerWindowController {
       if !isFullScreen {
         player.window.setFrameImmediately(newGeometry.windowFrame, animate: false)
       }
-
       // Make sure this is up-to-date
       videoView.apply(newGeometry)
 
