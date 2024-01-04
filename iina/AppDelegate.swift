@@ -681,9 +681,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Certain events (like when PIP is enabled) can result in this being called when it shouldn't.
     guard !PlayerCore.active.windowController.isOpen else { return false }
 
-    if Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) == .quit {
+    if Preference.bool(for: .quitWhenNoOpenedWindow) {
       Preference.UIState.clearSavedStateForThisLaunch()
-      Logger.log("Will quit on last window closed", level: .verbose)
+      Logger.log("Will quit due to last window closed", level: .verbose)
       return true
     } else {
       self.doActionWhenLastWindowWillClose()
@@ -721,7 +721,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     if window.isOnlyOpenWindow() {
-      let quitForAction: Preference.ActionWhenNoOpenedWindow?
+      let quitForAction: Preference.ActionAfterLaunch?
       switch window.savedStateName {
       case WindowAutosaveName.playbackHistory.string:
         quitForAction = .historyWindow
@@ -738,10 +738,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
 
-  private func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionWhenNoOpenedWindow? = nil) {
+  private func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionAfterLaunch? = nil) {
     guard !isTerminating else { return }
 
-    if let whatToDo = Preference.ActionWhenNoOpenedWindow(key: .actionWhenNoOpenedWindow) {
+    if let whatToDo = Preference.ActionAfterLaunch(key: .actionAfterLaunch) {
       Logger.log("ActionWhenNoOpenedWindow: \(whatToDo)", level: .verbose)
       if whatToDo == quitForAction {
         Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")

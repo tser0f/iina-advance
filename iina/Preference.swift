@@ -85,6 +85,9 @@ struct Preference {
     /** Black out other monitors while fullscreen (bool) */
     static let blackOutMonitor = Key("blackOutMonitor")
 
+    /// Quit when no open window (bool)
+    static let quitWhenNoOpenedWindow = Key("quitWhenNoOpenedWindow")
+
     /// For windowed mode only.
     /// `true`: restrict viewport size (i.e. the window size minus any outside bars) to conform to video aspect ratio.
     /// `false`: allow user to resize window and show black bars.
@@ -93,8 +96,6 @@ struct Preference {
     /// If enabled, in legacy full screen, video will fill entire screen including camera housing, showing a
     /// visible notch in the middle top
     static let allowVideoToOverlapCameraHousing = Key("allowVideoToOverlapCameraHousing")
-
-    static let actionWhenNoOpenedWindow = Key("actionWhenNoOpenedWindow")
 
     /** Keep player window open on end of file / playlist. (bool) */
     static let keepOpenOnFileEnd = Key("keepOpenOnFileEnd")
@@ -485,19 +486,6 @@ struct Preference {
     case seek = 2
 
     static var defaultValue = ArrowButtonAction.speed
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-  }
-
-  enum ActionWhenNoOpenedWindow: Int, InitializingFromKey {
-    case welcomeWindow = 0
-    case quit
-    case none
-    case historyWindow
-
-    static var defaultValue = ActionWhenNoOpenedWindow.none
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1221,8 +1209,8 @@ struct Preference {
     .iinaEnablePluginSystem: false,
 
       .keepOpenOnFileEnd: true,
+    .quitWhenNoOpenedWindow: false,
     .resumeFromEndRestartsPlayback: true,
-    .actionWhenNoOpenedWindow: ActionWhenNoOpenedWindow.none.rawValue,
     .useExactSeek: SeekOption.exact.rawValue,
     .followGlobalSeekTypeWhenAdjustSlider: false,
     .relativeSeekAmount: 3,
