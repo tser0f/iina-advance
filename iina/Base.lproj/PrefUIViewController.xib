@@ -190,117 +190,136 @@
             </constraints>
             <point key="canvasLocation" x="-27" y="-1039"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="550" height="112"/>
+        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="573" height="134"/>
             <subviews>
                 <textField identifier="SectionTitleFullScreen" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fkF-Rz-sk3">
-                    <rect key="frame" x="-2" y="88" width="81" height="16"/>
+                    <rect key="frame" x="-2" y="114" width="81" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Full Screen:" id="615-la-NDK">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9m-Hf-6wE" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="430" height="96"/>
+                <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9m-Hf-6wE" userLabel="RightColumn Stack View">
+                    <rect key="frame" x="120" y="8" width="453" height="122"/>
                     <subviews>
-                        <button translatesAutoresizingMaskIntoConstraints="NO" id="KlA-Ot-dln">
-                            <rect key="frame" x="-2" y="79" width="165" height="18"/>
-                            <buttonCell key="cell" type="check" title="Use custom full screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="TvB-UM-FrS">
-                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                <font key="font" metaFont="system"/>
-                            </buttonCell>
-                            <constraints>
-                                <constraint firstAttribute="height" constant="16" id="KFs-wZ-OQT"/>
-                            </constraints>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.useLegacyFullScreen" id="7NU-Ss-Bmz"/>
-                            </connections>
-                        </button>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="cyV-Gs-jgb" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="76" width="1" height="0.0"/>
-                            <constraints>
-                                <constraint firstAttribute="height" id="LS6-pm-MKB"/>
-                                <constraint firstAttribute="width" constant="1" id="f4s-XJ-jKY"/>
-                            </constraints>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyFullScreen" id="ctI-HB-Rid">
-                                    <dictionary key="options">
-                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                    </dictionary>
-                                </binding>
-                            </connections>
-                        </customView>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="BqM-nJ-IDU" userLabel="ToggleAnimationSpeedContainer View">
-                            <rect key="frame" x="20" y="56" width="404" height="16"/>
+                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="azI-1c-jRR" userLabel="CustomFullScreen Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
+                            <rect key="frame" x="0.0" y="32" width="453" height="90"/>
                             <subviews>
-                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="NbK-vD-Iek">
-                                    <rect key="frame" x="-2" y="0.0" width="152" height="16"/>
-                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Toggle animation speed:" id="R8D-0O-y1f">
+                                <button identifier="Trigger2" translatesAutoresizingMaskIntoConstraints="NO" id="KlA-Ot-dln">
+                                    <rect key="frame" x="-2" y="73" width="455" height="18"/>
+                                    <buttonCell key="cell" type="check" title="Use custom full screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="TvB-UM-FrS">
+                                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
-                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                    </textFieldCell>
-                                </textField>
-                                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1oZ-lo-QsR" userLabel="ToggleAnimationSpeed Horizontal Slider">
-                                    <rect key="frame" x="162" y="-2" width="244" height="17"/>
+                                    </buttonCell>
                                     <constraints>
-                                        <constraint firstAttribute="width" constant="240" id="8g7-LI-2hr"/>
+                                        <constraint firstAttribute="height" constant="16" id="KFs-wZ-OQT"/>
                                     </constraints>
-                                    <sliderCell key="cell" controlSize="mini" state="on" userInterfaceLayoutDirection="rightToLeft" alignment="left" minValue="0.0625" maxValue="0.75" doubleValue="0.5" tickMarkPosition="below" numberOfTickMarks="12" allowsTickMarkValuesOnly="YES" sliderType="linear" id="fc5-xy-pnP"/>
                                     <connections>
-                                        <binding destination="lH7-Vv-0M1" name="value" keyPath="values.animationDurationFullScreen" id="uPJ-wT-miW"/>
+                                        <binding destination="lH7-Vv-0M1" name="value" keyPath="values.useLegacyFullScreen" id="7NU-Ss-Bmz"/>
                                     </connections>
-                                </slider>
+                                </button>
+                                <box identifier="Content1" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="gcX-vp-hRg" userLabel="CustomFullScreen Box">
+                                    <rect key="frame" x="-3" y="-4" width="459" height="76"/>
+                                    <view key="contentView" id="N67-qd-WIx" userLabel="CustomFullScreenBox Content View">
+                                        <rect key="frame" x="4" y="5" width="451" height="68"/>
+                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                        <subviews>
+                                            <stackView distribution="equalCentering" orientation="vertical" alignment="leading" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vnG-7B-ZyZ" userLabel="CustomFullScreenBox Vertical Stack View">
+                                                <rect key="frame" x="0.0" y="0.0" width="451" height="68"/>
+                                                <subviews>
+                                                    <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="EVN-KQ-c0l" userLabel="ToggleAnimationSpeed HStack View">
+                                                        <rect key="frame" x="16" y="36" width="396" height="20"/>
+                                                        <subviews>
+                                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="NbK-vD-Iek">
+                                                                <rect key="frame" x="-2" y="4" width="152" height="16"/>
+                                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Toggle animation speed:" id="R8D-0O-y1f">
+                                                                    <font key="font" metaFont="system"/>
+                                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                                                </textFieldCell>
+                                                            </textField>
+                                                            <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1oZ-lo-QsR" userLabel="ToggleAnimationSpeed Horizontal Slider">
+                                                                <rect key="frame" x="154" y="2" width="244" height="17"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="width" constant="240" id="8g7-LI-2hr"/>
+                                                                </constraints>
+                                                                <sliderCell key="cell" controlSize="mini" state="on" userInterfaceLayoutDirection="rightToLeft" alignment="left" minValue="0.0625" maxValue="0.75" doubleValue="0.5" tickMarkPosition="below" numberOfTickMarks="12" allowsTickMarkValuesOnly="YES" sliderType="linear" id="fc5-xy-pnP"/>
+                                                                <connections>
+                                                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.animationDurationFullScreen" id="uPJ-wT-miW"/>
+                                                                </connections>
+                                                            </slider>
+                                                        </subviews>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="20" id="NmS-dF-Tkz"/>
+                                                        </constraints>
+                                                        <visibilityPriorities>
+                                                            <integer value="1000"/>
+                                                            <integer value="1000"/>
+                                                        </visibilityPriorities>
+                                                        <customSpacing>
+                                                            <real value="3.4028234663852886e+38"/>
+                                                            <real value="3.4028234663852886e+38"/>
+                                                        </customSpacing>
+                                                    </stackView>
+                                                    <button translatesAutoresizingMaskIntoConstraints="NO" id="Nuv-dC-vHt">
+                                                        <rect key="frame" x="14" y="11" width="375" height="18"/>
+                                                        <buttonCell key="cell" type="check" title="Use entire Macbook screen even if there is a visible notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
+                                                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                            <font key="font" metaFont="system"/>
+                                                        </buttonCell>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="16" id="A3f-UU-ve0"/>
+                                                        </constraints>
+                                                        <connections>
+                                                            <binding destination="lH7-Vv-0M1" name="value" keyPath="values.allowVideoToOverlapCameraHousing" id="AQ6-lq-boF"/>
+                                                            <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyFullScreen" id="ndf-cy-9qe">
+                                                                <dictionary key="options">
+                                                                    <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                                                </dictionary>
+                                                            </binding>
+                                                        </connections>
+                                                    </button>
+                                                </subviews>
+                                                <edgeInsets key="edgeInsets" left="16" right="16" top="12" bottom="12"/>
+                                                <visibilityPriorities>
+                                                    <integer value="1000"/>
+                                                    <integer value="1000"/>
+                                                </visibilityPriorities>
+                                                <customSpacing>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                </customSpacing>
+                                            </stackView>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstAttribute="trailing" secondItem="vnG-7B-ZyZ" secondAttribute="trailing" id="DUG-EJ-jEW"/>
+                                            <constraint firstItem="vnG-7B-ZyZ" firstAttribute="top" secondItem="N67-qd-WIx" secondAttribute="top" id="kft-Kh-3wq"/>
+                                            <constraint firstItem="vnG-7B-ZyZ" firstAttribute="leading" secondItem="N67-qd-WIx" secondAttribute="leading" id="mE8-sr-VL2"/>
+                                            <constraint firstAttribute="bottom" secondItem="vnG-7B-ZyZ" secondAttribute="bottom" id="qrB-ho-t1P"/>
+                                        </constraints>
+                                    </view>
+                                    <font key="titleFont" metaFont="system"/>
+                                </box>
                             </subviews>
                             <constraints>
-                                <constraint firstItem="1oZ-lo-QsR" firstAttribute="leading" secondItem="NbK-vD-Iek" secondAttribute="trailing" constant="16" id="24A-bN-JTN"/>
-                                <constraint firstItem="NbK-vD-Iek" firstAttribute="leading" secondItem="BqM-nJ-IDU" secondAttribute="leading" id="diV-O4-b1D"/>
-                                <constraint firstAttribute="trailing" secondItem="1oZ-lo-QsR" secondAttribute="trailing" id="jl4-pl-Xk9"/>
-                                <constraint firstAttribute="bottom" secondItem="NbK-vD-Iek" secondAttribute="bottom" id="uNJ-cE-8ip"/>
-                                <constraint firstItem="1oZ-lo-QsR" firstAttribute="firstBaseline" secondItem="NbK-vD-Iek" secondAttribute="firstBaseline" id="wBI-Yl-cOc"/>
-                                <constraint firstItem="NbK-vD-Iek" firstAttribute="top" secondItem="BqM-nJ-IDU" secondAttribute="top" id="zst-cR-xRr"/>
+                                <constraint firstItem="gcX-vp-hRg" firstAttribute="top" secondItem="KlA-Ot-dln" secondAttribute="bottom" constant="4" id="A9c-jj-4Jb"/>
+                                <constraint firstItem="gcX-vp-hRg" firstAttribute="leading" secondItem="azI-1c-jRR" secondAttribute="leading" id="Yi5-bX-Qcl"/>
+                                <constraint firstAttribute="trailing" secondItem="gcX-vp-hRg" secondAttribute="trailing" id="bUW-5P-yNA"/>
+                                <constraint firstItem="KlA-Ot-dln" firstAttribute="leading" secondItem="azI-1c-jRR" secondAttribute="leading" id="dG8-D7-vfR"/>
+                                <constraint firstItem="NbK-vD-Iek" firstAttribute="height" secondItem="KlA-Ot-dln" secondAttribute="height" id="pdh-G3-sLf"/>
+                                <constraint firstAttribute="trailing" secondItem="KlA-Ot-dln" secondAttribute="trailing" id="zwt-qI-QBw"/>
                             </constraints>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyFullScreen" id="SQc-NS-WFg">
-                                    <dictionary key="options">
-                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                    </dictionary>
-                                </binding>
-                            </connections>
-                        </customView>
-                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="olV-5h-wSi" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="52" width="1" height="0.0"/>
-                            <constraints>
-                                <constraint firstAttribute="height" id="5Og-TH-Aq0"/>
-                                <constraint firstAttribute="width" constant="1" id="WU8-nC-Rlo"/>
-                            </constraints>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyFullScreen" id="cNJ-KZ-fLB">
-                                    <dictionary key="options">
-                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                    </dictionary>
-                                </binding>
-                            </connections>
-                        </customView>
-                        <button translatesAutoresizingMaskIntoConstraints="NO" id="Nuv-dC-vHt">
-                            <rect key="frame" x="18" y="31" width="375" height="18"/>
-                            <buttonCell key="cell" type="check" title="Use entire Macbook screen even if there is a visible notch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="0Pq-50-bqi">
-                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                <font key="font" metaFont="system"/>
-                            </buttonCell>
-                            <constraints>
-                                <constraint firstAttribute="height" constant="16" id="A3f-UU-ve0"/>
-                            </constraints>
-                            <connections>
-                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.allowVideoToOverlapCameraHousing" id="AQ6-lq-boF"/>
-                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.useLegacyFullScreen" id="ndf-cy-9qe">
-                                    <dictionary key="options">
-                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
-                                    </dictionary>
-                                </binding>
-                            </connections>
-                        </button>
+                            <visibilityPriorities>
+                                <integer value="1000"/>
+                                <integer value="1000"/>
+                            </visibilityPriorities>
+                            <customSpacing>
+                                <real value="3.4028234663852886e+38"/>
+                                <real value="3.4028234663852886e+38"/>
+                            </customSpacing>
+                        </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="glX-jw-WmF" userLabel="8pt Spacer">
                             <rect key="frame" x="0.0" y="20" width="1" height="8"/>
                             <constraints>
@@ -320,25 +339,15 @@
                         </button>
                     </subviews>
                     <constraints>
-                        <constraint firstItem="Nuv-dC-vHt" firstAttribute="leading" secondItem="KlA-Ot-dln" secondAttribute="leading" constant="20" id="3op-0g-EX0"/>
-                        <constraint firstItem="prD-fv-qux" firstAttribute="height" secondItem="KlA-Ot-dln" secondAttribute="height" id="L95-0p-rXD"/>
-                        <constraint firstItem="NbK-vD-Iek" firstAttribute="height" secondItem="Nuv-dC-vHt" secondAttribute="height" id="wng-XT-USj"/>
-                        <constraint firstItem="BqM-nJ-IDU" firstAttribute="leading" secondItem="Nuv-dC-vHt" secondAttribute="leading" id="xuM-La-f16"/>
+                        <constraint firstItem="prD-fv-qux" firstAttribute="height" secondItem="Nuv-dC-vHt" secondAttribute="height" id="RsW-6t-t2b"/>
+                        <constraint firstAttribute="trailing" secondItem="azI-1c-jRR" secondAttribute="trailing" id="nhU-HZ-aPN"/>
                     </constraints>
                     <visibilityPriorities>
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
-                        <integer value="1000"/>
-                        <integer value="1000"/>
-                        <integer value="1000"/>
-                        <integer value="1000"/>
                     </visibilityPriorities>
                     <customSpacing>
-                        <real value="3.4028234663852886e+38"/>
-                        <real value="3.4028234663852886e+38"/>
-                        <real value="3.4028234663852886e+38"/>
-                        <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
@@ -350,8 +359,8 @@
                 <constraint firstItem="fkF-Rz-sk3" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="2Pv-Ut-0kz" secondAttribute="leading" constant="120" id="QFc-9n-B6e"/>
                 <constraint firstItem="fkF-Rz-sk3" firstAttribute="leading" secondItem="2Pv-Ut-0kz" secondAttribute="leading" id="QkP-SM-25o"/>
                 <constraint firstItem="d9m-Hf-6wE" firstAttribute="leading" secondItem="2Pv-Ut-0kz" secondAttribute="leading" constant="120" id="YlZ-7O-9cw"/>
+                <constraint firstItem="d9m-Hf-6wE" firstAttribute="top" secondItem="2Pv-Ut-0kz" secondAttribute="top" constant="8" id="ftY-Gb-HSa"/>
                 <constraint firstAttribute="trailing" secondItem="d9m-Hf-6wE" secondAttribute="trailing" id="ofv-rX-MTT"/>
-                <constraint firstItem="KlA-Ot-dln" firstAttribute="firstBaseline" secondItem="fkF-Rz-sk3" secondAttribute="firstBaseline" id="xfH-Zw-67Q"/>
                 <constraint firstAttribute="bottom" secondItem="d9m-Hf-6wE" secondAttribute="bottom" constant="8" id="zrl-6c-0VQ"/>
             </constraints>
             <point key="canvasLocation" x="-5" y="-407"/>
@@ -550,7 +559,7 @@
                             <subviews>
                                 <button identifier="Trigger0" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
                                     <rect key="frame" x="-2" y="47" width="455" height="18"/>
-                                    <buttonCell key="cell" type="check" title="Change window size:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="zOq-Em-wUe">
+                                    <buttonCell key="cell" type="check" title="Change window size" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="zOq-Em-wUe">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>
@@ -689,7 +698,7 @@
                             <subviews>
                                 <button identifier="Trigger1" horizontalHuggingPriority="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
                                     <rect key="frame" x="-2" y="128" width="455" height="18"/>
-                                    <buttonCell key="cell" type="check" title="Change window position:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Ofm-qE-RgQ">
+                                    <buttonCell key="cell" type="check" title="Change window position" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Ofm-qE-RgQ">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                     </buttonCell>

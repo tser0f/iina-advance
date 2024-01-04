@@ -43,7 +43,7 @@ class CollapseView: NSStackView {
     guard trigger == nil && contentView == nil else { return }
     findViews()
     guard let trigger = trigger as? NSControl, let _ = contentView else {
-      fatalError("FoldableView is not set up correctly.")
+      fatalError("CollapseView is not set up correctly.")
     }
 
     // for better collapse animation
