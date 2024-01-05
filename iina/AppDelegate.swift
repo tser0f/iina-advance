@@ -478,44 +478,44 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   // Saves an ordered list of current open windows (if configured) each time *any* window becomes the key window.
   private func keyWindowDidChange(_ notification: Notification) {
-    // This notification can sometimes happen if the app had multiple windows at shutdown.
-    // We will ignore it in this case, because this is exactly the case that we want to save!
-    guard !self.isTerminating else {
-      return
-    }
     // Query for the list of open windows and save it.
     // Don't do this too soon, or their orderIndexes may not yet be up to date.
-    DispatchQueue.main.async {
+    DispatchQueue.main.async { [self] in
+      // This notification can sometimes happen if the app had multiple windows at shutdown.
+      // We will ignore it in this case, because this is exactly the case that we want to save!
+      guard !isTerminating else {
+        return
+      }
       Preference.UIState.saveCurrentOpenWindowList()
     }
   }
 
   private func windowDidMiniaturize(_ notification: Notification) {
-    guard !self.isTerminating else {
-      return
-    }
     guard let window = notification.object as? NSWindow else { return }
     let savedStateName = window.savedStateName
     guard !savedStateName.isEmpty else { return }
 
     Logger.log("Window did minimize; adding to minimized windows list: \(savedStateName.quoted)")
     AppDelegate.windowsMinimized.insert(savedStateName)
-    DispatchQueue.main.async {
+    DispatchQueue.main.async { [self] in
+      guard !isTerminating else {
+        return
+      }
       Preference.UIState.saveCurrentOpenWindowList()
     }
   }
 
   private func windowDidDeminiaturize(_ notification: Notification) {
-    guard !self.isTerminating else {
-      return
-    }
     guard let window = notification.object as? NSWindow else { return }
     let savedStateName = window.savedStateName
     guard !savedStateName.isEmpty else { return }
 
     Logger.log("Window did unminimize; removing from minimized windows list: \(savedStateName.quoted)")
     AppDelegate.windowsMinimized.remove(savedStateName)
-    DispatchQueue.main.async {
+    DispatchQueue.main.async { [self] in
+      guard !isTerminating else {
+        return
+      }
       Preference.UIState.saveCurrentOpenWindowList()
     }
   }
