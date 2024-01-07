@@ -34,9 +34,6 @@ Temporary Items
 build/
 DerivedData/
 
-## Xcode generated
-*/project.xcworkspace/xcshareddata/
-
 ## Various settings
 *.pbxuser
 !default.pbxuser

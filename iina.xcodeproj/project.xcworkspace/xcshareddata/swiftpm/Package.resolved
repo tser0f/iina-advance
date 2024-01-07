@@ -1,0 +1,50 @@
+{
+  "pins" : [
+    {
+      "identity" : "grmustache.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/groue/GRMustache.swift",
+      "state" : {
+        "revision" : "671e2c5234e829c1f337c9d300bd6d9b21d1c42a",
+        "version" : "4.0.1"
+      }
+    },
+    {
+      "identity" : "gzipswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/1024jp/GzipSwift",
+      "state" : {
+        "revision" : "ba0b6cb51cc6202f896e469b87d2889a46b10d1b",
+        "version" : "5.1.1"
+      }
+    },
+    {
+      "identity" : "just",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dduan/Just",
+      "state" : {
+        "revision" : "1824bf84cf52d11d69ae20cfb89f0ce5bffa5650",
+        "version" : "0.8.0"
+      }
+    },
+    {
+      "identity" : "promisekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mxcl/PromiseKit",
+      "state" : {
+        "revision" : "aea48ea1855f5d82e2dffa6027afce3aab8f3dd7",
+        "version" : "6.13.3"
+      }
+    },
+    {
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle/",
+      "state" : {
+        "revision" : "87e4fcbac39912f9cdb9a9acf205cad60e1ca3bc",
+        "version" : "2.4.2"
+      }
+    }
+  ],
+  "version" : 2
+}
