@@ -17,6 +17,7 @@ fileprivate let MenuItemTagPaste = 603
 fileprivate let MenuItemTagDelete = 604
 
 fileprivate let isPlayingTextBlendFraction: CGFloat = 0.3
+fileprivate let isPlayingPrefixTextBlendFraction: CGFloat = 0.2
 
 class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, SidebarTabGroupViewController, NSMenuItemValidation {
 
@@ -92,6 +93,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   ]
 
   fileprivate var isPlayingTextColor: NSColor = .textColor
+  fileprivate var isPlayingPrefixTextColor: NSColor = .secondaryLabelColor
   fileprivate var cachedEffectiveAppearanceName: String? = nil
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
@@ -116,6 +118,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   fileprivate func setCustomColors() {
     if #available(macOS 10.14, *) {
       isPlayingTextColor = NSColor.controlAccentColor.blended(withFraction: isPlayingTextBlendFraction, of: .textColor)!
+      isPlayingPrefixTextColor = NSColor.controlAccentColor.blended(withFraction: isPlayingPrefixTextBlendFraction, of: .textColor)!
     }
   }
 
@@ -595,15 +598,16 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         }
 
         let textColor = item.isPlaying ? isPlayingTextColor : .controlTextColor
+        let prefixTextColor = item.isPlaying ? isPlayingPrefixTextColor : .secondaryLabelColor
         if Preference.bool(for: .shortenFileGroupsInPlaylist), let prefix = player.info.currentVideosInfo.first(where: { $0.path == item.filename })?.prefix,
            !prefix.isEmpty,
            prefix.count <= displayStr.count,  // check whether prefix length > filename length
            prefix.count >= PrefixMinLength,
            filename.count > FilenameMinLength {
-          cellView.setPrefix(prefix)
+          cellView.setPrefix(prefix, textColor: prefixTextColor)
           cellView.setTitle(String(filename[filename.index(filename.startIndex, offsetBy: prefix.count)...]), textColor: textColor)
         } else {
-          cellView.setPrefix(nil)
+          cellView.setPrefix(nil, textColor: prefixTextColor)
           cellView.setAdditionalInfo(nil)
           cellView.setTitle(filename, textColor: textColor)
         }
@@ -958,7 +962,12 @@ class PlaylistTrackCellView: NSTableCellView {
   @IBOutlet weak var durationLabel: EditableTextField!
   @IBOutlet weak var playbackProgressView: PlaylistPlaybackProgressView!
 
-  func setPrefix(_ prefix: String?) {
+  func setPrefix(_ prefix: String?, textColor: NSColor? = nil) {
+    if #available(macOS 10.14, *) {
+      prefixBtn.contentTintColor = textColor
+    } else {
+      // Sorry earlier versions, no color for you
+    }
     if let prefix = prefix {
       prefixBtn.hasPrefix = true
       prefixBtn.text = prefix
