@@ -25,7 +25,7 @@ class ThumbnailPeekView: NSView {
     guard let layer = self.layer else { return }
 
     let cornerRadius: CGFloat
-    let style: Preference.ThumnailBorderStyle = Preference.enum(for: .thumbnailBorderStyle)
+    let style: Preference.ThumnailBorderStyle = Preference.isAdvancedEnabled ? Preference.enum(for: .thumbnailBorderStyle) : Preference.ThumnailBorderStyle.defaultValue
     switch style {
     case .plain:
       layer.borderWidth = 0

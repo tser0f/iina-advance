@@ -2068,6 +2068,15 @@
                                 <real value="3.4028234663852886e+38"/>
                             </customSpacing>
                             <connections>
+                                <binding destination="lH7-Vv-0M1" name="hidden2" keyPath="values.enableAdvancedSettings" previousBinding="1pe-a3-e0i" id="uLi-dG-0qv">
+                                    <dictionary key="options">
+                                        <integer key="NSMultipleValuesPlaceholder" value="-1"/>
+                                        <integer key="NSNoSelectionPlaceholder" value="-1"/>
+                                        <integer key="NSNotApplicablePlaceholder" value="-1"/>
+                                        <integer key="NSNullPlaceholder" value="-1"/>
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
                                 <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.enableThumbnailPreview" id="1pe-a3-e0i">
                                     <dictionary key="options">
                                         <string key="NSValueTransformerName">NSNegateBoolean</string>
