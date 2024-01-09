@@ -338,7 +338,7 @@ struct Preference {
     static let enablePlaylistLoop = Key("enablePlaylistLoop")
     static let enableFileLoop = Key("enableFileLoop")
 
-    /// If true, scan playlist for files with identical starting strings, and replace them with `...` button
+    /// If true, scan playlist filenames with identical starting strings.  replace them with `…` button
     static let shortenFileGroupsInPlaylist = Key("shortenFileGroupsInPlaylist")
 
     // Input

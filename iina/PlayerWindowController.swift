@@ -385,6 +385,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .verticalScrollAction,
     .playlistShowMetadata,
     .playlistShowMetadataInMusicMode,
+    .shortenFileGroupsInPlaylist,
     .autoSwitchToMusicMode,
     .hideWindowsWhenInactive,
     .osdPosition,
@@ -460,13 +461,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if let newValue = change[.newKey] as? Int {
         doubleClickAction = Preference.MouseClickAction(rawValue: newValue)!
       }
-    case PK.playlistShowMetadata.rawValue, PK.playlistShowMetadataInMusicMode.rawValue:
+    case PK.playlistShowMetadata.rawValue, PK.playlistShowMetadataInMusicMode.rawValue, PK.shortenFileGroupsInPlaylist.rawValue:
       if player.isPlaylistVisible {
         player.windowController.playlistView.playlistTableView.reloadData()
       }
     case PK.autoSwitchToMusicMode.rawValue:
       player.overrideAutoMusicMode = false
-      
+
     case PK.enableOSC.rawValue,
       PK.oscPosition.rawValue,
       PK.topBarPlacement.rawValue,
@@ -1317,6 +1318,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   override func keyDown(with event: NSEvent) {
     let keyCode = KeyCodeHelper.mpvKeyCode(from: event)
     let normalizedKeyCode = KeyCodeHelper.normalizeMpv(keyCode)
+    log.verbose("KEY DOWN: \(normalizedKeyCode.quoted)")
 
     PluginInputManager.handle(
       input: normalizedKeyCode, event: .keyDown, player: player,
