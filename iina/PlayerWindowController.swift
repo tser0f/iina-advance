@@ -1258,6 +1258,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Returns true if handled
   @discardableResult
   func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
+    // Some script bindings will draw to the video area. We don't know which will, but
+    // if the DisplayLink is not active the updates will not be displayed.
+    // So start the DisplayLink temporily if not already running:
+    forceDraw()
+
     if keyBinding.isIINACommand {
       if let menuItem = keyBinding.menuItem, let action = menuItem.action {
         // - Menu item (e.g. custom video filter)
@@ -2133,7 +2138,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     let currentLayout = currentLayout
-    log.verbose("WindowWILLResize mode=\(currentLayout.mode) RequestedSize=\(requestedSize)")
+    log.verbose("WindowWILLResize mode=\(currentLayout.mode) RequestedSize=\(requestedSize) isAnimatingLayoutTransition=\(isAnimatingLayoutTransition)")
     videoView.videoLayer.enterAsynchronousMode()
 
     /// This method only provides the desired size for the window, but we don't have access to the  desired origin.
@@ -2400,6 +2405,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if currentLayout.isLegacyFullScreen {
       window?.level = .iinaFloating
     }
+
+    // If focus changed from a different window, need to recalculate the current bindings
+    // so that this window's input sections are included and the other window's are not:
+    AppInputConfig.rebuildCurrent()
 
     if Preference.bool(for: .pauseWhenInactive) && isPausedDueToInactive {
       player.resume()

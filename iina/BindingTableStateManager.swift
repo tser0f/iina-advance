@@ -171,7 +171,7 @@ class BindingTableStateManager: NSObject {
   }
 
   private func appInputConfigDidChange(_ notification: Notification) {
-    Logger.log("Received \(notification.name.rawValue.quoted)", level: .verbose)
+    Logger.log("BindingTableStateManager received \(notification.name.rawValue.quoted)", level: .verbose)
     guard let userData = notification.userInfo else {
       Logger.log("Notification \(notification.name.rawValue.quoted): contains no data!", level: .error)
       return

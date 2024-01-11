@@ -71,6 +71,8 @@ struct AppInputConfig {
 
   static private var lastStartedVersion: Int = 0
 
+  /// If `true`, add extra logging specific to input bindings build. Useful for debugging.
+  /// Can toggle at run time by updating boolean pref key `logKeyBindingsRebuild`.
   static var logBindingsRebuild: Bool {
     Preference.bool(for: .logKeyBindingsRebuild)
   }
