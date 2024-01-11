@@ -24,7 +24,7 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="392"/>
             <point key="canvasLocation" x="-1607" y="64"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior" propertyAccessControl="none">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="6zR-96-iKB" userLabel="Prefs &gt; General &gt; Behavior" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="568" height="556"/>
             <subviews>
                 <textField identifier="SectionTitleBehavior" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="38y-2I-MGs">
@@ -549,6 +549,9 @@
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
+                            <connections>
+                                <binding destination="IBP-Mz-Maa" name="value" keyPath="values.quitWhenNoOpenedWindow" id="R7R-Sm-Oir"/>
+                            </connections>
                         </button>
                     </subviews>
                     <constraints>
@@ -627,18 +630,18 @@
             <point key="canvasLocation" x="-2189" y="118.5"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="IBP-Mz-Maa"/>
-        <customView id="y7O-rd-dnT" userLabel="Prefs &gt; General &gt; Playlist" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="692" height="146"/>
+        <customView id="y7O-rd-dnT" userLabel="Prefs &gt; General &gt; Playlist" propertyAccessControl="all">
+            <rect key="frame" x="0.0" y="0.0" width="717" height="146"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="XlS-gh-24j" userLabel="Playlist-RightColumn VStack View">
-                    <rect key="frame" x="120" y="8" width="564" height="130"/>
+                    <rect key="frame" x="120" y="8" width="589" height="130"/>
                     <subviews>
                         <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hse-Ce-rRe" userLabel="AddFilesAutomatically VStack View">
-                            <rect key="frame" x="0.0" y="96" width="564" height="34"/>
+                            <rect key="frame" x="0.0" y="96" width="589" height="34"/>
                             <subviews>
                                 <button horizontalHuggingPriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="xmd-ef-R8e">
-                                    <rect key="frame" x="-2" y="17" width="566" height="18"/>
+                                    <rect key="frame" x="-2" y="17" width="591" height="18"/>
                                     <buttonCell key="cell" type="check" title="Add files in the same folder automatically" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="QJq-fO-hhK">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
@@ -651,7 +654,7 @@
                                     </connections>
                                 </button>
                                 <textField focusRingType="none" horizontalHuggingPriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="OVz-Nv-1WW">
-                                    <rect key="frame" x="14" y="0.0" width="552" height="14"/>
+                                    <rect key="frame" x="14" y="0.0" width="577" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="14" id="gqs-Zj-YSK"/>
                                     </constraints>
@@ -712,8 +715,8 @@
                             </connections>
                         </button>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Q1d-l6-T8I">
-                            <rect key="frame" x="-2" y="-1" width="564" height="18"/>
-                            <buttonCell key="cell" type="check" title="Fold beginnings of displayed titles into &quot;…&quot; when multiple titles share the same beginning" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="G44-l9-kVk">
+                            <rect key="frame" x="-2" y="-1" width="591" height="18"/>
+                            <buttonCell key="cell" type="check" title="Fold beginnings of displayed titles with &quot;…&quot; when more than 2 titles share the same beginning" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="G44-l9-kVk">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
@@ -762,7 +765,7 @@
                 <constraint firstItem="XlS-gh-24j" firstAttribute="top" secondItem="y7O-rd-dnT" secondAttribute="top" constant="8" id="iZ3-mm-jTs"/>
                 <constraint firstItem="XlS-gh-24j" firstAttribute="leading" secondItem="y7O-rd-dnT" secondAttribute="leading" constant="120" id="wGO-XT-AhZ"/>
             </constraints>
-            <point key="canvasLocation" x="-2202" y="715"/>
+            <point key="canvasLocation" x="-2203" y="725"/>
         </customView>
         <customView id="Kmu-J1-cbE" userLabel="Prefs &gt; General &gt; History" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="480" height="112"/>

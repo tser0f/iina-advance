@@ -47,6 +47,7 @@ enum WindowAutosaveName: Equatable {
 
   case preference
   case welcome
+  case openFile
   case openURL
   case about
   case inspector  // not always treated like a real window
@@ -63,6 +64,8 @@ enum WindowAutosaveName: Equatable {
       return "IINAPreferenceWindow"
     case .welcome:
       return "IINAWelcomeWindow"
+    case .openFile:
+      return "OpenFileWindow"
     case .openURL:
       return "OpenURLWindow"
     case .about:

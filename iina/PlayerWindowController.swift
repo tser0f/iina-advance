@@ -1076,6 +1076,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Also show or hide default album art if needed.
   func refreshAlbumArtDisplay(_ videoParams: MPVVideoParams?, isVideoTrackSelected: Bool,
                               _ currentMediaAudioStatus: PlaybackInfo.CurrentMediaAudioStatus) {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded else { return }
 
     // Part 1: default album art
@@ -3763,9 +3764,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let appDelegate = (NSApp.delegate! as! AppDelegate)
     switch cmd {
     case .openFile:
-      appDelegate.openFile(self)
+      appDelegate.showOpenFileWindow(isAlternativeAction: false)
     case .openURL:
-      appDelegate.openURL(self)
+      appDelegate.showOpenURLWindow(isAlternativeAction: false)
     case .flip:
       menuToggleFlip(.dummy)
     case .mirror:

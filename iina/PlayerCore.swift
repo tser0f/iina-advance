@@ -1918,7 +1918,7 @@ class PlayerCore: NSObject {
     syncAbLoop()
     saveState()
 
-    // Get these while in mpv queue
+    // Grab these while still in mpv queue
     let videoParams = mpv.queryForVideoParams()
     let isVideoTrackSelected = info.isVideoTrackSelected
     let currentMediaAudioStatus = info.currentMediaAudioStatus
@@ -2112,6 +2112,10 @@ class PlayerCore: NSObject {
     let currentMediaAudioStatus = info.currentMediaAudioStatus
 
     DispatchQueue.main.async{ [self] in
+      guard info.fileLoaded else {
+        log.verbose("After video track changed to: \(vid): file is not loaded!")
+        return
+      }
       windowController.forceDraw()
       /// Do this first, before `applyVideoViewVisibility`, for a nicer animation`
       windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)

@@ -1097,9 +1097,9 @@ extension NSWindow {
   }
 
   /// Excludes the Inspector window
-  func isOnlyOpenWindow() -> Bool {
+  var isOnlyOpenWindow: Bool {
     for window in NSApp.windows {
-      if window != self && window.isVisible && window.savedStateName != WindowAutosaveName.inspector.string {
+      if window != self, let knownWindowName = WindowAutosaveName(window.savedStateName), knownWindowName != .inspector {
         return false
       }
     }
@@ -1107,7 +1107,7 @@ extension NSWindow {
     return true
   }
 
-  func isImportant() -> Bool {
+  var isImportant: Bool {
     // All the windows we care about have autosave names
     return !savedStateName.isEmpty
   }

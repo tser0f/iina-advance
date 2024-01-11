@@ -528,7 +528,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     case .welcomeWindow:
       showWelcomeWindow()
     case .openPanel:
-      openFile(self)
+      showOpenFileWindow(isAlternativeAction: true)
     case .historyWindow:
       showHistoryWindow(self)
     case .none:
@@ -620,6 +620,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       case .about:
         showAboutWindow(self)
         wc = aboutWindow
+      case .openFile:
+        // TODO: persist isAlternativeAction too
+        showOpenFileWindow(isAlternativeAction: true)
       case .openURL:
         // TODO: persist isAlternativeAction too
         showOpenURLWindow(isAlternativeAction: true)
@@ -649,7 +652,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     Preference.set(false, for: .isRestoreInProgress)
 
     // Count only "important windows" (IINA startup can open other windows which are hidden, such as color picker)
-    let openWindowCount = NSApp.windows.reduce(0, {count, win in (win.isImportant() && win.isOpen()) ? count + 1 : count})
+    let openWindowCount = NSApp.windows.reduce(0, {count, win in (win.isImportant && win.isOpen()) ? count + 1 : count})
     if openWindowCount == 0 {
       Logger.log("Looks like none of the windows was restored successfully. Falling back to user launch preference")
       return false
@@ -663,6 +666,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     initialWindow.reloadData()
     Logger.log("Total WelcomeWindow reload time: \(sw) ms")
     initialWindow.showWindow(nil)
+  }
+
+  func showOpenFileWindow(isAlternativeAction: Bool) {
+    Logger.log("Showing OpenFileWindow (isAlternativeAction: \(isAlternativeAction))", level: .verbose)
+    let panel = NSOpenPanel()
+    panel.setFrameAutosaveName(WindowAutosaveName.openFile.string)
+    panel.title = NSLocalizedString("alert.choose_media_file.title", comment: "Choose Media File")
+    panel.canCreateDirectories = false
+    panel.canChooseFiles = true
+    panel.canChooseDirectories = true
+    panel.allowsMultipleSelection = true
+
+    panel.begin(completionHandler: { result in
+      if result == .OK {  /// OK
+        if Preference.bool(for: .recordRecentFiles) {
+          for url in panel.urls {
+            NSDocumentController.shared.noteNewRecentDocumentURL(url)
+          }
+        }
+        let playerCore = PlayerCore.activeOrNewForMenuAction(isAlternative: isAlternativeAction)
+        if playerCore.openURLs(panel.urls) == 0 {
+          Logger.log("OpenFile: notifying user there is nothing to open", level: .verbose)
+          Utility.showAlert("nothing_to_open")
+        }
+      } else {  /// Cancel
+        Logger.log("OpenFile: user cancelled", level: .verbose)
+      }
+    })
   }
 
   func showOpenURLWindow(isAlternativeAction: Bool) {
@@ -682,13 +713,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard !PlayerCore.active.windowController.isOpen else { return false }
 
     if Preference.bool(for: .quitWhenNoOpenedWindow) {
+      if Preference.ActionAfterLaunch(key: .actionAfterLaunch) == .openPanel {
+        // FIXME: figure out how to get open panel to open
+
+      }
       Preference.UIState.clearSavedStateForThisLaunch()
       Logger.log("Will quit due to last window closed", level: .verbose)
       return true
-    } else {
-      self.doActionWhenLastWindowWillClose()
-      return false
     }
+
+    self.doActionWhenLastWindowWillClose()
+    return false
   }
 
   private func windowWillClose(_ notification: Notification) {
@@ -720,53 +755,47 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
     }
 
-    if window.isOnlyOpenWindow() {
+    if window.isOnlyOpenWindow {
       let quitForAction: Preference.ActionAfterLaunch?
-      switch window.savedStateName {
-      case WindowAutosaveName.playbackHistory.string:
-        quitForAction = .historyWindow
-      case WindowAutosaveName.welcome.string:
-        guard !initialWindow.expectingAnotherWindowToOpen else {
-          return
+      if let windowName = WindowAutosaveName(window.savedStateName) {
+        switch windowName {
+        case .playbackHistory:
+          quitForAction = .historyWindow
+        case .welcome:
+          guard !initialWindow.expectingAnotherWindowToOpen else {
+            return
+          }
+          quitForAction = .welcomeWindow
+        default:
+          quitForAction = nil
         }
-        quitForAction = .welcomeWindow
-      default:
+      } else {
         quitForAction = nil
       }
       doActionWhenLastWindowWillClose(quitFor: quitForAction)
     }
   }
 
-
   private func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionAfterLaunch? = nil) {
     guard !isTerminating else { return }
+    guard let whatToDo = Preference.ActionAfterLaunch(key: .actionAfterLaunch) else { return }
 
-    if let whatToDo = Preference.ActionAfterLaunch(key: .actionAfterLaunch) {
-      Logger.log("ActionWhenNoOpenedWindow: \(whatToDo)", level: .verbose)
-      if whatToDo == quitForAction {
-        Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
-        Preference.UIState.clearSavedStateForThisLaunch()
-        DispatchQueue.main.async {
-          NSApp.terminate(nil)
-        }
-        return
+    Logger.log("ActionWhenNoOpenedWindow: \(whatToDo). QuitForAction: \(quitForAction.debugDescription)", level: .verbose)
+    if whatToDo == quitForAction {
+      Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
+      Preference.UIState.clearSavedStateForThisLaunch()
+      DispatchQueue.main.async {
+        NSApp.terminate(nil)
       }
-
-      switch whatToDo {
-      case .welcomeWindow:
-        showWelcomeWindow()
-      case .historyWindow:
-        showHistoryWindow(self)
-      default:
-        break
-      }
+    } else {
+      doLaunchOrReopenAction()
     }
   }
 
   // MARK: Application termination
 
   @objc
-  func shutdownTimedout() {
+  func shutdownDidTimeout() {
     timedOut = true
     if !allPlayersHaveShutdown {
       Logger.log("Timed out waiting for players to stop and shut down", level: .warning)
@@ -897,11 +926,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       timer = Timer(timeInterval: terminationTimeout, repeats: false) { _ in
         // Once macOS 10.11 is no longer supported the contents of the method can be inlined in this
         // closure.
-        self.shutdownTimedout()
+        self.shutdownDidTimeout()
       }
     } else {
       timer = Timer(timeInterval: terminationTimeout, target: self,
-                    selector: #selector(self.shutdownTimedout), userInfo: nil, repeats: false)
+                    selector: #selector(self.shutdownDidTimeout), userInfo: nil, repeats: false)
     }
     RunLoop.main.add(timer, forMode: .common)
 
@@ -1191,26 +1220,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   // MARK: - Menu actions
 
   @IBAction func openFile(_ sender: AnyObject) {
-    Logger.log("Menu - Open file")
-    let panel = NSOpenPanel()
-    panel.title = NSLocalizedString("alert.choose_media_file.title", comment: "Choose Media File")
-    panel.canCreateDirectories = false
-    panel.canChooseFiles = true
-    panel.canChooseDirectories = true
-    panel.allowsMultipleSelection = true
-    if panel.runModal() == .OK {
-      if Preference.bool(for: .recordRecentFiles) {
-        for url in panel.urls {
-          NSDocumentController.shared.noteNewRecentDocumentURL(url)
-        }
-      }
-      let isAlternative = (sender as? NSMenuItem)?.tag == AlternativeMenuItemTag
-      let playerCore = PlayerCore.activeOrNewForMenuAction(isAlternative: isAlternative)
-      if playerCore.openURLs(panel.urls) == 0 {
-        Logger.log("OpenFile: notifying user there is nothing to open", level: .verbose)
-        Utility.showAlert("nothing_to_open")
-      }
-    }
+    Logger.log("Menu - Open File")
+    showOpenFileWindow(isAlternativeAction: sender.tag == AlternativeMenuItemTag)
   }
 
   @IBAction func openURL(_ sender: AnyObject) {
