@@ -108,6 +108,8 @@ struct Preference {
     /// Pressing pause/resume when stopped at EOF to restart playback
     static let resumeFromEndRestartsPlayback = Key("resumeFromEndRestartsPlayback")
 
+    static let actionWhenNoOpenWindow = Key("actionWhenNoOpenWindow")
+
     /** Resume from last position */
     static let resumeLastPosition = Key("resumeLastPosition")
 
@@ -479,6 +481,21 @@ struct Preference {
     case historyWindow
 
     static var defaultValue = ActionAfterLaunch.welcomeWindow
+
+    init?(key: Key) {
+      self.init(rawValue: Preference.integer(for: key))
+    }
+  }
+
+  enum ActionWhenNoOpenWindow: Int, InitializingFromKey {
+    /// Stay consistent with ordering of `ActionAfterLaunch`:
+    case welcomeWindow = 0
+    case openPanel
+    case none
+    case historyWindow
+    case quit
+
+    static var defaultValue = ActionWhenNoOpenWindow.none
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1217,6 +1234,7 @@ struct Preference {
       .keepOpenOnFileEnd: true,
     .quitWhenNoOpenedWindow: false,
     .resumeFromEndRestartsPlayback: true,
+    .actionWhenNoOpenWindow: ActionWhenNoOpenWindow.none.rawValue,
     .useExactSeek: SeekOption.exact.rawValue,
     .followGlobalSeekTypeWhenAdjustSlider: false,
     .relativeSeekAmount: 3,

@@ -724,7 +724,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // OpenFile is an NSPanel, which AppKit considers not to be a window. Need to account for this ourselves.
     guard !isShowingOpenFileWindow else { return false }
 
-    if Preference.bool(for: .quitWhenNoOpenedWindow) {
+    if Preference.ActionWhenNoOpenWindow(key: .actionWhenNoOpenWindow) == .quit {
       Preference.UIState.clearSavedStateForThisLaunch()
       Logger.log("Will quit due to last window closed", level: .verbose)
       return true
@@ -767,7 +767,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     if window.isOnlyOpenWindow {
-      let quitForAction: Preference.ActionAfterLaunch?
+      let quitForAction: Preference.ActionWhenNoOpenWindow?
       if let windowName = WindowAutosaveName(window.savedStateName) {
         switch windowName {
         case .playbackHistory:
@@ -789,19 +789,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
   }
 
-  private func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionAfterLaunch? = nil) {
+  private func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionWhenNoOpenWindow? = nil) {
     guard !isTerminating else { return }
-    guard let whatToDo = Preference.ActionAfterLaunch(key: .actionAfterLaunch) else { return }
+    guard var action = Preference.ActionWhenNoOpenWindow(key: .actionWhenNoOpenWindow) else { return }
+    Logger.log("ActionWhenNoOpenWindow: \(action). QuitForAction: \(quitForAction.debugDescription)", level: .verbose)
 
-    Logger.log("ActionWhenNoOpenedWindow: \(whatToDo). QuitForAction: \(quitForAction.debugDescription)", level: .verbose)
-    if whatToDo == quitForAction {
-      Logger.log("Last window closed was the configured ActionWhenNoOpenedWindow. Will quit instead of re-opening it.")
+    if action == quitForAction {
+      Logger.log("Last window closed was the configured ActionWhenNoOpenWindow. Will quit instead of re-opening it.")
+      action = .quit
+    }
+
+    switch action {
+    case .welcomeWindow:
+      showWelcomeWindow()
+    case .openPanel:
+      showOpenFileWindow(isAlternativeAction: true)
+    case .historyWindow:
+      showHistoryWindow(self)
+    case .none:
+      break
+    case .quit:
       Preference.UIState.clearSavedStateForThisLaunch()
       DispatchQueue.main.async {
         NSApp.terminate(nil)
       }
-    } else {
-      doLaunchOrReopenAction()
     }
   }
 
