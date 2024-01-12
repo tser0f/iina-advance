@@ -2558,7 +2558,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     animationTasks.append(IINAAnimation.Task(duration: duration, { [self] in
       guard fadeableViewsAnimationState == .hidden || fadeableViewsAnimationState == .shown else { return }
       fadeableViewsAnimationState = .willShow
-      player.refreshSyncUITimer(log: "Showing fadeable views ")
+      player.refreshSyncUITimer(logMsg: "Showing fadeable views ")
       destroyFadeTimer()
 
       for v in fadeableViews {
@@ -2642,7 +2642,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       destroyFadeTimer()
       fadeableViewsAnimationState = .willHide
       fadeableTopBarAnimationState = .willHide
-      player.refreshSyncUITimer(log: "Hiding fadeable views ")
+      player.refreshSyncUITimer(logMsg: "Hiding fadeable views ")
 
       for v in fadeableViews {
         v.animator().alphaValue = 0
@@ -2918,6 +2918,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard !isShowingPersistentOSD else { return }
 
     if let hideOSDTimer = self.hideOSDTimer {
@@ -3004,6 +3005,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @objc
   func hideOSD(immediately: Bool = false) {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     osdAnimationState = .willHide
     isShowingPersistentOSD = false
     osdContext = nil

@@ -614,7 +614,9 @@ class PlayerCore: NSObject {
 
       sendOSD(.stop)
       isStopping = true
-      refreshSyncUITimer()
+      DispatchQueue.main.async { [self] in
+        refreshSyncUITimer()
+      }
       _ = mpv.command(.stop)
     }
   }
@@ -1926,6 +1928,7 @@ class PlayerCore: NSObject {
     // main thread stuff
     DispatchQueue.main.async { [self] in
       refreshSyncUITimer()
+
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
       }
@@ -2222,8 +2225,9 @@ class PlayerCore: NSObject {
   /// Call this when `syncUITimer` may need to be started, stopped, or needs its interval changed. It will figure out the correct action.
   /// Just need to make sure that any state variables (e.g., `info.isPaused`, `isInMiniPlayer`, the vars checked by `windowController.isUITimerNeeded()`,
   /// etc.) are set *before* calling this method, not after, so that it makes the correct decisions.
-  func refreshSyncUITimer(log: String = "") {
+  func refreshSyncUITimer(logMsg: String = "") {
     // Check if timer should start/restart
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
 
     let useTimer: Bool
     if isStopping || isStopped || isShuttingDown || isShutdown {
@@ -2278,18 +2282,28 @@ class PlayerCore: NSObject {
     }
 
     if Logger.isEnabled(.verbose) {
-      var summary = wasTimerRunning ? (useTimer ? (timerRestartNeeded ? "restarting" : "running") : "didStop") : (useTimer ? "starting" : "notNeeded")
+      var summary: String = ""
+      if wasTimerRunning {
+        if useTimer {
+          summary = timerRestartNeeded ? "restarting" : "running"
+        } else {
+          summary = "didStop"
+        }
+      } else {  // timer was not running
+        summary = useTimer ? "starting" : "notNeeded"
+      }
       if summary != lastTimerSummary {
         lastTimerSummary = summary
         if useTimer {
           summary += ", every \(timerConfig.interval)s"
         }
-        Logger.log("\(log)- SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn)\(isStopped.yn) quit:\(isShuttingDown.yn)\(isShutdown.yn))",
-                   level: .verbose, subsystem: subsystem)
+        log.verbose("\(logMsg)- SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn)\(isStopped.yn) quit:\(isShuttingDown.yn)\(isShutdown.yn))")
       }
     }
 
-    guard useTimer && (!wasTimerRunning || timerRestartNeeded) else { return }
+    guard useTimer && (timerRestartNeeded || !wasTimerRunning) else {
+      return
+    }
 
     // Timer will start
 
@@ -2298,6 +2312,7 @@ class PlayerCore: NSObject {
       syncUITime()
     }
 
+    log.verbose("Scheduling SyncUITimer")
     syncUITimer = Timer.scheduledTimer(
       timeInterval: timerConfig.interval,
       target: self,
@@ -2313,7 +2328,10 @@ class PlayerCore: NSObject {
   private var lastSaveTime = Date().timeIntervalSince1970
 
   @objc func syncUITime() {
-    guard didInitVideo && !isStopping && !isShuttingDown else { return }
+    guard didInitVideo, !isStopping, !isShuttingDown else {
+      log.verbose("syncUITime: not syncing")
+      return
+    }
 
     let isNetworkStream = info.isNetworkResource
     if isNetworkStream {
