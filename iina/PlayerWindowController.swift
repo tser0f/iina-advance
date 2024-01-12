@@ -1324,7 +1324,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   override func keyDown(with event: NSEvent) {
     let keyCode = KeyCodeHelper.mpvKeyCode(from: event)
     let normalizedKeyCode = KeyCodeHelper.normalizeMpv(keyCode)
-    log.verbose("KEY DOWN: \(normalizedKeyCode.quoted)")
+    log.verbose("KEYDOWN: \(normalizedKeyCode.quoted)")
 
     PluginInputManager.handle(
       input: normalizedKeyCode, event: .keyDown, player: player,

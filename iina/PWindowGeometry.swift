@@ -51,6 +51,17 @@ enum ScreenFitOption: Int {
       return false
     }
   }
+
+  var shouldMoveWindowToKeepInContainer: Bool {
+    switch self {
+    case .legacyFullScreen, .nativeFullScreen:
+      return true
+    case .keepInVisibleScreen, .centerInVisibleScreen:
+      return Preference.bool(for: .moveWindowIntoVisibleScreenOnResize)
+    default:
+      return false
+    }
+  }
 }
 
 /**
@@ -668,7 +679,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     // Move window if needed to make sure the window is not offscreen
     var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
-    if let containerFrame {
+    if let containerFrame, newFitOption.shouldMoveWindowToKeepInContainer {
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
       if newFitOption == .centerInVisibleScreen {
         newWindowFrame = newWindowFrame.size.centeredRect(in: containerFrame)

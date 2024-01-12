@@ -162,7 +162,7 @@ class AppInputConfigBuilder {
       if AppInputConfig.logBindingsRebuild {
         Logger.log("Skipping line: \"default-bindings start\"", level: .verbose)
       }
-      displayMessage = "IINA does not support default-level (\"builtin\") bindings"
+      displayMessage = "IINA does not support default-level (\"builtin\") bindings" // TODO: localize
       isEnabled = false
     } else if let destinationSectionName = keyMapping.destinationSection {
       /// Special case: does the command contain an explicit input section using curly braces? (Example line: `Meta+K {default} screenshot`)
@@ -173,9 +173,14 @@ class AppInputConfigBuilder {
         Logger.log("Modifying binding to remove redundant section specifier (\(destinationSectionName.quoted)) for key: \(keyMapping.rawKey.quoted)", level: .verbose)
       } else {
         Logger.log("Skipping binding which specifies section \(destinationSectionName.quoted) for key: \(keyMapping.rawKey.quoted)", level: .verbose)
-        displayMessage = "Adding bindings to other input sections is not supported"
+        displayMessage = "Adding bindings to other input sections is not supported"  // TODO: localize
         isEnabled = false
       }
+    }
+
+    if section.origin == .libmpv && displayMessage.isEmpty {
+      // Set default tooltip
+      displayMessage = "This key binding was set by a Lua script or via mpv RPC"  // TODO: localize
     }
 
     if AppInputConfig.logBindingsRebuild {

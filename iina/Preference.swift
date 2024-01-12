@@ -93,6 +93,11 @@ struct Preference {
     /// `false`: allow user to resize window and show black bars.
     static let lockViewportToVideoSize = Key("lockViewportToVideoSize")
 
+    /// For windowed mode only.
+    /// `true`: when the window is resized, move it back inside the screen's visible rect if is not already
+    /// `false`: do nothing if part of it is offscreen after the window is resized.
+    static let moveWindowIntoVisibleScreenOnResize = Key("moveWindowIntoVisibleScreenOnResize")
+
     /// If enabled, in legacy full screen, video will fill entire screen including camera housing, showing a
     /// visible notch in the middle top
     static let allowVideoToOverlapCameraHousing = Key("allowVideoToOverlapCameraHousing")
@@ -1047,6 +1052,7 @@ struct Preference {
     .arrowButtonAction: ArrowButtonAction.speed.rawValue,
     .useLegacyWindowedMode: false,
     .lockViewportToVideoSize: true,
+    .moveWindowIntoVisibleScreenOnResize: false,
     .allowVideoToOverlapCameraHousing: false,
     .pauseWhenOpen: false,
     .hideWindowsWhenInactive: false,

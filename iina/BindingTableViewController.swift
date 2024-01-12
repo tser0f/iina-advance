@@ -782,7 +782,7 @@ extension BindingTableViewController: NSMenuDelegate {
         let sourceName = (clickedRow.keyMapping as? MenuItemMapping)?.sourceName ?? "<ERROR>"
         culprit = "the saved filter \(sourceName.quoted)"
       case .libmpv:
-        culprit = "a Lua script or other mpv interface"
+        culprit = "a Lua script or via mpv RPC"
       case .builtInMenuItem:
         culprit = "a built-in menu item"
       default:

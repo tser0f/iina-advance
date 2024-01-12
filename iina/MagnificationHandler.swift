@@ -20,6 +20,7 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
     let pinchAction: Preference.PinchAction = Preference.enum(for: .pinchAction)
     guard pinchAction != .none else { return }
     guard !windowController.isInInteractiveMode else { return }
+    guard !(windowController.isInMiniPlayer && !windowController.miniPlayer.isVideoVisible) else { return }
 
     switch pinchAction {
     case .none:

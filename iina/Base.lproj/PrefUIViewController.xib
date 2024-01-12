@@ -190,8 +190,8 @@
             </constraints>
             <point key="canvasLocation" x="-27" y="-1039"/>
         </customView>
-        <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="573" height="134"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="2Pv-Ut-0kz" userLabel="Prefs &gt; UI &gt; Full Screen" propertyAccessControl="all">
+            <rect key="frame" x="0.0" y="0.0" width="573" height="138"/>
             <subviews>
                 <textField identifier="SectionTitleFullScreen" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fkF-Rz-sk3">
                     <rect key="frame" x="-2" y="114" width="81" height="16"/>
@@ -366,11 +366,11 @@
             <point key="canvasLocation" x="-5" y="-407"/>
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="lH7-Vv-0M1"/>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window Geometry" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="613" height="401"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="D77-Iw-nrY" userLabel="Prefs &gt; UI &gt; Window Geometry" propertyAccessControl="all">
+            <rect key="frame" x="0.0" y="0.0" width="613" height="425"/>
             <subviews>
                 <textField identifier="SectionTitleWindow" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RFk-nU-SGL">
-                    <rect key="frame" x="-2" y="377" width="61" height="16"/>
+                    <rect key="frame" x="-2" y="401" width="61" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Window:" id="GKy-3g-4MB">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -378,10 +378,10 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3GV-dH-tZQ" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="493" height="385"/>
+                    <rect key="frame" x="120" y="8" width="493" height="409"/>
                     <subviews>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Xgb-im-tqO">
-                            <rect key="frame" x="-2" y="368" width="424" height="18"/>
+                            <rect key="frame" x="-2" y="392" width="424" height="18"/>
                             <buttonCell key="cell" type="check" title="Lock proportions of window to prevent empty space around video" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9Cn-gh-mtB">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -393,8 +393,35 @@
                                 <binding destination="lH7-Vv-0M1" name="value" keyPath="values.lockViewportToVideoSize" id="30d-RO-gHp"/>
                             </connections>
                         </button>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="o8C-MT-KJn" userLabel="0pt Spacer">
+                            <rect key="frame" x="0.0" y="389" width="1" height="0.0"/>
+                            <constraints>
+                                <constraint firstAttribute="height" id="ZFV-GH-Tjj"/>
+                                <constraint firstAttribute="width" constant="1" id="cNU-hr-AyC"/>
+                            </constraints>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.resizeWindowTiming" id="Mmp-NU-OrJ">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">InverseResizeTimingTransformer</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
+                        </customView>
+                        <button translatesAutoresizingMaskIntoConstraints="NO" id="xMC-EY-bOr">
+                            <rect key="frame" x="-2" y="368" width="379" height="18"/>
+                            <buttonCell key="cell" type="check" title="Reposition window when scaling video to keep it fully visible on screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="BeX-Eq-sUG">
+                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                <font key="font" metaFont="system"/>
+                            </buttonCell>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="16" id="l8a-NE-gKD"/>
+                            </constraints>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="value" keyPath="values.moveWindowIntoVisibleScreenOnResize" id="MMQ-gG-q6f"/>
+                            </connections>
+                        </button>
                         <button hidden="YES" verticalHuggingPriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="RRL-GG-R45">
-                            <rect key="frame" x="-2" y="368" width="280" height="18"/>
+                            <rect key="frame" x="-2" y="392" width="280" height="18"/>
                             <buttonCell key="cell" type="check" title="Use physical resolution on Retina displays" bezelStyle="regularSquare" imagePosition="left" enabled="NO" inset="2" id="fsj-YE-OB7">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -994,8 +1021,12 @@
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
                     </visibilityPriorities>
                     <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
@@ -1026,7 +1057,7 @@
             </constraints>
             <point key="canvasLocation" x="7.5" y="-737"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="none">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="487" height="662"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">

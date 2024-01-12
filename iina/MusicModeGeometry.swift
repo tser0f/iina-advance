@@ -160,7 +160,10 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     newHeight = min(round(newHeight), maxHeight)
     let newWindowSize = NSSize(width: newWidth, height: newHeight)
 
-    let newWindowFrame = NSRect(origin: windowFrame.origin, size: newWindowSize).constrain(in: containerFrame)
+    var newWindowFrame = NSRect(origin: windowFrame.origin, size: newWindowSize)
+    if ScreenFitOption.keepInVisibleScreen.shouldMoveWindowToKeepInContainer {
+      newWindowFrame = newWindowFrame.constrain(in: containerFrame)
+    }
     let fittedGeo = self.clone(windowFrame: newWindowFrame)
     Logger.log("Refitted \(fittedGeo), from requestedSize: \(requestedSize)", level: .verbose)
     return fittedGeo
@@ -178,16 +181,16 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     Logger.log("Scaling MusicMode video to desiredSize: \(newVideoSize)", level: .verbose)
 
     let newScreenID = screenID ?? self.screenID
-    let screenFrame: NSRect = PWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: .keepInVisibleScreen)!
+    let containerFrame: NSRect = PWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: .keepInVisibleScreen)!
 
     // Window height should not change. Only video size should be scaled
-    let windowHeight = min(screenFrame.height, windowFrame.height)
+    let windowHeight = min(containerFrame.height, windowFrame.height)
 
     // Constrain desired width within min and max allowed, then recalculate height from new value
     var newVideoWidth = newVideoSize.width
     newVideoWidth = max(newVideoWidth, Constants.Distance.MusicMode.minWindowWidth)
     newVideoWidth = min(newVideoWidth, MiniPlayerController.maxWindowWidth)
-    newVideoWidth = min(newVideoWidth, screenFrame.width)
+    newVideoWidth = min(newVideoWidth, containerFrame.width)
 
     var newVideoHeight = newVideoWidth / videoAspect
 
@@ -202,8 +205,8 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
     var newOriginX = windowFrame.origin.x
 
     // Determine which X direction to scale towards by checking which side of the screen it's closest to
-    let distanceToLeadingSideOfScreen = abs(abs(windowFrame.minX) - abs(screenFrame.minX))
-    let distanceToTrailingSideOfScreen = abs(abs(windowFrame.maxX) - abs(screenFrame.maxX))
+    let distanceToLeadingSideOfScreen = abs(abs(windowFrame.minX) - abs(containerFrame.minX))
+    let distanceToTrailingSideOfScreen = abs(abs(windowFrame.maxX) - abs(containerFrame.maxX))
     if distanceToTrailingSideOfScreen < distanceToLeadingSideOfScreen {
       // Closer to trailing side. Keep trailing side fixed by adjusting the window origin by the width changed
       let widthChange = windowFrame.width - newVideoWidth
@@ -213,7 +216,11 @@ struct MusicModeGeometry: Equatable, CustomStringConvertible {
 
     let newWindowOrigin = NSPoint(x: newOriginX, y: windowFrame.origin.y)
     let newWindowSize = NSSize(width: newVideoWidth, height: windowHeight)
-    let newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize).constrain(in: screenFrame)
+    var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
+
+    if ScreenFitOption.keepInVisibleScreen.shouldMoveWindowToKeepInContainer {
+      newWindowFrame = newWindowFrame.constrain(in: containerFrame)
+    }
 
     return clone(windowFrame: newWindowFrame)
   }

@@ -120,7 +120,7 @@
 "preference.system_media_control" = "Use system media control";
 
 "preference.key_binding_hint_1" = "To edit key bindings in current configuration file, click \"Duplicate\" button first to create a copy.";
-"preference.key_binding_hint_2" = "Double click a row at the right side to edit the corresponding key binding.";
+"preference.key_binding_hint_2" = "Double click a row at the right side to edit the corresponding key binding.\nOnly one key binding can be mapped to the same \"Key\" at the same time. If multiple rows have the same \"Key\" value, only the lowest one will be used.";
 
 "preference.enable_adv_settings" = "Enable advanced settings";
 

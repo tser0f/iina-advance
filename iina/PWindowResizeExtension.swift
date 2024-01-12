@@ -201,7 +201,7 @@ extension PlayerWindowController {
       }
     }
 
-    log.verbose("[MPVVideoReconfig C-5] ResizeSchem=\(resizeScheme). Resizing & centering windowFrame")
+    log.verbose("[MPVVideoReconfig C-5] ResizeScheme=\(resizeScheme). Resizing & centering windowFrame")
     return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
   }
 
@@ -287,10 +287,11 @@ extension PlayerWindowController {
    */
   func resizeViewport(to desiredViewportSize: CGSize? = nil, centerOnScreen: Bool = false) {
     guard currentLayout.mode == .windowed || currentLayout.mode == .musicMode else { return }
+    guard let window else { return }
 
     switch currentLayout.mode {
     case .windowed:
-      let newGeoUnconstrained = windowedModeGeometry.scaleViewport(to: desiredViewportSize, fitOption: .noConstraints)
+      let newGeoUnconstrained = windowedModeGeometry.clone(windowFrame: window.frame).scaleViewport(to: desiredViewportSize, fitOption: .noConstraints)
       // User has actively resized the video. Assume this is the new preferred resolution
       player.info.intendedViewportSize = newGeoUnconstrained.viewportSize
 
@@ -300,7 +301,7 @@ extension PlayerWindowController {
       applyWindowGeometryInAnimationPipeline(newGeometry)
     case .musicMode:
       /// In music mode, `viewportSize==videoSize` always. Will get `nil` here if video is not visible
-      guard let newMusicModeGeometry = musicModeGeometry.scaleVideo(to: desiredViewportSize) else { return }
+      guard let newMusicModeGeometry = musicModeGeometry.clone(windowFrame: window.frame).scaleVideo(to: desiredViewportSize) else { return }
       log.verbose("Calling applyMusicModeGeometry from resizeViewport, to: \(newMusicModeGeometry.windowFrame)")
       applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry)
     default:
@@ -309,12 +310,13 @@ extension PlayerWindowController {
   }
 
   func scaleVideoByIncrement(_ widthStep: CGFloat) {
+    guard let window else { return }
     let currentViewportSize: NSSize
     switch currentLayout.mode {
     case .windowed:
-      currentViewportSize = windowedModeGeometry.viewportSize
+      currentViewportSize = windowedModeGeometry.clone(windowFrame: window.frame).viewportSize
     case .musicMode:
-      guard let viewportSize = musicModeGeometry.viewportSize else { return }
+      guard let viewportSize = musicModeGeometry.clone(windowFrame: window.frame).viewportSize else { return }
       currentViewportSize = viewportSize
     default:
       return
