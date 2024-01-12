@@ -87,7 +87,9 @@ struct AppInputConfig {
   /// as notifies the other callbacks supplied here as needed.
   static func rebuildCurrent(attaching userData: NotificationData? = nil) {
     let requestedVersion = AppInputConfig.lastStartedVersion + 1
-    log.verbose("Requesting AppInputConfig build v\(requestedVersion)")
+    if AppInputConfig.logBindingsRebuild {
+      log.verbose("Requesting AppInputConfig build v\(requestedVersion)")
+    }
 
     DispatchQueue.main.async {
 
@@ -113,7 +115,9 @@ struct AppInputConfig {
 
       let notification = Notification(name: .iinaAppInputConfigDidChange,
                                       object: nil, userInfo: data)
-      log.verbose("Completed AppInputConfig v\(appInputConfigNew.version); posting notification: \(notification.name.rawValue.quoted)")
+      if AppInputConfig.logBindingsRebuild {
+        log.verbose("Completed AppInputConfig v\(appInputConfigNew.version); posting notification: \(notification.name.rawValue.quoted)")
+      }
       NotificationCenter.default.post(notification)
     }
   }

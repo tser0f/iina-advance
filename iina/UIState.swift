@@ -142,7 +142,7 @@ extension Preference {
 
     static func saveCurrentOpenWindowList(excludingWindowName nameToExclude: String? = nil) {
       guard let app = NSApp.delegate as? AppDelegate, !app.isTerminating else { return }
-      let openWindowNames = self.getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
+      let openWindowNames = getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
       let minimizedWindowNames = Array(AppDelegate.windowsMinimized)
       let hiddenWindowNames = Array(AppDelegate.windowsHidden)
       Logger.log("Saving window list. Open: \(openWindowNames), hidden: \(hiddenWindowNames), minimized: \(minimizedWindowNames)", level: .verbose)

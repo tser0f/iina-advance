@@ -43,6 +43,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   var openFileCalled = false
   var shouldIgnoreOpenFile = false
 
+  private var isShowingOpenFileWindow = false
+
   private var commandLineStatus = CommandLineStatus()
 
   private var allPlayersHaveShutdown = false
@@ -670,6 +672,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   func showOpenFileWindow(isAlternativeAction: Bool) {
     Logger.log("Showing OpenFileWindow (isAlternativeAction: \(isAlternativeAction))", level: .verbose)
+    isShowingOpenFileWindow = true
     let panel = NSOpenPanel()
     panel.setFrameAutosaveName(WindowAutosaveName.openFile.string)
     panel.title = NSLocalizedString("alert.choose_media_file.title", comment: "Choose Media File")
@@ -678,8 +681,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     panel.canChooseDirectories = true
     panel.allowsMultipleSelection = true
 
-    panel.begin(completionHandler: { result in
+    panel.begin(completionHandler: { [self] result in
+      isShowingOpenFileWindow = false
       if result == .OK {  /// OK
+        Logger.log("OpenFile: user chose \(panel.urls.count) files", level: .verbose)
         if Preference.bool(for: .recordRecentFiles) {
           for url in panel.urls {
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
@@ -693,6 +698,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       } else {  /// Cancel
         Logger.log("OpenFile: user cancelled", level: .verbose)
       }
+      // AppKit does not consider a panel to be a window, so it won't fire this. Must call ourselves:
+      windowWillClose(panel)
     })
   }
 
@@ -708,15 +715,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    guard !isTerminating else { return false }
+
     Logger.log("applicationShouldTerminateAfterLastWindowClosed() entered", level: .verbose)
     // Certain events (like when PIP is enabled) can result in this being called when it shouldn't.
     guard !PlayerCore.active.windowController.isOpen else { return false }
 
-    if Preference.bool(for: .quitWhenNoOpenedWindow) {
-      if Preference.ActionAfterLaunch(key: .actionAfterLaunch) == .openPanel {
-        // FIXME: figure out how to get open panel to open
+    // OpenFile is an NSPanel, which AppKit considers not to be a window. Need to account for this ourselves.
+    guard !isShowingOpenFileWindow else { return false }
 
-      }
+    if Preference.bool(for: .quitWhenNoOpenedWindow) {
       Preference.UIState.clearSavedStateForThisLaunch()
       Logger.log("Will quit due to last window closed", level: .verbose)
       return true
@@ -728,7 +736,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   private func windowWillClose(_ notification: Notification) {
     guard let window = notification.object as? NSWindow else { return }
+    windowWillClose(window)
+  }
 
+  private func windowWillClose(_ window: NSWindow) {
     guard !isTerminating else { return }
 
     let windowName = window.savedStateName
@@ -761,6 +772,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         switch windowName {
         case .playbackHistory:
           quitForAction = .historyWindow
+        case .openFile:
+          quitForAction = .openPanel
         case .welcome:
           guard !initialWindow.expectingAnotherWindowToOpen else {
             return

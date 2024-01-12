@@ -91,6 +91,8 @@ enum WindowAutosaveName: Equatable {
       self = .preference
     case WindowAutosaveName.welcome.string:
       self = .welcome
+    case WindowAutosaveName.openFile.string:
+      self = .openFile
     case WindowAutosaveName.openURL.string:
       self = .openURL
     case WindowAutosaveName.about.string:
