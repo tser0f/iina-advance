@@ -43,11 +43,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   var openFileCalled = false
   var shouldIgnoreOpenFile = false
 
-  private var isShowingOpenFileWindow = false
+  var isShowingOpenFileWindow = false
 
   private var commandLineStatus = CommandLineStatus()
-
-  private var allPlayersHaveShutdown = false
 
   private(set) var isTerminating = false
 
@@ -682,7 +680,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     panel.allowsMultipleSelection = true
 
     panel.begin(completionHandler: { [self] result in
-      isShowingOpenFileWindow = false
       if result == .OK {  /// OK
         Logger.log("OpenFile: user chose \(panel.urls.count) files", level: .verbose)
         if Preference.bool(for: .recordRecentFiles) {
@@ -700,6 +697,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
       // AppKit does not consider a panel to be a window, so it won't fire this. Must call ourselves:
       windowWillClose(panel)
+      isShowingOpenFileWindow = false
     })
   }
 
@@ -717,7 +715,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     guard !isTerminating else { return false }
 
-    Logger.log("applicationShouldTerminateAfterLastWindowClosed() entered", level: .verbose)
+    Logger.log("applicationShouldTerminateAfterLastWindowClosed entered", level: .verbose)
     // Certain events (like when PIP is enabled) can result in this being called when it shouldn't.
     guard !PlayerCore.active.windowController.isOpen else { return false }
 
@@ -730,7 +728,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return true
     }
 
-    self.doActionWhenLastWindowWillClose()
+    doActionWhenLastWindowWillClose(quitFor: .openPanel)
     return false
   }
 
@@ -743,26 +741,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     guard !isTerminating else { return }
 
     let windowName = window.savedStateName
-    if !windowName.isEmpty {
-      AppDelegate.windowsHidden.remove(windowName)
-      AppDelegate.windowsMinimized.remove(windowName)
+    guard !windowName.isEmpty else { return }
 
-      /// Query for the list of open windows and save it (excluding the window which is about to close).
-      /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
-      /// the user closes a window which is not in the foreground.
-      Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.savedStateName)
+    AppDelegate.windowsHidden.remove(windowName)
+    AppDelegate.windowsMinimized.remove(windowName)
 
-      // Player window was closed? Need to remove some additional state
-      if let player = (window.windowController as? PlayerWindowController)?.player {
-        Preference.UIState.clearPlayerSaveState(forPlayerID: player.label)
+    /// Query for the list of open windows and save it (excluding the window which is about to close).
+    /// Most cases are covered by saving when `keyWindowDidChange` is called, but this covers the case where
+    /// the user closes a window which is not in the foreground.
+    Preference.UIState.saveCurrentOpenWindowList(excludingWindowName: window.savedStateName)
 
-        // Check whether this is the last player closed; show welcome or history window if configured.
-        // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
-        if player.isOnlyOpenPlayer {
-          player.log.verbose("Window was last player window open: \(window.savedStateName.quoted)")
-          doActionWhenLastWindowWillClose()
-          return
-        }
+    if let player = (window.windowController as? PlayerWindowController)?.player {
+      // Player window was closed; need to remove some additional state
+      Preference.UIState.clearPlayerSaveState(forPlayerID: player.label)
+
+      // Check whether this is the last player closed; show welcome or history window if configured.
+      // Other windows like Settings may be open, and user shouldn't need to close them all to get back the welcome window.
+      if player.isOnlyOpenPlayer {
+        player.log.verbose("Window was last player window open: \(window.savedStateName.quoted)")
+        doActionWhenLastWindowWillClose()
+        return
       }
     }
 
@@ -810,9 +808,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       break
     case .quit:
       Preference.UIState.clearSavedStateForThisLaunch()
-      DispatchQueue.main.async {
-        NSApp.terminate(nil)
-      }
+      NSApp.terminate(nil)
     }
   }
 
@@ -821,7 +817,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   @objc
   func shutdownDidTimeout() {
     timedOut = true
-    if !allPlayersHaveShutdown {
+    if !PlayerCoreManager.allPlayersHaveShutdown {
       Logger.log("Timed out waiting for players to stop and shut down", level: .warning)
       // For debugging list players that have not terminated.
       for player in PlayerCoreManager.playerCores {
@@ -829,13 +825,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         if !player.isStopped {
           Logger.log("Player \(label) failed to stop", level: .warning)
         } else if !player.isShutdown {
-          Logger.log("Player \(label) failed to shutdown", level: .warning)
+          Logger.log("Player \(label) failed to shut down", level: .warning)
         }
       }
       // For debugging purposes we do not remove observers in case players stop or shutdown after
       // the timeout has fired as knowing that occurred maybe useful for debugging why the
       // termination sequence failed to complete on time.
-      Logger.log("Not waiting for players to shutdown; proceeding with application termination",
+      Logger.log("Not waiting for players to shut down; proceeding with application termination",
                  level: .warning)
     }
     if OnlineSubtitle.loggedIn {
@@ -909,13 +905,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // player and shutdown was initiated by typing "q" in the player window. That sends a quit
     // command directly to mpv causing mpv and the player to shutdown before application
     // termination is initiated.
-    allPlayersHaveShutdown = true
-    for player in PlayerCoreManager.playerCores {
-      if !player.isShutdown {
-        allPlayersHaveShutdown = false
-        break
-      }
-    }
+    let allPlayersHaveShutdown = PlayerCoreManager.allPlayersHaveShutdown
     if allPlayersHaveShutdown {
       Logger.log("All players have shut down")
     } else {
@@ -945,23 +935,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // arbitrary timeout that forces termination to complete. The expectation is that this timeout
     // is never triggered. If a timeout warning is logged during termination then that needs to be
     // investigated.
-    var timer: Timer
-    if #available(macOS 10.12, *) {
-      timer = Timer(timeInterval: terminationTimeout, repeats: false) { _ in
-        // Once macOS 10.11 is no longer supported the contents of the method can be inlined in this
-        // closure.
-        self.shutdownDidTimeout()
-      }
-    } else {
-      timer = Timer(timeInterval: terminationTimeout, target: self,
-                    selector: #selector(self.shutdownDidTimeout), userInfo: nil, repeats: false)
-    }
-    RunLoop.main.add(timer, forMode: .common)
+    var timer: Timer? = nil
 
     // Establish an observer for a player core stopping.
-    let center = NotificationCenter.default
     var observers: [NSObjectProtocol] = []
-    var observer = center.addObserver(forName: .iinaPlayerStopped, object: nil, queue: .main) { note in
+
+    observers.append(NotificationCenter.default.addObserver(forName: .iinaPlayerStopped, object: nil, queue: .main) { note in
       guard !self.timedOut else {
         // The player has stopped after IINA already timed out, gave up waiting for players to
         // shutdown, and told Cocoa to proceed with termination. AppKit will continue to process
@@ -977,14 +956,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         return
       }
       guard let player = note.object as? PlayerCore else { return }
+      player.log.verbose("Got iinaPlayerStopped. Requesting player shutdown")
       // Now that the player has stopped it is safe to instruct the player to terminate. IINA MUST
       // wait for the player to stop before instructing it to terminate because sending the quit
       // command to mpv while it is still asynchronously executing the stop command can result in a
       // watch later file that is missing information such as the playback position. See issue #3939
       // for details.
       player.shutdown()
-    }
-    observers.append(observer)
+    })
 
     /// Proceed with termination if all outstanding shutdown tasks have completed.
     ///
@@ -992,20 +971,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     /// request has completed. If there are no other termination tasks outstanding then this method will instruct AppKit to proceed with
     /// termination.
     func proceedWithTermination() {
-      if !allPlayersHaveShutdown {
-        // If any player has not shutdown then continue waiting.
-        for player in PlayerCoreManager.playerCores {
-          guard player.isShutdown else { return }
-        }
-        allPlayersHaveShutdown = true
-        // All players have shutdown.
-        Logger.log("All players have shut down")
-      }
-      guard !OnlineSubtitle.loggedIn else { return }
+      let allPlayersHaveShutdown = PlayerCoreManager.allPlayersHaveShutdown
+      let didSubtitleSvcLogOut = !OnlineSubtitle.loggedIn
+      // All players have shut down.
+      Logger.log("AllPlayersShutdown: \(allPlayersHaveShutdown), OnlineSubtitleLoggedOut: \(didSubtitleSvcLogOut)")
+      // If any player has not shut down then continue waiting.
+      guard allPlayersHaveShutdown && didSubtitleSvcLogOut else { return }
       // All players have shutdown. No longer logged into an online subtitles provider.
       Logger.log("Proceeding with application termination")
       // No longer need the timer that forces termination to proceed.
-      timer.invalidate()
+      timer?.invalidate()
       // No longer need the observers for players stopping and shutting down, along with the
       // observer for logout requests completing.
       ObjcUtils.silenced {
@@ -1018,7 +993,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     // Establish an observer for a player core shutting down.
-    observer = center.addObserver(forName: .iinaPlayerShutdown, object: nil, queue: .main) { _ in
+    observers.append(NotificationCenter.default.addObserver(forName: .iinaPlayerShutdown, object: nil, queue: .main) { _ in
+      Logger.log("Got iinaPlayerShutdown event")
       guard !self.timedOut else {
         // The player has shutdown after IINA already timed out, gave up waiting for players to
         // shutdown, and told Cocoa to proceed with termination. AppKit will continue to process
@@ -1030,15 +1006,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         // blocked. Log that this has occurred and take no further action as it is too late to
         // proceed with the normal termination sequence. If the log file has already been closed
         // then the message will only be printed to the console.
-        Logger.log("Player shut down after application termination timed out", level: .warning)
+        Logger.log("Player shutdown completed after application termination timed out", level: .warning)
         return
       }
       proceedWithTermination()
-    }
-    observers.append(observer)
+    })
 
     // Establish an observer for logging out of the online subtitle provider.
-    observer = center.addObserver(forName: .iinaLogoutCompleted, object: nil, queue: .main) { _ in
+    observers.append(NotificationCenter.default.addObserver(forName: .iinaLogoutCompleted, object: nil, queue: .main) { _ in
       guard !self.timedOut else {
         // The request to log out of the online subtitles provider has completed after IINA already
         // timed out, gave up waiting for players to shutdown, and told Cocoa to proceed with
@@ -1050,13 +1025,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           level: .warning)
         return
       }
+      Logger.log("Got iinaLogoutCompleted notification", level: .verbose)
       proceedWithTermination()
-    }
-    observers.append(observer)
+    })
 
     // Instruct any players that are already stopped to start shutting down.
     for player in PlayerCoreManager.playerCores {
       if player.isStopped && !player.isShutdown {
+        player.log.verbose("Requesting shutdown of stopped player")
         player.shutdown()
       }
     }
@@ -1065,12 +1041,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     return .terminateLater
   }
 
-  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
     // Once termination starts subsystems such as mpv are being shutdown. Accessing mpv
     // once it has been instructed to shutdown can trigger a crash. MUST NOT permit
     // reopening once termination has started.
     guard !isTerminating else { return false }
-    guard !flag else { return true }
+    guard !hasVisibleWindows && !isShowingOpenFileWindow else { return true }
     Logger.log("Handle reopen")
     doLaunchOrReopenAction()
     return true

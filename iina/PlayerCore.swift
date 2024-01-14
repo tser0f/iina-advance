@@ -457,18 +457,14 @@ class PlayerCore: NSObject {
 
   private func savePlayerStateForShutdown() {
     log.verbose("Cleaning up player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))")
-    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
 
-    $isShuttingDown.withLock() { isShuttingDown in
-      guard !isShuttingDown else { return }
-      isShuttingDown = true
-    }
     saveState()            // Save state to IINA prefs (if enabled)
-    mpv.queue.async { [self] in
-      savePlaybackPosition() // Save state to mpv watch-later (if enabled)
+    savePlaybackPosition() // Save state to mpv watch-later (if enabled)
+    DispatchQueue.main.async { [self] in
+      refreshSyncUITimer()   // Shut down timer
+      uninitVideo()          // Shut down DisplayLink
     }
-    refreshSyncUITimer()   // Shut down timer
-    uninitVideo()          // Shut down DisplayLink
   }
 
   func saveState() {
@@ -493,32 +489,35 @@ class PlayerCore: NSObject {
   ///     sent to mpv using the synchronous API mpv executes the quit command asynchronously. The player is not fully shutdown
   ///     until mpv finishes executing the quit command and shuts down.
   func shutdown(saveIfEnabled: Bool = true) {
-    DispatchQueue.main.async { [self] in
+    $isShuttingDown.withLock() { isShuttingDown in
       guard !isShuttingDown else { return }
-      Logger.log("Shutting down", subsystem: subsystem)
+      isShuttingDown = true
+    }
+    mpv.queue.async { [self] in
       if saveIfEnabled {
         savePlayerStateForShutdown()
       } else {
         log.debug("Removing player \(label)")
         PlayerCore.manager.removePlayer(withLabel: label)
       }
-      mpv.queue.async { [self] in
-        mpv.mpvQuit()
-      }
+      mpv.mpvQuit()
     }
   }
 
   func mpvHasShutdown(isMPVInitiated: Bool = false) {
     let suffix = isMPVInitiated ? " (initiated by mpv)" : ""
-    Logger.log("Player has shutdown\(suffix)", subsystem: subsystem)
+    Logger.log("Player has shut down\(suffix)", subsystem: subsystem)
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     isStopped = true
     isShutdown = true
-    DispatchQueue.main.async { [self] in
-      // If mpv shutdown was initiated by mpv then the player state has not been saved.
-      if isMPVInitiated {
-        savePlayerStateForShutdown()
+    // If mpv shutdown was initiated by mpv then the player state has not been saved.
+    if isMPVInitiated {
+      $isShuttingDown.withLock() { isShuttingDown in
+        isShuttingDown = true
       }
+      savePlayerStateForShutdown()
+    }
+    DispatchQueue.main.async { [self] in
       postNotification(.iinaPlayerShutdown)
     }
   }

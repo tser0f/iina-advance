@@ -16,6 +16,15 @@ class PlayerCoreManager {
     return PlayerCore.manager.getPlayerCores()
   }
 
+  static var allPlayersHaveShutdown: Bool {
+    for player in playerCores {
+      if !player.isShutdown {
+        return false
+      }
+    }
+    return true
+  }
+
   // Attempt to exactly restore play state & UI from last run of IINA (for given player)
   static func restoreFromPriorLaunch(playerID id: String) -> PlayerCore {
     Logger.log("Creating new PlayerCore & restoring saved state for \(WindowAutosaveName.playerWindow(id: id).string.quoted)")

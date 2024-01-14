@@ -543,6 +543,7 @@ not applying FFmpeg 9599 workaround
 
   /// Shutdown this mpv controller.
   func mpvQuit() {
+    player.log.verbose("Quitting mpv")
     // Remove observers for IINA preference. Must not attempt to change a mpv setting
     // in response to an IINA preference change while mpv is shutting down.
     removeOptionObservers()
@@ -677,7 +678,7 @@ not applying FFmpeg 9599 workaround
   }
 
   func getInputBindings(filterCommandsBy filter: ((Substring) -> Bool)? = nil) -> [KeyMapping] {
-    Logger.log("Requesting from mpv: \(MPVProperty.inputBindings)", level: .verbose)
+    player.log.verbose("Requesting from mpv: \(MPVProperty.inputBindings)")
     let parsed = getNode(MPVProperty.inputBindings)
     return toKeyMappings(parsed)
   }
@@ -697,7 +698,7 @@ not applying FFmpeg 9599 workaround
         }
       }
     } else {
-      Logger.log("Failed to parse mpv input bindings!", level: .error)
+      player.log.error("Failed to parse mpv input bindings!")
     }
     return keyMappingList
   }
@@ -932,7 +933,7 @@ not applying FFmpeg 9599 workaround
   private func handleEvent(_ event: UnsafePointer<mpv_event>!) {
     let eventId: mpv_event_id = event.pointee.event_id
     if logEvents && Logger.isEnabled(.verbose) {
-      Logger.log("Got mpv event: \(eventId)", level: .verbose)
+      player.log.verbose("Got mpv event: \(eventId)")
     }
 
     switch eventId {
@@ -947,7 +948,7 @@ not applying FFmpeg 9599 workaround
           args.append(String(cString: (bufferPointer[i])!))
         }
       }
-      Logger.log("Got mpv '\(eventId)': \(numArgs >= 0 ? "\(args)": "numArgs=\(numArgs)")", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv '\(eventId)': \(numArgs >= 0 ? "\(args)": "numArgs=\(numArgs)")")
 
     case MPV_EVENT_SHUTDOWN:
       let quitByMPV = !player.isShuttingDown
@@ -1013,16 +1014,16 @@ not applying FFmpeg 9599 workaround
       player.onVideoReconfig()
 
     case MPV_EVENT_START_FILE:
-      Logger.log("Got mpv fileStarted event", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv fileStarted event")
       player.info.isIdle = false
       guard let path = getString(MPVProperty.path) else {
-        Logger.log("File started, but no path!", level: .warning, subsystem: player.subsystem)
+        player.log.warn("File started, but no path!")
         break
       }
       player.fileStarted(path: path)
 
     case MPV_EVENT_FILE_LOADED:
-      Logger.log("Got mpv fileLoaded event", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv fileLoaded event")
       let pause: Bool
       if let priorState = player.info.priorState {
         if Preference.bool(for: .alwaysPauseMediaWhenRestoringAtLaunch) {
@@ -1086,7 +1087,7 @@ not applying FFmpeg 9599 workaround
         let code = event.pointee.error
         guard code >= 0 else {
           let error = String(cString: mpv_error_string(code))
-          Logger.log("Cannot take a screenshot, mpv API error: \(error), Return value: \(code)", level: .error)
+          player.log.error("Cannot take a screenshot, mpv API error: \(error), returnCalue: \(code)")
           // Unfortunately the mpv API does not provide any details on the failure. The error
           // code returned maps to "error running command", so all the alert can report is
           // that we cannot take a screenshot.
@@ -1193,7 +1194,7 @@ not applying FFmpeg 9599 workaround
 
     case MPVOption.PlaybackControl.pause:
       guard let paused = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
-        player.log.error("Failed to parse pause mpv pause!")
+        player.log.error("Failed to parse mpv pause!")
         break
       }
 
