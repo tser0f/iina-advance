@@ -488,12 +488,9 @@ struct Preference {
   }
 
   enum ActionWhenNoOpenWindow: Int, InitializingFromKey {
-    /// Stay consistent with ordering of `ActionAfterLaunch`:
-    case welcomeWindow = 0
-    case openPanel
-    case none
-    case historyWindow
+    case sameActionAsLaunch = 0
     case quit
+    case none
 
     static var defaultValue = ActionWhenNoOpenWindow.none
 

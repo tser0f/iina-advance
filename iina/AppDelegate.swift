@@ -49,6 +49,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   private(set) var isTerminating = false
 
+  private var lastClosedWindowName: String = ""
+
   private var observers: [NSObjectProtocol] = []
   var observedPrefKeys: [Preference.Key] = [
     .logLevel,
@@ -728,7 +730,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       return true
     }
 
-    doActionWhenLastWindowWillClose(quitFor: .openPanel)
+    doActionWhenLastWindowWillClose()
     return false
   }
 
@@ -743,6 +745,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let windowName = window.savedStateName
     guard !windowName.isEmpty else { return }
 
+    lastClosedWindowName = windowName
     AppDelegate.windowsHidden.remove(windowName)
     AppDelegate.windowsMinimized.remove(windowName)
 
@@ -760,14 +763,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       if player.isOnlyOpenPlayer {
         player.log.verbose("Window was last player window open: \(window.savedStateName.quoted)")
         doActionWhenLastWindowWillClose()
-        return
       }
+    } else if window.isOnlyOpenWindow {
+      doActionWhenLastWindowWillClose()
     }
+  }
 
-    if window.isOnlyOpenWindow {
-      let quitForAction: Preference.ActionWhenNoOpenWindow?
-      if let windowName = WindowAutosaveName(window.savedStateName) {
-        switch windowName {
+  private func doActionWhenLastWindowWillClose() {
+    guard !isTerminating else { return }
+    guard var noOpenWindowAction = Preference.ActionWhenNoOpenWindow(key: .actionWhenNoOpenWindow) else { return }
+    Logger.log("ActionWhenNoOpenWindow: \(noOpenWindowAction). LastClosedWindowName: \(lastClosedWindowName.quoted)", level: .verbose)
+    var shouldTerminate: Bool = false
+
+    switch noOpenWindowAction {
+    case .none:
+      break
+    case .quit:
+      shouldTerminate = true
+    case .sameActionAsLaunch:
+      let launchAction: Preference.ActionAfterLaunch = Preference.enum(for: .actionAfterLaunch)
+      var quitForAction: Preference.ActionAfterLaunch? = nil
+
+      // Check if user just closed the window we are configured to open. If so, exit app instead of doing nothing
+      if let closedWindowName = WindowAutosaveName(lastClosedWindowName) {
+        switch closedWindowName {
         case .playbackHistory:
           quitForAction = .historyWindow
         case .openFile:
@@ -780,33 +799,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         default:
           quitForAction = nil
         }
-      } else {
-        quitForAction = nil
       }
-      doActionWhenLastWindowWillClose(quitFor: quitForAction)
+
+      if launchAction == quitForAction {
+        Logger.log("Last window closed was the configured ActionWhenNoOpenWindow. Will quit instead of re-opening it.")
+        shouldTerminate = true
+      } else {
+        switch launchAction {
+        case .welcomeWindow:
+          showWelcomeWindow()
+        case .openPanel:
+          showOpenFileWindow(isAlternativeAction: true)
+        case .historyWindow:
+          showHistoryWindow(self)
+        case .none:
+          break
+        }
+      }
     }
-  }
 
-  private func doActionWhenLastWindowWillClose(quitFor quitForAction: Preference.ActionWhenNoOpenWindow? = nil) {
-    guard !isTerminating else { return }
-    guard var action = Preference.ActionWhenNoOpenWindow(key: .actionWhenNoOpenWindow) else { return }
-    Logger.log("ActionWhenNoOpenWindow: \(action). QuitForAction: \(quitForAction.debugDescription)", level: .verbose)
-
-    if action == quitForAction {
-      Logger.log("Last window closed was the configured ActionWhenNoOpenWindow. Will quit instead of re-opening it.")
-      action = .quit
-    }
-
-    switch action {
-    case .welcomeWindow:
-      showWelcomeWindow()
-    case .openPanel:
-      showOpenFileWindow(isAlternativeAction: true)
-    case .historyWindow:
-      showHistoryWindow(self)
-    case .none:
-      break
-    case .quit:
+    if shouldTerminate {
       Preference.UIState.clearSavedStateForThisLaunch()
       NSApp.terminate(nil)
     }
@@ -935,7 +947,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // arbitrary timeout that forces termination to complete. The expectation is that this timeout
     // is never triggered. If a timeout warning is logged during termination then that needs to be
     // investigated.
-    var timer: Timer? = nil
+    var timer: Timer
+    if #available(macOS 10.12, *) {
+      timer = Timer(timeInterval: terminationTimeout, repeats: false) { _ in
+        // Once macOS 10.11 is no longer supported the contents of the method can be inlined in this
+        // closure.
+        self.shutdownDidTimeout()
+      }
+    } else {
+      timer = Timer(timeInterval: terminationTimeout, target: self,
+                    selector: #selector(self.shutdownDidTimeout), userInfo: nil, repeats: false)
+    }
+    RunLoop.main.add(timer, forMode: .common)
 
     // Establish an observer for a player core stopping.
     var observers: [NSObjectProtocol] = []
@@ -980,7 +1003,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       // All players have shutdown. No longer logged into an online subtitles provider.
       Logger.log("Proceeding with application termination")
       // No longer need the timer that forces termination to proceed.
-      timer?.invalidate()
+      timer.invalidate()
       // No longer need the observers for players stopping and shutting down, along with the
       // observer for logout requests completing.
       ObjcUtils.silenced {
