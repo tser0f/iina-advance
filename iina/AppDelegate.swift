@@ -378,9 +378,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     Preference.UIState.disableSaveAndRestoreUntilNextLaunch()
 
     var lastPlayerCore: PlayerCore? = nil
-    let getNewPlayerCore = { () -> PlayerCore in
+    let getNewPlayerCore = { [self] () -> PlayerCore in
       let pc = PlayerCore.newPlayerCore
-      self.commandLineStatus.assignMPVArguments(to: pc)
+      commandLineStatus.assignMPVArguments(to: pc)
+      if commandLineStatus.shufflePlaylist {
+        pc.shufflePending = true
+      }
       lastPlayerCore = pc
       return pc
     }

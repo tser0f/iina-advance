@@ -168,6 +168,9 @@ class PlayerCore: NSObject {
 
   var isSearchingOnlineSubtitle = false
 
+  /// For supporting `--shuffle` arg, to shuffle playlist when launching from command line
+  var shufflePending = false
+
   var isMiniPlayerWaitingToShowVideo: Bool = false
 
   // test seeking
@@ -1904,16 +1907,23 @@ class PlayerCore: NSObject {
           guard currentTicket == self.backgroundQueueTicket, self.mpv.mpv != nil else { return }
           self.setTrack(1, forType: .sub)
         }
-        PlayerCore.backgroundQueue.asyncAfter(deadline: .now() + 0.5) { [self] in
-          autoSearchOnlineSub()
-        }
+        self.autoSearchOnlineSub()
       }
+      
       events.emit(.fileStarted)
-
-      let url = info.currentURL
-      let message = (info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent) ?? "-"
-      sendOSD(.fileStart(message))
     }
+  }
+
+  /// Called via mpv hook `on_load`, right before file is loaded.
+  func fileWillLoad() {
+    /// Currently this method is only used to honor `--shuffle` arg via iina-cli
+    guard shufflePending else { return }
+    shufflePending = false
+
+    Logger.log("Shuffling playlist", subsystem: subsystem)
+    mpv.command(.playlistShuffle)
+    /// will cancel this file load sequence (so `fileLoaded` will not be called), then will start loading item at index 0
+    mpv.command(.playlistPlayIndex, args: ["0"])
   }
 
   /** This function is called right after file loaded. Should load all meta info here. */
