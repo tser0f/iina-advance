@@ -92,6 +92,7 @@ class MenuController: NSObject, NSMenuDelegate {
   @IBOutlet weak var deleteCurrentFile: NSMenuItem!
   @IBOutlet weak var newWindow: NSMenuItem!
   @IBOutlet weak var newWindowSeparator: NSMenuItem!
+  @IBOutlet weak var otherKeyBindingsMenu: NSMenu!
   // Playback
   @IBOutlet weak var playbackMenu: NSMenu!
   @IBOutlet weak var pause: NSMenuItem!
@@ -228,6 +229,8 @@ class MenuController: NSObject, NSMenuDelegate {
       newWindowSeparator.isHidden = false
       newWindow.isHidden = false
     }
+
+    otherKeyBindingsMenu.delegate = self
 
     // Playback menu
 
@@ -420,6 +423,13 @@ class MenuController: NSObject, NSMenuDelegate {
   }
 
   // MARK: - Update Menus
+
+  func updateOtherKeyBindings(replacingAllWith newItems: [NSMenuItem]) {
+    otherKeyBindingsMenu.removeAllItems()
+    for item in newItems {
+      otherKeyBindingsMenu.addItem(item)
+    }
+  }
 
   private func updatePlaylist() {
     playlistMenu.removeAllItems()
@@ -1008,34 +1018,35 @@ class MenuController: NSObject, NSMenuDelegate {
       bindableMenuItems.append((pictureInPicture, true, ["toggle-pip"], false, nil, nil))
     }
 
+    var otherActionsMenuItems: [NSMenuItem] = []
+
+    /// Loop over all the list of menu items which can be matched with one or more `KeyMapping`s
     bindableMenuItems.forEach { (menuItem, isIINACmd, actionForMenuItem, normalizeLastNum, numRange, l10nKey) in
+      /// Loop over all key bindings. Examine each binding's action and see if it is equivalent to `menuItem`'s action
       var didBindMenuItem = false
       for binding in userBindings {
-        guard binding.isEnabled else { continue }
         let kb = binding.keyMapping
         guard kb.isIINACommand == isIINACmd else { continue }
         let (sameAction, value, extraData) = sameKeyAction(kb.action, actionForMenuItem, normalizeLastNum, numRange)
         if sameAction, let (kEqv, kMdf) = KeyCodeHelper.macOSKeyEquivalent(from: kb.normalizedMpvKey) {
           /// If we got here, `KeyMapping`'s action qualifies for being bound to `menuItem`.
-
           let kbMenuItem: NSMenuItem
+
           if didBindMenuItem {
-            /// There is already a `KeyMapping` bound to the menu item. This means that its key will trigger `menuItem`'s action.
-            /// There can only be one key equivalent per menu item. But we want every matching `KeyMapping` to trigger `menuItem`'s
-            /// action. Also, some key combinations may go to `keyDown()` in `PlayerWindowController` instead.
-            /// To make this work while not disturbing legacy code, create a dummy `NSMenuItem` to hold the data needed to call
-            /// the action. Store it in the `KeyMapping` so that it can be called from the player window.
+            /// This `KeyMapping` matches a menu item whose key equivalent was set from a different `KeyMapping`.
+            /// There can only be one key equivalent per menu item, so we will create a duplicate menu item and put it in a hidden menu.
             kbMenuItem = NSMenuItem(title: menuItem.title, action: menuItem.action, keyEquivalent: "")
             kbMenuItem.tag = menuItem.tag
+            otherActionsMenuItems.append(kbMenuItem)
           } else {
-            // First qualifying mapping
+            /// This `KeyMapping` was the first match found for this menu item.
             kbMenuItem = menuItem
             didBindMenuItem = true
           }
-          updateMenuItem(kbMenuItem, kEqv: kEqv, kMdf: kMdf, l10nKey: l10nKey, value: value, extraData: extraData)
           kb.menuItem = kbMenuItem
           /// Make sure this is executed after `updateMenuItem()` to ensure it contains the accurate menu item title:
           binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
+          updateMenuItem(kbMenuItem, kEqv: kEqv, kMdf: kMdf, l10nKey: l10nKey, value: value, extraData: extraData)
         }
       }
 
@@ -1044,14 +1055,15 @@ class MenuController: NSObject, NSMenuDelegate {
         // This is needed for the case where the menu item previously matched to a key binding, but now there is no match.
         // Obviously this is a little kludgey, but it avoids having to do a big refactor and/or writing a bunch of new code.
         let (_, value, extraData) = sameKeyAction(actionForMenuItem, actionForMenuItem, normalizeLastNum, numRange)
-
         updateMenuItem(menuItem, kEqv: "", kMdf: [], l10nKey: l10nKey, value: value, extraData: extraData)
       }
     }
+
+    updateOtherKeyBindings(replacingAllWith: otherActionsMenuItems)
   }
 
-  // Updates the key equivalent of the given menu item.
-  // May also change its title and representedObject, for items which can change based on some param value(s).
+  /// Updates the key equivalent of the given menu item.
+  /// May also update its title and representedObject, for items which can change based on some param value(s).
   private func updateMenuItem(_ menuItem: NSMenuItem, kEqv: String, kMdf: NSEvent.ModifierFlags, l10nKey: String?, value: Double?, extraData: Any?) {
     menuItem.keyEquivalent = kEqv
     menuItem.keyEquivalentModifierMask = kMdf
@@ -1063,6 +1075,9 @@ class MenuController: NSObject, NSMenuDelegate {
       } else {
         menuItem.representedObject = value
       }
+    } else {
+      // Clear any previous value
+      menuItem.representedObject = nil
     }
   }
 

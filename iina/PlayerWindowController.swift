@@ -1265,9 +1265,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     if keyBinding.isIINACommand {
       if let menuItem = keyBinding.menuItem, let action = menuItem.action {
-        // - Menu item (e.g. custom video filter)
-        // If a menu item's key equivalent doesn't have any modifiers, the player window will get the key event instead of the main menu.
-        log.verbose("Executing action for menuItem \(menuItem.title.quoted)")
+        // - Menu item (e.g. custom video filter). It is an error for this to show up here. Still, try to recover if found
+        log.error("Key binding containing IINACmd is attached to menu item: \(menuItem.title.quoted). This should have been handled by the MenuController")
         NSApp.sendAction(action, to: self, from: menuItem)
         return true
       }
@@ -1284,7 +1283,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // - mpv command
 
       if let menuItem = keyBinding.menuItem, let action = menuItem.action {
-        // Contains an action selector. Call it instead of sending raw mpv command
+        log.error("Key binding for mpv is attached to menu item: \(menuItem.title.quoted). This should have been handled by the MenuController")
         NSApplication.shared.sendAction(action, to: menuItem.target, from: menuItem)
         return true
       }
