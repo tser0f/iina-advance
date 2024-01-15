@@ -27,7 +27,6 @@ class BindingTableViewController: NSObject {
 
   private var draggedRowInfo: (Int, IndexSet)? = nil
 
-  fileprivate let blendFraction: CGFloat = 0.2
   fileprivate var nonConfTextColor: NSColor = .textColor
   fileprivate var pluginIconColor: NSColor = .textColor
   fileprivate var libmpvIconColor: NSColor = .textColor

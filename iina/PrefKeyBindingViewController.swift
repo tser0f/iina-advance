@@ -53,6 +53,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var duplicateConfBtn: NSButton!
   @IBOutlet weak var useMediaKeysButton: NSButton!
   @IBOutlet weak var bindingSearchField: NSSearchField!
+  @IBOutlet weak var showFromAllSourcesBtn: NSButton!
 
   deinit {
     for observer in observers {
@@ -194,6 +195,29 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
 
       bindingTableController?.setCustomColors(builtInItemTextColor: builtInItemTextColor)
       bindingTableView.reloadExistingRows(reselectRowsAfter: true)
+
+      let lastPlayerStr = NSLocalizedString("preference.show_all_bindings.last_player", comment: "last player window")
+      let allSourcesStr = NSLocalizedString("preference.show_all_bindings.other_sources", comment: "other bindings")
+      let btnTitle = String(format: NSLocalizedString("preference.show_all_bindings", comment: "Include %@ which are present in %@"), allSourcesStr, lastPlayerStr)
+      let attrString = NSMutableAttributedString(string: btnTitle, attributes: [:])
+
+      // Add special formatting for "from all sources" substring
+      if let nsRange = btnTitle.range(of: allSourcesStr)?.nsRange(in: btnTitle) {
+        attrString.addAttributes([.foregroundColor: builtInItemTextColor], range: nsRange)
+
+        // Add italic
+        if let buttonFont = showFromAllSourcesBtn.font {
+          let italicDescriptor: NSFontDescriptor = buttonFont.fontDescriptor.withSymbolicTraits(NSFontDescriptor.SymbolicTraits.italic)
+          if let italicFont = NSFont(descriptor: italicDescriptor, size: 0) {
+            attrString.addAttributes([.font: italicFont], range: nsRange)
+          }
+        }
+      }
+
+      // TODO: add link to last player window, and update it as it changes
+
+      showFromAllSourcesBtn.attributedTitle = attrString
+      showFromAllSourcesBtn.layout() // Re-layout in case width changed due to formatting changes
     }
   }
 }

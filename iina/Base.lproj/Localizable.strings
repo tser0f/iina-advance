@@ -120,7 +120,10 @@
 "preference.system_media_control" = "Use system media control";
 
 "preference.key_binding_hint_1" = "To edit key bindings in current configuration file, click \"Duplicate\" button first to create a copy.";
-"preference.key_binding_hint_2" = "Double click a row at the right side to edit the corresponding key binding.\nOnly one key binding can be mapped to the same \"Key\" value at the same time. If multiple rows have the same \"Key\" value, only the lowest one will be used.";
+"preference.key_binding_hint_2" = "Double click a row at the right side to edit the corresponding key binding.\nIf more than one row has the same value for \"Key\", only the last will be enabled, and all previous will be ignored.";
+"preference.show_all_bindings" = "Display %@ present in %@";
+"preference.show_all_bindings.last_player" = "player window";
+"preference.show_all_bindings.other_sources" = "all other bindings";
 
 "preference.enable_adv_settings" = "Enable advanced settings";
 
