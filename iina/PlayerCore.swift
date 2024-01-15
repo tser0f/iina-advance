@@ -2303,7 +2303,8 @@ class PlayerCore: NSObject {
         if useTimer {
           summary += ", every \(timerConfig.interval)s"
         }
-        log.verbose("\(logMsg)- SyncUITimer \(summary) (paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn)\(isStopped.yn) quit:\(isShuttingDown.yn)\(isShutdown.yn))")
+        let logMsg = logMsg.isEmpty ? logMsg : "\(logMsg)- "
+        log.verbose("\(logMsg)SyncUITimer \(summary), paused:\(info.isPaused.yn) net:\(info.isNetworkResource.yn) mini:\(isInMiniPlayer.yn) touchBar:\(needsTouchBar.yn) stop:\(isStopping.yn)\(isStopped.yn) quit:\(isShuttingDown.yn)\(isShutdown.yn)")
       }
     }
 

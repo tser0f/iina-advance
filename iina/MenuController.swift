@@ -915,28 +915,28 @@ class MenuController: NSObject, NSMenuDelegate {
   }
 
   private func updateKeyEquivalent(from binding: InputBinding) {
-      guard let menuItem = binding.menuItem else { return }
+    guard let menuItem = binding.menuItem else { return }
 
-      if binding.isEnabled {
-        let mpvKey = binding.keyMapping.normalizedMpvKey
-        if let (kEqv, kMdf) = KeyCodeHelper.macOSKeyEquivalent(from: mpvKey) {
-          menuItem.keyEquivalent = kEqv
-          menuItem.keyEquivalentModifierMask = kMdf
-          binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
-          if AppInputConfig.logBindingsRebuild {
-            Logger.log("Set menu keyEquiv: \(mpvKey.quoted) → \(menuItem.menuPathDescription)", level: .verbose)
-          }
-        } else {
-          Logger.log("Failed to get MacOS menu item key equivalent for \(mpvKey.quoted)", level: .error)
+    if binding.isEnabled {
+      let mpvKey = binding.keyMapping.normalizedMpvKey
+      if let (kEqv, kMdf) = KeyCodeHelper.macOSKeyEquivalent(from: mpvKey) {
+        menuItem.keyEquivalent = kEqv
+        menuItem.keyEquivalentModifierMask = kMdf
+        binding.displayMessage = "This key binding will activate the menu item: \(menuItem.menuPathDescription)"
+        if AppInputConfig.logBindingsRebuild {
+          Logger.log("Set menu keyEquiv: \(mpvKey.quoted) → \(menuItem.menuPathDescription)", level: .verbose)
         }
       } else {
-        // Conflict! Key binding already reserved
-        menuItem.keyEquivalent = ""
-        menuItem.keyEquivalentModifierMask = []
-        if AppInputConfig.logBindingsRebuild {
-          Logger.log("Unset menu keyEquiv: \(menuItem.title.quoted)", level: .verbose)
-        }
+        Logger.log("Failed to get MacOS menu item key equivalent for \(mpvKey.quoted)", level: .error)
       }
+    } else {
+      // Conflict! Key binding already reserved
+      menuItem.keyEquivalent = ""
+      menuItem.keyEquivalentModifierMask = []
+      if AppInputConfig.logBindingsRebuild {
+        Logger.log("Unset menu keyEquiv: \(menuItem.title.quoted)", level: .verbose)
+      }
+    }
   }
 
   private func matchKeyEquivalents(with userBindings: [InputBinding]) {

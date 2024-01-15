@@ -618,7 +618,7 @@ not applying FFmpeg 9599 workaround
 
   // Set property
   func setFlag(_ name: String, _ flag: Bool) {
-    Logger.log("Setting flag: \(name) := \(flag)", level: .verbose, subsystem: player.subsystem)
+    player.log.verbose("Setting flag \(name.quoted)=\(flag)")
     var data: Int = flag ? 1 : 0
     mpv_set_property(mpv, name, MPV_FORMAT_FLAG, &data)
   }
@@ -1014,7 +1014,9 @@ not applying FFmpeg 9599 workaround
       player.onVideoReconfig()
 
     case MPV_EVENT_START_FILE:
-      player.log.verbose("Got mpv fileStarted event")
+      guard let dataPtr = UnsafeMutablePointer<mpv_event_start_file>(OpaquePointer(event.pointee.data)) else { return }
+      let playlistEntryID = Int(dataPtr.pointee.playlist_entry_id)
+      player.log.verbose("FileStarted entryID: \(playlistEntryID)")
       player.info.isIdle = false
       guard let path = getString(MPVProperty.path) else {
         player.log.warn("File started, but no path!")
@@ -1023,7 +1025,7 @@ not applying FFmpeg 9599 workaround
       player.fileStarted(path: path)
 
     case MPV_EVENT_FILE_LOADED:
-      player.log.verbose("Got mpv fileLoaded event")
+      player.log.verbose("FileLoaded")
       let pause: Bool
       if let priorState = player.info.priorState {
         if Preference.bool(for: .alwaysPauseMediaWhenRestoringAtLaunch) {
@@ -1069,7 +1071,29 @@ not applying FFmpeg 9599 workaround
     case MPV_EVENT_END_FILE:
       // if receive end-file when loading file, might be error
       // wait for idle
-      let reason = event!.pointee.data.load(as: mpv_end_file_reason.self)
+      guard let dataPtr = UnsafeMutablePointer<mpv_event_end_file>(OpaquePointer(event.pointee.data)) else { return }
+      let playlistEntryID = dataPtr.pointee.playlist_entry_id
+      let playlistInsertID = dataPtr.pointee.playlist_insert_id
+      let playlistInsertNumEntries = dataPtr.pointee.playlist_insert_num_entries
+      let reason = dataPtr.pointee.reason
+      let reasonString: String
+      switch reason {
+      case MPV_END_FILE_REASON_EOF:
+        reasonString = "EOF"
+      case MPV_END_FILE_REASON_STOP:
+        reasonString = "STOP"
+      case MPV_END_FILE_REASON_QUIT:
+        reasonString = "QUIT"
+      case MPV_END_FILE_REASON_ERROR:
+        reasonString = "ERROR"
+      case MPV_END_FILE_REASON_REDIRECT:
+        reasonString = "REDIRECT"
+      default:
+        reasonString = "???"
+      }
+      let errorCode = dataPtr.pointee.error
+      let errorString = reason == MPV_END_FILE_REASON_ERROR ? "error=\(errorCode) (\(String(cString: mpv_error_string(errorCode))))" : "No"
+      player.log.verbose("FileEnded entryID=\(playlistEntryID) insertID=\(playlistInsertID) numEntries=\(playlistInsertNumEntries) reason=\(reasonString) error=\(errorString)")
       if player.info.fileLoading {
         if reason != MPV_END_FILE_REASON_STOP {
           receivedEndFileWhileLoading = true
