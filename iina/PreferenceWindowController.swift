@@ -184,6 +184,8 @@ class PreferenceWindowController: NSWindowController {
 
   override func windowDidLoad() {
     super.windowDidLoad()
+    // Set this to true temporarily, so that table doesn't fire selectionChanged events while setting up
+    tableView.allowsEmptySelection = true
 
     if let undoManager = window?.undoManager {
       Logger.log("PreferenceWindow loaded: setting UndoManager", level: .verbose)
