@@ -2080,7 +2080,12 @@ class PlayerCore: NSObject {
     /// officially done loading
     info.justOpenedFile = false
     info.justStartedFile = false
-    if info.priorState != nil {
+    if let priorState = info.priorState {
+      if priorState.string(for: .playPosition) != nil {
+        /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
+        log.verbose("Clearing mpv 'start' option now that restore is complete")
+        mpv.setString(MPVOption.PlaybackControl.start, "none")
+      }
       info.priorState = nil
       log.debug("Done with restore")
     }

@@ -69,6 +69,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   @IBOutlet weak var resizeWindowWhenOpeningFileCheckbox: NSButton!
   @IBOutlet weak var resizeWindowTimingPopUpButton: NSPopUpButton!
+  @IBOutlet weak var unparsedGeometryabel: NSTextField!
   @IBOutlet weak var mpvWindowSizeCollapseView: CollapseView!
   @IBOutlet weak var mpvWindowPositionCollapseView: CollapseView!
   @IBOutlet weak var windowSizeCheckBox: NSButton!
@@ -168,7 +169,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       PK.useLegacyWindowedMode.rawValue,
       PK.themeMaterial.rawValue,
       PK.enableAdvancedSettings.rawValue:
+
       refreshTitleBarAndOSCSection()
+      updateGeometryUI()
     case PK.settingsTabGroupLocation.rawValue, PK.playlistTabGroupLocation.rawValue:
       refreshSidebarSection()
     case PK.controlBarToolbarButtons.rawValue,
@@ -377,7 +380,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   private func updateGeometryUI() {
     let resizeOption = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
     let scheme: Preference.ResizeWindowScheme = Preference.enum(for: .resizeWindowScheme)
-    
+
     let isAnyResizeEnabled: Bool
     switch resizeOption {
     case .never:
@@ -409,7 +412,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     if isMpvGeometryEnabled {
       let geometryString = Preference.string(for: .initialWindowSizePosition) ?? ""
       if let geometry = MPVGeometryDef.parse(geometryString) {
-        Logger.log("Parsed \(Preference.quoted(.initialWindowSizePosition)): \(geometry)")
+        Logger.log("Parsed \(Preference.quoted(.initialWindowSizePosition))=\(geometryString.quoted) ➤ \(geometry)")
+        unparsedGeometryabel.stringValue = "\"\(geometryString)\""
         // size
         if var h = geometry.h {
           isUsingMpvSize = true
@@ -450,8 +454,11 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
           windowPosYOffsetTextField.stringValue = yIsPercent ? String(y.dropLast()) : y
           windowPosYUnitPopUpButton.selectItem(withTag: yIsPercent ? UnitPercentTag : UnitPointTag)
         }
+      } else {
+        unparsedGeometryabel.stringValue = ""
       }
     }
+    unparsedGeometryabel.isHidden = !(Preference.isAdvancedEnabled && isMpvGeometryEnabled)
     spacer0.isHidden = !isMpvGeometryEnabled
     mpvWindowSizeCollapseView.isHidden = !isMpvGeometryEnabled
     mpvWindowPositionCollapseView.isHidden = !isMpvGeometryEnabled

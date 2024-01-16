@@ -20,11 +20,11 @@ struct MPVGeometryDef: CustomStringConvertible {
     guard captures.count == 9 else { return nil }
     // return struct
     return MPVGeometryDef(x: captures[6],
-                       y: captures[8],
-                       w: captures[2],
-                       h: captures[4],
-                       xSign: captures[5],
-                       ySign: captures[7])
+                          y: captures[8],
+                          w: captures[2],
+                          h: captures[4],
+                          xSign: captures[5],
+                          ySign: captures[7])
   }
 
   var description: String {
@@ -34,6 +34,6 @@ struct MPVGeometryDef: CustomStringConvertible {
     let h0 = h == nil ? "nil" : String(h!)
     let xSign0 = xSign == nil ? "nil" : String(xSign!)
     let ySign0 = ySign == nil ? "nil" : String(ySign!)
-    return "Geometry(x: \(x0), y: \(y0), W: \(w0), H: \(h0), xSign=\(xSign0), ySign=\(ySign0))"
+    return "Geometry(x: (\(xSign0)) \(x0), y: (\(ySign0)) \(y0), W: \(w0), H: \(h0))"
   }
 }

@@ -1083,11 +1083,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let showDefaultArt: Bool
     // if received video size before switching to music mode, hide default album art
-    if isVideoTrackSelected {
-      log.verbose("Hiding defaultAlbumArt because vid != 0")
+    if isVideoTrackSelected || !player.info.fileLoaded {
+      log.verbose("Hiding defaultAlbumArt because isFileLoaded=\(player.info.fileLoaded), vidSelected=\(isVideoTrackSelected)")
       showDefaultArt = false
     } else {
-      log.verbose("Showing defaultAlbumArt because vid = 0")
+      log.verbose("Showing defaultAlbumArt because isFileLoaded=\(player.info.fileLoaded), vidSelected=\(isVideoTrackSelected)")
       showDefaultArt = true
     }
 
@@ -1098,9 +1098,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
     guard let videoParams else { return }
 
+    let showAlbumArt = currentMediaAudioStatus == .isAudio
     let oldAspectRatio = player.info.videoAspect
     let newAspectRatio: CGFloat
-    if showDefaultArt || currentMediaAudioStatus == .isAudio {
+    if showDefaultArt || showAlbumArt {
       newAspectRatio = 1.0
     } else {
       // This can also equal 1 if not found
@@ -1108,7 +1109,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     guard newAspectRatio != oldAspectRatio else {
-      log.verbose("After updating default album art: no change to videoAspect (\(oldAspectRatio)); no more work needed")
+      log.verbose("After updating defaultAlbumArt: no change to videoAspect (\(oldAspectRatio)); no more work needed")
       return
     }
     log.verbose("Updating videoAspect from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")

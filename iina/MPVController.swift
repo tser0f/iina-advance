@@ -382,8 +382,7 @@ not applying FFmpeg 9599 workaround
     setUserOption(PK.ytdlRawOptions, type: .string, forName: MPVOption.ProgramBehavior.ytdlRawOptions)
     chkErr(mpv_set_option_string(mpv, MPVOption.ProgramBehavior.resetOnNextFile,
                                  [MPVOption.PlaybackControl.abLoopA,
-                                  MPVOption.PlaybackControl.abLoopB,
-                                  MPVOption.PlaybackControl.start].joined(separator: ",")))
+                                  MPVOption.PlaybackControl.abLoopB].joined(separator: ",")))
 
     // Set user defined conf dir.
     if Preference.bool(for: .enableAdvancedSettings),
@@ -431,7 +430,7 @@ not applying FFmpeg 9599 workaround
     // chkErr(mpv_request_event(mpv, MPV_EVENT_TICK, 1))
 
     addHook(MPVHook.onLoad, hook: MPVHookValue(withBlock: { [self] next in
-      Logger.log("Callback triggered for mpv 'on-load' hook", level: .verbose, subsystem: player.subsystem)
+      player.log.verbose("Got mpv hook: 'on-load'")
       player.fileWillLoad()
       next()
     }))
@@ -996,7 +995,7 @@ not applying FFmpeg 9599 workaround
       if mpvIINALevel.rawValue >= Preference.integer(for: .iinaMpvLogLevel) {
         // Remove newline if there is one
         let text = text.hasSuffix("\n") ? String(text.dropLast()) : text
-        Logger.log("[\(level.first ?? "?")][\(prefix)] \(text)", level: mpvIINALevel, subsystem: mpvSubsystem)
+        Logger.log("[\(prefix)|\(level.first ?? "?")] \(text)", level: mpvIINALevel, subsystem: mpvSubsystem)
       }
 
       mpvLogScanner.processLogLine(prefix: prefix, level: level, msg: text)
