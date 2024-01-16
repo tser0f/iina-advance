@@ -24,8 +24,8 @@
 // Initial Window
 "initial.announcement" = "You are using a %@ version of IINA";
 "initial.beta.desc" = "If you want to rollback to a release version, uncheck \"receive beta updates\" from Settings > General, and install a stable release from our <a href=\"https://iina.io\">official website</a>.";
-"initial.nightly.desc" = "Nightly is not recommended to be used as daily drive. Currently nightly builds do not support auto update. Please manually download newer builds from our <a href=\"https://nightly.iina.io\">nightly website</a>.";
-"initial.debug.desc" = "Debug builds are usually not optimized for performance, so it is not recommended to be used as daily drive. Debug builds do not support auto update.";
+"initial.nightly.desc" = "Nightly is not recommended to be used as daily drive. Currently, nightly builds do not support auto update. Please manually download newer builds from our <a href=\"https://nightly.iina.io\">nightly website</a>.";
+"initial.debug.desc" = "Debug builds are usually not optimized for performance, so it is not recommended to be used as a daily drive. Debug builds do not support auto update.";
 "initial.bug_report" = "Report via <a href=\"https://github.com/iina/iina/issues\">GitHub issues</a>.";
 
 // Inspector Window
@@ -100,8 +100,9 @@
 "osd.timed_out" = "Timed Out";
 "osd.filter_added" = "Added Filter: %@";
 "osd.filter_removed" = "Removed Filter";
-"osd.file_loop" = "File Loop: %@";
-"osd.playlist_loop" = "Playlist Loop: %@";
+"osd.file_loop" = "Loop Single File";
+"osd.playlist_loop" = "Loop Playlist";
+"osd.no_loop" = "Disable Looping";
 
 "preference.title" = "Preferences";
 "preference.general" = "General";
@@ -204,7 +205,7 @@
 "alert.error_open_name" = "Cannot open file or stream:\n%@";
 "alert.error_finding_file" = "Cannot find %@ file!";
 "alert.error_loading_script" = "Cannot load script %@!";
-"alert.error_saving_file" = "Error occured when saving %@: %@";
+"alert.error_saving_file" = "Error occurred when saving %@: %@";
 "alert.error_deleting_file" = "Cannot delete the file.";
 
 "alert.config.new.title" = "New Input Configuration";
@@ -218,7 +219,7 @@
 "alert.config.cannot_create" = "Cannot create config file!\n%@";
 "alert.config.cannot_write" = "Cannot write to config file!";
 
-"alert.filter.incorrect" = "Error occured when setting filters. Please check your parameter format.";
+"alert.filter.incorrect" = "Error occurred when setting filters. Please check your parameter format.";
 "alert.add_filter.title" = "New Filter";
 "alert.add_filter.message" = "Please enter a filter string in format of mpv's vf or af command.";
 
@@ -343,11 +344,10 @@
 "osc_toolbar.full_screen" = "Toggle full screen";
 "osc_toolbar.music_mode" = "Enter music mode";
 "osc_toolbar.sub_track" = "Choose subtitle track";
-"osc_toolbar.screenshot" = "Take a screenshot"; 
+"osc_toolbar.screenshot" = "Take a screenshot";
 
 "mini_player.album_art" = "Toggle album art";
-"mini_player.loop" = "Repeat playlist";
-"mini_player.loop_file" = "Repeat single file";
+"mini_player.loop" = "Repeat";
 "mini_player.shuffle" = "Shuffle";
 "mini_player.remove" = "Remove from playlist";
 "mini_player.add" = "Add to playlist";
@@ -383,16 +383,16 @@
 "permissions.show-osd.desc" = "This plugin can show OSD (On Screen Display) messages.";
 "permissions.show-alert.name" = "Show Alerts";
 "permissions.show-alert.desc" = "This plugin can show pop-up alerts.";
-"permissions.video-overlay.name" = "Add overlay on videos";
+"permissions.video-overlay.name" = "Add overlays on videos";
 "permissions.video-overlay.desc" = "This plugin can render additional content on the top of the video.";
 "permissions.file-system.name" = "Access the file system";
-"permissions.file-system.desc" = "This plugin can read or write files on your disk, including sensitive information. It can also call other programs or applications that can harm your computer. So be sure to verify the source.";
+"permissions.file-system.desc" = "This plugin can read or write files on your disk, which may include sensitive information. It can also execute other programs or applications that can harm your computer. So be sure to verify the source.";
 
 "plugin.install" = "Install";
 "plugin.installed" = "Installed";
 "plugin.not_installed" = "Not Installed";
 "plugin.local" = "Installed locally";
-"alert.plugin.install_error" = "Error occured during the installation: %@";
+"alert.plugin.install_error" = "Error occurred during the installation: %@";
 "alert.invalid_url" = "The URL is invalid.";
 "plugin.install_error.invalid_url" = "The URL is invalid.";
 "plugin.install_error.file_not_found" = "Cannot find the package file.";

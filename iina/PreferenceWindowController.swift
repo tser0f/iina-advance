@@ -10,10 +10,13 @@ import Cocoa
 
 fileprivate extension String {
   func removedLastSemicolon() -> String {
-    if self.hasSuffix(":") || self.hasSuffix("：") {
-      return String(self.dropLast())
-    }
+    let trimed = trimWhitespaceSuffix()
+    guard !trimed.hasSuffix(":") else { return String(trimed.dropLast()) }
     return self
+  }
+
+  func trimWhitespaceSuffix() -> String {
+    self.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
   }
 }
 
@@ -39,7 +42,19 @@ extension PreferenceWindowEmbeddable {
   }
 }
 
-class PreferenceWindowController: NSWindowController, NSWindowDelegate {
+class CustomCellView: NSTableCellView {
+  @IBOutlet weak var leadingConstraint: NSLayoutConstraint!
+
+  override func viewWillDraw() {
+    if #unavailable (macOS 11.0) {
+      leadingConstraint.constant = 20
+    }
+    super.viewWillDraw()
+  }
+}
+
+
+class PreferenceWindowController: NSWindowController {
   static unowned var undoManager: UndoManager? = nil
 
   class Trie {
@@ -206,7 +221,7 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
       ["utilities", "PrefUtilsViewController"],
     ]
     if IINA_ENABLE_PLUGIN_SYSTEM {
-      viewMap.insert(["plugin", "PrefPluginViewController"], at: 8)
+      viewMap.insert(["plugins", "PrefPluginViewController"], at: 8)
     }
     let labelDict = [String: [String: [String]]](
       uniqueKeysWithValues: viewMap.map { (NSLocalizedString("preference.\($0[0])", comment: ""), self.getLabelDict(inNibNamed: $0[1])) })
@@ -254,7 +269,7 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
 
   @IBAction func searchFieldAction(_ sender: Any) {
     guard !isIndexing else { return }
-    let searchString = searchField.stringValue.lowercased()
+    let searchString = searchField.stringValue.lowercased().trimWhitespaceSuffix().removedLastSemicolon()
     if searchString == lastString { return }
     if searchString.count == 0 {
       dismissCompletionList()
@@ -357,7 +372,7 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
   ///
   /// The UI labels and titles contain extraneous characters that must be removed for them to be used as a search term.
   /// - Parameter string: The string to turn into a search term.
-  /// - Returns: The given string with extraneous character removed.
+  /// - Returns: The given string with extraneous characters removed.
   private func formSearchTerm(_ string: String) -> String {
     string.trimmingCharacters(in: .whitespacesAndNewlines)
       .replacingOccurrences(of: "[:…()\"\n]", with: "", options: .regularExpression)
@@ -377,7 +392,7 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
 
   private func getTitle(from view: NSView) -> String? {
     if let label = view as? NSTextField,
-      !label.isEditable, label.textColor == .labelColor,
+      !label.isEditable, label.textColor == .labelColor, label.stringValue != "Label",
       !label.identifierStartsWith("AccessoryLabel"), !label.identifierStartsWith("Trigger") {
       return formSearchTerm(label.stringValue)
     } else if let button = view as? NSButton,
@@ -410,6 +425,7 @@ class PreferenceWindowController: NSWindowController, NSWindowDelegate {
       // vc.perform(#selector(vc.installPluginAction(localPackageURL:)), with: url, afterDelay: 0.25)
     }
   }
+
   // MARK: - Debugging
 
 #if DEBUG

@@ -11,34 +11,35 @@ import Cocoa
 fileprivate func sameKeyAction(_ lhs: [String], _ rhs: [String], _ normalizeLastNum: Bool, _ numRange: ClosedRange<Double>?) -> (Bool, Double?, Any?) {
   var lhs = lhs
   var extraData: Any? = nil
-  if lhs.first == "seek" {
-    if let last = lhs.last {
-      if let _ = Double(last) {
-        extraData = Preference.SeekOption.defaultValue
-      } else {
-        // matching values are one of: "relative", "keyframes", "exact", "relative+keyframes", "relative+exact"
-        let splitArray = last.split(whereSeparator: { $0 == "+" })
-        if splitArray.count == 2 && splitArray[0] == "relative" {
-          if splitArray[1] == "exact" {
-            lhs = [String](lhs.dropLast())
-            extraData = Preference.SeekOption.exact
-          } else if splitArray[1] == "keyframes" {
-            lhs = [String](lhs.dropLast())
-            extraData = Preference.SeekOption.relative
-          }
-        } else if splitArray.count == 1 {
-          if splitArray[0] == "exact" {
-            lhs = [String](lhs.dropLast())
-            extraData = Preference.SeekOption.exact
-          } else if splitArray[0] == "keyframes" {
-            lhs = [String](lhs.dropLast())
-            extraData = Preference.SeekOption.relative
-          } else if splitArray[0] == "relative" {
-            lhs = [String](lhs.dropLast())
-            extraData = Preference.SeekOption.defaultValue
-          }
-        }
-      }
+  if lhs.first == "seek", rhs.first == "seek", lhs.count > 2, let last = lhs.last {
+    // This is a seek command that includes flags. Adjust the command before checking for a match.
+    if lhs.count == 4 {
+      // The original mpv seek command required that the keyframes and exact flags be passed as a
+      // 3rd parameter. This is considered deprecated but still supported by mpv. Convert this to
+      // the current command format by combining the flags using a "+" separator.
+      lhs[2] = "\(lhs[2])+\(lhs[3])"
+      lhs = [String](lhs.dropLast())
+    }
+    var splitArray = last.split(whereSeparator: { $0 == "+" })
+    if let index = splitArray.firstIndex(of: "relative") {
+      // The mpv seek command seeks relative to current position by default. Because of that the
+      // seek command used by menu items does not specify this flag. Ignore it when checking for a
+      // match.
+      splitArray.remove(at: index)
+    }
+    if let index = splitArray.firstIndex(of: "exact") {
+      // Alter the behavior of the menu item by passing this flag on the side as extra data.
+      splitArray.remove(at: index)
+      extraData = Preference.SeekOption.exact
+    }
+    // NOTE at this time PlayerCore does not support specifying the keyframes flag, so it can't
+    // be specified on the side as extra data as is done for exact. Although the mpv seek command
+    // normally defaults to seeking by keyframes, that default can be changed by the hr-seek option.
+    // When hr-seek has been set to enable exact seeks by default the keyframes flag will override
+    // that default.
+    if splitArray.isEmpty {
+      // All flags were recognized as ones we do not need to consider when checking for a match.
+      lhs = [String](lhs.dropLast())
     }
   }
   guard lhs.count > 0 && lhs.count == rhs.count else {
@@ -473,10 +474,9 @@ class MenuController: NSObject, NSMenuDelegate {
     chapterPanel?.title = isDisplayingChapters ? Constants.String.hideChaptersPanel : Constants.String.chaptersPanel
     pause.title = player.info.isPaused ? Constants.String.resume : Constants.String.pause
     abLoop.state = player.isABLoopActive ? .on : .off
-    let isLoop = player.mpv.getString(MPVOption.PlaybackControl.loopFile) == "inf"
-    fileLoop.state = isLoop ? .on : .off
-    let isPlaylistLoop = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
-    playlistLoop.state = (isPlaylistLoop == "inf" || isPlaylistLoop == "force") ? .on : .off
+    let loopMode = player.getLoopMode()
+    fileLoop.state = loopMode == .file ? .on : .off
+    playlistLoop.state = loopMode == .playlist ? .on : .off
     speedIndicator.title = String(format: NSLocalizedString("menu.speed", comment: "Speed:"), player.info.playSpeed)
   }
 

@@ -1260,11 +1260,8 @@ not applying FFmpeg 9599 workaround
         player.sendOSD(.speed(data))
       }
 
-    case MPVOption.PlaybackControl.loopPlaylist:
-      player.syncUI(.playlistLoop)
-
-    case MPVOption.PlaybackControl.loopFile:
-      player.syncUI(.fileLoop)
+    case MPVOption.PlaybackControl.loopPlaylist, MPVOption.PlaybackControl.loopFile:
+      player.syncUI(.loop)
 
     case MPVOption.Video.deinterlace:
       needReloadQuickSettingsView = true

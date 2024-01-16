@@ -7,12 +7,12 @@
 */
 
 "cmd.ignore" = "Ігнараваць";
-"cmd.seek" = "Seek";
-"cmd.revert-seek" = "Revert seek";
-"cmd.set" = "Set";
+"cmd.seek" = "Пераматаць";
+"cmd.revert-seek" = "Перамотка назад";
+"cmd.set" = "Задаць";
 "cmd.cycle" = "Cycle";
 "cmd.cycle-values" = "Cycle in";
-"cmd.add" = "Change";
+"cmd.add" = "Змяніць";
 "cmd.multiply" = "Multiply";
 "cmd.frame-step" = "Next frame";
 "cmd.frame-back-step" = "Previous frame";
@@ -40,7 +40,7 @@
 "iina.toggle-pip" = "Toggle Picture-in-Picture";
 "iina.toggle-music-mode" = "Toggle Music Mode";
 "iina.open-file" = "Open file";
-"iina.open-url" = "Open URL";
+"iina.open-url" = "Адкрыць URL-адрас";
 "iina.video-panel" = "Video panel";
 "iina.audio-panel" = "Audio panel";
 "iina.sub-panel" = "Subtitle panel";

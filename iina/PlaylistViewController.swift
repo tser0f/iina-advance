@@ -76,8 +76,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   @IBOutlet weak var buttonTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var tabHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var deleteBtn: NSButton!
-  @IBOutlet weak var loopPlaylistBtn: NSButton!
-  @IBOutlet weak var loopFileBtn: NSButton!
+  @IBOutlet weak var loopBtn: NSButton!
   @IBOutlet weak var shuffleBtn: NSButton!
   @IBOutlet weak var totalLengthLabel: NSTextField!
   @IBOutlet var subPopover: NSPopover!
@@ -148,14 +147,13 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
     playlistTableView.menu?.delegate = self
 
-    [deleteBtn, loopPlaylistBtn, loopFileBtn, shuffleBtn].forEach {
+    [deleteBtn, loopBtn, shuffleBtn].forEach {
       $0?.image?.isTemplate = true
       $0?.alternateImage?.isTemplate = true
     }
     
     deleteBtn.toolTip = NSLocalizedString("mini_player.delete", comment: "delete")
-    loopPlaylistBtn.toolTip = NSLocalizedString("mini_player.loop", comment: "loop playlist")
-    loopFileBtn.toolTip = NSLocalizedString("mini_player.loop_file", comment: "loop file")
+    loopBtn.toolTip = NSLocalizedString("mini_player.loop", comment: "loop")
     shuffleBtn.toolTip = NSLocalizedString("mini_player.shuffle", comment: "shuffle")
     addBtn.toolTip = NSLocalizedString("mini_player.add", comment: "add")
     removeBtn.toolTip = NSLocalizedString("mini_player.remove", comment: "remove")
@@ -220,9 +218,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
 
   override func viewDidAppear() {
     scrollPlaylistToCurrentItem()
-
-    let loopStatus = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
-    loopPlaylistBtn.state = (loopStatus == "inf" || loopStatus == "force") ? .on : .off
+    updateLoopBtnStatus()
   }
 
   deinit {
@@ -290,23 +286,18 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
       }
     }
   }
-    
-  func updateLoopPlaylistBtnStatus() {
+
+  func updateLoopBtnStatus() {
     guard isViewLoaded else { return }
-    let loopStatus = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
-    let loopEnabled = loopStatus == "inf" || loopStatus == "force"
-    loopPlaylistBtn.state = loopEnabled ? .on : .off
-    Preference.set(loopEnabled, for: .enablePlaylistLoop)
+    let loopMode = player.getLoopMode()
+    switch loopMode {
+    case .off:  loopBtn.state = .off
+    case .file: loopBtn.state = .on
+    default:    loopBtn.state = .mixed
+    }
+    loopBtn.alternateImage = NSImage.init(named: loopBtn.state == .on ? "loop_file" : "loop_dark")
   }
 
-  func updateLoopFileBtnStatus() {
-    guard isViewLoaded else { return }
-    let loopStatus = player.mpv.getString(MPVOption.PlaybackControl.loopFile)
-    let loopEnabled = loopStatus == "inf"
-    loopFileBtn.state = loopEnabled ? .on : .off
-    Preference.set(loopEnabled, for: .enableFileLoop)
-  }
-    
   // MARK: - Tab switching
 
   /** Switch tab (call from other objects) */
@@ -513,8 +504,8 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     switchToTab(.chapters)
   }
 
-  @IBAction func loopPlaylistBtnAction(_ sender: AnyObject) {
-    player.togglePlaylistLoop()
+  @IBAction func loopBtnAction(_ sender: NSButton) {
+    player.nextLoopMode()
   }
 
   @IBAction func loopFileBtnAction(_ sender: AnyObject) {

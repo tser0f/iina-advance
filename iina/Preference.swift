@@ -428,6 +428,9 @@ struct Preference {
 
     static let iinaEnablePluginSystem = Key("iinaEnablePluginSystem")
 
+    /** Workaround for issue [#4688](https://github.com/iina/iina/issues/4688) */
+    static let recentDocuments = Key("recentDocuments")
+
     // MARK: - Keys: Internal UI State
 
     /// When saving and restoring the UI state is enabled, we need to first check if other instances of IINA are running so that they
@@ -1259,7 +1262,9 @@ struct Preference {
     .savedVideoFilters: [SavedFilter](),
     .savedAudioFilters: [SavedFilter](),
 
-      .suppressCannotPreventDisplaySleep: false
+    .suppressCannotPreventDisplaySleep: false,
+
+    .recentDocuments: [Any]()
   ]
 
 

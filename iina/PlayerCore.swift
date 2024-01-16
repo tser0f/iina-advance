@@ -799,24 +799,64 @@ class PlayerCore: NSObject {
     }
     // The play slider has knobs representing the loop points, make insure the slider is in sync.
     windowController?.syncPlaySliderABLoop()
-    log.debug("Synchronized info.abLoopStatus \(info.abLoopStatus)")
-    saveState()
-  }
-
-  func toggleFileLoop() {
-    mpv.queue.async { [self] in
-      let isLoop = mpv.getString(MPVOption.PlaybackControl.loopFile) == "inf"
-      mpv.setString(MPVOption.PlaybackControl.loopFile, isLoop ? "no" : "inf")
-      sendOSD(.fileLoop(!isLoop))
-    }
+    Logger.log("Synchronized info.abLoopStatus \(info.abLoopStatus)")
   }
 
   func togglePlaylistLoop() {
     mpv.queue.async { [self] in
-      let loopStatus = mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
-      let isLoop = (loopStatus == "inf" || loopStatus == "force")
-      mpv.setString(MPVOption.PlaybackControl.loopPlaylist, isLoop ? "no" : "inf")
-      sendOSD(.playlistLoop(!isLoop))
+      let loopMode = getLoopMode()
+      if loopMode == .playlist {
+        setLoopMode(.off)
+      } else {
+        setLoopMode(.playlist)
+      }
+    }
+  }
+
+  func toggleFileLoop() {
+    mpv.queue.async { [self] in
+      let loopMode = getLoopMode()
+      if loopMode == .file {
+        setLoopMode(.off)
+      } else {
+        setLoopMode(.file)
+      }
+    }
+  }
+
+  func getLoopMode() -> LoopMode {
+    let loopFileStatus = mpv.getString(MPVOption.PlaybackControl.loopFile)
+    guard loopFileStatus != "inf" else { return .file }
+    if let loopFileStatus = loopFileStatus, let count = Int(loopFileStatus), count != 0 {
+      return .file
+    }
+    let loopPlaylistStatus = mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
+    guard loopPlaylistStatus != "inf", loopPlaylistStatus != "force" else { return .playlist }
+    guard let loopPlaylistStatus = loopPlaylistStatus, let count = Int(loopPlaylistStatus) else {
+      return .off
+    }
+    return count == 0 ? .off : .playlist
+  }
+
+  private func setLoopMode(_ newMode: LoopMode) {
+    switch newMode {
+    case .playlist:
+      mpv.setString(MPVOption.PlaybackControl.loopPlaylist, "inf")
+      mpv.setString(MPVOption.PlaybackControl.loopFile, "no")
+      sendOSD(.playlistLoop)
+    case .file:
+      mpv.setString(MPVOption.PlaybackControl.loopFile, "inf")
+      sendOSD(.fileLoop)
+    case .off:
+      mpv.setString(MPVOption.PlaybackControl.loopPlaylist, "no")
+      mpv.setString(MPVOption.PlaybackControl.loopFile, "no")
+      sendOSD(.noLoop)
+    }
+  }
+
+  func nextLoopMode() {
+    mpv.queue.async { [self] in
+      setLoopMode(getLoopMode().next())
     }
   }
 
@@ -1948,7 +1988,20 @@ class PlayerCore: NSObject {
           exitMusicMode(automatically: true)
         }
       }
+    }
 
+    // add to history
+    if let url = info.currentURL {
+      let duration = info.videoDuration ?? .zero
+      HistoryController.shared.queue.async {
+        HistoryController.shared.add(url, duration: duration.second)
+      }
+      if Preference.bool(for: .recordRecentFiles) && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
+        NSDocumentController.shared.noteNewRecentDocumentURL(url)
+#if DEBUG
+        DispatchQueue.main.async { (NSApp.delegate as? AppDelegate)?.saveRecentDocuments() }
+#endif
+      }
     }
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
@@ -2402,8 +2455,7 @@ class PlayerCore: NSObject {
     case muteButton
     case chapterList
     case playlist
-    case playlistLoop
-    case fileLoop
+    case loop
   }
 
   func syncUI(_ option: SyncUIOption) {
@@ -2441,14 +2493,9 @@ class PlayerCore: NSObject {
         }
       }
 
-    case .playlistLoop:
+    case .loop:
       DispatchQueue.main.async {
-        self.windowController.playlistView.updateLoopPlaylistBtnStatus()
-      }
-
-    case .fileLoop:
-      DispatchQueue.main.async {
-        self.windowController.playlistView.updateLoopFileBtnStatus()
+        self.windowController.playlistView.updateLoopBtnStatus()
       }
     }
 
@@ -2755,6 +2802,7 @@ class PlayerCore: NSObject {
     mpv.queue.async { [self] in
       _reloadChapters()
     }
+    syncUI(.chapterList)
   }
 
   // MARK: - Notifications

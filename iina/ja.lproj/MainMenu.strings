@@ -82,8 +82,8 @@
 /* Class = "NSMenuItem"; title = "<None>"; ObjectID = "9pa-9C-ueQ"; */
 "9pa-9C-ueQ.title" = "<なし>";
 
-/* Class = "NSMenuItem"; title = "Save Downloaded Subtitle"; ObjectID = "9zk-co-roT"; */
-"9zk-co-roT.title" = "ダウンロードした字幕を保存";
+/* Class = "NSMenuItem"; title = "Save Downloaded Subtitle…"; ObjectID = "9zk-co-roT"; */
+"9zk-co-roT.title" = "ダウンロードした字幕を保存…";
 
 /* Class = "NSMenuItem"; title = "Take a Screenshot"; ObjectID = "AoP-K6-Kb5"; */
 "AoP-K6-Kb5.title" = "スクリーンショットを撮る";
@@ -201,6 +201,9 @@
 
 /* Class = "NSMenuItem"; title = "Find Online Subtitles…"; ObjectID = "Mg3-WB-gjZ"; */
 "Mg3-WB-gjZ.title" = "オンラインで字幕を探す…";
+
+/* Class = "NSMenuItem"; title = "Find Online Subtitles from" ObjectID = "5dT-kq-WV9"; */
+"5dT-kq-WV9.title" = "Find Online Subtitles from";
 
 /* Class = "NSMenuItem"; title = "Save Current Playlist…"; ObjectID = "Mjr-lL-oEt"; */
 "Mjr-lL-oEt.title" = "現在のプレイリストを保存…";

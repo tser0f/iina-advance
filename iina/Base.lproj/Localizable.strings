@@ -100,8 +100,9 @@
 "osd.timed_out" = "Timed Out";
 "osd.filter_added" = "Added Filter: %@";
 "osd.filter_removed" = "Removed Filter";
-"osd.file_loop" = "File Loop: %@";
-"osd.playlist_loop" = "Playlist Loop: %@";
+"osd.file_loop" = "Loop Single File";
+"osd.playlist_loop" = "Loop Playlist";
+"osd.no_loop" = "Disable Looping";
 
 "preference.title" = "Preferences";
 "preference.general" = "General";
@@ -346,8 +347,7 @@
 "osc_toolbar.screenshot" = "Take a screenshot"; 
 
 "mini_player.album_art" = "Toggle album art";
-"mini_player.loop" = "Repeat playlist";
-"mini_player.loop_file" = "Repeat single file";
+"mini_player.loop" = "Repeat";
 "mini_player.shuffle" = "Shuffle";
 "mini_player.remove" = "Remove from playlist";
 "mini_player.add" = "Add to playlist";
