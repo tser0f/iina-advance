@@ -23,14 +23,14 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window title="Preferences" releasedWhenClosed="NO" frameAutosaveName="" animationBehavior="default" titlebarAppearsTransparent="YES" titleVisibility="hidden" id="F0z-JX-Cv5">
+        <window title="Preferences" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" titlebarAppearsTransparent="YES" titleVisibility="hidden" id="F0z-JX-Cv5" userLabel="Preferences Window">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="820" height="480"/>
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1415"/>
             <value key="minSize" type="size" width="820" height="320"/>
             <view key="contentView" wantsLayer="YES" id="se5-gp-TjO" userLabel="PrefWindow Content View">
-                <rect key="frame" x="0.0" y="0.0" width="840" height="480"/>
+                <rect key="frame" x="0.0" y="0.0" width="820" height="480"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                 <subviews>
                     <visualEffectView blendingMode="behindWindow" material="sidebar" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="AO2-1e-7F6" userLabel="PrefNavPanel Visual Effect View">
@@ -79,7 +79,7 @@
                                                                     <rect key="frame" x="0.0" y="9" width="18" height="18"/>
                                                                     <constraints>
                                                                         <constraint firstAttribute="width" secondItem="5Yr-Dy-tXq" secondAttribute="height" multiplier="1:1" id="ITq-jp-a8v"/>
-                                                                        <constraint firstAttribute="height" constant="22" id="W2O-qT-W0s"/>
+                                                                        <constraint firstAttribute="width" constant="18" id="W2O-qT-W0s"/>
                                                                     </constraints>
                                                                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="feg-Zf-aMd"/>
                                                                     <connections>
@@ -99,7 +99,7 @@
                                                                 </textField>
                                                             </subviews>
                                                             <constraints>
-                                                                <constraint firstAttribute="trailing" secondItem="XDU-ud-pYc" secondAttribute="trailing" id="GBQ-e5-LaX"/>
+                                                                <constraint firstAttribute="trailing" secondItem="XDU-ud-pYc" secondAttribute="trailing" constant="20" id="GBQ-e5-LaX"/>
                                                                 <constraint firstItem="XDU-ud-pYc" firstAttribute="leading" secondItem="5Yr-Dy-tXq" secondAttribute="trailing" constant="8" id="N2o-JC-vPx"/>
                                                                 <constraint firstItem="5Yr-Dy-tXq" firstAttribute="centerY" secondItem="Cky-oa-sEY" secondAttribute="centerY" id="eBq-gK-JL2"/>
                                                                 <constraint firstItem="5Yr-Dy-tXq" firstAttribute="leading" secondItem="Cky-oa-sEY" secondAttribute="leading" id="ekq-kA-abF"/>
@@ -117,7 +117,6 @@
                                         </tableView>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstAttribute="bottom" secondItem="vde-uJ-0ge" secondAttribute="bottom" id="BM2-79-oGE"/>
                                         <constraint firstItem="vde-uJ-0ge" firstAttribute="leading" secondItem="H3G-ed-YHx" secondAttribute="leading" id="Cxz-CR-kdA"/>
                                         <constraint firstAttribute="trailing" secondItem="vde-uJ-0ge" secondAttribute="trailing" id="goR-gh-yRz"/>
                                         <constraint firstItem="vde-uJ-0ge" firstAttribute="top" secondItem="H3G-ed-YHx" secondAttribute="top" id="tZn-Id-7Ac"/>
@@ -125,7 +124,6 @@
                                     <nil key="backgroundColor"/>
                                     <edgeInsets key="contentInsets" left="0.0" right="0.0" top="0.0" bottom="0.0"/>
                                 </clipView>
-                                <edgeInsets key="contentInsets" left="0.0" right="0.0" top="0.0" bottom="0.0"/>
                                 <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="DkZ-6e-xVc">
                                     <rect key="frame" x="-100" y="-100" width="220" height="16"/>
                                     <autoresizingMask key="autoresizingMask"/>
@@ -427,6 +425,5 @@
             </constraints>
             <point key="canvasLocation" x="-307" y="307"/>
         </customView>
-        <userDefaultsController representsSharedInstance="YES" id="hg6-Fc-oSH"/>
     </objects>
 </document>
