@@ -952,6 +952,7 @@ not applying FFmpeg 9599 workaround
 
     case MPV_EVENT_SHUTDOWN:
       let quitByMPV = !player.isShuttingDown
+      player.log.verbose("Got mpv shutdown event, quitByMPV: \(quitByMPV.yesno)")
       if quitByMPV {
         // This happens when the user presses "q" in a player window and the quit command is sent
         // directly to mpv. The user could also use mpv's IPC interface to send the quit command to
@@ -972,9 +973,10 @@ not applying FFmpeg 9599 workaround
                                argument: nil, order: Int.min, modes: [.common])
         }
       } else {
+        player.mpvHasShutdown()
+        player.log.verbose("Calling mpv_destroy")
         mpv_destroy(mpv)
         mpv = nil
-        player.mpvHasShutdown()
       }
 
     case MPV_EVENT_LOG_MESSAGE:

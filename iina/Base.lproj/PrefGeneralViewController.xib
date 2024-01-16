@@ -186,12 +186,12 @@
                                 </textField>
                                 <popUpButton horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EHL-JZ-pOJ">
                                     <rect key="frame" x="184" y="-4" width="191" height="25"/>
-                                    <popUpButtonCell key="cell" type="push" title="Same action as at launch" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="LLC-oc-e6Q" id="RAv-Yr-VKh">
+                                    <popUpButtonCell key="cell" type="push" title="Do same action as at launch" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="LLC-oc-e6Q" id="RAv-Yr-VKh">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="menu"/>
                                         <menu key="menu" id="8Yo-th-5Mt">
                                             <items>
-                                                <menuItem title="Same action as at launch" state="on" id="LLC-oc-e6Q"/>
+                                                <menuItem title="Do same action as at launch" state="on" id="LLC-oc-e6Q"/>
                                                 <menuItem title="Do nothing" tag="2" id="Qgg-oP-V6V"/>
                                                 <menuItem title="Quit" tag="1" id="qft-0j-2pI"/>
                                             </items>

@@ -280,7 +280,7 @@ struct PlayerSaveState {
         return
       }
       guard !player.isShuttingDown else {
-        player.log.warn("Skipping player state save: is shutting down")
+        player.log.warn("Skipping player state save: player is shutting down")
         return
       }
       guard !player.windowController.isClosing else {

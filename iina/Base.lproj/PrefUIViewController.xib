@@ -382,7 +382,7 @@
                     <subviews>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Xgb-im-tqO">
                             <rect key="frame" x="-2" y="392" width="424" height="18"/>
-                            <buttonCell key="cell" type="check" title="Lock proportions of window to prevent empty space around video" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9Cn-gh-mtB">
+                            <buttonCell key="cell" type="check" title="Lock proportions to prevent empty space around video" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9Cn-gh-mtB">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>
@@ -409,7 +409,7 @@
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="xMC-EY-bOr">
                             <rect key="frame" x="-2" y="368" width="379" height="18"/>
-                            <buttonCell key="cell" type="check" title="Reposition window when scaling video to keep it fully visible on screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="BeX-Eq-sUG">
+                            <buttonCell key="cell" type="check" title="When scaling video, reposition window as needed to stay fully visible on screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="BeX-Eq-sUG">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>

@@ -461,10 +461,6 @@ class PlayerCore: NSObject {
 
     saveState()            // Save state to IINA prefs (if enabled)
     savePlaybackPosition() // Save state to mpv watch-later (if enabled)
-    DispatchQueue.main.async { [self] in
-      refreshSyncUITimer()   // Shut down timer
-      uninitVideo()          // Shut down DisplayLink
-    }
   }
 
   func saveState() {
@@ -476,6 +472,7 @@ class PlayerCore: NSObject {
   private func uninitVideo() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard didInitVideo else { return }
+    log.debug("Uninit video")
     videoView.stopDisplayLink()
     videoView.uninit()
     didInitVideo = false
@@ -489,23 +486,15 @@ class PlayerCore: NSObject {
   ///     sent to mpv using the synchronous API mpv executes the quit command asynchronously. The player is not fully shutdown
   ///     until mpv finishes executing the quit command and shuts down.
   func shutdown(saveIfEnabled: Bool = true) {
-    var alreadyShuttingDown = false
-    $isShuttingDown.withLock() { isShuttingDown in
-      if isShuttingDown {
-        log.verbose("Player is already shutting down")
-        alreadyShuttingDown = true
-      }
-      isShuttingDown = true
-    }
-    guard !alreadyShuttingDown else {
+    guard !isShuttingDown else {
+      log.verbose("Player is already shutting down")
       return
     }
+    isShuttingDown = true
+
     mpv.queue.async { [self] in
       if saveIfEnabled {
         savePlayerStateForShutdown()
-      } else {
-        log.debug("Removing player \(label)")
-        PlayerCore.manager.removePlayer(withLabel: label)
       }
       mpv.mpvQuit()
     }
@@ -513,20 +502,23 @@ class PlayerCore: NSObject {
 
   func mpvHasShutdown(isMPVInitiated: Bool = false) {
     let suffix = isMPVInitiated ? " (initiated by mpv)" : ""
-    Logger.log("Player has shut down\(suffix)", subsystem: subsystem)
+    log.debug("Player has shut down\(suffix)")
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     isStopped = true
     isShutdown = true
     // If mpv shutdown was initiated by mpv then the player state has not been saved.
     if isMPVInitiated {
-      $isShuttingDown.withLock() { isShuttingDown in
-        isShuttingDown = true
-      }
+      isShuttingDown = true
       savePlayerStateForShutdown()
     }
     DispatchQueue.main.async { [self] in
-      postNotification(.iinaPlayerShutdown)
+      refreshSyncUITimer()   // Shut down timer
+      uninitVideo()          // Shut down DisplayLink
     }
+    log.debug("Removing player \(label)")
+    PlayerCore.manager.removePlayer(withLabel: label)
+
+    postNotification(.iinaPlayerShutdown)
   }
 
   func enterMusicMode(automatically: Bool = false) {
@@ -636,7 +628,6 @@ class PlayerCore: NSObject {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
 
     isStopped = true
-    isStopping = false
     postNotification(.iinaPlayerStopped)
   }
 
