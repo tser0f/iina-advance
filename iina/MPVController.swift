@@ -993,9 +993,10 @@ not applying FFmpeg 9599 workaround
       let text = String(cString: (dataPtr.pointee.text)!)
       let mpvIINALevel = logLevelMap[level] ?? .verbose
 
-      // TODO bring back pref
-      if mpvIINALevel.rawValue >= Logger.Level.warning.rawValue {
-        Logger.log("[\(prefix)] \(level): \(text)", level: mpvIINALevel, subsystem: mpvSubsystem)
+      if mpvIINALevel.rawValue >= Preference.integer(for: .iinaMpvLogLevel) {
+        // Remove newline if there is one
+        let text = text.hasSuffix("\n") ? String(text.dropLast()) : text
+        Logger.log("[\(level.first ?? "?")][\(prefix)] \(text)", level: mpvIINALevel, subsystem: mpvSubsystem)
       }
 
       mpvLogScanner.processLogLine(prefix: prefix, level: level, msg: text)
