@@ -1656,6 +1656,7 @@ not applying FFmpeg 9599 workaround
       player.log.error(message)
       Utility.showAlert("fatal_error", arguments: [message])
       player.shutdown(saveIfEnabled: false)
+      player.windowController.close()
     }
   }
 }

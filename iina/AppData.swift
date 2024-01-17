@@ -45,6 +45,7 @@ struct AppData {
 
   static let osdSeekSubSecPrecisionComparison: Double = 1000000
 
+  static let mpvArgNone = "none"
   static let defaultAspectName = "Default"
   static let cropNone = "None"
   /** generate aspect and crop options in menu */

@@ -1975,6 +1975,7 @@ class PlayerCore: NSObject {
     // main thread stuff
     DispatchQueue.main.async { [self] in
       refreshSyncUITimer()
+      windowController.updateVolumeUI()
 
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
@@ -2084,7 +2085,7 @@ class PlayerCore: NSObject {
       if priorState.string(for: .playPosition) != nil {
         /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
         log.verbose("Clearing mpv 'start' option now that restore is complete")
-        mpv.setString(MPVOption.PlaybackControl.start, "none")
+        mpv.setString(MPVOption.PlaybackControl.start, AppData.mpvArgNone)
       }
       info.priorState = nil
       log.debug("Done with restore")
@@ -2765,6 +2766,10 @@ class PlayerCore: NSObject {
     info.vid = vid
     info.sid = sid
     info.secondSid = secondSid
+    DispatchQueue.main.async { [self] in
+      // Change enablement based on whether there is audio or if it is selected
+      windowController.updateVolumeUI()
+    }
     log.verbose("Reloaded selected tracks. Vid:\(vid) Aid:\(aid) Sid:\(sid) Sid2:\(secondSid)")
   }
 

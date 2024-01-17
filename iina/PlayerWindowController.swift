@@ -3413,6 +3413,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func updateVolumeUI() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded, !isClosing, !player.isShuttingDown else { return }
+    guard player.info.fileLoaded else { return }
 
     let volume = player.info.volume
     let isMuted = player.info.isMuted
