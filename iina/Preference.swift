@@ -1368,6 +1368,11 @@ struct Preference {
     return T.init(key: key) ?? T.defaultValue
   }
 
+  static func keyHasBeenPersisted(_ key: Key) -> Bool {
+    let identifier = InfoDictionary.shared.bundleIdentifier
+    guard let persisted = ud.persistentDomain(forName: identifier) else { return false }
+    return persisted.keys.contains(key.rawValue)
+  }
   static var isAdvancedEnabled: Bool {
     return Preference.bool(for: .enableAdvancedSettings)
   }

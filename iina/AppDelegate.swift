@@ -200,10 +200,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   // MARK: - App Delegate
 
   func applicationWillFinishLaunching(_ notification: Notification) {
-    // Check for legacy pref entries and migrate them to their modern equivalents.
-    // Must do this before setting defaults so that checking for existing entries doesn't result in false positives
-    LegacyMigration.migrateLegacyPreferences()
-
     // Must setup preferences before logging so log level is set correctly.
     registerUserDefaultValues()
 
@@ -241,6 +237,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     for key in self.observedPrefKeys {
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
+
+    // Check for legacy pref entries and migrate them to their modern equivalents.
+    // Must do this before setting defaults so that checking for existing entries doesn't result in false positives
+    LegacyMigration.migrateLegacyPreferences()
 
     // Call this *before* registering for url events, to guarantee that menu is init'd
     confTableStateManager.startUp()

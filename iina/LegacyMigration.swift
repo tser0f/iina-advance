@@ -38,16 +38,32 @@ class LegacyMigration {
    for these keys.
    */
   static func migrateLegacyPreferences() {
-    for (modernKey, legacyKey) in legacyColorPrefKeyMap {
-      // If modern pref entry already exists, then user has already upgraded and no action is needed for this key
-      guard UserDefaults.standard.object(forKey: modernKey.rawValue) == nil else { continue }
+    Logger.log("Looking for legacy color prefs to migrate", level: .verbose)
 
-      // Look for legacy pref:
-      guard let data = UserDefaults.standard.data(forKey: legacyKey.rawValue) else { continue }
-      guard let color = NSUnarchiver.unarchiveObject(with: data) as? NSColor else { continue }
-      guard let mpvColorString = color.usingColorSpace(.deviceRGB)?.mpvColorString else { continue }
-      // Store migrated value in modern string format under modern pref key:
-      UserDefaults.standard.set(mpvColorString, forKey: modernKey.rawValue)
+    var unmigratedEntriesFoundCount: Int = 0
+    var entriesMigratedCount: Int = 0
+    for (modernKey, legacyKey) in legacyColorPrefKeyMap {
+      // Migrate pref only if there is a legacy entry with but no corresponding modern entry
+      guard Preference.keyHasBeenPersisted(legacyKey),
+            !Preference.keyHasBeenPersisted(modernKey) else { continue }
+      unmigratedEntriesFoundCount += 1
+
+      // Deserialize & convert legacy pref value to modern string format:
+      guard let legacyData = Preference.data(for: legacyKey) else { continue }
+      guard let color = NSUnarchiver.unarchiveObject(with: legacyData) as? NSColor,
+            let mpvColorString = color.usingColorSpace(.deviceRGB)?.mpvColorString else {
+        Logger.log("Failed to convert color value from legacy pref \(legacyKey.rawValue)", level: .error)
+        continue
+      }
+      // Store string under modern pref key:
+      Preference.set(mpvColorString, for: modernKey)
+      Logger.log("Converted color value from legacy pref \(legacyKey.rawValue) and stored in pref \(modernKey.rawValue)")
+      entriesMigratedCount += 1
+    }
+    if unmigratedEntriesFoundCount == 0 {
+      Logger.log("No unmigrated legacy color prefs found")
+    } else {
+      Logger.log("Migrated \(entriesMigratedCount) of \(unmigratedEntriesFoundCount) legacy color prefs")
     }
   }
 
