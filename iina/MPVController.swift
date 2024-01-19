@@ -1102,6 +1102,8 @@ not applying FFmpeg 9599 workaround
       let errorCode = dataPtr.pointee.error
       let errorString = reason == MPV_END_FILE_REASON_ERROR ? "error=\(errorCode) (\(String(cString: mpv_error_string(errorCode))))" : "No"
       player.log.verbose("FileEnded entryID=\(playlistEntryID) insertID=\(playlistInsertID) numEntries=\(playlistInsertNumEntries) reason=\(reasonString) error=\(errorString)")
+      player.info.fileLoading = false
+      player.info.fileLoaded = false
       if player.info.fileLoading {
         if reason != MPV_END_FILE_REASON_STOP {
           receivedEndFileWhileLoading = true
@@ -1460,6 +1462,7 @@ not applying FFmpeg 9599 workaround
         }
         player.info.isIdle = true
         if player.info.fileLoaded {
+          player.log.error("Received MPV_EVENT_END_FILE and 'idle-active' after already loading \(player.info.currentURL?.path.pii.quoted ?? "nil"). Will close window")
           player.info.fileLoaded = false
           player.closeWindow()
         }

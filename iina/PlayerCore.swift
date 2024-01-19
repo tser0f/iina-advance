@@ -389,6 +389,7 @@ class PlayerCore: NSObject {
 
       // Send load file command
       info.fileLoading = true
+      info.fileLoaded = false
       info.justOpenedFile = true
       // Reset state flags
       isStopping = false
