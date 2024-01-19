@@ -9,31 +9,44 @@
 import Foundation
 
 struct MPVGeometryDef: CustomStringConvertible {
-  var x: String?, y: String?, w: String?, h: String?, xSign: String?, ySign: String?
+  var w: String?
+  var wIsPercentage: Bool
+  var h: String?
+  var hIsPercentage: Bool
+  var xSign: String?
+  var x: String?
+  var xIsPercentage: Bool
+  var ySign: String?
+  var y: String?
+  var yIsPercentage: Bool
 
   static func parse(_ geometryString: String) -> MPVGeometryDef? {
-    // guard option value
     guard !geometryString.isEmpty else { return nil }
-    // match the string, replace empty group by nil
     let captures: [String?] = Regex.geometry.captures(in: geometryString).map { $0.isEmpty ? nil : $0 }
-    // guard matches
-    guard captures.count == 9 else { return nil }
-    // return struct
-    return MPVGeometryDef(x: captures[6],
-                          y: captures[8],
-                          w: captures[2],
-                          h: captures[4],
+    guard captures.count == 11 else { return nil }
+    return MPVGeometryDef(w: captures[1],
+                          wIsPercentage: captures[2] == "%",
+                          h: captures[3],
+                          hIsPercentage: captures[4] == "%",
                           xSign: captures[5],
-                          ySign: captures[7])
+                          x: captures[6],
+                          xIsPercentage: captures[7] == "%",
+                          ySign: captures[8],
+                          y: captures[9],
+                          yIsPercentage: captures[10] == "%")
   }
 
   var description: String {
+    let w0 = w == nil ? "nil" : String(w!)
+    let wPer = wIsPercentage ? "%" : ""
+    let h0 = h == nil ? "nil" : String(h!)
+    let hPer = hIsPercentage ? "%" : ""
     let x0 = x == nil ? "nil" : String(x!)
     let y0 = y == nil ? "nil" : String(y!)
-    let w0 = w == nil ? "nil" : String(w!)
-    let h0 = h == nil ? "nil" : String(h!)
     let xSign0 = xSign == nil ? "nil" : String(xSign!)
+    let xPer = xIsPercentage ? "%" : ""
     let ySign0 = ySign == nil ? "nil" : String(ySign!)
-    return "Geometry(x: (\(xSign0)) \(x0), y: (\(ySign0)) \(y0), W: \(w0), H: \(h0))"
+    let yPer = yIsPercentage ? "%" : ""
+    return "Geometry(W: \(w0)\(wPer), H: \(h0)\(hPer), x: (\(xSign0)) \(x0)\(xPer), y: (\(ySign0)) \(y0)\(yPer))"
   }
 }

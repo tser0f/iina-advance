@@ -326,7 +326,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       // size
       if windowSizeCheckBox.state == .on {
         // either width or height, but not both
-        if windowSizeTypePopUpButton.selectedTag() == SizeWidthTag {
+        if windowSizeTypePopUpButton.selectedTag() == SizeHeightTag {
           geometry += "x"
         }
 
@@ -349,7 +349,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         }
 
         // Y
-        geometry += windowPosYAnchorPopUpButton.selectedTag() == SideBottomTag ? "+" : "-"
+        geometry += windowPosYAnchorPopUpButton.selectedTag() == SideTopTag ? "+" : "-"
 
         if windowPosYUnitPopUpButton.selectedTag() == UnitPercentTag {
           geometry += normalizePercentage(windowPosYOffsetTextField.stringValue)
@@ -415,28 +415,16 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
         Logger.log("Parsed \(Preference.quoted(.initialWindowSizePosition))=\(geometryString.quoted) ➤ \(geometry)")
         unparsedGeometryabel.stringValue = "\"\(geometryString)\""
         // size
-        if var h = geometry.h {
+        if let h = geometry.h {
           isUsingMpvSize = true
           windowSizeTypePopUpButton.selectItem(withTag: SizeHeightTag)
-          let isPercent = h.hasSuffix("%")
-          windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
-          if isPercent {
-            h = String(h.dropLast())
-          }
-          if let hInt = Int(h) {
-            windowSizeValueTextField.stringValue = String(hInt)
-          }
-        } else if var w = geometry.w {
+          windowSizeUnitPopUpButton.selectItem(withTag: geometry.hIsPercentage ? UnitPercentTag : UnitPointTag)
+          windowSizeValueTextField.stringValue = h
+        } else if let w = geometry.w {
           isUsingMpvSize = true
           windowSizeTypePopUpButton.selectItem(withTag: SizeWidthTag)
-          let isPercent = w.hasSuffix("%")
-          windowSizeUnitPopUpButton.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
-          if isPercent {
-            w = String(w.dropLast())
-          }
-          if let wInt = Int(w) {
-            windowSizeValueTextField.stringValue = String(wInt)
-          }
+          windowSizeUnitPopUpButton.selectItem(withTag: geometry.wIsPercentage ? UnitPercentTag : UnitPointTag)
+          windowSizeValueTextField.stringValue = w
         }
         // position
         if var x = geometry.x, var y = geometry.y {
@@ -445,16 +433,17 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
           x = x.hasPrefix("+") ? String(x.dropFirst()) : x
           y = y.hasPrefix("+") ? String(y.dropFirst()) : y
           isUsingMpvPos = true
-          let xIsPercent = x.hasSuffix("%")
           windowPosXAnchorPopUpButton.selectItem(withTag: xSign == "+" ? SideLeftTag : SideRightTag)
-          windowPosXOffsetTextField.stringValue = xIsPercent ? String(x.dropLast()) : x
-          windowPosXUnitPopUpButton.selectItem(withTag: xIsPercent ? UnitPercentTag : UnitPointTag)
-          let yIsPercent = y.hasSuffix("%")
-          windowPosYAnchorPopUpButton.selectItem(withTag: ySign == "+" ? SideBottomTag : SideTopTag)
-          windowPosYOffsetTextField.stringValue = yIsPercent ? String(y.dropLast()) : y
-          windowPosYUnitPopUpButton.selectItem(withTag: yIsPercent ? UnitPercentTag : UnitPointTag)
+          windowPosXOffsetTextField.stringValue = x
+          windowPosXUnitPopUpButton.selectItem(withTag: geometry.xIsPercentage ? UnitPercentTag : UnitPointTag)
+          windowPosYAnchorPopUpButton.selectItem(withTag: ySign == "+" ? SideTopTag : SideBottomTag)
+          windowPosYOffsetTextField.stringValue = y
+          windowPosYUnitPopUpButton.selectItem(withTag: geometry.yIsPercentage ? UnitPercentTag : UnitPointTag)
         }
       } else {
+        if !geometryString.isEmpty {
+          Logger.log("Failed to parse string \(geometryString.quoted) from \(Preference.quoted(.initialWindowSizePosition)) pref", level: .error)
+        }
         unparsedGeometryabel.stringValue = ""
       }
     }

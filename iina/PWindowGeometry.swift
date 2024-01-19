@@ -313,7 +313,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   var outsideBarsTotalSize: NSSize {
-    return NSSize(width: outsideBarsTotalWidth, height: outsideTopBarHeight + outsideBottomBarHeight)
+    return NSSize(width: outsideBarsTotalWidth, height: outsideBarsTotalHeight)
   }
 
   static func minViewportMargins(forMode mode: PlayerWindowMode) -> BoxQuad {
@@ -566,8 +566,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   fileprivate func computeMaxViewportSize(in containerSize: NSSize) -> NSSize {
     // Resize only the video. Panels outside the video do not change size.
     // To do this, subtract the "outside" panels from the container frame
-    return NSSize(width: containerSize.width - outsideBarsTotalSize.width,
-                  height: containerSize.height - outsideBarsTotalSize.height)
+    return NSSize(width: containerSize.width - outsideBarsTotalWidth,
+                  height: containerSize.height - outsideBarsTotalHeight)
   }
 
   // Computes & returns the max video size with proper aspect ratio which can fit in the given container, after subtracting outside bars
@@ -621,6 +621,12 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let outsideBarsSize = self.outsideBarsTotalSize
     let newScreenID = screenID ?? self.screenID
     let containerFrame: NSRect? = PWindowGeometry.getContainerFrame(forScreenID: newScreenID, fitOption: newFitOption)
+    let maxViewportSize: NSSize?
+    if let containerFrame {
+      maxViewportSize = computeMaxViewportSize(in: containerFrame.size)
+    } else {
+      maxViewportSize = nil
+    }
 
     var newViewportSize = desiredSize ?? viewportSize
     if Logger.isTraceEnabled {
@@ -631,23 +637,21 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     /// Make sure viewport size is at least as large as min.
     /// This is especially important when inside sidebars are taking up most of the space & `lockViewportToVideoSize` is `true`.
-
     let minVideoSize = PWindowGeometry.computeMinVideoSize(forAspectRatio: videoAspect, mode: mode)
     newViewportSize = NSSize(width: max(minVideoSize.width, newViewportSize.width),
                              height: max(minVideoSize.height, newViewportSize.height))
 
     if lockViewportToVideoSize {
-      /// Constrain `viewportSize` within `containerFrame`. Gotta do this BEFORE computing videoSize.
-      /// So we do it again below. Big deal. Been mucking with this code way too long. It's fine.
-      if let containerFrame {
-        let maxSize = NSSize(width: containerFrame.size.width - outsideBarsSize.width,
-                             height: containerFrame.size.height - outsideBarsSize.height)
-        newViewportSize = NSSize(width: min(newViewportSize.width, maxSize.width),
-                                 height: min(newViewportSize.height, maxSize.height))
+      if let maxViewportSize {
+        /// Constrain `viewportSize` within `containerFrame`. Gotta do this BEFORE computing videoSize.
+        /// So we do it again below. Big deal. Been mucking with this code way too long. It's fine.
+        newViewportSize = NSSize(width: min(newViewportSize.width, maxViewportSize.width),
+                                 height: min(newViewportSize.height, maxViewportSize.height))
       }
 
       /// Compute `videoSize` to fit within `viewportSize` (minus `viewportMargins`) while maintaining `videoAspect`:
       let newVideoSize = PWindowGeometry.computeVideoSize(withAspectRatio: videoAspect, toFillIn: newViewportSize, mode: mode)
+      /// Remember that interactive mode has fixed nonzero viewport margins, despite `lockViewportToVideoSize==true`
       let minViewportMargins = PWindowGeometry.minViewportMargins(forMode: mode)
       newViewportSize = NSSize(width: newVideoSize.width + minViewportMargins.totalWidth,
                                height: newVideoSize.height + minViewportMargins.totalHeight)
@@ -659,11 +663,9 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
                              height: max(minViewportHeight, newViewportSize.height))
 
     /// Constrain `viewportSize` within `containerFrame` if relevant:
-    if let containerFrame {
-      let maxSize = NSSize(width: containerFrame.size.width - outsideBarsSize.width,
-                           height: containerFrame.size.height - outsideBarsSize.height)
-      newViewportSize = NSSize(width: min(newViewportSize.width, maxSize.width),
-                               height: min(newViewportSize.height, maxSize.height))
+    if let maxViewportSize {
+      newViewportSize = NSSize(width: min(newViewportSize.width, maxViewportSize.width),
+                               height: min(newViewportSize.height, maxViewportSize.height))
     }
 
     // -- Window size calculation
@@ -814,7 +816,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
   func apply(mpvGeometry: MPVGeometryDef, andDesiredVideoSize desiredVideoSize: NSSize) -> PWindowGeometry {
     guard let screenFrame: NSRect = getContainerFrame() else {
-      Logger.log("Cannot apply mpv geometry: no container frame found (fitOption: \(fitOption))")
+      Logger.log("Cannot apply mpv geometry: no container frame found (fitOption: \(fitOption))", level: .error)
       return self
     }
     let maxVideoSize = computeMaxVideoSize(in: screenFrame.size)
@@ -826,7 +828,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     if let strw = mpvGeometry.w, strw != "0" {
       var w: CGFloat
       if strw.hasSuffix("%") {
-        w = CGFloat(Double(String(strw.dropLast()))! * 0.01 * Double(maxVideoSize.width))
+        w = CGFloat(Double(String(strw.dropLast()))! * 0.01 * Double(screenFrame.width))
       } else {
         w = CGFloat(Int(strw)!)
       }
@@ -837,7 +839,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     } else if let strh = mpvGeometry.h, strh != "0" {
       var h: CGFloat
       if strh.hasSuffix("%") {
-        h = CGFloat(Double(String(strh.dropLast()))! * 0.01 * Double(maxVideoSize.height))
+        h = CGFloat(Double(String(strh.dropLast()))! * 0.01 * Double(screenFrame.height))
       } else {
         h = CGFloat(Int(strh)!)
       }
@@ -870,9 +872,10 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       } else {
         y = CGFloat(Int(stry)!)
       }
-      newOrigin.y = ySign == "+" ? y : maxVideoSize.height - y
-      if (ySign == "-") {
+      if ySign == "-" {  // Offset from TOP
         newOrigin.y -= maxVideoSize.height
+      } else {
+        newOrigin.y = ySign == "+" ? y : maxVideoSize.height - y
       }
     }
     // if x and y are not specified
