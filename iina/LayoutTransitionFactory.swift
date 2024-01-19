@@ -423,7 +423,17 @@ extension PlayerWindowController {
           let heightFillsScreen = prevWindowedGeo.windowFrame.height == screenFrame.height
           let newViewportHeight = heightFillsScreen ? prevWindowedGeo.viewportSize.height : round(prevWindowedGeo.viewportSize.height * widthRatio)
           let resizedViewport = NSSize(width: newViewportWidth, height: newViewportHeight)
-          return outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
+          let resizedGeo = outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
+          /// Kludge to fix unwanted window movement when opening/closing sidebars and `Preference.moveWindowIntoVisibleScreenOnResize` is false.
+          /// 1 of 2 - See below
+          // TODO: maybe find a more elegant solution
+          if resizedGeo.fitOption.shouldMoveWindowToKeepInContainer {
+            // Window origin was changed to keep it on screen. OK to use this
+            return resizedGeo
+          } else {
+            // Use previous origin, because scaleViewport() causes it to move when we don't want it to
+            return resizedGeo.clone(windowFrame: prevWindowedGeo.windowFrame.clone(size: resizedGeo.windowFrame.size))
+          }
         }
 
         // If window already fills screen height, keep window height (do not shrink window) when collapsing outside bars.
@@ -433,7 +443,15 @@ extension PlayerWindowController {
           let widthFillsScreen = prevWindowedGeo.windowFrame.width == screenFrame.width
           let newViewportWidth = widthFillsScreen ? prevWindowedGeo.viewportSize.width : round(prevWindowedGeo.viewportSize.width * heightRatio)
           let resizedViewport = NSSize(width: newViewportWidth, height: newViewportHeight)
-          return outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
+          let resizedGeo = outputGeo.scaleViewport(to: resizedViewport, mode: outputLayout.mode)
+          /// Kludge to fix unwanted window movement when opening/closing sidebars and `Preference.moveWindowIntoVisibleScreenOnResize` is false.
+          /// 2 of 2
+          if resizedGeo.fitOption.shouldMoveWindowToKeepInContainer {
+            // Window origin was changed to keep it on screen. OK to use this
+            return resizedGeo
+          } else {
+            return resizedGeo.clone(windowFrame: prevWindowedGeo.windowFrame.clone(size: resizedGeo.windowFrame.size))
+          }
         }
       }
 

@@ -758,26 +758,30 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   // Resizes the window appropriately
   func withResizedOutsideBars(newOutsideTopBarHeight: CGFloat? = nil, newOutsideTrailingBarWidth: CGFloat? = nil,
                               newOutsideBottomBarHeight: CGFloat? = nil, newOutsideLeadingBarWidth: CGFloat? = nil) -> PWindowGeometry {
+    assert((newOutsideTopBarHeight ?? 0) >= 0)
+    assert((newOutsideTrailingBarWidth ?? 0) >= 0)
+    assert((newOutsideBottomBarHeight ?? 0) >= 0)
+    assert((newOutsideLeadingBarWidth ?? 0) >= 0)
 
     var ΔW: CGFloat = 0
     var ΔH: CGFloat = 0
     var ΔX: CGFloat = 0
     var ΔY: CGFloat = 0
-    if let newOutsideTopBarHeight = newOutsideTopBarHeight {
-      let ΔTop = abs(newOutsideTopBarHeight) - self.outsideTopBarHeight
+    if let newOutsideTopBarHeight {
+      let ΔTop = newOutsideTopBarHeight - self.outsideTopBarHeight
       ΔH += ΔTop
     }
-    if let newOutsideTrailingBarWidth = newOutsideTrailingBarWidth {
-      let ΔRight = abs(newOutsideTrailingBarWidth) - self.outsideTrailingBarWidth
+    if let newOutsideTrailingBarWidth {
+      let ΔRight = newOutsideTrailingBarWidth - self.outsideTrailingBarWidth
       ΔW += ΔRight
     }
-    if let newOutsideBottomBarHeight = newOutsideBottomBarHeight {
-      let ΔBottom = abs(newOutsideBottomBarHeight) - self.outsideBottomBarHeight
+    if let newOutsideBottomBarHeight {
+      let ΔBottom = newOutsideBottomBarHeight - self.outsideBottomBarHeight
       ΔH += ΔBottom
       ΔY -= ΔBottom
     }
-    if let newOutsideLeadingBarWidth = newOutsideLeadingBarWidth {
-      let ΔLeft = abs(newOutsideLeadingBarWidth) - self.outsideLeadingBarWidth
+    if let newOutsideLeadingBarWidth {
+      let ΔLeft = newOutsideLeadingBarWidth - self.outsideLeadingBarWidth
       ΔW += ΔLeft
       ΔX -= ΔLeft
     }
@@ -824,24 +828,21 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
 
     var newVideoSize = desiredVideoSize
     var widthOrHeightIsSet = false
+
     // w and h can't take effect at same time
-    if let strw = mpvGeometry.w, strw != "0" {
-      var w: CGFloat
-      if strw.hasSuffix("%") {
-        w = CGFloat(Double(String(strw.dropLast()))! * 0.01 * Double(screenFrame.width))
-      } else {
-        w = CGFloat(Int(strw)!)
+    if let strw = mpvGeometry.w, let wInt = Int(strw), wInt > 0 {
+      var w = CGFloat(wInt)
+      if mpvGeometry.wIsPercentage {
+        w = w * 0.01 * Double(screenFrame.width)
       }
       w = max(minVideoSize.width, w)
       newVideoSize.width = w
       newVideoSize.height = w / videoAspect
       widthOrHeightIsSet = true
-    } else if let strh = mpvGeometry.h, strh != "0" {
-      var h: CGFloat
-      if strh.hasSuffix("%") {
-        h = CGFloat(Double(String(strh.dropLast()))! * 0.01 * Double(screenFrame.height))
-      } else {
-        h = CGFloat(Int(strh)!)
+    } else if let strh = mpvGeometry.h, let hInt = Int(strh), hInt > 0 {
+      var h = CGFloat(hInt)
+      if mpvGeometry.hIsPercentage {
+        h = h * 0.01 * Double(screenFrame.height)
       }
       h = max(minVideoSize.height, h)
       newVideoSize.height = h
@@ -850,27 +851,24 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     }
 
     var newOrigin = NSPoint()
-    // x, origin is window center
-    if let strx = mpvGeometry.x, let xSign = mpvGeometry.xSign {
-      let x: CGFloat
-      if strx.hasSuffix("%") {
-        x = CGFloat(Double(String(strx.dropLast()))! * 0.01 * Double(maxVideoSize.width)) - newVideoSize.width / 2
-      } else {
-        x = CGFloat(Int(strx)!)
+    // x
+    if let strx = mpvGeometry.x, let xInt = Int(strx), let xSign = mpvGeometry.xSign {
+      var x = CGFloat(xInt)
+      if mpvGeometry.xIsPercentage {
+        x = x * 0.01 * Double(maxVideoSize.width) - newVideoSize.width / 2
       }
       newOrigin.x = xSign == "+" ? x : maxVideoSize.width - x
       // if xSign equals "-", need set right border as origin
-      if (xSign == "-") {
+      if xSign == "-" {
         newOrigin.x -= maxVideoSize.width
       }
     }
+
     // y
-    if let stry = mpvGeometry.y, let ySign = mpvGeometry.ySign {
-      let y: CGFloat
-      if stry.hasSuffix("%") {
-        y = CGFloat(Double(String(stry.dropLast()))! * 0.01 * Double(maxVideoSize.height)) - maxVideoSize.height / 2
-      } else {
-        y = CGFloat(Int(stry)!)
+    if let stry = mpvGeometry.y, let yInt = Int(stry), let ySign = mpvGeometry.ySign {
+      var y = CGFloat(yInt)
+      if mpvGeometry.yIsPercentage {
+        y = y * 0.01 * Double(maxVideoSize.height) - maxVideoSize.height / 2
       }
       if ySign == "-" {  // Offset from TOP
         newOrigin.y -= maxVideoSize.height

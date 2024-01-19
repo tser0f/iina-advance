@@ -201,6 +201,10 @@ extension NSRect {
               height: abs(pt1.y - pt2.y))
   }
 
+  func clone(size newSize: NSSize) -> NSRect {
+    return NSRect(origin: self.origin, size: newSize)
+  }
+
   func multiply(_ multiplier: CGFloat) -> NSRect {
     return NSRect(x: origin.x, y: origin.y, width: width * multiplier, height: height * multiplier)
   }

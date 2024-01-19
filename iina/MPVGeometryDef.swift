@@ -13,9 +13,11 @@ struct MPVGeometryDef: CustomStringConvertible {
   var wIsPercentage: Bool
   var h: String?
   var hIsPercentage: Bool
+  /// `+`==left; `-`==right
   var xSign: String?
   var x: String?
   var xIsPercentage: Bool
+  /// `+`==top; `-`==bottom
   var ySign: String?
   var y: String?
   var yIsPercentage: Bool
