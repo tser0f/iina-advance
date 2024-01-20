@@ -580,6 +580,14 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     return PWindowGeometry.computeVideoSize(withAspectRatio: videoAspect, toFillIn: maxViewportSize, mode: mode)
   }
 
+  private func adjustWindowOrigin(forNewWindowSize newWindowSize: NSSize) -> NSPoint {
+    // Round the results to prevent excessive window drift due to small imprecisions in calculation
+    let deltaX = (newWindowSize.width - windowFrame.size.width) / 2
+    let deltaY = (newWindowSize.height - windowFrame.size.height) / 2
+    return NSPoint(x: round(windowFrame.origin.x - deltaX),
+                   y: round(windowFrame.origin.y - deltaY))
+  }
+
   func refit(_ newFit: ScreenFitOption? = nil, lockViewportToVideoSize: Bool? = nil) -> PWindowGeometry {
     return scaleViewport(fitOption: newFit)
   }
@@ -677,14 +685,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     let newWindowSize = NSSize(width: round(newViewportSize.width + outsideBarsSize.width),
                                height: round(newViewportSize.height + outsideBarsSize.height))
 
-    // Round the results to prevent excessive window drift due to small imprecisions in calculation
-    let deltaX = (newWindowSize.width - windowFrame.size.width) / 2
-    let deltaY = (newWindowSize.height - windowFrame.size.height) / 2
-    let newWindowOrigin = NSPoint(x: round(windowFrame.origin.x - deltaX),
-                                  y: round(windowFrame.origin.y - deltaY))
-
-    // Move window if needed to make sure the window is not offscreen
-    var newWindowFrame = NSRect(origin: newWindowOrigin, size: newWindowSize)
+    let adjustedOrigin = adjustWindowOrigin(forNewWindowSize: newWindowSize)
+    var newWindowFrame = NSRect(origin: adjustedOrigin, size: newWindowSize)
     if let containerFrame, newFitOption.shouldMoveWindowToKeepInContainer {
       newWindowFrame = newWindowFrame.constrain(in: containerFrame)
       if newFitOption == .centerInVisibleScreen {
@@ -833,6 +835,8 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     var newWindowSize = desiredWindowSize
     var isWidthSet = false
     var isHeightSet = false
+    var isXSet = false
+    var isYSet = false
 
     if let strw = mpvGeometry.w, let wInt = Int(strw), wInt > 0 {
       var w = CGFloat(wInt)
@@ -916,9 +920,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
       } else {  // Offset from LEFT
         newOrigin.x += xOffset
       }
-    } else {
-      // x not set
-      newOrigin.x += round((screenFrame.width - newWindowSize.width) / 2)
+      isXSet = true
     }
 
     // y
@@ -937,9 +939,16 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
         newOrigin.y += (screenFrame.height - newWindowSize.height)
         newOrigin.y -= yOffset
       }
-    } else {
-      // y not set
-      newOrigin.y += round((screenFrame.height - newWindowSize.height) / 2)
+      isYSet = true
+    }
+
+    // If X or Y are not set, just adjust the previous values according to the change in window width or height, respectively
+    let adjustedOrigin = adjustWindowOrigin(forNewWindowSize: newWindowSize)
+    if !isXSet {
+      newOrigin.x = adjustedOrigin.x
+    }
+    if !isYSet {
+      newOrigin.y = adjustedOrigin.y
     }
 
     let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)

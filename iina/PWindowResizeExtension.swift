@@ -118,7 +118,7 @@ extension PlayerWindowController {
       }
 
       let newWindowGeo = resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: videoDisplayRotatedSize)
-      if player.info.justStartedFile && currentLayout.mode == .windowed {
+      if !player.info.justStartedFile && currentLayout.mode == .windowed {
         // Update intended viewport to new size.
         player.info.intendedViewportSize = newWindowGeo.viewportSize
       }
@@ -185,8 +185,13 @@ extension PlayerWindowController {
     case .mpvGeometry:
       // check if have mpv geometry set (initial window position/size)
       if let mpvGeometry = player.getMPVGeometry() {
+        var preferredGeo = windowGeo
+        if Preference.bool(for: .lockViewportToVideoSize), let intendedViewportSize = player.info.intendedViewportSize  {
+          log.verbose("[MPVVideoReconfig C-3b] Using intendedViewportSize \(intendedViewportSize)")
+          preferredGeo = windowGeo.scaleViewport(to: intendedViewportSize)
+        }
         log.verbose("[MPVVideoReconfig C-3] Applying mpv \(mpvGeometry) within screen \(screenVisibleFrame)")
-        return windowGeo.apply(mpvGeometry: mpvGeometry, desiredWindowSize: windowGeo.windowFrame.size)  // send existing size
+        return windowGeo.apply(mpvGeometry: mpvGeometry, desiredWindowSize: preferredGeo.windowFrame.size)
       }
       log.warn("[MPVVideoReconfig C-3a] No mpv geometry found")
     case .simpleVideoSizeMultiple:
