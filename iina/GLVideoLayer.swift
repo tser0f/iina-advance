@@ -14,8 +14,6 @@ class GLVideoLayer: CAOpenGLLayer {
 
   unowned var videoView: VideoView!
 
-  // Use semaphore to prevent more than 2 frames enqueued at any given time. Any more is wasted resources
-  private let mpvGLSemaphore = DispatchSemaphore(value: 2)
   private let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
   private var blocked = false
 
@@ -247,11 +245,7 @@ class GLVideoLayer: CAOpenGLLayer {
       return
     }
 
-    // Do not draw if queue is already at capacity
-    if mpvGLSemaphore.wait(timeout: .now()) == .timedOut { return }
-
     mpvGLQueue.async { [self] in
-      mpvGLSemaphore.signal()
       draw()
     }
   }
