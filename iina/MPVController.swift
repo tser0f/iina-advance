@@ -869,7 +869,7 @@ not applying FFmpeg 9599 workaround
     }
     // Will crash if querying mpv after stop command started
     guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else {
-      player.log.verbose("Cannot get videoParams: stopping=\(player.isStopping), stopped=\(player.isStopped) shuttingDown=\(player.isShuttingDown)")
+      player.log.verbose("Cannot get videoParams: stopping=\(player.isStopping.yn) stopped=\(player.isStopped.yn) shuttingDown=\(player.isShuttingDown.yn)")
       return nil
     }
 
@@ -1033,7 +1033,6 @@ not applying FFmpeg 9599 workaround
       player.fileStarted(path: path)
 
     case MPV_EVENT_FILE_LOADED:
-      player.log.verbose("FileLoaded")
       let pause: Bool
       if let priorState = player.info.priorState {
         if Preference.bool(for: .alwaysPauseMediaWhenRestoringAtLaunch) {
@@ -1046,7 +1045,7 @@ not applying FFmpeg 9599 workaround
       } else {
         pause = Preference.bool(for: .pauseWhenOpen)
       }
-      player.log.verbose("OnFileLoaded: setting playback to \(pause ? "paused" : "resume")")
+      player.log.verbose("FileLoaded: setting playback to \(pause ? "paused" : "resume")")
       setFlag(MPVOption.PlaybackControl.pause, pause)
 
       let duration = getDouble(MPVProperty.duration)
@@ -1102,8 +1101,6 @@ not applying FFmpeg 9599 workaround
       let errorCode = dataPtr.pointee.error
       let errorString = reason == MPV_END_FILE_REASON_ERROR ? "error=\(errorCode) (\(String(cString: mpv_error_string(errorCode))))" : "No"
       player.log.verbose("FileEnded entryID=\(playlistEntryID) insertID=\(playlistInsertID) numEntries=\(playlistInsertNumEntries) reason=\(reasonString) error=\(errorString)")
-      player.info.fileLoading = false
-      player.info.fileLoaded = false
       if player.info.fileLoading {
         if reason != MPV_END_FILE_REASON_STOP {
           receivedEndFileWhileLoading = true
@@ -1454,15 +1451,16 @@ not applying FFmpeg 9599 workaround
 
     case MPVProperty.idleActive:
       if let idleActive = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee, idleActive {
+        player.log.verbose("Got mpv 'idle-active': \(idleActive.yn)")
         if receivedEndFileWhileLoading && player.info.fileLoading {
-          player.log.error("Received MPV_EVENT_END_FILE and 'idle-active' while loading \(player.info.currentURL?.path.pii.quoted ?? "nil"). Will display alert to user and close window")
+          player.log.error("Received MPV_EVENT_END_FILE + 'idle-active' while loading \(player.info.currentURL?.path.pii.quoted ?? "nil"). Will display alert to user and close window")
           player.errorOpeningFileAndClosePlayerWindow(url: player.info.currentURL)
           player.info.fileLoading = false
           player.info.currentURL = nil
         }
         player.info.isIdle = true
         if player.info.fileLoaded {
-          player.log.error("Received MPV_EVENT_END_FILE and 'idle-active' after already loading \(player.info.currentURL?.path.pii.quoted ?? "nil"). Will close window")
+          player.log.error("Received MPV_EVENT_END_FILE + 'idle-active' after fileLoaded. Will close window")
           player.info.fileLoaded = false
           player.closeWindow()
         }

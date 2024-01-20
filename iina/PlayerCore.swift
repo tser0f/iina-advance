@@ -393,7 +393,6 @@ class PlayerCore: NSObject {
       info.justOpenedFile = true
       // Reset state flags
       isStopping = false
-      isStopped = false
 
       mpv.command(.loadfile, args: [path])
 
@@ -619,7 +618,7 @@ class PlayerCore: NSObject {
       DispatchQueue.main.async { [self] in
         refreshSyncUITimer()
       }
-      _ = mpv.command(.stop)
+      mpv.command(.stop)
     }
   }
 

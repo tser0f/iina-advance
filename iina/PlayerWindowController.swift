@@ -1083,11 +1083,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let showDefaultArt: Bool
     // if received video size before switching to music mode, hide default album art
-    if isVideoTrackSelected || !player.info.fileLoaded {
-      log.verbose("Hiding defaultAlbumArt because isFileLoaded=\(player.info.fileLoaded), vidSelected=\(isVideoTrackSelected)")
+    // Don't show art if currently loading
+    if isVideoTrackSelected || !player.info.fileLoaded || player.isStopped {
+      log.verbose("Hiding defaultAlbumArt because fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = false
     } else {
-      log.verbose("Showing defaultAlbumArt because isFileLoaded=\(player.info.fileLoaded), vidSelected=\(isVideoTrackSelected)")
+      log.verbose("Showing defaultAlbumArt because fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = true
     }
 
