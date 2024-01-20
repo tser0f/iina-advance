@@ -402,7 +402,7 @@
                             </constraints>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="xMC-EY-bOr">
-                            <rect key="frame" x="-2" y="366" width="440" height="18"/>
+                            <rect key="frame" x="-2" y="366" width="442" height="18"/>
                             <buttonCell key="cell" type="check" title="Reposition window when it is resized to keep it fully visible on screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="BeX-Eq-sUG">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -551,7 +551,7 @@
                             </connections>
                         </customView>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="750" verticalStackHuggingPriority="750" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="x81-2h-hH0" userLabel="MPVGeometryConfig HStack View">
-                            <rect key="frame" x="20" y="277" width="182" height="16"/>
+                            <rect key="frame" x="20" y="277" width="195" height="16"/>
                             <subviews>
                                 <button tag="2" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VqS-1r-k2A" userLabel="MPVGeometryConfig Radio Button">
                                     <rect key="frame" x="-2" y="-1" width="126" height="18"/>
@@ -569,7 +569,7 @@
                                     </connections>
                                 </button>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="LA6-rp-Ub0" userLabel="GeometryString Label">
-                                    <rect key="frame" x="130" y="0.0" width="54" height="13"/>
+                                    <rect key="frame" x="130" y="0.0" width="67" height="16"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" title="++20-+20" id="ZGN-hK-bfY">
                                         <font key="font" usesAppearanceFont="YES"/>
                                         <color key="textColor" name="placeholderTextColor" catalog="System" colorSpace="catalog"/>

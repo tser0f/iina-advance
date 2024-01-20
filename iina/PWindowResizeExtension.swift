@@ -118,10 +118,6 @@ extension PlayerWindowController {
       }
 
       let newWindowGeo = resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: videoDisplayRotatedSize)
-      if !player.info.justStartedFile && currentLayout.mode == .windowed {
-        // Update intended viewport to new size.
-        player.info.intendedViewportSize = newWindowGeo.viewportSize
-      }
 
       animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.VideoReconfigDuration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`

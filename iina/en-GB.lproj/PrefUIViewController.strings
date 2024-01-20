@@ -76,8 +76,8 @@
 /* Class = "NSTextFieldCell"; title = "Y offset:"; ObjectID = "KCL-Ki-A0p"; */
 "KCL-Ki-A0p.title" = "Y offset:";
 
-/* Class = "NSMenuItem"; title = "Fast Forward / Rewind"; ObjectID = "KJT-iG-2xc"; */
-"KJT-iG-2xc.title" = "Fast Forward / Rewind";
+/* Class = "NSMenuItem"; title = "Seek -10s / +10s"; ObjectID = "KJT-iG-2xc"; */
+"KJT-iG-2xc.title" = "Seek -10s / +10s";
 
 /* Class = "NSMenuItem"; title = "1x video size"; ObjectID = "MR7-Ac-SAO"; */
 "MR7-Ac-SAO.title" = "1x video size";
