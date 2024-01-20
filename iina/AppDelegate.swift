@@ -253,12 +253,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // register for url event
     NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(self.handleURLEvent(event:withReplyEvent:)), forEventClass: AEEventClass(kInternetEventClass), andEventID: AEEventID(kAEGetURL))
 
-    // guide window
-    let version = InfoDictionary.shared.version.0
-    if FirstRunManager.isFirstRun(for: .init("firstLaunchAfter\(version)")) {
-      guideWindow.show(pages: [.highlights])
-    }
-
     // Hide Window > "Enter Full Screen" menu item, because this is already present in the Video menu
     UserDefaults.standard.set(false, forKey: "NSFullScreenMenuItemEverywhere")
 

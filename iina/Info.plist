@@ -1354,13 +1354,13 @@
 			</dict>
 		</dict>
 	</array>
-	<key>com.colliderli.iina.build.branch</key>
+	<key>com.iina-advance.build.branch</key>
 	<string>IINA_BUILD_BRANCH</string>
-	<key>com.colliderli.iina.build.commit</key>
+	<key>com.iina-advance.build.commit</key>
 	<string>IINA_BUILD_COMMIT</string>
-	<key>com.colliderli.iina.build.configuration</key>
+	<key>com.iina-advance.build.configuration</key>
 	<string>$(CONFIGURATION)</string>
-	<key>com.colliderli.iina.build.date</key>
+	<key>com.iina-advance.build.date</key>
 	<string>IINA_BUILD_DATE</string>
 </dict>
 </plist>

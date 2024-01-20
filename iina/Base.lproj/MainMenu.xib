@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="21507" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="21507"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -32,7 +32,7 @@
                                     <action selector="showAboutWindow:" target="Voe-Tx-rLC" id="HGv-E1-lQH"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Check for Updates..." id="gMo-qL-m08">
+                            <menuItem title="Check for Updates..." hidden="YES" enabled="NO" id="gMo-qL-m08">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="checkForUpdates:" target="wTK-gz-aTs" id="MFD-wN-SXh"/>
@@ -118,9 +118,9 @@
                             </menuItem>
                             <menuItem isSeparatorItem="YES" hidden="YES" id="bEr-t9-Pyn"/>
                             <menuItem title="New Window" hidden="YES" keyEquivalent="n" id="Qv1-xd-wj5">
-                              <connections>
-                                <action selector="menuNewWindow:" target="Voe-Tx-rLC" id="J5Q-v3-yX9"/>
-                              </connections>
+                                <connections>
+                                    <action selector="menuNewWindow:" target="Voe-Tx-rLC" id="J5Q-v3-yX9"/>
+                                </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="m38-SL-vHw"/>
                             <menuItem title="Playback History" keyEquivalent="H" id="LND-1n-DU2">
@@ -661,13 +661,13 @@ CA
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="ZO8-wH-FBe"/>
-                            <menuItem title="Release Highlights" id="kOx-hc-aQG">
+                            <menuItem title="Release Highlights" hidden="YES" enabled="NO" id="kOx-hc-aQG">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="showHighlights:" target="Voe-Tx-rLC" id="VXT-LI-ofl"/>
                                 </connections>
                             </menuItem>
-                            <menuItem isSeparatorItem="YES" id="Cxg-P0-6hm"/>
+                            <menuItem isSeparatorItem="YES" hidden="YES" id="Cxg-P0-6hm"/>
                             <menuItem title="GitHub" id="A9w-iE-gVg">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>

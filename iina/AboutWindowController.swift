@@ -33,7 +33,7 @@ class AboutWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var iconImageView: NSImageView!
   @IBOutlet weak var iinaLabel: NSTextField! {
     didSet {
-      iinaLabel.font = NSFont.systemFont(ofSize: 24, weight: .light)
+      iinaLabel.font = NSFont.systemFont(ofSize: 32, weight: .light)
     }
   }
   @IBOutlet weak var versionLabel: NSTextField!
@@ -140,7 +140,7 @@ class AboutWindowController: NSWindowController, NSWindowDelegate {
 
   @objc func openCommitLink() {
     guard let commitSHA = InfoDictionary.shared.buildCommit else { return }
-    NSWorkspace.shared.open(.init(string: "https://github.com/iina/iina/commit/\(commitSHA)")!)
+    NSWorkspace.shared.open(.init(string: "\(AppData.githubLink)/commit/\(commitSHA)")!)
   }
 
   @IBAction func sectionBtnAction(_ sender: NSButton) {

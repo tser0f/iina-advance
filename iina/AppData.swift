@@ -81,7 +81,7 @@ struct AppData {
   static let thumbnailCacheFolder = "thumb_cache"
   static let screenshotCacheFolder = "screenshot_cache"
 
-  static let githubLink = "https://github.com/iina/iina"
+  static let githubLink = "https://github.com/svobs/iina-advance"
   static let contributorsLink = "https://github.com/iina/iina/graphs/contributors"
   static let crowdinMembersLink = "https://crowdin.com/project/iina/members"
   static let wikiLink = "https://github.com/iina/iina/wiki"
