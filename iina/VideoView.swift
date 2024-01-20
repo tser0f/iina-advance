@@ -273,7 +273,8 @@ class VideoView: NSView {
   func startDisplayLink() {
     let link = obtainDisplayLink()
     guard !CVDisplayLinkIsRunning(link) else { return }
-    
+    log.verbose("Starting DisplayLink")
+
     videoLayer.resume()
     updateDisplayLink()
 
@@ -338,7 +339,6 @@ class VideoView: NSView {
   func displayActive(temporary: Bool = false) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     if !temporary {
-      log.verbose("VideoView displayActive")
       displayIdleTimer?.invalidate()
     }
     startDisplayLink()

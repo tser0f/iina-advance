@@ -377,6 +377,10 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
     return minViewportHeight(mode: mode) + outsideBarsTotalSize.height
   }
 
+  func minWindowSize(mode: PlayerWindowMode) -> NSSize {
+    return NSSize(width: minWindowWidth(mode: mode), height: minWindowHeight(mode: mode))
+  }
+
   var hasTopPaddingForCameraHousing: Bool {
     return topMarginHeight > 0
   }
@@ -818,78 +822,128 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
-  func apply(mpvGeometry: MPVGeometryDef, andDesiredVideoSize desiredVideoSize: NSSize) -> PWindowGeometry {
+  func apply(mpvGeometry: MPVGeometryDef, desiredWindowSize: NSSize) -> PWindowGeometry {
     guard let screenFrame: NSRect = getContainerFrame() else {
       Logger.log("Cannot apply mpv geometry: no container frame found (fitOption: \(fitOption))", level: .error)
       return self
     }
-    let maxVideoSize = computeMaxVideoSize(in: screenFrame.size)
-    let minVideoSize = PWindowGeometry.computeMinVideoSize(forAspectRatio: videoAspect, mode: .windowed)
+    let maxWindowSize = screenFrame.size
+    let minWindowSize = minWindowSize(mode: .windowed)
 
-    var newVideoSize = desiredVideoSize
-    var widthOrHeightIsSet = false
+    var newWindowSize = desiredWindowSize
+    var isWidthSet = false
+    var isHeightSet = false
 
-    // w and h can't take effect at same time
     if let strw = mpvGeometry.w, let wInt = Int(strw), wInt > 0 {
       var w = CGFloat(wInt)
       if mpvGeometry.wIsPercentage {
-        w = w * 0.01 * Double(screenFrame.width)
+        w = w * 0.01 * Double(maxWindowSize.width)
       }
-      w = max(minVideoSize.width, w)
-      newVideoSize.width = w
-      newVideoSize.height = w / videoAspect
-      widthOrHeightIsSet = true
-    } else if let strh = mpvGeometry.h, let hInt = Int(strh), hInt > 0 {
-      var h = CGFloat(hInt)
-      if mpvGeometry.hIsPercentage {
-        h = h * 0.01 * Double(screenFrame.height)
-      }
-      h = max(minVideoSize.height, h)
-      newVideoSize.height = h
-      newVideoSize.width = h * videoAspect
-      widthOrHeightIsSet = true
+      newWindowSize.width = max(minWindowSize.width, w)
+      isWidthSet = true
     }
 
-    var newOrigin = NSPoint()
+    if let strh = mpvGeometry.h, let hInt = Int(strh), hInt > 0 {
+      var h = CGFloat(hInt)
+      if mpvGeometry.hIsPercentage {
+        h = h * 0.01 * Double(maxWindowSize.height)
+      }
+      newWindowSize.height = max(minWindowSize.height, h)
+      isHeightSet = true
+    }
+
+    // 1. If both width & height are set, video will scale to fit inside it, but there may be empty margins.
+    // 2. If only width or height is set, but not both: derive the other from the aspect ratio.
+    // 3. Otherwise default to desiredVideoSize.
+    if isWidthSet && !isHeightSet {
+      // Calculate height based on width and aspect
+      let newViewportWidth = newWindowSize.width - outsideBarsTotalWidth
+      let newViewportHeight = round(newViewportWidth / videoAspect)
+      newWindowSize.height = newViewportHeight + outsideBarsTotalHeight
+
+      var mustRecomputeWidth = false
+      if newWindowSize.height > maxWindowSize.height {
+        // Shrink if exceeded max height
+        newWindowSize.height = maxWindowSize.height
+        mustRecomputeWidth = true
+      } else if newWindowSize.height < minWindowSize.height {
+        newWindowSize.height = minWindowSize.height
+        mustRecomputeWidth = true
+      }
+      if mustRecomputeWidth {
+        // Recalculate width based on height and aspect
+        let newViewportHeight = newWindowSize.height - outsideBarsTotalHeight
+        let newViewportWidth = round(newViewportHeight * videoAspect)
+        newWindowSize.width = newViewportWidth + outsideBarsTotalWidth
+      }
+    } else if !isWidthSet && isHeightSet {
+      // Calculate width based on height and aspect
+      let newViewportHeight = newWindowSize.height - outsideBarsTotalHeight
+      let newViewportWidth = round(newViewportHeight * videoAspect)
+      newWindowSize.width = newViewportWidth + outsideBarsTotalWidth
+
+      var mustRecomputeHeight = false
+      if newWindowSize.width > maxWindowSize.width {
+        // Shrink if exceeded max width
+        newWindowSize.width = maxWindowSize.width
+        mustRecomputeHeight = true
+      } else if newWindowSize.width < minWindowSize.width {
+        newWindowSize.width = minWindowSize.width
+        mustRecomputeHeight = true
+      }
+      if mustRecomputeHeight {
+        // Recalculate height based on width and aspect
+        let newViewportWidth = newWindowSize.width - outsideBarsTotalWidth
+        let newViewportHeight = round(newViewportWidth / videoAspect)
+        newWindowSize.height = newViewportHeight + outsideBarsTotalHeight
+      }
+    }
+
+    var newOrigin = screenFrame.origin
     // x
     if let strx = mpvGeometry.x, let xInt = Int(strx), let xSign = mpvGeometry.xSign {
-      var x = CGFloat(xInt)
+      let unusedScreenWidth = max(0, screenFrame.width - newWindowSize.width)
+      var xOffset = CGFloat(xInt)
       if mpvGeometry.xIsPercentage {
-        x = x * 0.01 * Double(maxVideoSize.width) - newVideoSize.width / 2
+        xOffset = xOffset * 0.01 * Double(screenFrame.width)
       }
-      newOrigin.x = xSign == "+" ? x : maxVideoSize.width - x
-      // if xSign equals "-", need set right border as origin
-      if xSign == "-" {
-        newOrigin.x -= maxVideoSize.width
+      // Reduce/eliminate offset if not enough space on screen
+      xOffset = min(unusedScreenWidth, xOffset)
+      // If xSign == "-", interpret as offset of right side of window from right side of screen
+      if xSign == "-" {  // Offset from RIGHT
+        newOrigin.x += (screenFrame.width - newWindowSize.width)
+        newOrigin.x -= xOffset
+      } else {  // Offset from LEFT
+        newOrigin.x += xOffset
       }
+    } else {
+      // x not set
+      newOrigin.x += round((screenFrame.width - newWindowSize.width) / 2)
     }
 
     // y
     if let stry = mpvGeometry.y, let yInt = Int(stry), let ySign = mpvGeometry.ySign {
-      var y = CGFloat(yInt)
+      let unusedScreenHeight = max(0, screenFrame.height - newWindowSize.height)
+      var yOffset = CGFloat(yInt)
       if mpvGeometry.yIsPercentage {
-        y = y * 0.01 * Double(maxVideoSize.height) - maxVideoSize.height / 2
+        yOffset = yOffset * 0.01 * Double(screenFrame.height)
       }
-      if ySign == "-" {  // Offset from TOP
-        newOrigin.y -= maxVideoSize.height
-      } else {
-        newOrigin.y = ySign == "+" ? y : maxVideoSize.height - y
+      // Reduce/eliminate offset if not enough space on screen
+      yOffset = min(unusedScreenHeight, yOffset)
+
+      if ySign == "-" {  // Offset from BOTTOM
+        newOrigin.y += yOffset
+      } else {  // Offset from TOP
+        newOrigin.y += (screenFrame.height - newWindowSize.height)
+        newOrigin.y -= yOffset
       }
-    }
-    // if x and y are not specified
-    if mpvGeometry.x == nil && mpvGeometry.y == nil && widthOrHeightIsSet {
-      newOrigin.x = (screenFrame.width - newVideoSize.width) / 2
-      newOrigin.y = (screenFrame.height - newVideoSize.height) / 2
+    } else {
+      // y not set
+      newOrigin.y += round((screenFrame.height - newWindowSize.height) / 2)
     }
 
-    // if the screen has offset
-    newOrigin.x += screenFrame.origin.x
-    newOrigin.y += screenFrame.origin.y
-
-    let outsideBarsTotalSize = self.outsideBarsTotalSize
-    let newWindowSize = NSSize(width: newVideoSize.width + outsideBarsTotalSize.width,
-                               height: newVideoSize.height + outsideBarsTotalSize.height)
     let newWindowFrame = NSRect(origin: newOrigin, size: newWindowSize)
+    Logger.log("Calculated windowFrame from mpv geometry: \(newWindowFrame)", level: .debug)
     return self.clone(windowFrame: newWindowFrame)
   }
 

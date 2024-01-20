@@ -403,7 +403,7 @@
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="xMC-EY-bOr">
                             <rect key="frame" x="-2" y="366" width="440" height="18"/>
-                            <buttonCell key="cell" type="check" title="Move window when scaling video to ensure it is fully visible in screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="BeX-Eq-sUG">
+                            <buttonCell key="cell" type="check" title="Reposition when window is resized to ensure it is fully visible in screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="BeX-Eq-sUG">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
                             </buttonCell>

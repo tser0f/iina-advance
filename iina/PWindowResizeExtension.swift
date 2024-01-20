@@ -186,7 +186,7 @@ extension PlayerWindowController {
       // check if have mpv geometry set (initial window position/size)
       if let mpvGeometry = player.getMPVGeometry() {
         log.verbose("[MPVVideoReconfig C-3] Applying mpv \(mpvGeometry) within screen \(screenVisibleFrame)")
-        return windowGeo.apply(mpvGeometry: mpvGeometry, andDesiredVideoSize: windowGeo.videoSize)  // send existing size
+        return windowGeo.apply(mpvGeometry: mpvGeometry, desiredWindowSize: windowGeo.windowFrame.size)  // send existing size
       }
       log.warn("[MPVVideoReconfig C-3a] No mpv geometry found")
     case .simpleVideoSizeMultiple:
