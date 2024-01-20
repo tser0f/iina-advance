@@ -47,13 +47,13 @@
 "jFt-2a-nmc.title" = "שמע";
 
 /* Class = "NSButtonCell"; title = "Cancel"; ObjectID = "kbP-VI-dmT"; */
-"kbP-VI-dmT.title" = "בטל";
+"kbP-VI-dmT.title" = "ביטול";
 
 /* Class = "NSTextFieldCell"; title = "Restore Alerts"; ObjectID = "AAD-Db-Acs"; */
 "AAD-Db-Acs.title" = "שחזר התראות";
 
 /* Class = "NSButtonCell"; title = "Restore Suppressed Alerts…"; ObjectID = "XAz-xa-LVo"; */
-"XAz-xa-LVo.title" = "שחזר התראות שהושתקו…";
+"XAz-xa-LVo.title" = "שחזר התראות שהוסתרו…";
 
 /* Class = "NSTextFieldCell"; title = "Restored."; ObjectID = "Wdh-me-hdC"; */
 "Wdh-me-hdC.title" = "שוחזרו.";

@@ -23,10 +23,10 @@
 "LNk-io-MM7.title" = "מטמון:";
 
 /* Class = "NSTextFieldCell"; title = "Requires restarting IINA to take effect."; ObjectID = "RwW-JS-iTv"; */
-"RwW-JS-iTv.title" = "נדרשת הפעלה מחדש של IINA כדי להשפיע.";
+"RwW-JS-iTv.title" = "נדרשת הפעלה מחדש של IINA כדי ששינוי ההגדרה ישפיע.";
 
 /* Class = "NSTextFieldCell"; title = "IINA will search youtube-dl in this folder. Restart needed."; ObjectID = "YqE-yV-BvQ"; */
-"YqE-yV-BvQ.title" = "IINA תחפש את youtube-dl בתקייה הזאת. נדרשת הפעלה מחדש של האפליקציה.";
+"YqE-yV-BvQ.title" = "‏IINA תחפש את youtube-dl בתקייה הזאת. נדרשת הפעלה מחדש של האפליקציה.";
 
 /* Class = "NSMenuItem"; title = "Auto"; ObjectID = "aNr-lv-K0r"; */
 "aNr-lv-K0r.title" = "אוטומטי";
@@ -38,7 +38,7 @@
 "dDD-g3-54w.title" = "Cache buffer size (KB):";
 
 /* Class = "NSTextFieldCell"; title = "User agent:"; ObjectID = "eN6-Sk-kUa"; */
-"eN6-Sk-kUa.title" = "User agent:";
+"eN6-Sk-kUa.title" = "‏User agent:";
 
 /* Class = "NSTextFieldCell"; title = "Default: 36000"; ObjectID = "fab-7d-mMQ"; */
 "fab-7d-mMQ.title" = "ברירת מחדל: 36000";
@@ -47,7 +47,7 @@
 "fpV-al-bn7.title" = "הפעל מטמון";
 
 /* Class = "NSTextFieldCell"; title = "Transport RTSP stream through:"; ObjectID = "hfn-h6-NCd"; */
-"hfn-h6-NCd.title" = "Transport RTSP stream through:";
+"hfn-h6-NCd.title" = "העברת זרם RTSP על גבי:";
 
 /* Class = "NSTextFieldCell"; title = "Network:"; ObjectID = "yrh-Jm-Q4e"; */
 "yrh-Jm-Q4e.title" = "רשת:";
