@@ -37,8 +37,8 @@ extension Preference {
 
     static func launchID(fromPlayerWindowKey key: String) -> Int? {
       if key.starts(with: WindowAutosaveName.playerWindowPrefix) {
-        let splitted = key.split(separator: "-")
-        if splitted.count >= 2 {
+        let splitted = key.split(separator: "-", maxSplits: 1)
+        if splitted.count == 2 {
           return Int(splitted[1])
         }
       }

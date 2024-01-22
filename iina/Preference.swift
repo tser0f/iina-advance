@@ -1200,7 +1200,7 @@ struct Preference {
     .useMpvOsd: false,
     .enableLogging: false,
     .logLevel: Logger.Level.debug.rawValue,
-    .iinaMpvLogLevel: Logger.Level.debug.rawValue,
+    .iinaMpvLogLevel: Logger.Level.warning.rawValue,
     .enablePiiMaskingInLog: true,
     .logKeyBindingsRebuild: false,
     .displayKeyBindingRawValues: false,

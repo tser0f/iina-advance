@@ -45,6 +45,10 @@ enum WindowAutosaveName: Equatable {
   static let playerWindowPrefix = "Player-"
   static let playerWindowFmt = "\(playerWindowPrefix)%@"
 
+  static func formatPlayerWindow(playerUID id: String) -> String {
+    String(format: WindowAutosaveName.playerWindowFmt, id)
+  }
+
   case preference
   case welcome
   case openFile
@@ -81,7 +85,7 @@ enum WindowAutosaveName: Equatable {
     case .fontPicker:
       return "IINAFontPickerWindow"
     case .playerWindow(let id):
-      return String(format: WindowAutosaveName.playerWindowFmt, id)
+      return WindowAutosaveName.formatPlayerWindow(playerUID: id)
     }
   }
 
