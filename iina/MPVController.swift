@@ -62,7 +62,6 @@ class MPVController: NSObject {
 
   var openGLContext: CGLContextObj! = nil
 
-  var mpvClientName: UnsafePointer<CChar>!
   var mpvVersion: String!
 
   var queue: DispatchQueue
@@ -204,9 +203,6 @@ not applying FFmpeg 9599 workaround
     // Create a new mpv instance and an associated client API handle to control the mpv instance.
     mpv = mpv_create()
 
-    // Get the name of this client handle.
-    mpvClientName = mpv_client_name(mpv)
-
     // User default settings
 
     if !player.info.isRestoring {
@@ -231,7 +227,8 @@ not applying FFmpeg 9599 workaround
 
     // log
     if Logger.enabled {
-      let path = Logger.logDirectory.appendingPathComponent("mpv.log").path
+      let path = Logger.logDirectory.appendingPathComponent("mpv-\(player.label).log").path
+      player.log.debug("Path of mpv log: \(path.quoted)")
       chkErr(mpv_set_option_string(mpv, MPVOption.ProgramBehavior.logFile, path))
     }
 
