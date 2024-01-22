@@ -852,7 +852,7 @@ struct Preference {
     case auto
     case autoCopy
 
-    static var defaultValue = HardwareDecoderOption.auto
+    static var defaultValue = HardwareDecoderOption.autoCopy
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1128,7 +1128,7 @@ struct Preference {
     .togglePipWhenSwitchingSpaces: false,
 
       .videoThreads: 0,
-    .hardwareDecoder: HardwareDecoderOption.auto.rawValue,
+    .hardwareDecoder: HardwareDecoderOption.autoCopy.rawValue,
     .forceDedicatedGPU: false,
     .loadIccProfile: true,
     .enableHdrSupport: false,

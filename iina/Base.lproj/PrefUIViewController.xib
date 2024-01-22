@@ -1495,7 +1495,7 @@
                                     <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                     <font key="font" metaFont="system"/>
                                     <connections>
-                                        <binding destination="lH7-Vv-0M1" name="value" keyPath="values.hideOverlaysWhenOutsideWindow" id="h2C-E2-3ZU"/>
+                                        <binding destination="lH7-Vv-0M1" name="value" keyPath="values.hideFadeableViewsWhenOutsideWindow" id="E3q-b2-hiD"/>
                                     </connections>
                                 </buttonCell>
                                 <connections>
