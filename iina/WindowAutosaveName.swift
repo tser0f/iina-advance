@@ -65,25 +65,25 @@ enum WindowAutosaveName: Equatable {
   var string: String {
     switch self {
     case .preference:
-      return "IINAPreferenceWindow"
+      return "Preferences"
     case .welcome:
-      return "IINAWelcomeWindow"
+      return "Welcome"
     case .openFile:
-      return "OpenFileWindow"
+      return "OpenFile"
     case .openURL:
-      return "OpenURLWindow"
+      return "OpenURL"
     case .about:
-      return "AboutWindow"
+      return "About"
     case .inspector:
-      return "InspectorWindow"
+      return "Inspector"
     case .playbackHistory:
-      return "PlaybackHistoryWindow"
+      return "History"
     case .videoFilter:
-      return "VideoFilterWindow"
+      return "VideoFilters"
     case .audioFilter:
-      return "AudioFilterWindow"
+      return "AudioFilters"
     case .fontPicker:
-      return "IINAFontPickerWindow"
+      return "FontPicker"
     case .playerWindow(let id):
       return WindowAutosaveName.formatPlayerWindow(playerUID: id)
     }
