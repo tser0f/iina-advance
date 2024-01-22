@@ -20,25 +20,6 @@ fileprivate let logEvents = false
  */
 fileprivate let mpvLogSubscriptionLevel: String = "debug"
 
-/*
- "no"    - disable absolutely all messages
- "fatal" - critical/aborting errors
- "error" - simple errors
- "warn"  - possible problems
- "info"  - informational message
- "v"     - noisy informational message
- "debug" - very noisy technical information
- "trace" - extremely noisy
- */
-let mpvSubsystem = Logger.makeSubsystem("mpv")
-fileprivate let logLevelMap: [String: Logger.Level] = ["fatal": .error,
-                                                       "error": .error,
-                                                       "warn": .warning,
-                                                       "info": .debug,
-                                                       "v": .verbose,
-                                                       "debug": .debug,
-                                                       "trace": .verbose]
-
 extension mpv_event_id: CustomStringConvertible {
   // Generated code from mpv is objc and does not have Swift's built-in enum name introspection.
   // We provide that here using mpv_event_name()
@@ -987,13 +968,6 @@ not applying FFmpeg 9599 workaround
       let prefix = String(cString: (dataPtr.pointee.prefix)!)
       let level = String(cString: (dataPtr.pointee.level)!)
       let text = String(cString: (dataPtr.pointee.text)!)
-      let mpvIINALevel = logLevelMap[level] ?? .verbose
-
-      if mpvIINALevel.rawValue >= Preference.integer(for: .iinaMpvLogLevel) {
-        // Remove newline if there is one
-        let text = text.hasSuffix("\n") ? String(text.dropLast()) : text
-        Logger.log("[\(prefix)|\(level.first ?? "?")] \(text)", level: mpvIINALevel, subsystem: mpvSubsystem)
-      }
 
       mpvLogScanner.processLogLine(prefix: prefix, level: level, msg: text)
 

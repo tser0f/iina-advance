@@ -237,7 +237,7 @@ class PlayerCore: NSObject {
   init(_ label: String) {
     Logger.log("PlayerCore\(label) init")
     self.label = label
-    self.subsystem = Logger.Subsystem(rawValue: "player\(label)")
+    self.subsystem = Logger.Subsystem(rawValue: "play-\(label)")
     super.init()
     self.mpv = MPVController(playerCore: self)
     self.bindingController = PlayerBindingController(playerCore: self)
@@ -802,7 +802,7 @@ class PlayerCore: NSObject {
     }
     // The play slider has knobs representing the loop points, make insure the slider is in sync.
     windowController?.syncPlaySliderABLoop()
-    Logger.log("Synchronized info.abLoopStatus \(info.abLoopStatus)")
+    log.verbose("Synchronized info.abLoopStatus \(info.abLoopStatus)")
   }
 
   func togglePlaylistLoop() {

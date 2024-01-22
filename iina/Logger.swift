@@ -317,7 +317,7 @@ class Logger: NSObject {
   private static func formatMessage(_ message: String, _ level: Level, _ subsystem: Subsystem,
                                     _ appendNewlineAtTheEnd: Bool, _ date: Date = Date()) -> String {
     let time = dateFormatter.string(from: date)
-    return "\(time) [\(subsystem.rawValue)][\(level.description)] \(message)\(appendNewlineAtTheEnd ? "\n" : "")"
+    return "\(time) |\(subsystem.rawValue) \(level.description)| \(message)\(appendNewlineAtTheEnd ? "\n" : "")"
   }
 
   private static func writeToFile(_ fileHandle: FileHandle?, _ data: Data) {

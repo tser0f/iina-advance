@@ -9,28 +9,37 @@
 import Foundation
 
 private let DEFINE_SECTION_REGEX = try! NSRegularExpression(
-  pattern: #"args=\[name=\"(.*)\", contents=\"(.*)\", flags=\"(.*)\"\]"#, options: []
-)
+  pattern: #"args=\[name=\"(.*)\", contents=\"(.*)\", flags=\"(.*)\"\]"#, options: [])
 private let ENABLE_SECTION_REGEX = try! NSRegularExpression(
-  pattern: #"args=\[name=\"(.*)\", flags=\"(.*)\"\]"#, options: []
-)
+  pattern: #"args=\[name=\"(.*)\", flags=\"(.*)\"\]"#, options: [])
 private let DISABLE_SECTION_REGEX = try! NSRegularExpression(
-  pattern: #"args=\[name=\"(.*)\"\]"#, options: []
-)
+  pattern: #"args=\[name=\"(.*)\"\]"#, options: [])
 private let FLAGS_REGEX = try! NSRegularExpression(
-  pattern: #"[^\+]+"#, options: []
-)
-
+  pattern: #"[^\+]+"#, options: [])
 private let COMMAND_REGEX = try! NSRegularExpression(
-  pattern: #"Run command:\s+([^,]+),"#, options: []
-)
-
-
-
+  pattern: #"Run command:\s+([^,]+),"#, options: [])
 
 private func all(_ string: String) -> NSRange {
   return NSRange(location: 0, length: string.count)
 }
+
+/*
+ "no"    - disable absolutely all messages
+ "fatal" - critical/aborting errors
+ "error" - simple errors
+ "warn"  - possible problems
+ "info"  - informational message
+ "v"     - noisy informational message
+ "debug" - very noisy technical information
+ "trace" - extremely noisy
+ */
+fileprivate let logLevelMap: [String: Logger.Level] = ["fatal": .error,
+                                                       "error": .error,
+                                                       "warn": .warning,
+                                                       "info": .debug,
+                                                       "v": .verbose,
+                                                       "debug": .debug,
+                                                       "trace": .verbose]
 
 class MPVLogScanner {
   private unowned let player: PlayerCore
@@ -42,7 +51,7 @@ class MPVLogScanner {
 
   init(player: PlayerCore) {
     self.player = player
-    mpvLogSubsystem = Logger.Subsystem(rawValue: "mpv\(player.label)")
+    mpvLogSubsystem = Logger.Subsystem(rawValue: "mpv-\(player.label)")
   }
 
   /**
@@ -50,6 +59,13 @@ class MPVLogScanner {
    Expected to return `true` if parsed & handled, `false` otherwise
    */
   func processLogLine(prefix: String, level: String, msg: String) {
+    let mpvIINALevel = logLevelMap[level] ?? .verbose
+    if mpvIINALevel.rawValue >= Preference.integer(for: .iinaMpvLogLevel) {
+      // Remove newline if there is one
+      let msg = msg.hasSuffix("\n") ? String(msg.dropLast()) : msg
+      Logger.log("[\(prefix)|\(level.first ?? "?")] \(msg)", level: mpvIINALevel, subsystem: mpvLogSubsystem)
+    }
+
     guard prefix == "cplayer", level.starts(with: "d") else { return }
     guard msg.starts(with: "Run command:") else { return }
     guard let cmdName = parseCommandName(from: msg) else { return }
