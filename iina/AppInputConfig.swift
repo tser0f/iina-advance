@@ -73,13 +73,12 @@ struct AppInputConfig {
 
   /// If `true`, add extra logging specific to input bindings build. Useful for debugging.
   /// Can toggle at run time by updating boolean pref key `logKeyBindingsRebuild`.
-  static var logBindingsRebuild: Bool {
-    Preference.bool(for: .logKeyBindingsRebuild)
-  }
+  static var logBindingsRebuild: Bool { Preference.bool(for: .logKeyBindingsRebuild) }
 
   /// The current instance. The app can only ever support one set of active key bindings at a time, so each time a change is made,
   /// the active bindings are rebuilt and the old set is discarded.
-  static private(set) var current = AppInputConfig(version: 0, bindingCandidateList: [], resolverDict: [:], userConfSectionStartIndex: 0, userConfSectionEndIndex: 0)
+  static private(set) var current = AppInputConfig(version: 0, bindingCandidateList: [], resolverDict: [:], duplicateKeys: [],
+                                                   userConfSectionStartIndex: 0, userConfSectionEndIndex: 0)
 
   /// This attempts to mimick the logic in mpv's `get_cmd_from_keys()` function in input/input.c.
   /// Rebuilds `appBindingsList` and `currentResolverDict`, updating menu item key equivalents along the way.
@@ -153,13 +152,17 @@ struct AppInputConfig {
     userConfSectionEndIndex - userConfSectionStartIndex
   }
 
-  init(version: Int, bindingCandidateList: [InputBinding], resolverDict: [String: InputBinding], userConfSectionStartIndex: Int, userConfSectionEndIndex: Int) {
+  init(version: Int, bindingCandidateList: [InputBinding], resolverDict: [String: InputBinding], duplicateKeys: Set<String>,
+       userConfSectionStartIndex: Int, userConfSectionEndIndex: Int) {
     self.version = version
     self.bindingCandidateList = bindingCandidateList
     self.resolverDict = resolverDict
+    self.duplicateKeys = duplicateKeys
     self.userConfSectionStartIndex = userConfSectionStartIndex
     self.userConfSectionEndIndex = userConfSectionEndIndex
   }
+
+  let duplicateKeys: Set<String>
 
   func logEnabledBindings() {
     if AppInputConfig.logBindingsRebuild, Logger.enabled && Logger.Level.preferred >= .verbose {

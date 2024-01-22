@@ -799,7 +799,8 @@ extension BindingTableViewController: NSMenuDelegate {
       }
     }
 
-    if !clickedRow.isEnabled {
+    let isDuplicate = bindingTableState.appInputConfig.duplicateKeys.contains(clickedRow.keyMapping.normalizedMpvKey)
+    if isDuplicate {
       mib.addItem("Show All Bindings For \(clickedRow.keyMapping.normalizedMpvKey.quoted)", #selector(self.filterByKey(_:)))
     }
 

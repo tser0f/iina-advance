@@ -28,6 +28,7 @@ class AppInputConfigBuilder {
     /// This also sets `userConfSectionStartIndex` and `userConfSectionEndIndex`.
     let bindingCandidateList = self.combineEnabledSectionBindings()
     var resolverDict: [String: InputBinding] = [:]
+    var duplicateKeys = Set<String>()
 
     // Now build the resolverDict, disabling redundant key bindings along the way.
     for binding in bindingCandidateList {
@@ -40,6 +41,7 @@ class AppInputConfigBuilder {
 
       // If multiple bindings map to the same key, favor the last one always.
       if let prevSameKeyBinding = resolverDict[key] {
+        duplicateKeys.insert(key)
         prevSameKeyBinding.isEnabled = false
         if prevSameKeyBinding.origin == .iinaPlugin {
           prevSameKeyBinding.displayMessage = "\(key.quoted) is overridden by \(binding.keyMapping.readableAction.quoted). Plugins must use key bindings which have not already been used."
@@ -60,6 +62,7 @@ class AppInputConfigBuilder {
     menuController.updateKeyEquivalents(from: bindingCandidateList)
 
     let appBindings = AppInputConfig(version: version, bindingCandidateList: bindingCandidateList, resolverDict: resolverDict,
+                                     duplicateKeys: duplicateKeys,
                                      userConfSectionStartIndex: userConfSectionStartIndex!, userConfSectionEndIndex: userConfSectionEndIndex!)
     log.debug("Finished rebuild of AppInputConfig (\(appBindings.resolverDict.count) bindings)")
     appBindings.logEnabledBindings()

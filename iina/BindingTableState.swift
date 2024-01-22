@@ -23,7 +23,7 @@ struct BindingTableState {
     self.inputConfFile = inputConfFile
     self.filterString = filterString
     self.showAllBindings = showAllBindings
-    self.filterBimap = BindingTableState.buildFilterBimap(from: appInputConfig.bindingCandidateList, by: filterString, confBindingsOnly: !showAllBindings)
+    self.filterBimap = BindingTableState.buildFilterBimap(from: appInputConfig, by: filterString, confBindingsOnly: !showAllBindings)
   }
 
   // MARK: Data
@@ -389,44 +389,53 @@ struct BindingTableState {
     return unfiltered
   }
 
-  private static func buildFilterBimap(from unfilteredRows: [InputBinding], by filterString: String, confBindingsOnly: Bool) -> BiDictionary<Int, Int>? {
+  private static func buildFilterBimap(from appInputConfig: AppInputConfig, by filterString: String, 
+                                       confBindingsOnly: Bool) -> BiDictionary<Int, Int>? {
     if filterString.isEmpty && !confBindingsOnly {
       return nil
     }
 
-    var biDict = BiDictionary<Int, Int>()
+    let unfilteredRows = appInputConfig.bindingCandidateList
 
-
-    if filterString.hasPrefix("#key=") {
-      // Match all occurrences of normalized key. Useful for finding duplicates
+    if filterString.hasPrefix("#key=") {  // Match all occurrences of normalized key. Useful for finding duplicates
       let key = filterString.dropFirst(5)
       if key.isEmpty {
-        return biDict  // empty set
+        return BiDictionary<Int, Int>()  // empty set
       }
       let normalizedMpvKey = KeyCodeHelper.normalizeMpv(String(key))
-      for (indexUnfiltered, bindingRow) in unfilteredRows.enumerated() {
-        if (!confBindingsOnly || bindingRow.origin == .confFile) && bindingRow.keyMapping.normalizedMpvKey == normalizedMpvKey {
-          biDict[key: indexUnfiltered] = biDict.values.count
-        }
-      }
+      return buildFilterBimap(from: unfilteredRows, { indexUnfiltered, bindingRow in
+        return (!confBindingsOnly || bindingRow.origin == .confFile) && bindingRow.keyMapping.normalizedMpvKey == normalizedMpvKey
+      })
 
-    } else {
-      // Regular match
-      for (indexUnfiltered, bindingRow) in unfilteredRows.enumerated() {
-        if matches(bindingRow, filterString, confBindingsOnly: confBindingsOnly) {
-          biDict[key: indexUnfiltered] = biDict.values.count
-        }
+    } else if filterString.hasPrefix("#dup") {  // Find all duplicates (i.e., bindings are not the only in the table with the same key)
+      return buildFilterBimap(from: unfilteredRows, { indexUnfiltered, bindingRow in
+        return appInputConfig.duplicateKeys.contains(bindingRow.keyMapping.normalizedMpvKey)
+      })
+
+    } else {  // Regular match
+      return buildFilterBimap(from: unfilteredRows, { indexUnfiltered, bindingRow in
+        return matches(bindingRow, filterString, confBindingsOnly: confBindingsOnly)
+      })
+    }
+  }
+
+  private static func buildFilterBimap(from unfilteredRows: [InputBinding], _ isIncluded: (Int, InputBinding) -> Bool) -> BiDictionary<Int, Int>? {
+    var biDict = BiDictionary<Int, Int>()
+
+    for (indexUnfiltered, bindingRow) in unfilteredRows.enumerated() {
+      if isIncluded(indexUnfiltered, bindingRow) {
+        let filteredIndex = biDict.values.count
+        biDict[key: indexUnfiltered] = filteredIndex
       }
     }
-
     return biDict
   }
 
   private static func matches(_ binding: InputBinding, _ filterString: String, confBindingsOnly: Bool) -> Bool {
     return (!confBindingsOnly || binding.origin == .confFile)
-      && (filterString.isEmpty
-      || binding.getKeyColumnDisplay(raw: true).localizedStandardContains(filterString)
-      || binding.getActionColumnDisplay(raw: true).localizedStandardContains(filterString)
-      || binding.getActionColumnDisplay(raw: false).localizedStandardContains(filterString))
+    && (filterString.isEmpty
+        || binding.getKeyColumnDisplay(raw: true).equalsIgnoreCase(filterString)
+        || binding.getActionColumnDisplay(raw: true).equalsIgnoreCase(filterString)
+        || binding.getActionColumnDisplay(raw: false).equalsIgnoreCase(filterString))
   }
 }

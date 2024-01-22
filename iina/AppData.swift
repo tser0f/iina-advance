@@ -37,10 +37,10 @@ struct AppData {
 
   /// Minimum value to set a mpv loop point to.
   ///
-  /// Setting a loop point to zero disables looping, so when loop points are being adjusted IINA must insure the mpv property is not
+  /// Setting a loop point to zero disables looping, so when loop points are being adjusted IINA must ensure the mpv property is not
   /// set to zero. However using `Double.leastNonzeroMagnitude` as the minimum value did not work because mpv truncates
   /// the value when storing the A-B loop points in the watch later file. As a result the state of the A-B loop feature is not properly
-  /// restored when the movies is played again. Using the following value as the minimum for loop points avoids this issue.
+  /// restored when the media is played again. Using the following value as the minimum for loop points avoids this issue. 
   static let minLoopPointTime = 0.000001
 
   static let osdSeekSubSecPrecisionComparison: Double = 1000000
