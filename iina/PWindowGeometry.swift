@@ -589,7 +589,7 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   }
 
   func refit(_ newFit: ScreenFitOption? = nil, lockViewportToVideoSize: Bool? = nil) -> PWindowGeometry {
-    return scaleViewport(fitOption: newFit)
+    return scaleViewport(fitOption: newFit, lockViewportToVideoSize: lockViewportToVideoSize)
   }
 
   func hasEqual(windowFrame windowFrame2: NSRect? = nil, videoSize videoSize2: NSSize? = nil) -> Bool {
@@ -615,19 +615,21 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   /// • If `desiredSize` is given, the `windowFrame` will be shrunk or grown as needed, as will the `videoSize` which will
   /// be resized to fit in the new `viewportSize` based on `videoAspect`.
   /// • If `mode` is provided, it will be applied to the resulting `PWindowGeometry`.
-  /// • If `mode.alwaysLockViewportToVideoSize==true`, then `viewportSize` will be shrunk to the same size as `videoSize`, and `windowFrame`
-  /// will be resized accordingly. If it is `false`, then `Preference.bool(for: .lockViewportToVideoSize)` will be used.
+  /// • If (1) `lockViewportToVideoSize` is specified, its value will be used (this should only be specified in rare cases).
+  /// Otherwise (2) if `mode.alwaysLockViewportToVideoSize==true`, then `viewportSize` will be shrunk to the same size as `videoSize`,
+  /// and `windowFrame` will be resized accordingly; otherwise, (3) `Preference.bool(for: .lockViewportToVideoSize)` will be used.
   /// • If `screenID` is provided, it will be associated with the resulting `PWindowGeometry`; otherwise `self.screenID` will be used.
   /// • If `fitOption` is provided, it will be applied to the resulting `PWindowGeometry`; otherwise `self.fitOption` will be used.
   func scaleViewport(to desiredSize: NSSize? = nil,
                      screenID: String? = nil,
                      fitOption: ScreenFitOption? = nil,
+                     lockViewportToVideoSize: Bool? = nil,
                      mode: PlayerWindowMode? = nil) -> PWindowGeometry {
 
     // -- First, set up needed variables
 
     let mode = mode ?? self.mode
-    let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
+    let lockViewportToVideoSize = lockViewportToVideoSize ?? Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
     // do not center in screen again unless explicitly requested
     let newFitOption = fitOption ?? (self.fitOption == .centerInVisibleScreen ? .keepInVisibleScreen : self.fitOption)
     let outsideBarsSize = self.outsideBarsTotalSize
@@ -706,10 +708,11 @@ struct PWindowGeometry: Equatable, CustomStringConvertible {
   func scaleVideo(to desiredVideoSize: NSSize,
                   screenID: String? = nil,
                   fitOption: ScreenFitOption? = nil,
+                  lockViewportToVideoSize: Bool? = nil,
                   mode: PlayerWindowMode? = nil) -> PWindowGeometry {
 
     let mode = mode ?? self.mode
-    let lockViewportToVideoSize = Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
+    let lockViewportToVideoSize = lockViewportToVideoSize ?? Preference.bool(for: .lockViewportToVideoSize) || mode.alwaysLockViewportToVideoSize
     if Logger.isTraceEnabled {
       Logger.log("[geo] ScaleVideo start, desiredVideoSize: \(desiredVideoSize), videoAspect: \(videoAspect), lockViewportToVideoSize: \(lockViewportToVideoSize)", level: .debug)
     }

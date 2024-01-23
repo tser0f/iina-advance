@@ -83,7 +83,16 @@ extension PlayerWindowController {
       assert(!isOpen)
       assert(!isInitialSizeDone)
       let initialLayout = LayoutState.buildFrom(initialLayoutSpec)
-      windowedModeGeometry = initialLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed)
+
+//    windowedModeGeometry = initialLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed)
+      /// Use `minVideoSize` at first when a new window is opened, so that when `resizeWindowAfterVideoReconfig()` is called shortly after,
+      /// it expands and creates a nice zooming effect.
+      let videoSize = AppData.minVideoSize
+      let windowFrame = NSRect(origin: CGPoint.zero, size: videoSize)
+      let defaultScreenID = NSScreen.main!.screenID
+      let initialGeo = initialLayout.buildGeometry(windowFrame: windowFrame, screenID: defaultScreenID, videoAspect: videoSize.mpvAspect)
+      windowedModeGeometry = initialGeo.refit(.centerInVisibleScreen)
+
       musicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed
     }
 

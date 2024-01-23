@@ -119,7 +119,13 @@ extension PlayerWindowController {
 
       let newWindowGeo = resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: videoDisplayRotatedSize)
 
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.VideoReconfigDuration, timing: .easeInEaseOut, { [self] in
+      var duration = IINAAnimation.VideoReconfigDuration
+      if player.info.justOpenedFile && !isInitialSizeDone {
+        // Just opened manually. Use a longer duration for this one, because the window starts small and will zoom into place.
+        isInitialSizeDone = true
+        duration = IINAAnimation.DefaultDuration
+      }
+      animationPipeline.submit(IINAAnimation.Task(duration: duration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`
         log.debug("[MPVVideoReconfig Apply] Applying result (FS:\(isFullScreen.yn)) → videoSize:\(newWindowGeo.videoSize) newWindowFrame: \(newWindowGeo.windowFrame)")
 
@@ -194,11 +200,15 @@ extension PlayerWindowController {
       let resizeWindowStrategy: Preference.ResizeWindowOption = Preference.enum(for: .resizeWindowOption)
       if resizeWindowStrategy == .fitScreen {
         log.verbose("[MPVVideoReconfig C-4] ResizeWindowOption=FitToScreen. Using screenFrame \(screenVisibleFrame)")
-        return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen)
+        let forceLockViewportToVideo = isInitialSizeDone ? nil : true
+        return windowGeo.scaleViewport(to: screenVisibleFrame.size, fitOption: .centerInVisibleScreen,
+                                       lockViewportToVideoSize: forceLockViewportToVideo)
       } else {
         let resizeRatio = resizeWindowStrategy.ratio
         newVideoSize = videoDisplayRotatedSize.multiply(CGFloat(resizeRatio))
         log.verbose("[MPVVideoReconfig C-2] Applied resizeRatio (\(resizeRatio)) to newVideoSize → \(newVideoSize)")
+        let forceLockViewportToVideo = isInitialSizeDone ? nil : true
+        return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen, lockViewportToVideoSize: forceLockViewportToVideo)
       }
     }
 
@@ -210,7 +220,6 @@ extension PlayerWindowController {
                                                  videoDisplayRotatedSize: NSSize) -> PWindowGeometry {
     if player.info.justOpenedFile && !isInitialSizeDone {
       log.verbose("[MPVVideoReconfig D-1] Just opened file with no resize strategy. Using windowedModeGeometryLastClosed: \(PlayerWindowController.windowedModeGeometryLastClosed)")
-      isInitialSizeDone = true
       return currentLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed,
                                                        videoAspect: videoDisplayRotatedSize.mpvAspect)
     }
