@@ -26,8 +26,8 @@ class Logger: NSObject {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd-HH-mm-ss"
     let timeString  = formatter.string(from: Date())
-    let token = Utility.ShortCodeGenerator.getCode(length: 6)
-    return "\(timeString)_\(token)"
+    let launchID = AppDelegate.launchID
+    return "\(timeString)_L\(launchID)"
   }()
 
   /// If true, strings which are indicated to contain personally identifiable information (PII) are replaced with a

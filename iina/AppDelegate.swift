@@ -25,7 +25,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   static let launchID: Int = {
     let nextID = Preference.integer(for: .launchCount) + 1
     Preference.set(nextID, for: .launchCount)
-    Logger.log("LaunchID: \(nextID)", level: .verbose)
     return nextID
   }()
 
@@ -232,7 +231,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     logBuildDetails()
     logPlatformDetails()
 
-    Logger.log("App will launch")
+    Logger.log("App will launch. LaunchID: \(AppDelegate.launchID)")
 
     for key in self.observedPrefKeys {
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
