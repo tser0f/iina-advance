@@ -11,6 +11,10 @@ import Cocoa
 class PlayerWindow: NSWindow {
   private var useZeroDurationForNextResize = false
 
+  var playerWinController: PlayerWindowController? {
+    return windowController as? PlayerWindowController
+  }
+
   var log: Logger.Subsystem {
     return (windowController as! PlayerWindowController).player.log
   }
@@ -27,10 +31,8 @@ class PlayerWindow: NSWindow {
       log.verbose("SetFrameImmediately: no change; will not update windowFrame")
       return
     }
-    
-    if let controller = windowController as? PlayerWindowController {
-      controller.videoView.videoLayer.enterAsynchronousMode()
-    }
+
+    playerWinController?.videoView.videoLayer.enterAsynchronousMode()
 
     useZeroDurationForNextResize = true
     log.verbose("SetFrameImmediately: animate=\(animate.yn) frame=\(newFrame)")
@@ -52,8 +54,8 @@ class PlayerWindow: NSWindow {
     /// Forward all key events which the window receives to its controller.
     /// This allows `ESC` & `TAB` key bindings to work, instead of getting swallowed by
     /// MacOS keyboard focus navigation (which we don't use).
-    if let controller = windowController as? PlayerWindowController {
-      controller.keyDown(with: event)
+    if let playerWinController {
+      playerWinController.keyDown(with: event)
     } else {
       super.keyDown(with: event)
     }
@@ -106,18 +108,23 @@ class PlayerWindow: NSWindow {
     return super.canBecomeMain
   }
 
+  private var isFullScreen: Bool { playerWinController?.isFullScreen ?? true }
+
   /// Setting `alphaValue=0` for Close & Miniaturize (red & green traffic lights) buttons causes `File` > `Close`
   /// and `Window` > `Minimize` to be disabled as an unwanted side effect. This can cause key bindings to fail
   /// during animations or if we're not careful to set `alphaValue=1` for hidden items. Permanently enabling them
   /// here guarantees consistent behavior.
   override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
-    if item.action == #selector(self.performClose(_:)) {
+    switch item.action {
+    case #selector(self.performClose(_:)):
       return true
-    } else if item.action == #selector(self.performMiniaturize(_:)) {
-      return true
-    } else if item.action == #selector(self.performZoom(_:)) {
-      return true
-    } else {
+    case #selector(self.performMiniaturize(_:)), #selector(self.performZoom(_:)), #selector(self.zoom(_:)):
+      /// `zoom:` is an item in the Zoom button (green traffic light)'s context menu
+      /// `performZoom:` is the equivalent item in the `Window` menu
+
+      // Do not allow when in legacy full screen
+      return !isFullScreen
+    default:
       return super.validateUserInterfaceItem(item)
     }
   }
@@ -130,10 +137,5 @@ class PlayerWindow: NSWindow {
   /// Need to override this for Minimize to work when `!styleMask.contains(.titled)`
   override func performMiniaturize(_ sender: Any?) {
     self.miniaturize(self)
-  }
-
-  /// Need to override this for Zoom to work when `!styleMask.contains(.titled)`
-  override func performZoom(_ sender: Any?) {
-    self.zoom(self)
   }
 }

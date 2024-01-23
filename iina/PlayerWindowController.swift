@@ -1260,19 +1260,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Returns true if handled
   @discardableResult
   func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
+    if let menuItem = keyBinding.menuItem {
+      log.error("Key binding is attached to menu item: \(menuItem.title.quoted). Assuming it is disabled since it was not handled by MenuController")
+      return false
+    }
+
     // Some script bindings will draw to the video area. We don't know which will, but
     // if the DisplayLink is not active the updates will not be displayed.
     // So start the DisplayLink temporily if not already running:
     forceDraw()
 
     if keyBinding.isIINACommand {
-      if let menuItem = keyBinding.menuItem, let action = menuItem.action {
-        // - Menu item (e.g. custom video filter). It is an error for this to show up here. Still, try to recover if found
-        log.error("Key binding containing IINACmd is attached to menu item: \(menuItem.title.quoted). This should have been handled by the MenuController")
-        NSApp.sendAction(action, to: self, from: menuItem)
-        return true
-      }
-
       // - IINA command
       if let iinaCommand = IINACommand(rawValue: keyBinding.rawAction) {
         handleIINACommand(iinaCommand)
@@ -1283,13 +1281,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     } else {
       // - mpv command
-
-      if let menuItem = keyBinding.menuItem, let action = menuItem.action {
-        log.error("Key binding for mpv is attached to menu item: \(menuItem.title.quoted). This should have been handled by the MenuController")
-        NSApplication.shared.sendAction(action, to: menuItem.target, from: menuItem)
-        return true
-      }
-
       player.mpv.queue.async { [self] in
         let returnValue: Int32
         // execute the command
@@ -1531,7 +1522,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       }
       let titleBarMinY = window!.frame.height - PlayerWindowController.standardTitleBarHeight
-      if event.clickCount == 2 && (event.locationInWindow.y >= titleBarMinY) {
+      if event.clickCount == 2 && (event.locationInWindow.y >= titleBarMinY) && !isFullScreen {
         if let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
           log.verbose("Double-click occurred in title bar. Executing \(userDefault.quoted)")
           if userDefault == "Minimize" {
