@@ -53,10 +53,7 @@ class CropSettingsViewController: CropBoxViewController {
     if isAllSelected || isNoSelection {
       player.log.verbose("User chose Done button from interactive mode, but isAllSelected=\(isAllSelected.yn) isNoSelection=\(isNoSelection.yn). Setting crop to none")
       // if no crop, remove the crop filter
-      if let vf = player.info.cropFilter {
-        // Untested - not sure how well this will animate...
-        _ = player.removeVideoFilter(vf)
-      }
+      player.removeCrop()
       windowController.exitInteractiveMode()
     } else {
       player.log.verbose("User chose Done button from interactive mode with new crop")

@@ -54,16 +54,30 @@ class MPVLogScanner {
     mpvLogSubsystem = Logger.Subsystem(rawValue: "mpv-\(player.label)")
   }
 
+  // Remove newline from msg if there is one
+  private func removeNewline(from msg: String) -> String {
+    return msg.hasSuffix("\n") ? String(msg.dropLast()) : msg
+  }
+
   /**
    Looks for key binding sections set in scripts; extracts them if found & sends them to relevant `PlayerBindingController`.
    Expected to return `true` if parsed & handled, `false` otherwise
    */
   func processLogLine(prefix: String, level: String, msg: String) {
     let mpvIINALevel = logLevelMap[level] ?? .verbose
+
+    // Log mpv msg to IINA log if configured
     if mpvIINALevel.rawValue >= Preference.integer(for: .iinaMpvLogLevel) {
-      // Remove newline if there is one
-      let msg = msg.hasSuffix("\n") ? String(msg.dropLast()) : msg
-      Logger.log("[\(prefix)|\(level.first ?? "?")] \(msg)", level: mpvIINALevel, subsystem: mpvLogSubsystem)
+      Logger.log("[\(prefix)|\(level.first ?? "?")] \(removeNewline(from: msg))", level: mpvIINALevel, subsystem: mpvLogSubsystem)
+    }
+
+    if msg.hasPrefix("Disabling filter \(Constants.FilterLabel.crop)") {
+      // Sometimes the crop can fail, but mpv does not return an error msg directly
+      if player.info.cropFilter != nil {
+        player.log.warn("Removing crop filter because msg was found in mpv log: \(removeNewline(from: msg).quoted)")
+        player.removeCrop()
+      }
+      return
     }
 
     guard prefix == "cplayer", level.starts(with: "d") else { return }

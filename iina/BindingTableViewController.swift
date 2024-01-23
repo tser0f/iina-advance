@@ -788,7 +788,7 @@ extension BindingTableViewController: NSMenuDelegate {
         Logger.log("Unrecognized binding origin for rowIndex \(clickedRowIndex): \(clickedRow.origin)", level: .error)
         culprit = "<unknown>"
       }
-      mib.addItalicDisabledItem("Cannot modify binding: it is owned by \(culprit)")
+      mib.addItalicDisabledItem("Cannot modify binding: it was set by \(culprit)")
     } else {
       // Edit options
       if isRaw {

@@ -1453,12 +1453,15 @@ class PlayerCore: NSObject {
         log.error("Requested crop string is invalid: \(str.quoted)")
         updateCropUI(to: AppData.cropNone)
       }
-      if let filter = info.cropFilter {
-        log.verbose("Setting crop to \(AppData.cropNone.quoted) and removing crop filter")
-        removeVideoFilter(filter)
-        updateCropUI(to: AppData.cropNone)
-      }
+      removeCrop()
     }
+  }
+
+  func removeCrop() {
+    guard let cropFilter = info.cropFilter else { return }
+    log.verbose("Setting crop to \(AppData.cropNone.quoted) and removing crop filter")
+    removeVideoFilter(cropFilter)
+    updateCropUI(to: AppData.cropNone)
   }
 
   private func updateCropUI(to newCropLabel: String) {
@@ -2114,14 +2117,18 @@ class PlayerCore: NSObject {
   func secondarySidChanged() {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-    info.secondSid = Int(mpv.getInt(MPVOption.Subtitles.secondarySid))
+    let ssid = Int(mpv.getInt(MPVOption.Subtitles.secondarySid))
+    info.secondSid = ssid
+    log.verbose("SSID changed to \(ssid)")
     postNotification(.iinaSIDChanged)
   }
 
   func sidChanged() {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-    info.sid = Int(mpv.getInt(MPVOption.TrackSelection.sid))
+    let sid = Int(mpv.getInt(MPVOption.TrackSelection.sid))
+    info.sid = sid
+    log.verbose("SID changed to \(sid)")
     postNotification(.iinaSIDChanged)
     sendOSD(.track(info.currentTrack(.sub) ?? .noneSubTrack))
   }
