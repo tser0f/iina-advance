@@ -3817,11 +3817,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func resetCollectionBehavior() {
-    guard !isFullScreen else { return }
+    /// Set option `.fullScreenDisallowsTiling` always.
+    /// As of MacOS 14.2.1, tiling is at best glitchy and at worst results in an infinite loop
+    // FIXME: support tiling for at least native full screen
     if Preference.bool(for: .useLegacyFullScreen) {
-      window?.collectionBehavior = [.managed, .fullScreenAuxiliary]
+      window?.collectionBehavior = [.managed, .fullScreenDisallowsTiling, .fullScreenAuxiliary]
     } else {
-      window?.collectionBehavior = [.managed, .fullScreenPrimary]
+      window?.collectionBehavior = [.managed, .fullScreenDisallowsTiling, .fullScreenPrimary]
     }
   }
 

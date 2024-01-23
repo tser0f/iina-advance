@@ -115,13 +115,25 @@ class PlayerWindow: NSWindow {
   /// during animations or if we're not careful to set `alphaValue=1` for hidden items. Permanently enabling them
   /// here guarantees consistent behavior.
   override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+    /// Could not find a better way to test for these two. They don't appear to be exposed anywhere.
+    /// `_zoomLeft:` == `Window` > `Move Window to Left Side of Screen`
+    /// `_zoomRight:` == `Window` > `Move Window to Right Side of Screen`
+    /// Both are also present in Zoom button's context menu.
+    if let selectorString = item.action?.description {
+      switch selectorString {
+      case "_zoomLeft:", "_zoomRight:":
+        return true
+      default:
+        break
+      }
+    }
+
     switch item.action {
     case #selector(self.performClose(_:)):
       return true
     case #selector(self.performMiniaturize(_:)), #selector(self.performZoom(_:)), #selector(self.zoom(_:)):
-      /// `zoom:` is an item in the Zoom button (green traffic light)'s context menu
+      /// `zoom:` is an item in the Zoom button (green traffic light)'s context menu.
       /// `performZoom:` is the equivalent item in the `Window` menu
-
       // Do not allow when in legacy full screen
       return !isFullScreen
     default:
