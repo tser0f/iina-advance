@@ -1495,21 +1495,21 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.verbose("PlayerWindow mouseUp @ \(event.locationInWindow), dragging: \(isDragging.yn), clickCount: \(event.clickCount): eventNum: \(event.eventNumber)")
     }
 
-    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
-      return
-    }
-    if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden,
-        controlBarFloating.isDragging || isMouseEvent(event, inAnyOf: [controlBarFloating]) {
-      controlBarFloating.mouseUp(with: event)
-      return
-    }
     restartHideCursorTimer()
     mousePosRelatedToWindow = nil
-    if isDragging {
+
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
+      log.verbose("PlayerWindow mouseUp: finished resizing sidebar")
+    } else if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden,
+        controlBarFloating.isDragging || isMouseEvent(event, inAnyOf: [controlBarFloating]) {
+      log.verbose("PlayerWindow mouseUp: finished drag of floating OSC")
+      controlBarFloating.mouseUp(with: event)
+    } else if isDragging {
       // if it's a mouseup after dragging window
+      log.verbose("PlayerWindow mouseUp: finished drag of window")
       isDragging = false
     } else if finishResizingSidebar(with: event) {
-      return
+      log.verbose("PlayerWindow mouseUp: finished resizing sidebar")
     } else {
       // if it's a mouseup after clicking
 
@@ -1518,22 +1518,27 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if event.clickCount <= 1 && !isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView, subPopoverView,
                                                                  topBarView, bottomBarView]) {
         if hideSidebarsOnClick() {
+          log.verbose("PlayerWindow mouseUp: hiding sidebars")
           return
         }
       }
       let titleBarMinY = window!.frame.height - PlayerWindowController.standardTitleBarHeight
-      if event.clickCount == 2 && (event.locationInWindow.y >= titleBarMinY) && !isFullScreen {
-        if let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
-          log.verbose("Double-click occurred in title bar. Executing \(userDefault.quoted)")
-          if userDefault == "Minimize" {
-            window?.performMiniaturize(nil)
-          } else if userDefault == "Maximize" {
-            window?.performZoom(nil)
+      if event.clickCount == 2 {
+        if !isFullScreen && (event.locationInWindow.y >= titleBarMinY) {
+          if let userDefault = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") {
+            log.verbose("Double-click occurred in title bar. Executing \(userDefault.quoted)")
+            if userDefault == "Minimize" {
+              window?.performMiniaturize(nil)
+            } else if userDefault == "Maximize" {
+              window?.performZoom(nil)
+            }
+            return
+          } else {
+            log.verbose("Double-click occurred in title bar, but no action for AppleActionOnDoubleClick")
           }
         } else {
-          log.verbose("No action for AppleActionOnDoubleClick")
+          log.verbose("Double-click did not occur inside title bar (minY: \(titleBarMinY)) or is full screen (\(isFullScreen))")
         }
-        return
       }
 
       guard !isMouseEvent(event, inAnyOf: mouseActionDisabledViews) else {

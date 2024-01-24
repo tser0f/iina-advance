@@ -459,7 +459,7 @@ class PlayerCore: NSObject {
   }
 
   private func savePlayerStateForShutdown() {
-    log.verbose("Cleaning up player state (isUISaveEnabled: \(Preference.UIState.isSaveEnabled))")
+    log.verbose("Cleaning up player state, isUISaveEnabled=\(Preference.UIState.isSaveEnabled.yn)")
     dispatchPrecondition(condition: .onQueue(mpv.queue))
 
     saveState()            // Save state to IINA prefs (if enabled)
@@ -493,6 +493,7 @@ class PlayerCore: NSObject {
       log.verbose("Player is already shutting down")
       return
     }
+    log.debug("Shutting down player, saveIfEnabled=\(saveIfEnabled.yn)")
     isShuttingDown = true
 
     mpv.queue.async { [self] in
