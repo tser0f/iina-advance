@@ -43,9 +43,8 @@ class PlaybackInfo {
     return priorState != nil
   }
 
-  /// Already received `fileStarted` event, but still waiting for `fileLoaded`
-  var justStartedFile: Bool = false
-  var justOpenedFile: Bool = false
+  /// Opened or started file, but still waiting for `fileLoaded`
+  var justOpenedFile: Bool = true
 
   var fileLoading: Bool = false
   var fileLoaded: Bool = false

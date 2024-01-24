@@ -84,14 +84,18 @@ extension PlayerWindowController {
       assert(!isInitialSizeDone)
       let initialLayout = LayoutState.buildFrom(initialLayoutSpec)
 
-//    windowedModeGeometry = initialLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed)
-      /// Use `minVideoSize` at first when a new window is opened, so that when `resizeWindowAfterVideoReconfig()` is called shortly after,
-      /// it expands and creates a nice zooming effect.
-      let videoSize = AppData.minVideoSize
-      let windowFrame = NSRect(origin: CGPoint.zero, size: videoSize)
-      let defaultScreenID = NSScreen.main!.screenID
-      let initialGeo = initialLayout.buildGeometry(windowFrame: windowFrame, screenID: defaultScreenID, videoAspect: videoSize.mpvAspect)
-      windowedModeGeometry = initialGeo.refit(.centerInVisibleScreen)
+      if shouldResizeWindowAfterVideoReconfig() {
+        /// Use `minVideoSize` at first when a new window is opened, so that when `resizeWindowAfterVideoReconfig()` is called shortly after,
+        /// it expands and creates a nice zooming effect.
+        let videoSize = AppData.minVideoSize
+        let windowFrame = NSRect(origin: CGPoint.zero, size: videoSize)
+        let defaultScreenID = NSScreen.main!.screenID
+        let initialGeo = initialLayout.buildGeometry(windowFrame: windowFrame, screenID: defaultScreenID, videoAspect: videoSize.mpvAspect)
+        windowedModeGeometry = initialGeo.refit(.centerInVisibleScreen)
+      } else {
+        // No configured resize strategy. So just apply the last closed geometry right away, with no extra animations
+        windowedModeGeometry = initialLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed)
+      }
 
       musicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed
     }

@@ -1859,7 +1859,7 @@ class PlayerCore: NSObject {
       guard !isStopping, !isShuttingDown else { return }
 
       log.debug("File started")
-      info.justStartedFile = true
+      info.justOpenedFile = true
       info.disableOSDForFileLoading = true
       info.videoParams = nil
 
@@ -2084,7 +2084,6 @@ class PlayerCore: NSObject {
     /// The first "playback restart" msg after starting a file means that the file is
     /// officially done loading
     info.justOpenedFile = false
-    info.justStartedFile = false
     if let priorState = info.priorState {
       if priorState.string(for: .playPosition) != nil {
         /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started

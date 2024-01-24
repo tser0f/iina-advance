@@ -910,6 +910,7 @@ not applying FFmpeg 9599 workaround
   ///     method can then be removed.`
   @objc
   internal func terminateApplication() {
+    player.log.verbose("Calling NSApp.terminate()")
     NSApp.terminate(nil)
   }
 
