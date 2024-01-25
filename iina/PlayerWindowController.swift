@@ -3004,6 +3004,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         case 90:
           name += ".90"
         default:
+          name += (name == "gobackward" ? ".minus" : ".plus")
           break
         }
         /// Set icon for next message, which is expected to be a `seek`
