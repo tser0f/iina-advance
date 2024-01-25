@@ -395,28 +395,31 @@ struct BindingTableState {
       return nil
     }
 
-    let unfilteredRows = appInputConfig.bindingCandidateList
-
-    if filterString.hasPrefix("#key=") {  // Match all occurrences of normalized key. Useful for finding duplicates
+    if filterString.hasPrefix("#key=") {
+      // Match all occurrences of normalized key. Useful for finding duplicates
       let key = filterString.dropFirst(5)
       if key.isEmpty {
         return BiDictionary<Int, Int>()  // empty set
       }
       let normalizedMpvKey = KeyCodeHelper.normalizeMpv(String(key))
-      return buildFilterBimap(from: unfilteredRows, { indexUnfiltered, bindingRow in
+      return buildFilterBimap(from: appInputConfig.bindingCandidateList, { indexUnfiltered, bindingRow in
         return (!confBindingsOnly || bindingRow.origin == .confFile) && bindingRow.keyMapping.normalizedMpvKey == normalizedMpvKey
       })
 
-    } else if filterString.hasPrefix("#dup") {  // Find all duplicates (i.e., bindings are not the only in the table with the same key)
-      return buildFilterBimap(from: unfilteredRows, { indexUnfiltered, bindingRow in
+    } else if filterString.hasPrefix("#dup") {
+      // Find all duplicates (i.e., bindings are not the only in the table with the same key)
+      return buildFilterBimap(from: appInputConfig.bindingCandidateList, { indexUnfiltered, bindingRow in
         return appInputConfig.duplicateKeys.contains(bindingRow.keyMapping.normalizedMpvKey)
       })
-
-    } else {  // Regular match
-      return buildFilterBimap(from: unfilteredRows, { indexUnfiltered, bindingRow in
-        return matches(bindingRow, filterString, confBindingsOnly: confBindingsOnly)
-      })
     }
+
+    // Regular match
+    return buildFilterBimap(from: appInputConfig.bindingCandidateList, { indexUnfiltered, bindingRow in
+      return (!confBindingsOnly || bindingRow.origin == .confFile) && (filterString.isEmpty
+          || bindingRow.getKeyColumnDisplay(raw: true).localizedStandardContains(filterString)
+          || bindingRow.getActionColumnDisplay(raw: true).localizedStandardContains(filterString)
+          || bindingRow.getActionColumnDisplay(raw: false).localizedStandardContains(filterString))
+    })
   }
 
   private static func buildFilterBimap(from unfilteredRows: [InputBinding], _ isIncluded: (Int, InputBinding) -> Bool) -> BiDictionary<Int, Int>? {
@@ -429,13 +432,5 @@ struct BindingTableState {
       }
     }
     return biDict
-  }
-
-  private static func matches(_ binding: InputBinding, _ filterString: String, confBindingsOnly: Bool) -> Bool {
-    return (!confBindingsOnly || binding.origin == .confFile)
-    && (filterString.isEmpty
-        || binding.getKeyColumnDisplay(raw: true).equalsIgnoreCase(filterString)
-        || binding.getActionColumnDisplay(raw: true).equalsIgnoreCase(filterString)
-        || binding.getActionColumnDisplay(raw: false).equalsIgnoreCase(filterString))
   }
 }
