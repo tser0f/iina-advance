@@ -225,6 +225,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var isUsingMpvOSD: Bool = false
   var osdAnimationState: UIAnimationState = .hidden
   var hideOSDTimer: Timer?
+  private var osdNextSeekIcon: NSImage? = nil
+  private var osdCurrentSeekIcon: NSImage? = nil
 
   // - Window Layout State
 
@@ -2742,7 +2744,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
 
       if let message = message {
-        setOSDViews(fromMessage: message)
+        setOSDViews(fromMessage: message, isUpdate: true)
       }
     }
     updatePlaySlider()
@@ -2839,7 +2841,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     contentView.layoutSubtreeIfNeeded()
   }
 
-  private func setOSDViews(fromMessage message: OSDMessage) {
+  private func setOSDViews(fromMessage message: OSDMessage, isUpdate: Bool = false) {
     player.osdLastMessage = message
 
     let (osdText, osdType) = message.message()
@@ -2875,11 +2877,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           icon = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "Pause")!
         case .stop:
           icon = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: "Stop")!
-//        case .seekRelative(let step):
+        case .seek:
+          icon = osdCurrentSeekIcon
         default:
           break
         }
-        // TODO: goforward.5, forward.frame.fill, etc
       }
     }
 
@@ -2973,6 +2975,49 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         osdAccessoryProgress.controlSize = .regular
       default:
         osdAccessoryProgress.controlSize = .small
+      }
+    }
+
+    if #available(macOS 11.0, *) {
+      /// The pseudo-OSDMessage `seekRelative`, if present, contains the step time for a relative seek.
+      /// But because it needs to be parsed from the mpv log, it is sent as a separate message which arrives immediately
+      /// prior to the `seek` message. With some smart logic, the info from the two messages can be combined to display
+      /// the most appropriate "jump" icon in the OSD in addition to the time display & progress bar.
+      if case .seekRelative(let stepString) = message, let step = Double(stepString) {
+        var name = step < 0 ? "gobackward" : "goforward"
+        let accDescription = "Relative Seek\(step < 0 ? "Backward" : "Forward")"
+        switch abs(step) {
+        case 5:
+          name += ".5"
+        case 10:
+          name += ".10"
+        case 15:
+          name += ".15"
+        case 30:
+          name += ".30"
+        case 45:
+          name += ".45"
+        case 60:
+          name += ".60"
+        case 75:
+          name += ".75"
+        case 90:
+          name += ".90"
+        default:
+          break
+        }
+        /// Set icon for next message, which is expected to be a `seek`
+        osdNextSeekIcon = NSImage(systemSymbolName: name, accessibilityDescription: accDescription)!
+        /// Done with `seekRelative` msg. It is not used for display.
+        return
+      } else if case .seek(_, _) = message {
+        /// Shift next icon into current icon, which will be used until the next call to `displayOSD()`
+        /// (although note that there can be subsequent calls to `setOSDViews()` to update the OSD's displayed time while playing,
+        /// but those do not count as "new" OSD messages, and thus will continue to use `osdCurrentSeekIcon`).
+        osdCurrentSeekIcon = osdNextSeekIcon
+        osdNextSeekIcon = nil
+      } else {
+        osdCurrentSeekIcon = nil
       }
     }
 

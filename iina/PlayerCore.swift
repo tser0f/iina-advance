@@ -2609,7 +2609,7 @@ class PlayerCore: NSObject {
       break
     }
 
-    var disableOSDForFileLoading: Bool = info.justOpenedFile || info.timeSinceLastFileOpenFinished < 0.2
+    let disableOSDForFileLoading: Bool = info.justOpenedFile || info.timeSinceLastFileOpenFinished < 0.2
     if disableOSDForFileLoading && !external {
       guard case .fileStart = osd else {
         return
