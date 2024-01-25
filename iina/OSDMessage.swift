@@ -33,6 +33,7 @@ enum OSDMessage {
 
   case pause
   case resume
+  case seekRelative(step: String)
   case seek(videoPosition: VideoTime?, videoDuration: VideoTime?)
   case frameStep
   case frameStepBack
@@ -116,6 +117,9 @@ enum OSDMessage {
 
     case .frameStepBack:
       return (NSLocalizedString("osd.frame_step_back", comment: "Previous Frame"), .normal)
+
+    case .seekRelative(let step):
+      return (step, .normal)
 
     case .seek(let videoPosition, let videoDuration):
       let posStr = videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder

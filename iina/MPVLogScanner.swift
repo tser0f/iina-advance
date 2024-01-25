@@ -18,6 +18,8 @@ private let FLAGS_REGEX = try! NSRegularExpression(
   pattern: #"[^\+]+"#, options: [])
 private let COMMAND_REGEX = try! NSRegularExpression(
   pattern: #"Run command:\s+([^,]+),"#, options: [])
+private let SEEK_ARGS_REGEX = try! NSRegularExpression(
+  pattern: #"target=\"([^\"]*)\"(?:, flags="([^\"]*)\")?"#, options: [])
 
 private func all(_ string: String) -> NSRange {
   return NSRange(location: 0, length: string.count)
@@ -100,6 +102,23 @@ class MPVLogScanner {
       player.sendOSD(.frameStep)
     case "frame-back-step":
       player.sendOSD(.frameStepBack)
+    case "seek":
+      guard let match = matchRegex(SEEK_ARGS_REGEX, msg) else { return }
+      guard match.numberOfRanges >= 1 else { return }
+      guard let targetRange = Range(match.range(at: 1), in: msg) else {
+        player.log.error("Failed to parse 'seek' args from: \(msg)")
+        return
+      }
+      if let argsRange = Range(match.range(at: 2), in: msg) {
+        let args = String(msg[argsRange])
+        guard !args.contains("absolute"), !args.contains("percent") else {
+          // Not interested in absolute or percent seeks
+          return
+        }
+      }
+      let target = String(msg[targetRange])
+      player.sendOSD(.seekRelative(step: target))
+      return
     default:
       return
     }

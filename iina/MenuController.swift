@@ -427,6 +427,7 @@ class MenuController: NSObject, NSMenuDelegate {
   func updateOtherKeyBindings(replacingAllWith newItems: [NSMenuItem]) {
     otherKeyBindingsMenu.removeAllItems()
     for item in newItems {
+      item.allowsKeyEquivalentWhenHidden = true
       otherKeyBindingsMenu.addItem(item)
     }
   }

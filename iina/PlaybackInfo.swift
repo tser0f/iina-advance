@@ -44,14 +44,25 @@ class PlaybackInfo {
   }
 
   /// Opened or started file, but still waiting for `fileLoaded`
-  var justOpenedFile: Bool = true
+  // TODO: investigate combining this with `!fileLoaded` and `fileLoading`
+  var justOpenedFile: Bool = true {
+    willSet {
+      if justOpenedFile && !newValue {
+        /// Changed from `true` to `false`: file is done loading, and `playback-restart` was sent
+        timeLastFileOpenFinished = Date().timeIntervalSince1970
+      }
+    }
+  }
+  private var timeLastFileOpenFinished: TimeInterval = 0
+  var timeSinceLastFileOpenFinished: TimeInterval {
+    Date().timeIntervalSince1970 - timeLastFileOpenFinished
+  }
 
   var fileLoading: Bool = false
   var fileLoaded: Bool = false
 
   var shouldAutoLoadFiles: Bool = false
   var isMatchingSubtitles = false
-  var disableOSDForFileLoading: Bool = false
 
   var isSeeking: Bool = false
 

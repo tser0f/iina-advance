@@ -127,15 +127,17 @@ class PlayerCore: NSObject {
 
   // OSD
   var isUsingMpvOSD: Bool = false
-  private var osdLastPosition: Double? = nil
-  private var osdLastDuration: Double? = nil
-  var osdLastMessageDisplayTime: TimeInterval = 0
+  private var osdLastPlaybackPosition: Double? = nil
+  private var osdLastPlaybackDuration: Double? = nil
+  private var osdLastMessageDisplayTime: TimeInterval = 0
   var osdLastMessage: OSDMessage? = nil {
     didSet {
-      osdLastMessageDisplayTime = Date().timeIntervalSince1970
+      if osdLastMessage != nil {
+        osdLastMessageDisplayTime = Date().timeIntervalSince1970
+      }
     }
   }
-
+  var osdTimeSinceLastMessage: Double { Date().timeIntervalSince1970 - osdLastMessageDisplayTime }
 
   /// Whether shutdown of this player has been initiated.
   @Atomic var isShuttingDown = false
@@ -387,13 +389,13 @@ class PlayerCore: NSObject {
       // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
       info.currentFolder = nil
 
-      // Send load file command
+      // Reset state flags
       info.fileLoading = true
       info.fileLoaded = false
       info.justOpenedFile = true
-      // Reset state flags
       isStopping = false
 
+      // Send load file command
       mpv.command(.loadfile, args: [path])
 
       if !info.isRestoring {  // restore state has higher precedence
@@ -690,7 +692,6 @@ class PlayerCore: NSObject {
   func seek(absoluteSecond: Double) {
     mpv.queue.async { [self] in
       Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
-      // FIXME: report error but exit window only (not app)
       mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
     }
   }
@@ -750,7 +751,7 @@ class PlayerCore: NSObject {
       osdView.setImage(image,
                        size: image.size.shrink(toSize: relativeSize),
                        fileURL: saveToFile ? lastScreenshotURL : nil)
-      self.sendOSD(.screenshot, forcedTimeout: 5, accessoryView: osdView.view, context: osdView)
+      self.sendOSD(.screenshot, forcedTimeout: 5, accessoryView: osdView.view)
       if !saveToFile {
         try? FileManager.default.removeItem(at: lastScreenshotURL)
       }
@@ -1891,67 +1892,69 @@ class PlayerCore: NSObject {
   // MARK: - Listeners
 
   func fileStarted(path: String) {
-    DispatchQueue.main.async { [self] in
-      guard !isStopping, !isShuttingDown else { return }
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+    guard !isStopping, !isShuttingDown else { return }
 
-      log.debug("File started")
-      info.justOpenedFile = true
-      info.disableOSDForFileLoading = true
-      info.videoParams = nil
+    log.debug("File started")
+    info.justOpenedFile = true
+    info.videoParams = nil
 
-      info.currentURL = path.contains("://") ?
-      URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
-      URL(fileURLWithPath: path)
+    info.currentURL = path.contains("://") ?
+    URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
+    URL(fileURLWithPath: path)
 
-      // set "date last opened" attribute
-      if let url = info.currentURL, url.isFileURL {
-        // the required data is a timespec struct
-        var ts = timespec()
-        let time = Date().timeIntervalSince1970
-        ts.tv_sec = Int(time)
-        ts.tv_nsec = Int(time.truncatingRemainder(dividingBy: 1) * 1_000_000_000)
-        let data = Data(bytesOf: ts)
-        // set the attribute; the key is undocumented
-        let name = "com.apple.lastuseddate#PS"
-        url.withUnsafeFileSystemRepresentation { fileSystemPath in
-          let _ = data.withUnsafeBytes {
-            setxattr(fileSystemPath, name, $0.baseAddress, data.count, 0, 0)
-          }
+    // set "date last opened" attribute
+    if let url = info.currentURL, url.isFileURL {
+      // the required data is a timespec struct
+      var ts = timespec()
+      let time = Date().timeIntervalSince1970
+      ts.tv_sec = Int(time)
+      ts.tv_nsec = Int(time.truncatingRemainder(dividingBy: 1) * 1_000_000_000)
+      let data = Data(bytesOf: ts)
+      // set the attribute; the key is undocumented
+      let name = "com.apple.lastuseddate#PS"
+      url.withUnsafeFileSystemRepresentation { fileSystemPath in
+        let _ = data.withUnsafeBytes {
+          setxattr(fileSystemPath, name, $0.baseAddress, data.count, 0, 0)
         }
       }
-
-      if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-        DispatchQueue.main.async {
-          NowPlayingInfoManager.updateInfo(state: .playing, withTitle: true)
-        }
-      }
-
-      // Auto load
-      $backgroundQueueTicket.withLock { $0 += 1 }
-      let shouldAutoLoadFiles = info.shouldAutoLoadFiles
-      let currentTicket = backgroundQueueTicket
-      PlayerCore.backgroundQueue.async { [self] in
-        // add files in same folder
-        if shouldAutoLoadFiles {
-          Logger.log("Started auto load", subsystem: self.subsystem)
-          self.autoLoadFilesInCurrentFolder(ticket: currentTicket)
-        }
-        // auto load matched subtitles
-        if let matchedSubs = self.info.getMatchedSubs(path) {
-          Logger.log("Found \(matchedSubs.count) subs for current file", subsystem: self.subsystem)
-          for sub in matchedSubs {
-            guard currentTicket == self.backgroundQueueTicket else { return }
-            self.loadExternalSubFile(sub)
-          }
-          // set sub to the first one
-          guard currentTicket == self.backgroundQueueTicket, self.mpv.mpv != nil else { return }
-          self.setTrack(1, forType: .sub)
-        }
-        self.autoSearchOnlineSub()
-      }
-      
-      events.emit(.fileStarted)
     }
+
+    if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
+      DispatchQueue.main.async {
+        NowPlayingInfoManager.updateInfo(state: .playing, withTitle: true)
+      }
+    }
+
+    // Auto load
+    $backgroundQueueTicket.withLock { $0 += 1 }
+    let shouldAutoLoadFiles = info.shouldAutoLoadFiles
+    let currentTicket = backgroundQueueTicket
+    PlayerCore.backgroundQueue.async { [self] in
+      // add files in same folder
+      if shouldAutoLoadFiles {
+        Logger.log("Started auto load", subsystem: self.subsystem)
+        self.autoLoadFilesInCurrentFolder(ticket: currentTicket)
+      }
+      // auto load matched subtitles
+      if let matchedSubs = self.info.getMatchedSubs(path) {
+        Logger.log("Found \(matchedSubs.count) subs for current file", subsystem: self.subsystem)
+        for sub in matchedSubs {
+          guard currentTicket == self.backgroundQueueTicket else { return }
+          self.loadExternalSubFile(sub)
+        }
+        // set sub to the first one
+        guard currentTicket == self.backgroundQueueTicket, self.mpv.mpv != nil else { return }
+        self.setTrack(1, forType: .sub)
+      }
+      self.autoSearchOnlineSub()
+    }
+
+    let url = info.currentURL
+    let message = info.isNetworkResource ? url?.absoluteString : url?.lastPathComponent
+    sendOSD(.fileStart(message ?? "-"))
+
+    events.emit(.fileStarted)
   }
 
   /// Called via mpv hook `on_load`, right before file is loaded.
@@ -2134,8 +2137,6 @@ class PlayerCore: NSObject {
       NowPlayingInfoManager.updateInfo()
     }
 
-    Timer.scheduledTimer(timeInterval: TimeInterval(0.2), target: self, selector: #selector(self.reEnableOSDAfterFileLoading), userInfo: nil, repeats: false)
-
     saveState()
   }
 
@@ -2269,11 +2270,6 @@ class PlayerCore: NSObject {
     }
   }
 
-  @objc
-  private func reEnableOSDAfterFileLoading() {
-    info.disableOSDForFileLoading = false
-  }
-
   private func autoSearchOnlineSub() {
     if Preference.bool(for: .autoSearchOnlineSub) &&
       !info.isNetworkResource && info.subTracks.isEmpty &&
@@ -2281,6 +2277,7 @@ class PlayerCore: NSObject {
       windowController.menuFindOnlineSub(.dummy)
     }
   }
+
   /**
    Add files in the same folder to playlist.
    It basically follows the following steps:
@@ -2562,7 +2559,7 @@ class PlayerCore: NSObject {
     saveState()
   }
 
-  func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
+  func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, external: Bool = false) {
     /// Note: use `windowController.loaded` (querying `windowController.isWindowLoaded` will initialize windowController unexpectedly)
     guard windowController.loaded,
           Preference.bool(for: .enableOSD),
@@ -2570,12 +2567,10 @@ class PlayerCore: NSObject {
     guard !info.isRestoring else { return }
     guard !isInMiniPlayer || Preference.bool(for: .enableOSDInMusicMode) else { return }
 
-    // Many redundant messages are sent from mpv. Try to filter them out here
-    let timeSinceLastMsg = Date().timeIntervalSince1970 - osdLastMessageDisplayTime
-
     switch osd {
     case .seek(_, _):
-      if timeSinceLastMsg < 0.25 {
+      // Many redundant messages are sent from mpv. Try to filter them out here
+      if osdTimeSinceLastMessage < 0.25 {
         if case .frameStep = osdLastMessage { return }
         if case .frameStepBack = osdLastMessage { return }
       }
@@ -2588,22 +2583,22 @@ class PlayerCore: NSObject {
       // Just round to nearest 1/1000000 sec for comparison.
       let newPosRounded = round(position * AppData.osdSeekSubSecPrecisionComparison)
       let newDurRounded = round(duration * AppData.osdSeekSubSecPrecisionComparison)
-      let oldPosRounded = round((osdLastPosition ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
-      let oldDurRounded = round((osdLastDuration ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+      let oldPosRounded = round((osdLastPlaybackPosition ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+      let oldDurRounded = round((osdLastPlaybackDuration ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
       guard newPosRounded != oldPosRounded || newDurRounded != oldDurRounded else {
         log.verbose("Ignoring request to show OSD seek; position/duration has not changed")
         return
       }
-      osdLastPosition = position
-      osdLastDuration = duration
+      osdLastPlaybackPosition = position
+      osdLastPlaybackDuration = duration
     case .pause, .resume:
-      if timeSinceLastMsg < 0.25 {
+      if osdTimeSinceLastMessage < 0.25 {
         if case .frameStep = osdLastMessage { return }
         if case .frameStepBack = osdLastMessage { return }
       }
       syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
-      osdLastPosition = info.videoPosition?.second
-      osdLastDuration = info.videoDuration?.second
+      osdLastPlaybackPosition = info.videoPosition?.second
+      osdLastPlaybackDuration = info.videoDuration?.second
     case .crop(let newCropLabel):
       if newCropLabel == AppData.cropNone && !isInInteractiveMode && info.videoFiltersDisabled[Constants.FilterLabel.crop] != nil {
         log.verbose("Ignoring request to show OSD crop 'None': looks like user starting to edit an existing crop")
@@ -2614,15 +2609,15 @@ class PlayerCore: NSObject {
       break
     }
 
-    if info.disableOSDForFileLoading && !external {
+    var disableOSDForFileLoading: Bool = info.justOpenedFile || info.timeSinceLastFileOpenFinished < 0.2
+    if disableOSDForFileLoading && !external {
       guard case .fileStart = osd else {
         return
       }
     }
 
     DispatchQueue.main.async { [self] in
-      log.verbose("Showing OSD: \(osd)")
-      windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView, context: context)
+      windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
     }
   }
 

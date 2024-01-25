@@ -836,8 +836,8 @@ not applying FFmpeg 9599 workaround
   /// Makes calls to mpv to get the latest video params, then returns them.
   func queryForVideoParams() -> MPVVideoParams? {
     // If loading file, video reconfig can return 0 width and height
-    guard !player.info.fileLoading else {
-      player.log.verbose("Cannot get videoParams: fileLoading")
+    guard !player.info.fileLoaded else {
+      player.log.verbose("Cannot get videoParams: file not loaded")
       return nil
     }
     // Will crash if querying mpv after stop command started
@@ -992,6 +992,7 @@ not applying FFmpeg 9599 workaround
       guard let dataPtr = UnsafeMutablePointer<mpv_event_start_file>(OpaquePointer(event.pointee.data)) else { return }
       let playlistEntryID = Int(dataPtr.pointee.playlist_entry_id)
       player.log.verbose("FileStarted entryID: \(playlistEntryID)")
+
       player.info.isIdle = false
       guard let path = getString(MPVProperty.path) else {
         player.log.warn("File started, but no path!")

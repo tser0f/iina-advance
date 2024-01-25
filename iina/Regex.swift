@@ -17,7 +17,7 @@ class Regex {
 
   /// From mpv: `Valid format: [W[%][xH[%]]][{+-}X[%]{+-}Y[%]] | [X[%]:Y[%]]`
   /// Note: `[X[%]:Y[%]]` format is not supported here
-  static let geometry = Regex("^(?:(?:(\\d+)(%)?)?(?:x(?:(\\d+)(%)?))?)?(?:(\\+|\\-)(?:((?:\\+|\\-)?\\d+)(%?))?(\\+|\\-)(?:((?:\\+|\\-)?\\d+)(%?))?)?$")
+  static let geometry = Regex(#"^(?:(?:(\d+)(%)?)?(?:x(?:(\d+)(%)?))?)?(?:(\+|\-)(?:((?:\+|\-)?\d+)(%?))?(\+|\-)(?:((?:\+|\-)?\d+)(%?))?)?$"#)
 
   var regex: NSRegularExpression?
 

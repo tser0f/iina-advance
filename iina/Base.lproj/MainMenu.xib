@@ -142,7 +142,7 @@
                                     <action selector="performClose:" target="-1" id="HmO-Ls-i7Q"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Other Actions From Key Bindings" hidden="YES" id="w2L-0L-eUk">
+                            <menuItem title="Other Actions From Key Bindings" hidden="YES" allowsKeyEquivalentWhenHidden="YES" id="w2L-0L-eUk">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Other Actions From Key Bindings" id="Yf9-Ns-n9l"/>
                             </menuItem>

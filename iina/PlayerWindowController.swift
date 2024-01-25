@@ -219,11 +219,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // - OSD
 
-  /// Whether current osd needs user interaction to be dismissed.
+  /// Whether current OSD needs user interaction to be dismissed.
   private var isShowingPersistentOSD = false
   /// If using the mpv OSD, disable the IINA OSD
   var isUsingMpvOSD: Bool = false
-  var osdContext: Any?
   var osdAnimationState: UIAnimationState = .hidden
   var hideOSDTimer: Timer?
 
@@ -2730,7 +2729,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
-    // OSD
+    // OSD, if shown
     if osdAnimationState == .shown, let osdLastMessage = player.osdLastMessage {
       let message: OSDMessage?
       switch osdLastMessage {
@@ -2868,15 +2867,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             icon = NSImage(systemSymbolName: "speaker.wave.3.fill", accessibilityDescription: "Sound is enabled")!
           }
         }
-
-      } else if case .resume = message {
-        icon = NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play")!
-      } else if case .pause = message {
-        icon = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "Pause")!
-      } else if case .stop = message {
-        icon = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: "Stop")!
+      } else {
+        switch message {
+        case .resume:
+          icon = NSImage(systemSymbolName: "play.fill", accessibilityDescription: "Play")!
+        case .pause:
+          icon = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "Pause")!
+        case .stop:
+          icon = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: "Stop")!
+//        case .seekRelative(let step):
+        default:
+          break
+        }
+        // TODO: goforward.5, forward.frame.fill, etc
       }
-      // TODO: goforward.5, forward.frame.fill, etc
     }
 
     if let icon {
@@ -2918,7 +2922,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
-  func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
+  func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard !isShowingPersistentOSD else { return }
 
@@ -2932,6 +2936,22 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else {
       osdAnimationState = .shown
     }
+
+    if autoHide {
+      let timeout: Double
+      if let forcedTimeout = forcedTimeout {
+        timeout = forcedTimeout
+        log.verbose("Showing OSD '\(message)', forced timeout: \(timeout) s")
+      } else {
+        // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
+        timeout = max(IINAAnimation.OSDAnimationDuration, Double(Preference.float(for: .osdAutoHideTimeout)))
+        log.verbose("Showing OSD '\(message)', timeout: \(timeout) s")
+      }
+      hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
+    } else {
+      log.verbose("Showing OSD '\(message)', no timeout")
+    }
+
     // Reduce text size if horizontal space is tight
     var osdTextSize = max(8.0, CGFloat(Preference.float(for: .osdTextSize)))
     let availableSpaceForOSD = currentLayout.spec.getWidthBetweenInsideSidebars(in: viewportView.frame.size.width)
@@ -2946,9 +2966,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.6).clamped(to: 11...25), weight: .regular)
     if #available(macOS 11.0, *) {
       switch osdTextSize {
-      case 50...:
+      case 42...:
+        // Looks like .large is the same as .regular, but maybe will change in the future...
         osdAccessoryProgress.controlSize = .large
-      case 32..<50:
+      case 28..<42:
         osdAccessoryProgress.controlSize = .regular
       default:
         osdAccessoryProgress.controlSize = .small
@@ -2961,26 +2982,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     osdVisualEffectView.isHidden = false
     fadeableViews.remove(osdVisualEffectView)
 
-    if autoHide {
-      let timeout: Double
-      if let forcedTimeout = forcedTimeout {
-        timeout = forcedTimeout
-      } else {
-        // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
-        let configuredTimeout = Double(Preference.float(for: .osdAutoHideTimeout))
-        timeout = configuredTimeout <= IINAAnimation.OSDAnimationDuration ? IINAAnimation.OSDAnimationDuration : configuredTimeout
-      }
-      hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
-    }
-
     for subview in osdStackView.views(in: .bottom) {
       osdStackView.removeView(subview)
     }
     if let accessoryView = accessoryView {
       isShowingPersistentOSD = true
-      if context != nil {
-        osdContext = context
-      }
 
       if #available(macOS 10.14, *) {} else {
         accessoryView.appearance = NSAppearance(named: .vibrantDark)
@@ -3009,7 +3015,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     osdAnimationState = .willHide
     isShowingPersistentOSD = false
-    osdContext = nil
     if let hideOSDTimer = self.hideOSDTimer {
       hideOSDTimer.invalidate()
       self.hideOSDTimer = nil
@@ -3729,7 +3734,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /** When slider changes */
   @IBAction func playSliderDidChange(_ sender: NSSlider) {
-    guard !player.info.fileLoading else { return }
+    guard player.info.fileLoaded else { return }
 
     let percentage = 100 * sender.doubleValue / sender.maxValue
     player.seek(percent: percentage, forceExact: !followGlobalSeekTypeWhenAdjustSlider)

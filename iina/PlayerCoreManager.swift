@@ -86,6 +86,18 @@ class PlayerCoreManager {
     return core!
   }
 
+  private func _findIdlePlayerCore() -> PlayerCore? {
+    return playerCores.first { $0.info.isIdle && !$0.info.fileLoading }
+  }
+
+  func findIdlePlayerCore() -> PlayerCore? {
+    var idleCore: PlayerCore?
+    lock.withLock {
+      idleCore = _findIdlePlayerCore()
+    }
+    return idleCore
+  }
+
   func getNonIdle() -> [PlayerCore] {
     var cores: [PlayerCore]? = nil
     lock.withLock {
@@ -94,9 +106,9 @@ class PlayerCoreManager {
     return cores!
   }
 
-  func _getIdleOrCreateNew() -> PlayerCore {
+  private func _getIdleOrCreateNew() -> PlayerCore {
     var core: PlayerCore
-    if let idleCore = playerCores.first(where: { $0.info.isIdle && !$0.info.fileLoading }) {
+    if let idleCore = _findIdlePlayerCore() {
       core = idleCore
     } else {
       core = _createNewPlayerCore()
@@ -160,14 +172,6 @@ class PlayerCoreManager {
     }
     pc!.start(restore: restore)
     return pc!
-  }
-
-  func findIdlePlayerCore() -> PlayerCore? {
-    var idleCore: PlayerCore?
-    lock.withLock {
-      idleCore = playerCores.first { $0.info.isIdle && !$0.info.fileLoading }
-    }
-    return idleCore
   }
 
   func removePlayer(withLabel label: String) {
