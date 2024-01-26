@@ -713,6 +713,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   @IBOutlet weak var osdVisualEffectView: NSVisualEffectView!
   @IBOutlet weak var osdStackView: NSStackView!
+  @IBOutlet weak var osdIcon: NSTextField!
   @IBOutlet weak var osdLabel: NSTextField!
   @IBOutlet weak var osdAccessoryText: NSTextField!
   @IBOutlet weak var osdAccessoryProgress: NSProgressIndicator!
@@ -2894,11 +2895,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if isImageDisabled {
         iconString.addAttributes([.foregroundColor: NSColor.disabledControlTextColor], range: NSMakeRange(0, iconString.length))
       }
-      let textString = NSAttributedString(string: " \(osdText)")
-      iconString.append(textString)
-      osdLabel.attributedStringValue = iconString
+      osdIcon.attributedStringValue = iconString
+      osdLabel.stringValue = osdText
     } else {
       // No icon
+      osdIcon.stringValue = ""
       osdLabel.stringValue = osdText
     }
 
@@ -2967,7 +2968,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       osdTextSize = min(osdTextSize, 36)
     }
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
-    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.6).clamped(to: 11...25), weight: .regular)
+    osdIcon.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize * 1.6, weight: .regular)
+    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.75).clamped(to: 11...25), weight: .regular)
     if #available(macOS 11.0, *) {
       switch osdTextSize {
       case 42...:

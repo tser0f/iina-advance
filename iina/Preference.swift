@@ -1067,7 +1067,7 @@ struct Preference {
     .enableOSDInMusicMode: true,
     .osdPosition: OSDPosition.topLeading.rawValue,
     .osdAutoHideTimeout: Float(1),
-    .osdTextSize: Float(42),
+    .osdTextSize: Float(28),
     .softVolume: 100,
     .arrowButtonAction: ArrowButtonAction.speed.rawValue,
     .lockViewportToVideoSize: true,
