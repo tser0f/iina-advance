@@ -31,8 +31,8 @@ enum OSDMessage {
 
   case fileStart(String)
 
-  case pause
-  case resume
+  case pause(videoPosition: VideoTime?, videoDuration: VideoTime?)
+  case resume(videoPosition: VideoTime?, videoDuration: VideoTime?)
   case seekRelative(step: String)
   case seek(videoPosition: VideoTime?, videoDuration: VideoTime?)
   case frameStep
@@ -106,11 +106,14 @@ enum OSDMessage {
     case .fileStart(let filename):
       return (filename, .normal)
 
-    case .pause:
-      return (NSLocalizedString("osd.pause", comment: "Pause"), .withText("{{position}} / {{duration}}"))
-
-    case .resume:
-      return (NSLocalizedString("osd.resume", comment: "Resume"), .withText("{{position}} / {{duration}}"))
+    case .pause(let videoPosition, let videoDuration),
+        .resume(let videoPosition, let videoDuration),
+        .seek(let videoPosition, let videoDuration):
+      let posStr = videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder
+      let durStr = videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder
+      let text = "\(posStr)/\(durStr)"
+      let percentage = (videoPosition / videoDuration) ?? 1
+      return (text, .withProgress(percentage))
 
     case .frameStep:
       return (NSLocalizedString("osd.frame_step", comment: "Next Frame"), .normal)
@@ -120,13 +123,6 @@ enum OSDMessage {
 
     case .seekRelative(let step):
       return (step, .normal)
-
-    case .seek(let videoPosition, let videoDuration):
-      let posStr = videoPosition?.stringRepresentation ?? Constants.String.videoTimePlaceholder
-      let durStr = videoDuration?.stringRepresentation ?? Constants.String.videoTimePlaceholder
-      let text = "\(posStr)/\(durStr)"
-      let percentage = (videoPosition / videoDuration) ?? 1
-      return (text, .withProgress(percentage))
 
     case .volume(let value):
       return (

@@ -1079,7 +1079,7 @@ struct Preference {
     .fullScreenWhenOpen: false,
     .useLegacyFullScreen: true,
     .showChapterPos: false,
-    .resumeLastPosition: true,
+    .resumeLastPosition: false,
     .useMediaKeys: true,
     .useAppleRemote: false,
     .alwaysFloatOnTop: false,

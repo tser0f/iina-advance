@@ -836,7 +836,7 @@ not applying FFmpeg 9599 workaround
   /// Makes calls to mpv to get the latest video params, then returns them.
   func queryForVideoParams() -> MPVVideoParams? {
     // If loading file, video reconfig can return 0 width and height
-    guard !player.info.fileLoaded else {
+    guard player.info.fileLoaded else {
       player.log.verbose("Cannot get videoParams: file not loaded")
       return nil
     }
@@ -1200,10 +1200,13 @@ not applying FFmpeg 9599 workaround
       player.log.verbose("Received mpv prop: 'pause' = \(paused)")
       if player.info.isPaused != paused {
         player.info.isPaused = paused
-        player.sendOSD(paused ? .pause : .resume)
-        player.syncUI(.playButton)
+
         DispatchQueue.main.async { [self] in
-          player.refreshSyncUITimer()
+          player.refreshSyncUITimer() // needed to get latest playback position
+          let osdMsg: OSDMessage = paused ? .pause(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration) :
+            .resume(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration)
+          player.sendOSD(osdMsg)
+          player.syncUI(.playButton)
           player.saveState()  // record the pause state
           if paused {
             player.videoView.displayIdle()

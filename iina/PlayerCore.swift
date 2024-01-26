@@ -386,6 +386,7 @@ class PlayerCore: NSObject {
     windowController.openWindow()
 
     mpv.queue.async { [self] in
+      log.debug("OpenPlayerWindow: setting fileLoaded=false")
       // clear currentFolder since playlist is cleared, so need to auto-load again in playerCore#fileStarted
       info.currentFolder = nil
 

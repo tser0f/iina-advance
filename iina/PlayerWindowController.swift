@@ -2735,8 +2735,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if osdAnimationState == .shown, let osdLastMessage = player.osdLastMessage {
       let message: OSDMessage?
       switch osdLastMessage {
-      case .pause, .resume:
-        message = osdLastMessage
+      case .pause:
+        message = .pause(videoPosition: pos, videoDuration: duration)
+      case .resume:
+        message = .resume(videoPosition: pos, videoDuration: duration)
       case .seek(_, _):
         message = .seek(videoPosition: pos, videoDuration: duration)
       default:
