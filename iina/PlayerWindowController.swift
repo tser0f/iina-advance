@@ -624,6 +624,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTopToTopBarConstraint: NSLayoutConstraint!
   @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdTopMarginConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdTrailingMarginConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdLeadingMarginConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdBottomMarginConstraint: NSLayoutConstraint!
 
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
@@ -2960,12 +2964,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Reduce text size if horizontal space is tight
     var osdTextSize = max(8.0, CGFloat(Preference.float(for: .osdTextSize)))
     let availableSpaceForOSD = currentLayout.spec.getWidthBetweenInsideSidebars(in: viewportView.frame.size.width)
-    if availableSpaceForOSD < 240 {
+    switch availableSpaceForOSD {
+    case ..<300:
       osdTextSize = min(osdTextSize, 18)
-    } else if availableSpaceForOSD < 360 {
+    case 300..<400:
       osdTextSize = min(osdTextSize, 28)
-    } else if availableSpaceForOSD < 500 {
+    case 400..<500:
       osdTextSize = min(osdTextSize, 36)
+    case 500..<700:
+      osdTextSize = min(osdTextSize, 50)
+    case 700..<900:
+      osdTextSize = min(osdTextSize, 72)
+    case 900..<1200:
+      osdTextSize = min(osdTextSize, 96)
+    case 1200..<1500:
+      osdTextSize = min(osdTextSize, 120)
+    default:
+      osdTextSize = min(osdTextSize, 150)
     }
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
     osdIcon.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize * 1.6, weight: .regular)
@@ -2981,6 +2996,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         osdAccessoryProgress.controlSize = .small
       }
     }
+    osdTopMarginConstraint.constant = osdTextSize * 0.5
+    osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.4)
+    osdBottomMarginConstraint.constant = osdTextSize * 0.5
+    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.25)
 
     if #available(macOS 11.0, *) {
       /// The pseudo-OSDMessage `seekRelative`, if present, contains the step time for a relative seek.
@@ -2989,7 +3008,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       /// the most appropriate "jump" icon in the OSD in addition to the time display & progress bar.
       if case .seekRelative(let stepString) = message, let step = Double(stepString) {
         var name = step < 0 ? "gobackward" : "goforward"
-        let accDescription = "Relative Seek\(step < 0 ? "Backward" : "Forward")"
+        let accDescription = "Relative Seek \(step < 0 ? "Backward" : "Forward")"
         switch abs(step) {
         case 5:
           name += ".5"

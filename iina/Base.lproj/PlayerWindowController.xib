@@ -57,11 +57,15 @@
                 <outlet property="oscTopMainView" destination="fDY-vk-Ylv" id="phs-Yu-dGn"/>
                 <outlet property="osdAccessoryProgress" destination="i10-rt-9cb" id="ZdR-ZV-uoQ"/>
                 <outlet property="osdAccessoryText" destination="lb1-5R-hR3" id="A7o-3l-NYe"/>
+                <outlet property="osdBottomMarginConstraint" destination="bAv-eX-FCj" id="s8C-CF-ZNF"/>
                 <outlet property="osdIcon" destination="yWY-Rb-zjW" id="SrP-lu-kr3"/>
                 <outlet property="osdLabel" destination="Ofw-1d-N4T" id="9ei-8o-aYw"/>
+                <outlet property="osdLeadingMarginConstraint" destination="F2r-Um-cea" id="zge-q9-BQb"/>
                 <outlet property="osdLeadingToMiniPlayerButtonsTrailingConstraint" destination="eTB-OD-mwZ" id="HuF-hG-NZ6"/>
                 <outlet property="osdStackView" destination="g0j-zS-jKv" id="aoo-Tm-yhj"/>
+                <outlet property="osdTopMarginConstraint" destination="9HC-B3-MnJ" id="AHR-BS-Hf5"/>
                 <outlet property="osdTopToTopBarConstraint" destination="hAe-Tn-76i" id="0hg-Nr-7O7"/>
+                <outlet property="osdTrailingMarginConstraint" destination="20A-Y9-xnl" id="oM9-TJ-0KE"/>
                 <outlet property="osdVisualEffectView" destination="g0O-v5-RQj" id="V4X-8K-6O1"/>
                 <outlet property="pipOverlayView" destination="Nrz-jZ-Luf" id="EU7-oY-Bwp"/>
                 <outlet property="playButton" destination="gxw-pJ-Lcg" id="t9H-xd-uqj"/>
@@ -415,7 +419,7 @@
                             <stackView distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="251" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="irz-R1-ajt" userLabel="OSD Horizontal Stack View">
                                 <rect key="frame" x="12" y="8" width="214" height="50"/>
                                 <subviews>
-                                    <textField identifier="OSD-Label" wantsLayer="YES" focusRingType="none" verticalHuggingPriority="249" horizontalCompressionResistancePriority="499" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yWY-Rb-zjW" userLabel="OSDIcon Label">
+                                    <textField identifier="OSD-Label" wantsLayer="YES" focusRingType="none" verticalHuggingPriority="249" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yWY-Rb-zjW" userLabel="OSDIcon Label">
                                         <rect key="frame" x="-2" y="0.0" width="49" height="50"/>
                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" alignment="left" title="▶️" usesSingleLineMode="YES" id="ocv-cu-Z7j">
                                             <font key="font" metaFont="system" size="40"/>
@@ -469,11 +473,11 @@
                             </stackView>
                         </subviews>
                         <constraints>
-                            <constraint firstAttribute="trailing" secondItem="irz-R1-ajt" secondAttribute="trailing" constant="12" id="20A-Y9-xnl"/>
-                            <constraint firstItem="g0j-zS-jKv" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" constant="8" id="9HC-B3-MnJ"/>
-                            <constraint firstItem="irz-R1-ajt" firstAttribute="leading" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="12" id="F2r-Um-cea"/>
+                            <constraint firstAttribute="trailing" secondItem="irz-R1-ajt" secondAttribute="trailing" constant="12" identifier="osdTrailingMarginConstraint" id="20A-Y9-xnl"/>
+                            <constraint firstItem="g0j-zS-jKv" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" constant="8" identifier="osdTopMarginConstraint" id="9HC-B3-MnJ"/>
+                            <constraint firstItem="irz-R1-ajt" firstAttribute="leading" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="12" identifier="osdLeadingMarginConstraint" id="F2r-Um-cea"/>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" priority="900" constant="115" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>
-                            <constraint firstAttribute="bottom" secondItem="g0j-zS-jKv" secondAttribute="bottom" constant="8" id="bAv-eX-FCj"/>
+                            <constraint firstAttribute="bottom" secondItem="g0j-zS-jKv" secondAttribute="bottom" constant="8" identifier="osdBottomMarginConstraint" id="bAv-eX-FCj"/>
                         </constraints>
                     </visualEffectView>
                     <visualEffectView identifier="TopBarView" blendingMode="withinWindow" material="titlebar" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="TRx-2V-Gr3" userLabel="TopBar View">

@@ -1064,7 +1064,7 @@ struct Preference {
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
     .enableOSD: true,
-    .enableOSDInMusicMode: true,
+    .enableOSDInMusicMode: false,
     .osdPosition: OSDPosition.topLeading.rawValue,
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(28),

@@ -690,7 +690,13 @@ class PlayerCore: NSObject {
     }
   }
 
+  var isSeekQueued = false
   func seek(absoluteSecond: Double) {
+    if isSeekQueued {
+      isSeekQueued = false
+      return
+    }
+    isSeekQueued = true
     mpv.queue.async { [self] in
       Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
       mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
@@ -2618,6 +2624,7 @@ class PlayerCore: NSObject {
     }
 
     DispatchQueue.main.async { [self] in
+      isSeekQueued = false
       windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
     }
   }
