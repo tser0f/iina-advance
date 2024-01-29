@@ -12,7 +12,7 @@ import Foundation
 extension PlayerWindowController {
 
   /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
-  func mpvVideoDidReconfig(_ videoParams: MPVVideoParams) {
+  func mpvVideoDidReconfig(_ videoParams: MPVVideoParams, justOpenedFile: Bool) {
     if !videoParams.hasValidSize && (player.isMiniPlayerWaitingToShowVideo ||
                                      (!musicModeGeometry.isVideoVisible && !player.info.isVideoTrackSelected)) {
       log.verbose("[MPVVideoReconfig] Ignoring reconfig because music mode is enabled and video is off")
@@ -117,10 +117,10 @@ extension PlayerWindowController {
         return
       }
 
-      let newWindowGeo = resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: videoDisplayRotatedSize)
+      let newWindowGeo = resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: videoDisplayRotatedSize, justOpenedFile: justOpenedFile)
 
       var duration = IINAAnimation.VideoReconfigDuration
-      if justOpenedFileManually {
+      if !isInitialSizeDone {
         // Just opened manually. Use a longer duration for this one, because the window starts small and will zoom into place.
         isInitialSizeDone = true
         duration = IINAAnimation.DefaultDuration
@@ -147,8 +147,8 @@ extension PlayerWindowController {
     log.debug("[MPVVideoReconfig Done]")
   }
 
-  func shouldResizeWindowAfterVideoReconfig() -> Bool {
-    guard player.info.justOpenedFile else {
+  func shouldResizeWindowAfterVideoReconfig(justOpenedFile: Bool) -> Bool {
+    guard justOpenedFile else {
       // video size changed during playback
       log.verbose("[MPVVideoReconfig C] justOpenedFile=NO → returning NO for shouldResize")
       return false
@@ -161,20 +161,21 @@ extension PlayerWindowController {
       log.verbose("[MPVVideoReconfig C] justOpenedFile & resizeTiming='Always' → returning YES for shouldResize")
       return true
     case .onlyWhenOpen:
-      log.verbose("[MPVVideoReconfig C] justOpenedFile & resizeTiming='OnlyWhenOpen' → returning justOpenedFile (\(player.info.justOpenedFile.yesno)) for shouldResize")
-      return player.info.justOpenedFile
+      log.verbose("[MPVVideoReconfig C] justOpenedFile & resizeTiming='OnlyWhenOpen' → returning justOpenedFile (\(justOpenedFile.yesno)) for shouldResize")
+      return justOpenedFile
     case .never:
       log.verbose("[MPVVideoReconfig C] justOpenedFile & resizeTiming='Never' → returning NO for shouldResize")
       return false
     }
   }
 
-  private func resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: NSSize) -> PWindowGeometry {
+  private func resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: NSSize, justOpenedFile: Bool) -> PWindowGeometry {
     let windowGeo = windowedModeGeometry.clone(videoAspect: videoDisplayRotatedSize.mpvAspect)
 
-    guard shouldResizeWindowAfterVideoReconfig() else {
+    guard shouldResizeWindowAfterVideoReconfig(justOpenedFile: justOpenedFile) else {
+      let justOpenedFileManually = justOpenedFile && !isInitialSizeDone
       if justOpenedFileManually {
-        log.verbose("[MPVVideoReconfig D-1] Just opened file with no resize strategy. Using windowedModeGeometryLastClosed: \(PlayerWindowController.windowedModeGeometryLastClosed)")
+        log.verbose("[MPVVideoReconfig D-1] Just opened file manually with no resize strategy. Using windowedModeGeometryLastClosed: \(PlayerWindowController.windowedModeGeometryLastClosed)")
         return currentLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed,
                                                          videoAspect: videoDisplayRotatedSize.mpvAspect)
       }

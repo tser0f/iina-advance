@@ -970,11 +970,13 @@ class PlayerCore: NSObject {
 
       sendOSD(.aspect(aspectDisplay))
     }
+    // Get this in the mpv thread to avoid race condition
+    let justOpenedFile = info.justOpenedFile
 
     DispatchQueue.main.async { [self] in
       if videoParams.hasValidSize {
         // Make sure window geometry is up to date
-        windowController.mpvVideoDidReconfig(videoParams)
+        windowController.mpvVideoDidReconfig(videoParams, justOpenedFile: justOpenedFile)
       }
 
       // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
@@ -2201,11 +2203,13 @@ class PlayerCore: NSObject {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard let videoParams = mpv.queryForVideoParams() else { return }
 
-    log.verbose("Got mpv `video-reconfig`; \(videoParams)")
+    // Get this in the mpv thread to avoid race condition
+    let justOpenedFile = info.justOpenedFile
+    log.verbose("Got mpv `video-reconfig`; \(videoParams), justOpenedFile: \(justOpenedFile)")
 
     // Always send this to window controller. It should be smart enough to resize only when needed:
     DispatchQueue.main.async { [self] in
-      windowController.mpvVideoDidReconfig(videoParams)
+      windowController.mpvVideoDidReconfig(videoParams, justOpenedFile: justOpenedFile)
 
       if videoParams.totalRotation != info.currentMediaThumbnails?.rotationDegrees {
         reloadThumbnails()

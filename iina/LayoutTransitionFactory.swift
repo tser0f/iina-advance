@@ -26,6 +26,8 @@ extension PlayerWindowController {
     if let priorState = player.info.priorState, let priorLayoutSpec = priorState.layoutSpec {
       log.verbose("Transitioning to initial layout from prior window state")
       isRestoringFromPrevLaunch = true
+      // Don't need this because we already know how to size the window
+      isInitialSizeDone = true
 
       // Restore saved geometries
       if let priorWindowedModeGeometry = priorState.windowedModeGeometry {
@@ -84,7 +86,7 @@ extension PlayerWindowController {
       assert(!isInitialSizeDone)
       let initialLayout = LayoutState.buildFrom(initialLayoutSpec)
 
-      if shouldResizeWindowAfterVideoReconfig() {
+      if shouldResizeWindowAfterVideoReconfig(justOpenedFile: true) {
         /// Use `minVideoSize` at first when a new window is opened, so that when `resizeWindowAfterVideoReconfig()` is called shortly after,
         /// it expands and creates a nice zooming effect.
         let videoSize = AppData.minVideoSize
