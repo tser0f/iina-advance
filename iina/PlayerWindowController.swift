@@ -3671,14 +3671,34 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  private func updateArrowButtonImages() {
+  func updateArrowButtonImages() {
+    let leftImage: NSImage
+    let rightImage: NSImage
     switch arrowBtnFunction {
     case .playlist:
-      leftArrowButton.image = #imageLiteral(resourceName: "nextl")
-      rightArrowButton.image = #imageLiteral(resourceName: "nextr")
-    case .speed, .seek:
-      leftArrowButton.image = #imageLiteral(resourceName: "speedl")
-      rightArrowButton.image = #imageLiteral(resourceName: "speed")
+      leftImage = #imageLiteral(resourceName: "nextl")
+      rightImage = #imageLiteral(resourceName: "nextr")
+    case .speed:
+      leftImage = #imageLiteral(resourceName: "speedl")
+      rightImage = #imageLiteral(resourceName: "speed")
+    case .seek:
+      if #available(macOS 11.0, *) {
+        let leftIcon = NSImage(systemSymbolName: "gobackward.10", accessibilityDescription: "Step Backward 10s")!
+        leftImage = leftIcon
+        let rightIcon = NSImage(systemSymbolName: "goforward.10", accessibilityDescription: "Step Forward 10s")!
+        rightImage = rightIcon
+      } else {
+        leftImage = #imageLiteral(resourceName: "speedl")
+        rightImage = #imageLiteral(resourceName: "speed")
+      }
+    }
+    leftArrowButton.image = leftImage
+    rightArrowButton.image = rightImage
+
+    if isInMiniPlayer {
+      miniPlayer.loadIfNeeded()
+      miniPlayer.leftArrowButton.image = leftImage
+      miniPlayer.rightArrowButton.image = rightImage
     }
   }
 

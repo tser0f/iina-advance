@@ -10,12 +10,14 @@
             <connections>
                 <outlet property="artistAlbumLabel" destination="qHK-Ae-PRZ" id="3LX-ZY-yPR"/>
                 <outlet property="controllerButtonsPanelView" destination="Wxl-Ex-FWV" id="Qyk-3u-ay1"/>
+                <outlet property="leftArrowButton" destination="jfj-IC-e3B" id="OIx-w2-1uV"/>
                 <outlet property="mediaInfoView" destination="Cef-Fd-eDH" id="ngB-gq-f49"/>
                 <outlet property="musicModeControlBarView" destination="Q6R-eL-qkW" id="2OU-bR-LVG"/>
                 <outlet property="muteButton" destination="5Og-lg-qvH" id="9dA-7h-PGA"/>
                 <outlet property="playButton" destination="28c-iK-4mT" id="EHU-TG-NZt"/>
                 <outlet property="playlistWrapperView" destination="2bL-q1-qry" id="acd-8i-uDw"/>
                 <outlet property="positionSliderWrapperView" destination="e1r-vi-5HY" id="nU3-cx-gOS"/>
+                <outlet property="rightArrowButton" destination="nwm-1g-9Dl" id="Lv2-yW-pJ3"/>
                 <outlet property="titleLabel" destination="jAX-WD-i2a" id="ZF9-1k-67p"/>
                 <outlet property="titleLabelTopConstraint" destination="gHa-e1-bbE" id="Mem-0n-QB9"/>
                 <outlet property="toggleAlbumArtButton" destination="6q3-fy-whD" id="VLO-mW-ziy"/>

@@ -22,6 +22,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var volumeSlider: NSSlider!
   @IBOutlet weak var muteButton: NSButton!
   @IBOutlet weak var playButton: NSButton!
+  @IBOutlet weak var leftArrowButton: NSButton!
+  @IBOutlet weak var rightArrowButton: NSButton!
 
   @IBOutlet weak var positionSliderWrapperView: NSView!
 
@@ -118,6 +120,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
 
     volumePopover.delegate = self
+    
+    windowController.updateArrowButtonImages()
 
     log.verbose("MiniPlayer viewDidLoad done")
   }
