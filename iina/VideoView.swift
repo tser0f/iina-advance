@@ -363,6 +363,7 @@ class VideoView: NSView {
   ///         full screen mode.
   func displayIdle() {
     log.verbose("VideoView displayIdle")
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     displayIdleTimer?.invalidate()
     // The time of 6 seconds was picked to match up with the time QuickTime delays once playback is
     // paused before stopping audio. As mpv does not provide an event indicating a frame step has

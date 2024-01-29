@@ -1039,9 +1039,7 @@ not applying FFmpeg 9599 workaround
       }
       player.reloadSavedIINAfilters()
 
-      DispatchQueue.main.async { [self] in
-        player.playbackRestarted()
-      }
+      player.playbackRestarted()
 
     case MPV_EVENT_END_FILE:
       // if receive end-file when loading file, might be error

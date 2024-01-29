@@ -48,6 +48,8 @@ class PlayerWindow: NSWindow {
   }
 
   override func keyDown(with event: NSEvent) {
+    playerWinController?.syncUIComponents()
+    
     if menu?.performKeyEquivalent(with: event) == true {
       return
     }
@@ -79,6 +81,7 @@ class PlayerWindow: NSWindow {
         break
       }
     }
+    playerWinController?.syncUIComponents()
     return super.performKeyEquivalent(with: event)
   }
 

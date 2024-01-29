@@ -81,6 +81,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// For supporting legacy full screen with multiple players. Uses player label as key
   private static var playersInLegacyFullScreen = Set<String>()
 
+  private var osdQueueLock = Lock()
+  private var osdQueue = LinkedList<() -> Void>()
+
   /** The quick setting sidebar (video, audio, subtitles). */
   lazy var quickSettingView: QuickSettingViewController = {
     let quickSettingView = QuickSettingViewController()
@@ -2757,7 +2760,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     updatePlaySlider()
   }
 
-  func updatePlaySlider() {
+  private func updatePlaySlider() {
     guard let pos = player.info.videoPosition, let duration = player.info.videoDuration else {
       log.verbose("Cannot update play slider: video position or duration not available")
       return
@@ -2930,8 +2933,37 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  // Do not call displayOSD directly. Call PlayerCore.sendOSD instead.
+  // Runs all tasks in the OSD queue until it is depleted.
+  func processQueuedOSDs() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
+    osdQueueLock.withLock {
+      while !osdQueue.isEmpty {
+        osdQueue.removeFirst()?()
+      }
+    }
+  }
+
+  /// Do not call `displayOSD` directly. Call `PlayerCore.sendOSD` instead.
+  ///
+  /// There is a timing issue that can occur when the user holds down a key to rapidly repeat a key binding or menu item equivalent,
+  /// which should result in an OSD being displayed for each keypress. But for some reason, the task to update the OSD,
+  /// which is enqueued via `DispatchQueue.main.async` (or even `sync`), does not run at all while the key events continue to come in.
+  /// To work around this issue, we instead enqueue the tasks to display OSD using a simple LinkedList and Lock. Then we call
+  /// `processQueuedOSDs()` both from here (as before), and inside the key event callbacks in `PlayerWindow` so that that the key events
+  /// themselves process the display of any enqueued OSD messages.
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
+    osdQueueLock.withLock {
+      osdQueue.append({ [self] in
+        _displayOSD(message, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
+      })
+    }
+    DispatchQueue.main.async { [self] in
+      processQueuedOSDs()
+    }
+  }
+
+  private func _displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard !isShowingPersistentOSD else { return }
 
@@ -3485,6 +3517,27 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
+  func syncUIComponents() {
+    processQueuedOSDs()
+
+    // don't let play/pause icon fall out of sync
+    let isPaused = player.info.isPaused
+    let isNetworkStream = player.info.isNetworkResource
+    updatePlayButtonState(isPaused ? .off : .on)
+    updatePlayTime()
+    updateAdditionalInfo()
+    if isInMiniPlayer {
+      miniPlayer.loadIfNeeded()
+      miniPlayer.updateScrollingLabels()
+    }
+    if isNetworkStream {
+      updateNetworkState()
+    }
+    // Need to also sync volume slider here, because this is called in response to repeated key presses
+    updateVolumeUI()
+  }
+
+
   func updateVolumeUI() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded, !isClosing, !player.isShuttingDown else { return }
@@ -3493,7 +3546,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let volume = player.info.volume
     let isMuted = player.info.isMuted
     let hasAudio = player.info.isAudioTrackSelected
-    log.verbose("Updating volume UI. HasAudio:\(hasAudio.yn) Muted:\(isMuted.yn) Vol:\(volume)")
 
     volumeSlider.isEnabled = hasAudio
     volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))

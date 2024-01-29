@@ -690,13 +690,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  var isSeekQueued = false
   func seek(absoluteSecond: Double) {
-    if isSeekQueued {
-      isSeekQueued = false
-      return
-    }
-    isSeekQueued = true
     mpv.queue.async { [self] in
       Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
       mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
@@ -2025,7 +2019,7 @@ class PlayerCore: NSObject {
     // main thread stuff
     DispatchQueue.main.async { [self] in
       refreshSyncUITimer()
-      windowController.updateVolumeUI()
+      windowController.syncUIComponents()
 
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
@@ -2100,6 +2094,7 @@ class PlayerCore: NSObject {
   }
 
   func seeking() {
+    log.verbose("Seeking")
     DispatchQueue.main.async { [self] in
       info.isSeeking = true
       // When playback is paused the display link may be shutdown in order to not waste energy.
@@ -2113,23 +2108,18 @@ class PlayerCore: NSObject {
   }
 
   func playbackRestarted() {
-    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     log.debug("Playback restarted")
 
     info.isIdle = false
     info.isSeeking = false
-    // When playback is paused the display link may be shutdown in order to not waste energy.
-    // The display link will be restarted while seeking. If playback is paused shut it down
-    // again.
-    if info.isPaused {
-      videoView.displayIdle()
-    }
-
-    syncUITime()
 
     /// The first "playback restart" msg after starting a file means that the file is
     /// officially done loading
     info.justOpenedFile = false
+
+    syncUITime()
+
     if let priorState = info.priorState {
       if priorState.string(for: .playPosition) != nil {
         /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
@@ -2140,8 +2130,17 @@ class PlayerCore: NSObject {
       log.debug("Done with restore")
     }
 
-    if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
-      NowPlayingInfoManager.updateInfo()
+    DispatchQueue.main.async { [self] in
+      // When playback is paused the display link may be shutdown in order to not waste energy.
+      // The display link will be restarted while seeking. If playback is paused shut it down
+      // again.
+      if info.isPaused {
+        videoView.displayIdle()
+      }
+
+      if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
+        NowPlayingInfoManager.updateInfo()
+      }
     }
 
     saveState()
@@ -2482,32 +2481,16 @@ class PlayerCore: NSObject {
       lastSaveTime = now
     }
 
-    DispatchQueue.main.async { [self] in
-      syncUITicketCount += 1
-      let syncUITicket = syncUITicketCount
+    syncUITicketCount += 1
+    let syncUITicket = syncUITicketCount
 
+    DispatchQueue.main.async { [self] in
       windowController.animationPipeline.submitZeroDuration { [self] in
         guard syncUITicket == syncUITicketCount else {
           return
         }
-        syncUITimeComponents()
+        windowController.syncUIComponents()
       }
-    }
-  }
-
-  func syncUITimeComponents() {
-    // don't let play/pause icon fall out of sync
-    let isPaused = info.isPaused
-    let isNetworkStream = info.isNetworkResource
-    windowController.updatePlayButtonState(isPaused ? .off : .on)
-    windowController.updatePlayTime()
-    windowController.updateAdditionalInfo()
-    if isInMiniPlayer {
-      windowController.miniPlayer.loadIfNeeded()
-      windowController.miniPlayer.updateScrollingLabels()
-    }
-    if isNetworkStream {
-      self.windowController.updateNetworkState()
     }
   }
 
@@ -2537,8 +2520,8 @@ class PlayerCore: NSObject {
       }
 
     case .volume, .muteButton:
-      DispatchQueue.main.async {
-        self.windowController.updateVolumeUI()
+      DispatchQueue.main.async { [self] in
+        windowController.updateVolumeUI()
       }
 
     case .chapterList:
@@ -2623,10 +2606,7 @@ class PlayerCore: NSObject {
       }
     }
 
-    DispatchQueue.main.async { [self] in
-      isSeekQueued = false
-      windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
-    }
+    windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
   }
 
   func hideOSD() {
