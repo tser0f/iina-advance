@@ -20,6 +20,10 @@ fileprivate let logEvents = false
  */
 fileprivate let mpvLogSubscriptionLevel: String = "debug"
 
+fileprivate func errorString(_ code: Int32) -> String {
+  return String(cString: mpv_error_string(code))
+}
+
 extension mpv_event_id: CustomStringConvertible {
   // Generated code from mpv is objc and does not have Swift's built-in enum name introspection.
   // We provide that here using mpv_event_name()
@@ -27,6 +31,35 @@ extension mpv_event_id: CustomStringConvertible {
     get {
       String(cString: mpv_event_name(self))
     }
+  }
+}
+
+extension mpv_event_end_file {
+  // For help with debugging
+  var reasonString: String {
+    let playlistEntryID = self.playlist_entry_id
+    let playlistInsertID = self.playlist_insert_id
+    let playlistInsertNumEntries = self.playlist_insert_num_entries
+    let reason = self.reason
+    var reasonString: String
+    switch reason {
+    case MPV_END_FILE_REASON_EOF:
+      reasonString = "EOF"
+    case MPV_END_FILE_REASON_STOP:
+      reasonString = "STOP"
+    case MPV_END_FILE_REASON_QUIT:
+      reasonString = "QUIT"
+    case MPV_END_FILE_REASON_ERROR:
+      reasonString = "ERROR"
+    case MPV_END_FILE_REASON_REDIRECT:
+      reasonString = "REDIRECT"
+    default:
+      reasonString = "???"
+    }
+    if reason == MPV_END_FILE_REASON_ERROR {
+      reasonString += " \(error) (\(errorString(error)))"
+    }
+    return reasonString
   }
 }
 
@@ -176,6 +209,14 @@ not applying FFmpeg 9599 workaround
     Logger.log("Option \(MPVOption.Video.hwdecCodecs) has been set to: \(value)")
   }
 
+  func updateKeepOpenOptionFromPrefs() {
+    setUserOption(PK.playlistAutoPlayNext, type: .other, forName: MPVOption.Window.keepOpen) { key in
+      let keepOpen = Preference.bool(for: PK.keepOpenOnFileEnd)
+      let keepOpenPl = !Preference.bool(for: PK.playlistAutoPlayNext)
+      return keepOpenPl ? "always" : (keepOpen ? yes_str : no_str)
+    }
+  }
+
   /**
    Init the mpv context, set options
    */
@@ -238,17 +279,7 @@ not applying FFmpeg 9599 workaround
     // Dropped media key support in 10.11 and 10.12.
     chkErr(mpv_set_option_string(mpv, MPVOption.Input.inputMediaKeys, no_str))
 
-    setUserOption(PK.keepOpenOnFileEnd, type: .other, forName: MPVOption.Window.keepOpen) { key in
-      let keepOpen = Preference.bool(for: PK.keepOpenOnFileEnd)
-      let keepOpenPl = !Preference.bool(for: PK.playlistAutoPlayNext)
-      return keepOpenPl ? "always" : (keepOpen ? "yes" : "no")
-    }
-
-    setUserOption(PK.playlistAutoPlayNext, type: .other, forName: MPVOption.Window.keepOpen) { key in
-      let keepOpen = Preference.bool(for: PK.keepOpenOnFileEnd)
-      let keepOpenPl = !Preference.bool(for: PK.playlistAutoPlayNext)
-      return keepOpenPl ? "always" : (keepOpen ? "yes" : "no")
-    }
+    updateKeepOpenOptionFromPrefs()
 
     chkErr(mpv_set_option_string(mpv, "watch-later-directory", Utility.watchLaterURL.path))
     setUserOption(PK.resumeLastPosition, type: .bool, forName: MPVOption.WatchLater.savePositionOnQuit)
@@ -358,9 +389,11 @@ not applying FFmpeg 9599 workaround
 
     setUserOption(PK.ytdlEnabled, type: .bool, forName: MPVOption.ProgramBehavior.ytdl)
     setUserOption(PK.ytdlRawOptions, type: .string, forName: MPVOption.ProgramBehavior.ytdlRawOptions)
+    /// Reset window-scale when changing tracks to prevent green screen errors
     chkErr(mpv_set_option_string(mpv, MPVOption.ProgramBehavior.resetOnNextFile,
                                  [MPVOption.PlaybackControl.abLoopA,
-                                  MPVOption.PlaybackControl.abLoopB].joined(separator: ",")))
+                                  MPVOption.PlaybackControl.abLoopB,
+                                  MPVOption.Window.windowScale].joined(separator: ",")))
 
     // Set user defined conf dir.
     if Preference.bool(for: .enableAdvancedSettings),
@@ -596,9 +629,11 @@ not applying FFmpeg 9599 workaround
 
   // Set property
   func setFlag(_ name: String, _ flag: Bool) {
-    player.log.verbose("Setting flag \(name.quoted)=\(flag)")
     var data: Int = flag ? 1 : 0
-    mpv_set_property(mpv, name, MPV_FORMAT_FLAG, &data)
+    let code = mpv_set_property(mpv, name, MPV_FORMAT_FLAG, &data)
+    if code < 0 {
+      player.log.error("Failed to set mpv_property \(name.quoted) = \(flag). Error: \(errorString(code))")
+    }
   }
 
   func setInt(_ name: String, _ value: Int) {
@@ -1053,24 +1088,8 @@ not applying FFmpeg 9599 workaround
       let playlistInsertID = dataPtr.pointee.playlist_insert_id
       let playlistInsertNumEntries = dataPtr.pointee.playlist_insert_num_entries
       let reason = dataPtr.pointee.reason
-      let reasonString: String
-      switch reason {
-      case MPV_END_FILE_REASON_EOF:
-        reasonString = "EOF"
-      case MPV_END_FILE_REASON_STOP:
-        reasonString = "STOP"
-      case MPV_END_FILE_REASON_QUIT:
-        reasonString = "QUIT"
-      case MPV_END_FILE_REASON_ERROR:
-        reasonString = "ERROR"
-      case MPV_END_FILE_REASON_REDIRECT:
-        reasonString = "REDIRECT"
-      default:
-        reasonString = "???"
-      }
-      let errorCode = dataPtr.pointee.error
-      let errorString = reason == MPV_END_FILE_REASON_ERROR ? "error=\(errorCode) (\(String(cString: mpv_error_string(errorCode))))" : "No"
-      player.log.verbose("FileEnded entryID=\(playlistEntryID) insertID=\(playlistInsertID) numEntries=\(playlistInsertNumEntries) reason=\(reasonString) error=\(errorString)")
+      let reasonString = dataPtr.pointee.reasonString
+      player.log.verbose("FileEnded entryID=\(playlistEntryID) insertID=\(playlistInsertID) numEntries=\(playlistInsertNumEntries) reason=\(reasonString)")
       if player.info.fileLoading {
         if reason != MPV_END_FILE_REASON_STOP {
           receivedEndFileWhileLoading = true
@@ -1562,7 +1581,7 @@ not applying FFmpeg 9599 workaround
     }
 
     if code < 0 {
-      let message = String(cString: mpv_error_string(code))
+      let message = errorString(code)
       player.log.error("Displaying mpv msg popup for error (\(code), name: \(name.quoted)): \"\(message)\"")
       Utility.showAlert("mpv_error", arguments: [message, "\(code)", name])
     }

@@ -375,7 +375,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal lazy var horizontalScrollAction: Preference.ScrollAction = Preference.enum(for: .horizontalScrollAction)
   internal lazy var verticalScrollAction: Preference.ScrollAction = Preference.enum(for: .verticalScrollAction)
 
-  static let playerWindowPrefKeys: [Preference.Key] = [
+  static private let observedPrefKeys: [Preference.Key] = [
+    .keepOpenOnFileEnd,
+    .playlistAutoPlayNext,
     .themeMaterial,
     .showRemainingTime,
     .maxVolume,
@@ -470,6 +472,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case PK.autoSwitchToMusicMode.rawValue:
       player.overrideAutoMusicMode = false
+
+    case PK.keepOpenOnFileEnd.rawValue, PK.playlistAutoPlayNext.rawValue:
+      player.mpv.updateKeepOpenOptionFromPrefs()
 
     case PK.enableOSC.rawValue,
       PK.oscPosition.rawValue,
@@ -1058,7 +1063,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    PlayerWindowController.playerWindowPrefKeys.forEach { key in
+    PlayerWindowController.observedPrefKeys.forEach { key in
       UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: .new, context: nil)
     }
 
@@ -1068,7 +1073,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   deinit {
     ObjcUtils.silenced {
-      for key in PlayerWindowController.playerWindowPrefKeys {
+      for key in PlayerWindowController.observedPrefKeys {
         UserDefaults.standard.removeObserver(self, forKeyPath: key.rawValue)
       }
     }

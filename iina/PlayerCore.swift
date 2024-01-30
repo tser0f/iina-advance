@@ -565,9 +565,10 @@ class PlayerCore: NSObject {
   }
 
   private func _resume() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     // Restart playback when reached EOF
-    if Preference.bool(for: .resumeFromEndRestartsPlayback) && mpv.getFlag(MPVProperty.eofReached) {
-      seek(absoluteSecond: 0)
+    if mpv.getFlag(MPVProperty.eofReached) && Preference.bool(for: .resumeFromEndRestartsPlayback) {
+      _seek(absoluteSecond: 0)
     }
     mpv.setFlag(MPVOption.PlaybackControl.pause, false)
   }
@@ -682,9 +683,13 @@ class PlayerCore: NSObject {
 
   func seek(absoluteSecond: Double) {
     mpv.queue.async { [self] in
-      Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
-      mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
+      _seek(absoluteSecond: absoluteSecond)
     }
+  }
+
+  func _seek(absoluteSecond: Double) {
+    Logger.log("Seek \(absoluteSecond) absolute+exact", level: .verbose, subsystem: subsystem)
+    mpv.command(.seek, args: ["\(absoluteSecond)", "absolute+exact"])
   }
 
   func frameStep(backwards: Bool) {
@@ -2059,6 +2064,9 @@ class PlayerCore: NSObject {
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     saveState()
     postNotification(.iinaAFChanged)
+    /// The first filter msg after starting a file means that the file is officially done loading.
+    /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
+    info.justOpenedFile = false
   }
 
   func aidChanged() {
@@ -2208,6 +2216,9 @@ class PlayerCore: NSObject {
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     saveState()
     postNotification(.iinaVFChanged)
+    /// The first filter msg after starting a file means that the file is officially done loading.
+    /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
+    info.justOpenedFile = false
   }
 
   func vidChanged() {
@@ -2216,9 +2227,6 @@ class PlayerCore: NSObject {
     let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
     info.vid = vid
     log.verbose("Video track changed to: \(vid)")
-    /// The first `vid` msg after starting a file means that the file is officially done loading.
-    /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
-    info.justOpenedFile = false
     // Get these while in mpv queue
     let videoParams = mpv.queryForVideoParams()
     let isVideoTrackSelected = info.isVideoTrackSelected
