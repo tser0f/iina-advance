@@ -461,14 +461,6 @@ class PlayerCore: NSObject {
     videoView.startDisplayLink()
   }
 
-  private func savePlayerStateForShutdown() {
-    log.verbose("Cleaning up player state, isUISaveEnabled=\(Preference.UIState.isSaveEnabled.yn)")
-    dispatchPrecondition(condition: .onQueue(mpv.queue))
-
-    saveState()            // Save state to IINA prefs (if enabled)
-    savePlaybackPosition() // Save state to mpv watch-later (if enabled)
-  }
-
   func saveState() {
     PlayerSaveState.save(self)  // record the pause state
   }
@@ -491,34 +483,31 @@ class PlayerCore: NSObject {
   /// - Important: As a part of shutting down the player this method sends a quit command to mpv. Even though the command is
   ///     sent to mpv using the synchronous API mpv executes the quit command asynchronously. The player is not fully shutdown
   ///     until mpv finishes executing the quit command and shuts down.
-  func shutdown(saveIfEnabled: Bool = true) {
+  func shutdown() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard !isShuttingDown else {
       log.verbose("Player is already shutting down")
       return
     }
-    log.debug("Shutting down player, saveIfEnabled=\(saveIfEnabled.yn)")
+    log.debug("Shutting down player")
     isShuttingDown = true
+    savePlaybackPosition() // Save state to mpv watch-later (if enabled)
+    refreshSyncUITimer()   // Shut down timer
+    uninitVideo()          // Shut down DisplayLink
 
-    mpv.queue.async { [self] in
-      if saveIfEnabled {
-        savePlayerStateForShutdown()
-      }
-      mpv.mpvQuit()
-    }
+    mpv.mpvQuit()
   }
 
   func mpvHasShutdown(isMPVInitiated: Bool = false) {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     let suffix = isMPVInitiated ? " (initiated by mpv)" : ""
     log.debug("Player has shut down\(suffix)")
-    dispatchPrecondition(condition: .onQueue(mpv.queue))
     isStopped = true
     isShutdown = true
     // If mpv shutdown was initiated by mpv then the player state has not been saved.
     if isMPVInitiated {
       isShuttingDown = true
-      savePlayerStateForShutdown()
-    }
-    DispatchQueue.main.async { [self] in
+      savePlaybackPosition() // Save state to mpv watch-later (if enabled)
       refreshSyncUITimer()   // Shut down timer
       uninitVideo()          // Shut down DisplayLink
     }
@@ -600,7 +589,8 @@ class PlayerCore: NSObject {
     videoView.stopDisplayLink()
 
     mpv.queue.async { [self] in
-      savePlaybackPosition()
+      saveState()            // Save state to IINA prefs (if enabled)
+      savePlaybackPosition() // Save state to mpv watch-later (if enabled)
 
       // Reset playback state
       info.currentURL = nil

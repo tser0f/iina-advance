@@ -939,7 +939,9 @@ not applying FFmpeg 9599 workaround
         // now that mpv has shut down. This is not needed when IINA sends the quit command to mpv
         // as in that case the observers are removed before the quit command is sent.
         removeOptionObservers()
-        player.mpvHasShutdown(isMPVInitiated: true)
+        DispatchQueue.main.sync { [self] in
+          player.mpvHasShutdown(isMPVInitiated: true)
+        }
         // Initiate application termination. AppKit requires this be done from the main thread,
         // however the main dispatch queue must not be used to avoid blocking the queue as per
         // instructions from Apple.
@@ -952,10 +954,12 @@ not applying FFmpeg 9599 workaround
                                argument: nil, order: Int.min, modes: [.common])
         }
       } else {
-        player.mpvHasShutdown()
         player.log.verbose("Calling mpv_destroy")
         mpv_destroy(mpv)
         mpv = nil
+        DispatchQueue.main.async { [self] in
+          player.mpvHasShutdown()
+        }
       }
 
     case MPV_EVENT_LOG_MESSAGE:
@@ -1625,7 +1629,7 @@ not applying FFmpeg 9599 workaround
       let message = "mpv API error: \"\(String(cString: mpv_error_string(status)))\", Return value: \(status!)."
       player.log.error(message)
       Utility.showAlert("fatal_error", arguments: [message])
-      player.shutdown(saveIfEnabled: false)
+      player.shutdown()
       player.windowController.close()
     }
   }
