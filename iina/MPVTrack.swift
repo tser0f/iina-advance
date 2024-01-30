@@ -80,6 +80,10 @@ class MPVTrack: NSObject {
     }
   }
 
+  override var description: String {
+    return "MPVTrack(\(idString): \(infoString))"
+  }
+
   var infoString: String {
     get {
       // title

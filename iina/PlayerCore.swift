@@ -292,7 +292,7 @@ class PlayerCore: NSObject {
       Logger.log("empty file path or url", level: .error, subsystem: subsystem)
       return
     }
-    Logger.log("Open URL: \(url.absoluteString.quoted)", subsystem: subsystem)
+    Logger.log("Open URL: \(url.absoluteString.pii.quoted)", subsystem: subsystem)
     if shouldAutoLoad {
       info.shouldAutoLoadFiles = true
     }
@@ -947,7 +947,8 @@ class PlayerCore: NSObject {
       }
     } else {
       aspectDisplay = AppData.defaultAspectName
-      log.verbose("Aspect \(aspect.quoted) is -1, default, or unrecognized. Setting videoAspectOverride to \(aspectDisplay.quoted)")
+      // -1, default, or unrecognized
+      log.verbose("Setting selectedAspect to: \(AppData.defaultAspectName.quoted) for aspect \(aspect.quoted)")
     }
 
     if info.selectedAspectRatioLabel != aspectDisplay {
@@ -1015,7 +1016,7 @@ class PlayerCore: NSObject {
       return nil
     }
 
-    let videoScale = videoWidthScaled / videoWidthUnscaled
+    let videoScale = (videoWidthScaled / videoWidthUnscaled).truncateTo6()
     return videoScale
   }
 
@@ -1969,7 +1970,7 @@ class PlayerCore: NSObject {
     // note: player may be "stopped" here
     guard !isStopping, !isShuttingDown else { return }
 
-    log.debug("File loaded: \(info.currentURL?.absoluteString.quoted ?? "nil")")
+    log.debug("File loaded: \(info.currentURL?.absoluteString.pii.quoted ?? "nil")")
     triedUsingExactSeekForCurrentFile = false
     info.fileLoading = false
     info.fileLoaded = true
@@ -2086,7 +2087,7 @@ class PlayerCore: NSObject {
   }
 
   func seeking() {
-    log.verbose("Seeking")
+    log.trace("Seeking")
     DispatchQueue.main.async { [self] in
       info.isSeeking = true
       // When playback is paused the display link may be shutdown in order to not waste energy.
@@ -2195,7 +2196,7 @@ class PlayerCore: NSObject {
 
     // Get this in the mpv thread to avoid race condition
     let justOpenedFile = info.justOpenedFile
-    log.verbose("Got mpv `video-reconfig`; \(videoParams), justOpenedFile: \(justOpenedFile)")
+    log.verbose("Got mpv `video-reconfig`; \(videoParams), justOpenedFile:\(justOpenedFile.yn)")
 
     // Always send this to window controller. It should be smart enough to resize only when needed:
     DispatchQueue.main.async { [self] in
@@ -2731,6 +2732,7 @@ class PlayerCore: NSObject {
 
   func reloadTrackInfo() {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
+    log.trace("Reloading tracklist from mpv")
     var audioTracks: [MPVTrack] = []
     var videoTracks: [MPVTrack] = []
     var subTracks: [MPVTrack] = []

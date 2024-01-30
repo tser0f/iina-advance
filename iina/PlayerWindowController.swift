@@ -3243,7 +3243,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           // Do this very fast because at present the crop animation is not great
           animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.CropAnimationDuration * 0.2, { [self] in
             let screen = bestScreen
-            log.verbose("[MPVVideoReconfig] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
+            log.verbose("[mpvVidReconfig] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
 
             /// Updated `windowedModeGeometry` even if in full screen - we are not prepared to look for changes later
             let croppedGeometry = windowedModeGeometry.cropVideo(from: uncroppedVideoSize, to: cropbox)

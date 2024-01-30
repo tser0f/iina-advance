@@ -360,6 +360,10 @@ extension CGFloat {
   func isWithin(_ threshold: CGFloat, of other: CGFloat) -> Bool {
     return abs(self - other) <= threshold
   }
+
+  func truncateTo6() -> Double {
+    return Double(Int(self * 1e6)) / 1e6
+  }
 }
 
 extension Bool {

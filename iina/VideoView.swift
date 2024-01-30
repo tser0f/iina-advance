@@ -343,6 +343,7 @@ class VideoView: NSView {
 
   /// Starts the display link if it has been stopped in order to save energy.
   func displayActive(temporary: Bool = false) {
+    log.trace("VideoView displayActive")
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     if !temporary {
       displayIdleTimer?.invalidate()
@@ -368,7 +369,7 @@ class VideoView: NSView {
   /// - Note: In addition to playback the display link must be running for operations such seeking, stepping and entering and leaving
   ///         full screen mode.
   func displayIdle() {
-    log.verbose("VideoView displayIdle")
+    log.trace("VideoView displayIdle")
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     displayIdleTimer?.invalidate()
     // The time of 6 seconds was picked to match up with the time QuickTime delays once playback is
