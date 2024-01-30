@@ -40,6 +40,8 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   @IBOutlet weak var volumeLabel: NSTextField!
   @IBOutlet weak var togglePlaylistButton: NSButton!
   @IBOutlet weak var toggleAlbumArtButton: NSButton!
+  @IBOutlet weak var leftArrowToPlayButtonSpaceConstraint: NSLayoutConstraint!
+  @IBOutlet weak var playButtonToRightArrowSpaceConstraint: NSLayoutConstraint!
 
   unowned var windowController: PlayerWindowController!
   var player: PlayerCore {
@@ -120,8 +122,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     windowController.backButtonVE.toolTip = NSLocalizedString("mini_player.back", comment: "back")
 
     volumePopover.delegate = self
-    
-    windowController.updateArrowButtonImages()
 
     log.verbose("MiniPlayer viewDidLoad done")
   }

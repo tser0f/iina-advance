@@ -456,8 +456,8 @@ extension PlayerWindowController {
         oscFloatingUpperView.addView(toolbarView, in: .trailing)
         oscFloatingUpperView.setVisibilityPriority(.detachEarlier, for: toolbarView)
 
-        playbackButtonsSquareWidthConstraint.constant = oscFloatingPlayBtnsSize
-        playbackButtonsHorizontalPaddingConstraint.constant = oscFloatingPlayBtnsHPad
+        playbackButtonsSquareWidthConstraint.animateToConstant(oscFloatingPlayBtnsSize)
+        playbackButtonsHorizontalPaddingConstraint.animateToConstant(oscFloatingPlayBtnsHPad)
       }
 
       let timeLabelFontSize: CGFloat
@@ -488,10 +488,13 @@ extension PlayerWindowController {
       timePositionHoverLabel.font = NSFont.systemFont(ofSize: timeLabelFontSize)
       timePositionHoverLabelVerticalSpaceConstraint?.isActive = true
 
+      updateArrowButtonImages()
+
     } else { // No OSC
       if outputLayout.isMusicMode {
         miniPlayer.loadIfNeeded()
         currentControlBar = miniPlayer.musicModeControlBarView
+        updateArrowButtonImages()
       } else {
         currentControlBar = nil
       }
@@ -1214,8 +1217,55 @@ extension PlayerWindowController {
     containerView.setVisibilityPriority(.detachEarly, for: fragVolumeView)
     containerView.setVisibilityPriority(.detachEarlier, for: toolbarView)
 
-    playbackButtonsSquareWidthConstraint.constant = playBtnSize
-    playbackButtonsHorizontalPaddingConstraint.constant = playBtnSpacing
+    playbackButtonsSquareWidthConstraint.animateToConstant(playBtnSize)
+
+    var spacing = playBtnSpacing
+    let arrowButtonAction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
+    if arrowButtonAction == .seek {
+      spacing *= 0.5
+    }
+    playbackButtonsHorizontalPaddingConstraint.animateToConstant(spacing)
+  }
+
+  private func updateArrowButtonImages() {
+    let arrowBtnAction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
+    let leftImage: NSImage
+    let rightImage: NSImage
+    switch arrowBtnAction {
+    case .playlist:
+      leftImage = #imageLiteral(resourceName: "nextl")
+      rightImage = #imageLiteral(resourceName: "nextr")
+    case .speed:
+      leftImage = #imageLiteral(resourceName: "speedl")
+      rightImage = #imageLiteral(resourceName: "speed")
+    case .seek:
+      if #available(macOS 11.0, *) {
+        let leftIcon = NSImage(systemSymbolName: "gobackward.10", accessibilityDescription: "Step Backward 10s")!
+        leftImage = leftIcon
+        let rightIcon = NSImage(systemSymbolName: "goforward.10", accessibilityDescription: "Step Forward 10s")!
+        rightImage = rightIcon
+      } else {
+        leftImage = #imageLiteral(resourceName: "speedl")
+        rightImage = #imageLiteral(resourceName: "speed")
+      }
+    }
+    leftArrowButton.image = leftImage
+    rightArrowButton.image = rightImage
+    // This reduces the size of the step backwards / forwards buttons
+    leftArrowButton.imageScaling = .scaleProportionallyDown
+    rightArrowButton.imageScaling = .scaleProportionallyDown
+
+    if isInMiniPlayer {
+      miniPlayer.loadIfNeeded()
+      miniPlayer.leftArrowButton.image = leftImage
+      miniPlayer.rightArrowButton.image = rightImage
+      miniPlayer.leftArrowButton.imageScaling = .scaleProportionallyDown
+      miniPlayer.rightArrowButton.imageScaling = .scaleProportionallyDown
+
+      let spacing: CGFloat = arrowBtnAction == .seek ? 8 : 16
+      miniPlayer.leftArrowToPlayButtonSpaceConstraint.animateToConstant(spacing)
+      miniPlayer.playButtonToRightArrowSpaceConstraint.animateToConstant(spacing)
+    }
   }
 
   private func rebuildToolbar(iconSize: CGFloat? = nil, iconPadding: CGFloat? = nil) -> NSStackView {

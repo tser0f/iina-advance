@@ -364,7 +364,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Observed user defaults
 
   // Cached user default values
-  private lazy var arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
   lazy var displayTimeAndBatteryInFullScreen: Bool = Preference.bool(for: .displayTimeAndBatteryInFullScreen)
   // Cached user defaults values
   internal lazy var followGlobalSeekTypeWhenAdjustSlider: Bool = Preference.bool(for: .followGlobalSeekTypeWhenAdjustSlider)
@@ -524,8 +523,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case PK.arrowButtonAction.rawValue:
       if let newValue = change[.newKey] as? Int {
-        arrowBtnFunction = Preference.ArrowButtonAction(rawValue: newValue)!
-        updateArrowButtonImages()
+        updateTitleBarAndOSC()
       }
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
@@ -925,11 +923,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     viewportTopOffsetFromTopBarTopConstraint.constant = PlayerWindowController.standardTitleBarHeight
 
     addTitleBarAccessoryViews()
-
-    // osc views
-    oscFloatingPlayButtonsContainerView.addView(fragPlaybackControlButtonsView, in: .center)
-
-    updateArrowButtonImages()
 
     // video view
 
@@ -3718,37 +3711,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func updateArrowButtonImages() {
-    let leftImage: NSImage
-    let rightImage: NSImage
-    switch arrowBtnFunction {
-    case .playlist:
-      leftImage = #imageLiteral(resourceName: "nextl")
-      rightImage = #imageLiteral(resourceName: "nextr")
-    case .speed:
-      leftImage = #imageLiteral(resourceName: "speedl")
-      rightImage = #imageLiteral(resourceName: "speed")
-    case .seek:
-      if #available(macOS 11.0, *) {
-        let leftIcon = NSImage(systemSymbolName: "gobackward.10", accessibilityDescription: "Step Backward 10s")!
-        leftImage = leftIcon
-        let rightIcon = NSImage(systemSymbolName: "goforward.10", accessibilityDescription: "Step Forward 10s")!
-        rightImage = rightIcon
-      } else {
-        leftImage = #imageLiteral(resourceName: "speedl")
-        rightImage = #imageLiteral(resourceName: "speed")
-      }
-    }
-    leftArrowButton.image = leftImage
-    rightArrowButton.image = rightImage
-
-    if isInMiniPlayer {
-      miniPlayer.loadIfNeeded()
-      miniPlayer.leftArrowButton.image = leftImage
-      miniPlayer.rightArrowButton.image = rightImage
-    }
-  }
-
   func updateMusicModeButtonsVisibility() {
     // Show only in music mode when video is visible
     closeButtonBackgroundViewVE.isHidden = !miniPlayer.isVideoVisible
@@ -3800,7 +3762,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   @IBAction func leftArrowButtonAction(_ sender: NSButton) {
-    if arrowBtnFunction == .speed {
+    if Preference.enum(for: .arrowButtonAction) == Preference.ArrowButtonAction.speed {
       let speeds = AppData.availableSpeedValues.count
       // If fast forwarding change speed to 1x
       if speedValueIndex > speeds / 2 {
@@ -3836,7 +3798,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   @IBAction func rightArrowButtonAction(_ sender: NSButton) {
-    if arrowBtnFunction == .speed {
+    if Preference.enum(for: .arrowButtonAction) == Preference.ArrowButtonAction.speed {
       let speeds = AppData.availableSpeedValues.count
       // If rewinding change speed to 1x
       if speedValueIndex < speeds / 2 {
@@ -3873,6 +3835,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /** handle action of either left or right arrow button */
   func arrowButtonAction(left: Bool) {
+    let arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
     switch arrowBtnFunction {
     case .speed:
       isFastforwarding = true
