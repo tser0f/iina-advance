@@ -842,7 +842,7 @@
                     <rect key="frame" x="12" y="0.0" width="24" height="24"/>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="speedl" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="ijT-3Y-AK2">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
-                        <font key="font" metaFont="system"/>
+                        <font key="font" metaFont="system" size="16"/>
                     </buttonCell>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="10x-bg-xlj" secondAttribute="height" multiplier="1:1" id="h3a-98-udy"/>
@@ -878,7 +878,7 @@
                     <rect key="frame" x="108" y="0.0" width="24" height="24"/>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="speed" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="Aiu-eh-hd9">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
-                        <font key="font" metaFont="system"/>
+                        <font key="font" metaFont="system" size="16"/>
                     </buttonCell>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="EIi-qd-glM" secondAttribute="height" multiplier="1:1" id="3Wl-xU-eqe"/>

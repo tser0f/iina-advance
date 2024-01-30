@@ -18,7 +18,7 @@ fileprivate var oscBarPlaybackIconSpacing: CGFloat {
 }
 
 fileprivate let oscFloatingPlayBtnsSize: CGFloat = 24
-fileprivate let oscFloatingPlayBtnsHPad: CGFloat = 8
+fileprivate let oscFloatingPlayBtnsHPad: CGFloat = 24
 fileprivate let oscFloatingToolbarButtonIconSize: CGFloat = 14
 fileprivate let oscFloatingToolbarButtonIconPadding: CGFloat = 5
 
@@ -1249,22 +1249,22 @@ extension PlayerWindowController {
         rightImage = #imageLiteral(resourceName: "speed")
       }
     }
+    let imageScaling: NSImageScaling = arrowBtnAction == .seek ? .scaleProportionallyDown : .scaleProportionallyUpOrDown
     leftArrowButton.image = leftImage
     rightArrowButton.image = rightImage
-    // This reduces the size of the step backwards / forwards buttons
-    leftArrowButton.imageScaling = .scaleProportionallyDown
-    rightArrowButton.imageScaling = .scaleProportionallyDown
+    leftArrowButton.imageScaling = imageScaling
+    rightArrowButton.imageScaling = imageScaling
 
     if isInMiniPlayer {
       miniPlayer.loadIfNeeded()
       miniPlayer.leftArrowButton.image = leftImage
       miniPlayer.rightArrowButton.image = rightImage
-      miniPlayer.leftArrowButton.imageScaling = .scaleProportionallyDown
-      miniPlayer.rightArrowButton.imageScaling = .scaleProportionallyDown
 
       let spacing: CGFloat = arrowBtnAction == .seek ? 8 : 16
       miniPlayer.leftArrowToPlayButtonSpaceConstraint.animateToConstant(spacing)
       miniPlayer.playButtonToRightArrowSpaceConstraint.animateToConstant(spacing)
+      miniPlayer.leftArrowButton.imageScaling = imageScaling
+      miniPlayer.rightArrowButton.imageScaling = imageScaling
     }
   }
 
