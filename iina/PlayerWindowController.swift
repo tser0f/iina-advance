@@ -81,9 +81,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// For supporting legacy full screen with multiple players. Uses player label as key
   private static var playersInLegacyFullScreen = Set<String>()
 
-  private var osdQueueLock = Lock()
-  private var osdQueue = LinkedList<() -> Void>()
-
   /** The quick setting sidebar (video, audio, subtitles). */
   lazy var quickSettingView: QuickSettingViewController = {
     let quickSettingView = QuickSettingViewController()
@@ -226,6 +223,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var hideOSDTimer: Timer?
   private var osdNextSeekIcon: NSImage? = nil
   private var osdCurrentSeekIcon: NSImage? = nil
+
+  private var osdQueueLock = Lock()
+  private var osdQueue = LinkedList<() -> Void>()
 
   // - Window Layout State
 
@@ -623,10 +623,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTopToTopBarConstraint: NSLayoutConstraint!
   @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var osdTopMarginConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdHeightContraint: NSLayoutConstraint!
   @IBOutlet weak var osdTrailingMarginConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdLeadingMarginConstraint: NSLayoutConstraint!
-  @IBOutlet weak var osdBottomMarginConstraint: NSLayoutConstraint!
 
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
@@ -715,7 +714,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var rightArrowLabel: NSTextField!
 
   @IBOutlet weak var osdVisualEffectView: NSVisualEffectView!
-  @IBOutlet weak var osdStackView: NSStackView!
+  @IBOutlet weak var osdHStackView: NSStackView!
+  @IBOutlet weak var osdVStackView: NSStackView!
   @IBOutlet weak var osdIcon: NSTextField!
   @IBOutlet weak var osdLabel: NSTextField!
   @IBOutlet weak var osdAccessoryText: NSTextField!
@@ -2909,15 +2909,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     switch osdType {
     case .normal:
-      osdStackView.setVisibilityPriority(.notVisible, for: osdAccessoryText)
-      osdStackView.setVisibilityPriority(.notVisible, for: osdAccessoryProgress)
+      osdVStackView.setVisibilityPriority(.notVisible, for: osdAccessoryText)
+      osdVStackView.setVisibilityPriority(.notVisible, for: osdAccessoryProgress)
     case .withProgress(let value):
-      osdStackView.setVisibilityPriority(.notVisible, for: osdAccessoryText)
-      osdStackView.setVisibilityPriority(.mustHold, for: osdAccessoryProgress)
+      osdVStackView.setVisibilityPriority(.notVisible, for: osdAccessoryText)
+      osdVStackView.setVisibilityPriority(.mustHold, for: osdAccessoryProgress)
       osdAccessoryProgress.doubleValue = value
     case .withText(let text):
-      osdStackView.setVisibilityPriority(.mustHold, for: osdAccessoryText)
-      osdStackView.setVisibilityPriority(.notVisible, for: osdAccessoryProgress)
+      osdVStackView.setVisibilityPriority(.mustHold, for: osdAccessoryText)
+      osdVStackView.setVisibilityPriority(.notVisible, for: osdAccessoryProgress)
 
       // data for mustache redering
       let osdData: [String: String] = [
@@ -2963,6 +2963,51 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   private func _displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard !isShowingPersistentOSD else { return }
+
+    if #available(macOS 11.0, *) {
+
+      /// The pseudo-OSDMessage `seekRelative`, if present, contains the step time for a relative seek.
+      /// But because it needs to be parsed from the mpv log, it is sent as a separate message which arrives immediately
+      /// prior to the `seek` message. With some smart logic, the info from the two messages can be combined to display
+      /// the most appropriate "jump" icon in the OSD in addition to the time display & progress bar.
+      if case .seekRelative(let stepString) = message, let step = Double(stepString) {
+        var name = step < 0 ? "gobackward" : "goforward"
+        let accDescription = "Relative Seek \(step < 0 ? "Backward" : "Forward")"
+        switch abs(step) {
+        case 5:
+          name += ".5"
+        case 10:
+          name += ".10"
+        case 15:
+          name += ".15"
+        case 30:
+          name += ".30"
+        case 45:
+          name += ".45"
+        case 60:
+          name += ".60"
+        case 75:
+          name += ".75"
+        case 90:
+          name += ".90"
+        default:
+          name += (name == "gobackward" ? ".minus" : ".plus")
+          break
+        }
+        /// Set icon for next message, which is expected to be a `seek`
+        osdNextSeekIcon = NSImage(systemSymbolName: name, accessibilityDescription: accDescription)!
+        /// Done with `seekRelative` msg. It is not used for display.
+        return
+      } else if case .seek(_, _) = message {
+        /// Shift next icon into current icon, which will be used until the next call to `displayOSD()`
+        /// (although note that there can be subsequent calls to `setOSDViews()` to update the OSD's displayed time while playing,
+        /// but those do not count as "new" OSD messages, and thus will continue to use `osdCurrentSeekIcon`).
+        osdCurrentSeekIcon = osdNextSeekIcon
+        osdNextSeekIcon = nil
+      } else {
+        osdCurrentSeekIcon = nil
+      }
+    }
 
     if let hideOSDTimer = self.hideOSDTimer {
       hideOSDTimer.invalidate()
@@ -3011,9 +3056,31 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     default:
       osdTextSize = min(osdTextSize, 150)
     }
+    let osdIconTextSize = osdTextSize * 1.4
+    let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
+
+    osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
+    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.15)
+
+    if #available(macOS 11.0, *) {
+      // Use dimensions of a dummy image to keep the height fixed. Because all the components are vertically aligned
+      // and each icon has a different height, this is needed to prevent the progress bar from jumping up and down
+      // each time the OSD message changes.
+      let attachment = NSTextAttachment()
+      attachment.image = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "")!
+      let iconString = NSMutableAttributedString(attachment: attachment)
+      iconString.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular),
+                              range: NSRange(location: 0, length: iconString.length))
+      let iconSize = iconString.size()
+      osdHeightContraint.constant = iconSize.height
+      osdHStackView.spacing = 2.0 + (iconString.size().width * 0.1)
+    } else {
+      osdHeightContraint.constant = osdTextSize
+    }
+
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
-    osdIcon.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize * 1.6, weight: .regular)
-    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: (osdTextSize * 0.75).clamped(to: 11...25), weight: .regular)
+    osdIcon.font = NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular)
+    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: osdAccessoryTextSize, weight: .regular)
     if #available(macOS 11.0, *) {
       switch osdTextSize {
       case 42...:
@@ -3025,54 +3092,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         osdAccessoryProgress.controlSize = .small
       }
     }
-    osdTopMarginConstraint.constant = osdTextSize * 0.5
-    osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.4)
-    osdBottomMarginConstraint.constant = osdTextSize * 0.5
-    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.25)
-
-    if #available(macOS 11.0, *) {
-      /// The pseudo-OSDMessage `seekRelative`, if present, contains the step time for a relative seek.
-      /// But because it needs to be parsed from the mpv log, it is sent as a separate message which arrives immediately
-      /// prior to the `seek` message. With some smart logic, the info from the two messages can be combined to display
-      /// the most appropriate "jump" icon in the OSD in addition to the time display & progress bar.
-      if case .seekRelative(let stepString) = message, let step = Double(stepString) {
-        var name = step < 0 ? "gobackward" : "goforward"
-        let accDescription = "Relative Seek \(step < 0 ? "Backward" : "Forward")"
-        switch abs(step) {
-        case 5:
-          name += ".5"
-        case 10:
-          name += ".10"
-        case 15:
-          name += ".15"
-        case 30:
-          name += ".30"
-        case 45:
-          name += ".45"
-        case 60:
-          name += ".60"
-        case 75:
-          name += ".75"
-        case 90:
-          name += ".90"
-        default:
-          name += (name == "gobackward" ? ".minus" : ".plus")
-          break
-        }
-        /// Set icon for next message, which is expected to be a `seek`
-        osdNextSeekIcon = NSImage(systemSymbolName: name, accessibilityDescription: accDescription)!
-        /// Done with `seekRelative` msg. It is not used for display.
-        return
-      } else if case .seek(_, _) = message {
-        /// Shift next icon into current icon, which will be used until the next call to `displayOSD()`
-        /// (although note that there can be subsequent calls to `setOSDViews()` to update the OSD's displayed time while playing,
-        /// but those do not count as "new" OSD messages, and thus will continue to use `osdCurrentSeekIcon`).
-        osdCurrentSeekIcon = osdNextSeekIcon
-        osdNextSeekIcon = nil
-      } else {
-        osdCurrentSeekIcon = nil
-      }
-    }
 
     setOSDViews(fromMessage: message)
 
@@ -3080,8 +3099,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     osdVisualEffectView.isHidden = false
     fadeableViews.remove(osdVisualEffectView)
 
-    for subview in osdStackView.views(in: .bottom) {
-      osdStackView.removeView(subview)
+    for subview in osdVStackView.views(in: .bottom) {
+      osdVStackView.removeView(subview)
     }
     if let accessoryView = accessoryView {
       isShowingPersistentOSD = true
@@ -3093,7 +3112,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       heightConstraint.priority = .defaultLow
       heightConstraint.isActive = true
 
-      osdStackView.addView(accessoryView, in: .bottom)
+      osdVStackView.addView(accessoryView, in: .bottom)
       accessoryView.addConstraintsToFillSuperview(leading: 0, trailing: 0)
 
       accessoryView.wantsLayer = true
@@ -3126,7 +3145,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if self.osdAnimationState == .willHide {
         self.osdAnimationState = .hidden
         self.osdVisualEffectView.isHidden = true
-        self.osdStackView.views(in: .bottom).forEach { self.osdStackView.removeView($0) }
+        self.osdVStackView.views(in: .bottom).forEach { self.osdVStackView.removeView($0) }
       }
     })
   }
