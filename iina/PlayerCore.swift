@@ -2107,10 +2107,6 @@ class PlayerCore: NSObject {
     info.isIdle = false
     info.isSeeking = false
 
-    /// The first "playback restart" msg after starting a file means that the file is
-    /// officially done loading
-    info.justOpenedFile = false
-
     syncUITime()
 
     if let priorState = info.priorState {
@@ -2220,6 +2216,9 @@ class PlayerCore: NSObject {
     let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
     info.vid = vid
     log.verbose("Video track changed to: \(vid)")
+    /// The first `vid` msg after starting a file means that the file is officially done loading.
+    /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
+    info.justOpenedFile = false
     // Get these while in mpv queue
     let videoParams = mpv.queryForVideoParams()
     let isVideoTrackSelected = info.isVideoTrackSelected
@@ -2660,7 +2659,7 @@ class PlayerCore: NSObject {
       }
 
       // Run the following in the background at lower priority, so the UI is not slowed down
-      PlayerCore.thumbnailQueue.async { [self] in
+      PlayerCore.thumbnailQueue.asyncAfter(deadline: .now() + 0.5) { [self] in
         guard ticket == thumbnailReloadTicketCounter else { return }
         guard !isStopping, !isStopped, !isShuttingDown else { return }
         log.debug("Reloading thumbnails (tkt \(ticket))")
