@@ -137,7 +137,7 @@ class PlayerCore: NSObject {
       }
     }
   }
-  var osdTimeSinceLastMessage: Double { Date().timeIntervalSince1970 - osdLastMessageDisplayTime }
+  var osdDidShowLastMessageRecently: Bool { Date().timeIntervalSince1970 - osdLastMessageDisplayTime < 0.25 }
 
   /// Whether shutdown of this player has been initiated.
   @Atomic var isShuttingDown = false
@@ -2564,7 +2564,7 @@ class PlayerCore: NSObject {
     switch osd {
     case .seek(_, _):
       // Many redundant messages are sent from mpv. Try to filter them out here
-      if osdTimeSinceLastMessage < 0.25 {
+      if osdDidShowLastMessageRecently {
         if case .frameStep = osdLastMessage { return }
         if case .frameStepBack = osdLastMessage { return }
       }
@@ -2586,7 +2586,7 @@ class PlayerCore: NSObject {
       osdLastPlaybackPosition = position
       osdLastPlaybackDuration = duration
     case .pause, .resume:
-      if osdTimeSinceLastMessage < 0.25 {
+      if osdDidShowLastMessageRecently {
         if case .frameStep = osdLastMessage { return }
         if case .frameStepBack = osdLastMessage { return }
       }

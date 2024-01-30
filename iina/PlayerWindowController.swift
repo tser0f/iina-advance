@@ -760,6 +760,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal var seekOverride = false
   internal var volumeOverride = false
 
+  private var lastScrollWheelSeekTime: TimeInterval = 0
+  var isInScrollWheelSeek: Bool {
+    set {
+      if newValue {
+        lastScrollWheelSeekTime = Date().timeIntervalSince1970
+      } else {
+        lastScrollWheelSeekTime = 0
+      }
+    }
+    get {
+      Date().timeIntervalSince1970 - lastScrollWheelSeekTime < 0.5
+    }
+  }
+
   var mouseActionDisabledViews: [NSView?] {[leadingSidebarView, trailingSidebarView, currentControlBar, titleBarView, oscTopMainView, subPopoverView]}
 
   var isFullScreen: Bool {
@@ -1692,6 +1706,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let scrollAction: Preference.ScrollAction
     if seekOverride {
       scrollAction = .seek
+      isInScrollWheelSeek = true
     } else if volumeOverride {
       scrollAction = .volume
     } else {
@@ -1742,6 +1757,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .seek:
       let seekAmount = (isMouse ? AppData.seekAmountMapMouse : AppData.seekAmountMap)[relativeSeekAmount] * delta
       player.seek(relativeSecond: seekAmount, option: useExactSeek)
+      isInScrollWheelSeek = true
     case .volume:
       // don't use precised delta for mouse
       let newVolume = player.info.volume + (isMouse ? delta : AppData.volumeMap[volumeScrollAmount] * delta)
@@ -1757,6 +1773,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     seekOverride = false
     volumeOverride = false
+
+    // Need to manually update the OSC & OSD because they may be missed otherwise
+    syncUIComponents()
   }
 
   override func mouseEntered(with event: NSEvent) {
@@ -2971,28 +2990,35 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       /// prior to the `seek` message. With some smart logic, the info from the two messages can be combined to display
       /// the most appropriate "jump" icon in the OSD in addition to the time display & progress bar.
       if case .seekRelative(let stepString) = message, let step = Double(stepString) {
-        var name = step < 0 ? "gobackward" : "goforward"
-        let accDescription = "Relative Seek \(step < 0 ? "Backward" : "Forward")"
-        switch abs(step) {
-        case 5:
-          name += ".5"
-        case 10:
-          name += ".10"
-        case 15:
-          name += ".15"
-        case 30:
-          name += ".30"
-        case 45:
-          name += ".45"
-        case 60:
-          name += ".60"
-        case 75:
-          name += ".75"
-        case 90:
-          name += ".90"
-        default:
-          name += (name == "gobackward" ? ".minus" : ".plus")
-          break
+        log.verbose("Got OSD '\(message)'")
+
+        let isBackward = step < 0
+        let accDescription = "Relative Seek \(isBackward ? "Backward" : "Forward")"
+        var name: String
+        if isInScrollWheelSeek {
+          name = isBackward ? "backward.fill" : "forward.fill"
+        } else {
+          name = isBackward ? "gobackward" : "goforward"
+          switch abs(step) {
+          case 5:
+            name += ".5"
+          case 10:
+            name += ".10"
+          case 15:
+            name += ".15"
+          case 30:
+            name += ".30"
+          case 45:
+            name += ".45"
+          case 60:
+            name += ".60"
+          case 75:
+            name += ".75"
+          case 90:
+            name += ".90"
+          default:
+            name += (name == "gobackward" ? ".minus" : ".plus")
+          }
         }
         /// Set icon for next message, which is expected to be a `seek`
         osdNextSeekIcon = NSImage(systemSymbolName: name, accessibilityDescription: accDescription)!
@@ -3002,8 +3028,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         /// Shift next icon into current icon, which will be used until the next call to `displayOSD()`
         /// (although note that there can be subsequent calls to `setOSDViews()` to update the OSD's displayed time while playing,
         /// but those do not count as "new" OSD messages, and thus will continue to use `osdCurrentSeekIcon`).
-        osdCurrentSeekIcon = osdNextSeekIcon
-        osdNextSeekIcon = nil
+        if osdNextSeekIcon != nil || !isInScrollWheelSeek {  // fudge this a bit for scroll wheel seek to look better
+          osdCurrentSeekIcon = osdNextSeekIcon
+          osdNextSeekIcon = nil
+        }
       } else {
         osdCurrentSeekIcon = nil
       }
