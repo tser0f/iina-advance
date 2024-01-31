@@ -2866,8 +2866,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func setOSDViews(fromMessage message: OSDMessage, isUpdate: Bool = false) {
-    player.osdLastMessage = message
-
     let (osdText, osdType) = message.message()
 
     var icon: NSImage? = nil

@@ -2563,6 +2563,7 @@ class PlayerCore: NSObject {
     case .seek(_, _):
       // Many redundant messages are sent from mpv. Try to filter them out here
       if osdDidShowLastMessageRecently {
+        if case .speed = osdLastMessage { return }
         if case .frameStep = osdLastMessage { return }
         if case .frameStepBack = osdLastMessage { return }
       }
@@ -2585,6 +2586,7 @@ class PlayerCore: NSObject {
       osdLastPlaybackDuration = duration
     case .pause, .resume:
       if osdDidShowLastMessageRecently {
+        if case .speed = osdLastMessage, case .resume = osd { return }
         if case .frameStep = osdLastMessage { return }
         if case .frameStepBack = osdLastMessage { return }
       }
@@ -2607,6 +2609,10 @@ class PlayerCore: NSObject {
         return
       }
     }
+
+    // End filtering
+
+    osdLastMessage = osd
 
     windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
   }
