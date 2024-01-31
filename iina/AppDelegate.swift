@@ -134,6 +134,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     switch keyPath {
     case Preference.Key.enableAdvancedSettings.rawValue, Preference.Key.enableLogging.rawValue:
       Logger.updateEnablement()
+      // depends on advanced being enabled:
+      menuController.refreshCmdNStatus()
+      menuController.refreshBuiltInMenuItemBindings()
 
     case Preference.Key.logLevel.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -141,6 +144,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
 
     case PK.enableCmdN.rawValue:
+      menuController.refreshCmdNStatus()
       menuController.refreshBuiltInMenuItemBindings()
       break
 

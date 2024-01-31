@@ -225,10 +225,7 @@ class MenuController: NSObject, NSMenuDelegate {
     savePlaylist.action = #selector(PlayerWindowController.menuSavePlaylist(_:))
     deleteCurrentFile.action = #selector(PlayerWindowController.menuDeleteCurrentFile(_:))
 
-    if Preference.bool(for: .enableCmdN) {
-      newWindowSeparator.isHidden = false
-      newWindow.isHidden = false
-    }
+    refreshCmdNStatus()
 
     otherKeyBindingsMenu.delegate = self
 
@@ -420,6 +417,14 @@ class MenuController: NSObject, NSMenuDelegate {
 
     inspector.action = #selector(PlayerWindowController.menuShowInspector(_:))
     miniPlayer.action = #selector(PlayerWindowController.menuSwitchToMiniPlayer(_:))
+  }
+
+  @discardableResult
+  func refreshCmdNStatus() -> Bool {
+    let isEnabled = Preference.isAdvancedEnabled && Preference.bool(for: .enableCmdN)
+    newWindowSeparator.isHidden = !isEnabled
+    newWindow.isHidden = !isEnabled
+    return isEnabled
   }
 
   // MARK: - Update Menus
@@ -867,7 +872,7 @@ class MenuController: NSObject, NSMenuDelegate {
             if let binding = filterDict[rawKey], binding.menuItem?.action == menuItem.action {
               return
             }
-            if menuItem.action == #selector(AppDelegate.menuNewWindow(_:)) && !Preference.bool(for: .enableCmdN) {
+            if menuItem.action == #selector(AppDelegate.menuNewWindow(_:)) && menuItem.isHidden {
               /// Exclude `File` > `New Window` if it is not enabled
               return
             }

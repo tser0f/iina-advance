@@ -1025,7 +1025,7 @@ struct Preference {
     .receiveBetaUpdate: false,
     .actionAfterLaunch: ActionAfterLaunch.welcomeWindow.rawValue,
     .alwaysOpenInNewWindow: true,
-    .enableCmdN: false,
+    .enableCmdN: true,
     .animationDurationDefault: 0.25,
     // Native duration (as of MacOS 13.4) is 0.5s, which is quite sluggish. Speed it up a bit
     .animationDurationFullScreen: 0.25,
@@ -1373,6 +1373,7 @@ struct Preference {
     guard let persisted = ud.persistentDomain(forName: identifier) else { return false }
     return persisted.keys.contains(key.rawValue)
   }
+  
   static var isAdvancedEnabled: Bool {
     return Preference.bool(for: .enableAdvancedSettings)
   }
