@@ -2717,54 +2717,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func updatePlaybackTime() {
-    // IINA listens for changes to mpv properties such as chapter that can occur during file loading
-    // resulting in this function being called before mpv has set its position and duration
-    // properties. Confirm the window and file have been loaded.
-    guard loaded else { return }
-    guard player.info.fileLoaded || player.info.isRestoring else { return }
-    // The mpv documentation for the duration property indicates mpv is not always able to determine
-    // the video duration in which case the property is not available.
-    guard let duration = player.info.videoDuration else {
-      log.debug("Cannot update playback UI: video duration not available")
-      return
-    }
-    guard let pos = player.info.videoPosition else {
-      log.debug("Cannot update playback UI: video position not available")
-      return
-    }
-
-    // OSD, if shown
-    if osdAnimationState == .shown, let osdLastMessage = player.osdLastMessage {
-      let message: OSDMessage?
-      switch osdLastMessage {
-      case .pause:
-        message = .pause(videoPosition: pos, videoDuration: duration)
-      case .resume:
-        message = .resume(videoPosition: pos, videoDuration: duration)
-      case .seek(_, _):
-        message = .seek(videoPosition: pos, videoDuration: duration)
-      default:
-        message = nil
-      }
-
-      if let message = message {
-        setOSDViews(fromMessage: message, isUpdate: true)
-      }
-    }
-
-    // OSC
-    let percentage = (pos.second / duration.second) * 100
-    [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
-    playSlider.updateTo(percentage: percentage)
-
-    // Touch bar
-    if #available(macOS 10.12.2, *) {
-      player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
-      player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
-    }
-  }
-
   // MARK: - UI: Title
 
   @objc
@@ -2839,7 +2791,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     contentView.layoutSubtreeIfNeeded()
   }
 
-  private func setOSDViews(fromMessage message: OSDMessage, isUpdate: Bool = false) {
+  private func setOSDViews(fromMessage message: OSDMessage) {
     let (osdText, osdType) = message.message()
 
     var icon: NSImage? = nil
@@ -3148,22 +3100,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     })
   }
 
-  func updateAdditionalInfo() {
-    guard isFullScreen && displayTimeAndBatteryInFullScreen else {
-      return
-    }
-
-    additionalInfoLabel.stringValue = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short)
-    let title = window?.representedURL?.lastPathComponent ?? window?.title ?? ""
-    additionalInfoTitle.stringValue = title
-    if let capacity = PowerSource.getList().filter({ $0.type == "InternalBattery" }).first?.currentCapacity {
-      additionalInfoBattery.stringValue = "\(capacity)%"
-      additionalInfoStackView.setVisibilityPriority(.mustHold, for: additionalInfoBatteryView)
-    } else {
-      additionalInfoStackView.setVisibilityPriority(.notVisible, for: additionalInfoBatteryView)
-    }
-  }
-
   // MARK: - UI: Interactive mode
 
 
@@ -3462,19 +3398,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - UI: Other
 
-  func updateBufferIndicatorView() {
-    guard loaded else { return }
-
-    if player.info.isNetworkResource {
-      bufferIndicatorView.isHidden = false
-      bufferSpin.startAnimation(nil)
-      bufferProgressLabel.stringValue = NSLocalizedString("main.opening_stream", comment:"Opening stream…")
-      bufferDetailLabel.stringValue = ""
-    } else {
-      bufferIndicatorView.isHidden = true
-    }
-  }
-
   func refreshHidesOnDeactivateStatus() {
     guard let window else { return }
     window.hidesOnDeactivate = currentLayout.isWindowed && Preference.bool(for: .hideWindowsWhenInactive)
@@ -3497,80 +3420,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       syncPlaySliderABLoop()
     }
     return returnValue
-  }
-
-  func syncPlaySliderABLoop() {
-    dispatchPrecondition(condition: .onQueue(player.mpv.queue))
-    let a = player.abLoopA
-    let b = player.abLoopB
-
-    DispatchQueue.main.async { [self] in
-      playSlider.abLoopA.isHidden = a == 0
-      playSlider.abLoopA.doubleValue = secondsToPercent(a)
-      playSlider.abLoopB.isHidden = b == 0
-      playSlider.abLoopB.doubleValue = secondsToPercent(b)
-      playSlider.needsDisplay = true
-    }
-  }
-
-  /// Returns the percent of the total duration of the video the given position in seconds represents.
-  ///
-  /// The percentage returned must be considered an estimate that could change. The duration of the video is obtained from the
-  /// [mpv](https://mpv.io/manual/stable/) `duration` property. The documentation for this property cautions that mpv
-  /// is not always able to determine the duration and when it does return a duration it may be an estimate. If the duration is unknown
-  /// this method will fallback to using the current playback position, if that is known. Otherwise this method will return zero.
-  /// - Parameter seconds: Position in the video as seconds from start.
-  /// - Returns: The percent of the video the given position represents.
-  private func secondsToPercent(_ seconds: Double) -> Double {
-    if let duration = player.info.videoDuration?.second {
-      return duration == 0 ? 0 : seconds / duration * 100
-    } else if let position = player.info.videoPosition?.second {
-      return position == 0 ? 0 : seconds / position * 100
-    } else {
-      return 0
-    }
-  }
-
-  func syncUIComponents() {
-    processQueuedOSDs()
-
-    // don't let play/pause icon fall out of sync
-    let isPaused = player.info.isPaused
-    let isNetworkStream = player.info.isNetworkResource
-    updatePlayButtonState(isPaused ? .off : .on)
-    updatePlaybackTime()
-    updateAdditionalInfo()
-    if isInMiniPlayer {
-      miniPlayer.loadIfNeeded()
-      miniPlayer.updateScrollingLabels()
-    }
-    if isNetworkStream {
-      updateNetworkState()
-    }
-    // Need to also sync volume slider here, because this is called in response to repeated key presses
-    updateVolumeUI()
-  }
-
-
-  func updateVolumeUI() {
-    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    guard loaded, !isClosing, !player.isShuttingDown else { return }
-    guard player.info.fileLoaded || player.info.isRestoring else { return }
-
-    let volume = player.info.volume
-    let isMuted = player.info.isMuted
-    let hasAudio = player.info.isAudioTrackSelected
-
-    volumeSlider.isEnabled = hasAudio
-    volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
-    volumeSlider.doubleValue = volume
-    muteButton.isEnabled = hasAudio
-    muteButton.state = isMuted ? .on : .off
-
-    if isInMiniPlayer {
-      miniPlayer.loadIfNeeded()
-      miniPlayer.updateVolumeUI(volume: volume, isMuted: isMuted, hasAudio: hasAudio)
-    }
   }
 
   func enterMusicMode() {
@@ -3646,17 +3495,93 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - Sync UI with playback
 
-  func forceDraw() {
+  func syncUIComponents() {
+    processQueuedOSDs()
+
+    // don't let play/pause icon fall out of sync
+    let isPaused = player.info.isPaused
+    let isNetworkStream = player.info.isNetworkResource
+    updatePlayButtonState(isPaused ? .off : .on)
+    updatePlaybackTimeUI()
+    updateAdditionalInfo()
+    if isInMiniPlayer {
+      miniPlayer.loadIfNeeded()
+      miniPlayer.updateScrollingLabels()
+    }
+    if isNetworkStream {
+      updateNetworkState()
+    }
+    // Need to also sync volume slider here, because this is called in response to repeated key presses
+    updateVolumeUI()
+  }
+
+  func updateVolumeUI() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    guard let currentVideoTrack = player.info.currentTrack(.video), currentVideoTrack.id != 0 else {
-      log.verbose("Will not force video redraw: no video track selected")
+    guard loaded, !isClosing, !player.isShuttingDown else { return }
+    guard player.info.fileLoaded || player.info.isRestoring else { return }
+
+    let volume = player.info.volume
+    let isMuted = player.info.isMuted
+    let hasAudio = player.info.isAudioTrackSelected
+
+    volumeSlider.isEnabled = hasAudio
+    volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
+    volumeSlider.doubleValue = volume
+    muteButton.isEnabled = hasAudio
+    muteButton.state = isMuted ? .on : .off
+
+    if isInMiniPlayer {
+      miniPlayer.loadIfNeeded()
+      miniPlayer.updateVolumeUI(volume: volume, isMuted: isMuted, hasAudio: hasAudio)
+    }
+  }
+
+  func updatePlaybackTimeUI() {
+    // IINA listens for changes to mpv properties such as chapter that can occur during file loading
+    // resulting in this function being called before mpv has set its position and duration
+    // properties. Confirm the window and file have been loaded.
+    guard loaded else { return }
+    guard player.info.fileLoaded || player.info.isRestoring else { return }
+    // The mpv documentation for the duration property indicates mpv is not always able to determine
+    // the video duration in which case the property is not available.
+    guard let duration = player.info.videoDuration else {
+      log.debug("Cannot update playback UI: video duration not available")
       return
     }
-    guard loaded, player.info.isPaused || currentVideoTrack.isAlbumart else { return }
-    log.verbose("Forcing video redraw")
-    // Does nothing if already active. Will restart idle timer if paused
-    player.videoView.displayActive(temporary: player.info.isPaused)
-    videoView.videoLayer.draw(forced: true)
+    guard let pos = player.info.videoPosition else {
+      log.debug("Cannot update playback UI: video position not available")
+      return
+    }
+
+    // OSD, if it is visibile and is showing playback position
+    if osdAnimationState == .shown, let osdLastMessage = player.osdLastMessage {
+      let message: OSDMessage?
+      switch osdLastMessage {
+      case .pause:
+        message = .pause(videoPosition: pos, videoDuration: duration)
+      case .resume:
+        message = .resume(videoPosition: pos, videoDuration: duration)
+      case .seek(_, _):
+        message = .seek(videoPosition: pos, videoDuration: duration)
+      default:
+        message = nil
+      }
+
+      if let message = message {
+        setOSDViews(fromMessage: message)
+      }
+    }
+
+    // OSC
+    let percentage = (pos.second / duration.second) * 100
+    [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+    playSlider.updateTo(percentage: percentage)
+
+    // Touch bar
+    if #available(macOS 10.12.2, *) {
+      player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
+      player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
+    }
   }
 
   func updatePlayButtonState(_ state: NSControl.StateValue) {
@@ -3670,6 +3595,67 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       speedValueIndex = AppData.availableSpeedValues.count / 2
       leftArrowLabel.isHidden = true
       rightArrowLabel.isHidden = true
+    }
+  }
+
+  func syncPlaySliderABLoop() {
+    dispatchPrecondition(condition: .onQueue(player.mpv.queue))
+    let a = player.abLoopA
+    let b = player.abLoopB
+
+    DispatchQueue.main.async { [self] in
+      playSlider.abLoopA.isHidden = a == 0
+      playSlider.abLoopA.doubleValue = secondsToPercent(a)
+      playSlider.abLoopB.isHidden = b == 0
+      playSlider.abLoopB.doubleValue = secondsToPercent(b)
+      playSlider.needsDisplay = true
+    }
+  }
+
+  /// Returns the percent of the total duration of the video the given position in seconds represents.
+  ///
+  /// The percentage returned must be considered an estimate that could change. The duration of the video is obtained from the
+  /// [mpv](https://mpv.io/manual/stable/) `duration` property. The documentation for this property cautions that mpv
+  /// is not always able to determine the duration and when it does return a duration it may be an estimate. If the duration is unknown
+  /// this method will fallback to using the current playback position, if that is known. Otherwise this method will return zero.
+  /// - Parameter seconds: Position in the video as seconds from start.
+  /// - Returns: The percent of the video the given position represents.
+  private func secondsToPercent(_ seconds: Double) -> Double {
+    if let duration = player.info.videoDuration?.second {
+      return duration == 0 ? 0 : seconds / duration * 100
+    } else if let position = player.info.videoPosition?.second {
+      return position == 0 ? 0 : seconds / position * 100
+    } else {
+      return 0
+    }
+  }
+
+  func updateAdditionalInfo() {
+    guard isFullScreen && displayTimeAndBatteryInFullScreen else {
+      return
+    }
+
+    additionalInfoLabel.stringValue = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short)
+    let title = window?.representedURL?.lastPathComponent ?? window?.title ?? ""
+    additionalInfoTitle.stringValue = title
+    if let capacity = PowerSource.getList().filter({ $0.type == "InternalBattery" }).first?.currentCapacity {
+      additionalInfoBattery.stringValue = "\(capacity)%"
+      additionalInfoStackView.setVisibilityPriority(.mustHold, for: additionalInfoBatteryView)
+    } else {
+      additionalInfoStackView.setVisibilityPriority(.notVisible, for: additionalInfoBatteryView)
+    }
+  }
+
+  func updateBufferIndicatorView() {
+    guard loaded else { return }
+
+    if player.info.isNetworkResource {
+      bufferIndicatorView.isHidden = false
+      bufferSpin.startAnimation(nil)
+      bufferProgressLabel.stringValue = NSLocalizedString("main.opening_stream", comment:"Opening stream…")
+      bufferDetailLabel.stringValue = ""
+    } else {
+      bufferIndicatorView.isHidden = true
     }
   }
 
@@ -3694,6 +3680,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Show only in music mode when video is hidden
     closeButtonBackgroundViewBox.isHidden = miniPlayer.isVideoVisible
+  }
+
+  func forceDraw() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    guard let currentVideoTrack = player.info.currentTrack(.video), currentVideoTrack.id != 0 else {
+      log.verbose("Will not force video redraw: no video track selected")
+      return
+    }
+    guard loaded, player.info.isPaused || currentVideoTrack.isAlbumart else { return }
+    log.verbose("Forcing video redraw")
+    // Does nothing if already active. Will restart idle timer if paused
+    videoView.displayActive(temporary: player.info.isPaused)
+    videoView.videoLayer.draw(forced: true)
   }
 
   // MARK: - IBActions
