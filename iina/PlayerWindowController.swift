@@ -912,8 +912,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     viewportView.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
 
     applyThemeMaterial()
-    // Update slider to corect position before displaying. Only useful when restoring at launch
-    updateVolumeUI()
+    // Update to corect values before displaying. Only useful when restoring at launch
+    syncUIComponents()
 
     leftLabel.mode = .current
     rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
@@ -2717,19 +2717,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func updatePlayTime() {
+  func updatePlaybackTime() {
     // IINA listens for changes to mpv properties such as chapter that can occur during file loading
     // resulting in this function being called before mpv has set its position and duration
     // properties. Confirm the window and file have been loaded.
-    guard loaded, player.info.fileLoaded else { return }
+    guard loaded else { return }
+    guard player.info.fileLoaded || player.info.isRestoring else { return }
     // The mpv documentation for the duration property indicates mpv is not always able to determine
     // the video duration in which case the property is not available.
     guard let duration = player.info.videoDuration else {
-      log.debug("Video duration not available")
+      log.debug("Cannot update playback UI: video duration not available")
       return
     }
     guard let pos = player.info.videoPosition else {
-      log.debug("Video position not available")
+      log.debug("Cannot update playback UI: video position not available")
       return
     }
 
@@ -2751,14 +2752,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         setOSDViews(fromMessage: message, isUpdate: true)
       }
     }
-    updatePlaySlider()
-  }
 
-  private func updatePlaySlider() {
-    guard let pos = player.info.videoPosition, let duration = player.info.videoDuration else {
-      log.verbose("Cannot update play slider: video position or duration not available")
-      return
-    }
     // OSC
     let percentage = (pos.second / duration.second) * 100
     [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
@@ -3544,7 +3538,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isPaused = player.info.isPaused
     let isNetworkStream = player.info.isNetworkResource
     updatePlayButtonState(isPaused ? .off : .on)
-    updatePlayTime()
+    updatePlaybackTime()
     updateAdditionalInfo()
     if isInMiniPlayer {
       miniPlayer.loadIfNeeded()
