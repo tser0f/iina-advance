@@ -2552,6 +2552,32 @@ class PlayerCore: NSObject {
     saveState()
   }
 
+  /// If `position` and `duration` are different than their previously cached values, overwrites the cached values and
+  /// returns `true`. Returns `false` if the same or one of the values is `nil`.
+  ///
+  /// Lots of redundant `seek` messages which are emitted at all sorts of different times, and each triggers a call to show
+  /// a `seek` OSD. To prevent duplicate OSDs, call this method to compare against the previous seek position.
+  @discardableResult
+  func compareAndSetIfNewPlaybackTime(position: Double?, duration: Double?) -> Bool {
+    guard let position, let duration else {
+      log.verbose("Ignoring request for OSD seek: position or duration is missing")
+      return false
+    }
+    // There seem to be precision errors which break equality when comparing values beyond 6 decimal places.
+    // Just round to nearest 1/1000000 sec for comparison.
+    let newPosRounded = round(position * AppData.osdSeekSubSecPrecisionComparison)
+    let newDurRounded = round(duration * AppData.osdSeekSubSecPrecisionComparison)
+    let oldPosRounded = round((osdLastPlaybackPosition ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+    let oldDurRounded = round((osdLastPlaybackDuration ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+    guard newPosRounded != oldPosRounded || newDurRounded != oldDurRounded else {
+      log.verbose("Ignoring request for OSD seek; position/duration has not changed")
+      return false
+    }
+    osdLastPlaybackPosition = position
+    osdLastPlaybackDuration = duration
+    return true
+  }
+
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, external: Bool = false) {
     /// Note: use `windowController.loaded` (querying `windowController.isWindowLoaded` will initialize windowController unexpectedly)
     guard windowController.loaded,
@@ -2568,23 +2594,9 @@ class PlayerCore: NSObject {
         if case .frameStep = osdLastMessage { return }
         if case .frameStepBack = osdLastMessage { return }
       }
-      // Try to avoid duplicate seek messages which are emitted when changing video settings while paused
-      guard let position = info.videoPosition?.second, let duration = info.videoDuration?.second else {
-        log.verbose("Ignoring request to show OSD seek: position or duration is missing")
+      guard compareAndSetIfNewPlaybackTime(position: info.videoPosition?.second, duration: info.videoDuration?.second) else {
         return
       }
-      // There seem to be precision errors which break equality when comparing values beyond 6 decimal places.
-      // Just round to nearest 1/1000000 sec for comparison.
-      let newPosRounded = round(position * AppData.osdSeekSubSecPrecisionComparison)
-      let newDurRounded = round(duration * AppData.osdSeekSubSecPrecisionComparison)
-      let oldPosRounded = round((osdLastPlaybackPosition ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
-      let oldDurRounded = round((osdLastPlaybackDuration ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
-      guard newPosRounded != oldPosRounded || newDurRounded != oldDurRounded else {
-        log.verbose("Ignoring request to show OSD seek; position/duration has not changed")
-        return
-      }
-      osdLastPlaybackPosition = position
-      osdLastPlaybackDuration = duration
     case .pause, .resume:
       if osdDidShowLastMessageRecently {
         if case .speed = osdLastMessage, case .resume = osd { return }
