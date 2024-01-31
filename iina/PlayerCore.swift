@@ -2070,10 +2070,8 @@ class PlayerCore: NSObject {
     info.justOpenedFile = false
   }
 
-  func aidChanged() {
-    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-    let aid = Int(mpv.getInt(MPVOption.TrackSelection.aid))
-    info.aid = aid
+  func aidChanged(to aid: Int) {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     log.verbose("Audio track changed to: \(aid)")
     syncUI(.volume)
     postNotification(.iinaAIDChanged)
@@ -2155,23 +2153,17 @@ class PlayerCore: NSObject {
     }
   }
 
-  func secondarySidChanged() {
+  func sidChanged(to sid: Int) {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
-    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-    let ssid = Int(mpv.getInt(MPVOption.Subtitles.secondarySid))
-    info.secondSid = ssid
-    log.verbose("SSID changed to \(ssid)")
-    postNotification(.iinaSIDChanged)
-  }
-
-  func sidChanged() {
-    dispatchPrecondition(condition: .onQueue(mpv.queue))
-    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-    let sid = Int(mpv.getInt(MPVOption.TrackSelection.sid))
-    info.sid = sid
     log.verbose("SID changed to \(sid)")
     postNotification(.iinaSIDChanged)
     sendOSD(.track(info.currentTrack(.sub) ?? .noneSubTrack))
+  }
+
+  func secondarySidChanged(to ssid: Int) {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+    log.verbose("SSID changed to \(ssid)")
+    postNotification(.iinaSIDChanged)
   }
 
   func trackListChanged() {
@@ -2222,12 +2214,9 @@ class PlayerCore: NSObject {
     info.justOpenedFile = false
   }
 
-  func vidChanged() {
-    dispatchPrecondition(condition: .onQueue(mpv.queue))
-    guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
-    let vid = Int(mpv.getInt(MPVOption.TrackSelection.vid))
-    info.vid = vid
+  func vidChanged(to vid: Int) {
     log.verbose("Video track changed to: \(vid)")
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
     // Get these while in mpv queue
     let videoParams = mpv.queryForVideoParams()
     let isVideoTrackSelected = info.isVideoTrackSelected

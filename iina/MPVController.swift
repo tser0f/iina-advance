@@ -1201,16 +1201,30 @@ not applying FFmpeg 9599 workaround
       }
 
     case MPVOption.TrackSelection.vid:
-      player.vidChanged()
+      guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else { break }
+      let vid = Int(getInt(MPVOption.TrackSelection.vid))
+      guard vid != player.info.vid else { return }
+      player.info.vid = vid
+      player.vidChanged(to: vid)
 
     case MPVOption.TrackSelection.aid:
-      player.aidChanged()
+      guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else { break }
+      let aid = Int(getInt(MPVOption.TrackSelection.aid))
+      guard aid != player.info.aid else { return }
+      player.aidChanged(to: aid)
 
     case MPVOption.TrackSelection.sid:
-      player.sidChanged()
+      guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else { break }
+      let sid = Int(getInt(MPVOption.TrackSelection.sid))
+      guard sid != player.info.sid else { return }
+      player.sidChanged(to: sid)
 
     case MPVOption.Subtitles.secondarySid:
-      player.secondarySidChanged()
+      guard !player.isStopping, !player.isStopped, !player.isShuttingDown, !player.isShutdown else { break }
+      let ssid = Int(getInt(MPVOption.Subtitles.secondarySid))
+      guard ssid != player.info.secondSid else { return }
+      player.info.secondSid = ssid
+      player.secondarySidChanged(to: ssid)
 
     case MPVOption.PlaybackControl.pause:
       guard let paused = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
