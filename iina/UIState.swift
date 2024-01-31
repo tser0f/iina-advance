@@ -141,7 +141,7 @@ extension Preference {
     }
 
     static func saveCurrentOpenWindowList(excludingWindowName nameToExclude: String? = nil) {
-      guard let app = NSApp.delegate as? AppDelegate, !app.isTerminating else { return }
+      guard !AppDelegate.shared.isTerminating else { return }
       let openWindowNames = getCurrentOpenWindowNames(excludingWindowName: nameToExclude)
       let minimizedWindowNames = Array(AppDelegate.windowsMinimized)
       let hiddenWindowNames = Array(AppDelegate.windowsHidden)
@@ -190,7 +190,7 @@ extension Preference {
     }
 
     static func clearAllSavedLaunchState(extraClean: Bool = false) {
-      guard let app = NSApp.delegate as? AppDelegate, !app.isTerminating else { return }
+      guard !AppDelegate.shared.isTerminating else { return }
       guard isSaveEnabled else {
         Logger.log("Will not clear saved UI state; UI save is disabled")
         return

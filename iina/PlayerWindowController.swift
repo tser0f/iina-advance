@@ -1981,7 +1981,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     isWindowMiniturized = false
     player.overrideAutoMusicMode = false
 
-    if !(NSApp.delegate as! AppDelegate).isTerminating {
+    if !AppDelegate.shared.isTerminating {
       /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
       if currentLayout.mode == .musicMode {
         PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry
@@ -2454,7 +2454,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if #available(macOS 10.13, *), RemoteCommandController.useSystemMediaControl {
       NowPlayingInfoManager.updateInfo(withTitle: true)
     }
-    (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
+    AppDelegate.shared.menuController?.updatePluginMenu()
 
     if isFullScreen && Preference.bool(for: .blackOutMonitor) {
       blackOutOtherMonitors()
@@ -3976,12 +3976,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Utility
 
   func handleIINACommand(_ cmd: IINACommand) {
-    let appDelegate = (NSApp.delegate! as! AppDelegate)
     switch cmd {
     case .openFile:
-      appDelegate.showOpenFileWindow(isAlternativeAction: false)
+      AppDelegate.shared.showOpenFileWindow(isAlternativeAction: false)
     case .openURL:
-      appDelegate.showOpenURLWindow(isAlternativeAction: false)
+      AppDelegate.shared.showOpenURLWindow(isAlternativeAction: false)
     case .flip:
       menuToggleFlip(.dummy)
     case .mirror:
@@ -4121,7 +4120,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     // to the window under everything else, including the overlay).
     pipOverlayView.isHidden = true
 
-    if (NSApp.delegate as! AppDelegate).isTerminating {
+    if AppDelegate.shared.isTerminating {
       // Don't bother restoring window state past this point
       return
     }
@@ -4146,7 +4145,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
   }
 
   func pipDidClose(_ pip: PIPViewController) {
-    guard !(NSApp.delegate as! AppDelegate).isTerminating else { return }
+    guard !AppDelegate.shared.isTerminating else { return }
 
     // seems to require separate animation blocks to work properly
     var animationTasks: [IINAAnimation.Task] = []

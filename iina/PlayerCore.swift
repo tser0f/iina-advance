@@ -241,7 +241,7 @@ class PlayerCore: NSObject {
 
   static func reloadPluginForAll(_ plugin: JavascriptPlugin) {
     manager.getPlayerCores().forEach { $0.reloadPlugin(plugin) }
-    (NSApp.delegate as? AppDelegate)?.menuController?.updatePluginMenu()
+    AppDelegate.shared.menuController?.updatePluginMenu()
   }
 
   private func loadPlugins() {
@@ -369,7 +369,7 @@ class PlayerCore: NSObject {
     }
 
     if !info.isRestoring {
-      (NSApp.delegate as! AppDelegate).initialWindow.closePriorToOpeningPlayerWindow()
+      AppDelegate.shared.initialWindow.closePriorToOpeningPlayerWindow()
     }
     windowController.openWindow()
 
@@ -2067,7 +2067,7 @@ class PlayerCore: NSObject {
         HistoryController.shared.add(url, duration: duration.second)
       }
       if Preference.bool(for: .recordRecentFiles) && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
-        DispatchQueue.main.sync { (NSApp.delegate as! AppDelegate).noteNewRecentDocumentURL(url) }
+        DispatchQueue.main.sync { AppDelegate.shared.noteNewRecentDocumentURL(url) }
       }
     }
     postNotification(.iinaFileLoaded)

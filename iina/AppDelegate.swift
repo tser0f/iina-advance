@@ -21,6 +21,9 @@ fileprivate let AlternativeMenuItemTag = 1
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
+  /// The `AppDelegate` singleton object.
+  static var shared: AppDelegate { NSApp.delegate as! AppDelegate }
+
   /// Each instance of IINA, when it starts, grabs the previous launch count from the prefs and increments it by 1, which becomes its launchID.
   static let launchID: Int = {
     let nextID = Preference.integer(for: .launchCount) + 1

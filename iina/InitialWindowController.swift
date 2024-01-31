@@ -484,10 +484,10 @@ class InitialWindowViewActionButton: NSView {
     self.layer?.backgroundColor = pressedBackground.cgColor
     if self.identifier == .openFile {
       Logger.log("User clicked the Open File button", level: .verbose)
-      (NSApp.delegate as! AppDelegate).openFile(self)
+      AppDelegate.shared.openFile(self)
     } else if self.identifier == .openURL {
       Logger.log("User clicked the Open URL button", level: .verbose)
-      (NSApp.delegate as! AppDelegate).openURL(self)
+      AppDelegate.shared.openURL(self)
     } else {
 
       // Make sure to load the same file which is displayed: get from window controller.

@@ -1135,7 +1135,7 @@ extension NSWindow {
 
   /// Excludes the Inspector window
   var isOnlyOpenWindow: Bool {
-    if savedStateName == WindowAutosaveName.openFile.string && (NSApp.delegate as! AppDelegate).isShowingOpenFileWindow {
+    if savedStateName == WindowAutosaveName.openFile.string && AppDelegate.shared.isShowingOpenFileWindow {
       return false
     }
     for window in NSApp.windows {

@@ -48,7 +48,7 @@ class PrefGeneralViewController: PreferenceViewController, PreferenceWindowEmbed
 
   @IBAction func rememberRecentChanged(_ sender: NSButton) {
     if sender.state == .off {
-      (NSApp.delegate as! AppDelegate).clearRecentDocuments(self)
+      AppDelegate.shared.clearRecentDocuments(self)
     }
   }
 }

@@ -56,7 +56,7 @@ class AppInputConfigBuilder {
     // Do this last, after everything has been inserted, so that there is no risk of blocking other bindings from being inserted.
     fillInPartialSequences(&resolverDict)
 
-    let menuController = (NSApp.delegate as! AppDelegate).menuController!
+    let menuController = AppDelegate.shared.menuController!
 
     // This will update all standard menu item bindings, and also update the isMenuItem status of each:
     menuController.updateKeyEquivalents(from: bindingCandidateList)

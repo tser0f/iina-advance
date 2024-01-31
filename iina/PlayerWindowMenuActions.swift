@@ -11,7 +11,7 @@ import Cocoa
 extension PlayerWindowController {
 
   @objc func menuShowInspector(_ sender: AnyObject) {
-    (NSApp.delegate as! AppDelegate).showInspectorWindow()
+    AppDelegate.shared.showInspectorWindow()
   }
 
   @objc func menuSavePlaylist(_ sender: NSMenuItem) {
@@ -252,7 +252,8 @@ extension PlayerWindowController {
         }
       }
     }
-    if let vfWindow = (NSApp.delegate as? AppDelegate)?.vfWindow, vfWindow.isWindowLoaded {
+    let vfWindow = AppDelegate.shared.vfWindow
+    if vfWindow.isWindowLoaded {
       vfWindow.reloadTable()
     }
   }
