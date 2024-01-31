@@ -52,7 +52,7 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
     case .scaleWithViewport:
       let rawSizePercentage = CGFloat(min(max(0, Preference.integer(for: .thumbnailRawSizePercentage)), 100))
       let thumbWidth = Int(round(videoRawSize.width * rawSizePercentage / 100))
-      log.verbose("Thumbnail native width will be \(thumbWidth)px (\(Int(rawSizePercentage))% of video's \(Int(videoRawSize.width))px)")
+      log.verbose("Thumbnail native width based on settings: \(thumbWidth)px (\(Int(rawSizePercentage))% of video's \(Int(videoRawSize.width))px)")
       return thumbWidth
     case .fixedSize:
       let requestedLength = CGFloat(Preference.integer(for: .thumbnailFixedLength))
@@ -114,7 +114,12 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
       log.verbose("Rotating \(ffThumbnails.count) thumbnails by \(rotationDegrees)° clockwise")
     }
 
+    // FFmpegController can send duplicates. Weed them out by timestamp
+    var existingTimestamps = Set(self.thumbnails.compactMap{ $0.timestamp })
+
+    var addedCount: Int = 0
     for ffThumbnail in ffThumbnails {
+      guard !existingTimestamps.contains(ffThumbnail.realTime) else { continue }
       guard let rawImage = ffThumbnail.image else { continue }
 
       let image: NSImage
@@ -128,10 +133,12 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
       self.ffThumbnails.append(ffThumbnail)
       let thumb = Thumbnail(image: image, timestamp: ffThumbnail.realTime)
       self.thumbnails.append(thumb)
+      existingTimestamps.insert(ffThumbnail.realTime)
+      addedCount += 1
     }
 
     if rotationDegrees != 0 {
-      log.verbose("Rotated thumbnails in \(sw) ms")
+      log.verbose("Rotated \(addedCount) thumbnails in \(sw) ms")
     }
   }
 
@@ -184,9 +191,10 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
 
     PlayerCore.thumbnailQueue.async { [self] in
       if thumbnails.count > 0 {
+        log.verbose("Got final count of \(thumbnails.count) thumbs, width=\(width)px")
         addThumbnails(thumbnails)
       }
-      log.debug("Done generating thumbnails, success=\(succeeded) count=\(self.thumbnails.count) width=\(width)px")
+      log.debug("Done generating thumbnails, success=\(succeeded.yn) count=\(self.thumbnails.count) width=\(width)px")
       guard succeeded else { return }
 
       player.refreshTouchBarSlider()

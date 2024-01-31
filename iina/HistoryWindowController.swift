@@ -177,7 +177,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
         return string.localizedStandardContains(searchString)
       }
     }
-    Logger.log("Reloading history table with \(historyList.count) entries (filtered: \(!searchString.isEmpty))", level: .verbose)
+    Logger.log("Reloading history table with \(historyList.count) entries, filtered=\((!searchString.isEmpty).yn)", level: .verbose)
 
     for entry in historyList {
       addToData(entry, forKey: getKey[groupBy]!(entry))

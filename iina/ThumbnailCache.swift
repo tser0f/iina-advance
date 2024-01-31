@@ -49,34 +49,49 @@ class ThumbnailCache {
     let fileTimestamp = FileTimestamp(fileModifiedDate.timeIntervalSince1970)
 
     // Check metadate in the cache
-    if self.fileExists(forName: name, forWidth: width) {
-      guard let file = try? FileHandle(forReadingFrom: urlFor(name, width: width)) else {
-        Logger.log("Cannot open cache file.", level: .error, subsystem: subsystem)
-        return false
-      }
-
-      let cacheVersion = file.read(type: CacheVersion.self)
-      if cacheVersion != version { return false }
-
-      return file.read(type: FileSize.self) == fileSize &&
-        file.read(type: FileTimestamp.self) == fileTimestamp
+    guard self.fileExists(forName: name, forWidth: width) else {
+      Logger.log("Cache file does not exist", level: .error, subsystem: subsystem)
+      return false
     }
 
-    return false
+    guard let file = try? FileHandle(forReadingFrom: urlFor(name, width: width)) else {
+      Logger.log("Cache file exists but cannot be opened", level: .error, subsystem: subsystem)
+      return false
+    }
+
+    let cacheVersion = file.read(type: CacheVersion.self)
+    guard cacheVersion == version else {
+      subsystem.error("Wrong version in cache file! Found: \(cacheVersion ?? 0)")
+      return false
+    }
+
+    let fileSizeInFile = file.read(type: FileSize.self)
+    guard fileSizeInFile == fileSize else {
+      subsystem.debug("Video's file size (\(fileSize)) does not match cached size (\(fileSizeInFile ?? 0)); assuming cache is stale")
+      return false
+    }
+
+    let fileTimestampInFile = file.read(type: FileTimestamp.self)
+    guard fileTimestampInFile == fileTimestamp else {
+      subsystem.debug("Video's modification TS (\(fileTimestamp)) does not match cached TS (\(fileTimestampInFile ?? 0)); assuming cache is stale")
+      return false
+    }
+    return true
   }
 
   /// Write thumbnail cache to file.
   /// This method is expected to be called when the file doesn't exist.
   static func write(_ thumbnails: [FFThumbnail], forName name: String, forVideo videoFilePath: String, forWidth width: Int) {
-    Logger.log("Writing \(thumbnails.count) thumbnails with width \(width) to cache file", subsystem: subsystem)
-
     let maxCacheSize = Preference.integer(for: .maxThumbnailPreviewCacheSize) * FloatingPointByteCountFormatter.PrefixFactor.mi.rawValue
     if maxCacheSize == 0 {
+      subsystem.verbose("Aborting write to thumbnail cache: maxCacheSize is 0")
       return
     }
+    subsystem.debug("Writing \(thumbnails.count) thumbnails with width=\(width) to cache file \(name.pii) (videoFile=\(videoFilePath.pii))")
+
     let cacheSize = ThumbnailCacheManager.shared.getCacheSize()
     if cacheSize > maxCacheSize {
-      Logger.log("Thumbnail cache size (\(cacheSize)) is larger than max allowed (\(maxCacheSize)) and will be cleared", subsystem: subsystem)
+      subsystem.debug("Thumbnail cache size (\(cacheSize)) is larger than max allowed (\(maxCacheSize)) and will be cleared")
       ThumbnailCacheManager.shared.clearOldCache()
     }
 
