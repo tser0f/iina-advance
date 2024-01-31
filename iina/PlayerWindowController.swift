@@ -1089,6 +1089,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let newMap = NSScreen.screens.map{ScreenMeta.from($0)}.reduce(Dictionary<UInt32, ScreenMeta>(), {(dict, screenMeta) in
       var dict = dict
       dict[screenMeta.displayID] = screenMeta
+      _ = Logger.getOrCreatePII(for: screenMeta.name)
       return dict
     })
     Logger.log("Built screen meta: \(newMap.values)", level: .verbose)

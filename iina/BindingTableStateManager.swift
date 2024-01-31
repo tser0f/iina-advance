@@ -23,7 +23,6 @@ class BindingTableStateManager: NSObject {
 
   override init() {
     super.init()
-    Logger.log("BindingTableStateManager init", level: .verbose)
     observers.append(NotificationCenter.default.addObserver(forName: .iinaAppInputConfigDidChange, object: nil, queue: .main, using: self.appInputConfigDidChange))
 
     for key in [Preference.Key.showKeyBindingsFromAllSources] {

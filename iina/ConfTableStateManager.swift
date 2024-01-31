@@ -24,7 +24,6 @@ class ConfTableStateManager: NSObject {
 
   override init() {
     super.init()
-    Logger.log("ConfTableStateManager init", level: .verbose)
 
     // This will notify that a pref has changed, even if it was changed by another instance of IINA:
     for key in [Preference.Key.currentInputConfigName, Preference.Key.inputConfigs] {
