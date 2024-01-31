@@ -912,6 +912,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     viewportView.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
 
     applyThemeMaterial()
+    // Update slider to corect position before displaying. Only useful when restoring at launch
+    updateVolumeUI()
 
     leftLabel.mode = .current
     rightLabel.mode = Preference.bool(for: .showRemainingTime) ? .remaining : .duration
@@ -3559,7 +3561,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func updateVolumeUI() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded, !isClosing, !player.isShuttingDown else { return }
-    guard player.info.fileLoaded else { return }
+    guard player.info.fileLoaded || player.info.isRestoring else { return }
 
     let volume = player.info.volume
     let isMuted = player.info.isMuted

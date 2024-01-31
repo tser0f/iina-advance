@@ -504,6 +504,21 @@ struct PlayerSaveState {
       }
     }
 
+    /// Need to set these in `info` before `openURLs()` is called
+    /// (or at least for `aid`, so that volume slider is correct at first draw)
+    if let vid = int(for: .vid) {
+      info.vid = vid
+    }
+    if let aid = int(for: .aid) {
+      info.aid = aid
+    }
+    if let sid = int(for: .sid) {
+      info.sid = sid
+    }
+    if let sid2 = int(for: .sid2) {
+      info.secondSid = sid2
+    }
+
     // Prevent "seek" OSD from appearing unncessarily after loading finishes
     player.compareAndSetIfNewPlaybackTime(position: info.videoPosition?.second, duration: info.videoDuration?.second)
 
@@ -578,20 +593,17 @@ struct PlayerSaveState {
     // Better to always pause when starting, because there may be a slight delay before it can be enforced later
     mpv.setFlag(MPVOption.PlaybackControl.pause, true)
 
-    if let vid = int(for: .vid) {
-      info.vid = vid
+    /// already read these into `info` up above. Now set in mpv
+    if let vid = info.vid {
       mpv.setInt(MPVOption.TrackSelection.vid, vid)
     }
-    if let aid = int(for: .aid) {
-      info.aid = aid
+    if let aid = info.aid {
       mpv.setInt(MPVOption.TrackSelection.aid, aid)
     }
-    if let sid = int(for: .sid) {
-      info.sid = sid
+    if let sid = info.sid {
       mpv.setInt(MPVOption.TrackSelection.sid, sid)
     }
-    if let sid2 = int(for: .sid2) {
-      info.secondSid = sid2
+    if let sid2 = info.secondSid {
       mpv.setInt(MPVOption.Subtitles.secondarySid, sid2)
     }
 
