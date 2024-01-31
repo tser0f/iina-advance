@@ -83,14 +83,14 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jfj-IC-e3B" userLabel="Prev Button">
-                                    <rect key="frame" x="54" y="6" width="32" height="32"/>
+                                    <rect key="frame" x="62" y="10" width="24" height="24"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextl" imagePosition="only" alignment="justified" controlSize="large" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="SZB-TX-yda">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                                         <font key="font" metaFont="system" size="16"/>
                                     </buttonCell>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="jfj-IC-e3B" secondAttribute="height" multiplier="1:1" id="3Tu-Mf-AWA"/>
-                                        <constraint firstAttribute="height" constant="32" id="AVQ-eY-Sqg"/>
+                                        <constraint firstAttribute="height" constant="24" id="AVQ-eY-Sqg"/>
                                     </constraints>
                                     <connections>
                                         <action selector="prevBtnAction:" target="-2" id="XQz-AU-kmJ"/>
@@ -111,14 +111,14 @@
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="nwm-1g-9Dl" userLabel="Next Button">
-                                    <rect key="frame" x="146" y="6" width="32" height="32"/>
+                                    <rect key="frame" x="146" y="10" width="24" height="24"/>
                                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="nextr" imagePosition="only" alignment="center" controlSize="large" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" maxAcceleratorLevel="5" id="OMQ-kW-mEi">
                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES" multiLevelAccelerator="YES"/>
                                         <font key="font" metaFont="system" size="16"/>
                                     </buttonCell>
                                     <constraints>
                                         <constraint firstAttribute="width" secondItem="nwm-1g-9Dl" secondAttribute="height" multiplier="1:1" id="P9S-Ze-mSU"/>
-                                        <constraint firstAttribute="height" constant="32" id="cuX-5c-RtE"/>
+                                        <constraint firstAttribute="height" constant="24" id="cuX-5c-RtE"/>
                                     </constraints>
                                     <connections>
                                         <action selector="nextBtnAction:" target="-2" id="XcN-k5-GJC"/>

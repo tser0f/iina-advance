@@ -1260,7 +1260,7 @@ extension PlayerWindowController {
       miniPlayer.leftArrowButton.image = leftImage
       miniPlayer.rightArrowButton.image = rightImage
 
-      let spacing: CGFloat = arrowBtnAction == .seek ? 8 : 16
+      let spacing: CGFloat = arrowBtnAction == .seek ? 12 : 16
       miniPlayer.leftArrowToPlayButtonSpaceConstraint.animateToConstant(spacing)
       miniPlayer.playButtonToRightArrowSpaceConstraint.animateToConstant(spacing)
       miniPlayer.leftArrowButton.imageScaling = imageScaling
