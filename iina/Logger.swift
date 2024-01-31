@@ -216,13 +216,17 @@ class Logger: NSObject {
     return Logger.Level.preferred >= level
   }
 
+  static let libraryDirectory: URL = {
+    let libraryURLs = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)
+    guard let libraryURL = libraryURLs.first else {
+      fatalDuringInit("Cannot get path to Logs directory: \(libraryURLs)")
+    }
+    return libraryURL
+  }()
+
   static let logDirectory: URL = {
     // get path
-    let libraryPaths = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)
-    guard let libraryPath = libraryPaths.first else {
-      fatalDuringInit("Cannot get path to Logs directory: \(libraryPaths)")
-    }
-    let logsUrl = libraryPath.appendingPathComponent("Logs", isDirectory: true)
+    let logsUrl = libraryDirectory.appendingPathComponent("Logs", isDirectory: true)
     let bundleID = Bundle.main.bundleIdentifier!
     let appLogsUrl = logsUrl.appendingPathComponent(bundleID, isDirectory: true)
 
@@ -345,6 +349,11 @@ class Logger: NSObject {
       }
     }
     return maskedMessage
+  }
+
+  static func initLogging() {
+    // Mask library URL in subsequent logging
+    _ = getOrCreatePII(for: libraryDirectory.path)
   }
 
   static func log(_ rawMessage: String, level: Level = .debug, subsystem: Subsystem = .general) {

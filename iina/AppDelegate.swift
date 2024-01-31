@@ -206,6 +206,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     // Must setup preferences before logging so log level is set correctly.
     registerUserDefaultValues()
 
+    Logger.initLogging()
     // Start the log file by logging the version of IINA producing the log file.
     Logger.log(InfoDictionary.shared.printableBuildInfo)
 

@@ -416,7 +416,7 @@ class PlayerCore: NSObject {
     guard !didStart else { return }
     didStart = true
 
-    log.verbose("Player start (restore: \(restore))")
+    log.verbose("Player start, restoring=\(restore.yn)")
 
     startMPV()
     loadPlugins()
