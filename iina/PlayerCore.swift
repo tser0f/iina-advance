@@ -237,9 +237,10 @@ class PlayerCore: NSObject {
   }
 
   init(_ label: String) {
-    Logger.log("PlayerCore\(label) init")
+    let log = Logger.Subsystem(rawValue: "play-\(label)")
+    log.debug("PlayerCore init")
     self.label = label
-    self.subsystem = Logger.Subsystem(rawValue: "play-\(label)")
+    self.subsystem = log
     super.init()
     self.mpv = MPVController(playerCore: self)
     self.bindingController = PlayerBindingController(playerCore: self)

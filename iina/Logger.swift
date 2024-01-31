@@ -239,7 +239,7 @@ class Logger: NSObject {
 
   private static let logFile: URL = logDirectory.appendingPathComponent("iina.log")
   // File for personally identifiable information lookup
-  private static let piiFile: URL = logDirectory.appendingPathComponent("user-private.txt")
+  private static let piiFile: URL = logDirectory.appendingPathComponent("pii.txt")
 
   private static let loggerSubsystem = Logger.makeSubsystem("logger")
 
