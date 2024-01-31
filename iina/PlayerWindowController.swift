@@ -1304,31 +1304,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     } else {
       // - mpv command
       player.mpv.queue.async { [self] in
-        let returnValue: Int32
         // execute the command
-        switch keyBinding.action.first! {
-          // TODO: replace this with a key binding interceptor
-        case MPVCommand.abLoop.rawValue:
-          returnValue = _abLoop()
-        case MPVCommand.screenshot.rawValue:
-          returnValue = player.mpv.command(rawString: keyBinding.rawAction)
-          if returnValue == 0 {
-            player.sendOSD(.screenshot)
-          }
-        default:
-          returnValue = player.mpv.command(rawString: keyBinding.rawAction)
-        }
-
-        let success = returnValue == 0
-
-        if success {
-          if keyBinding.action.first == MPVCommand.screenshot.rawValue {
-            player.sendOSD(.screenshot)
-          }
-
-        } else {
-          log.error("Return value \(returnValue) when executing key command \(keyBinding.rawAction.quoted)")
-        }
+        let returnValue: Int32 = player.mpv.command(rawString: keyBinding.rawAction)
+        log.error("Return value \(returnValue) from mpv key command \(keyBinding.rawAction.quoted)")
       }
 
       return true  // Was handled (even if not successful)
