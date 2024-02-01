@@ -117,7 +117,23 @@ extension PlayerWindowController {
         return
       }
 
-      let newWindowGeo = resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: videoDisplayRotatedSize, justOpenedFile: justOpenedFile)
+      let windowGeo = windowedModeGeometry.clone(videoAspect: videoDisplayRotatedSize.mpvAspect)
+
+      let newWindowGeo: PWindowGeometry
+      if shouldResizeWindowAfterVideoReconfig(justOpenedFile: justOpenedFile) {
+        newWindowGeo = resizeAfterFileOpen(windowGeo: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
+
+      } else {
+        let justOpenedFileManually = justOpenedFile && !isInitialSizeDone
+        if justOpenedFileManually {
+          log.verbose("[mpvVidReconfig D-1] Just opened file manually with no resize strategy. Using windowedModeGeometryLastClosed: \(PlayerWindowController.windowedModeGeometryLastClosed)")
+          newWindowGeo = currentLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed,
+                                                           videoAspect: videoDisplayRotatedSize.mpvAspect)
+        } else {
+          // video size changed during playback
+          newWindowGeo = resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
+        }
+      }
 
       var duration = IINAAnimation.VideoReconfigDuration
       if !isInitialSizeDone {
@@ -169,22 +185,7 @@ extension PlayerWindowController {
     }
   }
 
-  private func resizeWindowAfterVideoReconfig(videoDisplayRotatedSize: NSSize, justOpenedFile: Bool) -> PWindowGeometry {
-    let windowGeo = windowedModeGeometry.clone(videoAspect: videoDisplayRotatedSize.mpvAspect)
-
-    guard shouldResizeWindowAfterVideoReconfig(justOpenedFile: justOpenedFile) else {
-      let justOpenedFileManually = justOpenedFile && !isInitialSizeDone
-      if justOpenedFileManually {
-        log.verbose("[mpvVidReconfig D-1] Just opened file manually with no resize strategy. Using windowedModeGeometryLastClosed: \(PlayerWindowController.windowedModeGeometryLastClosed)")
-        return currentLayout.convertWindowedModeGeometry(from: PlayerWindowController.windowedModeGeometryLastClosed,
-                                                         videoAspect: videoDisplayRotatedSize.mpvAspect)
-      }
-
-      // video size changed during playback
-      return resizeMinimallyAfterVideoReconfig(from: windowGeo, videoDisplayRotatedSize: videoDisplayRotatedSize)
-    }
-    assert(player.info.justOpenedFile)
-
+  private func resizeAfterFileOpen(windowGeo: PWindowGeometry, videoDisplayRotatedSize: NSSize) -> PWindowGeometry {
     let screenID = player.isInMiniPlayer ? musicModeGeometry.screenID : windowedModeGeometry.screenID
     let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
     var newVideoSize = windowGeo.videoSize

@@ -392,8 +392,7 @@ not applying FFmpeg 9599 workaround
     /// Reset window-scale when changing tracks to prevent green screen errors
     chkErr(mpv_set_option_string(mpv, MPVOption.ProgramBehavior.resetOnNextFile,
                                  [MPVOption.PlaybackControl.abLoopA,
-                                  MPVOption.PlaybackControl.abLoopB,
-                                  MPVOption.Window.windowScale].joined(separator: ",")))
+                                  MPVOption.PlaybackControl.abLoopB].joined(separator: ",")))
 
     // Set user defined conf dir.
     if Preference.bool(for: .enableAdvancedSettings),
