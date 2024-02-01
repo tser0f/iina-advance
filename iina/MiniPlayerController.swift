@@ -345,13 +345,17 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
         player.setVideoTrackEnabled(true, showMiniPlayerVideo: true)
       } else {
         /// If hiding video, do animations first, then call `setVideoTrackEnabled(false)`.
-        applyVideoViewVisibility(showVideo: showVideo)
+        applyVideoViewVisibility(showVideo: false)
       }
     })
   }
 
+  func showVideo() {
+    applyVideoViewVisibility(showVideo: true)
+  }
+
   // TODO: develop a nice sliding animation if possible
-  func applyVideoViewVisibility(showVideo: Bool) {
+  private func applyVideoViewVisibility(showVideo: Bool) {
     var tasks: [IINAAnimation.Task] = []
     tasks.append(IINAAnimation.zeroDurationTask{ [self] in
       // Hide OSD during animation
