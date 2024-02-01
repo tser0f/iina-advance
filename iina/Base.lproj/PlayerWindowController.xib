@@ -46,8 +46,8 @@
                 <outlet property="leadingTitleBarLeadingSpaceConstraint" destination="8Ry-mq-mNQ" id="abn-rz-U1P"/>
                 <outlet property="leadingTitleBarTrailingSpaceConstraint" destination="ckY-Xn-Az9" id="2Sw-bW-ZKj"/>
                 <outlet property="leftArrowButton" destination="10x-bg-xlj" id="HOT-Yl-7aO"/>
-                <outlet property="leftArrowLabel" destination="Yg9-Sd-sWy" id="fps-VD-ZgC"/>
                 <outlet property="leftLabel" destination="NBD-MV-OuG" id="7xb-a1-6NR"/>
+                <outlet property="leftSpeedLabel" destination="Yg9-Sd-sWy" id="fps-VD-ZgC"/>
                 <outlet property="muteButton" destination="2py-h1-0km" id="baB-6t-gO7"/>
                 <outlet property="onTopButton" destination="Ztc-Kn-fxI" id="xCA-hX-VpW"/>
                 <outlet property="oscBottomMainView" destination="Qmi-hb-0aM" id="PM5-Ic-nvt"/>
@@ -74,8 +74,8 @@
                 <outlet property="playbackButtonsHorizontalPaddingConstraint" destination="V3v-73-S9H" id="N0E-eR-w7j"/>
                 <outlet property="playbackButtonsSquareWidthConstraint" destination="7xv-qQ-n43" id="Bu6-zH-TFP"/>
                 <outlet property="rightArrowButton" destination="EIi-qd-glM" id="U46-Gl-e8D"/>
-                <outlet property="rightArrowLabel" destination="QTI-wi-oyB" id="icX-KI-Muj"/>
                 <outlet property="rightLabel" destination="GgV-Cc-sk0" id="fnx-gO-YPl"/>
+                <outlet property="rightSpeedLabel" destination="QTI-wi-oyB" id="icX-KI-Muj"/>
                 <outlet property="thumbnailPeekView" destination="vej-bg-g6C" id="sws-ib-t4r"/>
                 <outlet property="timePositionHoverLabel" destination="qOq-6a-7j7" id="ngM-1f-G5D"/>
                 <outlet property="timePositionHoverLabelHorizontalCenterConstraint" destination="ekV-Sh-cEZ" id="zYq-k1-B2g"/>
@@ -262,43 +262,14 @@
                             <stackView identifier="OSC-Floating-TopHalf-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="Unr-Y6-JoM" userLabel="OSC-Floating-UpperHalf View" customClass="ClickThroughStackView" customModule="IINA" customModuleProvider="target">
                                 <rect key="frame" x="10" y="26" width="420" height="37"/>
                                 <middleViews>
-                                    <textField identifier="Left-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Speed Label">
-                                        <rect key="frame" x="-2" y="12" width="26" height="13"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="OjQ-BT-Oar"/>
-                                        </constraints>
-                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="right" title="-32x" id="eCe-SS-Wlj">
-                                            <font key="font" metaFont="system" size="10"/>
-                                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
-                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                        </textFieldCell>
-                                    </textField>
                                     <stackView identifier="OSC-Fragment-Control-View" orientation="horizontal" alignment="centerY" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" horizontalClippingResistancePriority="500" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hDm-KI-3o4" userLabel="OSC-Floating-PlayButtons-Container Stack View" customClass="ClickThroughStackView" customModule="IINA" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="0.0" width="420" height="37"/>
                                     </stackView>
-                                    <textField identifier="Right-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Speed Label">
-                                        <rect key="frame" x="400" y="12" width="26" height="13"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="GMD-Cv-N6X"/>
-                                        </constraints>
-                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="left" title="32x" id="ULE-u4-k9L">
-                                            <font key="font" metaFont="system" size="10"/>
-                                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
-                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                        </textFieldCell>
-                                    </textField>
                                 </middleViews>
-                                <constraints>
-                                    <constraint firstItem="QTI-wi-oyB" firstAttribute="width" secondItem="Yg9-Sd-sWy" secondAttribute="width" id="lhy-md-HP5"/>
-                                </constraints>
                                 <visibilityPriorities>
-                                    <integer value="1000"/>
-                                    <integer value="1000"/>
                                     <integer value="1000"/>
                                 </visibilityPriorities>
                                 <customSpacing>
-                                    <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
                                     <real value="3.4028234663852886e+38"/>
                                 </customSpacing>
                             </stackView>
@@ -861,7 +832,7 @@
                     <rect key="frame" x="60" y="0.0" width="24" height="24"/>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="play" imagePosition="only" alignment="center" alternateImage="pause" refusesFirstResponder="YES" state="on" imageScaling="proportionallyUpOrDown" inset="2" id="mWQ-R0-GGr">
                         <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
-                        <font key="font" metaFont="system"/>
+                        <font key="font" metaFont="system" size="16"/>
                     </buttonCell>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="gxw-pJ-Lcg" secondAttribute="height" multiplier="1:1" id="7Xg-CL-HXe"/>
@@ -890,6 +861,28 @@
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="06z-vV-Q73" userLabel="Right-most Spacer">
                     <rect key="frame" x="132" y="0.0" width="12" height="24"/>
                 </customView>
+                <textField identifier="Left-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Speed Label">
+                    <rect key="frame" x="9" y="-10" width="31" height="13"/>
+                    <constraints>
+                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="OjQ-BT-Oar"/>
+                    </constraints>
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="center" title="-32x" id="eCe-SS-Wlj">
+                        <font key="font" metaFont="system" size="10"/>
+                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField identifier="Right-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Speed Label">
+                    <rect key="frame" x="105" y="-10" width="30" height="13"/>
+                    <constraints>
+                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="GMD-Cv-N6X"/>
+                    </constraints>
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" alignment="center" title="32x" id="ULE-u4-k9L">
+                        <font key="font" metaFont="system" size="10"/>
+                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
             </subviews>
             <constraints>
                 <constraint firstItem="X5y-IG-ngq" firstAttribute="width" secondItem="I07-AH-cjL" secondAttribute="width" id="0vs-zP-8OU"/>
@@ -912,11 +905,13 @@
                 <constraint firstAttribute="bottom" secondItem="X5y-IG-ngq" secondAttribute="bottom" id="Nga-Wr-kdK"/>
                 <constraint firstAttribute="trailing" secondItem="06z-vV-Q73" secondAttribute="trailing" id="PLL-cS-kT4"/>
                 <constraint firstItem="siV-cJ-huN" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="QZd-EP-nGL"/>
+                <constraint firstItem="Yg9-Sd-sWy" firstAttribute="centerX" secondItem="10x-bg-xlj" secondAttribute="centerX" id="Qx8-AM-MSK"/>
                 <constraint firstItem="06z-vV-Q73" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="Rk6-Ms-Nt9"/>
                 <constraint firstAttribute="bottom" secondItem="siV-cJ-huN" secondAttribute="bottom" id="Wt9-GV-5Qg"/>
                 <constraint firstItem="EIi-qd-glM" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="X4K-XI-9dS"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="leading" secondItem="I07-AH-cjL" secondAttribute="trailing" id="XL0-Ya-7hM"/>
                 <constraint firstItem="EIi-qd-glM" firstAttribute="width" secondItem="10x-bg-xlj" secondAttribute="width" id="YB1-TV-uzN"/>
+                <constraint firstAttribute="bottom" secondItem="Yg9-Sd-sWy" secondAttribute="bottom" constant="-10" id="YgX-gn-KpY"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="aJW-dV-zhS"/>
                 <constraint firstItem="siV-cJ-huN" firstAttribute="leading" secondItem="Yv6-0K-6E4" secondAttribute="leading" id="cHK-nA-SWz"/>
                 <constraint firstAttribute="bottom" secondItem="EIi-qd-glM" secondAttribute="bottom" id="dKb-25-XUY"/>
@@ -924,11 +919,13 @@
                 <constraint firstItem="06z-vV-Q73" firstAttribute="leading" secondItem="EIi-qd-glM" secondAttribute="trailing" id="eOx-13-7hg"/>
                 <constraint firstItem="I07-AH-cjL" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="ehY-Oy-N1n"/>
                 <constraint firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="gel-MK-3nz"/>
+                <constraint firstItem="QTI-wi-oyB" firstAttribute="bottom" secondItem="Yv6-0K-6E4" secondAttribute="bottom" constant="10" id="jac-QC-BOL"/>
                 <constraint firstItem="siV-cJ-huN" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="kLO-HC-vfC"/>
                 <constraint firstItem="X5y-IG-ngq" firstAttribute="top" secondItem="10x-bg-xlj" secondAttribute="top" id="kda-hs-rOj"/>
                 <constraint firstItem="EIi-qd-glM" firstAttribute="top" secondItem="10x-bg-xlj" secondAttribute="top" id="nam-S9-vAq"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="pu0-FJ-wNz"/>
                 <constraint firstItem="10x-bg-xlj" firstAttribute="leading" secondItem="siV-cJ-huN" secondAttribute="trailing" id="qcZ-ea-Ibq"/>
+                <constraint firstItem="EIi-qd-glM" firstAttribute="centerX" secondItem="QTI-wi-oyB" secondAttribute="centerX" id="rtt-3b-STq"/>
                 <constraint firstItem="I07-AH-cjL" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="tZa-KL-vfS"/>
                 <constraint firstItem="06z-vV-Q73" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="xbo-Ky-Ajh"/>
             </constraints>

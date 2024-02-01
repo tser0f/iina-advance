@@ -724,8 +724,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet var fragPositionSliderView: NSView!
   @IBOutlet weak var fragPlaybackControlButtonsView: NSView!
 
-  @IBOutlet weak var leftArrowLabel: NSTextField!
-  @IBOutlet weak var rightArrowLabel: NSTextField!
+  @IBOutlet weak var leftSpeedLabel: NSTextField!
+  @IBOutlet weak var rightSpeedLabel: NSTextField!
 
   @IBOutlet weak var osdVisualEffectView: NSVisualEffectView!
   @IBOutlet weak var osdHStackView: NSStackView!
@@ -3016,7 +3016,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         } else {
           switch abs(step) {
           case 5, 10, 15, 30, 45, 60, 75, 90:
-            name = isBackward ? "gobackward.\(step)" : "goforward.\(step)"
+            let absStep = Int(abs(step))
+            name = isBackward ? "gobackward.\(absStep)" : "goforward.\(absStep)"
           default:
             name = isBackward ? "gobackward.minus" : "goforward.plus"
           }
@@ -3677,8 +3678,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     if state == .off {
       speedValueIndex = AppData.availableSpeedValues.count / 2
-      leftArrowLabel.isHidden = true
-      rightArrowLabel.isHidden = true
+      leftSpeedLabel.isHidden = true
+      rightSpeedLabel.isHidden = true
     }
   }
 
@@ -3807,8 +3808,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if isPaused {
       // speed is already reset by playerCore
       speedValueIndex = AppData.availableSpeedValues.count / 2
-      leftArrowLabel.isHidden = true
-      rightArrowLabel.isHidden = true
+      leftSpeedLabel.isHidden = true
+      rightSpeedLabel.isHidden = true
       // set speed to 0 if is fastforwarding
       if isFastforwarding {
         player.setSpeed(1)
@@ -3902,16 +3903,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let speedValue = AppData.availableSpeedValues[speedValueIndex]
       player.setSpeed(speedValue)
       if speedValueIndex == 5 {
-        leftArrowLabel.isHidden = true
-        rightArrowLabel.isHidden = true
+        leftSpeedLabel.isHidden = true
+        rightSpeedLabel.isHidden = true
       } else if speedValueIndex < 5 {
-        leftArrowLabel.isHidden = false
-        rightArrowLabel.isHidden = true
-        leftArrowLabel.stringValue = String(format: "%.2fx", speedValue)
+        leftSpeedLabel.isHidden = false
+        rightSpeedLabel.isHidden = true
+        leftSpeedLabel.stringValue = String(format: "%.2fx", speedValue)
       } else if speedValueIndex > 5 {
-        leftArrowLabel.isHidden = true
-        rightArrowLabel.isHidden = false
-        rightArrowLabel.stringValue = String(format: "%.0fx", speedValue)
+        leftSpeedLabel.isHidden = true
+        rightSpeedLabel.isHidden = false
+        rightSpeedLabel.stringValue = String(format: "%.0fx", speedValue)
       }
       // if is paused
       if playButton.state == .off {
