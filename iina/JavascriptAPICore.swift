@@ -60,8 +60,7 @@ class JavascriptAPICore: JavascriptAPI, JavascriptAPICoreExportable {
 
   func osd(_ message: String) {
     whenPermitted(to: .showOSD) {
-      player!.sendOSD(.customWithDetail(message, "From plugin \(pluginInstance.plugin.name)"),
-                      autoHide: true, accessoryView: nil, external: true)
+      player!.sendOSD(.customWithDetail(message, "From plugin \(pluginInstance.plugin.name)"), external: true)
     }
   }
 

@@ -732,15 +732,15 @@ class PlayerCore: NSObject {
     }
 
     DispatchQueue.main.async { [self] in
-      let osdView = ScreenshootOSDView()
+      let osdViewController = ScreenshootOSDView()
       // Shrink to some fraction of the currently displayed video
       let relativeSize = windowController.videoView.frame.size.multiply(0.3)
       let previewImageSize = screenshotImage.size.shrink(toSize: relativeSize)
-      osdView.setImage(screenshotImage,
+      osdViewController.setImage(screenshotImage,
                        size: previewImageSize,
                        fileURL: saveToFile ? lastScreenshotURL : nil)
 
-      self.sendOSD(.screenshot, forcedTimeout: 5, accessoryView: osdView.view)
+      self.sendOSD(.screenshot, forcedTimeout: 5, accessoryViewController: osdViewController)
       if !saveToFile {
         try? FileManager.default.removeItem(at: lastScreenshotURL)
       }
@@ -2555,8 +2555,9 @@ class PlayerCore: NSObject {
     saveState()
   }
 
-  func sendOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, external: Bool = false) {
-    windowController.displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView, isExternal: external)
+  func sendOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil,
+               accessoryViewController: NSViewController? = nil, external: Bool = false) {
+    windowController.displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryViewController: accessoryViewController, isExternal: external)
   }
 
   func hideOSD() {

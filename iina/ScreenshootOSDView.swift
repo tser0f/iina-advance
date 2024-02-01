@@ -36,6 +36,7 @@ class ScreenshootOSDView: NSViewController {
       bottomConstraint.constant = 8
     }
     view.needsLayout = true
+    deleteBtn.action = #selector(self.deleteBtnAction(_:))
   }
 
   override func viewDidLoad() {
@@ -43,20 +44,32 @@ class ScreenshootOSDView: NSViewController {
     imageView.image = image
   }
 
+  override func mouseDown(with event: NSEvent) {
+    let player = PlayerCore.active
+    player.log.verbose("ScreenshotOSD mouseDown: dismissing OSD")
+    player.hideOSD()
+  }
+
   @IBAction func deleteBtnAction(_ sender: Any) {
-    PlayerCore.active.hideOSD()
+    let player = PlayerCore.active
+    player.log.verbose("ScreenshotOSD Delete button clicked")
+    player.hideOSD()
     guard let fileURL = fileURL else { return }
     try? FileManager.default.removeItem(at: fileURL)
   }
 
   @IBAction func revealBtnAction(_ sender: Any) {
-    PlayerCore.active.hideOSD()
+    let player = PlayerCore.active
+    player.log.verbose("ScreenshotOSD Reveal button clicked")
+    player.hideOSD()
     guard let fileURL = fileURL else { return }
     NSWorkspace.shared.activateFileViewerSelecting([fileURL])
   }
 
   @IBAction func editBtnAction(_ sender: Any) {
-    PlayerCore.active.hideOSD()
+    let player = PlayerCore.active
+    player.log.verbose("ScreenshotOSD Edit button clicked")
+    player.hideOSD()
     guard let fileURL = fileURL else { return }
     NSWorkspace.shared.open(fileURL)
   }

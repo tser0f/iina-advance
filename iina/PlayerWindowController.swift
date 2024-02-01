@@ -217,8 +217,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /// Whether current OSD needs user interaction to be dismissed.
   private var isShowingPersistentOSD = false
-  /// If using the mpv OSD, disable the IINA OSD
-
   var osdAnimationState: UIAnimationState = .hidden
   var hideOSDTimer: Timer?
   private var osdNextSeekIcon: NSImage? = nil
@@ -235,7 +233,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func osdDidShowLastMsgRecently() -> Bool {
     return Date().timeIntervalSince1970 - osdLastDisplayedMsgTS < 0.25
   }
-
+  // Need to keep a reference to NSViewController here in order for its Objective-C selectors to work
+  var osdContext: NSViewController? = nil
   private var osdQueueLock = Lock()
   private var osdQueue = LinkedList<() -> Void>()
 
@@ -2929,7 +2928,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// To work around this issue, we instead enqueue the tasks to display OSD using a simple LinkedList and Lock. Then we call
   /// `processQueuedOSDs()` both from here (as before), and inside the key event callbacks in `PlayerWindow` so that that the key events
   /// themselves process the display of any enqueued OSD messages.
-  func displayOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, isExternal: Bool = false) {
+  func displayOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil,
+                  accessoryViewController: NSViewController? = nil, isExternal: Bool = false) {
     /// Note: use `loaded` (querying `isWindowLoaded` will initialize windowController unexpectedly)
     guard loaded, Preference.bool(for: .enableOSD), !player.isUsingMpvOSD,
           !player.info.isRestoring,
@@ -2946,7 +2946,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     osdQueueLock.withLock {
       osdQueue.append({ [self] in
         animationPipeline.submit(IINAAnimation.Task(duration: 0, { [self] in
-          _displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
+          _displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryViewController: accessoryViewController)
         }))
       })
     }
@@ -2955,7 +2955,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  private func _displayOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
+  private func _displayOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil,
+                           accessoryViewController: NSViewController? = nil) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
 
     // Filter out unwanted OSDs first
@@ -3013,26 +3014,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         if isInScrollWheelSeek {
           name = isBackward ? "backward.fill" : "forward.fill"
         } else {
-          name = isBackward ? "gobackward" : "goforward"
           switch abs(step) {
-          case 5:
-            name += ".5"
-          case 10:
-            name += ".10"
-          case 15:
-            name += ".15"
-          case 30:
-            name += ".30"
-          case 45:
-            name += ".45"
-          case 60:
-            name += ".60"
-          case 75:
-            name += ".75"
-          case 90:
-            name += ".90"
+          case 5, 10, 15, 30, 45, 60, 75, 90:
+            name = isBackward ? "gobackward.\(step)" : "goforward.\(step)"
           default:
-            name += (name == "gobackward" ? ".minus" : ".plus")
+            name = isBackward ? "gobackward.minus" : "goforward.plus"
           }
         }
         /// Set icon for next msg, which is expected to be a `seek`
@@ -3142,7 +3128,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     for subview in osdVStackView.views(in: .bottom) {
       osdVStackView.removeView(subview)
     }
-    if let accessoryView = accessoryView {  // e.g., ScreenshotOSDView
+    if let accessoryViewController {  // e.g., ScreenshootOSDView
+      let accessoryView = accessoryViewController.view
+      osdContext = accessoryViewController
       isShowingPersistentOSD = true
       osdHeightConstraint.constant = 0
       osdHeightConstraint.priority = .defaultLow
@@ -3158,11 +3146,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       accessoryView.layer?.opacity = 0
       osdVisualEffectView.layoutSubtreeIfNeeded()
 
-      var tasks: [IINAAnimation.Task] = []
-      tasks.append(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration, {
+      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration * 0.5, {
         accessoryView.layer?.opacity = 1
       }))
-      animationPipeline.submit(tasks)
 
     } else {
       // Need this only for OSD messages which use the icon
@@ -3179,6 +3165,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     osdAnimationState = .willHide
     isShowingPersistentOSD = false
+    osdContext = nil
     if let hideOSDTimer = self.hideOSDTimer {
       hideOSDTimer.invalidate()
       self.hideOSDTimer = nil

@@ -377,7 +377,7 @@ class OpenSub {
         subChooseViewController.userCanceledAction = {
           resolver.reject(OnlineSubtitle.CommonError.canceled)
         }
-        PlayerCore.active.sendOSD(.foundSub(subs.count), autoHide: false, accessoryView: subChooseViewController.view)
+        PlayerCore.active.sendOSD(.foundSub(subs.count), autoHide: false, accessoryViewController: subChooseViewController)
         subChooseViewController.tableView.reloadData()
       }
     }
