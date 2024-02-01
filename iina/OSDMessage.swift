@@ -101,7 +101,7 @@ enum OSDMessage {
     }
   }
 
-  func message() -> (String, OSDType) {
+  func details() -> (String, OSDType) {
     switch self {
     case .fileStart(let filename):
       return (filename, .normal)

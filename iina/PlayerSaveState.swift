@@ -520,7 +520,8 @@ struct PlayerSaveState {
     }
 
     // Prevent "seek" OSD from appearing unncessarily after loading finishes
-    player.compareAndSetIfNewPlaybackTime(position: info.videoPosition?.second, duration: info.videoDuration?.second)
+    windowController.osdLastPlaybackPosition = info.videoPosition?.second
+    windowController.osdLastPlaybackDuration = info.videoDuration?.second
 
     // Open the window!
     player.openURLs([url], shouldAutoLoad: false)

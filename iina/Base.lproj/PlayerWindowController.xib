@@ -58,7 +58,7 @@
                 <outlet property="osdAccessoryProgress" destination="i10-rt-9cb" id="ZdR-ZV-uoQ"/>
                 <outlet property="osdAccessoryText" destination="lb1-5R-hR3" id="A7o-3l-NYe"/>
                 <outlet property="osdHStackView" destination="irz-R1-ajt" id="ZPd-2L-J39"/>
-                <outlet property="osdHeightContraint" destination="HrJ-x6-0Rl" id="NBn-yF-emN"/>
+                <outlet property="osdHeightConstraint" destination="HrJ-x6-0Rl" id="NBn-yF-emN"/>
                 <outlet property="osdIcon" destination="yWY-Rb-zjW" id="SrP-lu-kr3"/>
                 <outlet property="osdLabel" destination="Ofw-1d-N4T" id="9ei-8o-aYw"/>
                 <outlet property="osdLeadingMarginConstraint" destination="F2r-Um-cea" id="zge-q9-BQb"/>
@@ -463,7 +463,7 @@
                                     </stackView>
                                 </subviews>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="50" id="HrJ-x6-0Rl"/>
+                                    <constraint firstAttribute="height" constant="50" identifier="osdHeightConstraint" id="HrJ-x6-0Rl"/>
                                 </constraints>
                                 <visibilityPriorities>
                                     <integer value="1000"/>

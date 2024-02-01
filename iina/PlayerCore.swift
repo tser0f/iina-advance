@@ -125,20 +125,7 @@ class PlayerCore: NSObject {
   // TODO: fold hideOSDTimer into this
   var syncUITimer: Timer?
 
-  // OSD
-  var isUsingMpvOSD: Bool = false
-  private var osdLastPlaybackPosition: Double? = nil
-  private var osdLastPlaybackDuration: Double? = nil
-  private var osdLastMessageDisplayTime: TimeInterval = 0
-  var osdLastMessage: OSDMessage? = nil {
-    didSet {
-      if osdLastMessage != nil {
-        osdLastMessageDisplayTime = Date().timeIntervalSince1970
-      }
-    }
-  }
-  var osdDidShowLastMessageRecently: Bool { Date().timeIntervalSince1970 - osdLastMessageDisplayTime < 0.25 }
-
+  var isUsingMpvOSD = false
   /// Whether shutdown of this player has been initiated.
   @Atomic var isShuttingDown = false
 
@@ -731,13 +718,13 @@ class PlayerCore: NSObject {
 
     guard let imageFolder = mpv.getString(MPVOption.Screenshot.screenshotDirectory) else { return }
     guard let lastScreenshotURL = Utility.getLatestScreenshot(from: imageFolder) else { return }
-    guard let image = NSImage(contentsOf: lastScreenshotURL) else {
+    guard let screenshotImage = NSImage(contentsOf: lastScreenshotURL) else {
       self.sendOSD(.screenshot)
       return
     }
     if saveToClipboard {
       NSPasteboard.general.clearContents()
-      NSPasteboard.general.writeObjects([image])
+      NSPasteboard.general.writeObjects([screenshotImage])
     }
     guard Preference.bool(for: .screenshotShowPreview) else {
       self.sendOSD(.screenshot)
@@ -748,9 +735,11 @@ class PlayerCore: NSObject {
       let osdView = ScreenshootOSDView()
       // Shrink to some fraction of the currently displayed video
       let relativeSize = windowController.videoView.frame.size.multiply(0.3)
-      osdView.setImage(image,
-                       size: image.size.shrink(toSize: relativeSize),
+      let previewImageSize = screenshotImage.size.shrink(toSize: relativeSize)
+      osdView.setImage(screenshotImage,
+                       size: previewImageSize,
                        fileURL: saveToFile ? lastScreenshotURL : nil)
+
       self.sendOSD(.screenshot, forcedTimeout: 5, accessoryView: osdView.view)
       if !saveToFile {
         try? FileManager.default.removeItem(at: lastScreenshotURL)
@@ -2112,7 +2101,6 @@ class PlayerCore: NSObject {
       videoView.displayActive()
     }
 
-    syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
     sendOSD(.seek(videoPosition: info.videoPosition, videoDuration: info.videoDuration))
   }
 
@@ -2567,82 +2555,8 @@ class PlayerCore: NSObject {
     saveState()
   }
 
-  /// If `position` and `duration` are different than their previously cached values, overwrites the cached values and
-  /// returns `true`. Returns `false` if the same or one of the values is `nil`.
-  ///
-  /// Lots of redundant `seek` messages which are emitted at all sorts of different times, and each triggers a call to show
-  /// a `seek` OSD. To prevent duplicate OSDs, call this method to compare against the previous seek position.
-  @discardableResult
-  func compareAndSetIfNewPlaybackTime(position: Double?, duration: Double?) -> Bool {
-    guard let position, let duration else {
-      log.verbose("Ignoring request for OSD seek: position or duration is missing")
-      return false
-    }
-    // There seem to be precision errors which break equality when comparing values beyond 6 decimal places.
-    // Just round to nearest 1/1000000 sec for comparison.
-    let newPosRounded = round(position * AppData.osdSeekSubSecPrecisionComparison)
-    let newDurRounded = round(duration * AppData.osdSeekSubSecPrecisionComparison)
-    let oldPosRounded = round((osdLastPlaybackPosition ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
-    let oldDurRounded = round((osdLastPlaybackDuration ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
-    guard newPosRounded != oldPosRounded || newDurRounded != oldDurRounded else {
-      log.verbose("Ignoring request for OSD seek; position/duration has not changed")
-      return false
-    }
-    osdLastPlaybackPosition = position
-    osdLastPlaybackDuration = duration
-    return true
-  }
-
-  func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, external: Bool = false) {
-    /// Note: use `windowController.loaded` (querying `windowController.isWindowLoaded` will initialize windowController unexpectedly)
-    guard windowController.loaded,
-          Preference.bool(for: .enableOSD),
-          !isUsingMpvOSD, !isInInteractiveMode else { return }
-    guard !info.isRestoring else { return }
-    guard !isInMiniPlayer || Preference.bool(for: .enableOSDInMusicMode) else { return }
-
-    switch osd {
-    case .seek(_, _):
-      // Many redundant messages are sent from mpv. Try to filter them out here
-      if osdDidShowLastMessageRecently {
-        if case .speed = osdLastMessage { return }
-        if case .frameStep = osdLastMessage { return }
-        if case .frameStepBack = osdLastMessage { return }
-      }
-      guard compareAndSetIfNewPlaybackTime(position: info.videoPosition?.second, duration: info.videoDuration?.second) else {
-        return
-      }
-    case .pause, .resume:
-      if osdDidShowLastMessageRecently {
-        if case .speed = osdLastMessage, case .resume = osd { return }
-        if case .frameStep = osdLastMessage { return }
-        if case .frameStepBack = osdLastMessage { return }
-      }
-      syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
-      osdLastPlaybackPosition = info.videoPosition?.second
-      osdLastPlaybackDuration = info.videoDuration?.second
-    case .crop(let newCropLabel):
-      if newCropLabel == AppData.cropNone && !isInInteractiveMode && info.videoFiltersDisabled[Constants.FilterLabel.crop] != nil {
-        log.verbose("Ignoring request to show OSD crop 'None': looks like user starting to edit an existing crop")
-        return
-      }
-
-    default:
-      break
-    }
-
-    let disableOSDForFileLoading: Bool = info.justOpenedFile || info.timeSinceLastFileOpenFinished < 0.2
-    if disableOSDForFileLoading && !external {
-      guard case .fileStart = osd else {
-        return
-      }
-    }
-
-    // End filtering
-
-    osdLastMessage = osd
-
-    windowController.displayOSD(osd, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
+  func sendOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, external: Bool = false) {
+    windowController.displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView, isExternal: external)
   }
 
   func hideOSD() {

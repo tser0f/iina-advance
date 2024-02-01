@@ -10,7 +10,6 @@ import Cocoa
 
 class ScreenshootOSDView: NSViewController {
   @IBOutlet weak var imageView: NSImageView!
-  @IBOutlet weak var heightConstraint: NSLayoutConstraint!
   @IBOutlet weak var bottomConstraint: NSLayoutConstraint!
   @IBOutlet weak var deleteBtn: NSButton!
   @IBOutlet weak var editBtn: NSButton!
@@ -20,21 +19,14 @@ class ScreenshootOSDView: NSViewController {
   private var size: NSSize?
   private var fileURL: URL?
 
-  func setImage(_ image: NSImage, size: NSSize, fileURL: URL?) {
+  func setImage(_ image: NSImage, size imageSize: NSSize, fileURL: URL?) {
     self.image = image
-    self.size = size
+    self.size = imageSize
     self.fileURL = fileURL
-  }
-
-  override func viewDidLoad() {
-    super.viewDidLoad()
     view.translatesAutoresizingMaskIntoConstraints = false
-    let imageSize = size!
-    imageView.widthAnchor.constraint(equalTo: imageView.heightAnchor, multiplier: imageSize.aspect).isActive = true
+    imageView.wantsLayer = true
     imageView.widthAnchor.constraint(lessThanOrEqualToConstant: imageSize.width).isActive = true
     imageView.heightAnchor.constraint(lessThanOrEqualToConstant: imageSize.height).isActive = true
-    imageView.image = image
-    imageView.wantsLayer = true
     imageView.layer?.borderColor = NSColor.gridColor.withAlphaComponent(0.6).cgColor
     imageView.layer?.borderWidth = 1
     imageView.layer?.cornerRadius = 4
@@ -43,24 +35,29 @@ class ScreenshootOSDView: NSViewController {
       [deleteBtn, editBtn, revealBtn].forEach { $0?.isHidden = true }
       bottomConstraint.constant = 8
     }
-    self.view.needsLayout = true
+    view.needsLayout = true
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    imageView.image = image
   }
 
   @IBAction func deleteBtnAction(_ sender: Any) {
+    PlayerCore.active.hideOSD()
     guard let fileURL = fileURL else { return }
     try? FileManager.default.removeItem(at: fileURL)
-    PlayerCore.active.hideOSD()
   }
 
   @IBAction func revealBtnAction(_ sender: Any) {
+    PlayerCore.active.hideOSD()
     guard let fileURL = fileURL else { return }
     NSWorkspace.shared.activateFileViewerSelecting([fileURL])
-    PlayerCore.active.hideOSD()
   }
 
   @IBAction func editBtnAction(_ sender: Any) {
+    PlayerCore.active.hideOSD()
     guard let fileURL = fileURL else { return }
     NSWorkspace.shared.open(fileURL)
-    PlayerCore.active.hideOSD()
   }
 }

@@ -218,11 +218,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// Whether current OSD needs user interaction to be dismissed.
   private var isShowingPersistentOSD = false
   /// If using the mpv OSD, disable the IINA OSD
-  var isUsingMpvOSD: Bool = false
+
   var osdAnimationState: UIAnimationState = .hidden
   var hideOSDTimer: Timer?
   private var osdNextSeekIcon: NSImage? = nil
   private var osdCurrentSeekIcon: NSImage? = nil
+  var osdLastPlaybackPosition: Double? = nil
+  var osdLastPlaybackDuration: Double? = nil
+  private var osdLastDisplayedMsgTS: TimeInterval = 0
+  var osdLastDisplayedMsg: OSDMessage? = nil {
+    didSet {
+      guard osdLastDisplayedMsg != nil else { return }
+      osdLastDisplayedMsgTS = Date().timeIntervalSince1970
+    }
+  }
+  func osdDidShowLastMsgRecently() -> Bool {
+    return Date().timeIntervalSince1970 - osdLastDisplayedMsgTS < 0.25
+  }
 
   private var osdQueueLock = Lock()
   private var osdQueue = LinkedList<() -> Void>()
@@ -626,7 +638,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTopToTopBarConstraint: NSLayoutConstraint!
   @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var osdHeightContraint: NSLayoutConstraint!
+  @IBOutlet weak var osdHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTrailingMarginConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdLeadingMarginConstraint: NSLayoutConstraint!
 
@@ -2793,7 +2805,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func setOSDViews(fromMessage message: OSDMessage) {
-    let (osdText, osdType) = message.message()
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    let (osdText, osdType) = message.details()
 
     var icon: NSImage? = nil
     var isImageDisabled = false
@@ -2883,6 +2896,31 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
+  /// If `position` and `duration` are different than their previously cached values, overwrites the cached values and
+  /// returns `true`. Returns `false` if the same or one of the values is `nil`.
+  ///
+  /// Lots of redundant `seek` messages which are emitted at all sorts of different times, and each triggers a call to show
+  /// a `seek` OSD. To prevent duplicate OSDs, call this method to compare against the previous seek position.
+  private func compareAndSetIfNewPlaybackTime(position: Double?, duration: Double?) -> Bool {
+    guard let position, let duration else {
+      log.verbose("Ignoring request for OSD seek: position or duration is missing")
+      return false
+    }
+    // There seem to be precision errors which break equality when comparing values beyond 6 decimal places.
+    // Just round to nearest 1/1000000 sec for comparison.
+    let newPosRounded = round(position * AppData.osdSeekSubSecPrecisionComparison)
+    let newDurRounded = round(duration * AppData.osdSeekSubSecPrecisionComparison)
+    let oldPosRounded = round((osdLastPlaybackPosition ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+    let oldDurRounded = round((osdLastPlaybackDuration ?? -1) * AppData.osdSeekSubSecPrecisionComparison)
+    guard newPosRounded != oldPosRounded || newDurRounded != oldDurRounded else {
+      log.verbose("Ignoring request for OSD seek; position/duration has not changed")
+      return false
+    }
+    osdLastPlaybackPosition = position
+    osdLastPlaybackDuration = duration
+    return true
+  }
+
   /// Do not call `displayOSD` directly. Call `PlayerCore.sendOSD` instead.
   ///
   /// There is a timing issue that can occur when the user holds down a key to rapidly repeat a key binding or menu item equivalent,
@@ -2891,10 +2929,25 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// To work around this issue, we instead enqueue the tasks to display OSD using a simple LinkedList and Lock. Then we call
   /// `processQueuedOSDs()` both from here (as before), and inside the key event callbacks in `PlayerWindow` so that that the key events
   /// themselves process the display of any enqueued OSD messages.
-  func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
+  func displayOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil, isExternal: Bool = false) {
+    /// Note: use `loaded` (querying `isWindowLoaded` will initialize windowController unexpectedly)
+    guard loaded, Preference.bool(for: .enableOSD), !player.isUsingMpvOSD,
+          !player.info.isRestoring,
+          !player.isInInteractiveMode else { return }
+    guard !isInMiniPlayer || Preference.bool(for: .enableOSDInMusicMode) else { return }
+
+    let disableOSDForFileLoading: Bool = player.info.justOpenedFile || player.info.timeSinceLastFileOpenFinished < 0.2
+    if disableOSDForFileLoading && !isExternal {
+      guard case .fileStart = msg else {
+        return
+      }
+    }
+
     osdQueueLock.withLock {
       osdQueue.append({ [self] in
-        _displayOSD(message, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
+        animationPipeline.submit(IINAAnimation.Task(duration: 0, { [self] in
+          _displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryView: accessoryView)
+        }))
       })
     }
     DispatchQueue.main.async { [self] in
@@ -2902,18 +2955,57 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  private func _displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
+  private func _displayOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil, accessoryView: NSView? = nil) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
+    // Filter out unwanted OSDs first
+
     guard !isShowingPersistentOSD else { return }
+
+    switch msg {
+    case .seek(_, _):
+      // Many redundant messages are sent from mpv. Try to filter them out here
+      if osdDidShowLastMsgRecently() {
+        if case .speed = osdLastDisplayedMsg { return }
+        if case .frameStep = osdLastDisplayedMsg { return }
+        if case .frameStepBack = osdLastDisplayedMsg { return }
+      }
+      player.syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
+      guard compareAndSetIfNewPlaybackTime(position: player.info.videoPosition?.second, duration: player.info.videoDuration?.second) else {
+        // Is redundant msg; discard
+        return
+      }
+    case .pause, .resume:
+      if osdDidShowLastMsgRecently() {
+        if case .speed = osdLastDisplayedMsg, case .resume = msg { return }
+        if case .frameStep = osdLastDisplayedMsg { return }
+        if case .frameStepBack = osdLastDisplayedMsg { return }
+      }
+      player.syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
+      osdLastPlaybackPosition = player.info.videoPosition?.second
+      osdLastPlaybackDuration = player.info.videoDuration?.second
+    case .crop(let newCropLabel):
+      if newCropLabel == AppData.cropNone && !isInInteractiveMode && player.info.videoFiltersDisabled[Constants.FilterLabel.crop] != nil {
+        log.verbose("Ignoring request to show OSD crop 'None': looks like user starting to edit an existing crop")
+        return
+      }
+
+    default:
+      break
+    }
+
+    // End filtering
+
+    osdLastDisplayedMsg = msg
 
     if #available(macOS 11.0, *) {
 
       /// The pseudo-OSDMessage `seekRelative`, if present, contains the step time for a relative seek.
-      /// But because it needs to be parsed from the mpv log, it is sent as a separate message which arrives immediately
-      /// prior to the `seek` message. With some smart logic, the info from the two messages can be combined to display
+      /// But because it needs to be parsed from the mpv log, it is sent as a separate msg which arrives immediately
+      /// prior to the `seek` msg. With some smart logic, the info from the two messages can be combined to display
       /// the most appropriate "jump" icon in the OSD in addition to the time display & progress bar.
-      if case .seekRelative(let stepString) = message, let step = Double(stepString) {
-        log.verbose("Got OSD '\(message)'")
+      if case .seekRelative(let stepString) = msg, let step = Double(stepString) {
+        log.verbose("Got OSD '\(msg)'")
 
         let isBackward = step < 0
         let accDescription = "Relative Seek \(isBackward ? "Backward" : "Forward")"
@@ -2943,11 +3035,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             name += (name == "gobackward" ? ".minus" : ".plus")
           }
         }
-        /// Set icon for next message, which is expected to be a `seek`
+        /// Set icon for next msg, which is expected to be a `seek`
         osdNextSeekIcon = NSImage(systemSymbolName: name, accessibilityDescription: accDescription)!
         /// Done with `seekRelative` msg. It is not used for display.
         return
-      } else if case .seek(_, _) = message {
+      } else if case .seek(_, _) = msg {
         /// Shift next icon into current icon, which will be used until the next call to `displayOSD()`
         /// (although note that there can be subsequent calls to `setOSDViews()` to update the OSD's displayed time while playing,
         /// but those do not count as "new" OSD messages, and thus will continue to use `osdCurrentSeekIcon`).
@@ -2960,6 +3052,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
+    // Restart timer
     if let hideOSDTimer = self.hideOSDTimer {
       hideOSDTimer.invalidate()
       self.hideOSDTimer = nil
@@ -2975,15 +3068,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let timeout: Double
       if let forcedTimeout = forcedTimeout {
         timeout = forcedTimeout
-        log.verbose("Showing OSD '\(message)', forced timeout: \(timeout) s")
+        log.verbose("Showing OSD '\(msg)', forced timeout: \(timeout) s")
       } else {
         // Timer and animation APIs require Double, but we must support legacy prefs, which store as Float
         timeout = max(IINAAnimation.OSDAnimationDuration, Double(Preference.float(for: .osdAutoHideTimeout)))
-        log.verbose("Showing OSD '\(message)', timeout: \(timeout) s")
+        log.verbose("Showing OSD '\(msg)', timeout: \(timeout) s")
       }
       hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(timeout), target: self, selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
     } else {
-      log.verbose("Showing OSD '\(message)', no timeout")
+      log.verbose("Showing OSD '\(msg)', no timeout")
     }
 
     // Reduce text size if horizontal space is tight
@@ -3023,10 +3116,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       iconString.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular),
                               range: NSRange(location: 0, length: iconString.length))
       let iconSize = iconString.size()
-      osdHeightContraint.constant = iconSize.height
+      osdHeightConstraint.constant = iconSize.height
       osdHStackView.spacing = 2.0 + (iconString.size().width * 0.1)
     } else {
-      osdHeightContraint.constant = osdTextSize
+      osdHeightConstraint.constant = osdTextSize
     }
 
     osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
@@ -3044,38 +3137,41 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
-    setOSDViews(fromMessage: message)
-
-    osdVisualEffectView.alphaValue = 1
-    osdVisualEffectView.isHidden = false
-    fadeableViews.remove(osdVisualEffectView)
+    setOSDViews(fromMessage: msg)
 
     for subview in osdVStackView.views(in: .bottom) {
       osdVStackView.removeView(subview)
     }
-    if let accessoryView = accessoryView {
+    if let accessoryView = accessoryView {  // e.g., ScreenshotOSDView
       isShowingPersistentOSD = true
+      osdHeightConstraint.constant = 0
+      osdHeightConstraint.priority = .defaultLow
 
       if #available(macOS 10.14, *) {} else {
         accessoryView.appearance = NSAppearance(named: .vibrantDark)
       }
-      let heightConstraint = NSLayoutConstraint(item: accessoryView, attribute: .height, relatedBy: .greaterThanOrEqual, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 300)
-      heightConstraint.priority = .defaultLow
-      heightConstraint.isActive = true
 
       osdVStackView.addView(accessoryView, in: .bottom)
       accessoryView.addConstraintsToFillSuperview(leading: 0, trailing: 0)
 
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0
+      osdVisualEffectView.layoutSubtreeIfNeeded()
 
-      IINAAnimation.runAsync(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration, { [self] in
-        osdVisualEffectView.layoutSubtreeIfNeeded()
-        osdVisualEffectView.display()
-      }), then: {
+      var tasks: [IINAAnimation.Task] = []
+      tasks.append(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration, {
         accessoryView.layer?.opacity = 1
-      })
+      }))
+      animationPipeline.submit(tasks)
+
+    } else {
+      // Need this only for OSD messages which use the icon
+      osdHeightConstraint.priority = .required
     }
+
+    osdVisualEffectView.alphaValue = 1
+    osdVisualEffectView.isHidden = false
+    fadeableViews.remove(osdVisualEffectView)
   }
 
   @objc
@@ -3554,10 +3650,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
 
-    // OSD, if it is visibile and is showing playback position
-    if osdAnimationState == .shown, let osdLastMessage = player.osdLastMessage {
+    // OSD, if it is visible and is showing playback position
+    if osdAnimationState == .shown, let osdLastDisplayedMsg {
       let message: OSDMessage?
-      switch osdLastMessage {
+      switch osdLastDisplayedMsg {
       case .pause:
         message = .pause(videoPosition: pos, videoDuration: duration)
       case .resume:

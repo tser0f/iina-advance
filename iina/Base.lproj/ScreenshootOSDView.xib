@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22154" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22154"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="ScreenshootOSDView" customModule="IINA" customModuleProvider="target">
             <connections>
+                <outlet property="bottomConstraint" destination="pSo-2Q-ukD" id="GRf-RA-b8Z"/>
                 <outlet property="deleteBtn" destination="u7L-iO-hp4" id="LLc-TB-Lty"/>
                 <outlet property="editBtn" destination="8sY-3E-IFw" id="mKR-i1-u5n"/>
                 <outlet property="imageView" destination="q1D-Q2-PWP" id="4Nz-wB-1iH"/>
@@ -20,7 +21,7 @@
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Hz6-mo-xeY">
             <rect key="frame" x="0.0" y="0.0" width="169" height="176"/>
             <subviews>
-                <imageView horizontalCompressionResistancePriority="749" verticalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="q1D-Q2-PWP">
+                <imageView horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="q1D-Q2-PWP">
                     <rect key="frame" x="0.0" y="36" width="140" height="140"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="140" placeholder="YES" id="taO-m6-Mlm"/>
@@ -63,14 +64,14 @@
             </subviews>
             <constraints>
                 <constraint firstItem="q1D-Q2-PWP" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="1Ys-JJ-HpL"/>
-                <constraint firstItem="u7L-iO-hp4" firstAttribute="top" secondItem="q1D-Q2-PWP" secondAttribute="bottom" constant="12" id="92W-Kb-AbB"/>
+                <constraint firstItem="u7L-iO-hp4" firstAttribute="top" secondItem="q1D-Q2-PWP" secondAttribute="bottom" priority="501" constant="12" id="92W-Kb-AbB"/>
                 <constraint firstItem="sfo-Mh-tkL" firstAttribute="height" secondItem="u7L-iO-hp4" secondAttribute="height" id="Fih-Xq-aEG"/>
                 <constraint firstItem="sfo-Mh-tkL" firstAttribute="leading" secondItem="8sY-3E-IFw" secondAttribute="trailing" constant="12" id="OSW-b3-t7Z"/>
                 <constraint firstItem="q1D-Q2-PWP" firstAttribute="top" secondItem="Hz6-mo-xeY" secondAttribute="top" id="QG1-H1-haW"/>
                 <constraint firstItem="sfo-Mh-tkL" firstAttribute="firstBaseline" secondItem="8sY-3E-IFw" secondAttribute="firstBaseline" id="SsV-YW-pkz"/>
                 <constraint firstItem="8sY-3E-IFw" firstAttribute="leading" secondItem="u7L-iO-hp4" secondAttribute="trailing" constant="12" id="Y5m-yN-VRf"/>
                 <constraint firstAttribute="bottom" secondItem="u7L-iO-hp4" secondAttribute="bottom" constant="8" id="a8f-KO-ruP"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="sfo-Mh-tkL" secondAttribute="trailing" id="d4C-qE-qrP"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="sfo-Mh-tkL" secondAttribute="trailing" priority="501" id="d4C-qE-qrP"/>
                 <constraint firstItem="8sY-3E-IFw" firstAttribute="height" secondItem="u7L-iO-hp4" secondAttribute="height" id="dp7-XK-BJu"/>
                 <constraint firstItem="8sY-3E-IFw" firstAttribute="firstBaseline" secondItem="u7L-iO-hp4" secondAttribute="firstBaseline" id="fWM-BN-pPf"/>
                 <constraint firstAttribute="bottom" secondItem="q1D-Q2-PWP" secondAttribute="bottom" constant="36" id="pSo-2Q-ukD"/>
