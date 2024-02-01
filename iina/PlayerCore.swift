@@ -909,6 +909,7 @@ class PlayerCore: NSObject {
   /** Set speed. */
   func setSpeed(_ speed: Double) {
     mpv.queue.async { [self] in
+      log.verbose("Setting speed to \(speed)")
       mpv.setDouble(MPVOption.PlaybackControl.speed, speed)
     }
   }

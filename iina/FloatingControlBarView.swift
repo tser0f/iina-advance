@@ -23,6 +23,7 @@ class FloatingControlBarView: NSVisualEffectView {
   weak var bottomMarginConstraint: NSLayoutConstraint!
 
   var mousePosRelatedToView: CGPoint?
+  var mousePosRelatedToWindow: CGPoint?
 
   var isDragging: Bool = false
 
@@ -124,25 +125,35 @@ class FloatingControlBarView: NSVisualEffectView {
     guard let viewportView = playerWindowController?.viewportView else { return }
 
     mousePosRelatedToView = self.convert(event.locationInWindow, from: nil)
+    mousePosRelatedToWindow = event.locationInWindow
     let originInViewport = viewportView.convert(frame.origin, from: nil)
     isAlignFeedbackSent = abs(originInViewport.x - (viewportView.frame.width - frame.width) / 2) <= Constants.Distance.floatingControllerSnapToCenterThreshold
-    isDragging = true
   }
 
   override func mouseDragged(with event: NSEvent) {
-    guard let mouseLocInView = mousePosRelatedToView,
+    guard let mousePosRelatedToView,
+          let mousePosRelatedToWindow,
           let playerWindowController,
           let viewportView = playerWindowController.viewportView else {
       return
     }
 
+    if !isDragging {
+      if mousePosRelatedToWindow.distance(to: event.locationInWindow) <= Constants.Distance.windowControllerMinInitialDragThreshold {
+        return
+      }
+      if Logger.enabled && Logger.Level.preferred >= .verbose {
+        playerWindowController.log.verbose("FloatingOSC mouseDrag: minimum dragging distance was met")
+      }
+      isDragging = true
+    }
     guard isDragging else { return }
 
     let currentLocInViewport = viewportView.convert(event.locationInWindow, from: nil)
     let geometry = FloatingControllerGeometry(windowLayout: playerWindowController.currentLayout, viewportSize: viewportView.frame.size)
 
-    var newCenterX = currentLocInViewport.x - mouseLocInView.x + geometry.halfBarWidth
-    let newOriginY = currentLocInViewport.y - mouseLocInView.y
+    var newCenterX = currentLocInViewport.x - mousePosRelatedToView.x + geometry.halfBarWidth
+    let newOriginY = currentLocInViewport.y - mousePosRelatedToView.y
     // stick to center
     if Preference.bool(for: .controlBarStickToCenter) {
       let xPosWhenCenter = geometry.centerX
