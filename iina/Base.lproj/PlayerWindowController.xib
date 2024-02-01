@@ -862,7 +862,7 @@
                     <rect key="frame" x="132" y="0.0" width="12" height="24"/>
                 </customView>
                 <textField identifier="Left-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Yg9-Sd-sWy" userLabel="Left Speed Label">
-                    <rect key="frame" x="9" y="-10" width="31" height="13"/>
+                    <rect key="frame" x="9" y="-8" width="31" height="13"/>
                     <constraints>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="OjQ-BT-Oar"/>
                     </constraints>
@@ -873,7 +873,7 @@
                     </textFieldCell>
                 </textField>
                 <textField identifier="Right-Speed-Label" hidden="YES" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="QTI-wi-oyB" userLabel="Right Speed Label">
-                    <rect key="frame" x="105" y="-10" width="30" height="13"/>
+                    <rect key="frame" x="105" y="-8" width="30" height="13"/>
                     <constraints>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="26" id="GMD-Cv-N6X"/>
                     </constraints>
@@ -911,7 +911,7 @@
                 <constraint firstItem="EIi-qd-glM" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="X4K-XI-9dS"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="leading" secondItem="I07-AH-cjL" secondAttribute="trailing" id="XL0-Ya-7hM"/>
                 <constraint firstItem="EIi-qd-glM" firstAttribute="width" secondItem="10x-bg-xlj" secondAttribute="width" id="YB1-TV-uzN"/>
-                <constraint firstAttribute="bottom" secondItem="Yg9-Sd-sWy" secondAttribute="bottom" constant="-10" id="YgX-gn-KpY"/>
+                <constraint firstAttribute="bottom" secondItem="Yg9-Sd-sWy" secondAttribute="bottom" constant="-8" id="YgX-gn-KpY"/>
                 <constraint firstItem="gxw-pJ-Lcg" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="aJW-dV-zhS"/>
                 <constraint firstItem="siV-cJ-huN" firstAttribute="leading" secondItem="Yv6-0K-6E4" secondAttribute="leading" id="cHK-nA-SWz"/>
                 <constraint firstAttribute="bottom" secondItem="EIi-qd-glM" secondAttribute="bottom" id="dKb-25-XUY"/>
@@ -919,7 +919,7 @@
                 <constraint firstItem="06z-vV-Q73" firstAttribute="leading" secondItem="EIi-qd-glM" secondAttribute="trailing" id="eOx-13-7hg"/>
                 <constraint firstItem="I07-AH-cjL" firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="ehY-Oy-N1n"/>
                 <constraint firstAttribute="bottom" secondItem="10x-bg-xlj" secondAttribute="bottom" id="gel-MK-3nz"/>
-                <constraint firstItem="QTI-wi-oyB" firstAttribute="bottom" secondItem="Yv6-0K-6E4" secondAttribute="bottom" constant="10" id="jac-QC-BOL"/>
+                <constraint firstItem="QTI-wi-oyB" firstAttribute="bottom" secondItem="Yv6-0K-6E4" secondAttribute="bottom" constant="8" id="jac-QC-BOL"/>
                 <constraint firstItem="siV-cJ-huN" firstAttribute="top" secondItem="Yv6-0K-6E4" secondAttribute="top" id="kLO-HC-vfC"/>
                 <constraint firstItem="X5y-IG-ngq" firstAttribute="top" secondItem="10x-bg-xlj" secondAttribute="top" id="kda-hs-rOj"/>
                 <constraint firstItem="EIi-qd-glM" firstAttribute="top" secondItem="10x-bg-xlj" secondAttribute="top" id="nam-S9-vAq"/>

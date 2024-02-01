@@ -2961,7 +2961,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Filter out unwanted OSDs first
 
-    guard !isShowingPersistentOSD else { return }
+    guard !isShowingPersistentOSD || accessoryViewController != nil else { return }
 
     switch msg {
     case .seek(_, _):

@@ -364,6 +364,10 @@ extension CGFloat {
   func truncateTo6() -> Double {
     return Double(Int(self * 1e6)) / 1e6
   }
+
+  func truncateTo3() -> Double {
+    return Double(Int(self * 1e3)) / 1e3
+  }
 }
 
 extension Bool {
