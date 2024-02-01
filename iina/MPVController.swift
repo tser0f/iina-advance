@@ -327,7 +327,7 @@ not applying FFmpeg 9599 workaround
     setUserOption(PK.subOverrideLevel, type: .other, forName: MPVOption.Subtitles.subAssOverride, transformer: subOverrideHandler)
 
     setUserOption(PK.subTextFont, type: .string, forName: MPVOption.Subtitles.subFont)
-    setUserOption(PK.subTextSize, type: .int, forName: MPVOption.Subtitles.subFontSize)
+    setUserOption(PK.subTextSize, type: .float, forName: MPVOption.Subtitles.subFontSize)
 
     setUserOption(PK.subTextColorString, type: .color, forName: MPVOption.Subtitles.subColor)
     setUserOption(PK.subBgColorString, type: .color, forName: MPVOption.Subtitles.subBackColor)
@@ -338,10 +338,10 @@ not applying FFmpeg 9599 workaround
     setUserOption(PK.subBlur, type: .float, forName: MPVOption.Subtitles.subBlur)
     setUserOption(PK.subSpacing, type: .float, forName: MPVOption.Subtitles.subSpacing)
 
-    setUserOption(PK.subBorderSize, type: .int, forName: MPVOption.Subtitles.subBorderSize)
+    setUserOption(PK.subBorderSize, type: .float, forName: MPVOption.Subtitles.subBorderSize)
     setUserOption(PK.subBorderColorString, type: .color, forName: MPVOption.Subtitles.subBorderColor)
 
-    setUserOption(PK.subShadowSize, type: .int, forName: MPVOption.Subtitles.subShadowOffset)
+    setUserOption(PK.subShadowSize, type: .float, forName: MPVOption.Subtitles.subShadowOffset)
     setUserOption(PK.subShadowColorString, type: .color, forName: MPVOption.Subtitles.subShadowColor)
 
     setUserOption(PK.subAlignX, type: .other, forName: MPVOption.Subtitles.subAlignX) { key in
