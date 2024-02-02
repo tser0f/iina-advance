@@ -2853,12 +2853,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if isImageDisabled {
         iconString.addAttributes([.foregroundColor: NSColor.disabledControlTextColor], range: NSMakeRange(0, iconString.length))
       }
+      osdIcon.isHidden = false
       osdIcon.attributedStringValue = iconString
       osdLabel.stringValue = osdText
+
+      // Need this only for OSD messages which use the icon
+      osdHeightConstraint.priority = .required
     } else {
       // No icon
+      osdIcon.isHidden = true
       osdIcon.stringValue = ""
       osdLabel.stringValue = osdText
+
+      osdHeightConstraint.constant = 0
+      osdHeightConstraint.priority = .defaultLow
     }
 
     switch osdType {
@@ -3133,8 +3141,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       let accessoryView = accessoryViewController.view
       osdContext = accessoryViewController
       isShowingPersistentOSD = true
-      osdHeightConstraint.constant = 0
-      osdHeightConstraint.priority = .defaultLow
 
       if #available(macOS 10.14, *) {} else {
         accessoryView.appearance = NSAppearance(named: .vibrantDark)
@@ -3151,9 +3157,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         accessoryView.layer?.opacity = 1
       }))
 
-    } else {
-      // Need this only for OSD messages which use the icon
-      osdHeightConstraint.priority = .required
     }
 
     osdVisualEffectView.alphaValue = 1
@@ -3584,9 +3587,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     processQueuedOSDs()
 
     // don't let play/pause icon fall out of sync
-    let isPaused = player.info.isPaused
     let isNetworkStream = player.info.isNetworkResource
-    updatePlayButtonState(isPaused ? .off : .on)
+    updatePlayButtonState()
     updatePlaybackTimeUI()
     updateAdditionalInfo()
     if isInMiniPlayer {
@@ -3669,17 +3671,22 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func updatePlayButtonState(_ state: NSControl.StateValue) {
+  func updatePlayButtonState() {
     guard loaded else { return }
+    let isPaused = player.info.isPaused
+    let state: NSControl.StateValue = isPaused ? .off : .on
     if isInMiniPlayer {
       player.windowController.miniPlayer.playButton.state = state
     }
     playButton.state = state
 
-    if state == .off {
+    if isPaused {
       speedValueIndex = AppData.availableSpeedValues.count / 2
       leftSpeedLabel.isHidden = true
       rightSpeedLabel.isHidden = true
+      playButton.imageScaling = .scaleProportionallyUpOrDown
+    } else {
+      playButton.imageScaling = .scaleProportionallyDown
     }
   }
 
@@ -3916,7 +3923,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
       // if is paused
       if playButton.state == .off {
-        updatePlayButtonState(.on)
         player.resume()
       }
 

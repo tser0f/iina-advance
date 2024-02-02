@@ -2520,7 +2520,7 @@ class PlayerCore: NSObject {
 
     case .playButton:
       DispatchQueue.main.async { [self] in
-        windowController.updatePlayButtonState(info.isPaused ? .off : .on)
+        windowController.updatePlayButtonState()
         if #available(macOS 10.12.2, *) {
           self.touchBarSupport.updateTouchBarPlayBtn()
         }

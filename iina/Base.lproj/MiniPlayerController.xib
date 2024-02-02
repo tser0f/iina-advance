@@ -93,7 +93,7 @@
                                         <constraint firstAttribute="height" constant="24" id="AVQ-eY-Sqg"/>
                                     </constraints>
                                     <connections>
-                                        <action selector="prevBtnAction:" target="-2" id="XQz-AU-kmJ"/>
+                                        <action selector="leftArrowButtonAction:" target="-1" id="pbG-0X-gdp"/>
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="28c-iK-4mT" userLabel="Play Button">
@@ -107,7 +107,7 @@
                                         <constraint firstAttribute="width" secondItem="28c-iK-4mT" secondAttribute="height" multiplier="1:1" id="sqa-rc-fhZ"/>
                                     </constraints>
                                     <connections>
-                                        <action selector="playButtonAction:" target="-2" id="wxZ-lu-kZk"/>
+                                        <action selector="playButtonAction:" target="-1" id="z9e-sV-9ax"/>
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="nwm-1g-9Dl" userLabel="Next Button">
@@ -121,7 +121,7 @@
                                         <constraint firstAttribute="height" constant="24" id="cuX-5c-RtE"/>
                                     </constraints>
                                     <connections>
-                                        <action selector="nextBtnAction:" target="-2" id="XcN-k5-GJC"/>
+                                        <action selector="rightArrowButtonAction:" target="-1" id="Gcx-z3-WQu"/>
                                     </connections>
                                 </button>
                                 <button translatesAutoresizingMaskIntoConstraints="NO" id="jJt-GH-mJQ" userLabel="TogglePlaylist Button">
@@ -239,7 +239,7 @@
                         <constraint firstAttribute="height" constant="14" id="cUj-wp-dxX"/>
                     </constraints>
                     <connections>
-                        <action selector="muteButtonAction:" target="-2" id="u5U-Dm-QKi"/>
+                        <action selector="muteButtonAction:" target="-1" id="jKh-Qf-tOV"/>
                     </connections>
                 </button>
                 <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ene-VG-UYY" userLabel="Volume Slider">
@@ -249,7 +249,7 @@
                     </constraints>
                     <sliderCell key="cell" controlSize="small" continuous="YES" refusesFirstResponder="YES" state="on" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="above" sliderType="linear" id="rZ7-sj-3jn" customClass="VolumeSliderCell" customModule="IINA" customModuleProvider="target"/>
                     <connections>
-                        <action selector="volumeSliderDidChange:" target="-2" id="24x-7W-lsa"/>
+                        <action selector="volumeSliderDidChange:" target="-1" id="amd-td-7lV"/>
                     </connections>
                 </slider>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MP6-sS-T7f" userLabel="50 Label">

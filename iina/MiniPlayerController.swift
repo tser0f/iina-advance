@@ -265,26 +265,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   // MARK: - IBActions
 
-  @IBAction func volumeSliderDidChange(_ sender: NSSlider) {
-    windowController.volumeSliderDidChange(sender)
-  }
-
-  @IBAction func muteButtonAction(_ sender: NSButton) {
-    player.toggleMute()
-  }
-
-  @IBAction func playButtonAction(_ sender: NSButton) {
-    windowController.playButtonAction(sender)
-  }
-
-  @IBAction func nextBtnAction(_ sender: NSButton) {
-    windowController.rightArrowButtonAction(sender)
-  }
-
-  @IBAction func prevBtnAction(_ sender: NSButton) {
-    windowController.leftArrowButtonAction(sender)
-  }
-
   @IBAction func volumeBtnAction(_ sender: NSButton) {
     if volumePopover.isShown {
       volumePopover.performClose(self)
@@ -296,11 +276,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   @IBAction func togglePlaylist(_ sender: Any) {
     windowController.animationPipeline.submitZeroDuration({ [self] in
-      doTogglePlaylist()
+      _togglePlaylist()
     })
   }
 
-  private func doTogglePlaylist() {
+  private func _togglePlaylist() {
     guard let window = windowController.window else { return }
     let oldGeometry = windowController.musicModeGeometry
     let showPlaylist = !isPlaylistVisible
