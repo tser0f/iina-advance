@@ -908,12 +908,20 @@ class PlayerCore: NSObject {
   }
 
   /** Set speed. */
-  func setSpeed(_ speed: CGFloat) {
+  func setSpeed(_ speed: CGFloat, triggerResume: Bool = false) {
     let speedTrunc = speed.truncateTo3()
     info.playSpeed = speedTrunc  // set preemptively to keep UI in sync
     mpv.queue.async { [self] in
       log.verbose("Setting speed to \(speedTrunc)")
       mpv.setDouble(MPVOption.PlaybackControl.speed, speedTrunc)
+
+      /// If `resetSpeedWhenPaused` is enabled, then speed is reset to 1x when pausing.
+      /// This will create a subconscious link in the user's mind between "pause" -> "unset speed".
+      /// Try to stay consistent by linking the contrapositive together: "set speed" -> "play".
+      /// The intuition should be most apparent when using the speed slider in Quick Settings.
+      if triggerResume, info.isPaused, Preference.bool(for: .resetSpeedWhenPaused) {
+        _resume()
+      }
     }
   }
 

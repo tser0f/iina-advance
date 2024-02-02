@@ -3903,7 +3903,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .speed:
       let speedValue = AppData.availableSpeedValues[speedValueIndex]
       player.setSpeed(speedValue)
-      // if is paused
+      // always resume if paused
       if player.info.isPaused {
         player.resume()
       }
