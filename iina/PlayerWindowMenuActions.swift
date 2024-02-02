@@ -59,14 +59,7 @@ extension PlayerWindowController {
   // MARK: - Control
 
   @objc func menuTogglePause(_ sender: NSMenuItem) {
-    player.mpv.queue.async { [self] in
-      player.togglePause()
-      // set speed to 0 if is fastforwarding
-      if isFastforwarding {
-        player.setSpeed(1)
-        isFastforwarding = false
-      }
-    }
+    player.togglePause()
   }
 
   @objc func menuStop(_ sender: NSMenuItem) {

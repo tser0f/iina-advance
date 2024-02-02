@@ -3684,9 +3684,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       speedValueIndex = AppData.availableSpeedValues.count / 2
       leftSpeedLabel.isHidden = true
       rightSpeedLabel.isHidden = true
+      // set speed to 0 if is fastforwarding
+      if isFastforwarding {
+        player.setSpeed(1)
+        isFastforwarding = false
+      }
+
       playButton.imageScaling = .scaleProportionallyUpOrDown
     } else {
       playButton.imageScaling = .scaleProportionallyDown
+    }
+    if #available(macOS 10.12.2, *) {
+      player.touchBarSupport.updateTouchBarPlayBtn()
     }
   }
 
@@ -3810,19 +3819,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   @IBAction func playButtonAction(_ sender: NSButton) {
-    let isPaused = player.info.isPaused
-    isPaused ? player.resume() : player.pause()
-    if isPaused {
-      // speed is already reset by playerCore
-      speedValueIndex = AppData.availableSpeedValues.count / 2
-      leftSpeedLabel.isHidden = true
-      rightSpeedLabel.isHidden = true
-      // set speed to 0 if is fastforwarding
-      if isFastforwarding {
-        player.setSpeed(1)
-        isFastforwarding = false
-      }
-    }
+    let wasPaused = player.info.isPaused
+    wasPaused ? player.resume() : player.pause()
+    assert(player.info.isPaused == !wasPaused)
   }
 
   @IBAction func muteButtonAction(_ sender: NSButton) {
@@ -3915,6 +3914,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       } else if speedValueIndex < 5 {
         leftSpeedLabel.isHidden = false
         rightSpeedLabel.isHidden = true
+        // FIXME: improve format
         leftSpeedLabel.stringValue = String(format: "%.2fx", speedValue)
       } else if speedValueIndex > 5 {
         leftSpeedLabel.isHidden = true

@@ -1220,9 +1220,9 @@ not applying FFmpeg 9599 workaround
       player.log.verbose("Received mpv prop: 'pause' = \(paused)")
       if player.info.isPaused != paused {
         player.info.isPaused = paused
-        player.syncUI(.playButton)
 
         DispatchQueue.main.async { [self] in
+          player.windowController.updatePlayButtonState()
           player.refreshSyncUITimer() // needed to get latest playback position
           let osdMsg: OSDMessage = paused ? .pause(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration) :
             .resume(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration)

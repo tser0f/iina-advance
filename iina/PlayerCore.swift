@@ -546,10 +546,13 @@ class PlayerCore: NSObject {
   ///     asleep. Thus `setFlag` **must not** be called if the `mpv` core is idle or stopping. See issue
   ///     [#4520](https://github.com/iina/iina/issues/4520)
   func pause() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    info.isPaused = true  // set preemptively to prevent inconsistencies in UI
     mpv.queue.async { [self] in
       guard !info.isIdle, !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
       mpv.setFlag(MPVOption.PlaybackControl.pause, true)
     }
+    windowController.updatePlayButtonState()
   }
 
   private func _resume() {
@@ -562,9 +565,11 @@ class PlayerCore: NSObject {
   }
 
   func resume() {
+    info.isPaused = false  // set preemptively to prevent inconsistencies in UI
     mpv.queue.async { [self] in
       _resume()
     }
+    windowController.updatePlayButtonState()
   }
 
   /// Stop playback and unload the media.
@@ -2503,7 +2508,6 @@ class PlayerCore: NSObject {
 
   // difficult to use option set
   enum SyncUIOption {
-    case playButton
     case volume
     case muteButton
     case chapterList
@@ -2517,14 +2521,6 @@ class PlayerCore: NSObject {
     log.verbose("Syncing UI \(option)")
 
     switch option {
-
-    case .playButton:
-      DispatchQueue.main.async { [self] in
-        windowController.updatePlayButtonState()
-        if #available(macOS 10.12.2, *) {
-          self.touchBarSupport.updateTouchBarPlayBtn()
-        }
-      }
 
     case .volume, .muteButton:
       DispatchQueue.main.async { [self] in
