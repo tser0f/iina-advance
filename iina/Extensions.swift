@@ -302,6 +302,15 @@ fileprivate let fmtDecimalMaxFractionDigits2Truncated: NumberFormatter = {
   return fmt
 }()
 
+fileprivate let fmtDecimalMaxFractionDigits3Truncated: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 3
+  fmt.roundingMode = .floor
+  return fmt
+}()
+
 // Formats a number to max 2 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
 fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
   let fmt = NumberFormatter()
@@ -326,6 +335,11 @@ extension FloatingPoint {
   /// Formats as String, truncating the number to 2 digits after the decimal
   var stringTrunc2f: String {
     return fmtDecimalMaxFractionDigits2Truncated.string(for: self)!
+  }
+
+  /// Formats as String, truncating the number to 3 digits after the decimal, and omitting any trailing zeroes
+  var stringTrunc3f: String {
+    return fmtDecimalMaxFractionDigits3Truncated.string(for: self)!
   }
 
   /// Formats as String, rounding the number to 2 digits after the decimal

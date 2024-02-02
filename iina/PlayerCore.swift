@@ -547,12 +547,16 @@ class PlayerCore: NSObject {
   ///     [#4520](https://github.com/iina/iina/issues/4520)
   func pause() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    let isNormalSpeed = info.playSpeed == 1
     info.isPaused = true  // set preemptively to prevent inconsistencies in UI
     mpv.queue.async { [self] in
       guard !info.isIdle, !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
       mpv.setFlag(MPVOption.PlaybackControl.pause, true)
     }
-    windowController.updatePlayButtonState()
+    if !isNormalSpeed && Preference.bool(for: .resetSpeedWhenPaused) {
+      setSpeed(1)
+    }
+    windowController.updatePlayButtonAndSpeedUI()
   }
 
   private func _resume() {
@@ -569,7 +573,7 @@ class PlayerCore: NSObject {
     mpv.queue.async { [self] in
       _resume()
     }
-    windowController.updatePlayButtonState()
+    windowController.updatePlayButtonAndSpeedUI()
   }
 
   /// Stop playback and unload the media.
@@ -905,8 +909,9 @@ class PlayerCore: NSObject {
 
   /** Set speed. */
   func setSpeed(_ speed: CGFloat) {
+    let speedTrunc = speed.truncateTo3()
+    info.playSpeed = speedTrunc  // set preemptively to keep UI in sync
     mpv.queue.async { [self] in
-      let speedTrunc = speed.truncateTo3()
       log.verbose("Setting speed to \(speedTrunc)")
       mpv.setDouble(MPVOption.PlaybackControl.speed, speedTrunc)
     }

@@ -53,7 +53,7 @@
 "osd.frame_step" = "Next Frame";
 "osd.frame_step_back" = "Prev Frame";
 "osd.volume" = "Volume: %i";
-"osd.speed" = "Speed: %.3fx";
+"osd.speed" = "Speed: %@x";
 "osd.aspect" = "Aspect Ratio: %@";
 "osd.crop" = "Crop: %@";
 "osd.rotate" = "Rotation: %i°";

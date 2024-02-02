@@ -162,8 +162,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // might use another obj to handle slider?
   var isMouseInWindow: Bool = false
 
-  var isFastforwarding: Bool = false
-
   // - Left and right arrow buttons
 
   /** The maximum pressure recorded when clicking on the arrow buttons. */
@@ -652,6 +650,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var timePositionHoverLabelHorizontalCenterConstraint: NSLayoutConstraint!
   @IBOutlet weak var timePositionHoverLabelVerticalSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var playSliderHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var speedLabelVerticalConstraint: NSLayoutConstraint!
 
   // - Outlets: Views
 
@@ -724,8 +723,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet var fragPositionSliderView: NSView!
   @IBOutlet weak var fragPlaybackControlButtonsView: NSView!
 
-  @IBOutlet weak var leftSpeedLabel: NSTextField!
-  @IBOutlet weak var rightSpeedLabel: NSTextField!
+  @IBOutlet weak var speedLabel: NSTextField!
 
   @IBOutlet weak var osdVisualEffectView: NSVisualEffectView!
   @IBOutlet weak var osdHStackView: NSStackView!
@@ -3588,7 +3586,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // don't let play/pause icon fall out of sync
     let isNetworkStream = player.info.isNetworkResource
-    updatePlayButtonState()
+    updatePlayButtonAndSpeedUI()
     updatePlaybackTimeUI()
     updateAdditionalInfo()
     if isInMiniPlayer {
@@ -3671,8 +3669,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  func updatePlayButtonState() {
+  func updatePlayButtonAndSpeedUI() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded else { return }
+
     let isPaused = player.info.isPaused
     let state: NSControl.StateValue = isPaused ? .off : .on
     if isInMiniPlayer {
@@ -3680,20 +3680,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     playButton.state = state
 
-    if isPaused {
-      speedValueIndex = AppData.availableSpeedValues.count / 2
-      leftSpeedLabel.isHidden = true
-      rightSpeedLabel.isHidden = true
-      // set speed to 0 if is fastforwarding
-      if isFastforwarding {
-        player.setSpeed(1)
-        isFastforwarding = false
-      }
+    let playSpeed = player.info.playSpeed
+    let isNormalSpeed = playSpeed == 1
+    speedLabel.isHidden = isPaused || isNormalSpeed
 
-      playButton.imageScaling = .scaleProportionallyUpOrDown
+    if isNormalSpeed {
+      speedValueIndex = AppData.availableSpeedValues.count / 2
     } else {
-      playButton.imageScaling = .scaleProportionallyDown
+      speedLabel.stringValue = "\(playSpeed.stringTrunc3f)x"
     }
+
     if #available(macOS 10.12.2, *) {
       player.touchBarSupport.updateTouchBarPlayBtn()
     }
@@ -3905,24 +3901,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
     switch arrowBtnFunction {
     case .speed:
-      isFastforwarding = true
       let speedValue = AppData.availableSpeedValues[speedValueIndex]
       player.setSpeed(speedValue)
-      if speedValueIndex == 5 {
-        leftSpeedLabel.isHidden = true
-        rightSpeedLabel.isHidden = true
-      } else if speedValueIndex < 5 {
-        leftSpeedLabel.isHidden = false
-        rightSpeedLabel.isHidden = true
-        // FIXME: improve format
-        leftSpeedLabel.stringValue = String(format: "%.2fx", speedValue)
-      } else if speedValueIndex > 5 {
-        leftSpeedLabel.isHidden = true
-        rightSpeedLabel.isHidden = false
-        rightSpeedLabel.stringValue = String(format: "%.0fx", speedValue)
-      }
       // if is paused
-      if playButton.state == .off {
+      if player.info.isPaused {
         player.resume()
       }
 

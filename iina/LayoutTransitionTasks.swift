@@ -490,6 +490,16 @@ extension PlayerWindowController {
 
       updateArrowButtonImages()
 
+      if outputLayout.oscPosition == .top {
+        speedLabelVerticalConstraint.isActive = false
+        speedLabelVerticalConstraint = speedLabel.bottomAnchor.constraint(equalTo: speedLabel.superview!.bottomAnchor, constant: 10)
+        speedLabelVerticalConstraint.isActive = true
+      } else {
+        speedLabelVerticalConstraint.isActive = false
+        speedLabelVerticalConstraint = speedLabel.topAnchor.constraint(equalTo: speedLabel.superview!.topAnchor, constant: -11)
+        speedLabelVerticalConstraint.isActive = true
+      }
+
     } else { // No OSC
       if outputLayout.isMusicMode {
         miniPlayer.loadIfNeeded()

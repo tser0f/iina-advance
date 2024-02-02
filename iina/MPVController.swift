@@ -1222,7 +1222,7 @@ not applying FFmpeg 9599 workaround
         player.info.isPaused = paused
 
         DispatchQueue.main.async { [self] in
-          player.windowController.updatePlayButtonState()
+          player.windowController.updatePlayButtonAndSpeedUI()
           player.refreshSyncUITimer() // needed to get latest playback position
           let osdMsg: OSDMessage = paused ? .pause(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration) :
             .resume(videoPosition: player.info.videoPosition, videoDuration: player.info.videoDuration)
@@ -1255,6 +1255,9 @@ not applying FFmpeg 9599 workaround
         player.log.verbose("Received mpv prop: `speed` = \(speed)")
         player.info.playSpeed = speed
         player.sendOSD(.speed(speed))
+        DispatchQueue.main.async { [self] in
+          player.windowController.updatePlayButtonAndSpeedUI()
+        }
       }
 
     case MPVOption.PlaybackControl.loopPlaylist, MPVOption.PlaybackControl.loopFile:
