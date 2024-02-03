@@ -153,10 +153,10 @@ class PlayerCoreManager {
       }
       pc = PlayerCore(label)
     } else {
-      while _playerExists(withLabel: "\(AppDelegate.launchID)_\(playerCoreCounter)") {
+      while _playerExists(withLabel: "\(AppDelegate.launchID)m\(playerCoreCounter)") {
         playerCoreCounter += 1
       }
-      pc = PlayerCore("\(AppDelegate.launchID)_\(playerCoreCounter)")
+      pc = PlayerCore("\(AppDelegate.launchID)m\(playerCoreCounter)")
       playerCoreCounter += 1
     }
     Logger.log("Successfully created PlayerCore \(pc.label)")

@@ -1252,6 +1252,7 @@ not applying FFmpeg 9599 workaround
     case MPVOption.PlaybackControl.speed:
       needReloadQuickSettingsView = true
       if let speed = UnsafePointer<Double>(OpaquePointer(property.data))?.pointee {
+        
         player.log.verbose("Received mpv prop: `speed` = \(speed)")
         player.info.playSpeed = speed
         player.sendOSD(.speed(speed))

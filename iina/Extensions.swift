@@ -366,22 +366,6 @@ extension CGFloat {
       return Double(copysign(1, self))
     }
   }
-
-  var twoDigitHex: String {
-    String(format: "%02X", self)
-  }
-
-  func isWithin(_ threshold: CGFloat, of other: CGFloat) -> Bool {
-    return abs(self - other) <= threshold
-  }
-
-  func truncateTo6() -> Double {
-    return Double(Int(self * 1e6)) / 1e6
-  }
-
-  func truncateTo3() -> Double {
-    return Double(Int(self * 1e3)) / 1e3
-  }
 }
 
 extension Bool {
@@ -406,6 +390,7 @@ extension Bool {
   }
 }
 
+// Try to use Double instead of CGFloat as declared type - more compatible
 extension Double {
   func prettyFormat() -> String {
     let rounded = (self * 1000).rounded() / 1000
@@ -418,6 +403,29 @@ extension Double {
 
   var twoDecimalPlaces: String {
     return String(format: "%.2f", self)
+  }
+
+  var twoDigitHex: String {
+    String(format: "%02X", self)
+  }
+
+  func isWithin(_ threshold: CGFloat, of other: CGFloat) -> Bool {
+    return abs(self - other) <= threshold
+  }
+
+  func truncatedTo6() -> Double {
+    return Double(Int(self * 1e6)) / 1e6
+  }
+
+  func truncatedTo3() -> Double {
+    return Double(Int(self * 1e3)) / 1e3
+  }
+
+  func roundedTo3() -> Double {
+    let scaledUp = self * 1e3
+    let scaledUpRounded = scaledUp.rounded(.toNearestOrEven)
+    let finalVal = scaledUpRounded / 1e3
+    return finalVal
   }
 }
 

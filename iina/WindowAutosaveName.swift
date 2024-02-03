@@ -42,7 +42,7 @@ struct SavedWindow {
 }
 
 enum WindowAutosaveName: Equatable {
-  static let playerWindowPrefix = "Player-"
+  static let playerWindowPrefix = "PWin-"
   static let playerWindowFmt = "\(playerWindowPrefix)%@"
 
   static func formatPlayerWindow(playerUID id: String) -> String {

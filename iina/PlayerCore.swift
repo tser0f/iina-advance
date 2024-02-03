@@ -225,7 +225,7 @@ class PlayerCore: NSObject {
 
   init(_ label: String) {
     let log = Logger.Subsystem(rawValue: "play-\(label)")
-    log.debug("PlayerCore init")
+    log.debug("PlayerCore \(label) init")
     self.label = label
     self.subsystem = log
     super.init()
@@ -908,8 +908,8 @@ class PlayerCore: NSObject {
   }
 
   /** Set speed. */
-  func setSpeed(_ speed: CGFloat, triggerResume: Bool = false) {
-    let speedTrunc = speed.truncateTo3()
+  func setSpeed(_ speed: Double, triggerResume: Bool = false) {
+    let speedTrunc = speed.truncatedTo3()
     info.playSpeed = speedTrunc  // set preemptively to keep UI in sync
     mpv.queue.async { [self] in
       log.verbose("Setting speed to \(speedTrunc)")
@@ -1034,7 +1034,7 @@ class PlayerCore: NSObject {
       return nil
     }
 
-    let videoScale = (videoWidthScaled / videoWidthUnscaled).truncateTo6()
+    let videoScale = (videoWidthScaled / videoWidthUnscaled).truncatedTo6()
     return videoScale
   }
 

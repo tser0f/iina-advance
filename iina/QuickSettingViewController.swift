@@ -621,9 +621,12 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       sender.allowsTickMarkValuesOnly = false
     }
     let sliderValue = sender.doubleValue
-    let value = AppData.minSpeed * pow(AppData.maxSpeed / AppData.minSpeed, sliderValue / sliderSteps)
-    customSpeedTextField.doubleValue = value
-    player.setSpeed(value, triggerResume: true)
+    /// Use `roundedTo3()` to ensure 3 decimal places maximum. This calculation tends to result in irrational numbers
+    /// with infinite trailing 9's. This is most irksome when trying to set the speed to 1.0.
+    let newSpeed = AppData.minSpeed * pow(AppData.maxSpeed / AppData.minSpeed, sliderValue / sliderSteps).roundedTo3()
+    player.log.verbose("Speed slider changed to \(sliderValue) → newSpeed = \(newSpeed)")
+    customSpeedTextField.doubleValue = newSpeed
+    player.setSpeed(newSpeed, triggerResume: true)
     redraw(indicator: speedSliderIndicator, constraint: speedSliderConstraint, slider: speedSlider, value: "\(customSpeedTextField.stringValue)x")
   }
 
