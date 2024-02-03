@@ -1218,8 +1218,9 @@ not applying FFmpeg 9599 workaround
       }
 
       player.log.verbose("Received mpv prop: 'pause' = \(paused)")
-      if player.info.isPaused != paused {
+      if player.info.isPaused != paused || player.info.pauseStateWasChangedLocally {
         player.info.isPaused = paused
+        player.info.pauseStateWasChangedLocally = false
 
         DispatchQueue.main.async { [self] in
           player.windowController.updatePlayButtonAndSpeedUI()
@@ -1252,10 +1253,11 @@ not applying FFmpeg 9599 workaround
     case MPVOption.PlaybackControl.speed:
       needReloadQuickSettingsView = true
       if let speed = UnsafePointer<Double>(OpaquePointer(property.data))?.pointee {
-        
+
         player.log.verbose("Received mpv prop: `speed` = \(speed)")
         player.info.playSpeed = speed
         player.sendOSD(.speed(speed))
+        player.saveState()  // record the new speed
         DispatchQueue.main.async { [self] in
           player.windowController.updatePlayButtonAndSpeedUI()
         }

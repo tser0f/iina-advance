@@ -78,6 +78,7 @@ class PlaybackInfo {
   var isPlaying: Bool {
     return !isPaused
   }
+  var pauseStateWasChangedLocally = false
 
   var currentURL: URL? {
     didSet {

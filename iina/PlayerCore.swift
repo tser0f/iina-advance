@@ -551,6 +551,8 @@ class PlayerCore: NSObject {
     info.isPaused = true  // set preemptively to prevent inconsistencies in UI
     mpv.queue.async { [self] in
       guard !info.isIdle, !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
+      /// Set this so that callbacks will fire even though `info.isPaused` was already set
+      info.pauseStateWasChangedLocally = true
       mpv.setFlag(MPVOption.PlaybackControl.pause, true)
     }
     if !isNormalSpeed && Preference.bool(for: .resetSpeedWhenPaused) {
@@ -571,6 +573,8 @@ class PlayerCore: NSObject {
   func resume() {
     info.isPaused = false  // set preemptively to prevent inconsistencies in UI
     mpv.queue.async { [self] in
+      /// Set this so that callbacks will fire even though `info.isPaused` was already set
+      info.pauseStateWasChangedLocally = true
       _resume()
     }
     windowController.updatePlayButtonAndSpeedUI()

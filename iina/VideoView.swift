@@ -272,16 +272,16 @@ class VideoView: NSView {
 
   func startDisplayLink() {
     let link = obtainDisplayLink()
-    guard !CVDisplayLinkIsRunning(link) else { return }
 
     var canProceed = true
     $isUninited.withLock() { isUninited in
       canProceed = !isUninited
     }
     guard canProceed else { return }
-    log.verbose("Starting DisplayLink")
 
+    log.verbose("Starting DisplayLink")
     videoLayer.resume()
+    guard !CVDisplayLinkIsRunning(link) else { return }
     updateDisplayLink()
 
     checkResult(CVDisplayLinkSetOutputCallback(link, displayLinkCallback, mutableRawPointerOf(obj: self)),
