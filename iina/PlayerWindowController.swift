@@ -536,9 +536,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         horizontalScrollAction = Preference.ScrollAction(rawValue: newValue)!
       }
     case PK.arrowButtonAction.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        updateTitleBarAndOSC()
-      }
+      updateTitleBarAndOSC()
     case PK.blackOutMonitor.rawValue:
       if let newValue = change[.newKey] as? Bool {
         if isFullScreen {

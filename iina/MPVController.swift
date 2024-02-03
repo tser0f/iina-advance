@@ -37,9 +37,6 @@ extension mpv_event_id: CustomStringConvertible {
 extension mpv_event_end_file {
   // For help with debugging
   var reasonString: String {
-    let playlistEntryID = self.playlist_entry_id
-    let playlistInsertID = self.playlist_insert_id
-    let playlistInsertNumEntries = self.playlist_insert_num_entries
     let reason = self.reason
     var reasonString: String
     switch reason {
