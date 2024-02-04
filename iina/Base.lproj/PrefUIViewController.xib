@@ -205,10 +205,10 @@
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d9m-Hf-6wE" userLabel="RightColumn Stack View">
                     <rect key="frame" x="120" y="8" width="453" height="122"/>
                     <subviews>
-                        <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="azI-1c-jRR" userLabel="CustomFullScreen Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
+                        <stackView identifier="CustomFullScreenCollapseView" distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="azI-1c-jRR" userLabel="CustomFullScreen Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
                             <rect key="frame" x="0.0" y="32" width="453" height="90"/>
                             <subviews>
-                                <button identifier="Trigger2" translatesAutoresizingMaskIntoConstraints="NO" id="KlA-Ot-dln">
+                                <button identifier="TriggerCustomFullScreen" translatesAutoresizingMaskIntoConstraints="NO" id="KlA-Ot-dln">
                                     <rect key="frame" x="-2" y="73" width="455" height="18"/>
                                     <buttonCell key="cell" type="check" title="Use custom full screen" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="TvB-UM-FrS">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -221,7 +221,7 @@
                                         <binding destination="lH7-Vv-0M1" name="value" keyPath="values.useLegacyFullScreen" id="7NU-Ss-Bmz"/>
                                     </connections>
                                 </button>
-                                <box identifier="Custom-Full-Screen-Box" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="gcX-vp-hRg" userLabel="CustomFullScreen Box">
+                                <box identifier="ContentCustomFullScreen" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="gcX-vp-hRg" userLabel="CustomFullScreen Box">
                                     <rect key="frame" x="-3" y="-4" width="459" height="76"/>
                                     <view key="contentView" id="N67-qd-WIx" userLabel="CustomFullScreenBox Content View">
                                         <rect key="frame" x="4" y="5" width="451" height="68"/>
@@ -600,10 +600,10 @@
                                 </binding>
                             </connections>
                         </customView>
-                        <stackView clipsToBounds="YES" distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" userLabel="MpvWindowSize Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
+                        <stackView identifier="MpvWinSizeCollapseView" clipsToBounds="YES" distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fnx-bb-tli" userLabel="MpvWindowSize Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
                             <rect key="frame" x="40" y="205" width="504" height="64"/>
                             <subviews>
-                                <button identifier="Trigger0" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
+                                <button identifier="TriggerMpvWinSize" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dvv-kN-b5O">
                                     <rect key="frame" x="-2" y="47" width="506" height="18"/>
                                     <buttonCell key="cell" type="check" title="Change window size" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="zOq-Em-wUe">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -613,7 +613,7 @@
                                         <action selector="updateGeometryValue:" target="-2" id="K9I-Dy-05e"/>
                                     </connections>
                                 </button>
-                                <box identifier="Content0" title="WindowSize Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="L5c-uf-ged" userLabel="WindowSize Box">
+                                <box identifier="ContentMpvWinSize" title="WindowSize Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="L5c-uf-ged" userLabel="WindowSize Box">
                                     <rect key="frame" x="-3" y="-4" width="510" height="50"/>
                                     <view key="contentView" id="dCZ-8R-c9z" userLabel="WindowSizeBox View">
                                         <rect key="frame" x="4" y="5" width="502" height="42"/>
@@ -739,10 +739,10 @@
                                 </binding>
                             </connections>
                         </customView>
-                        <stackView clipsToBounds="YES" distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" userLabel="MpvWindowPosition Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
+                        <stackView identifier="MpvWinPosCollapseView" clipsToBounds="YES" distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="501" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5zT-kW-YFh" userLabel="MpvWindowPosition Collapse View" customClass="CollapseView" customModule="IINA" customModuleProvider="target">
                             <rect key="frame" x="40" y="52" width="504" height="145"/>
                             <subviews>
-                                <button identifier="Trigger1" horizontalHuggingPriority="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
+                                <button identifier="TriggerMpvWinPos" horizontalHuggingPriority="1" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tLm-Qr-UNX">
                                     <rect key="frame" x="-2" y="128" width="506" height="18"/>
                                     <buttonCell key="cell" type="check" title="Change window position" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Ofm-qE-RgQ">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -752,7 +752,7 @@
                                         <action selector="updateGeometryValue:" target="-2" id="HFd-qO-18w"/>
                                     </connections>
                                 </button>
-                                <box identifier="Content1" horizontalHuggingPriority="249" horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="501" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Mye-uz-WUr" userLabel="WindowPos Box">
+                                <box identifier="ContentMpvWinPos" horizontalHuggingPriority="249" horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="501" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="Mye-uz-WUr" userLabel="WindowPos Box">
                                     <rect key="frame" x="-3" y="-4" width="510" height="131"/>
                                     <view key="contentView" id="Z8T-H5-nff" userLabel="WindowPosBox View">
                                         <rect key="frame" x="4" y="5" width="502" height="123"/>
@@ -1076,7 +1076,7 @@
             <point key="canvasLocation" x="7.5" y="-737"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="gjB-It-iFS" userLabel="Prefs &gt; UI &gt; Title Bar and Controller" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="10" width="487" height="662"/>
+            <rect key="frame" x="0.0" y="0.0" width="487" height="662"/>
             <subviews>
                 <textField identifier="SectionTitleOSC" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4XH-GU-VhV">
                     <rect key="frame" x="-2" y="622" width="124" height="32"/>
