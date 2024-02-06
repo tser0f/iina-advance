@@ -257,22 +257,22 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - Window geometry vars
 
-  lazy var windowedModeGeometry: PWindowGeometry = PlayerWindowController.windowedModeGeometryLastClosed {
+  lazy var windowedModeGeo: WinGeometry = PlayerWindowController.windowedModeGeoLastClosed {
     didSet {
-      log.verbose("Updated windowedModeGeometry := \(windowedModeGeometry)")
-      assert(windowedModeGeometry.mode == .windowed, "windowedModeGeometry has unexpected mode: \(windowedModeGeometry.mode) (expected: \(PlayerWindowMode.windowed)")
-      assert(!windowedModeGeometry.fitOption.isFullScreen, "windowedModeGeometry has invalid fitOption: \(windowedModeGeometry.fitOption)")
+      log.verbose("Updated windowedModeGeo := \(windowedModeGeo)")
+      assert(windowedModeGeo.mode == .windowed, "windowedModeGeo has unexpected mode: \(windowedModeGeo.mode) (expected: \(PlayerWindowMode.windowed)")
+      assert(!windowedModeGeo.fitOption.isFullScreen, "windowedModeGeo has invalid fitOption: \(windowedModeGeo.fitOption)")
     }
   }
 
   // Remembers the geometry of the "last closed" window in windowed, so future windows will default to its layout.
   // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
-  static var windowedModeGeometryLastClosed: PWindowGeometry = {
+  static var windowedModeGeoLastClosed: WinGeometry = {
     let csv = Preference.string(for: .uiLastClosedWindowedModeGeometry)
     if csv?.isEmpty ?? true {
       Logger.log("Pref entry for \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) is empty. Will fall back to default geometry",
                  level: .verbose)
-    } else if let savedGeo = PWindowGeometry.fromCSV(csv) {
+    } else if let savedGeo = WinGeometry.fromCSV(csv) {
       return savedGeo
     }
     // Compute default geometry for main screen
@@ -280,20 +280,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return LayoutState.buildFrom(LayoutSpec.defaultLayout()).buildDefaultInitialGeometry(screen: defaultScreen)
   }() {
     didSet {
-      Preference.set(windowedModeGeometryLastClosed.toCSV(), for: .uiLastClosedWindowedModeGeometry)
-      Logger.log("Updated pref \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) := \(windowedModeGeometryLastClosed)", level: .verbose)
+      Preference.set(windowedModeGeoLastClosed.toCSV(), for: .uiLastClosedWindowedModeGeometry)
+      Logger.log("Updated pref \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) := \(windowedModeGeoLastClosed)", level: .verbose)
     }
   }
 
-  lazy var musicModeGeometry: MusicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed {
+  lazy var musicModeGeo: MusicModeGeometry = PlayerWindowController.musicModeGeoLastClosed {
     didSet {
-      log.verbose("Updated musicModeGeometry := \(musicModeGeometry)")
+      log.verbose("Updated musicModeGeo := \(musicModeGeo)")
     }
   }
 
   // Remembers the geometry of the "last closed" music mode window, so future music mode windows will default to its layout.
   // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
-  static var musicModeGeometryLastClosed: MusicModeGeometry = {
+  static var musicModeGeoLastClosed: MusicModeGeometry = {
     let csv = Preference.string(for: .uiLastClosedMusicModeGeometry)
     if csv?.isEmpty ?? true {
       Logger.log("Pref entry for \(Preference.quoted(.uiLastClosedMusicModeGeometry)) is empty. Will fall back to default music mode geometry",
@@ -307,19 +307,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return defaultGeo
   }() {
     didSet {
-      Preference.set(musicModeGeometryLastClosed.toCSV(), for: .uiLastClosedMusicModeGeometry)
-      Logger.log("Updated musicModeGeometryLastClosed := \(musicModeGeometryLastClosed)", level: .verbose)
+      Preference.set(musicModeGeoLastClosed.toCSV(), for: .uiLastClosedMusicModeGeometry)
+      Logger.log("Updated musicModeGeoLastClosed := \(musicModeGeoLastClosed)", level: .verbose)
     }
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.
-  var interactiveModeGeometry: PWindowGeometry? = nil {
+  var interactiveModeGeo: WinGeometry? = nil {
     didSet {
-      if let geo = interactiveModeGeometry {
-        log.verbose("Updated interactiveModeGeometry := \(geo)")
-        assert(geo.mode == .windowedInteractive || geo.mode == .fullScreenInteractive, "unexpected mode for interactiveModeGeometry: \(geo.mode)")
+      if let geo = interactiveModeGeo {
+        log.verbose("Updated interactiveModeGeo := \(geo)")
+        assert(geo.mode == .windowedInteractive || geo.mode == .fullScreenInteractive, "unexpected mode for interactiveModeGeo: \(geo.mode)")
       } else {
-        log.verbose("Updated interactiveModeGeometry := nil")
+        log.verbose("Updated interactiveModeGeo := nil")
       }
     }
   }
@@ -1139,12 +1139,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let layout = currentLayout
     switch layout.mode {
     case .musicMode:
-      let newMusicModeGeometry = musicModeGeometry.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
+      let newMusicModeGeometry = musicModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
       /// If `isMiniPlayerWaitingToShowVideo` is true, need to update the cached geometry & other state vars,
       /// but do not update frame because that will be handled right after
       applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry, setFrame: !player.isMiniPlayerWaitingToShowVideo)
     case .windowed:
-      var newGeo = windowedModeGeometry.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
+      var newGeo = windowedModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
 
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
@@ -1192,7 +1192,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /// When entering "windowed" mode (either from initial load, PIP, or music mode), call this to add/return `videoView`
   /// to this window. Will do nothing if it's already there.
-  func addVideoViewToWindow(_ geometry: PWindowGeometry) {
+  func addVideoViewToWindow(_ geometry: WinGeometry) {
     guard let window else { return }
     guard !viewportView.subviews.contains(videoView) else { return }
     player.log.verbose("Adding videoView to viewportView, screenScaleFactor: \(window.screenScaleFactor)")
@@ -1910,15 +1910,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     resetCollectionBehavior()
     updateBufferIndicatorView()
     updateOSDPosition()
-    addVideoViewToWindow(windowedModeGeometry)
+    addVideoViewToWindow(windowedModeGeo)
 
     /// `isOpen==true` if opening a new file in an already open window
     if isOpen {
       /// `windowFrame` may be slightly off; update it
       if currentLayout.mode == .windowed {
-        windowedModeGeometry = currentLayout.buildGeometry(windowFrame: window.frame, screenID: bestScreen.screenID, videoAspect: windowedModeGeometry.videoAspect)
+        windowedModeGeo = currentLayout.buildGeometry(windowFrame: window.frame, screenID: bestScreen.screenID, videoAspect: windowedModeGeo.videoAspect)
       } else if currentLayout.mode == .musicMode {
-        musicModeGeometry = musicModeGeometry.clone(windowFrame: window.frame, screenID: bestScreen.screenID)
+        musicModeGeo = musicModeGeo.clone(windowFrame: window.frame, screenID: bestScreen.screenID)
       }
     } else {
       // Restore layout from last launch or configure from prefs. Do not animate.
@@ -1974,13 +1974,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if !AppDelegate.shared.isTerminating {
       /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
       if currentLayout.mode == .musicMode {
-        PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry.clone(windowFrame: window.frame)
+        PlayerWindowController.musicModeGeoLastClosed = musicModeGeo.clone(windowFrame: window.frame)
       } else {
         if currentLayout.mode == .windowed {
           // Update frame since it may have moved
-          windowedModeGeometry = windowedModeGeometry.clone(windowFrame: window.frame)
+          windowedModeGeo = windowedModeGeo.clone(windowFrame: window.frame)
         }
-        PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
+        PlayerWindowController.windowedModeGeoLastClosed = windowedModeGeo
       }
     }
     lastWindowedLayoutSpec = LayoutSpec.defaultLayout()
@@ -2156,7 +2156,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     /// This method only provides the desired size for the window, but we don't have access to the  desired origin.
     /// So we need to be careful not to make assumptions about which directions the window is expanding toward.
-    /// It's OK to use `PWindowGeometry` for size calculations, but do not save the geometry objects.
+    /// It's OK to use `WinGeometry` for size calculations, but do not save the geometry objects.
     /// After the window frame is updated, `updateCachedGeometry()` will query the window for its location & size,
     /// and will save that.
     defer {
@@ -2169,7 +2169,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     case .fullScreen, .fullScreenInteractive:
       if currentLayout.isLegacyFullScreen {
-        let newGeometry = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspect: player.info.videoAspect)
+        let newGeometry = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeo.screenID, videoAspect: player.info.videoAspect)
         return newGeometry.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
@@ -2315,16 +2315,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspect: player.info.videoAspect)
           applyLegacyFullScreenGeometry(fsGeo)
           // Update screenID at least, so that window won't go back to other screen when exiting FS
-          windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
+          windowedModeGeo = windowedModeGeo.clone(screenID: screenID)
           player.saveState()
         } else if currentLayout.mode == .windowed {
-          // Update windowedModeGeometry with new window position & screen (but save size)
-          let newWindowFrame = NSRect(origin: window.frame.origin, size: windowedModeGeometry.windowFrame.size)
-          windowedModeGeometry = windowedModeGeometry.clone(windowFrame: newWindowFrame, screenID: screenID)
+          // Update windowedModeGeo with new window position & screen (but save size)
+          let newWindowFrame = NSRect(origin: window.frame.origin, size: windowedModeGeo.windowFrame.size)
+          windowedModeGeo = windowedModeGeo.clone(windowFrame: newWindowFrame, screenID: screenID)
           // Make sure window is within screen
           if !isDragging {
             log.verbose("Refitting window in response to WindowDidChangeScreen")
-            let refittedGeo = windowedModeGeometry.refit()
+            let refittedGeo = windowedModeGeo.refit()
             applyWindowGeometry(refittedGeo)
             denyNextWindowResize = false  // Setting window frame in the prior line will override auto-resize
           }
@@ -2380,7 +2380,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
           /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
           /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
-          let oldGeo = windowedModeGeometry
+          let oldGeo = windowedModeGeo
           let newGeo = oldGeo.refit()
           guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
             log.verbose("No need to update windowFrame in response to ScreenParametersNotification - no change")
@@ -3261,9 +3261,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             let screen = bestScreen
             log.verbose("[mpvVidReconfig] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
 
-            /// Updated `windowedModeGeometry` even if in full screen - we are not prepared to look for changes later
-            let croppedGeometry = windowedModeGeometry.cropVideo(from: uncroppedVideoSize, to: cropbox)
-            windowedModeGeometry = croppedGeometry
+            /// Updated `windowedModeGeo` even if in full screen - we are not prepared to look for changes later
+            let croppedGeometry = windowedModeGeo.cropVideo(from: uncroppedVideoSize, to: cropbox)
+            windowedModeGeo = croppedGeometry
             player.info.videoAspect = croppedGeometry.videoAspect
             player.info.intendedViewportSize = croppedGeometry.viewportSize
 
@@ -3276,13 +3276,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             if currentLayout.isFullScreen {
               let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspect: croppedGeometry.videoAspect)
               videoView.apply(fsInteractiveModeGeo)
-              interactiveModeGeometry = fsInteractiveModeGeo
+              interactiveModeGeo = fsInteractiveModeGeo
             } else {
 
-              let imGeoPrev = interactiveModeGeometry ?? windowedModeGeometry.toInteractiveMode()
+              let imGeoPrev = interactiveModeGeo ?? windowedModeGeo.toInteractiveMode()
               let imGeoNew = imGeoPrev.cropVideo(from: uncroppedVideoSize, to: cropbox)
 
-              interactiveModeGeometry = imGeoNew
+              interactiveModeGeo = imGeoNew
               player.window.setFrameImmediately(imGeoNew.windowFrame)
             }
           }))
@@ -3356,7 +3356,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbnailPeekView.isHidden = true
       return
     }
-    guard !currentLayout.isMusicMode || (Preference.bool(for: .enableThumbnailForMusicMode) && musicModeGeometry.isVideoVisible) else {
+    guard !currentLayout.isMusicMode || (Preference.bool(for: .enableThumbnailForMusicMode) && musicModeGeo.isVideoVisible) else {
       thumbnailPeekView.isHidden = true
       return
     }
@@ -4121,7 +4121,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     }
 
     // Set frame to animate back to
-    let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
+    let geo = currentLayout.mode == .musicMode ? musicModeGeo.toWinGeometry() : windowedModeGeo
     pip.replacementRect = geo.videoFrameInWindowCoords
     pip.replacementWindow = window
 
@@ -4159,7 +4159,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
-      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
+      let geo = currentLayout.mode == .musicMode ? musicModeGeo.toWinGeometry() : windowedModeGeo
       addVideoViewToWindow(geo)
       videoView.apply(geo)
 

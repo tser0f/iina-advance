@@ -855,22 +855,22 @@ extension PlayerWindowController {
     return false
   }
 
-  /// Returns new or existing `PWindowGeometry` if handled; `nil` if not
+  /// Returns new or existing `WinGeometry` if handled; `nil` if not
   func resizeSidebar(with dragEvent: NSEvent) -> Bool {
     guard leadingSidebarIsResizing || trailingSidebarIsResizing else { return false }
 
-    let oldGeo: PWindowGeometry
+    let oldGeo: WinGeometry
     switch currentLayout.mode {
     case .windowed:
-      oldGeo = windowedModeGeometry
+      oldGeo = windowedModeGeo
     case .fullScreen:
-      oldGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspect: player.info.videoAspect)
+      oldGeo = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeo.screenID, videoAspect: player.info.videoAspect)
     case .musicMode, .windowedInteractive, .fullScreenInteractive:
       Logger.fatal("ResizeSidebar: current mode unexpected: \(currentLayout.mode)")
     }
 
     return IINAAnimation.disableAnimation { [self] in
-      let newGeo: PWindowGeometry?
+      let newGeo: WinGeometry?
 
       if leadingSidebarIsResizing {
         newGeo = resizeLeadingSidebar(from: oldGeo, dragLocationX: dragEvent.locationInWindow.x)
@@ -886,7 +886,7 @@ extension PlayerWindowController {
         switch currentLayout.mode {
         case .windowed:
           // Need to update this for future operations
-          windowedModeGeometry = newGeo
+          windowedModeGeo = newGeo
         case .fullScreen:
           break
         case .musicMode, .windowedInteractive, .fullScreenInteractive:
@@ -897,9 +897,9 @@ extension PlayerWindowController {
     }
   }
 
-  private func resizeLeadingSidebar(from oldGeo: PWindowGeometry, dragLocationX: CGFloat) -> PWindowGeometry? {
+  private func resizeLeadingSidebar(from oldGeo: WinGeometry, dragLocationX: CGFloat) -> WinGeometry? {
     let newPlaylistWidth: CGFloat
-    let newGeo: PWindowGeometry
+    let newGeo: WinGeometry
     let currentLayout = currentLayout
     let desiredPlaylistWidth = clampPlaylistWidth(dragLocationX + 2)
 
@@ -945,9 +945,9 @@ extension PlayerWindowController {
     return newGeo
   }
 
-  private func resizeTrailingSidebar(from oldGeo: PWindowGeometry, dragLocationX: CGFloat) -> PWindowGeometry? {
+  private func resizeTrailingSidebar(from oldGeo: WinGeometry, dragLocationX: CGFloat) -> WinGeometry? {
     let newPlaylistWidth: CGFloat
-    let newGeo: PWindowGeometry
+    let newGeo: WinGeometry
     let currentLayout = currentLayout
     let viewportSize = oldGeo.viewportSize
     let desiredPlaylistWidth = clampPlaylistWidth(oldGeo.windowFrame.width - dragLocationX - 2)

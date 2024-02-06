@@ -21,8 +21,8 @@ struct PlayerSaveState {
 
     case intendedViewportSize = "intendedViewportSize"
     case layoutSpec = "layoutSpec"
-    case windowedModeGeometry = "windowedModeGeo"
-    case musicModeGeometry = "musicModeGeo"
+    case windowedModeGeo = "windowedModeGeo"
+    case musicModeGeo = "musicModeGeo"
     case screens = "screens"
     case miscWindowBools = "miscWindowBools"
     case overrideAutoMusicMode = "overrideAutoMusicMode"
@@ -74,7 +74,7 @@ struct PlayerSaveState {
 
   static fileprivate let specPrefStringVersion = "1"
   static fileprivate let windowGeometryPrefStringVersion = "1"
-  static fileprivate let musicModeGeometryPrefStringVersion = "1"
+  static fileprivate let musicModeGeoPrefStringVersion = "1"
   static fileprivate let playlistVideosCSVVersion = "1"
   static fileprivate let specErrPre = "Failed to parse LayoutSpec from string:"
   static fileprivate let geoErrPre = "Failed to parse WindowGeometry from string:"
@@ -87,8 +87,8 @@ struct PlayerSaveState {
   /// See `setInitialWindowLayout()` in `PlayerWindowLayout.swift`.
   let layoutSpec: PlayerWindowController.LayoutSpec?
   /// If in fullscreen, this is actually the `priorWindowedGeometry`
-  let windowedModeGeometry: PWindowGeometry?
-  let musicModeGeometry: MusicModeGeometry?
+  let windowedModeGeo: WinGeometry?
+  let musicModeGeo: MusicModeGeometry?
   let screens: [ScreenMeta]
 
   init(_ props: [String: Any]) {
@@ -96,10 +96,10 @@ struct PlayerSaveState {
 
     let layoutSpecCSV = PlayerSaveState.string(for: .layoutSpec, properties)
     self.layoutSpec = PlayerWindowController.LayoutSpec.fromCSV(layoutSpecCSV)
-    let windowdModeCSV = PlayerSaveState.string(for: .windowedModeGeometry, properties)
-    self.windowedModeGeometry = PWindowGeometry.fromCSV(windowdModeCSV)
-    let musicModeCSV = PlayerSaveState.string(for: .musicModeGeometry, properties)
-    self.musicModeGeometry = MusicModeGeometry.fromCSV(musicModeCSV)
+    let windowdModeCSV = PlayerSaveState.string(for: .windowedModeGeo, properties)
+    self.windowedModeGeo = WinGeometry.fromCSV(windowdModeCSV)
+    let musicModeCSV = PlayerSaveState.string(for: .musicModeGeo, properties)
+    self.musicModeGeo = MusicModeGeometry.fromCSV(musicModeCSV)
     self.screens = (props[PropName.screens.rawValue] as? [String] ?? []).compactMap({ScreenMeta.from($0)})
   }
 
@@ -120,12 +120,12 @@ struct PlayerSaveState {
     /// `layoutSpec`
     props[PropName.layoutSpec.rawValue] = layout.spec.toCSV()
 
-    /// `windowedModeGeometry`
-    let windowedModeGeometry = wc.windowedModeGeometry
-    props[PropName.windowedModeGeometry.rawValue] = windowedModeGeometry.toCSV()
+    /// `windowedModeGeo`
+    let windowedModeGeo = wc.windowedModeGeo
+    props[PropName.windowedModeGeo.rawValue] = windowedModeGeo.toCSV()
 
-    /// `musicModeGeometry`
-    props[PropName.musicModeGeometry.rawValue] = wc.musicModeGeometry.toCSV()
+    /// `musicModeGeo`
+    props[PropName.musicModeGeo.rawValue] = wc.musicModeGeo.toCSV()
 
     let screenMetaCSVList: [String] = wc.cachedScreens.values.map{$0.toCSV()}
     props[PropName.screens.rawValue] = screenMetaCSVList
@@ -807,7 +807,7 @@ extension MusicModeGeometry {
 
   /// `MusicModeGeometry` -> String
   func toCSV() -> String {
-    return [PlayerSaveState.musicModeGeometryPrefStringVersion,
+    return [PlayerSaveState.musicModeGeoPrefStringVersion,
             self.windowFrame.origin.x.string2f,
             self.windowFrame.origin.y.string2f,
             self.windowFrame.width.string2f,
@@ -821,9 +821,9 @@ extension MusicModeGeometry {
   }
 }
 
-extension PWindowGeometry {
+extension WinGeometry {
 
-  /// `PWindowGeometry` -> String
+  /// `WinGeometry` -> String
   func toCSV() -> String {
     return [PlayerSaveState.windowGeometryPrefStringVersion,
             self.topMarginHeight.string2f,
@@ -850,8 +850,8 @@ extension PWindowGeometry {
     ].joined(separator: ",")
   }
 
-  /// String -> `PWindowGeometry`
-  static func fromCSV(_ csv: String?) -> PWindowGeometry? {
+  /// String -> `WinGeometry`
+  static func fromCSV(_ csv: String?) -> WinGeometry? {
     guard !(csv?.isEmpty ?? true) else {
       Logger.log("CSV is empty; returning nil for geometry", level: .debug)
       return nil
@@ -897,7 +897,7 @@ extension PWindowGeometry {
       let windowFrame = CGRect(x: winOriginX, y: winOriginY, width: winWidth, height: winHeight)
       let viewportMargins = BoxQuad(top: viewportMarginTop, trailing: viewportMarginTrailing,
                                     bottom: viewportMarginBottom, leading: viewportMarginLeading)
-      return PWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
+      return WinGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: fitOption, mode: mode, topMarginHeight: topMarginHeight,
                              outsideTopBarHeight: outsideTopBarHeight, outsideTrailingBarWidth: outsideTrailingBarWidth,
                              outsideBottomBarHeight: outsideBottomBarHeight, outsideLeadingBarWidth: outsideLeadingBarWidth,
                              insideTopBarHeight: insideTopBarHeight, insideTrailingBarWidth: insideTrailingBarWidth,

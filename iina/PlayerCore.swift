@@ -1016,7 +1016,7 @@ class PlayerCore: NSObject {
     return nil
   }
 
-  func updateMPVWindowScale(using windowGeo: PWindowGeometry) {
+  func updateMPVWindowScale(using windowGeo: WinGeometry) {
     mpv.queue.async { [self] in
       guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
         log.verbose("Skipping update to mpv window-scale: could not get size info")
@@ -1036,7 +1036,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  private func deriveVideoScale(from windowGeometry: PWindowGeometry) -> CGFloat? {
+  private func deriveVideoScale(from windowGeometry: WinGeometry) -> CGFloat? {
     let videoWidthScaled = windowGeometry.videoSize.width
 
     // This should take into account aspect override and/or crop already

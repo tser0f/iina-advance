@@ -50,11 +50,11 @@ extension PlayerWindowController {
     /// Set this here because we are setting `currentLayout`
     switch transition.outputLayout.mode {
     case .windowed:
-      windowedModeGeometry = transition.outputGeometry
+      windowedModeGeo = transition.outputGeometry
     case .musicMode:
-      musicModeGeometry = musicModeGeometry.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspect: transition.outputGeometry.videoAspect)
+      musicModeGeo = musicModeGeo.clone(windowFrame: transition.outputGeometry.windowFrame, videoAspect: transition.outputGeometry.videoAspect)
     case .windowedInteractive:
-      interactiveModeGeometry = transition.outputGeometry
+      interactiveModeGeo = transition.outputGeometry
     case .fullScreen, .fullScreenInteractive:
       // Not applicable when entering full screen
       break
@@ -63,8 +63,8 @@ extension PlayerWindowController {
     guard let window = window else { return }
 
     if transition.isEnteringFullScreen {
-      /// `windowedModeGeometry` should already be kept up to date. Might be hard to track down bugs...
-      log.verbose("[\(transition.name)] Entering full screen; priorWindowedGeometry = \(windowedModeGeometry)")
+      /// `windowedModeGeo` should already be kept up to date. Might be hard to track down bugs...
+      log.verbose("[\(transition.name)] Entering full screen; priorWindowedGeometry = \(windowedModeGeo)")
 
       // Hide traffic light buttons & title during the animation.
       // Do not move this block. It needs to go here.
@@ -689,7 +689,7 @@ extension PlayerWindowController {
     log.verbose("[\(transition.name)] OpenNewPanels. TitleBar_H: \(outputLayout.titleBarHeight), TopOSC_H: \(outputLayout.topOSCHeight)")
 
     if transition.isEnteringMusicMode {
-      miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: musicModeGeometry.isVideoVisible)
+      miniPlayer.applyVideoViewVisibilityConstraints(isVideoVisible: musicModeGeo.isVideoVisible)
     }
 
     // Update heights to their final values:
@@ -753,7 +753,7 @@ extension PlayerWindowController {
         videoView.apply(transition.outputGeometry)
       } else if transition.outputLayout.isLegacyFullScreen {
         let screen = NSScreen.getScreenOrDefault(screenID: transition.outputGeometry.screenID)
-        let newGeo: PWindowGeometry
+        let newGeo: WinGeometry
         if transition.isEnteringLegacyFullScreen {
           // Deal with possible top margin needed to hide camera housing
           if transition.isInitialLayout {
@@ -779,7 +779,7 @@ extension PlayerWindowController {
       }
     case .musicMode:
       // Especially needed when applying initial layout:
-      applyMusicModeGeometry(musicModeGeometry)
+      applyMusicModeGeometry(musicModeGeo)
     case .windowed, .windowedInteractive:
       let newWindowFrame = transition.outputGeometry.windowFrame
       log.verbose("[\(transition.name)] Calling setFrame from OpenNewPanels with \(newWindowFrame)")
@@ -998,7 +998,7 @@ extension PlayerWindowController {
     }
 
     if transition.isTogglingFullScreen || transition.isTogglingMusicMode {
-      if transition.outputLayout.isMusicMode && !musicModeGeometry.isVideoVisible {
+      if transition.outputLayout.isMusicMode && !musicModeGeo.isVideoVisible {
         player.setVideoTrackEnabled(false)
       } else {
         player.updateMPVWindowScale(using: transition.outputGeometry)
@@ -1006,7 +1006,7 @@ extension PlayerWindowController {
     }
 
     if transition.isExitingInteractiveMode {
-      interactiveModeGeometry = nil
+      interactiveModeGeo = nil
     }
 
     refreshHidesOnDeactivateStatus()
@@ -1044,7 +1044,7 @@ extension PlayerWindowController {
     }
   }
 
-  func updateOSDTopOffset(_ geometry: PWindowGeometry, isLegacyFullScreen: Bool) {
+  func updateOSDTopOffset(_ geometry: WinGeometry, isLegacyFullScreen: Bool) {
     if isLegacyFullScreen {
       // Make sure OSD (& Additional Info) does not overlap camera housing
       let cameraHousingHeight =  NSScreen.forScreenID(geometry.screenID)?.cameraHousingHeight ?? 0
