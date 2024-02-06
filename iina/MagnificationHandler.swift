@@ -35,13 +35,19 @@ class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
         }
       }
     case .windowSize:
-      if windowController.isFullScreen { return }
+      guard !windowController.isFullScreen else { return }
 
       var finalGeometry: PWindowGeometry? = nil
       // adjust window size
       switch recognizer.state {
       case .began:
+        guard let window = windowController.window else { return }
         windowController.isMagnifying = true
+        if windowController.currentLayout.isMusicMode {
+          windowController.musicModeGeometry = windowController.musicModeGeometry.clone(windowFrame: window.frame)
+        } else {
+          windowController.windowedModeGeometry = windowController.windowedModeGeometry.clone(windowFrame: window.frame)
+        }
         scaleVideoFromPinchGesture(to: recognizer.magnification)
       case .changed:
         scaleVideoFromPinchGesture(to: recognizer.magnification)
