@@ -1097,7 +1097,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func refreshAlbumArtDisplay(_ videoParams: MPVVideoParams?, isVideoTrackSelected: Bool,
                               _ currentMediaAudioStatus: PlaybackInfo.CurrentMediaAudioStatus) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    guard loaded else { return }
+    guard loaded, let window else { return }
 
     // Part 1: default album art
 
@@ -1139,12 +1139,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let layout = currentLayout
     switch layout.mode {
     case .musicMode:
-      let newMusicModeGeometry = musicModeGeometry.clone(videoAspect: newAspectRatio)
+      let newMusicModeGeometry = musicModeGeometry.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
       /// If `isMiniPlayerWaitingToShowVideo` is true, need to update the cached geometry & other state vars,
       /// but do not update frame because that will be handled right after
       applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry, setFrame: !player.isMiniPlayerWaitingToShowVideo)
     case .windowed:
-      var newGeo = windowedModeGeometry.clone(videoAspect: newAspectRatio)
+      var newGeo = windowedModeGeometry.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
 
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
@@ -1158,7 +1158,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .fullScreen:
       animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
         player.info.videoAspect = newAspectRatio
-        guard let screen = window?.screen else { return }
+        guard let screen = window.screen else { return }
         let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
         if layout.isLegacyFullScreen {
           applyLegacyFullScreenGeometry(fsGeo)
@@ -1508,6 +1508,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // if it's a mouseup after dragging window
       log.verbose("PlayerWindow mouseUp: finished drag of window")
       isDragging = false
+      // Update geometry with new position, because windowDidUpdate does not always seem to fire
+      updateCachedGeometry()
     } else if finishResizingSidebar(with: event) {
       log.verbose("PlayerWindow mouseUp: finished resizing sidebar")
     } else {
@@ -1961,8 +1963,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Stop playing. This will save state if configured to do so:
     player.stop()
     // stop tracking mouse event
-    guard let w = self.window, let cv = w.contentView else { return }
-    cv.trackingAreas.forEach(cv.removeTrackingArea)
+    guard let window, let contentView = window.contentView else { return }
+    contentView.trackingAreas.forEach(contentView.removeTrackingArea)
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
 
     // Reset state flags
@@ -1972,8 +1974,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if !AppDelegate.shared.isTerminating {
       /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
       if currentLayout.mode == .musicMode {
-        PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry
+        PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry.clone(windowFrame: window.frame)
       } else {
+        if currentLayout.mode == .windowed {
+          // Update frame since it may have moved
+          windowedModeGeometry = windowedModeGeometry.clone(windowFrame: window.frame)
+        }
         PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
       }
     }
@@ -2017,6 +2023,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
+    // Do not run into animation task in native full screen, because the OS will not stop to wait for it
     animateEntryIntoFullScreen(withDuration: duration, isLegacy: false)
   }
 
@@ -2109,11 +2116,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isFullScreen = NSApp.presentationOptions.contains(.fullScreen)
     log.verbose("EnterFullScreen called (legacy: \(isLegacy.yn), isNativeFullScreenNow: \(isFullScreen.yn))")
 
-    if isLegacy {
-      animateEntryIntoFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
-    } else if !isFullScreen {
-      window.toggleFullScreen(self)
-    }
+    animationPipeline.submitZeroDuration({ [self] in
+      if isLegacy {
+        animateEntryIntoFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
+      } else if !isFullScreen {
+        window.toggleFullScreen(self)
+      }
+    })
   }
 
   func exitFullScreen(legacy: Bool) {
@@ -2121,12 +2130,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isFullScreen = NSApp.presentationOptions.contains(.fullScreen)
     log.verbose("ExitFullScreen called (legacy: \(legacy.yn), isNativeFullScreenNow: \(isFullScreen.yn))")
 
-    // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
-    if legacy {
-      animateExitFromFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
-    } else if isFullScreen {
-      window.toggleFullScreen(self)
-    }
+    animationPipeline.submitZeroDuration({ [self] in
+      // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
+      if legacy {
+        animateExitFromFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
+      } else if isFullScreen {
+        window.toggleFullScreen(self)
+      }
+    })
   }
 
   // MARK: - Window delegate: Resize
@@ -2282,25 +2293,40 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         blackOutOtherMonitors()
       }
 
-      log.verbose("WindowDidChangeScreen (tkt \(ticket)): screenFrame=\(screen.frame)")
-      videoView.updateDisplayLink()
-      player.events.emit(.windowScreenChanged)
+      animationPipeline.submitZeroDuration({ [self] in
+        log.verbose("WindowDidChangeScreen (tkt \(ticket)): screenFrame=\(screen.frame)")
+        videoView.updateDisplayLink()
+        player.events.emit(.windowScreenChanged)
+      })
 
-      /// Need to recompute legacy FS's window size so it exactly fills the new screen.
-      /// But looks like the OS will try to reposition the window on its own and can't be stopped...
-      /// Just wait until after it does its thing before calling `setFrame()`.
-      if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
-        animationPipeline.submit(IINAAnimation.Task({ [self] in
+      guard !player.info.isRestoring else { return }
+
+      animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
+        let screenID = bestScreen.screenID
+
+        /// Need to recompute legacy FS's window size so it exactly fills the new screen.
+        /// But looks like the OS will try to reposition the window on its own and can't be stopped...
+        /// Just wait until after it does its thing before calling `setFrame()`.
+        if currentLayout.isLegacyFullScreen {
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
-          log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
-          let screenID = bestScreen.screenID
+          log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
           let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspect: player.info.videoAspect)
           applyLegacyFullScreenGeometry(fsGeo)
+          // Update screenID at least, so that window won't go back to other screen when exiting FS
           windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
           player.saveState()
-        }))
-      }
+        } else if currentLayout.mode == .windowed {
+          // Update windowedModeGeometry with new window position & screen
+          windowedModeGeometry = windowedModeGeometry.clone(windowFrame: window.frame, screenID: screenID)
+          // Make sure window is within screen
+          if !isDragging, windowedModeGeometry.fitOption.shouldMoveWindowToKeepInContainer {
+            log.verbose("Refitting window in response to WindowDidChangeScreen")
+            let refittedGeo = windowedModeGeometry.refit()
+            applyWindowGeometry(refittedGeo)
+          }
+        }
+      }))
     }
   }
 

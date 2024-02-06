@@ -63,7 +63,7 @@ extension PlayerWindowController {
       log.verbose("[mpvVidReconfig] Found a disabled crop filter: \(prevCropFilter.stringFormat.quoted). Will enter interactive crop.")
       log.verbose("[mpvVidReconfig] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropbox: \(prevCropbox)")
 
-      animationPipeline.submit(IINAAnimation.Task({ [self] in
+      animationPipeline.submitZeroDuration({ [self] in
         let uncroppedWindowedGeo = windowedModeGeometry.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
                                                                     videoScale: player.info.cachedWindowScale)
         // Update the cached objects even if not in windowed mode
@@ -81,7 +81,7 @@ extension PlayerWindowController {
           return
         }
         enterInteractiveMode(.crop)
-      }))
+      })
 
     } else if player.info.isRestoring {
       if isInInteractiveMode {
@@ -614,7 +614,7 @@ extension PlayerWindowController {
   }
 
   // TODO: split this into separate windowed & FS
-  private func applyWindowGeometry(_ newGeometry: PWindowGeometry, setFrame: Bool = true) {
+  func applyWindowGeometry(_ newGeometry: PWindowGeometry, setFrame: Bool = true) {
     // Update video aspect ratio always
     player.info.videoAspect = newGeometry.videoAspect
     let currentLayout = currentLayout

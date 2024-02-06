@@ -102,7 +102,7 @@ extension PlayerWindowController {
       musicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed
     }
 
-    log.verbose("Setting initial \(initialLayoutSpec), windowedGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")
+    log.verbose("Setting initial \(initialLayoutSpec), windowedModeGeometry: \(windowedModeGeometry), musicModeGeometry: \(musicModeGeometry)")
 
     let transitionName = "\(isRestoringFromPrevLaunch ? "Restore" : "Set")InitialLayout"
     let initialTransition = buildLayoutTransition(named: transitionName,
