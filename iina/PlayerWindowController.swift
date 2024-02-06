@@ -379,6 +379,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .keepOpenOnFileEnd,
     .playlistAutoPlayNext,
     .themeMaterial,
+    .playerWindowOpacity,
     .showRemainingTime,
     .maxVolume,
     .useExactSeek,
@@ -435,6 +436,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     switch keyPath {
     case PK.themeMaterial.rawValue:
       applyThemeMaterial()
+    case PK.playerWindowOpacity.rawValue:
+      if let newValue = change[.newKey] as? Double {
+        animationPipeline.submit(IINAAnimation.Task({ [self] in
+          let windowOpacity = Float(newValue)
+          setWindowOpacity(windowOpacity)
+          updateCustomBorderBoxVisibility(using: currentLayout, windowOpacity: windowOpacity)
+        }))
+      }
     case PK.showRemainingTime.rawValue:
       if let newValue = change[.newKey] as? Bool {
         rightLabel.mode = newValue ? .remaining : .duration
@@ -3600,6 +3609,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window else { return }
     window.contentView?.layer?.backgroundColor = newColor
     viewportView.layer?.backgroundColor = newColor
+  }
+
+  func setWindowOpacity(_ newValue: Float) {
+    guard let window else { return }
+    let prevOpacity = window.contentView?.layer?.opacity ?? -1
+    log.debug("Changing window opacity, \(prevOpacity) → \(newValue)")
+    window.backgroundColor = newValue < 1.0 ? .clear : .black
+    window.contentView?.layer?.opacity = newValue
   }
 
   // MARK: - Sync UI with playback

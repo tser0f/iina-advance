@@ -63,6 +63,7 @@ struct Preference {
 
     /** Material for OSC and title bar (Theme(int)) */
     static let themeMaterial = Key("themeMaterial")
+    static let playerWindowOpacity = Key("playerWindowOpacity")
 
     /** Soft volume (int, 0 - 100)*/
     static let softVolume = Key("softVolume")
@@ -1065,6 +1066,7 @@ struct Preference {
     .hideTrailingSidebarOnClick: true,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.system.rawValue,
+    .playerWindowOpacity: 1.0,
     .enableOSD: true,
     .enableOSDInMusicMode: false,
     .osdPosition: OSDPosition.topLeading.rawValue,

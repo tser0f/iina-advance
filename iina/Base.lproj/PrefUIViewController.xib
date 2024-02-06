@@ -60,11 +60,11 @@
             <point key="canvasLocation" x="606" y="-693"/>
         </customView>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="M9c-Ak-HmK" userLabel="Prefs &gt; UI &gt; Appearance" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="82"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="M9c-Ak-HmK" userLabel="Prefs &gt; UI &gt; Appearance" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="628" height="115"/>
             <subviews>
                 <textField identifier="SectionTitleAppearance" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="APB-Nm-aTA">
-                    <rect key="frame" x="-2" y="58" width="87" height="16"/>
+                    <rect key="frame" x="-2" y="91" width="87" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Appearance:" id="mM7-1Q-FyL">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -72,10 +72,10 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VWZ-zT-vZx" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="360" height="66"/>
+                    <rect key="frame" x="120" y="8" width="508" height="99"/>
                     <subviews>
-                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vO4-Dh-YVv" userLabel="HStack View">
-                            <rect key="frame" x="0.0" y="46" width="249" height="20"/>
+                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vO4-Dh-YVv" userLabel="Theme HStack View">
+                            <rect key="frame" x="0.0" y="79" width="249" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="BMi-Ax-7wP">
                                     <rect key="frame" x="-2" y="4" width="50" height="16"/>
@@ -122,14 +122,14 @@
                             </customSpacing>
                         </stackView>
                         <customView translatesAutoresizingMaskIntoConstraints="NO" id="3SK-mj-ecb" userLabel="4pt Spacer">
-                            <rect key="frame" x="0.0" y="38" width="1" height="4"/>
+                            <rect key="frame" x="0.0" y="71" width="1" height="4"/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="4" id="T1J-os-ogo"/>
                                 <constraint firstAttribute="width" constant="1" id="YSM-E2-p4E"/>
                             </constraints>
                         </customView>
                         <button translatesAutoresizingMaskIntoConstraints="NO" id="Jf5-XY-THf">
-                            <rect key="frame" x="-2" y="17" width="297" height="18"/>
+                            <rect key="frame" x="-2" y="50" width="297" height="18"/>
                             <buttonCell key="cell" type="check" title="Use custom window style with sharp corners" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="mRo-KS-u6M">
                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -142,7 +142,7 @@
                             </connections>
                         </button>
                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="FzN-vg-jJ7">
-                            <rect key="frame" x="-2" y="0.0" width="360" height="14"/>
+                            <rect key="frame" x="-2" y="33" width="360" height="14"/>
                             <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="For smoother full screen transitions, enable custom full screen also." id="DrH-3F-GvB">
                                 <font key="font" metaFont="label" size="11"/>
                                 <color key="textColor" name="disabledControlTextColor" catalog="System" colorSpace="catalog"/>
@@ -164,14 +164,78 @@
                                 </binding>
                             </connections>
                         </textField>
+                        <customView translatesAutoresizingMaskIntoConstraints="NO" id="eJu-Nq-9oR" userLabel="4pt Spacer">
+                            <rect key="frame" x="0.0" y="25" width="1" height="4"/>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="1" id="AN5-Cx-Pg6"/>
+                                <constraint firstAttribute="height" constant="4" id="J1R-zk-WH5"/>
+                            </constraints>
+                        </customView>
+                        <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eOl-tJ-VhJ" userLabel="WindowOpacity HStack View">
+                            <rect key="frame" x="0.0" y="0.0" width="407" height="21"/>
+                            <subviews>
+                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LhQ-Kp-mGk">
+                                    <rect key="frame" x="-2" y="3" width="105" height="16"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Window opacity:" id="uGI-PI-buG">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Oz4-Vq-YmU" userLabel="WindowOpacity Slider">
+                                    <rect key="frame" x="107" y="1" width="244" height="17"/>
+                                    <constraints>
+                                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="150" id="0Ss-3d-jQk"/>
+                                        <constraint firstAttribute="width" relation="lessThanOrEqual" priority="900" constant="240" id="ddJ-ex-oMD"/>
+                                    </constraints>
+                                    <sliderCell key="cell" controlSize="mini" state="on" alignment="left" minValue="0.01" maxValue="1" doubleValue="1" tickMarkPosition="below" numberOfTickMarks="20" sliderType="linear" id="N3H-Ki-LQU"/>
+                                    <connections>
+                                        <binding destination="lH7-Vv-0M1" name="value" keyPath="values.playerWindowOpacity" id="HHs-zO-i4f"/>
+                                    </connections>
+                                </slider>
+                                <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6ww-6d-2un" userLabel="WindowOpacity Text Field">
+                                    <rect key="frame" x="357" y="0.0" width="50" height="21"/>
+                                    <constraints>
+                                        <constraint firstAttribute="width" constant="50" id="mif-PX-Ro2"/>
+                                    </constraints>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="q2O-wm-zM7" userLabel="WindowOpacity Text Field Cell">
+                                        <numberFormatter key="formatter" formatterBehavior="default10_4" numberStyle="percent" lenient="YES" formatWidth="-1" minimumIntegerDigits="1" maximumIntegerDigits="2000000000" id="5l9-QK-8xh">
+                                            <integer key="multiplier" value="100"/>
+                                            <real key="minimum" value="0.01"/>
+                                            <real key="maximum" value="1"/>
+                                        </numberFormatter>
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                    <connections>
+                                        <binding destination="lH7-Vv-0M1" name="value" keyPath="values.playerWindowOpacity" id="rPs-Ob-WMs"/>
+                                    </connections>
+                                </textField>
+                            </subviews>
+                            <visibilityPriorities>
+                                <integer value="1000"/>
+                                <integer value="1000"/>
+                                <integer value="1000"/>
+                            </visibilityPriorities>
+                            <customSpacing>
+                                <real value="3.4028234663852886e+38"/>
+                                <real value="3.4028234663852886e+38"/>
+                                <real value="3.4028234663852886e+38"/>
+                            </customSpacing>
+                        </stackView>
                     </subviews>
                     <visibilityPriorities>
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
                     </visibilityPriorities>
                     <customSpacing>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
