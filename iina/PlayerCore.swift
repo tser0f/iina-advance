@@ -2139,16 +2139,6 @@ class PlayerCore: NSObject {
 
     syncUITime()
 
-    if let priorState = info.priorState {
-      if priorState.string(for: .playPosition) != nil {
-        /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
-        log.verbose("Clearing mpv 'start' option now that restore is complete")
-        mpv.setString(MPVOption.PlaybackControl.start, AppData.mpvArgNone)
-      }
-      info.priorState = nil
-      log.debug("Done with restore")
-    }
-
     DispatchQueue.main.async { [self] in
       // When playback is paused the display link may be shutdown in order to not waste energy.
       // The display link will be restarted while seeking. If playback is paused shut it down
@@ -2242,6 +2232,17 @@ class PlayerCore: NSObject {
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     saveState()
     postNotification(.iinaVFChanged)
+
+    if let priorState = info.priorState {
+      if priorState.string(for: .playPosition) != nil {
+        /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
+        log.verbose("Clearing mpv 'start' option now that restore is complete")
+        mpv.setString(MPVOption.PlaybackControl.start, AppData.mpvArgNone)
+      }
+      info.priorState = nil
+      log.debug("Done with restore")
+    }
+
     /// The first filter msg after starting a file means that the file is officially done loading.
     /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
     info.justOpenedFile = false
@@ -2855,16 +2856,18 @@ class PlayerCore: NSObject {
       if let p = filter.params, let wStr = p["w"], let hStr = p["h"], p["x"] == nil && p["y"] == nil, let w = Double(wStr), let h = Double(hStr) {
         // Probably a selection from the Quick Settings panel. See if there are any matches.
         guard w != 0, h != 0 else {
-          log.error("Cannot set filter \(filter.label ?? ""): w or h is 0")
+          log.error("Cannot set filter \(filter.label?.quoted ?? ""): w or h is 0")
           return
         }
         // Truncate to 2 decimal places precision for comparison.
-        let selectedAspect = Int((w / h) * 100)
+        let selectedAspect = (w / h).roundedTo2()
+        log.verbose("Determined aspect=\(selectedAspect) from filter \(filter.label?.quoted ?? "")")
         for cropLabel in AppData.cropsInPanel {
           let tokens = cropLabel.split(separator: ":")
           if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
-            let aspectRatio = Int((width / height) * 100)
+            let aspectRatio = (width / height).roundedTo2()
             if aspectRatio == selectedAspect {
+              log.verbose("Filter \(filter.label?.quoted ?? "") matches known crop \(cropLabel.quoted)")
               updateCropUI(to: cropLabel)
               return
             }
@@ -2873,10 +2876,12 @@ class PlayerCore: NSObject {
       } else if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
         // Probably a custom crop
         let customCropLabel = "(\(x), \(y)) (\(w)\u{d7}\(h))"
+        log.verbose("Filter \(filter.label?.quoted ?? "") looks like custom crop. Sending to UI label \(customCropLabel.quoted)")
         updateCropUI(to: customCropLabel)
         return
       }
       // Default to "Custom" crop in Quick Settings panel
+      log.verbose("Could not determine crop from filter \(filter.label?.quoted ?? "")")
       updateCropUI(to: "")
     case Constants.FilterLabel.flip:
       info.flipFilter = filter

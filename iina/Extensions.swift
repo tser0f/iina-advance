@@ -421,6 +421,13 @@ extension Double {
     return Double(Int(self * 1e3)) / 1e3
   }
 
+  func roundedTo2() -> Double {
+    let scaledUp = self * 1e2
+    let scaledUpRounded = scaledUp.rounded(.toNearestOrEven)
+    let finalVal = scaledUpRounded / 1e2
+    return finalVal
+  }
+
   func roundedTo3() -> Double {
     let scaledUp = self * 1e3
     let scaledUpRounded = scaledUp.rounded(.toNearestOrEven)

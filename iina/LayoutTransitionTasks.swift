@@ -576,9 +576,9 @@ extension PlayerWindowController {
       if transition.isEnteringInteractiveMode {
         // Entering interactive mode
         if #available(macOS 10.14, *) {
-          window.contentView?.layer?.backgroundColor = Constants.Color.interactiveModeBackground
+          setEmptySpaceColor(to: Constants.Color.interactiveModeBackground)
         } else {
-          window.contentView?.layer?.backgroundColor = NSColor(calibratedWhite: 0.1, alpha: 1).cgColor
+          setEmptySpaceColor(to: NSColor(calibratedWhite: 0.1, alpha: 1).cgColor)
         }
 
         // Add crop settings at bottom
@@ -595,7 +595,7 @@ extension PlayerWindowController {
         }
       } else if transition.isExitingInteractiveMode {
         // Exiting interactive mode
-        window.contentView?.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
+        setEmptySpaceColor(to: Constants.Color.defaultWindowBackgroundColor)
 
         if let cropController = self.cropSettingsView {
           cropController.cropBoxView.removeFromSuperview()

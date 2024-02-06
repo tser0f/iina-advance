@@ -903,11 +903,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// when `lockViewportToVideoSize` is disabled, or when in legacy full screen on a Macbook screen  with a
     /// notch and the preference `allowVideoToOverlapCameraHousing` is false.
     cv.wantsLayer = true
-    cv.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
-
     // Need this to be black also, for sidebar animations
     viewportView.wantsLayer = true
-    viewportView.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
+    setEmptySpaceColor(to: Constants.Color.defaultWindowBackgroundColor)
 
     applyThemeMaterial()
     // Update to corect values before displaying. Only useful when restoring at launch
@@ -1435,6 +1433,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
     if let cropSettingsView, !cropSettingsView.cropBoxView.isHidden, isMouseEvent(event, inAnyOf: [cropSettingsView.cropBoxView]) {
+      cropSettingsView.cropBoxView.mouseDown(with: event)
       return
     }
     // record current mouse pos
@@ -1460,7 +1459,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
     if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
-      cropSettingsView.mouseDragged(with: event)
+      cropSettingsView.cropBoxView.mouseDragged(with: event)
       return
     }
     let didResizeSidebar = resizeSidebar(with: event)
@@ -1500,7 +1499,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     mousePosRelatedToWindow = nil
 
     if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
-      log.verbose("PlayerWindow mouseUp: finished resizing sidebar")
+      log.verbose("PlayerWindow mouseUp: finished cropboxView selection drag")
     } else if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden,
         controlBarFloating.isDragging || isMouseEvent(event, inAnyOf: [controlBarFloating]) {
       log.verbose("PlayerWindow mouseUp: finished drag of floating OSC")
@@ -3566,6 +3565,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       player.saveState()
     }
     resetCollectionBehavior()
+  }
+
+  func setEmptySpaceColor(to newColor: CGColor) {
+    guard let window else { return }
+    window.contentView?.layer?.backgroundColor = newColor
+    viewportView.layer?.backgroundColor = newColor
   }
 
   // MARK: - Sync UI with playback
