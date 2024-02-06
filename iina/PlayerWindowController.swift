@@ -2261,6 +2261,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("WindowDidChangeBackingProperties received")
     if videoView.refreshContentsScale() {
       // Do not allow MacOS to change the window size:
+      log.verbose("Will deny next window resize")
       denyNextWindowResize = true
     }
   }
@@ -2317,13 +2318,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
           player.saveState()
         } else if currentLayout.mode == .windowed {
-          // Update windowedModeGeometry with new window position & screen
-          windowedModeGeometry = windowedModeGeometry.clone(windowFrame: window.frame, screenID: screenID)
+          // Update windowedModeGeometry with new window position & screen (but save size)
+          let newWindowFrame = NSRect(origin: window.frame.origin, size: windowedModeGeometry.windowFrame.size)
+          windowedModeGeometry = windowedModeGeometry.clone(windowFrame: newWindowFrame, screenID: screenID)
           // Make sure window is within screen
-          if !isDragging, windowedModeGeometry.fitOption.shouldMoveWindowToKeepInContainer {
+          if !isDragging {
             log.verbose("Refitting window in response to WindowDidChangeScreen")
             let refittedGeo = windowedModeGeometry.refit()
             applyWindowGeometry(refittedGeo)
+            denyNextWindowResize = false  // Setting window frame in the prior line will override auto-resize
           }
         }
       }))

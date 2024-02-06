@@ -241,9 +241,7 @@ class FloatingControlBarView: NSVisualEffectView {
     var maxOriginY: CGFloat {
       let maxYWithoutTopBar = viewportSize.height - FloatingControlBarView.barHeight - FloatingControlBarView.margin
       let topBarHeight = windowLayout.insideTopBarHeight
-      let value = maxYWithoutTopBar - topBarHeight
-      // ensure sanity
-      return max(value, FloatingControlBarView.barHeight + FloatingControlBarView.margin)
+      return maxYWithoutTopBar - topBarHeight
     }
 
     var centerX: CGFloat {
