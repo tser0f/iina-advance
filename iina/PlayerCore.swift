@@ -556,7 +556,7 @@ class PlayerCore: NSObject {
       mpv.setFlag(MPVOption.PlaybackControl.pause, true)
     }
     if !isNormalSpeed && Preference.bool(for: .resetSpeedWhenPaused) {
-      setSpeed(1)
+      setSpeed(1, forceResume: false)
     }
     windowController.updatePlayButtonAndSpeedUI()
   }
@@ -911,8 +911,10 @@ class PlayerCore: NSObject {
     }
   }
 
-  /** Set speed. */
-  func setSpeed(_ speed: Double, triggerResume: Bool = false) {
+  /// Set playbackk speed.
+  /// If `forceResume` is `true`, then always resume if paused; if `false`, never resume if paused;
+  /// if `nil`, then resume if paused based on pref setting.
+  func setSpeed(_ speed: Double, forceResume: Bool? = nil) {
     let speedTrunc = speed.truncatedTo3()
     info.playSpeed = speedTrunc  // set preemptively to keep UI in sync
     mpv.queue.async { [self] in
@@ -923,8 +925,12 @@ class PlayerCore: NSObject {
       /// This will create a subconscious link in the user's mind between "pause" -> "unset speed".
       /// Try to stay consistent by linking the contrapositive together: "set speed" -> "play".
       /// The intuition should be most apparent when using the speed slider in Quick Settings.
-      if triggerResume, info.isPaused, Preference.bool(for: .resetSpeedWhenPaused) {
-        _resume()
+      if info.isPaused {
+        if let forceResume, forceResume {
+          _resume()
+        } else if forceResume == nil && Preference.bool(for: .resetSpeedWhenPaused) {
+          _resume()
+        }
       }
     }
   }

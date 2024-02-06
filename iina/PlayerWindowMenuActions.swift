@@ -94,7 +94,7 @@ extension PlayerWindowController {
       return
     }
     if let multiplier = sender.representedObject as? Double {
-      player.setSpeed(player.info.playSpeed * multiplier, triggerResume: true)
+      player.setSpeed(player.info.playSpeed * multiplier)
     }
   }
 
