@@ -8,7 +8,7 @@
 
 import Foundation
 
-class VideoMagnificationHandler: NSMagnificationGestureRecognizer {
+class MagnificationGestureHandler: NSMagnificationGestureRecognizer {
 
   lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(PlayerWindowController.handleMagnifyGesture(recognizer:)))

@@ -104,10 +104,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var customTitleBar: CustomTitleBarViewController? = nil
 
   // For Rotate gesture:
-  let rotationHandler = VideoRotationHandler()
+  let rotationHandler = RotationGestureHandler()
 
   // For Pinch To Magnify gesture:
-  let magnificationHandler = VideoMagnificationHandler()
+  let magnificationHandler = MagnificationGestureHandler()
 
   let animationPipeline = IINAAnimation.Pipeline()
 

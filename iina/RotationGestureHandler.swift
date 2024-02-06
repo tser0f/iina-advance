@@ -1,5 +1,5 @@
 //
-//  VideoRotationHandler.swift
+//  RotationGestureHandler.swift
 //  iina
 //
 //  Created by Matt Svoboda on 2023-03-26.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-class VideoRotationHandler {
+class RotationGestureHandler {
 
   // Current rotation of videoView
   private var cgCurrentRotationDegrees: CGFloat = 0
