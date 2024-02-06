@@ -13,6 +13,13 @@ extension PlayerWindowController {
 
   /// Set window size when info available, or video size changed. Called in response to receiving `video-reconfig` msg
   func mpvVideoDidReconfig(_ videoParams: MPVVideoParams, justOpenedFile: Bool) {
+    animationPipeline.submitZeroDuration({ [self] in
+      _mpvVideoDidReconfig(videoParams, justOpenedFile: justOpenedFile)
+    })
+  }
+
+  /// Only `mpvVideoDidReconfig` should call this.
+  private func _mpvVideoDidReconfig(_ videoParams: MPVVideoParams, justOpenedFile: Bool) {
     if !videoParams.hasValidSize && (player.isMiniPlayerWaitingToShowVideo ||
                                      (!musicModeGeo.isVideoVisible && !player.info.isVideoTrackSelected)) {
       log.verbose("[mpvVidReconfig] Ignoring reconfig because music mode is enabled and video is off")
@@ -65,39 +72,35 @@ extension PlayerWindowController {
       log.verbose("[mpvVidReconfig E2] Found a disabled crop filter: \(prevCropFilter.stringFormat.quoted). Will enter interactive crop.")
       log.verbose("[mpvVidReconfig E2] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropbox: \(prevCropbox)")
 
-      animationPipeline.submitZeroDuration({ [self] in
-        let uncroppedWindowedGeo = windowedModeGeo.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
-                                                                    videoScale: player.info.cachedWindowScale)
-        // Update the cached objects even if not in windowed mode
-        player.info.videoAspect = uncroppedWindowedGeo.videoAspect
-        windowedModeGeo = uncroppedWindowedGeo
+      let uncroppedWindowedGeo = windowedModeGeo.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
+                                                                  videoScale: player.info.cachedWindowScale)
+      // Update the cached objects even if not in windowed mode
+      player.info.videoAspect = uncroppedWindowedGeo.videoAspect
+      windowedModeGeo = uncroppedWindowedGeo
 
-        if currentLayout.mode == .windowed {
-          let uncroppedWindowedGeo = windowedModeGeo.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
-                                                                 videoScale: player.info.cachedWindowScale)
-          applyWindowGeometry(uncroppedWindowedGeo)
-        } else if currentLayout.mode != .fullScreen {
-          assert(false, "Bad state! Invalid mode: \(currentLayout.spec.mode)")
-          return
-        }
-        enterInteractiveMode(.crop)
-      })
+      if currentLayout.mode == .windowed {
+        let uncroppedWindowedGeo = windowedModeGeo.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
+                                                               videoScale: player.info.cachedWindowScale)
+        applyWindowGeometry(uncroppedWindowedGeo)
+      } else if currentLayout.mode != .fullScreen {
+        assert(false, "Bad state! Invalid mode: \(currentLayout.spec.mode)")
+        return
+      }
+      enterInteractiveMode(.crop)
 
     } else if player.info.isRestoring {
       if isInInteractiveMode {
         /// If restoring into interactive mode, we didn't have `videoDisplayRotatedSize` while doing layout. Add it now (if needed)
-        animationPipeline.submitZeroDuration({ [self] in
-          let videoSize: NSSize
-          if currentLayout.isFullScreen {
-            let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspect: newVideoAspect)
-            videoSize = fsInteractiveModeGeo.videoSize
-            interactiveModeGeo = fsInteractiveModeGeo
-          } else { // windowed
-            videoSize = interactiveModeGeo?.videoSize ?? windowedModeGeo.videoSize
-          }
-          log.debug("[mpvVidReconfig F-1] Restoring crop box origVideoSize=\(videoDisplayRotatedSize), videoSize=\(videoSize)")
-          addOrReplaceCropBoxSelection(origVideoSize: videoDisplayRotatedSize, videoSize: videoSize)
-        })
+        let videoSize: NSSize
+        if currentLayout.isFullScreen {
+          let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspect: newVideoAspect)
+          videoSize = fsInteractiveModeGeo.videoSize
+          interactiveModeGeo = fsInteractiveModeGeo
+        } else { // windowed
+          videoSize = interactiveModeGeo?.videoSize ?? windowedModeGeo.videoSize
+        }
+        log.debug("[mpvVidReconfig F-1] Restoring crop box origVideoSize=\(videoDisplayRotatedSize), videoSize=\(videoSize)")
+        addOrReplaceCropBoxSelection(origVideoSize: videoDisplayRotatedSize, videoSize: videoSize)
 
       } else {
         log.verbose("[mpvVidReconfig A Done] Restore is in progress; ignoring mpv video-reconfig")
@@ -142,20 +145,18 @@ extension PlayerWindowController {
         isInitialSizeDone = true
         duration = IINAAnimation.DefaultDuration
       }
-      animationPipeline.submit(IINAAnimation.Task(duration: duration, timing: .easeInEaseOut, { [self] in
-        /// Finally call `setFrame()`
-        log.debug("[mpvVidReconfig D-2 Apply] Applying result (FS:\(isFullScreen.yn)) → videoSize:\(newWindowGeo.videoSize) newWindowFrame: \(newWindowGeo.windowFrame)")
+      /// Finally call `setFrame()`
+      log.debug("[mpvVidReconfig D-2 Apply] Applying result (FS:\(isFullScreen.yn)) → videoSize:\(newWindowGeo.videoSize) newWindowFrame: \(newWindowGeo.windowFrame)")
 
-        if currentLayout.mode == .windowed {
-          applyWindowGeometry(newWindowGeo)
-        } else if currentLayout.mode == .fullScreen {
-          // TODO: break FS into separate function
-          applyWindowGeometry(newWindowGeo)
-        } else {
-          // Update this for later use if not currently in windowed mode
-          windowedModeGeo = newWindowGeo
-        }
-      }))
+      if currentLayout.mode == .windowed {
+        applyWindowGeometryInAnimationPipeline(newWindowGeo, duration: duration)
+      } else if currentLayout.mode == .fullScreen {
+        // TODO: break FS into separate function
+        applyWindowGeometryInAnimationPipeline(newWindowGeo)
+      } else {
+        // Update this for later use if not currently in windowed mode
+        windowedModeGeo = newWindowGeo
+      }
 
       // UI and slider
       log.debug("[mpvVidReconfig Done] Emitting windowSizeAdjusted")
@@ -596,7 +597,7 @@ extension PlayerWindowController {
 
   /// Updates/redraws current `window.frame` and its internal views from `newGeometry`. Animated.
   /// Also updates cached `windowedModeGeo` and saves updated state.
-  func applyWindowGeometryInAnimationPipeline(_ newGeometry: WinGeometry) {
+  func applyWindowGeometryInAnimationPipeline(_ newGeometry: WinGeometry, duration: CGFloat = IINAAnimation.DefaultDuration) {
     var ticket: Int = 0
     $geoUpdateTicketCounter.withLock {
       $0 += 1
