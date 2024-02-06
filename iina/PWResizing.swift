@@ -34,7 +34,7 @@ extension PlayerWindowController {
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoDisplayRotatedSize
     }
-    guard let screen = window?.screen else { return }
+    let screen = bestScreen
     let currentLayout = currentLayout
 
     if isInInteractiveMode, let cropController = self.cropSettingsView, cropController.cropBoxView.didSubmit {
@@ -44,7 +44,9 @@ extension PlayerWindowController {
       let cropboxUnscaled = NSRect(x: cropController.cropx, y: cropController.cropyFlippedForMac,
                                    width: cropController.cropw, height: cropController.croph)
 
+      log.verbose("[mpvVidReconfig G] Looks like crop was submitted. Exiting interactive mode")
       exitInteractiveMode(cropVideoFrom: uncroppedVideoSize, to: cropboxUnscaled)
+      // fall through
 
     } else if currentLayout.canEnterInteractiveMode, let prevCropFilter = player.info.videoFiltersDisabled[Constants.FilterLabel.crop] {
       // Not yet in interactive mode, but the active crop was just disabled prior to entering it,
@@ -55,13 +57,13 @@ extension PlayerWindowController {
       let videoDisplaySize = videoParams.videoDisplaySize
       // FIXME: this is a junk fix. Find a better way to trigger this
       guard abs(videoDisplaySize.width - videoFullSize.width) <= 1 && abs(videoDisplaySize.height - videoFullSize.height) <= 1 else {
-        log.verbose("[mpvVidReconfig] Found a disabled crop filter \(prevCropFilter.stringFormat.quoted), but videoRawSize \(videoParams.videoRawSize) does not yet match videoDisplaySize \(videoParams.videoDisplaySize); ignoring")
+        log.verbose("[mpvVidReconfig E1] Found a disabled crop filter \(prevCropFilter.stringFormat.quoted), but videoRawSize \(videoParams.videoRawSize) does not yet match videoDisplaySize \(videoParams.videoDisplaySize); ignoring")
         return
       }
 
       let prevCropbox = prevCropFilter.cropRect(origVideoSize: videoDisplayRotatedSize, flipY: true)
-      log.verbose("[mpvVidReconfig] Found a disabled crop filter: \(prevCropFilter.stringFormat.quoted). Will enter interactive crop.")
-      log.verbose("[mpvVidReconfig] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropbox: \(prevCropbox)")
+      log.verbose("[mpvVidReconfig E2] Found a disabled crop filter: \(prevCropFilter.stringFormat.quoted). Will enter interactive crop.")
+      log.verbose("[mpvVidReconfig E2] VideoDisplayRotatedSize: \(videoDisplayRotatedSize), PrevCropbox: \(prevCropbox)")
 
       animationPipeline.submitZeroDuration({ [self] in
         let uncroppedWindowedGeo = windowedModeGeo.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
@@ -70,13 +72,11 @@ extension PlayerWindowController {
         player.info.videoAspect = uncroppedWindowedGeo.videoAspect
         windowedModeGeo = uncroppedWindowedGeo
 
-        if currentLayout.mode == .fullScreen {
-
-        } else if currentLayout.mode == .windowed {
+        if currentLayout.mode == .windowed {
           let uncroppedWindowedGeo = windowedModeGeo.uncropVideo(videoDisplayRotatedSize: videoDisplayRotatedSize, cropbox: prevCropbox,
-                                                                      videoScale: player.info.cachedWindowScale)
+                                                                 videoScale: player.info.cachedWindowScale)
           applyWindowGeometry(uncroppedWindowedGeo)
-        } else {
+        } else if currentLayout.mode != .fullScreen {
           assert(false, "Bad state! Invalid mode: \(currentLayout.spec.mode)")
           return
         }
@@ -95,16 +95,17 @@ extension PlayerWindowController {
           } else { // windowed
             videoSize = interactiveModeGeo?.videoSize ?? windowedModeGeo.videoSize
           }
-          log.debug("[mpvVidReconfig] Restoring crop box origVideoSize=\(videoDisplayRotatedSize), videoSize=\(videoSize)")
+          log.debug("[mpvVidReconfig F-1] Restoring crop box origVideoSize=\(videoDisplayRotatedSize), videoSize=\(videoSize)")
           addOrReplaceCropBoxSelection(origVideoSize: videoDisplayRotatedSize, videoSize: videoSize)
         })
 
       } else {
-        log.verbose("[mpvVidReconfig A] Restore is in progress; ignoring mpv video-reconfig")
+        log.verbose("[mpvVidReconfig A Done] Restore is in progress; ignoring mpv video-reconfig")
       }
+      return
 
     } else if currentLayout.mode == .musicMode {
-      log.debug("[mpvVidReconfig] Player is in music mode; calling applyMusicModeGeometry")
+      log.debug("[mpvVidReconfig M Apply] Player is in music mode; calling applyMusicModeGeometry")
       /// Keep prev `windowFrame`. Just adjust height to fit new video aspect ratio
       /// (unless it doesn't fit in screen; see `applyMusicModeGeometry()`)
       let newGeometry = musicModeGeo.clone(videoAspect: newVideoAspect)
@@ -113,7 +114,7 @@ extension PlayerWindowController {
     } else { // Windowed or full screen
       if let oldVideoParams, oldVideoParams.videoRawSize.equalTo(videoParams.videoRawSize),
          let oldVideoDR = oldVideoParams.videoDisplayRotatedSize, oldVideoDR.equalTo(videoDisplayRotatedSize) {
-        log.debug("[mpvVidReconfig Done] No change to prev video params. Taking no action")
+        log.debug("[mpvVidReconfig F Done] No change to prev video params. Taking no action")
         return
       }
 
@@ -143,7 +144,7 @@ extension PlayerWindowController {
       }
       animationPipeline.submit(IINAAnimation.Task(duration: duration, timing: .easeInEaseOut, { [self] in
         /// Finally call `setFrame()`
-        log.debug("[mpvVidReconfig Apply] Applying result (FS:\(isFullScreen.yn)) → videoSize:\(newWindowGeo.videoSize) newWindowFrame: \(newWindowGeo.windowFrame)")
+        log.debug("[mpvVidReconfig D-2 Apply] Applying result (FS:\(isFullScreen.yn)) → videoSize:\(newWindowGeo.videoSize) newWindowFrame: \(newWindowGeo.windowFrame)")
 
         if currentLayout.mode == .windowed {
           applyWindowGeometry(newWindowGeo)
@@ -157,10 +158,9 @@ extension PlayerWindowController {
       }))
 
       // UI and slider
+      log.debug("[mpvVidReconfig Done] Emitting windowSizeAdjusted")
       player.events.emit(.windowSizeAdjusted, data: newWindowGeo.windowFrame)
     }
-
-    log.debug("[mpvVidReconfig Done]")
   }
 
   func shouldResizeWindowAfterVideoReconfig(justOpenedFile: Bool) -> Bool {
@@ -197,13 +197,15 @@ extension PlayerWindowController {
       if let mpvGeometry = player.getMPVGeometry() {
         var preferredGeo = windowGeo
         if Preference.bool(for: .lockViewportToVideoSize), let intendedViewportSize = player.info.intendedViewportSize  {
-          log.verbose("[mpvVidReconfig C-3b] Using intendedViewportSize \(intendedViewportSize)")
+          log.verbose("[mpvVidReconfig C-6] Using intendedViewportSize \(intendedViewportSize)")
           preferredGeo = windowGeo.scaleViewport(to: intendedViewportSize)
         }
         log.verbose("[mpvVidReconfig C-3] Applying mpv \(mpvGeometry) within screen \(screenVisibleFrame)")
         return windowGeo.apply(mpvGeometry: mpvGeometry, desiredWindowSize: preferredGeo.windowFrame.size)
+      } else {
+        log.warn("[mpvVidReconfig C-5] No mpv geometry found")
+        return windowGeo.scaleVideo(to: newVideoSize)  // do not center
       }
-      log.warn("[mpvVidReconfig C-3a] No mpv geometry found")
     case .simpleVideoSizeMultiple:
       let resizeWindowStrategy: Preference.ResizeWindowOption = Preference.enum(for: .resizeWindowOption)
       if resizeWindowStrategy == .fitScreen {
@@ -221,9 +223,6 @@ extension PlayerWindowController {
         return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen, lockViewportToVideoSize: forceLockViewportToVideo)
       }
     }
-
-    log.verbose("[mpvVidReconfig C-5] ResizeScheme=\(resizeScheme). Resizing & centering windowFrame")
-    return windowGeo.scaleVideo(to: newVideoSize, fitOption: .centerInVisibleScreen)
   }
 
   private func resizeMinimallyAfterVideoReconfig(from windowGeo: WinGeometry,
@@ -247,7 +246,7 @@ extension PlayerWindowController {
       }
     }
 
-    log.verbose("[mpvVidReconfig D] Minimal resize: applying desiredViewportSize \(desiredViewportSize)")
+    log.verbose("[mpvVidReconfig D-3] Minimal resize: applying desiredViewportSize \(desiredViewportSize)")
     return windowGeo.scaleViewport(to: desiredViewportSize)
   }
 

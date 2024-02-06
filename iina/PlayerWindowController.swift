@@ -1442,7 +1442,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
     if let cropSettingsView, !cropSettingsView.cropBoxView.isHidden, isMouseEvent(event, inAnyOf: [cropSettingsView.cropBoxView]) {
-      cropSettingsView.cropBoxView.mouseDown(with: event)
+      log.verbose("PlayerWindow: mouseDown should be handled by CropBoxView")
       return
     }
     // record current mouse pos
@@ -1467,7 +1467,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       controlBarFloating.mouseDragged(with: event)
       return
     }
-    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging || cropSettingsView.cropBoxView.isFreeSelecting {
       cropSettingsView.cropBoxView.mouseDragged(with: event)
       return
     }
@@ -1507,8 +1507,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     restartHideCursorTimer()
     mousePosRelatedToWindow = nil
 
-    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
-      log.verbose("PlayerWindow mouseUp: finished cropboxView selection drag")
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging || cropSettingsView.cropBoxView.isFreeSelecting {
+      log.verbose("PlayerWindow mouseUp: finishing cropboxView selection drag")
+      cropSettingsView.cropBoxView.mouseUp(with: event)
     } else if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden,
         controlBarFloating.isDragging || isMouseEvent(event, inAnyOf: [controlBarFloating]) {
       log.verbose("PlayerWindow mouseUp: finished drag of floating OSC")
@@ -3268,7 +3269,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           // Do this very fast because at present the crop animation is not great
           animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.CropAnimationDuration * 0.2, { [self] in
             let screen = bestScreen
-            log.verbose("[mpvVidReconfig] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
+            log.verbose("[mpvVidReconfig E4] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
 
             /// Updated `windowedModeGeo` even if in full screen - we are not prepared to look for changes later
             let croppedGeometry = windowedModeGeo.cropVideo(from: uncroppedVideoSize, to: cropbox)
@@ -3300,7 +3301,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
         let newMode: PlayerWindowMode = currentLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
         let lastSpec = currentLayout.mode == .fullScreenInteractive ? currentLayout.spec : lastWindowedLayoutSpec
-        log.verbose("Exiting interactive mode, newMode: \(newMode)")
+        log.verbose("[mpvVidReconfig E5] Exiting interactive mode, newMode: \(newMode)")
         let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: lastSpec)
         let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
         let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: currentLayout, to: newLayoutSpec,

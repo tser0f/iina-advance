@@ -46,7 +46,7 @@ class CropBoxView: NSView {
 
   var isDragging = false
   private var dragSide: DragSide = .top
-  private var isFreeSelecting = false
+  var isFreeSelecting = false
   private var lastMousePos: NSPoint?
 
   private enum DragSide {
@@ -61,7 +61,7 @@ class CropBoxView: NSView {
 
   // MARK: - Rect size settings
 
-  // call by windowControllerController. when view resized
+  // call by windowController. when view resized
   func resized(with videoRect: NSRect) {
     self.videoRect = videoRect
     updateBoxRect()
@@ -145,13 +145,14 @@ class CropBoxView: NSView {
       // free select
       isFreeSelecting = true
       window?.invalidateCursorRects(for: self)
-    } else {
-      super.mouseDown(with: event)
     }
+    Logger.log("CropBoxView mouseDown, isDragging=\(isDragging.yn) isFreeSelecting=\(isFreeSelecting.yn)", level: .verbose)
+    super.mouseDown(with: event)
   }
 
   override func mouseDragged(with event: NSEvent) {
     let mousePos = convert(event.locationInWindow, from: nil).constrained(to: videoRect)
+//    Logger.log("CropBoxView mouseDragged, isDragging=\(isDragging.yn) isFreeSelecting=\(isFreeSelecting.yn)", level: .verbose)
 
     if isDragging {
       // resizing selected box
@@ -185,15 +186,13 @@ class CropBoxView: NSView {
       let newBoxRect = NSRect(vertexPoint: lastMousePos!, and: mousePos)
       boxRectChanged(to: newBoxRect)
       needsDisplay = true
-    } else {
-      super.mouseDragged(with: event)
     }
   }
 
   override func mouseUp(with event: NSEvent) {
-    if isDragging {
+    Logger.log("CropBoxView mouseUp, isDragging=\(isDragging.yn) isFreeSelecting=\(isFreeSelecting.yn)", level: .verbose)
+    if isDragging || isFreeSelecting {
       isDragging = false
-    } else if isFreeSelecting {
       isFreeSelecting = false
       updateCursorRects()
     } else {
