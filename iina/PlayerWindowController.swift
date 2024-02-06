@@ -1442,7 +1442,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
     if let cropSettingsView, !cropSettingsView.cropBoxView.isHidden, isMouseEvent(event, inAnyOf: [cropSettingsView.cropBoxView]) {
-      log.verbose("PlayerWindow: mouseDown should be handled by CropBoxView")
+      log.verbose("PlayerWindow: mouseDown should have been handled by CropBoxView")
       return
     }
     // record current mouse pos
@@ -1467,7 +1467,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       controlBarFloating.mouseDragged(with: event)
       return
     }
-    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging || cropSettingsView.cropBoxView.isFreeSelecting {
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDraggingToResize || cropSettingsView.cropBoxView.isDraggingNew {
       cropSettingsView.cropBoxView.mouseDragged(with: event)
       return
     }
@@ -1507,7 +1507,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     restartHideCursorTimer()
     mousePosRelatedToWindow = nil
 
-    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging || cropSettingsView.cropBoxView.isFreeSelecting {
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDraggingToResize || cropSettingsView.cropBoxView.isDraggingNew {
       log.verbose("PlayerWindow mouseUp: finishing cropboxView selection drag")
       cropSettingsView.cropBoxView.mouseUp(with: event)
     } else if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden,
@@ -3614,8 +3614,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func setWindowOpacity(_ newValue: Float) {
     guard let window else { return }
-    let prevOpacity = window.contentView?.layer?.opacity ?? -1
-    log.debug("Changing window opacity, \(prevOpacity) → \(newValue)")
+    let existingValue = window.contentView?.layer?.opacity ?? -1
+    guard existingValue != newValue else { return }
+    log.debug("Changing window opacity, \(existingValue) → \(newValue)")
     window.backgroundColor = newValue < 1.0 ? .clear : .black
     window.contentView?.layer?.opacity = newValue
   }
