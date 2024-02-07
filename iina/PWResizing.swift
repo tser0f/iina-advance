@@ -405,23 +405,19 @@ extension PlayerWindowController {
       if let interactiveModeGeo {
         currentGeometry = interactiveModeGeo.clone(windowFrame: window.frame)
       } else {
-        log.error("WindowWillResize: could not find interactiveModeGeo; will substitute windowedModeGeo")
+        log.error("WinWillResize: could not find interactiveModeGeo; will substitute windowedModeGeo")
         let updatedWindowedModeGeometry = windowedModeGeo.clone(windowFrame: window.frame)
         currentGeometry = updatedWindowedModeGeometry.toInteractiveMode()
       }
-      if requestedSize.width < Constants.InteractiveMode.minWindowWidth {
-        log.verbose("WindowWillResize: requested width (\(requestedSize.width)) is less than min width for interactive mode (\(Constants.InteractiveMode.minWindowWidth)). Denying resize")
-        return currentGeometry
-      }
     default:
-      log.error("WindowWillResize: requested mode is invalid: \(currentLayout.spec.mode). Will fall back to windowedModeGeo")
+      log.error("WinWillResize: requested mode is invalid: \(currentLayout.spec.mode). Will fall back to windowedModeGeo")
       return windowedModeGeo
     }
 
     assert(currentGeometry.mode == currentLayout.mode)
 
     if denyNextWindowResize {
-      log.verbose("WindowWillResize: denying this resize; will stay at \(currentGeometry.windowFrame.size)")
+      log.verbose("WinWillResize: denying this resize; will stay at \(currentGeometry.windowFrame.size)")
       denyNextWindowResize = false
       return currentGeometry
     }
@@ -433,14 +429,14 @@ extension PlayerWindowController {
         // If getting here, restore is in progress. Don't allow size changes, but don't worry
         // about whether the saved size is valid. It will be handled elsewhere.
         if savedLayoutSpec.mode == .musicMode, let savedMusicModeGeo = savedState.musicModeGeo {
-          log.verbose("WindowWillResize: denying request due to restore; returning saved musicMode size \(savedMusicModeGeo.windowFrame.size)")
+          log.verbose("WinWillResize: denying request due to restore; returning saved musicMode size \(savedMusicModeGeo.windowFrame.size)")
           return savedMusicModeGeo.toWinGeometry()
         } else if savedLayoutSpec.mode == .windowed, let savedWindowedModeGeo = savedState.windowedModeGeo {
-          log.verbose("WindowWillResize: denying request due to restore; returning saved windowedMode size \(savedWindowedModeGeo.windowFrame.size)")
+          log.verbose("WinWillResize: denying request due to restore; returning saved windowedMode size \(savedWindowedModeGeo.windowFrame.size)")
           return savedWindowedModeGeo
         }
       }
-      log.error("WindowWillResize: failed to restore window frame; returning existing: \(currentGeometry.windowFrame.size)")
+      log.error("WinWillResize: failed to restore window frame; returning existing: \(currentGeometry.windowFrame.size)")
       return currentGeometry
     }
 
@@ -450,7 +446,7 @@ extension PlayerWindowController {
       if (requestedSize.width < minWindowWidth) || (requestedSize.height < minWindowHeight) {
         // Sending the current size seems to work much better with accessibilty requests
         // than trying to change to the min size
-        log.verbose("WindowWillResize: requested smaller than min (\(minWindowWidth) x \(minWindowHeight)); returning existing \(currentGeometry.windowFrame.size)")
+        log.verbose("WinWillResize: requested smaller than min (\(minWindowWidth) x \(minWindowHeight)); returning existing \(currentGeometry.windowFrame.size)")
         return currentGeometry
       }
     }
@@ -482,8 +478,6 @@ extension PlayerWindowController {
                                                     height: requestedVideoHeight)
     let resizeFromHeightGeo = currentGeometry.scaleVideo(to: resizeFromHeightRequestedVideoSize)
 
-    log.verbose("WindowWillResize: PREV:\(currentGeometry), WIDTH:\(resizeFromWidthGeo), HEIGHT:\(resizeFromHeightGeo)")
-
     let chosenGeometry: WinGeometry
     if window.inLiveResize {
       /// Notes on the trickiness of live window resize:
@@ -496,14 +490,22 @@ extension PlayerWindowController {
       /// in small increments (depending on how fast the user moves the cursor) but this will result in a different choice between "A" or "B" schemes
       /// each time, with very different answers, which causes the jumpiness. In this case either scheme will work fine, just as long as we stick
       /// to the same scheme for the whole resize. So to fix this, we add `isLiveResizingWidth`, and once set, stick to scheme "B".
-      if window.frame.height != requestedSize.height {
-        isLiveResizingWidth = true
+      if isLiveResizingWidth == nil {
+        if currentGeometry.windowFrame.height != requestedSize.height {
+          isLiveResizingWidth = false
+        } else if currentGeometry.windowFrame.width != requestedSize.width {
+          isLiveResizingWidth = true
+        }
       }
+      guard let isLiveResizingWidth else {
+        return currentGeometry
+      }
+      log.verbose("WinWillResize: PREV:\(currentGeometry.windowFrame.size), REQ:\(requestedSize) WIDTH:\(resizeFromWidthGeo.windowFrame.size), HEIGHT:\(resizeFromHeightGeo.windowFrame.size), chose:\(isLiveResizingWidth ? "W" : "H")")
 
       if isLiveResizingWidth {
-        chosenGeometry = resizeFromHeightGeo
-      } else {
         chosenGeometry = resizeFromWidthGeo
+      } else {
+        chosenGeometry = resizeFromHeightGeo
       }
 
       if currentLayout.mode == .windowed {
@@ -520,7 +522,7 @@ extension PlayerWindowController {
         chosenGeometry = resizeFromHeightGeo
       }
     }
-    log.verbose("WindowWillResize isLive:\(window.inLiveResize.yn) req:\(requestedSize) lockViewport:Y prevVideoSize:\(currentGeometry.videoSize) returning:\(chosenGeometry.windowFrame.size)")
+    log.verbose("WinWillResize isLive:\(window.inLiveResize.yn) req:\(requestedSize) lockViewport:Y prevVideoSize:\(currentGeometry.videoSize) returning:\(chosenGeometry.windowFrame.size)")
 
     // TODO: validate geometry
     return chosenGeometry

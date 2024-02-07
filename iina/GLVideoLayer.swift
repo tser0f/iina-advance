@@ -214,7 +214,7 @@ class GLVideoLayer: CAOpenGLLayer {
     asychronousModeLock.withLock{
       asychronousModeTimer?.invalidate()
       if !isAsynchronous {
-        videoView.player.log.verbose("Entering asynchronous mode")
+        videoView.player.log.trace("Entering asynchronous mode")
       }
       /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
       /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
@@ -235,7 +235,7 @@ class GLVideoLayer: CAOpenGLLayer {
 
   @objc func exitAsynchronousMode() {
     asychronousModeLock.withLock{
-      videoView.player.log.verbose("Exiting asynchronous mode")
+      videoView.player.log.trace("Exiting asynchronous mode")
       isAsynchronous = false
     }
   }

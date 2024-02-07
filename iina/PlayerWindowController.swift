@@ -157,7 +157,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var mousePosRelatedToWindow: CGPoint?
   var isDragging: Bool = false
-  var isLiveResizingWidth = false
+  var isLiveResizingWidth: Bool? = nil
 
   // might use another obj to handle slider?
   var isMouseInWindow: Bool = false
@@ -2153,15 +2153,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Window delegate: Resize
 
   func windowWillStartLiveResize(_ notification: Notification) {
-    guard let window = notification.object as? NSWindow else { return }
-    guard !isAnimating, !isMagnifying else { return }
-    log.verbose("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)")
-    isLiveResizingWidth = false
+    log.verbose("WindowWillStartLiveResize")
+    isLiveResizingWidth = nil  // reset this
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     let currentLayout = currentLayout
-    log.verbose("WindowWILLResize mode=\(currentLayout.mode) RequestedSize=\(requestedSize) isAnimatingLayoutTransition=\(isAnimatingLayoutTransition)")
+    log.verbose("Win-WILL-Resize mode=\(currentLayout.mode) RequestedSize=\(requestedSize) isAnimatingLayoutTransition=\(isAnimatingLayoutTransition)")
     videoView.videoLayer.enterAsynchronousMode()
 
     /// This method only provides the desired size for the window, but we don't have access to the  desired origin.
@@ -2207,7 +2205,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     IINAAnimation.disableAnimation {
       if log.isTraceEnabled {
-        log.trace("WindowDIDResize mode=\(currentLayout.mode) frame=\(window.frame)")
+        log.trace("Win-DID-Resize mode=\(currentLayout.mode) frame=\(window.frame)")
       }
 
       // These may no longer be aligned correctly. Just hide them
