@@ -2326,16 +2326,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           windowedModeGeo = windowedModeGeo.clone(screenID: screenID)
           player.saveState()
         } else if currentLayout.mode == .windowed {
-          // Update windowedModeGeo with new window position & screen (but save size)
+          // Update windowedModeGeo with new window position & screen (but preserve previous size)
           let newWindowFrame = NSRect(origin: window.frame.origin, size: windowedModeGeo.windowFrame.size)
           windowedModeGeo = windowedModeGeo.clone(windowFrame: newWindowFrame, screenID: screenID)
-          // Make sure window is within screen
-          if !isDragging {
-            log.verbose("Refitting window in response to WindowDidChangeScreen")
-            let refittedGeo = windowedModeGeo.refit()
-            applyWindowGeometry(refittedGeo)
-            denyNextWindowResize = false  // Setting window frame in the prior line will override auto-resize
-          }
         }
       }))
     }
