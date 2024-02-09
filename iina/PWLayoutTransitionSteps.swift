@@ -1378,7 +1378,6 @@ extension PlayerWindowController {
 
     if let customTitleBar {
       customTitleBar.removeAndCleanUp()
-      fadeableViews.remove(customTitleBar.view)
       self.customTitleBar = nil
     }
   }

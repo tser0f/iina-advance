@@ -15,7 +15,7 @@ class GLVideoLayer: CAOpenGLLayer {
   unowned var videoView: VideoView!
 
   private let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
-  private var blocked = false
+  @Atomic private var blocked = false
 
   private var fbo: GLint = 1
 
@@ -198,12 +198,19 @@ class GLVideoLayer: CAOpenGLLayer {
     /// layer is polled at a high rate about whether it needs to draw. Disable this to save CPU while idle.
     isAsynchronous = false
 
-    blocked = true
+    $blocked.withLock() { isBlocked in
+      guard !isBlocked else { return }
+      isBlocked = true
+      mpvGLQueue.suspend()
+    }
   }
 
   func resume() {
-    blocked = false
-
+    $blocked.withLock() { isBlocked in
+      guard isBlocked else { return }
+      isBlocked = false
+      mpvGLQueue.resume()
+    }
     drawAsync()
   }
 

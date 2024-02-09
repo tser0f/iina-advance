@@ -986,7 +986,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Do not make visual effects views opaque when window is not in focus
     for view in [topBarView, osdVisualEffectView, bottomBarView, controlBarFloating,
-                 leadingSidebarView, trailingSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
+                 leadingSidebarView, trailingSidebarView, pipOverlayView, bufferIndicatorView] {
       view?.state = .active
     }
 
