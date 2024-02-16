@@ -170,6 +170,13 @@
                                 <constraint firstAttribute="width" constant="1" id="AN5-Cx-Pg6"/>
                                 <constraint firstAttribute="height" constant="4" id="J1R-zk-WH5"/>
                             </constraints>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.enableAdvancedSettings" id="vdi-Ma-Kap">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
                         </customView>
                         <stackView distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eOl-tJ-VhJ" userLabel="WindowOpacity HStack View">
                             <rect key="frame" x="0.0" y="0.0" width="407" height="21"/>
@@ -223,6 +230,13 @@
                                 <real value="3.4028234663852886e+38"/>
                                 <real value="3.4028234663852886e+38"/>
                             </customSpacing>
+                            <connections>
+                                <binding destination="lH7-Vv-0M1" name="hidden" keyPath="values.enableAdvancedSettings" id="GgU-jJ-Gze">
+                                    <dictionary key="options">
+                                        <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                    </dictionary>
+                                </binding>
+                            </connections>
                         </stackView>
                     </subviews>
                     <visibilityPriorities>

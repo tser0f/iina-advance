@@ -742,6 +742,46 @@ extension NSTextField {
 
 }
 
+extension CGImage {
+  /// Returns this image's data in PNG format, suitable for writing to a `.png` file on disk
+  var pngData: Data? {
+    guard let mutableData = CFDataCreateMutable(nil, 0),
+          let destination = CGImageDestinationCreateWithData(mutableData, "public.png" as CFString, 1, nil) else { return nil }
+    CGImageDestinationAddImage(destination, self, nil)
+    guard CGImageDestinationFinalize(destination) else { return nil }
+    return mutableData as Data
+  }
+
+  @discardableResult
+  func saveAsPNG(fileURL: URL) -> Bool {
+    let path = fileURL.path
+    guard FileManager.default.createFile(atPath: fileURL.path, contents: nil, attributes: nil) else {
+      Logger.log("Could not create PNG file: \(path.pii.quoted)", level: .error)
+      return false
+    }
+    guard let file = try? FileHandle(forWritingTo: fileURL) else {
+      Logger.log("Could not create PNG file for writing: \(path.pii.quoted)", level: .error)
+      return false
+    }
+
+    guard let pngData else {
+      Logger.log("Could not get PNG data from CGImage!", level: .error)
+      return false
+    }
+
+    file.write(pngData)
+
+    if #available(macOS 10.15, *) {
+      do {
+        try file.close()
+      } catch {
+        Logger.log("Failed to close file: \(path.pii.quoted)", level: .error)
+      }
+    }
+    return true
+  }
+}
+
 extension NSImage {
   func tinted(_ tintColor: NSColor) -> NSImage {
     guard self.isTemplate else { return self }
@@ -1350,12 +1390,13 @@ extension NSView {
     }
   }
 
-  func snapshotImage() -> NSImage? {
-
-    guard let window = window,
-          let screen = window.screen,
-          let contentView = window.contentView else { return nil }
-
+  func snapshotImage() -> CGImage? {
+    guard let window = window, let screen = window.screen, let contentView = window.contentView else { return nil }
+    if #available(macOS 10.15, *) {
+      CGRequestScreenCaptureAccess()
+    } else {
+      // Fallback on earlier versions
+    }
     let originRect = self.convert(self.bounds, to:contentView)
     var rect = originRect
     rect.origin.x += window.frame.origin.x
@@ -1363,9 +1404,7 @@ extension NSView {
     rect.origin.y += screen.frame.size.height - window.frame.origin.y - window.frame.size.height
     rect.origin.y += window.frame.size.height - originRect.origin.y - originRect.size.height
     guard window.windowNumber > 0 else { return nil }
-    guard let cgImage = CGWindowListCreateImage(rect, .optionIncludingWindow, CGWindowID(window.windowNumber), CGWindowImageOption.bestResolution) else { return nil }
-
-    return NSImage(cgImage: cgImage, size: self.bounds.size)
+    return CGWindowListCreateImage(rect, .optionIncludingWindow, CGWindowID(window.windowNumber), CGWindowImageOption.bestResolution)
   }
 
   var iinaAppearance: NSAppearance {

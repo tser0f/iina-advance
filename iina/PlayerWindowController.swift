@@ -376,6 +376,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal lazy var verticalScrollAction: Preference.ScrollAction = Preference.enum(for: .verticalScrollAction)
 
   static private let observedPrefKeys: [Preference.Key] = [
+    .enableAdvancedSettings,
     .keepOpenOnFileEnd,
     .playlistAutoPlayNext,
     .themeMaterial,
@@ -434,16 +435,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let keyPath = keyPath, let change = change else { return }
 
     switch keyPath {
+    case PK.enableAdvancedSettings.rawValue:
+      animationPipeline.submit(IINAAnimation.Task({ [self] in
+        updateCustomBorderBoxAndWindowOpacity(using: currentLayout)
+      }))
     case PK.themeMaterial.rawValue:
       applyThemeMaterial()
     case PK.playerWindowOpacity.rawValue:
-      if let newValue = change[.newKey] as? Double {
-        animationPipeline.submit(IINAAnimation.Task({ [self] in
-          let windowOpacity = Float(newValue)
-          setWindowOpacity(windowOpacity)
-          updateCustomBorderBoxVisibility(using: currentLayout, windowOpacity: windowOpacity)
-        }))
-      }
+      animationPipeline.submit(IINAAnimation.Task({ [self] in
+        updateCustomBorderBoxAndWindowOpacity(using: currentLayout)
+      }))
     case PK.showRemainingTime.rawValue:
       if let newValue = change[.newKey] as? Bool {
         rightLabel.mode = newValue ? .remaining : .duration
@@ -3603,13 +3604,23 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     viewportView.layer?.backgroundColor = newColor
   }
 
-  func setWindowOpacity(_ newValue: Float) {
+  private func setWindowOpacity(to newValue: Float) {
     guard let window else { return }
     let existingValue = window.contentView?.layer?.opacity ?? -1
     guard existingValue != newValue else { return }
     log.debug("Changing window opacity, \(existingValue) → \(newValue)")
     window.backgroundColor = newValue < 1.0 ? .clear : .black
     window.contentView?.layer?.opacity = newValue
+  }
+
+  func updateCustomBorderBoxAndWindowOpacity(using layout: LayoutState) {
+    let windowOpacity = Preference.isAdvancedEnabled ? Preference.float(for: .playerWindowOpacity) : 1.0
+    setWindowOpacity(to: windowOpacity)
+    // Native window removes the border if winodw background is transparent.
+    // Try to match this behavior for legacy window
+    let hide = !layout.spec.isLegacyStyle || layout.isFullScreen || windowOpacity < 1.0
+    customWindowBorderBox.isHidden = hide
+    customWindowBorderTopHighlightBox.isHidden = hide
   }
 
   // MARK: - Sync UI with playback

@@ -712,6 +712,8 @@ class PlayerCore: NSObject {
   }
 
   func screenshot() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
     guard let vid = info.vid, vid > 0 else { return }
     let saveToFile = Preference.bool(for: .screenshotSaveToFile)
     let saveToClipboard = Preference.bool(for: .screenshotCopyToClipboard)
