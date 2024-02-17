@@ -2987,9 +2987,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     osdQueueLock.withLock {
       osdQueue.append({ [self] in
-        animationPipeline.submit(IINAAnimation.Task(duration: 0, { [self] in
+        animationPipeline.submitZeroDuration{ [self] in
           _displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryViewController: accessoryViewController)
-        }))
+        }
       })
     }
     DispatchQueue.main.async { [self] in
@@ -3111,8 +3111,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     updateOSDTextSize()
     setOSDViews(fromMessage: msg)
 
-    for subview in osdVStackView.views(in: .bottom) {
-      osdVStackView.removeView(subview)
+    let existingAccessoryViews = osdVStackView.views(in: .bottom)
+    if !existingAccessoryViews.isEmpty {
+      for subview in osdVStackView.views(in: .bottom) {
+        osdVStackView.removeView(subview)
+      }
     }
     if let accessoryViewController {  // e.g., ScreenshootOSDView
       let accessoryView = accessoryViewController.view
@@ -3124,15 +3127,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
 
       osdVStackView.addView(accessoryView, in: .bottom)
-      accessoryView.layoutSubtreeIfNeeded()
+      // These are needed to allow resizing of window width, for some reason
       accessoryView.addConstraintsToFillSuperview(leading: 0, trailing: 0)
-
-      accessoryView.wantsLayer = true
-      accessoryView.layer?.opacity = 0
-
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration * 0.5, {
-        accessoryView.layer?.opacity = 1
-      }))
     }
 
     osdVisualEffectView.layoutSubtreeIfNeeded()
