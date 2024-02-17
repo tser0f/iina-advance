@@ -385,9 +385,9 @@
                         </connections>
                     </customView>
                     <visualEffectView identifier="OSD-View" hidden="YES" wantsLayer="YES" blendingMode="withinWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="g0O-v5-RQj" userLabel="OSD Visual Effect View">
-                        <rect key="frame" x="8" y="303" width="168" height="61"/>
+                        <rect key="frame" x="8" y="303" width="164" height="61"/>
                         <subviews>
-                            <stackView distribution="fillEqually" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="irz-R1-ajt" userLabel="OSD Horizontal Stack View">
+                            <stackView distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="irz-R1-ajt" userLabel="OSD Horizontal Stack View">
                                 <rect key="frame" x="8" y="8" width="148" height="45"/>
                                 <subviews>
                                     <textField identifier="OSD-Icon-Label" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="1000" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" verticalCompressionResistancePriority="1000" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yWY-Rb-zjW" userLabel="OSDIcon Label">
@@ -447,7 +447,7 @@
                             </stackView>
                         </subviews>
                         <constraints>
-                            <constraint firstAttribute="trailing" secondItem="irz-R1-ajt" secondAttribute="trailing" constant="12" identifier="osdTrailingMarginConstraint" id="20A-Y9-xnl"/>
+                            <constraint firstAttribute="trailing" secondItem="irz-R1-ajt" secondAttribute="trailing" constant="8" identifier="osdTrailingMarginConstraint" id="20A-Y9-xnl"/>
                             <constraint firstAttribute="bottom" secondItem="irz-R1-ajt" secondAttribute="bottom" constant="8" id="8zf-O4-vae"/>
                             <constraint firstItem="irz-R1-ajt" firstAttribute="leading" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="8" identifier="osdLeadingMarginConstraint" id="F2r-Um-cea"/>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" priority="900" constant="50" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>

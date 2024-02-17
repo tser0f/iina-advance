@@ -3133,6 +3133,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }))
     }
 
+    osdVisualEffectView.layoutSubtreeIfNeeded()
     osdVisualEffectView.alphaValue = 1
     osdVisualEffectView.isHidden = false
     fadeableViews.remove(osdVisualEffectView)
@@ -3141,6 +3142,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @objc
   func hideOSD(immediately: Bool = false) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    log.verbose("Hiding OSD")
     osdAnimationState = .willHide
     isShowingPersistentOSD = false
     osdContext = nil
@@ -3187,7 +3189,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
 
     osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
-    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.15)
+    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
 
     let osdLabelFont = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
     osdLabel.font = osdLabelFont
