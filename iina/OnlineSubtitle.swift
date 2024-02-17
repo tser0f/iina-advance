@@ -148,7 +148,7 @@ class OnlineSubtitle {
         if subtitles.isEmpty {
           throw OnlineSubtitle.CommonError.noResult
         } else {
-          player.sendOSD(.foundSub(subtitles.count))
+          player.sendOSD(.downloadingSub(subtitles.count))
         }
       }.thenFlatMap { subtitle in
         subtitle.download()
@@ -225,7 +225,7 @@ class OnlineSubtitle {
       player.hideOSD()
     }.catch { err in
       let osdMessage: OSDMessage
-      let prefix = "Failed to obtain subtitles for \(url) from \(provider.name). "
+      let prefix = "Failed to obtain subtitles for \(url.description.pii) from \(provider.name). "
       switch err {
       case CommonError.noResult:
         // Not an error.
@@ -265,6 +265,7 @@ class OnlineSubtitle {
         // Not an error.
         log("User canceled download of subtitles")
       default:
+        // TODO: include message in network error OSD
         osdMessage = .networkError
         log("\(prefix)\(err.localizedDescription)", level: .error)
       }
