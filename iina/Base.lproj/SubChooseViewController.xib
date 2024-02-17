@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22155" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22155"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -146,6 +146,7 @@
                 <constraint firstItem="i9Z-jA-8gU" firstAttribute="leading" secondItem="tFf-9S-9GB" secondAttribute="trailing" constant="8" id="5Ic-qQ-aEq"/>
                 <constraint firstItem="T82-Op-UIR" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="6Xh-Bu-7TR"/>
                 <constraint firstItem="T82-Op-UIR" firstAttribute="top" secondItem="CFP-kG-Ixy" secondAttribute="bottom" constant="8" id="FZN-8k-JXM"/>
+                <constraint firstAttribute="width" priority="499" constant="500" id="Fm1-BD-B4h"/>
                 <constraint firstAttribute="trailing" secondItem="CFP-kG-Ixy" secondAttribute="trailing" id="Qnk-7D-vre"/>
                 <constraint firstItem="CFP-kG-Ixy" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="Qzc-2o-vZl"/>
                 <constraint firstAttribute="bottom" secondItem="i9Z-jA-8gU" secondAttribute="bottom" constant="8" id="RbC-52-0AG"/>

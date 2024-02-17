@@ -450,7 +450,7 @@
                             <constraint firstAttribute="trailing" secondItem="irz-R1-ajt" secondAttribute="trailing" constant="12" identifier="osdTrailingMarginConstraint" id="20A-Y9-xnl"/>
                             <constraint firstAttribute="bottom" secondItem="irz-R1-ajt" secondAttribute="bottom" constant="8" id="8zf-O4-vae"/>
                             <constraint firstItem="irz-R1-ajt" firstAttribute="leading" secondItem="g0O-v5-RQj" secondAttribute="leading" constant="8" identifier="osdLeadingMarginConstraint" id="F2r-Um-cea"/>
-                            <constraint firstAttribute="width" relation="greaterThanOrEqual" priority="900" constant="115" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>
+                            <constraint firstAttribute="width" relation="greaterThanOrEqual" priority="900" constant="50" identifier="osdMinWidthConstraint" id="PAq-Ca-D8I"/>
                             <constraint firstItem="irz-R1-ajt" firstAttribute="top" secondItem="g0O-v5-RQj" secondAttribute="top" constant="8" id="rAU-zU-HxD"/>
                         </constraints>
                     </visualEffectView>
