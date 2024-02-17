@@ -648,8 +648,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var osdTopToTopBarConstraint: NSLayoutConstraint!
   @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdIconHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdTopMarginConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTrailingMarginConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdLeadingMarginConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdBottomMarginConstraint: NSLayoutConstraint!
 
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
@@ -3122,11 +3124,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
 
       osdVStackView.addView(accessoryView, in: .bottom)
+      accessoryView.layoutSubtreeIfNeeded()
       accessoryView.addConstraintsToFillSuperview(leading: 0, trailing: 0)
 
       accessoryView.wantsLayer = true
       accessoryView.layer?.opacity = 0
-      osdVisualEffectView.layoutSubtreeIfNeeded()
 
       animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration * 0.5, {
         accessoryView.layer?.opacity = 1
@@ -3188,6 +3190,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
 
+    osdTopMarginConstraint.constant = 4 + (osdTextSize * 0.15)
+    osdBottomMarginConstraint.constant = 4 + (osdTextSize * 0.15)
     osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
     osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
 
@@ -3205,7 +3209,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     let osdIconTextSize = (osdTextSize * 1.1) + (osdAccessoryProgress.fittingSize.height * 1.5)
 
-    var iconWidth: CGFloat = 0
     var iconHeight: CGFloat = 0
     let osdIconFont = NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular)
     osdIcon.font = osdIconFont
@@ -3218,11 +3221,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       attachment.image = NSImage(systemSymbolName: "backward.fill", accessibilityDescription: "")!
       let iconString = NSMutableAttributedString(attachment: attachment)
       iconString.addAttribute(.font, value: osdIconFont, range: NSRange(location: 0, length: iconString.length))
-      iconWidth = iconString.size().width
       iconHeight = iconString.size().height
 
       osdIconHeightConstraint.constant = iconHeight
-      osdHStackView.spacing = 2.0 + (iconWidth * 0.1)
+      osdHStackView.spacing = 2.0 + (osdIconTextSize * 0.1)
     } else {
       // don't use constraint for older versions. OSD text's vertical position may change depending on icon
       osdIconHeightConstraint.priority = .defaultLow
