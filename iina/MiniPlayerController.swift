@@ -87,12 +87,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   // MARK: - Initialization
 
-  /// Polyfill for MacOS 14.0's `loadViewIfNeeded()`.
-  /// Load XIB if not already loaded. Prevents unboxing nils for `@IBOutlet` properties.
-  func loadIfNeeded() {
-    _ = self.view
-  }
-
   override func viewDidLoad() {
     super.viewDidLoad()
 

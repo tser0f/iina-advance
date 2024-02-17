@@ -55,7 +55,7 @@
                                                 <rect key="frame" x="11" y="1" width="477" height="35"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="ASf-cI-KhW">
+                                                    <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ASf-cI-KhW">
                                                         <rect key="frame" x="2" y="4" width="473" height="14"/>
                                                         <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Table View Cell" id="Bnm-Vf-zg5">
                                                             <font key="font" metaFont="smallSystem"/>
@@ -66,7 +66,7 @@
                                                             <binding destination="P97-ul-Qub" name="value" keyPath="objectValue.name" id="03c-5e-AAK"/>
                                                         </connections>
                                                     </textField>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UH9-D2-Ky7">
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="UH9-D2-Ky7">
                                                         <rect key="frame" x="2" y="20" width="28" height="11"/>
                                                         <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Label" id="FW8-qy-9po">
                                                             <font key="font" metaFont="label" size="9"/>
@@ -77,8 +77,8 @@
                                                             <binding destination="P97-ul-Qub" name="value" keyPath="objectValue.left" id="vqh-LZ-Hz5"/>
                                                         </connections>
                                                     </textField>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1Sq-2N-kTU">
-                                                        <rect key="frame" x="415" y="22" width="60" height="11"/>
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Sq-2N-kTU">
+                                                        <rect key="frame" x="415" y="20" width="60" height="11"/>
                                                         <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="2000-00-00" id="qnJ-hh-Ajn">
                                                             <font key="font" metaFont="label" size="9"/>
                                                             <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
@@ -93,9 +93,9 @@
                                                     <constraint firstItem="UH9-D2-Ky7" firstAttribute="top" secondItem="P97-ul-Qub" secondAttribute="top" constant="4" id="1t3-Df-wwC"/>
                                                     <constraint firstItem="1Sq-2N-kTU" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="UH9-D2-Ky7" secondAttribute="trailing" constant="8" id="FFv-ub-pFq"/>
                                                     <constraint firstItem="ASf-cI-KhW" firstAttribute="top" secondItem="UH9-D2-Ky7" secondAttribute="bottom" constant="2" id="GhN-3s-u3F"/>
+                                                    <constraint firstItem="1Sq-2N-kTU" firstAttribute="firstBaseline" secondItem="UH9-D2-Ky7" secondAttribute="firstBaseline" id="NhH-DH-vfA"/>
                                                     <constraint firstAttribute="trailing" secondItem="1Sq-2N-kTU" secondAttribute="trailing" constant="4" id="Prx-45-HCt"/>
                                                     <constraint firstItem="UH9-D2-Ky7" firstAttribute="leading" secondItem="P97-ul-Qub" secondAttribute="leading" constant="4" id="fCW-Ci-SGz"/>
-                                                    <constraint firstItem="1Sq-2N-kTU" firstAttribute="top" secondItem="P97-ul-Qub" secondAttribute="top" constant="2" id="hjk-G1-0qz"/>
                                                     <constraint firstAttribute="bottom" secondItem="ASf-cI-KhW" secondAttribute="bottom" constant="4" id="kCX-xn-Acw"/>
                                                     <constraint firstAttribute="trailing" secondItem="ASf-cI-KhW" secondAttribute="trailing" constant="4" id="uMs-2X-huR"/>
                                                     <constraint firstItem="ASf-cI-KhW" firstAttribute="leading" secondItem="P97-ul-Qub" secondAttribute="leading" constant="4" id="vlM-IS-LSD"/>

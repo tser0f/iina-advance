@@ -368,6 +368,7 @@ class OpenSub {
           resolver.fulfill(subs)
           return
         }
+        subChooseViewController.loadIfNeeded()
         subChooseViewController.subtitles = subs
         subChooseViewController.context = self
 

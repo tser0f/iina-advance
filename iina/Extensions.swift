@@ -1343,6 +1343,14 @@ extension DispatchQueue {
   }
 }
 
+extension NSViewController {
+  /// Polyfill for MacOS 14.0's `loadViewIfNeeded()`.
+  /// Load XIB if not already loaded. Prevents unboxing nils for `@IBOutlet` properties.
+  func loadIfNeeded() {
+    _ = self.view
+  }
+}
+
 extension NSView {
   func addConstraintsToFillSuperview(v: Bool = true, h: Bool = true, priority: NSLayoutConstraint.Priority = .required) {
     guard let superview = superview else { return }

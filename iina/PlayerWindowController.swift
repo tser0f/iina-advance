@@ -223,7 +223,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return Date().timeIntervalSince1970 - osdLastDisplayedMsgTS < 0.25
   }
   // Need to keep a reference to NSViewController here in order for its Objective-C selectors to work
-  var osdContext: NSViewController? = nil
+  var osdContext: NSViewController? = nil {
+    didSet {
+      if let osdContext {
+        log.verbose("Updated osdContext to: \(osdContext)")
+      } else {
+        log.verbose("Updated osdContext to: nil")
+      }
+    }
+  }
   private var osdQueueLock = Lock()
   private var osdQueue = LinkedList<() -> Void>()
 
@@ -395,6 +403,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .shortenFileGroupsInPlaylist,
     .autoSwitchToMusicMode,
     .hideWindowsWhenInactive,
+    .osdTextSize,
     .osdPosition,
     .enableOSC,
     .oscPosition,
@@ -570,6 +579,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       animationPipeline.submit(IINAAnimation.zeroDurationTask {
         self.updateOSDPosition()
       })
+    case PK.osdTextSize.rawValue:
+      animationPipeline.submit(IINAAnimation.zeroDurationTask { [self] in
+        updateOSDTextSize()
+      })
     default:
       return
     }
@@ -634,7 +647,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTopToTopBarConstraint: NSLayoutConstraint!
   @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var osdHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdIconHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTrailingMarginConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdLeadingMarginConstraint: NSLayoutConstraint!
 
@@ -2874,16 +2887,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       osdIcon.attributedStringValue = iconString
       osdLabel.stringValue = osdText
 
-      // Need this only for OSD messages which use the icon
-      osdHeightConstraint.priority = .required
+      if #available(macOS 11.0, *) {
+        // Need this only for OSD messages which use the icon, and MacOS 11.0+
+        osdIconHeightConstraint.priority = .required
+      }
     } else {
       // No icon
       osdIcon.isHidden = true
       osdIcon.stringValue = ""
       osdLabel.stringValue = osdText
 
-      osdHeightConstraint.constant = 0
-      osdHeightConstraint.priority = .defaultLow
+      osdIconHeightConstraint.constant = 0
+      osdIconHeightConstraint.priority = .defaultLow
     }
 
     switch osdType {
@@ -3091,64 +3106,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.verbose("Showing OSD '\(msg)', no timeout")
     }
 
-    // Reduce text size if horizontal space is tight
-    var osdTextSize = max(8.0, CGFloat(Preference.float(for: .osdTextSize)))
-    let availableSpaceForOSD = currentLayout.spec.getWidthBetweenInsideSidebars(in: viewportView.frame.size.width)
-    switch availableSpaceForOSD {
-    case ..<300:
-      osdTextSize = min(osdTextSize, 18)
-    case 300..<400:
-      osdTextSize = min(osdTextSize, 28)
-    case 400..<500:
-      osdTextSize = min(osdTextSize, 36)
-    case 500..<700:
-      osdTextSize = min(osdTextSize, 50)
-    case 700..<900:
-      osdTextSize = min(osdTextSize, 72)
-    case 900..<1200:
-      osdTextSize = min(osdTextSize, 96)
-    case 1200..<1500:
-      osdTextSize = min(osdTextSize, 120)
-    default:
-      osdTextSize = min(osdTextSize, 150)
-    }
-    let osdIconTextSize = osdTextSize * 1.4
-    let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
-
-    osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
-    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.15)
-
-    if #available(macOS 11.0, *) {
-      // Use dimensions of a dummy image to keep the height fixed. Because all the components are vertically aligned
-      // and each icon has a different height, this is needed to prevent the progress bar from jumping up and down
-      // each time the OSD message changes.
-      let attachment = NSTextAttachment()
-      attachment.image = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "")!
-      let iconString = NSMutableAttributedString(attachment: attachment)
-      iconString.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular),
-                              range: NSRange(location: 0, length: iconString.length))
-      let iconSize = iconString.size()
-      osdHeightConstraint.constant = iconSize.height
-      osdHStackView.spacing = 2.0 + (iconString.size().width * 0.1)
-    } else {
-      osdHeightConstraint.constant = osdTextSize
-    }
-
-    osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
-    osdIcon.font = NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular)
-    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: osdAccessoryTextSize, weight: .regular)
-    if #available(macOS 11.0, *) {
-      switch osdTextSize {
-      case 42...:
-        // Looks like .large is the same as .regular, but maybe will change in the future...
-        osdAccessoryProgress.controlSize = .large
-      case 28..<42:
-        osdAccessoryProgress.controlSize = .regular
-      default:
-        osdAccessoryProgress.controlSize = .small
-      }
-    }
-
+    updateOSDTextSize()
     setOSDViews(fromMessage: msg)
 
     for subview in osdVStackView.views(in: .bottom) {
@@ -3173,7 +3131,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration * 0.5, {
         accessoryView.layer?.opacity = 1
       }))
-
     }
 
     osdVisualEffectView.alphaValue = 1
@@ -3203,6 +3160,73 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         self.osdVStackView.views(in: .bottom).forEach { self.osdVStackView.removeView($0) }
       }
     })
+  }
+
+  func updateOSDTextSize() {
+    // Reduce text size if horizontal space is tight
+    var osdTextSize = max(8.0, CGFloat(Preference.float(for: .osdTextSize)))
+    let availableSpaceForOSD = currentLayout.spec.getWidthBetweenInsideSidebars(in: viewportView.frame.size.width)
+    switch availableSpaceForOSD {
+    case ..<300:
+      osdTextSize = min(osdTextSize, 18)
+    case 300..<400:
+      osdTextSize = min(osdTextSize, 28)
+    case 400..<500:
+      osdTextSize = min(osdTextSize, 36)
+    case 500..<700:
+      osdTextSize = min(osdTextSize, 50)
+    case 700..<900:
+      osdTextSize = min(osdTextSize, 72)
+    case 900..<1200:
+      osdTextSize = min(osdTextSize, 96)
+    case 1200..<1500:
+      osdTextSize = min(osdTextSize, 120)
+    default:
+      osdTextSize = min(osdTextSize, 150)
+    }
+    let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
+
+    osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
+    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.15)
+
+    let osdLabelFont = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
+    osdLabel.font = osdLabelFont
+    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: osdAccessoryTextSize, weight: .regular)
+    if #available(macOS 11.0, *) {
+      switch osdTextSize {
+      case 32...:
+        osdAccessoryProgress.controlSize = .regular
+      default:
+        osdAccessoryProgress.controlSize = .small
+      }
+    }
+
+    let osdIconTextSize = (osdTextSize * 1.1) + (osdAccessoryProgress.fittingSize.height * 1.5)
+
+    var iconWidth: CGFloat = 0
+    var iconHeight: CGFloat = 0
+    let osdIconFont = NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular)
+    osdIcon.font = osdIconFont
+
+    if #available(macOS 11.0, *) {
+      // Use dimensions of a dummy image to keep the height fixed. Because all the components are vertically aligned
+      // and each icon has a different height, this is needed to prevent the progress bar from jumping up and down
+      // each time the OSD message changes.
+      let attachment = NSTextAttachment()
+      attachment.image = NSImage(systemSymbolName: "backward.fill", accessibilityDescription: "")!
+      let iconString = NSMutableAttributedString(attachment: attachment)
+      iconString.addAttribute(.font, value: osdIconFont, range: NSRange(location: 0, length: iconString.length))
+      iconWidth = iconString.size().width
+      iconHeight = iconString.size().height
+
+      osdIconHeightConstraint.constant = iconHeight
+      osdHStackView.spacing = 2.0 + (iconWidth * 0.1)
+    } else {
+      // don't use constraint for older versions. OSD text's vertical position may change depending on icon
+      osdIconHeightConstraint.priority = .defaultLow
+      osdIconHeightConstraint.constant = 0
+    }
+    osdIcon.font = osdIconFont
   }
 
   // MARK: - UI: Interactive mode
