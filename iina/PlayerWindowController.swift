@@ -1130,8 +1130,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // if received video size before switching to music mode, hide default album art
     // Don't show art if currently loading
     // FIXME: should not be reading `player.info` vars from this thread
-    if isVideoTrackSelected || player.info.justOpenedFile || !player.info.fileLoaded || player.isStopped {
-      log.verbose("Hiding defaultAlbumArt because fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
+    if isVideoTrackSelected || player.info.justOpenedFile || player.isStopped {
+      log.verbose("Hiding defaultAlbumArt because justOpenedFile=\(player.info.justOpenedFile.yn) fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = false
     } else {
       log.verbose("Showing defaultAlbumArt because fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")

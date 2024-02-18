@@ -45,15 +45,8 @@ class PlaybackInfo {
 
   /// Opened or started file, but still waiting for `fileLoaded`
   // TODO: investigate combining this with `!fileLoaded` and `fileLoading`
-  var justOpenedFile: Bool = true {
-    willSet {
-      if justOpenedFile && !newValue {
-        /// Changed from `true` to `false`: file is done loading, and `playback-restart` was sent
-        timeLastFileOpenFinished = Date().timeIntervalSince1970
-      }
-    }
-  }
-  private var timeLastFileOpenFinished: TimeInterval = 0
+  var justOpenedFile: Bool = true
+  var timeLastFileOpenFinished: TimeInterval = 0
   var timeSinceLastFileOpenFinished: TimeInterval {
     Date().timeIntervalSince1970 - timeLastFileOpenFinished
   }

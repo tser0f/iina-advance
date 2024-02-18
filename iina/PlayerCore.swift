@@ -2034,11 +2034,6 @@ class PlayerCore: NSObject {
     syncAbLoop()
     saveState()
 
-    // Grab these while still in mpv queue
-    let videoParams = mpv.queryForVideoParams()
-    let isVideoTrackSelected = info.isVideoTrackSelected
-    let currentMediaAudioStatus = info.currentMediaAudioStatus
-
     // main thread stuff
     DispatchQueue.main.async { [self] in
       refreshSyncUITimer()
@@ -2046,25 +2041,6 @@ class PlayerCore: NSObject {
 
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
-      }
-
-      // Update art & aspect *before* switching to/from music mode for more pleasant animation
-      if currentMediaAudioStatus == .isAudio || !isVideoTrackSelected {
-        log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
-        windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
-      }
-
-      // if need to switch to music mode
-      if Preference.bool(for: .autoSwitchToMusicMode) {
-        if overrideAutoMusicMode {
-          log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
-        } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
-          log.debug("Current media is audio: auto-switching to music mode")
-          enterMusicMode(automatically: true)
-        } else if currentMediaAudioStatus == .notAudio && isInMiniPlayer {
-          log.debug("Current media is not audio: auto-switching to normal window")
-          exitMusicMode(automatically: true)
-        }
       }
     }
 
@@ -2088,7 +2064,54 @@ class PlayerCore: NSObject {
     postNotification(.iinaAFChanged)
     /// The first filter msg after starting a file means that the file is officially done loading.
     /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
+    fileIsCompletelyDoneLoading()
+  }
+
+  /// The mpv `file-loaded` event is emitted before everything associated with the file (such as filters) is completely done loading.
+  /// This event should be called when everything is truly done.
+  func fileIsCompletelyDoneLoading() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+    guard info.justOpenedFile else { return }
+    
+    log.verbose("File is completely done loading; setting justOpenedFile=N")
     info.justOpenedFile = false
+    info.timeLastFileOpenFinished = Date().timeIntervalSince1970
+
+    if let priorState = info.priorState {
+      if priorState.string(for: .playPosition) != nil {
+        /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
+        log.verbose("Clearing mpv 'start' option now that restore is complete")
+        mpv.setString(MPVOption.PlaybackControl.start, AppData.mpvArgNone)
+      }
+      info.priorState = nil
+      log.debug("Done with restore")
+    }
+
+    // Grab these while still in mpv queue
+    let videoParams = mpv.queryForVideoParams()
+    let isVideoTrackSelected = info.isVideoTrackSelected
+    let currentMediaAudioStatus = info.currentMediaAudioStatus
+
+    DispatchQueue.main.async { [self] in
+      // Update art & aspect *before* switching to/from music mode for more pleasant animation
+      if currentMediaAudioStatus == .isAudio || !isVideoTrackSelected {
+        log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
+        windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
+      }
+
+      // if need to switch to music mode
+      if Preference.bool(for: .autoSwitchToMusicMode) {
+        if overrideAutoMusicMode {
+          log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
+        } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
+          log.debug("Current media is audio: auto-switching to music mode")
+          enterMusicMode(automatically: true)
+        } else if currentMediaAudioStatus == .notAudio && isInMiniPlayer {
+          log.debug("Current media is not audio: auto-switching to normal window")
+          exitMusicMode(automatically: true)
+        }
+      }
+    }
   }
 
   func reloadAID() {
@@ -2235,19 +2258,9 @@ class PlayerCore: NSObject {
     saveState()
     postNotification(.iinaVFChanged)
 
-    if let priorState = info.priorState {
-      if priorState.string(for: .playPosition) != nil {
-        /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
-        log.verbose("Clearing mpv 'start' option now that restore is complete")
-        mpv.setString(MPVOption.PlaybackControl.start, AppData.mpvArgNone)
-      }
-      info.priorState = nil
-      log.debug("Done with restore")
-    }
-
     /// The first filter msg after starting a file means that the file is officially done loading.
     /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
-    info.justOpenedFile = false
+    fileIsCompletelyDoneLoading()
   }
 
   func reloadVID() {

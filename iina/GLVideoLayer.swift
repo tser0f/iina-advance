@@ -211,7 +211,6 @@ class GLVideoLayer: CAOpenGLLayer {
       isBlocked = false
       mpvGLQueue.resume()
     }
-    drawAsync()
   }
 
   /// We want `isAsynchronous = true` while executing any animation which causes the layer to resize.
