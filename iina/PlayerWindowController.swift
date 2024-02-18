@@ -3184,16 +3184,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     default:
       osdTextSize = min(osdTextSize, 150)
     }
-    let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
 
-    osdTopMarginConstraint.constant = 4 + (osdTextSize * 0.15)
-    osdBottomMarginConstraint.constant = 4 + (osdTextSize * 0.15)
-    osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
-    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
+    let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
+    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: osdAccessoryTextSize, weight: .regular)
+
+    let fullMargin = 8 + (osdTextSize * 0.12)
+    let halfMargin = fullMargin * 0.5
+    osdTopMarginConstraint.constant = halfMargin
+    osdBottomMarginConstraint.constant = halfMargin
+    osdTrailingMarginConstraint.constant = fullMargin
+    osdLeadingMarginConstraint.constant = fullMargin
 
     let osdLabelFont = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
     osdLabel.font = osdLabelFont
-    osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: osdAccessoryTextSize, weight: .regular)
+
     if #available(macOS 11.0, *) {
       switch osdTextSize {
       case 32...:
@@ -3204,8 +3208,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     let osdIconTextSize = (osdTextSize * 1.1) + (osdAccessoryProgress.fittingSize.height * 1.5)
-
-    var iconHeight: CGFloat = 0
     let osdIconFont = NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular)
     osdIcon.font = osdIconFont
 
@@ -3214,19 +3216,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // and each icon has a different height, this is needed to prevent the progress bar from jumping up and down
       // each time the OSD message changes.
       let attachment = NSTextAttachment()
-      attachment.image = NSImage(systemSymbolName: "backward.fill", accessibilityDescription: "")!
+      attachment.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: "")!
       let iconString = NSMutableAttributedString(attachment: attachment)
       iconString.addAttribute(.font, value: osdIconFont, range: NSRange(location: 0, length: iconString.length))
-      iconHeight = iconString.size().height
+      let iconHeight = iconString.size().height
 
       osdIconHeightConstraint.constant = iconHeight
-      osdHStackView.spacing = 2.0 + (osdIconTextSize * 0.1)
     } else {
       // don't use constraint for older versions. OSD text's vertical position may change depending on icon
       osdIconHeightConstraint.priority = .defaultLow
       osdIconHeightConstraint.constant = 0
     }
-    osdIcon.font = osdIconFont
   }
 
   // MARK: - UI: Interactive mode
