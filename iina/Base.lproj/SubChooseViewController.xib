@@ -18,7 +18,7 @@
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Hz6-mo-xeY" userLabel="SubChooseView">
             <rect key="frame" x="0.0" y="0.0" width="480" height="200"/>
             <subviews>
-                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="CFP-kG-Ixy">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="499" translatesAutoresizingMaskIntoConstraints="NO" id="CFP-kG-Ixy">
                     <rect key="frame" x="-2" y="184" width="484" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Please click to select subtitles to download:" id="vAl-Km-bkf">
                         <font key="font" metaFont="system"/>

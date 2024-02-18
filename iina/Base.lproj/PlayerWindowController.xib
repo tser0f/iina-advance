@@ -403,10 +403,10 @@
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                         </textFieldCell>
                                     </textField>
-                                    <stackView identifier="OSD-Vertical-Stack-View" distribution="fill" orientation="vertical" alignment="leading" spacing="2" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="g0j-zS-jKv" userLabel="OSD Vertical Stack View">
+                                    <stackView identifier="OSD-Vertical-Stack-View" distribution="fill" orientation="vertical" alignment="leading" spacing="2" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" horizontalCompressionResistancePriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="g0j-zS-jKv" userLabel="OSD Vertical Stack View">
                                         <rect key="frame" x="40" y="0.0" width="104" height="45"/>
                                         <subviews>
-                                            <textField identifier="OSD-Label" wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="500" verticalCompressionResistancePriority="1000" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ofw-1d-N4T" userLabel="OSDLabel">
+                                            <textField identifier="OSD-Label" wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="499" verticalCompressionResistancePriority="1000" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ofw-1d-N4T" userLabel="OSDLabel">
                                                 <rect key="frame" x="-2" y="30" width="108" height="15"/>
                                                 <textFieldCell key="cell" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" alignment="left" title="On Screen Display" usesSingleLineMode="YES" id="JAn-Yu-XA2">
                                                     <font key="font" metaFont="cellTitle"/>

@@ -3127,8 +3127,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
 
       osdVStackView.addView(accessoryView, in: .bottom)
-      // These are needed to allow resizing of window width, for some reason
-      accessoryView.addConstraintsToFillSuperview(leading: 0, trailing: 0)
     }
 
     osdVisualEffectView.layoutSubtreeIfNeeded()
