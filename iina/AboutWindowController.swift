@@ -39,7 +39,6 @@ class AboutWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var versionLabel: NSTextField!
   @IBOutlet weak var mpvVersionLabel: NSTextField!
   @IBOutlet weak var ffmpegVersionLabel: NSTextField!
-  @IBOutlet weak var buildView: NSView!
   @IBOutlet weak var buildBranchButton: NSButton!
   @IBOutlet weak var buildDateLabel: NSTextField!
 
@@ -85,23 +84,20 @@ class AboutWindowController: NSWindowController, NSWindowDelegate {
       if let buildDate = InfoDictionary.shared.buildDate,
          let buildSHA = InfoDictionary.shared.shortCommitSHA {
         buildDateLabel.stringValue = buildDate
-        buildDateLabel.isHidden = false
         buildBranchButton.title = "NIGHTLY " + buildSHA
         buildBranchButton.action = #selector(self.openCommitLink)
-        buildBranchButton.isHidden = false
       }
     case .debug:
       if let buildDate = InfoDictionary.shared.buildDate,
          let buildBranch = InfoDictionary.shared.buildBranch,
          let buildSHA = InfoDictionary.shared.shortCommitSHA {
         buildDateLabel.stringValue = buildDate
-        buildDateLabel.isHidden = false
         buildBranchButton.title = buildBranch + " " + buildSHA
         buildBranchButton.action = #selector(self.openCommitLink)
-        buildBranchButton.isHidden = false
       }
     default:
-      break
+      buildDateLabel.isHidden = true
+      buildBranchButton.isHidden = true
     }
 
     if let contrubutionFile = Bundle.main.path(forResource: "Contribution", ofType: "rtf") {

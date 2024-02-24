@@ -54,8 +54,8 @@ class GLVideoLayer: CAOpenGLLayer {
       canDrawCountLastPrint = canDrawCountTotal
       drawCountLastPrint = drawCountTotal
       forcedCountLastPrint = forcedCountTotal
-      let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)" : "NA"
-      NSLog("FPS: \(fpsDraws.string2f) (\(drawsSinceLastPrint)/\(canDrawCallsSinceLastPrint) requests drawn, \(forcedSinceLastPrint) forced, \(displaysSinceLastPrint) displays over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale.string6f), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
+      let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.stringMaxFrac2)x\(videoView.heightConstraint.constant.stringMaxFrac2)" : "NA"
+      NSLog("FPS: \(fpsDraws.stringMaxFrac2) (\(drawsSinceLastPrint)/\(canDrawCallsSinceLastPrint) requests drawn, \(forcedSinceLastPrint) forced, \(displaysSinceLastPrint) displays over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale.stringMaxFrac6), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
     }
   }
 #endif

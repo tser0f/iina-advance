@@ -85,7 +85,7 @@ class OpenSub {
       }
 
       if let fps = attributes.fps, fps != 0 {
-        tokens.append("\(fps.string2f) fps")
+        tokens.append("\(fps.stringMaxFrac2) fps")
       }
 
       let downloadCount = "\u{2b07}\(attributes.downloadCount)"

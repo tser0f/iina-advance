@@ -148,7 +148,7 @@ class PlaybackInfo {
   var videoAspect: CGFloat {
     set {
       videoAspectNormalized = Aspect.mpvPrecision(of: newValue)
-      log.verbose("Updated videoAspect to \(videoAspectNormalized.string6f)")
+      log.verbose("Updated videoAspect to \(videoAspectNormalized.stringMaxFrac6)")
     }
     get {
       return videoAspectNormalized

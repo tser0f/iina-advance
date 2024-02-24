@@ -293,73 +293,6 @@ extension NSMenu {
   }
 }
 
-fileprivate let fmtDecimalMaxFractionDigits2Truncated: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 2
-  fmt.roundingMode = .floor
-  return fmt
-}()
-
-fileprivate let fmtDecimalMaxFractionDigits3Truncated: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 3
-  fmt.roundingMode = .floor
-  return fmt
-}()
-
-// Formats a number to max 2 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
-fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 2
-  return fmt
-}()
-
-// Formats a number to max 6 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
-fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 6
-  return fmt
-}()
-
-/// Applies to `Double`, `CGFloat`, ...
-extension FloatingPoint {
-
-  /// Formats as String, truncating the number to 2 digits after the decimal
-  var stringTrunc2f: String {
-    return fmtDecimalMaxFractionDigits2Truncated.string(for: self)!
-  }
-
-  /// Formats as String, truncating the number to 3 digits after the decimal, and omitting any trailing zeroes
-  var stringTrunc3f: String {
-    return fmtDecimalMaxFractionDigits3Truncated.string(for: self)!
-  }
-
-  /// Formats as String, rounding the number to 2 digits after the decimal
-  var string2f: String {
-    return fmtDecimalMaxFractionDigits2.string(for: self)!
-  }
-
-  /// Formats as String, rounding the number to 6 digits after the decimal
-  var string6f: String {
-    return fmtDecimalMaxFractionDigits6.string(for: self)!
-  }
-
-  /// Returns a "normalized" number string for the exclusive purpose of comparing two mpv aspect ratios while avoiding precision errors.
-  /// Not pretty to put this here, but need to make this searchable & don't have time for a larger refactor
-  var aspectNormalDecimalString: String {
-    return string2f
-  }
-}
-
-
 extension CGFloat {
   var unifiedDouble: Double {
     get {
@@ -460,6 +393,43 @@ extension BinaryInteger {
   }
 }
 
+fileprivate let fmtDecimalMaxFractionDigits2Truncated: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 2
+  fmt.roundingMode = .floor
+  return fmt
+}()
+
+fileprivate let fmtDecimalMaxFractionDigits3Truncated: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 3
+  fmt.roundingMode = .floor
+  return fmt
+}()
+
+// Formats a number to max 2 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
+fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 2
+  return fmt
+}()
+
+// Formats a number to max 6 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
+fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 6
+  return fmt
+}()
+
+/// Applies to `Double`, `CGFloat`, ...
 extension FloatingPoint {
   func clamped(to range: Range<Self>) -> Self {
     if self < range.lowerBound {
@@ -469,6 +439,32 @@ extension FloatingPoint {
     } else {
       return self
     }
+  }
+
+  /// Formats as String, truncating the number to 2 digits after the decimal
+  var stringTrunc2f: String {
+    return fmtDecimalMaxFractionDigits2Truncated.string(for: self)!
+  }
+
+  /// Formats as String, truncating the number to 3 digits after the decimal, and omitting any trailing zeroes
+  var stringTrunc3f: String {
+    return fmtDecimalMaxFractionDigits3Truncated.string(for: self)!
+  }
+
+  /// Formats as String, rounding the number to 2 digits after the decimal
+  var stringMaxFrac2: String {
+    return fmtDecimalMaxFractionDigits2.string(for: self)!
+  }
+
+  /// Formats as String, rounding the number to 6 digits after the decimal
+  var stringMaxFrac6: String {
+    return fmtDecimalMaxFractionDigits6.string(for: self)!
+  }
+
+  /// Returns a "normalized" number string for the exclusive purpose of comparing two mpv aspect ratios while avoiding precision errors.
+  /// Not pretty to put this here, but need to make this searchable & don't have time for a larger refactor
+  var aspectNormalDecimalString: String {
+    return stringMaxFrac2
   }
 }
 

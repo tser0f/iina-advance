@@ -131,7 +131,7 @@ struct PlayerSaveState {
     props[PropName.screens.rawValue] = screenMetaCSVList
 
     if let size = info.intendedViewportSize {
-      let sizeString = [size.width.string2f, size.height.string2f].joined(separator: ",")
+      let sizeString = [size.width.stringMaxFrac2, size.height.stringMaxFrac2].joined(separator: ",")
       props[PropName.intendedViewportSize.rawValue] = sizeString
     }
 
@@ -139,7 +139,7 @@ struct PlayerSaveState {
       props[PropName.isOnTop.rawValue] = true.yn
     }
 
-    props[PropName.windowScale.rawValue] = player.info.cachedWindowScale.string6f
+    props[PropName.windowScale.rawValue] = player.info.cachedWindowScale.stringMaxFrac6
 
     if Preference.bool(for: .autoSwitchToMusicMode) {
       var overrideAutoMusicMode = player.overrideAutoMusicMode
@@ -172,10 +172,10 @@ struct PlayerSaveState {
     }
 
     if let videoPosition = info.videoPosition?.second {
-      props[PropName.playPosition.rawValue] = videoPosition.string6f
+      props[PropName.playPosition.rawValue] = videoPosition.stringMaxFrac6
     }
     if let videoDuration = info.videoDuration?.second {
-      props[PropName.playDuration.rawValue] = videoDuration.string6f
+      props[PropName.playDuration.rawValue] = videoDuration.stringMaxFrac6
     }
     props[PropName.paused.rawValue] = info.isPaused.yn
 
@@ -212,22 +212,22 @@ struct PlayerSaveState {
     props[PropName.gamma.rawValue] = String(info.gamma)
     props[PropName.hue.rawValue] = String(info.hue)
 
-    props[PropName.playSpeed.rawValue] = info.playSpeed.string6f
-    props[PropName.volume.rawValue] = info.volume.string6f
+    props[PropName.playSpeed.rawValue] = info.playSpeed.stringMaxFrac6
+    props[PropName.volume.rawValue] = info.volume.stringMaxFrac6
     props[PropName.isMuted.rawValue] = info.isMuted.yn
-    props[PropName.audioDelay.rawValue] = info.audioDelay.string6f
-    props[PropName.subDelay.rawValue] = info.subDelay.string6f
+    props[PropName.audioDelay.rawValue] = info.audioDelay.stringMaxFrac6
+    props[PropName.subDelay.rawValue] = info.subDelay.stringMaxFrac6
 
     props[PropName.isSubVisible.rawValue] = info.isSubVisible.yn
     props[PropName.isSub2Visible.rawValue] = info.isSecondSubVisible.yn
 
     let abLoopA: Double = player.abLoopA
     if abLoopA != 0 {
-      props[PropName.abLoopA.rawValue] = abLoopA.string6f
+      props[PropName.abLoopA.rawValue] = abLoopA.stringMaxFrac6
     }
     let abLoopB: Double = player.abLoopB
     if abLoopB != 0 {
-      props[PropName.abLoopB.rawValue] = abLoopB.string6f
+      props[PropName.abLoopB.rawValue] = abLoopB.stringMaxFrac6
     }
 
     props[PropName.videoRotation.rawValue] = String(info.userRotation)
@@ -244,7 +244,7 @@ struct PlayerSaveState {
 
     props[PropName.videoFiltersDisabled.rawValue] = player.info.videoFiltersDisabled.values.map({$0.stringFormat}).joined(separator: ",")
 
-    props[PropName.subScale.rawValue] = player.mpv.getDouble(MPVOption.Subtitles.subScale).string2f
+    props[PropName.subScale.rawValue] = player.mpv.getDouble(MPVOption.Subtitles.subScale).stringMaxFrac2
     props[PropName.subPos.rawValue] = String(player.mpv.getInt(MPVOption.Subtitles.subPos))
 
     props[PropName.loopPlaylist.rawValue] = player.mpv.getString(MPVOption.PlaybackControl.loopPlaylist)
@@ -711,10 +711,10 @@ struct ScreenMeta {
 
   func toCSV() -> String {
     return [ScreenMeta.csvVersion, String(displayID), name,
-            frame.origin.x.string2f, frame.origin.y.string2f, frame.size.width.string2f, frame.size.height.string2f,
-            visibleFrame.origin.x.string2f, visibleFrame.origin.y.string2f, visibleFrame.size.width.string2f, visibleFrame.size.height.string2f,
-            nativeResolution.width.string2f, nativeResolution.height.string2f,
-            cameraHousingHeight.string2f
+            frame.origin.x.stringMaxFrac2, frame.origin.y.stringMaxFrac2, frame.size.width.stringMaxFrac2, frame.size.height.stringMaxFrac2,
+            visibleFrame.origin.x.stringMaxFrac2, visibleFrame.origin.y.stringMaxFrac2, visibleFrame.size.width.stringMaxFrac2, visibleFrame.size.height.stringMaxFrac2,
+            nativeResolution.width.stringMaxFrac2, nativeResolution.height.stringMaxFrac2,
+            cameraHousingHeight.stringMaxFrac2
     ].joined(separator: ",")
   }
 
@@ -808,11 +808,11 @@ extension MusicModeGeometry {
   /// `MusicModeGeometry` -> String
   func toCSV() -> String {
     return [PlayerSaveState.musicModeGeoPrefStringVersion,
-            self.windowFrame.origin.x.string2f,
-            self.windowFrame.origin.y.string2f,
-            self.windowFrame.width.string2f,
-            self.windowFrame.height.string2f,
-            self.playlistHeight.string2f,
+            self.windowFrame.origin.x.stringMaxFrac2,
+            self.windowFrame.origin.y.stringMaxFrac2,
+            self.windowFrame.width.stringMaxFrac2,
+            self.windowFrame.height.stringMaxFrac2,
+            self.playlistHeight.stringMaxFrac2,
             self.isVideoVisible.yn,
             self.isPlaylistVisible.yn,
             self.videoAspect.aspectNormalDecimalString,
@@ -826,24 +826,24 @@ extension WinGeometry {
   /// `WinGeometry` -> String
   func toCSV() -> String {
     return [PlayerSaveState.windowGeometryPrefStringVersion,
-            self.topMarginHeight.string2f,
-            self.outsideTopBarHeight.string2f,
-            self.outsideTrailingBarWidth.string2f,
-            self.outsideBottomBarHeight.string2f,
-            self.outsideLeadingBarWidth.string2f,
-            self.insideTopBarHeight.string2f,
-            self.insideTrailingBarWidth.string2f,
-            self.insideBottomBarHeight.string2f,
-            self.insideLeadingBarWidth.string2f,
-            self.viewportMargins.top.string2f,
-            self.viewportMargins.trailing.string2f,
-            self.viewportMargins.bottom.string2f,
-            self.viewportMargins.leading.string2f,
+            self.topMarginHeight.stringMaxFrac2,
+            self.outsideTopBarHeight.stringMaxFrac2,
+            self.outsideTrailingBarWidth.stringMaxFrac2,
+            self.outsideBottomBarHeight.stringMaxFrac2,
+            self.outsideLeadingBarWidth.stringMaxFrac2,
+            self.insideTopBarHeight.stringMaxFrac2,
+            self.insideTrailingBarWidth.stringMaxFrac2,
+            self.insideBottomBarHeight.stringMaxFrac2,
+            self.insideLeadingBarWidth.stringMaxFrac2,
+            self.viewportMargins.top.stringMaxFrac2,
+            self.viewportMargins.trailing.stringMaxFrac2,
+            self.viewportMargins.bottom.stringMaxFrac2,
+            self.viewportMargins.leading.stringMaxFrac2,
             self.videoAspect.aspectNormalDecimalString,
-            self.windowFrame.origin.x.string2f,
-            self.windowFrame.origin.y.string2f,
-            self.windowFrame.width.string2f,
-            self.windowFrame.height.string2f,
+            self.windowFrame.origin.x.stringMaxFrac2,
+            self.windowFrame.origin.y.stringMaxFrac2,
+            self.windowFrame.width.stringMaxFrac2,
+            self.windowFrame.height.stringMaxFrac2,
             String(self.fitOption.rawValue),
             self.screenID,
             String(self.mode.rawValue)
