@@ -182,7 +182,12 @@ class TouchBarSupport: NSObject, NSTouchBarDelegate {
   }
 
   @objc func touchBarRewindAction(_ sender: NSButton) {
-    player.windowController.arrowButtonAction(left: sender.tag == 0)
+    let isLeft = sender.tag == 0
+    if isLeft {
+      player.windowController.leftArrowButtonAction(sender)
+    } else {
+      player.windowController.rightArrowButtonAction(sender)
+    }
   }
 
   @objc func touchBarSeekAction(_ sender: NSButton) {

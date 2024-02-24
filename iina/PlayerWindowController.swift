@@ -104,10 +104,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   var customTitleBar: CustomTitleBarViewController? = nil
 
   // For Rotate gesture:
-  let rotationHandler = VideoRotationHandler()
+  let rotationHandler = RotationGestureHandler()
 
   // For Pinch To Magnify gesture:
-  let magnificationHandler = VideoMagnificationHandler()
+  let magnificationHandler = MagnificationGestureHandler()
 
   let animationPipeline = IINAAnimation.Pipeline()
 
@@ -157,7 +157,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   var mousePosRelatedToWindow: CGPoint?
   var isDragging: Bool = false
-  var isLiveResizingWidth = false
+  var isLiveResizingWidth: Bool? = nil
 
   // might use another obj to handle slider?
   var isMouseInWindow: Bool = false
@@ -165,10 +165,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // - Left and right arrow buttons
 
   /** The maximum pressure recorded when clicking on the arrow buttons. */
-  var maxPressure: Int32 = 0
+  var maxPressure: Int = 0
 
   /** The value of speedValueIndex before Force Touch. */
-  var oldIndex: Int = AppData.availableSpeedValues.count / 2
+  var oldSpeedValueIndex: Int = AppData.availableSpeedValues.count / 2
 
   /** When the arrow buttons were last clicked. */
   var lastClick = Date()
@@ -178,15 +178,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   private var lastMouseUpEventID: Int = -1
   private var lastRightMouseDownEventID: Int = -1
   private var lastRightMouseUpEventID: Int = -1
-
-  /** The index of current speed in speed value array. */
-  var speedValueIndex: Int = AppData.availableSpeedValues.count / 2 {
-    didSet {
-      if speedValueIndex < 0 || speedValueIndex >= AppData.availableSpeedValues.count {
-        speedValueIndex = AppData.availableSpeedValues.count / 2
-      }
-    }
-  }
 
   /** For force touch action */
   var isCurrentPressInSecondStage = false
@@ -232,7 +223,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return Date().timeIntervalSince1970 - osdLastDisplayedMsgTS < 0.25
   }
   // Need to keep a reference to NSViewController here in order for its Objective-C selectors to work
-  var osdContext: NSViewController? = nil
+  var osdContext: NSViewController? = nil {
+    didSet {
+      if let osdContext {
+        log.verbose("Updated osdContext to: \(osdContext)")
+      } else {
+        log.verbose("Updated osdContext to: nil")
+      }
+    }
+  }
   private var osdQueueLock = Lock()
   private var osdQueue = LinkedList<() -> Void>()
 
@@ -266,22 +265,22 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // MARK: - Window geometry vars
 
-  lazy var windowedModeGeometry: PWindowGeometry = PlayerWindowController.windowedModeGeometryLastClosed {
+  lazy var windowedModeGeo: WinGeometry = PlayerWindowController.windowedModeGeoLastClosed {
     didSet {
-      log.verbose("Updated windowedModeGeometry := \(windowedModeGeometry)")
-      assert(windowedModeGeometry.mode == .windowed, "windowedModeGeometry has unexpected mode: \(windowedModeGeometry.mode) (expected: \(PlayerWindowMode.windowed)")
-      assert(!windowedModeGeometry.fitOption.isFullScreen, "windowedModeGeometry has invalid fitOption: \(windowedModeGeometry.fitOption)")
+      log.verbose("Updated windowedModeGeo := \(windowedModeGeo)")
+      assert(windowedModeGeo.mode == .windowed, "windowedModeGeo has unexpected mode: \(windowedModeGeo.mode) (expected: \(PlayerWindowMode.windowed)")
+      assert(!windowedModeGeo.fitOption.isFullScreen, "windowedModeGeo has invalid fitOption: \(windowedModeGeo.fitOption)")
     }
   }
 
   // Remembers the geometry of the "last closed" window in windowed, so future windows will default to its layout.
   // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
-  static var windowedModeGeometryLastClosed: PWindowGeometry = {
+  static var windowedModeGeoLastClosed: WinGeometry = {
     let csv = Preference.string(for: .uiLastClosedWindowedModeGeometry)
     if csv?.isEmpty ?? true {
       Logger.log("Pref entry for \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) is empty. Will fall back to default geometry",
                  level: .verbose)
-    } else if let savedGeo = PWindowGeometry.fromCSV(csv) {
+    } else if let savedGeo = WinGeometry.fromCSV(csv) {
       return savedGeo
     }
     // Compute default geometry for main screen
@@ -289,20 +288,20 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return LayoutState.buildFrom(LayoutSpec.defaultLayout()).buildDefaultInitialGeometry(screen: defaultScreen)
   }() {
     didSet {
-      Preference.set(windowedModeGeometryLastClosed.toCSV(), for: .uiLastClosedWindowedModeGeometry)
-      Logger.log("Updated pref \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) := \(windowedModeGeometryLastClosed)", level: .verbose)
+      Preference.set(windowedModeGeoLastClosed.toCSV(), for: .uiLastClosedWindowedModeGeometry)
+      Logger.log("Updated pref \(Preference.quoted(.uiLastClosedWindowedModeGeometry)) := \(windowedModeGeoLastClosed)", level: .verbose)
     }
   }
 
-  lazy var musicModeGeometry: MusicModeGeometry = PlayerWindowController.musicModeGeometryLastClosed {
+  lazy var musicModeGeo: MusicModeGeometry = PlayerWindowController.musicModeGeoLastClosed {
     didSet {
-      log.verbose("Updated musicModeGeometry := \(musicModeGeometry)")
+      log.verbose("Updated musicModeGeo := \(musicModeGeo)")
     }
   }
 
   // Remembers the geometry of the "last closed" music mode window, so future music mode windows will default to its layout.
   // The first "get" of this will load from saved pref. Every "set" of this will update the pref.
-  static var musicModeGeometryLastClosed: MusicModeGeometry = {
+  static var musicModeGeoLastClosed: MusicModeGeometry = {
     let csv = Preference.string(for: .uiLastClosedMusicModeGeometry)
     if csv?.isEmpty ?? true {
       Logger.log("Pref entry for \(Preference.quoted(.uiLastClosedMusicModeGeometry)) is empty. Will fall back to default music mode geometry",
@@ -316,19 +315,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     return defaultGeo
   }() {
     didSet {
-      Preference.set(musicModeGeometryLastClosed.toCSV(), for: .uiLastClosedMusicModeGeometry)
-      Logger.log("Updated musicModeGeometryLastClosed := \(musicModeGeometryLastClosed)", level: .verbose)
+      Preference.set(musicModeGeoLastClosed.toCSV(), for: .uiLastClosedMusicModeGeometry)
+      Logger.log("Updated musicModeGeoLastClosed := \(musicModeGeoLastClosed)", level: .verbose)
     }
   }
 
   // Only used when in interactive mode. Discarded after exiting interactive mode.
-  var interactiveModeGeometry: PWindowGeometry? = nil {
+  var interactiveModeGeo: WinGeometry? = nil {
     didSet {
-      if let geo = interactiveModeGeometry {
-        log.verbose("Updated interactiveModeGeometry := \(geo)")
-        assert(geo.mode == .windowedInteractive || geo.mode == .fullScreenInteractive, "unexpected mode for interactiveModeGeometry: \(geo.mode)")
+      if let geo = interactiveModeGeo {
+        log.verbose("Updated interactiveModeGeo := \(geo)")
+        assert(geo.mode == .windowedInteractive || geo.mode == .fullScreenInteractive, "unexpected mode for interactiveModeGeo: \(geo.mode)")
       } else {
-        log.verbose("Updated interactiveModeGeometry := nil")
+        log.verbose("Updated interactiveModeGeo := nil")
       }
     }
   }
@@ -385,9 +384,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   internal lazy var verticalScrollAction: Preference.ScrollAction = Preference.enum(for: .verticalScrollAction)
 
   static private let observedPrefKeys: [Preference.Key] = [
+    .enableAdvancedSettings,
     .keepOpenOnFileEnd,
     .playlistAutoPlayNext,
     .themeMaterial,
+    .playerWindowOpacity,
     .showRemainingTime,
     .maxVolume,
     .useExactSeek,
@@ -402,6 +403,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .shortenFileGroupsInPlaylist,
     .autoSwitchToMusicMode,
     .hideWindowsWhenInactive,
+    .osdAutoHideTimeout,
+    .osdTextSize,
     .osdPosition,
     .enableOSC,
     .oscPosition,
@@ -442,8 +445,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let keyPath = keyPath, let change = change else { return }
 
     switch keyPath {
+    case PK.enableAdvancedSettings.rawValue:
+      animationPipeline.submit(IINAAnimation.Task({ [self] in
+        updateCustomBorderBoxAndWindowOpacity(using: currentLayout)
+      }))
     case PK.themeMaterial.rawValue:
       applyThemeMaterial()
+    case PK.playerWindowOpacity.rawValue:
+      animationPipeline.submit(IINAAnimation.Task({ [self] in
+        updateCustomBorderBoxAndWindowOpacity(using: currentLayout)
+      }))
     case PK.showRemainingTime.rawValue:
       if let newValue = change[.newKey] as? Bool {
         rightLabel.mode = newValue ? .remaining : .duration
@@ -564,10 +575,22 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if let newRawValue = change[.newKey] as? Int, let newLocationID = Preference.SidebarLocation(rawValue: newRawValue) {
         self.moveTabGroup(.playlist, toSidebarLocation: newLocationID)
       }
+    case PK.osdAutoHideTimeout.rawValue:
+      if let newTimeout = change[.newKey] as? Double {
+        if osdAnimationState == .shown, let hideOSDTimer = hideOSDTimer, hideOSDTimer.isValid {
+          // Reschedule timer to prevent prev long timeout from lingering
+          self.hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(newTimeout), target: self,
+                                                   selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
+        }
+      }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
       animationPipeline.submit(IINAAnimation.zeroDurationTask {
         self.updateOSDPosition()
+      })
+    case PK.osdTextSize.rawValue:
+      animationPipeline.submit(IINAAnimation.zeroDurationTask { [self] in
+        updateOSDTextSize()
       })
     default:
       return
@@ -633,9 +656,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   @IBOutlet weak var trailingSidebarToOSDSpaceConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTopToTopBarConstraint: NSLayoutConstraint!
   @IBOutlet var osdLeadingToMiniPlayerButtonsTrailingConstraint: NSLayoutConstraint!
-  @IBOutlet weak var osdHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdIconHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdTopMarginConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdTrailingMarginConstraint: NSLayoutConstraint!
   @IBOutlet weak var osdLeadingMarginConstraint: NSLayoutConstraint!
+  @IBOutlet weak var osdBottomMarginConstraint: NSLayoutConstraint!
 
   // Sets the size of the spacer view in the top overlay which reserves space for a title bar:
   @IBOutlet weak var titleBarHeightConstraint: NSLayoutConstraint!
@@ -912,11 +937,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     /// when `lockViewportToVideoSize` is disabled, or when in legacy full screen on a Macbook screen  with a
     /// notch and the preference `allowVideoToOverlapCameraHousing` is false.
     cv.wantsLayer = true
-    cv.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
-
     // Need this to be black also, for sidebar animations
     viewportView.wantsLayer = true
-    viewportView.layer?.backgroundColor = Constants.Color.defaultWindowBackgroundColor
+    setEmptySpaceColor(to: Constants.Color.defaultWindowBackgroundColor)
 
     applyThemeMaterial()
     // Update to corect values before displaying. Only useful when restoring at launch
@@ -988,7 +1011,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // Do not make visual effects views opaque when window is not in focus
     for view in [topBarView, osdVisualEffectView, bottomBarView, controlBarFloating,
-                 leadingSidebarView, trailingSidebarView, osdVisualEffectView, pipOverlayView, bufferIndicatorView] {
+                 leadingSidebarView, trailingSidebarView, pipOverlayView, bufferIndicatorView] {
       view?.state = .active
     }
 
@@ -1108,7 +1131,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func refreshAlbumArtDisplay(_ videoParams: MPVVideoParams?, isVideoTrackSelected: Bool,
                               _ currentMediaAudioStatus: PlaybackInfo.CurrentMediaAudioStatus) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    guard loaded else { return }
+    guard loaded, let window else { return }
 
     // Part 1: default album art
 
@@ -1116,8 +1139,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // if received video size before switching to music mode, hide default album art
     // Don't show art if currently loading
     // FIXME: should not be reading `player.info` vars from this thread
-    if isVideoTrackSelected || player.info.justOpenedFile || !player.info.fileLoaded || player.isStopped {
-      log.verbose("Hiding defaultAlbumArt because fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
+    if isVideoTrackSelected || player.info.justOpenedFile || player.isStopped {
+      log.verbose("Hiding defaultAlbumArt because justOpenedFile=\(player.info.justOpenedFile.yn) fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = false
     } else {
       log.verbose("Showing defaultAlbumArt because fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
@@ -1150,12 +1173,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let layout = currentLayout
     switch layout.mode {
     case .musicMode:
-      let newMusicModeGeometry = musicModeGeometry.clone(videoAspect: newAspectRatio)
+      let newMusicModeGeometry = musicModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
       /// If `isMiniPlayerWaitingToShowVideo` is true, need to update the cached geometry & other state vars,
       /// but do not update frame because that will be handled right after
       applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry, setFrame: !player.isMiniPlayerWaitingToShowVideo)
     case .windowed:
-      var newGeo = windowedModeGeometry.clone(videoAspect: newAspectRatio)
+      var newGeo = windowedModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
 
       let viewportSize: NSSize
       if Preference.bool(for: .lockViewportToVideoSize),
@@ -1169,7 +1192,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case .fullScreen:
       animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
         player.info.videoAspect = newAspectRatio
-        guard let screen = window?.screen else { return }
+        guard let screen = window.screen else { return }
         let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
         if layout.isLegacyFullScreen {
           applyLegacyFullScreenGeometry(fsGeo)
@@ -1203,7 +1226,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /// When entering "windowed" mode (either from initial load, PIP, or music mode), call this to add/return `videoView`
   /// to this window. Will do nothing if it's already there.
-  func addVideoViewToWindow(_ geometry: PWindowGeometry) {
+  func addVideoViewToWindow(_ geometry: WinGeometry) {
     guard let window else { return }
     guard !viewportView.subviews.contains(videoView) else { return }
     player.log.verbose("Adding videoView to viewportView, screenScaleFactor: \(window.screenScaleFactor)")
@@ -1444,6 +1467,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       return
     }
     if let cropSettingsView, !cropSettingsView.cropBoxView.isHidden, isMouseEvent(event, inAnyOf: [cropSettingsView.cropBoxView]) {
+      log.verbose("PlayerWindow: mouseDown should have been handled by CropBoxView")
       return
     }
     // record current mouse pos
@@ -1468,8 +1492,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       controlBarFloating.mouseDragged(with: event)
       return
     }
-    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
-      cropSettingsView.mouseDragged(with: event)
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDraggingToResize || cropSettingsView.cropBoxView.isDraggingNew {
+      cropSettingsView.cropBoxView.mouseDragged(with: event)
       return
     }
     let didResizeSidebar = resizeSidebar(with: event)
@@ -1508,8 +1532,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     restartHideCursorTimer()
     mousePosRelatedToWindow = nil
 
-    if let cropSettingsView, cropSettingsView.cropBoxView.isDragging {
-      log.verbose("PlayerWindow mouseUp: finished resizing sidebar")
+    if let cropSettingsView, cropSettingsView.cropBoxView.isDraggingToResize || cropSettingsView.cropBoxView.isDraggingNew {
+      log.verbose("PlayerWindow mouseUp: finishing cropboxView selection drag")
+      cropSettingsView.cropBoxView.mouseUp(with: event)
     } else if let controlBarFloating = controlBarFloating, !controlBarFloating.isHidden,
         controlBarFloating.isDragging || isMouseEvent(event, inAnyOf: [controlBarFloating]) {
       log.verbose("PlayerWindow mouseUp: finished drag of floating OSC")
@@ -1518,6 +1543,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       // if it's a mouseup after dragging window
       log.verbose("PlayerWindow mouseUp: finished drag of window")
       isDragging = false
+      // Update geometry with new position, because windowDidUpdate does not always seem to fire
+      updateCachedGeometry()
     } else if finishResizingSidebar(with: event) {
       log.verbose("PlayerWindow mouseUp: finished resizing sidebar")
     } else {
@@ -1918,15 +1945,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     resetCollectionBehavior()
     updateBufferIndicatorView()
     updateOSDPosition()
-    addVideoViewToWindow(windowedModeGeometry)
+    addVideoViewToWindow(windowedModeGeo)
 
     /// `isOpen==true` if opening a new file in an already open window
     if isOpen {
       /// `windowFrame` may be slightly off; update it
       if currentLayout.mode == .windowed {
-        windowedModeGeometry = currentLayout.buildGeometry(windowFrame: window.frame, screenID: bestScreen.screenID, videoAspect: windowedModeGeometry.videoAspect)
+        windowedModeGeo = currentLayout.buildGeometry(windowFrame: window.frame, screenID: bestScreen.screenID, videoAspect: windowedModeGeo.videoAspect)
       } else if currentLayout.mode == .musicMode {
-        musicModeGeometry = musicModeGeometry.clone(windowFrame: window.frame, screenID: bestScreen.screenID)
+        musicModeGeo = musicModeGeo.clone(windowFrame: window.frame, screenID: bestScreen.screenID)
       }
     } else {
       // Restore layout from last launch or configure from prefs. Do not animate.
@@ -1971,8 +1998,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Stop playing. This will save state if configured to do so:
     player.stop()
     // stop tracking mouse event
-    guard let w = self.window, let cv = w.contentView else { return }
-    cv.trackingAreas.forEach(cv.removeTrackingArea)
+    guard let window, let contentView = window.contentView else { return }
+    contentView.trackingAreas.forEach(contentView.removeTrackingArea)
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
 
     // Reset state flags
@@ -1982,9 +2009,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if !AppDelegate.shared.isTerminating {
       /// Prepare window for possible reuse: restore default geometry, close sidebars, etc.
       if currentLayout.mode == .musicMode {
-        PlayerWindowController.musicModeGeometryLastClosed = musicModeGeometry
+        PlayerWindowController.musicModeGeoLastClosed = musicModeGeo.clone(windowFrame: window.frame)
       } else {
-        PlayerWindowController.windowedModeGeometryLastClosed = windowedModeGeometry
+        if currentLayout.mode == .windowed {
+          // Update frame since it may have moved
+          windowedModeGeo = windowedModeGeo.clone(windowFrame: window.frame)
+        }
+        PlayerWindowController.windowedModeGeoLastClosed = windowedModeGeo
       }
     }
     lastWindowedLayoutSpec = LayoutSpec.defaultLayout()
@@ -2027,6 +2058,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   func window(_ window: NSWindow, startCustomAnimationToEnterFullScreenOn screen: NSScreen, withDuration duration: TimeInterval) {
+    // Do not run into animation task in native full screen, because the OS will not stop to wait for it
     animateEntryIntoFullScreen(withDuration: duration, isLegacy: false)
   }
 
@@ -2119,11 +2151,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isFullScreen = NSApp.presentationOptions.contains(.fullScreen)
     log.verbose("EnterFullScreen called (legacy: \(isLegacy.yn), isNativeFullScreenNow: \(isFullScreen.yn))")
 
-    if isLegacy {
-      animateEntryIntoFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
-    } else if !isFullScreen {
-      window.toggleFullScreen(self)
-    }
+    animationPipeline.submitZeroDuration({ [self] in
+      if isLegacy {
+        animateEntryIntoFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
+      } else if !isFullScreen {
+        window.toggleFullScreen(self)
+      }
+    })
   }
 
   func exitFullScreen(legacy: Bool) {
@@ -2131,31 +2165,31 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isFullScreen = NSApp.presentationOptions.contains(.fullScreen)
     log.verbose("ExitFullScreen called (legacy: \(legacy.yn), isNativeFullScreenNow: \(isFullScreen.yn))")
 
-    // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
-    if legacy {
-      animateExitFromFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
-    } else if isFullScreen {
-      window.toggleFullScreen(self)
-    }
+    animationPipeline.submitZeroDuration({ [self] in
+      // If "legacy" pref was toggled while in fullscreen, still need to exit native FS
+      if legacy {
+        animateExitFromFullScreen(withDuration: IINAAnimation.FullScreenTransitionDuration, isLegacy: true)
+      } else if isFullScreen {
+        window.toggleFullScreen(self)
+      }
+    })
   }
 
   // MARK: - Window delegate: Resize
 
   func windowWillStartLiveResize(_ notification: Notification) {
-    guard let window = notification.object as? NSWindow else { return }
-    guard !isAnimating, !isMagnifying else { return }
-    log.verbose("LiveResize started (\(window.inLiveResize)) for window: \(window.frame)")
-    isLiveResizingWidth = false
+    log.verbose("WindowWillStartLiveResize")
+    isLiveResizingWidth = nil  // reset this
   }
 
   func windowWillResize(_ window: NSWindow, to requestedSize: NSSize) -> NSSize {
     let currentLayout = currentLayout
-    log.verbose("WindowWILLResize mode=\(currentLayout.mode) RequestedSize=\(requestedSize) isAnimatingLayoutTransition=\(isAnimatingLayoutTransition)")
+    log.verbose("Win-WILL-Resize mode=\(currentLayout.mode) RequestedSize=\(requestedSize) isAnimatingLayoutTransition=\(isAnimatingLayoutTransition)")
     videoView.videoLayer.enterAsynchronousMode()
 
     /// This method only provides the desired size for the window, but we don't have access to the  desired origin.
     /// So we need to be careful not to make assumptions about which directions the window is expanding toward.
-    /// It's OK to use `PWindowGeometry` for size calculations, but do not save the geometry objects.
+    /// It's OK to use `WinGeometry` for size calculations, but do not save the geometry objects.
     /// After the window frame is updated, `updateCachedGeometry()` will query the window for its location & size,
     /// and will save that.
     defer {
@@ -2168,7 +2202,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     case .fullScreen, .fullScreenInteractive:
       if currentLayout.isLegacyFullScreen {
-        let newGeometry = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeometry.screenID, videoAspect: player.info.videoAspect)
+        let newGeometry = currentLayout.buildFullScreenGeometry(inScreenID: windowedModeGeo.screenID, videoAspect: player.info.videoAspect)
         return newGeometry.windowFrame.size
       } else {  // is native full screen
         // This method can be called as a side effect of the animation. If so, ignore.
@@ -2196,7 +2230,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     IINAAnimation.disableAnimation {
       if log.isTraceEnabled {
-        log.trace("WindowDIDResize mode=\(currentLayout.mode) frame=\(window.frame)")
+        log.trace("Win-DID-Resize mode=\(currentLayout.mode) frame=\(window.frame)")
       }
 
       // These may no longer be aligned correctly. Just hide them
@@ -2260,6 +2294,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     log.verbose("WindowDidChangeBackingProperties received")
     if videoView.refreshContentsScale() {
       // Do not allow MacOS to change the window size:
+      log.verbose("Will deny next window resize")
       denyNextWindowResize = true
     }
   }
@@ -2292,25 +2327,35 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         blackOutOtherMonitors()
       }
 
-      log.verbose("WindowDidChangeScreen (tkt \(ticket)): screenFrame=\(screen.frame)")
-      videoView.updateDisplayLink()
-      player.events.emit(.windowScreenChanged)
+      animationPipeline.submitZeroDuration({ [self] in
+        log.verbose("WindowDidChangeScreen (tkt \(ticket)): screenFrame=\(screen.frame)")
+        videoView.updateDisplayLink()
+        player.events.emit(.windowScreenChanged)
+      })
 
-      /// Need to recompute legacy FS's window size so it exactly fills the new screen.
-      /// But looks like the OS will try to reposition the window on its own and can't be stopped...
-      /// Just wait until after it does its thing before calling `setFrame()`.
-      if currentLayout.isLegacyFullScreen && !player.info.isRestoring {
-        animationPipeline.submit(IINAAnimation.Task({ [self] in
+      guard !player.info.isRestoring else { return }
+
+      animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
+        let screenID = bestScreen.screenID
+
+        /// Need to recompute legacy FS's window size so it exactly fills the new screen.
+        /// But looks like the OS will try to reposition the window on its own and can't be stopped...
+        /// Just wait until after it does its thing before calling `setFrame()`.
+        if currentLayout.isLegacyFullScreen {
           let layout = currentLayout
           guard layout.isLegacyFullScreen else { return }  // check again now that we are inside animation
-          log.verbose("Updating legacy full screen window and windowedModeGeometry in response to WindowDidChangeScreen")
-          let screenID = bestScreen.screenID
+          log.verbose("Updating legacy full screen window in response to WindowDidChangeScreen")
           let fsGeo = layout.buildFullScreenGeometry(inScreenID: screenID, videoAspect: player.info.videoAspect)
           applyLegacyFullScreenGeometry(fsGeo)
-          windowedModeGeometry = windowedModeGeometry.clone(screenID: screenID)
+          // Update screenID at least, so that window won't go back to other screen when exiting FS
+          windowedModeGeo = windowedModeGeo.clone(screenID: screenID)
           player.saveState()
-        }))
-      }
+        } else if currentLayout.mode == .windowed {
+          // Update windowedModeGeo with new window position & screen (but preserve previous size)
+          let newWindowFrame = NSRect(origin: window.frame.origin, size: windowedModeGeo.windowFrame.size)
+          windowedModeGeo = windowedModeGeo.clone(windowFrame: newWindowFrame, screenID: screenID)
+        }
+      }))
     }
   }
 
@@ -2361,7 +2406,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           /// In certain corner cases (e.g., exiting legacy full screen after changing screens while in full screen),
           /// the screen's `visibleFrame` can change after `transition.outputGeometry` was generated and won't be known until the end.
           /// By calling `refit()` here, we can make sure the window is constrained to the up-to-date `visibleFrame`.
-          let oldGeo = windowedModeGeometry
+          let oldGeo = windowedModeGeo
           let newGeo = oldGeo.refit()
           guard !newGeo.hasEqual(windowFrame: oldGeo.windowFrame, videoSize: oldGeo.videoSize) else {
             log.verbose("No need to update windowFrame in response to ScreenParametersNotification - no change")
@@ -2853,16 +2898,18 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       osdIcon.attributedStringValue = iconString
       osdLabel.stringValue = osdText
 
-      // Need this only for OSD messages which use the icon
-      osdHeightConstraint.priority = .required
+      if #available(macOS 11.0, *) {
+        // Need this only for OSD messages which use the icon, and MacOS 11.0+
+        osdIconHeightConstraint.priority = .required
+      }
     } else {
       // No icon
       osdIcon.isHidden = true
       osdIcon.stringValue = ""
       osdLabel.stringValue = osdText
 
-      osdHeightConstraint.constant = 0
-      osdHeightConstraint.priority = .defaultLow
+      osdIconHeightConstraint.constant = 0
+      osdIconHeightConstraint.priority = .defaultLow
     }
 
     switch osdType {
@@ -2949,9 +2996,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     osdQueueLock.withLock {
       osdQueue.append({ [self] in
-        animationPipeline.submit(IINAAnimation.Task(duration: 0, { [self] in
+        animationPipeline.submitZeroDuration{ [self] in
           _displayOSD(msg, autoHide: autoHide, forcedTimeout: forcedTimeout, accessoryViewController: accessoryViewController)
-        }))
+        }
       })
     }
     DispatchQueue.main.async { [self] in
@@ -3044,10 +3091,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // Restart timer
-    if let hideOSDTimer = self.hideOSDTimer {
-      hideOSDTimer.invalidate()
-      self.hideOSDTimer = nil
-    }
+    hideOSDTimer?.invalidate()
     if osdAnimationState != .shown {
       osdAnimationState = .shown  /// set this before calling `refreshSyncUITimer()`
       player.refreshSyncUITimer()
@@ -3070,6 +3114,56 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.verbose("Showing OSD '\(msg)', no timeout")
     }
 
+    updateOSDTextSize()
+    setOSDViews(fromMessage: msg)
+
+    let existingAccessoryViews = osdVStackView.views(in: .bottom)
+    if !existingAccessoryViews.isEmpty {
+      for subview in osdVStackView.views(in: .bottom) {
+        osdVStackView.removeView(subview)
+      }
+    }
+    if let accessoryViewController {  // e.g., ScreenshootOSDView
+      let accessoryView = accessoryViewController.view
+      osdContext = accessoryViewController
+      isShowingPersistentOSD = true
+
+      if #available(macOS 10.14, *) {} else {
+        accessoryView.appearance = NSAppearance(named: .vibrantDark)
+      }
+
+      osdVStackView.addView(accessoryView, in: .bottom)
+    }
+
+    osdVisualEffectView.layoutSubtreeIfNeeded()
+    osdVisualEffectView.alphaValue = 1
+    osdVisualEffectView.isHidden = false
+    fadeableViews.remove(osdVisualEffectView)
+  }
+
+  @objc
+  func hideOSD(immediately: Bool = false) {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+    log.verbose("Hiding OSD")
+    osdAnimationState = .willHide
+    isShowingPersistentOSD = false
+    osdContext = nil
+    hideOSDTimer?.invalidate()
+
+    player.refreshSyncUITimer()
+
+    IINAAnimation.runAsync(IINAAnimation.Task(duration: immediately ? 0 : IINAAnimation.OSDAnimationDuration, { [self] in
+      osdVisualEffectView.alphaValue = 0
+    }), then: {
+      if self.osdAnimationState == .willHide {
+        self.osdAnimationState = .hidden
+        self.osdVisualEffectView.isHidden = true
+        self.osdVStackView.views(in: .bottom).forEach { self.osdVStackView.removeView($0) }
+      }
+    })
+  }
+
+  func updateOSDTextSize() {
     // Reduce text size if horizontal space is tight
     var osdTextSize = max(8.0, CGFloat(Preference.float(for: .osdTextSize)))
     let availableSpaceForOSD = currentLayout.spec.getWidthBetweenInsideSidebars(in: viewportView.frame.size.width)
@@ -3091,97 +3185,49 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     default:
       osdTextSize = min(osdTextSize, 150)
     }
-    let osdIconTextSize = osdTextSize * 1.4
+
     let osdAccessoryTextSize = (osdTextSize * 0.75).clamped(to: 11...25)
-
-    osdTrailingMarginConstraint.constant = 4 + (osdTextSize * 0.3)
-    osdLeadingMarginConstraint.constant = 4 + (osdTextSize * 0.15)
-
-    if #available(macOS 11.0, *) {
-      // Use dimensions of a dummy image to keep the height fixed. Because all the components are vertically aligned
-      // and each icon has a different height, this is needed to prevent the progress bar from jumping up and down
-      // each time the OSD message changes.
-      let attachment = NSTextAttachment()
-      attachment.image = NSImage(systemSymbolName: "pause.fill", accessibilityDescription: "")!
-      let iconString = NSMutableAttributedString(attachment: attachment)
-      iconString.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular),
-                              range: NSRange(location: 0, length: iconString.length))
-      let iconSize = iconString.size()
-      osdHeightConstraint.constant = iconSize.height
-      osdHStackView.spacing = 2.0 + (iconString.size().width * 0.1)
-    } else {
-      osdHeightConstraint.constant = osdTextSize
-    }
-
-    osdLabel.font = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
-    osdIcon.font = NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular)
     osdAccessoryText.font = NSFont.monospacedDigitSystemFont(ofSize: osdAccessoryTextSize, weight: .regular)
+
+    let fullMargin = 8 + (osdTextSize * 0.12)
+    let halfMargin = fullMargin * 0.5
+    osdTopMarginConstraint.constant = halfMargin
+    osdBottomMarginConstraint.constant = halfMargin
+    osdTrailingMarginConstraint.constant = fullMargin
+    osdLeadingMarginConstraint.constant = fullMargin
+
+    let osdLabelFont = NSFont.monospacedDigitSystemFont(ofSize: osdTextSize, weight: .regular)
+    osdLabel.font = osdLabelFont
+
     if #available(macOS 11.0, *) {
       switch osdTextSize {
-      case 42...:
-        // Looks like .large is the same as .regular, but maybe will change in the future...
-        osdAccessoryProgress.controlSize = .large
-      case 28..<42:
+      case 32...:
         osdAccessoryProgress.controlSize = .regular
       default:
         osdAccessoryProgress.controlSize = .small
       }
     }
 
-    setOSDViews(fromMessage: msg)
+    let osdIconTextSize = (osdTextSize * 1.1) + (osdAccessoryProgress.fittingSize.height * 1.5)
+    let osdIconFont = NSFont.monospacedDigitSystemFont(ofSize: osdIconTextSize, weight: .regular)
+    osdIcon.font = osdIconFont
 
-    for subview in osdVStackView.views(in: .bottom) {
-      osdVStackView.removeView(subview)
+    if #available(macOS 11.0, *) {
+      // Use dimensions of a dummy image to keep the height fixed. Because all the components are vertically aligned
+      // and each icon has a different height, this is needed to prevent the progress bar from jumping up and down
+      // each time the OSD message changes.
+      let attachment = NSTextAttachment()
+      attachment.image = NSImage(systemSymbolName: "play.fill", accessibilityDescription: "")!
+      let iconString = NSMutableAttributedString(attachment: attachment)
+      iconString.addAttribute(.font, value: osdIconFont, range: NSRange(location: 0, length: iconString.length))
+      let iconHeight = iconString.size().height
+
+      osdIconHeightConstraint.constant = iconHeight
+    } else {
+      // don't use constraint for older versions. OSD text's vertical position may change depending on icon
+      osdIconHeightConstraint.priority = .defaultLow
+      osdIconHeightConstraint.constant = 0
     }
-    if let accessoryViewController {  // e.g., ScreenshootOSDView
-      let accessoryView = accessoryViewController.view
-      osdContext = accessoryViewController
-      isShowingPersistentOSD = true
-
-      if #available(macOS 10.14, *) {} else {
-        accessoryView.appearance = NSAppearance(named: .vibrantDark)
-      }
-
-      osdVStackView.addView(accessoryView, in: .bottom)
-      accessoryView.addConstraintsToFillSuperview(leading: 0, trailing: 0)
-
-      accessoryView.wantsLayer = true
-      accessoryView.layer?.opacity = 0
-      osdVisualEffectView.layoutSubtreeIfNeeded()
-
-      animationPipeline.submit(IINAAnimation.Task(duration: IINAAnimation.OSDAnimationDuration * 0.5, {
-        accessoryView.layer?.opacity = 1
-      }))
-
-    }
-
-    osdVisualEffectView.alphaValue = 1
-    osdVisualEffectView.isHidden = false
-    fadeableViews.remove(osdVisualEffectView)
-  }
-
-  @objc
-  func hideOSD(immediately: Bool = false) {
-    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    osdAnimationState = .willHide
-    isShowingPersistentOSD = false
-    osdContext = nil
-    if let hideOSDTimer = self.hideOSDTimer {
-      hideOSDTimer.invalidate()
-      self.hideOSDTimer = nil
-    }
-
-    player.refreshSyncUITimer()
-
-    IINAAnimation.runAsync(IINAAnimation.Task(duration: immediately ? 0 : IINAAnimation.OSDAnimationDuration, { [self] in
-      osdVisualEffectView.alphaValue = 0
-    }), then: {
-      if self.osdAnimationState == .willHide {
-        self.osdAnimationState = .hidden
-        self.osdVisualEffectView.isHidden = true
-        self.osdVStackView.views(in: .bottom).forEach { self.osdVStackView.removeView($0) }
-      }
-    })
   }
 
   // MARK: - UI: Interactive mode
@@ -3240,11 +3286,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           // Do this very fast because at present the crop animation is not great
           animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.CropAnimationDuration * 0.2, { [self] in
             let screen = bestScreen
-            log.verbose("[mpvVidReconfig] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
+            log.verbose("[mpvVidReconfig E4] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
 
-            /// Updated `windowedModeGeometry` even if in full screen - we are not prepared to look for changes later
-            let croppedGeometry = windowedModeGeometry.cropVideo(from: uncroppedVideoSize, to: cropbox)
-            windowedModeGeometry = croppedGeometry
+            /// Updated `windowedModeGeo` even if in full screen - we are not prepared to look for changes later
+            let croppedGeometry = windowedModeGeo.cropVideo(from: uncroppedVideoSize, to: cropbox)
+            windowedModeGeo = croppedGeometry
             player.info.videoAspect = croppedGeometry.videoAspect
             player.info.intendedViewportSize = croppedGeometry.viewportSize
 
@@ -3257,13 +3303,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             if currentLayout.isFullScreen {
               let fsInteractiveModeGeo = currentLayout.buildFullScreenGeometry(inside: screen, videoAspect: croppedGeometry.videoAspect)
               videoView.apply(fsInteractiveModeGeo)
-              interactiveModeGeometry = fsInteractiveModeGeo
+              interactiveModeGeo = fsInteractiveModeGeo
             } else {
 
-              let imGeoPrev = interactiveModeGeometry ?? windowedModeGeometry.toInteractiveMode()
+              let imGeoPrev = interactiveModeGeo ?? windowedModeGeo.toInteractiveMode()
               let imGeoNew = imGeoPrev.cropVideo(from: uncroppedVideoSize, to: cropbox)
 
-              interactiveModeGeometry = imGeoNew
+              interactiveModeGeo = imGeoNew
               player.window.setFrameImmediately(imGeoNew.windowFrame)
             }
           }))
@@ -3272,7 +3318,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
         let newMode: PlayerWindowMode = currentLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
         let lastSpec = currentLayout.mode == .fullScreenInteractive ? currentLayout.spec : lastWindowedLayoutSpec
-        log.verbose("Exiting interactive mode, newMode: \(newMode)")
+        log.verbose("[mpvVidReconfig E5] Exiting interactive mode, newMode: \(newMode)")
         let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: lastSpec)
         let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
         let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: currentLayout, to: newLayoutSpec,
@@ -3337,7 +3383,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       thumbnailPeekView.isHidden = true
       return
     }
-    guard !currentLayout.isMusicMode || (Preference.bool(for: .enableThumbnailForMusicMode) && musicModeGeometry.isVideoVisible) else {
+    guard !currentLayout.isMusicMode || (Preference.bool(for: .enableThumbnailForMusicMode) && musicModeGeo.isVideoVisible) else {
       thumbnailPeekView.isHidden = true
       return
     }
@@ -3577,6 +3623,31 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     resetCollectionBehavior()
   }
 
+  func setEmptySpaceColor(to newColor: CGColor) {
+    guard let window else { return }
+    window.contentView?.layer?.backgroundColor = newColor
+    viewportView.layer?.backgroundColor = newColor
+  }
+
+  private func setWindowOpacity(to newValue: Float) {
+    guard let window else { return }
+    let existingValue = window.contentView?.layer?.opacity ?? -1
+    guard existingValue != newValue else { return }
+    log.debug("Changing window opacity, \(existingValue) → \(newValue)")
+    window.backgroundColor = newValue < 1.0 ? .clear : .black
+    window.contentView?.layer?.opacity = newValue
+  }
+
+  func updateCustomBorderBoxAndWindowOpacity(using layout: LayoutState) {
+    let windowOpacity = Preference.isAdvancedEnabled ? Preference.float(for: .playerWindowOpacity) : 1.0
+    setWindowOpacity(to: windowOpacity)
+    // Native window removes the border if winodw background is transparent.
+    // Try to match this behavior for legacy window
+    let hide = !layout.spec.isLegacyStyle || layout.isFullScreen || windowOpacity < 1.0
+    customWindowBorderBox.isHidden = hide
+    customWindowBorderTopHighlightBox.isHidden = hide
+  }
+
   // MARK: - Sync UI with playback
 
   func syncUIComponents() {
@@ -3625,6 +3696,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // properties. Confirm the window and file have been loaded.
     guard loaded else { return }
     guard player.info.fileLoaded || player.info.isRestoring else { return }
+
+    /// Need to call this to update `videoPosition`, `videoDuration`
+    player.syncUITime()
+
     // The mpv documentation for the duration property indicates mpv is not always able to determine
     // the video duration in which case the property is not available.
     guard let duration = player.info.videoDuration else {
@@ -3682,9 +3757,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isNormalSpeed = playSpeed == 1
     speedLabel.isHidden = isPaused || isNormalSpeed
 
-    if isNormalSpeed {
-      speedValueIndex = AppData.availableSpeedValues.count / 2
-    } else {
+    if !isNormalSpeed {
       speedLabel.stringValue = "\(playSpeed.stringTrunc3f)x"
     }
 
@@ -3823,96 +3896,66 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   @IBAction func leftArrowButtonAction(_ sender: NSButton) {
-    if Preference.enum(for: .arrowButtonAction) == Preference.ArrowButtonAction.speed {
-      let speeds = AppData.availableSpeedValues.count
-      // If fast forwarding change speed to 1x
-      if speedValueIndex > speeds / 2 {
-        speedValueIndex = speeds / 2
-      }
-
-      if sender.intValue == 0 { // Released
-        if maxPressure == 1 &&
-          (speedValueIndex < speeds / 2 - 1 ||
-           Date().timeIntervalSince(lastClick) < AppData.minimumPressDuration) { // Single click ended, 2x speed
-          speedValueIndex = oldIndex - 1
-        } else { // Force Touch or long press ended
-          speedValueIndex = speeds / 2
-        }
-        maxPressure = 0
-      } else {
-        if sender.intValue == 1 && maxPressure == 0 { // First press
-          oldIndex = speedValueIndex
-          speedValueIndex -= 1
-          lastClick = Date()
-        } else { // Force Touch
-          speedValueIndex = max(oldIndex - Int(sender.intValue), 0)
-        }
-        maxPressure = max(maxPressure, sender.intValue)
-      }
-      arrowButtonAction(left: true)
-    } else {
-      // trigger action only when released button
-      if sender.intValue == 0 {
-        arrowButtonAction(left: true)
-      }
-    }
+    arrowButtonAction(left: true, clickPressure: Int(sender.intValue))
   }
 
   @IBAction func rightArrowButtonAction(_ sender: NSButton) {
-    if Preference.enum(for: .arrowButtonAction) == Preference.ArrowButtonAction.speed {
-      let speeds = AppData.availableSpeedValues.count
-      // If rewinding change speed to 1x
-      if speedValueIndex < speeds / 2 {
-        speedValueIndex = speeds / 2
-      }
-
-      if sender.intValue == 0 { // Released
-        if maxPressure == 1 &&
-          (speedValueIndex > speeds / 2 + 1 ||
-           Date().timeIntervalSince(lastClick) < AppData.minimumPressDuration) { // Single click ended
-          speedValueIndex = oldIndex + 1
-        } else { // Force Touch or long press ended
-          speedValueIndex = speeds / 2
-        }
-        maxPressure = 0
-      } else {
-        if sender.intValue == 1 && maxPressure == 0 { // First press
-          oldIndex = speedValueIndex
-          speedValueIndex += 1
-          lastClick = Date()
-        } else { // Force Touch
-          speedValueIndex = min(oldIndex + Int(sender.intValue), speeds - 1)
-        }
-        maxPressure = max(maxPressure, sender.intValue)
-      }
-      arrowButtonAction(left: false)
-    } else {
-      // trigger action only when released button
-      if sender.intValue == 0 {
-        arrowButtonAction(left: false)
-      }
-    }
+    arrowButtonAction(left: false, clickPressure: Int(sender.intValue))
   }
 
   /** handle action of either left or right arrow button */
-  func arrowButtonAction(left: Bool) {
+  private func arrowButtonAction(left: Bool, clickPressure: Int) {
+    let didRelease = clickPressure == 0
+
     let arrowBtnFunction: Preference.ArrowButtonAction = Preference.enum(for: .arrowButtonAction)
     switch arrowBtnFunction {
-    case .speed:
-      let speedValue = AppData.availableSpeedValues[speedValueIndex]
-      player.setSpeed(speedValue)
-      // always resume if paused
-      if player.info.isPaused {
-        player.resume()
-      }
-
     case .playlist:
+      guard didRelease else { return }
       player.mpv.command(left ? .playlistPrev : .playlistNext, checkError: false)
 
     case .seek:
+      guard didRelease else { return }
       player.seek(relativeSecond: left ? -10 : 10, option: .defaultValue)
 
+    case .speed:
+      let indexSpeed1x = AppData.availableSpeedValues.count / 2
+      let directionUnit: Int = (left ? -1 : 1)
+      let currentSpeedIndex = findClosestCurrentSpeedIndex()
+
+      let newSpeedIndex: Int
+      if didRelease { // Released
+        if maxPressure == 1 &&
+            ((left ? currentSpeedIndex < indexSpeed1x - 1 : currentSpeedIndex > indexSpeed1x + 1) ||
+             Date().timeIntervalSince(lastClick) < AppData.minimumPressDuration) { // Single click ended
+          newSpeedIndex = oldSpeedValueIndex + directionUnit
+        } else { // Force Touch or long press ended
+          newSpeedIndex = indexSpeed1x
+        }
+        maxPressure = 0
+      } else {
+        if clickPressure == 1 && maxPressure == 0 { // First press
+          oldSpeedValueIndex = currentSpeedIndex
+          newSpeedIndex = currentSpeedIndex + directionUnit
+          lastClick = Date()
+        } else { // Force Touch
+          newSpeedIndex = oldSpeedValueIndex + (clickPressure * directionUnit)
+        }
+        maxPressure = max(maxPressure, clickPressure)
+      }
+      let newSpeedIndexClamped = newSpeedIndex.clamped(to: 0..<AppData.availableSpeedValues.count)
+      let newSpeed = AppData.availableSpeedValues[newSpeedIndexClamped]
+      player.setSpeed(newSpeed, forceResume: true) // always resume if paused
     }
+  }
+
+  private func findClosestCurrentSpeedIndex() -> Int {
+    let currentSpeed = player.info.playSpeed
+    for (speedIndex, speedValue) in AppData.availableSpeedValues.enumerated() {
+      if currentSpeed <= speedValue {
+        return speedIndex
+      }
+    }
+    return AppData.availableSpeedValues.count - 1
   }
 
   @IBAction func toggleOnTop(_ sender: AnyObject) {
@@ -4124,7 +4167,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
     }
 
     // Set frame to animate back to
-    let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
+    let geo = currentLayout.mode == .musicMode ? musicModeGeo.toWinGeometry() : windowedModeGeo
     pip.replacementRect = geo.videoFrameInWindowCoords
     pip.replacementWindow = window
 
@@ -4162,7 +4205,7 @@ extension PlayerWindowController: PIPViewControllerDelegate {
       /// Must set this before calling `addVideoViewToWindow()`
       pipStatus = .notInPIP
 
-      let geo = currentLayout.mode == .musicMode ? musicModeGeometry.toPWindowGeometry() : windowedModeGeometry
+      let geo = currentLayout.mode == .musicMode ? musicModeGeo.toWinGeometry() : windowedModeGeo
       addVideoViewToWindow(geo)
       videoView.apply(geo)
 

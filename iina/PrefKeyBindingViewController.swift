@@ -64,6 +64,17 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
     UserDefaults.standard.removeObserver(self, forKeyPath: #keyPath(view.effectiveAppearance))
   }
 
+  override func viewWillAppear() {
+    Logger.log("Key Bindings pref pane will appear", level: .verbose)
+    BindingTableState.manager.enableObservers()
+  }
+
+  override func viewWillDisappear() {
+    // Disable observers when not in use to save CPU
+    Logger.log("Key Bindings pref pane will disappear", level: .verbose)
+    BindingTableState.manager.disableObservers()
+  }
+
   override func viewDidLoad() {
     super.viewDidLoad()
 

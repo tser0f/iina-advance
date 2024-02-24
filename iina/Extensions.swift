@@ -293,73 +293,6 @@ extension NSMenu {
   }
 }
 
-fileprivate let fmtDecimalMaxFractionDigits2Truncated: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 2
-  fmt.roundingMode = .floor
-  return fmt
-}()
-
-fileprivate let fmtDecimalMaxFractionDigits3Truncated: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 3
-  fmt.roundingMode = .floor
-  return fmt
-}()
-
-// Formats a number to max 2 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
-fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 2
-  return fmt
-}()
-
-// Formats a number to max 6 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
-fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
-  let fmt = NumberFormatter()
-  fmt.numberStyle = .decimal
-  fmt.usesGroupingSeparator = false
-  fmt.maximumFractionDigits = 6
-  return fmt
-}()
-
-/// Applies to `Double`, `CGFloat`, ...
-extension FloatingPoint {
-
-  /// Formats as String, truncating the number to 2 digits after the decimal
-  var stringTrunc2f: String {
-    return fmtDecimalMaxFractionDigits2Truncated.string(for: self)!
-  }
-
-  /// Formats as String, truncating the number to 3 digits after the decimal, and omitting any trailing zeroes
-  var stringTrunc3f: String {
-    return fmtDecimalMaxFractionDigits3Truncated.string(for: self)!
-  }
-
-  /// Formats as String, rounding the number to 2 digits after the decimal
-  var string2f: String {
-    return fmtDecimalMaxFractionDigits2.string(for: self)!
-  }
-
-  /// Formats as String, rounding the number to 6 digits after the decimal
-  var string6f: String {
-    return fmtDecimalMaxFractionDigits6.string(for: self)!
-  }
-
-  /// Returns a "normalized" number string for the exclusive purpose of comparing two mpv aspect ratios while avoiding precision errors.
-  /// Not pretty to put this here, but need to make this searchable & don't have time for a larger refactor
-  var aspectNormalDecimalString: String {
-    return string2f
-  }
-}
-
-
 extension CGFloat {
   var unifiedDouble: Double {
     get {
@@ -421,6 +354,13 @@ extension Double {
     return Double(Int(self * 1e3)) / 1e3
   }
 
+  func roundedTo2() -> Double {
+    let scaledUp = self * 1e2
+    let scaledUpRounded = scaledUp.rounded(.toNearestOrEven)
+    let finalVal = scaledUpRounded / 1e2
+    return finalVal
+  }
+
   func roundedTo3() -> Double {
     let scaledUp = self * 1e3
     let scaledUpRounded = scaledUp.rounded(.toNearestOrEven)
@@ -453,6 +393,43 @@ extension BinaryInteger {
   }
 }
 
+fileprivate let fmtDecimalMaxFractionDigits2Truncated: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 2
+  fmt.roundingMode = .floor
+  return fmt
+}()
+
+fileprivate let fmtDecimalMaxFractionDigits3Truncated: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 3
+  fmt.roundingMode = .floor
+  return fmt
+}()
+
+// Formats a number to max 2 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
+fileprivate let fmtDecimalMaxFractionDigits2: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 2
+  return fmt
+}()
+
+// Formats a number to max 6 digits after the decimal, rounded, but will omit trailing zeroes, and no commas or other formatting for large numbers
+fileprivate let fmtDecimalMaxFractionDigits6: NumberFormatter = {
+  let fmt = NumberFormatter()
+  fmt.numberStyle = .decimal
+  fmt.usesGroupingSeparator = false
+  fmt.maximumFractionDigits = 6
+  return fmt
+}()
+
+/// Applies to `Double`, `CGFloat`, ...
 extension FloatingPoint {
   func clamped(to range: Range<Self>) -> Self {
     if self < range.lowerBound {
@@ -462,6 +439,32 @@ extension FloatingPoint {
     } else {
       return self
     }
+  }
+
+  /// Formats as String, truncating the number to 2 digits after the decimal
+  var stringTrunc2f: String {
+    return fmtDecimalMaxFractionDigits2Truncated.string(for: self)!
+  }
+
+  /// Formats as String, truncating the number to 3 digits after the decimal, and omitting any trailing zeroes
+  var stringTrunc3f: String {
+    return fmtDecimalMaxFractionDigits3Truncated.string(for: self)!
+  }
+
+  /// Formats as String, rounding the number to 2 digits after the decimal
+  var stringMaxFrac2: String {
+    return fmtDecimalMaxFractionDigits2.string(for: self)!
+  }
+
+  /// Formats as String, rounding the number to 6 digits after the decimal
+  var stringMaxFrac6: String {
+    return fmtDecimalMaxFractionDigits6.string(for: self)!
+  }
+
+  /// Returns a "normalized" number string for the exclusive purpose of comparing two mpv aspect ratios while avoiding precision errors.
+  /// Not pretty to put this here, but need to make this searchable & don't have time for a larger refactor
+  var aspectNormalDecimalString: String {
+    return stringMaxFrac2
   }
 }
 
@@ -733,6 +736,46 @@ extension NSTextField {
     self.attributedStringValue = attrString
   }
 
+}
+
+extension CGImage {
+  /// Returns this image's data in PNG format, suitable for writing to a `.png` file on disk
+  var pngData: Data? {
+    guard let mutableData = CFDataCreateMutable(nil, 0),
+          let destination = CGImageDestinationCreateWithData(mutableData, "public.png" as CFString, 1, nil) else { return nil }
+    CGImageDestinationAddImage(destination, self, nil)
+    guard CGImageDestinationFinalize(destination) else { return nil }
+    return mutableData as Data
+  }
+
+  @discardableResult
+  func saveAsPNG(fileURL: URL) -> Bool {
+    let path = fileURL.path
+    guard FileManager.default.createFile(atPath: fileURL.path, contents: nil, attributes: nil) else {
+      Logger.log("Could not create PNG file: \(path.pii.quoted)", level: .error)
+      return false
+    }
+    guard let file = try? FileHandle(forWritingTo: fileURL) else {
+      Logger.log("Could not create PNG file for writing: \(path.pii.quoted)", level: .error)
+      return false
+    }
+
+    guard let pngData else {
+      Logger.log("Could not get PNG data from CGImage!", level: .error)
+      return false
+    }
+
+    file.write(pngData)
+
+    if #available(macOS 10.15, *) {
+      do {
+        try file.close()
+      } catch {
+        Logger.log("Failed to close file: \(path.pii.quoted)", level: .error)
+      }
+    }
+    return true
+  }
 }
 
 extension NSImage {
@@ -1296,6 +1339,14 @@ extension DispatchQueue {
   }
 }
 
+extension NSViewController {
+  /// Polyfill for MacOS 14.0's `loadViewIfNeeded()`.
+  /// Load XIB if not already loaded. Prevents unboxing nils for `@IBOutlet` properties.
+  func loadIfNeeded() {
+    _ = self.view
+  }
+}
+
 extension NSView {
   func addConstraintsToFillSuperview(v: Bool = true, h: Bool = true, priority: NSLayoutConstraint.Priority = .required) {
     guard let superview = superview else { return }
@@ -1343,12 +1394,13 @@ extension NSView {
     }
   }
 
-  func snapshotImage() -> NSImage? {
-
-    guard let window = window,
-          let screen = window.screen,
-          let contentView = window.contentView else { return nil }
-
+  func snapshotImage() -> CGImage? {
+    guard let window = window, let screen = window.screen, let contentView = window.contentView else { return nil }
+    if #available(macOS 10.15, *) {
+      CGRequestScreenCaptureAccess()
+    } else {
+      // Fallback on earlier versions
+    }
     let originRect = self.convert(self.bounds, to:contentView)
     var rect = originRect
     rect.origin.x += window.frame.origin.x
@@ -1356,9 +1408,7 @@ extension NSView {
     rect.origin.y += screen.frame.size.height - window.frame.origin.y - window.frame.size.height
     rect.origin.y += window.frame.size.height - originRect.origin.y - originRect.size.height
     guard window.windowNumber > 0 else { return nil }
-    guard let cgImage = CGWindowListCreateImage(rect, .optionIncludingWindow, CGWindowID(window.windowNumber), CGWindowImageOption.bestResolution) else { return nil }
-
-    return NSImage(cgImage: cgImage, size: self.bounds.size)
+    return CGWindowListCreateImage(rect, .optionIncludingWindow, CGWindowID(window.windowNumber), CGWindowImageOption.bestResolution)
   }
 
   var iinaAppearance: NSAppearance {

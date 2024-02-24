@@ -58,13 +58,13 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   var isPlaylistVisible: Bool {
     get {
-      windowController.musicModeGeometry.isPlaylistVisible
+      windowController.musicModeGeo.isPlaylistVisible
     }
   }
 
   var isVideoVisible: Bool {
     get {
-      return windowController.musicModeGeometry.isVideoVisible
+      return windowController.musicModeGeo.isVideoVisible
     }
   }
 
@@ -86,12 +86,6 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   }
 
   // MARK: - Initialization
-
-  /// Polyfill for MacOS 14.0's `loadViewIfNeeded()`.
-  /// Load XIB if not already loaded. Prevents unboxing nils for `@IBOutlet` properties.
-  func loadIfNeeded() {
-    _ = self.view
-  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -282,7 +276,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
 
   private func _togglePlaylist() {
     guard let window = windowController.window else { return }
-    let oldGeometry = windowController.musicModeGeometry
+    let oldGeometry = windowController.musicModeGeo
     let showPlaylist = !isPlaylistVisible
     log.verbose("Toggling playlist visibility from \((!showPlaylist).yn) to \(showPlaylist.yn)")
     let currentDisplayedPlaylistHeight = currentDisplayedPlaylistHeight
@@ -354,7 +348,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
     })
 
     tasks.append(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
-      let newGeometry = windowController.musicModeGeometry.withVideoViewVisible(showVideo)
+      let newGeometry = windowController.musicModeGeo.withVideoViewVisible(showVideo)
       log.verbose("VideoView setting videoViewVisible=\(showVideo), videoHeight=\(newGeometry.videoHeight)")
       windowController.applyMusicModeGeometry(newGeometry)
     }))
@@ -392,11 +386,11 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
       return window.frame.size
     }
 
-    let oldGeometry = windowController.musicModeGeometry
+    let oldGeometry = windowController.musicModeGeo
     let requestedWindowFrame = NSRect(origin: window.frame.origin, size: requestedSize)
     var newGeometry = oldGeometry.clone(windowFrame: requestedWindowFrame)
     IINAAnimation.disableAnimation{
-      /// This will set `windowController.musicModeGeometry` after applying any necessary constraints
+      /// This will set `windowController.musicModeGeo` after applying any necessary constraints
       newGeometry = windowController.applyMusicModeGeometry(newGeometry, setFrame: false, animate: false, updateCache: false)
     }
 
@@ -406,7 +400,7 @@ class MiniPlayerController: NSViewController, NSPopoverDelegate {
   func windowDidResize() {
     _ = view
     resetScrollingLabels()
-    // Do not save musicModeGeometry here! Pinch gesture will handle itself. Drag-to-resize will be handled below.
+    // Do not save musicModeGeo here! Pinch gesture will handle itself. Drag-to-resize will be handled below.
   }
 
   func windowDidEndLiveResize() {

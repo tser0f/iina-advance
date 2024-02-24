@@ -626,7 +626,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let newSpeed = AppData.minSpeed * pow(AppData.maxSpeed / AppData.minSpeed, sliderValue / sliderSteps).roundedTo3()
     player.log.verbose("Speed slider changed to \(sliderValue) → newSpeed = \(newSpeed)")
     customSpeedTextField.doubleValue = newSpeed
-    player.setSpeed(newSpeed, triggerResume: true)
+    player.setSpeed(newSpeed)
     redraw(indicator: speedSliderIndicator, constraint: speedSliderConstraint, slider: speedSlider, value: "\(customSpeedTextField.stringValue)x")
   }
 
@@ -638,7 +638,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let sliderValue = log(value / AppData.minSpeed) / log(AppData.maxSpeed / AppData.minSpeed) * sliderSteps
     speedSlider.doubleValue = sliderValue
     if player.info.playSpeed != value {
-      player.setSpeed(value, triggerResume: true)
+      player.setSpeed(value)
     }
     redraw(indicator: speedSliderIndicator, constraint: speedSliderConstraint, slider: speedSlider, value: "\(sender.stringValue)x")
     if let window = sender.window {

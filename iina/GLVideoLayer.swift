@@ -15,7 +15,7 @@ class GLVideoLayer: CAOpenGLLayer {
   unowned var videoView: VideoView!
 
   private let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
-  private var blocked = false
+  @Atomic private var blocked = false
 
   private var fbo: GLint = 1
 
@@ -54,8 +54,8 @@ class GLVideoLayer: CAOpenGLLayer {
       canDrawCountLastPrint = canDrawCountTotal
       drawCountLastPrint = drawCountTotal
       forcedCountLastPrint = forcedCountTotal
-      let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.string2f)x\(videoView.heightConstraint.constant.string2f)" : "NA"
-      NSLog("FPS: \(fpsDraws.string2f) (\(drawsSinceLastPrint)/\(canDrawCallsSinceLastPrint) requests drawn, \(forcedSinceLastPrint) forced, \(displaysSinceLastPrint) displays over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale.string6f), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
+      let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.stringMaxFrac2)x\(videoView.heightConstraint.constant.stringMaxFrac2)" : "NA"
+      NSLog("FPS: \(fpsDraws.stringMaxFrac2) (\(drawsSinceLastPrint)/\(canDrawCallsSinceLastPrint) requests drawn, \(forcedSinceLastPrint) forced, \(displaysSinceLastPrint) displays over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale.stringMaxFrac6), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
     }
   }
 #endif
@@ -198,13 +198,19 @@ class GLVideoLayer: CAOpenGLLayer {
     /// layer is polled at a high rate about whether it needs to draw. Disable this to save CPU while idle.
     isAsynchronous = false
 
-    blocked = true
+    $blocked.withLock() { isBlocked in
+      guard !isBlocked else { return }
+      isBlocked = true
+      mpvGLQueue.suspend()
+    }
   }
 
   func resume() {
-    blocked = false
-
-    drawAsync()
+    $blocked.withLock() { isBlocked in
+      guard isBlocked else { return }
+      isBlocked = false
+      mpvGLQueue.resume()
+    }
   }
 
   /// We want `isAsynchronous = true` while executing any animation which causes the layer to resize.
@@ -214,7 +220,7 @@ class GLVideoLayer: CAOpenGLLayer {
     asychronousModeLock.withLock{
       asychronousModeTimer?.invalidate()
       if !isAsynchronous {
-        videoView.player.log.verbose("Entering asynchronous mode")
+        videoView.player.log.trace("Entering asynchronous mode")
       }
       /// Set this to `true` to enable video redraws to match the timing of the view redraw during animations.
       /// This fixes a situation where the layer size may not match the size of its superview at each redraw,
@@ -235,7 +241,7 @@ class GLVideoLayer: CAOpenGLLayer {
 
   @objc func exitAsynchronousMode() {
     asychronousModeLock.withLock{
-      videoView.player.log.verbose("Exiting asynchronous mode")
+      videoView.player.log.trace("Exiting asynchronous mode")
       isAsynchronous = false
     }
   }

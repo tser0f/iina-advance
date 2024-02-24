@@ -22,7 +22,9 @@ class AppInputConfigBuilder {
   }
 
   func build(version: Int) -> AppInputConfig {
-    log.verbose("Starting rebuild of AppInputConfig v\(version)")
+    if AppInputConfig.logBindingsRebuild {
+      log.verbose("Starting rebuild of AppInputConfig v\(version)")
+    }
 
     /// Build the list of `InputBinding`s, including redundancies. We're not done setting each's `isEnabled` field though.
     /// This also sets `userConfSectionStartIndex` and `userConfSectionEndIndex`.

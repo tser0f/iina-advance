@@ -556,7 +556,7 @@ class PlayerCore: NSObject {
       mpv.setFlag(MPVOption.PlaybackControl.pause, true)
     }
     if !isNormalSpeed && Preference.bool(for: .resetSpeedWhenPaused) {
-      setSpeed(1)
+      setSpeed(1, forceResume: false)
     }
     windowController.updatePlayButtonAndSpeedUI()
   }
@@ -712,6 +712,8 @@ class PlayerCore: NSObject {
   }
 
   func screenshot() {
+    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
+
     guard let vid = info.vid, vid > 0 else { return }
     let saveToFile = Preference.bool(for: .screenshotSaveToFile)
     let saveToClipboard = Preference.bool(for: .screenshotCopyToClipboard)
@@ -911,8 +913,10 @@ class PlayerCore: NSObject {
     }
   }
 
-  /** Set speed. */
-  func setSpeed(_ speed: Double, triggerResume: Bool = false) {
+  /// Set playbackk speed.
+  /// If `forceResume` is `true`, then always resume if paused; if `false`, never resume if paused;
+  /// if `nil`, then resume if paused based on pref setting.
+  func setSpeed(_ speed: Double, forceResume: Bool? = nil) {
     let speedTrunc = speed.truncatedTo3()
     info.playSpeed = speedTrunc  // set preemptively to keep UI in sync
     mpv.queue.async { [self] in
@@ -923,8 +927,12 @@ class PlayerCore: NSObject {
       /// This will create a subconscious link in the user's mind between "pause" -> "unset speed".
       /// Try to stay consistent by linking the contrapositive together: "set speed" -> "play".
       /// The intuition should be most apparent when using the speed slider in Quick Settings.
-      if triggerResume, info.isPaused, Preference.bool(for: .resetSpeedWhenPaused) {
-        _resume()
+      if info.isPaused {
+        if let forceResume, forceResume {
+          _resume()
+        } else if forceResume == nil && Preference.bool(for: .resetSpeedWhenPaused) {
+          _resume()
+        }
       }
     }
   }
@@ -1010,7 +1018,7 @@ class PlayerCore: NSObject {
     return nil
   }
 
-  func updateMPVWindowScale(using windowGeo: PWindowGeometry) {
+  func updateMPVWindowScale(using windowGeo: WinGeometry) {
     mpv.queue.async { [self] in
       guard let actualVideoScale = deriveVideoScale(from: windowGeo) else {
         log.verbose("Skipping update to mpv window-scale: could not get size info")
@@ -1030,7 +1038,7 @@ class PlayerCore: NSObject {
     }
   }
 
-  private func deriveVideoScale(from windowGeometry: PWindowGeometry) -> CGFloat? {
+  private func deriveVideoScale(from windowGeometry: WinGeometry) -> CGFloat? {
     let videoWidthScaled = windowGeometry.videoSize.width
 
     // This should take into account aspect override and/or crop already
@@ -2026,11 +2034,6 @@ class PlayerCore: NSObject {
     syncAbLoop()
     saveState()
 
-    // Grab these while still in mpv queue
-    let videoParams = mpv.queryForVideoParams()
-    let isVideoTrackSelected = info.isVideoTrackSelected
-    let currentMediaAudioStatus = info.currentMediaAudioStatus
-
     // main thread stuff
     DispatchQueue.main.async { [self] in
       refreshSyncUITimer()
@@ -2038,25 +2041,6 @@ class PlayerCore: NSObject {
 
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
-      }
-
-      // Update art & aspect *before* switching to/from music mode for more pleasant animation
-      if currentMediaAudioStatus == .isAudio || !isVideoTrackSelected {
-        log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
-        windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
-      }
-
-      // if need to switch to music mode
-      if Preference.bool(for: .autoSwitchToMusicMode) {
-        if overrideAutoMusicMode {
-          log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
-        } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
-          log.debug("Current media is audio: auto-switching to music mode")
-          enterMusicMode(automatically: true)
-        } else if currentMediaAudioStatus == .notAudio && isInMiniPlayer {
-          log.debug("Current media is not audio: auto-switching to normal window")
-          exitMusicMode(automatically: true)
-        }
       }
     }
 
@@ -2080,7 +2064,54 @@ class PlayerCore: NSObject {
     postNotification(.iinaAFChanged)
     /// The first filter msg after starting a file means that the file is officially done loading.
     /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
+    fileIsCompletelyDoneLoading()
+  }
+
+  /// The mpv `file-loaded` event is emitted before everything associated with the file (such as filters) is completely done loading.
+  /// This event should be called when everything is truly done.
+  func fileIsCompletelyDoneLoading() {
+    dispatchPrecondition(condition: .onQueue(mpv.queue))
+    guard info.justOpenedFile else { return }
+    
+    log.verbose("File is completely done loading; setting justOpenedFile=N")
     info.justOpenedFile = false
+    info.timeLastFileOpenFinished = Date().timeIntervalSince1970
+
+    if let priorState = info.priorState {
+      if priorState.string(for: .playPosition) != nil {
+        /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
+        log.verbose("Clearing mpv 'start' option now that restore is complete")
+        mpv.setString(MPVOption.PlaybackControl.start, AppData.mpvArgNone)
+      }
+      info.priorState = nil
+      log.debug("Done with restore")
+    }
+
+    // Grab these while still in mpv queue
+    let videoParams = mpv.queryForVideoParams()
+    let isVideoTrackSelected = info.isVideoTrackSelected
+    let currentMediaAudioStatus = info.currentMediaAudioStatus
+
+    DispatchQueue.main.async { [self] in
+      // Update art & aspect *before* switching to/from music mode for more pleasant animation
+      if currentMediaAudioStatus == .isAudio || !isVideoTrackSelected {
+        log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
+        windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
+      }
+
+      // if need to switch to music mode
+      if Preference.bool(for: .autoSwitchToMusicMode) {
+        if overrideAutoMusicMode {
+          log.verbose("Skipping music mode auto-switch because overrideAutoMusicMode is true")
+        } else if currentMediaAudioStatus == .isAudio && !isInMiniPlayer && !windowController.isFullScreen {
+          log.debug("Current media is audio: auto-switching to music mode")
+          enterMusicMode(automatically: true)
+        } else if currentMediaAudioStatus == .notAudio && isInMiniPlayer {
+          log.debug("Current media is not audio: auto-switching to normal window")
+          exitMusicMode(automatically: true)
+        }
+      }
+    }
   }
 
   func reloadAID() {
@@ -2132,16 +2163,6 @@ class PlayerCore: NSObject {
     info.isSeeking = false
 
     syncUITime()
-
-    if let priorState = info.priorState {
-      if priorState.string(for: .playPosition) != nil {
-        /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
-        log.verbose("Clearing mpv 'start' option now that restore is complete")
-        mpv.setString(MPVOption.PlaybackControl.start, AppData.mpvArgNone)
-      }
-      info.priorState = nil
-      log.debug("Done with restore")
-    }
 
     DispatchQueue.main.async { [self] in
       // When playback is paused the display link may be shutdown in order to not waste energy.
@@ -2236,9 +2257,10 @@ class PlayerCore: NSObject {
     guard !isStopping, !isStopped, !isShuttingDown, !isShutdown else { return }
     saveState()
     postNotification(.iinaVFChanged)
+
     /// The first filter msg after starting a file means that the file is officially done loading.
     /// (Put this here instead of at `playback-restart` because it occurs later & will avoid triggering display of OSDs)
-    info.justOpenedFile = false
+    fileIsCompletelyDoneLoading()
   }
 
   func reloadVID() {
@@ -2849,16 +2871,18 @@ class PlayerCore: NSObject {
       if let p = filter.params, let wStr = p["w"], let hStr = p["h"], p["x"] == nil && p["y"] == nil, let w = Double(wStr), let h = Double(hStr) {
         // Probably a selection from the Quick Settings panel. See if there are any matches.
         guard w != 0, h != 0 else {
-          log.error("Cannot set filter \(filter.label ?? ""): w or h is 0")
+          log.error("Cannot set filter \(filter.label?.quoted ?? ""): w or h is 0")
           return
         }
         // Truncate to 2 decimal places precision for comparison.
-        let selectedAspect = Int((w / h) * 100)
+        let selectedAspect = (w / h).roundedTo2()
+        log.verbose("Determined aspect=\(selectedAspect) from filter \(filter.label?.quoted ?? "")")
         for cropLabel in AppData.cropsInPanel {
           let tokens = cropLabel.split(separator: ":")
           if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
-            let aspectRatio = Int((width / height) * 100)
+            let aspectRatio = (width / height).roundedTo2()
             if aspectRatio == selectedAspect {
+              log.verbose("Filter \(filter.label?.quoted ?? "") matches known crop \(cropLabel.quoted)")
               updateCropUI(to: cropLabel)
               return
             }
@@ -2867,10 +2891,12 @@ class PlayerCore: NSObject {
       } else if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
         // Probably a custom crop
         let customCropLabel = "(\(x), \(y)) (\(w)\u{d7}\(h))"
+        log.verbose("Filter \(filter.label?.quoted ?? "") looks like custom crop. Sending to UI label \(customCropLabel.quoted)")
         updateCropUI(to: customCropLabel)
         return
       }
       // Default to "Custom" crop in Quick Settings panel
+      log.verbose("Could not determine crop from filter \(filter.label?.quoted ?? "")")
       updateCropUI(to: "")
     case Constants.FilterLabel.flip:
       info.flipFilter = filter

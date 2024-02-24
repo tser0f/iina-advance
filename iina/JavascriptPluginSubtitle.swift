@@ -98,6 +98,7 @@ class JSPluginSub {
           resolver.fulfill(subs)
           return
         }
+        subChooseViewController.loadIfNeeded()
         subChooseViewController.subtitles = subs
         // prevent self being deallocated for unknown reason
         subChooseViewController.context = self

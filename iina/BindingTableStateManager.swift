@@ -21,8 +21,8 @@ class BindingTableStateManager: NSObject {
   private var undoHelper = PrefsWindowUndoHelper()
   private var observers: [NSObjectProtocol] = []
 
-  override init() {
-    super.init()
+  func enableObservers() {
+    guard observers.isEmpty else { return }
     observers.append(NotificationCenter.default.addObserver(forName: .iinaAppInputConfigDidChange, object: nil, queue: .main, using: self.appInputConfigDidChange))
 
     for key in [Preference.Key.showKeyBindingsFromAllSources] {
@@ -30,7 +30,7 @@ class BindingTableStateManager: NSObject {
     }
   }
 
-  deinit {
+  func disableObservers() {
     for observer in observers {
       NotificationCenter.default.removeObserver(observer)
     }

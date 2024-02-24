@@ -528,7 +528,7 @@ class Utility {
     }
 
     var description: String {
-      return msElapsed.string2f
+      return msElapsed.stringMaxFrac2
     }
   }
 

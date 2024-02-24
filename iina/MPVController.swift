@@ -489,7 +489,7 @@ not applying FFmpeg 9599 workaround
         mpv_render_param(type: MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, data: openGLInitParams),
         mpv_render_param()
       ]
-      mpv_render_context_create(&mpvRenderContext, mpv, &params)
+      chkErr(mpv_render_context_create(&mpvRenderContext, mpv, &params))
       openGLContext = CGLGetCurrentContext()
       mpv_render_context_set_update_callback(mpvRenderContext!, mpvUpdateCallback, mutableRawPointerOf(obj: player.videoView.videoLayer))
     }

@@ -555,19 +555,19 @@ extension PlayerWindowController {
       return outputLayout
     }
 
-    func buildFullScreenGeometry(inScreenID screenID: String, videoAspect: CGFloat) -> PWindowGeometry {
+    func buildFullScreenGeometry(inScreenID screenID: String, videoAspect: CGFloat) -> WinGeometry {
       let screen = NSScreen.getScreenOrDefault(screenID: screenID)
       return buildFullScreenGeometry(inside: screen, videoAspect: videoAspect)
     }
 
-    func buildFullScreenGeometry(inside screen: NSScreen, videoAspect: CGFloat) -> PWindowGeometry {
+    func buildFullScreenGeometry(inside screen: NSScreen, videoAspect: CGFloat) -> WinGeometry {
       assert(isFullScreen)
 
       if isInteractiveMode {
-        let windowFrame = PWindowGeometry.fullScreenWindowFrame(in: screen, legacy: spec.isLegacyStyle)
+        let windowFrame = WinGeometry.fullScreenWindowFrame(in: screen, legacy: spec.isLegacyStyle)
         let fitOption: ScreenFitOption = spec.isLegacyStyle ? .legacyFullScreen : .nativeFullScreen
         let topMarginHeight = screen.cameraHousingHeight ?? 0
-        return PWindowGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
+        return WinGeometry(windowFrame: windowFrame, screenID: screen.screenID, fitOption: fitOption,
                                mode: mode, topMarginHeight: topMarginHeight,
                                outsideTopBarHeight: 0, outsideTrailingBarWidth: 0,
                                outsideBottomBarHeight: Constants.InteractiveMode.outsideBottomBarHeight,
@@ -576,7 +576,7 @@ extension PlayerWindowController {
                                viewportMargins: Constants.InteractiveMode.viewportMargins, videoAspect: videoAspect)
       }
 
-      return PWindowGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle, mode: mode,
+      return WinGeometry.forFullScreen(in: screen, legacy: spec.isLegacyStyle, mode: mode,
                                            outsideTopBarHeight: outsideTopBarHeight,
                                            outsideTrailingBarWidth: outsideTrailingBarWidth,
                                            outsideBottomBarHeight: outsideBottomBarHeight,
@@ -590,7 +590,7 @@ extension PlayerWindowController {
     }
 
     // Converts & updates existing geometry to this layout
-    func convertWindowedModeGeometry(from existingGeometry: PWindowGeometry, videoAspect: CGFloat? = nil) -> PWindowGeometry {
+    func convertWindowedModeGeometry(from existingGeometry: WinGeometry, videoAspect: CGFloat? = nil) -> WinGeometry {
       return existingGeometry.withResizedBars(outsideTopBarHeight: outsideTopBarHeight,
                                               outsideTrailingBarWidth: outsideTrailingBarWidth,
                                               outsideBottomBarHeight: outsideBottomBarHeight,
@@ -602,10 +602,10 @@ extension PlayerWindowController {
                                               videoAspect: videoAspect)
     }
 
-    func buildGeometry(windowFrame: NSRect, screenID: String, videoAspect: CGFloat) -> PWindowGeometry {
+    func buildGeometry(windowFrame: NSRect, screenID: String, videoAspect: CGFloat) -> WinGeometry {
       assert(isWindowed, "buildGeometry(fromWindowFrame): unexpected mode: \(mode)")
 
-      let geo = PWindowGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: .keepInVisibleScreen,
+      let geo = WinGeometry(windowFrame: windowFrame, screenID: screenID, fitOption: .keepInVisibleScreen,
                                 mode: mode,
                                 topMarginHeight: 0,  // is only nonzero when in legacy FS
                                 outsideTopBarHeight: outsideTopBarHeight,
@@ -621,7 +621,7 @@ extension PlayerWindowController {
     }
 
     /// Only for windowed modes!
-    func buildDefaultInitialGeometry(screen: NSScreen) -> PWindowGeometry {
+    func buildDefaultInitialGeometry(screen: NSScreen) -> WinGeometry {
       let videoSize = AppData.defaultVideoSize
       let windowFrame = NSRect(origin: CGPoint.zero, size: videoSize)
       let geo = buildGeometry(windowFrame: windowFrame, screenID: screen.screenID, videoAspect: videoSize.mpvAspect)

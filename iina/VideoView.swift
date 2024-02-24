@@ -177,7 +177,7 @@ class VideoView: NSView {
     window?.layoutIfNeeded()
   }
 
-  func apply(_ geometry: PWindowGeometry?) {
+  func apply(_ geometry: WinGeometry?) {
     guard player.windowController.pipStatus == .notInPIP else {
       log.verbose("VideoView: currently in PiP; ignoring request to set viewportMargin constraints")
       return
