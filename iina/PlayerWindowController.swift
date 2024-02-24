@@ -403,6 +403,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .shortenFileGroupsInPlaylist,
     .autoSwitchToMusicMode,
     .hideWindowsWhenInactive,
+    .osdAutoHideTimeout,
     .osdTextSize,
     .osdPosition,
     .enableOSC,
@@ -573,6 +574,14 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     case PK.playlistTabGroupLocation.rawValue:
       if let newRawValue = change[.newKey] as? Int, let newLocationID = Preference.SidebarLocation(rawValue: newRawValue) {
         self.moveTabGroup(.playlist, toSidebarLocation: newLocationID)
+      }
+    case PK.osdAutoHideTimeout.rawValue:
+      if let newTimeout = change[.newKey] as? Double {
+        if osdAnimationState == .shown, let hideOSDTimer = hideOSDTimer, hideOSDTimer.isValid {
+          // Reschedule timer to prevent prev long timeout from lingering
+          self.hideOSDTimer = Timer.scheduledTimer(timeInterval: TimeInterval(newTimeout), target: self,
+                                                   selector: #selector(self.hideOSD), userInfo: nil, repeats: false)
+        }
       }
     case PK.osdPosition.rawValue:
       // If OSD is showing, it will move over as a neat animation:
@@ -3082,10 +3091,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // Restart timer
-    if let hideOSDTimer = self.hideOSDTimer {
-      hideOSDTimer.invalidate()
-      self.hideOSDTimer = nil
-    }
+    hideOSDTimer?.invalidate()
     if osdAnimationState != .shown {
       osdAnimationState = .shown  /// set this before calling `refreshSyncUITimer()`
       player.refreshSyncUITimer()
@@ -3142,10 +3148,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     osdAnimationState = .willHide
     isShowingPersistentOSD = false
     osdContext = nil
-    if let hideOSDTimer = self.hideOSDTimer {
-      hideOSDTimer.invalidate()
-      self.hideOSDTimer = nil
-    }
+    hideOSDTimer?.invalidate()
 
     player.refreshSyncUITimer()
 
