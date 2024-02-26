@@ -26,6 +26,7 @@ class ConfTableViewController: NSObject {
     return ConfTableState.current
   }
   private unowned var bindingTableViewController: BindingTableViewController
+  private var selectionDidChangeHandler: () -> Void
   private var observers: [NSObjectProtocol] = []      // For regular NotificationCenter
 
   // Convenience var. Pref lookup is super fast; should be fine to check on each access. Try to reduce need for restart
@@ -40,9 +41,11 @@ class ConfTableViewController: NSObject {
     builtInConfTextColor = builtInItemTextColor
   }
 
-  init(_ inputConfTableView: EditableTableView, _ bindingTableViewController: BindingTableViewController) {
+  init(_ inputConfTableView: EditableTableView, _ bindingTableViewController: BindingTableViewController,
+       selectionDidChangeHandler: @escaping () -> Void) {
     self.tableView = inputConfTableView
     self.bindingTableViewController = bindingTableViewController
+    self.selectionDidChangeHandler = selectionDidChangeHandler
 
     super.init()
 
@@ -97,6 +100,7 @@ extension ConfTableViewController: NSTableViewDelegate {
 
   // Selection Changed
   @objc func tableViewSelectionDidChange(_ notification: Notification) {
+    selectionDidChangeHandler()
     guard tableView.selectedRow >= 0 else {
       Logger.log("ConfTableViewController: ignoring tableViewSelectionDidChange(); no row selected", level: .verbose)
       return

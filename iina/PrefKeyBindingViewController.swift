@@ -78,9 +78,9 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    let bindingTableController = BindingTableViewController(bindingTableView, selectionDidChangeHandler: updateRemoveButtonEnablement)
+    let bindingTableController = BindingTableViewController(bindingTableView, selectionDidChangeHandler: updateTableButtonVisibilities)
     self.bindingTableController = bindingTableController
-    confTableController = ConfTableViewController(confTableView, bindingTableController)
+    confTableController = ConfTableViewController(confTableView, bindingTableController, selectionDidChangeHandler: updateTableButtonVisibilities)
     setCustomTableColors()
 
     bindingSearchField.stringValue = bindingTableState.filterString
@@ -90,7 +90,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
     }
 
     observers.append(NotificationCenter.default.addObserver(forName: .iinaPendingUIChangeForConfTable, object: nil, queue: .main) { _ in
-      self.updateEditEnabledStatus()
+      self.updateTableButtonVisibilities()
     })
 
     addObserver(self, forKeyPath: #keyPath(view.effectiveAppearance), options: [], context: nil)
@@ -107,7 +107,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
     })
 
     confTableController?.selectCurrentConfRow()
-    self.updateEditEnabledStatus()
+    self.updateTableButtonVisibilities()
 
     // FIXME: need to change this to *after* first data load
     // Set initial scroll, and set up to save scroll value across launches
@@ -181,21 +181,17 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
   }
 
   // MARK: - UI
-
-  private func updateEditEnabledStatus() {
+  private func updateTableButtonVisibilities() {
     let isSelectedConfReadOnly = confTableState.isSelectedConfReadOnly
     Logger.log("Updating editEnabledStatus to \(!isSelectedConfReadOnly)", level: .verbose)
-    [showConfFileBtn, deleteConfFileBtn, addBindingBtn].forEach { btn in
-      btn.isEnabled = !isSelectedConfReadOnly
+    [deleteConfFileBtn, addBindingBtn].forEach { btn in
+      btn?.isHidden = isSelectedConfReadOnly
     }
+    showConfFileBtn.isEnabled = !isSelectedConfReadOnly
     confHintLabel.stringValue = NSLocalizedString("preference.key_binding_hint_\(isSelectedConfReadOnly ? "1" : "2")", comment: "preference.key_binding_hint")
 
-    self.updateRemoveButtonEnablement()
-  }
-
-  private func updateRemoveButtonEnablement() {
     // re-evaluate this each time either table changed selection:
-    removeBindingBtn.isEnabled = !confTableState.isSelectedConfReadOnly && bindingTableView.selectedRow != -1
+    removeBindingBtn.isHidden = confTableState.isSelectedConfReadOnly || bindingTableView.selectedRowIndexes.isEmpty
   }
 
   private func setCustomTableColors() {
