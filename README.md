@@ -2,36 +2,34 @@
 <img height="256" src="https://github.com/iina/iina/raw/master/iina/Assets.xcassets/AppIcon.appiconset/iina-icon-256.png">
 </p>
 
-<h1 align="center">IINA</h1>
+<h1 align="center">IINA Advance</h1>
 
-<p align="center">IINA is the <b>modern</b> video player for macOS.</p>
-
-<p align="center">
-<a href="https://iina.io/">Website</a> ·
-<a href="https://github.com/iina/iina/releases">Releases</a> ·
-<a href="https://t.me/IINAUsers">Telegram Group</a>
-</p>
+<p align="center"><b><a href="https://github.com/iina/iina">IINA</a></b> is the modern video player for macOS.</p>
+<p align="center"><b>Advance</b>, as in, <i>advance preview</i> of new or experimental features. Or maybe an attempt to <i>advance</i> IINA development more rapidly.</p>
 
 ---
-[![Crowdin](https://badges.crowdin.net/iina/localized.svg)](https://crowdin.com/project/iina)
-## Features
+## Major new features
 
-* Based on [mpv](https://github.com/mpv-player/mpv), which provides the best decoding capacity on macOS
-* Designed with modern versions of macOS (10.11+) in mind
-* All the features you need for video and music: subtitles, playlists, chapters…and much, much more!
-* Force Touch, picture-in-picture and advanced Touch Bar support
-* Customizable user interface including multiple color schemes and on screen controller (OSC) layout positioning
-* Standalone Music Mode designed for audio files
-* Video thumbnails
-* Online subtitle searching and intelligent local subtitle matching
-* Unlimited playback history
-* Convenient and interactive settings for video/audio filters
-* Fully customizable keyboard, mouse, trackpad, and gesture controls
-* mpv configuration files and script system for advanced users
-* Command line tool and browser extensions provided
-* In active development
+* Can restore all its open windows and state when reopening the app.
+* A new player window layout system, allowing for new modes such as showing the controller and sidebars "outside" the video, the ability to expand the window to any size, and much more. Much effort has gone into smoothing out animations so that switching between various modes (and window handling in general) should be very smooth.
+* Ability to resize thumbnails, and improved thumbnail handling.
+* A massive rewrite of the key bindings system. Adds support for key sequences and dynamic bindings from Lua scripts, and integrates all the other sources of key bindings such as menu items and filter shortcuts. Enhances the Key Bindings editor with copy/paste, undo/redo, drag & drop, color coding for conflict detection and more.
+* Tons of bug fixes and enhancements, and hopefully an overall smoother experience.
+
+Stable binaries with more detailed change info can be found on the <a href="https://github.com/svobs/iina-advance/releases/">Releases</a> page.
+
+## Note about reusing previous settings
+At present, IINA Advance shares most of the same settings as IINA, and each can share the same settings files without harming the other's. However, because the two apps have different bundle IDs, they store their settings in separate locations and do not share them.
+
+For those who have been using IINA previously and want to copy over their settings, history, and other state, copy each location in the first column to the location in the second column:
+
+|                       | IINA                                                 | IINA Advance                                      |
+|-----------------------|------------------------------------------------------|---------------------------------------------------|
+| Primary settings file | `~/Library/Preferences/com.colliderli.iina.plist`    | `~/Library/Preferences/com.iina-advance.plist`    |
+| Other support files   | `~/Library/Application Support/com.colliderli.iina` | `~/Library/Application Support/com.iina-advance` |
 
 ## Building
+*(unchanged from the upstream IINA project)*
 
 IINA uses mpv for media playback. To build IINA, you can either fetch copies of these libraries we have already built (using the instructions below) or build them yourself by skipping to [these instructions](#building-mpv-manually).
 
