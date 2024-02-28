@@ -65,8 +65,12 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
     removeButton.isHidden = true
 
     enableAdvancedSettingsBtn.checked = Preference.bool(for: .enableAdvancedSettings)
-    enableAdvancedSettingsBtn.action = {
-      Preference.set($0, for: .enableAdvancedSettings)
+    enableAdvancedSettingsBtn.action = { [self] enable in
+      Preference.set(enable, for: .enableAdvancedSettings)
+      if !enable {
+        optionsTableView.selectApprovedRowIndexes(IndexSet())  // deselect rows
+      }
+      optionsTableView.reloadData()
     }
   }
 
@@ -141,11 +145,11 @@ extension PrefAdvancedViewController: NSTableViewDelegate, NSTableViewDataSource
 
     switch columnName {
     case "Key":
-      textField.stringValue = options[row][0]
+      setFormattedText(for: cell, to: options[row][0], isEnabled: tableView.isEnabled)
       return cell
 
     case "Value":
-      textField.stringValue = options[row][1]
+      setFormattedText(for: cell, to: options[row][1], isEnabled: tableView.isEnabled)
       return cell
 
     default:
@@ -161,6 +165,10 @@ extension PrefAdvancedViewController: NSTableViewDelegate, NSTableViewDataSource
     removeButton.isHidden = optionsTableView.selectedRowIndexes.isEmpty
   }
 
+  private func setFormattedText(for cell: NSTableCellView, to stringValue: String, isEnabled: Bool) {
+    guard let textField = cell.textField else { return }
+    textField.setFormattedText(stringValue: stringValue, textColor: isEnabled ? .controlTextColor : .disabledControlTextColor)
+  }
 }
 
 extension PrefAdvancedViewController: EditableTableViewDelegate {

@@ -197,14 +197,7 @@ extension BindingTableViewController: NSTableViewDelegate {
     guard let textField = cell.textField else { return }
 
     if isEnabled {
-      var textColor: NSColor
-      if #available(macOS 10.14, *) {
-        textColor = nonConfTextColor
-      } else {
-        textColor = .linkColor
-      }
-
-      textField.setFormattedText(stringValue: stringValue, textColor: origin == InputBindingOrigin.confFile ? nil : textColor, italic: italic)
+      textField.setFormattedText(stringValue: stringValue, textColor: origin == InputBindingOrigin.confFile ? nil : nonConfTextColor, italic: italic)
     } else {
       textField.setFormattedText(stringValue: stringValue, textColor: NSColor.systemRed, strikethrough: true, italic: italic)
     }

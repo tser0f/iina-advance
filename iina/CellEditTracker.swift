@@ -91,6 +91,10 @@ class CellEditTracker: NSObject, NSTextFieldDelegate {
     self.current = CurrentFocus(textField: textField, stringValueOrig: textField.stringValue, row: row, column: column, editInProgress: false)
     textField.delegate = self
     textField.editTracker = self
+    if !parentTable.isEnabled {
+      // deselect rows if not enabled
+      parentTable.selectApprovedRowIndexes(IndexSet())
+    }
   }
 
   func startEdit() {
@@ -153,6 +157,11 @@ class CellEditTracker: NSObject, NSTextFieldDelegate {
 
   func askUserToApproveDoubleClickEdit() -> Bool {
     if let current = current {
+      guard self.parentTable.isEnabled else {
+        // deselect rows
+        self.parentTable.selectApprovedRowIndexes(IndexSet())
+        return false
+      }
       return self.delegate.userDidDoubleClickOnCell(row: current.row, column: current.column)
     }
     return false
