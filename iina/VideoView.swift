@@ -45,10 +45,6 @@ class VideoView: NSView {
 
     translatesAutoresizingMaskIntoConstraints = false
 
-    // other settings
-    wantsBestResolutionOpenGLSurface = true
-    wantsExtendedDynamicRangeOpenGLSurface = true
-
     // dragging init
     registerForDraggedTypes([.nsFilenames, .nsURL, .string])
   }

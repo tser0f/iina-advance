@@ -1247,45 +1247,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window else { return }
 
     let theme: Preference.Theme = Preference.enum(for: .themeMaterial)
-    if #available(macOS 10.14, *) {
-      let newAppearance = NSAppearance(iinaTheme: theme)
-      window.appearance = newAppearance
+    let newAppearance = NSAppearance(iinaTheme: theme)
+    window.appearance = newAppearance
 
-      // Change to appearance above does not take effect until this task completes. Enqueue a new task to run after this one.
-      DispatchQueue.main.async { [self] in
-        (newAppearance ?? window.effectiveAppearance).applyAppearanceFor {
-          thumbnailPeekView.refreshColors()
-        }
-      }
-      // See overridden functions for 10.14-
-      return
-    }
-
-    let (appearance, material) = Utility.getAppearanceAndMaterial(from: theme)
-    let isDarkTheme = appearance?.isDark ?? true
-    (playSlider.cell as? PlaySliderCell)?.isInDarkTheme = isDarkTheme
-
-    for view in [topBarView, controlBarFloating, bottomBarView,
-                 osdVisualEffectView, pipOverlayView, additionalInfoView, bufferIndicatorView] {
-      view?.material = material
-      view?.appearance = appearance
-    }
-
-    for sidebar in [leadingSidebarView, trailingSidebarView] {
-      sidebar?.material = .dark
-      sidebar?.appearance = NSAppearance(named: .vibrantDark)
-    }
-
-    if isInMiniPlayer {
-      miniPlayer.loadIfNeeded()
-
-      for view in [miniPlayer.musicModeControlBarView, closeButtonBackgroundViewVE, miniPlayer.playlistWrapperView] {
-        view?.appearance = appearance
-        view?.material = material
+    // Change to appearance above does not take effect until this task completes. Enqueue a new task to run after this one.
+    DispatchQueue.main.async { [self] in
+      (newAppearance ?? window.effectiveAppearance).applyAppearanceFor {
+        thumbnailPeekView.refreshColors()
       }
     }
-
-    window.appearance = appearance
   }
 
   func updateUseLegacyFullScreen() {
