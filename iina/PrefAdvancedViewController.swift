@@ -43,7 +43,7 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
   @IBOutlet var mpvSettingsView: NSView!
 
   @IBOutlet weak var enableAdvancedSettingsBtn: Switch!
-  @IBOutlet weak var optionsTableView: NSTableView!
+  @IBOutlet weak var optionsTableView: EditableTableView!
   @IBOutlet weak var useAnotherConfigDirBtn: NSButton!
   @IBOutlet weak var chooseConfigDirBtn: NSButton!
   @IBOutlet weak var removeButton: NSButton!
@@ -59,8 +59,10 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
 
     optionsTableView.dataSource = self
     optionsTableView.delegate = self
+    optionsTableView.editableDelegate = self
     optionsTableView.sizeLastColumnToFit()
-    removeButton.isEnabled = false
+    optionsTableView.editableTextColumnIndexes = [0, 1]
+    removeButton.isHidden = true
 
     enableAdvancedSettingsBtn.checked = Preference.bool(for: .enableAdvancedSettings)
     enableAdvancedSettingsBtn.action = {
@@ -120,37 +122,76 @@ extension PrefAdvancedViewController: NSTableViewDelegate, NSTableViewDataSource
     return options.count
   }
 
-  func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
-    guard options.count > row else { return nil }
-    if tableColumn?.identifier == .key {
-      return options[row][0]
-    } else if tableColumn?.identifier == .value {
-      return options[row][1]
-    }
-    return nil
-  }
+  /**
+   Make cell view when asked
+   */
+  @objc func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+    guard let identifier = tableColumn?.identifier else { return nil }
 
-  func tableView(_ tableView: NSTableView, setObjectValue object: Any?, for tableColumn: NSTableColumn?, row: Int) {
-    guard let value = object as? String,
-      let identifier = tableColumn?.identifier else { return }
-    guard !value.isEmpty else {
-      Utility.showAlert("extra_option.empty", sheetWindow: view.window)
-      return
+    guard let cell = tableView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView else {
+      return nil
     }
-    guard options.count > row else { return }
-    if identifier == .key {
-      options[row][0] = value
-    } else if identifier == .value {
-      options[row][1] = value
+    let columnName = identifier.rawValue
+
+    guard row < options.count else {
+      return nil
     }
-    saveToUserDefaults()
+
+    guard let textField = cell.textField else { return nil }
+
+    switch columnName {
+    case "Key":
+      textField.stringValue = options[row][0]
+      return cell
+
+    case "Value":
+      textField.stringValue = options[row][1]
+      return cell
+
+    default:
+      Logger.log("Unrecognized column: '\(columnName)'", level: .error)
+      return nil
+    }
   }
 
   func tableViewSelectionDidChange(_ notification: Notification) {
     if optionsTableView.selectedRowIndexes.count == 0 {
       optionsTableView.reloadData()
     }
-    removeButton.isEnabled = optionsTableView.selectedRow != -1
+    removeButton.isHidden = optionsTableView.selectedRowIndexes.isEmpty
   }
 
+}
+
+extension PrefAdvancedViewController: EditableTableViewDelegate {
+  func userDidDoubleClickOnCell(row rowIndex: Int, column columnIndex: Int) -> Bool {
+    Logger.log("Double-click: Edit requested for row \(rowIndex), col \(columnIndex)")
+    optionsTableView.editCell(row: rowIndex, column: columnIndex)
+    return true
+  }
+
+  func userDidPressEnterOnRow(_ rowIndex: Int) -> Bool {
+    Logger.log("Enter key: Edit requested for row \(rowIndex)")
+    optionsTableView.editCell(row: rowIndex, column: 0)
+    return true
+  }
+
+  func editDidEndWithNewText(newValue: String, row rowIndex: Int, column columnIndex: Int) -> Bool {
+    Logger.log("User finished editing value for row \(rowIndex), col \(columnIndex): \(newValue.quoted)", level: .verbose)
+    guard rowIndex < options.count else {
+      return false
+    }
+
+    var rowValues = options[rowIndex]
+
+    guard columnIndex < rowValues.count else {
+      Logger.log("userDidEndEditing(): bad column index: \(columnIndex)")
+      return false
+    }
+
+    rowValues[columnIndex] = newValue
+    options[rowIndex] = rowValues
+    saveToUserDefaults()
+    return true
+  }
 }

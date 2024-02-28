@@ -42,7 +42,7 @@
                             <rect key="frame" x="0.0" y="552" width="289" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="750" verticalHuggingPriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="OXi-vL-mzp">
-                                    <rect key="frame" x="-2" y="0.0" width="65" height="19"/>
+                                    <rect key="frame" x="-2" y="0.0" width="65" height="20"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="At launch:" id="gqT-CB-Puw">
                                         <font key="font" metaFont="system"/>
                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -69,7 +69,6 @@
                                 </popUpButton>
                             </subviews>
                             <constraints>
-                                <constraint firstItem="bV8-LP-cwH" firstAttribute="firstBaseline" secondItem="OXi-vL-mzp" secondAttribute="firstBaseline" id="NRl-Lu-XB1"/>
                                 <constraint firstAttribute="trailing" secondItem="bV8-LP-cwH" secondAttribute="trailing" id="wgN-7H-Izj"/>
                             </constraints>
                             <visibilityPriorities>
@@ -677,7 +676,6 @@
                 </stackView>
             </subviews>
             <constraints>
-                <constraint firstItem="OXi-vL-mzp" firstAttribute="firstBaseline" secondItem="38y-2I-MGs" secondAttribute="firstBaseline" id="1h7-Bl-tua"/>
                 <constraint firstItem="WFe-Uj-CJG" firstAttribute="leading" secondItem="6zR-96-iKB" secondAttribute="leading" constant="120" id="96y-64-SiA"/>
                 <constraint firstItem="38y-2I-MGs" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="6zR-96-iKB" secondAttribute="leading" constant="120" id="Dd3-CV-21F"/>
                 <constraint firstItem="38y-2I-MGs" firstAttribute="top" secondItem="6zR-96-iKB" secondAttribute="top" constant="8" id="EkZ-1t-Li0"/>
