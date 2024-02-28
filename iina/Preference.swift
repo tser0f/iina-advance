@@ -1194,7 +1194,7 @@ struct Preference {
     .userAgent: "",
     .transportRTSPThrough: RTSPTransportation.tcp.rawValue,
     .ytdlEnabled: true,
-    .ytdlSearchPath: "",
+    .ytdlSearchPath: "/usr/local/bin",
     .ytdlRawOptions: "",
     .httpProxy: "",
 
