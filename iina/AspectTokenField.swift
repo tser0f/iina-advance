@@ -16,12 +16,13 @@ fileprivate let maxAspectCount: Int = 5
 fileprivate struct AspectSet {
   let tokens: [String]
 
-  /// Enforces `maxAspectCount`
+  /// Enforces  `maxAspectCount`
   init(tokens: [String]) {
     var tokens = tokens
     while tokens.count > maxAspectCount {
       tokens.removeLast()
     }
+    tokens = tokens.filter{Aspect.isValid($0)}
     self.tokens = tokens
   }
 
@@ -215,9 +216,6 @@ extension AspectTokenField: NSTokenFieldDelegate {
 
   // Called by AppKit. EditingString -> Token
   func tokenField(_ tokenField: NSTokenField, representedObjectForEditing editingString: String) -> Any? {
-    guard Aspect.isValid(editingString) else {
-      return nil
-    }
     if enableLookupLogging {
       Logger.log("ATF Given editingString: \(editingString.quoted) -> returning: \(editingString.quoted)", level: .verbose)
     }

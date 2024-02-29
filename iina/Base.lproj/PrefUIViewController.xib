@@ -8,7 +8,8 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="PrefUIViewController" customModule="IINA" customModuleProvider="target">
             <connections>
-                <outlet property="aspectsTokenField" destination="ujy-m2-hkj" id="acG-KE-NCX"/>
+                <outlet property="aspectsTokenField" destination="ujy-m2-hkj" id="6na-Cg-CtC"/>
+                <outlet property="cropTokenField" destination="hg9-M3-Cff" id="6pU-e7-Aco"/>
                 <outlet property="hideFadeableViewsOutsideWindowCheckBox" destination="kw0-f3-qrz" id="gFU-Zd-LEb"/>
                 <outlet property="leadingSidebarBox" destination="jiM-84-6ud" id="GAC-XV-De5"/>
                 <outlet property="mpvGeometryRadioButton" destination="VqS-1r-k2A" id="V6d-3D-LCy"/>
@@ -1820,11 +1821,11 @@
             </constraints>
             <point key="canvasLocation" x="5" y="471"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="all">
-            <rect key="frame" x="0.0" y="0.0" width="520" height="386"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="none">
+            <rect key="frame" x="0.0" y="0.0" width="520" height="439"/>
             <subviews>
                 <textField identifier="SectionTitleSidebars" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E6K-jW-Lzn">
-                    <rect key="frame" x="-2" y="362" width="124" height="16"/>
+                    <rect key="frame" x="-2" y="415" width="124" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Sidebars:" id="b6k-dZ-1ha">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1832,10 +1833,10 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="kog-j2-kGH" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="8" width="392" height="371"/>
+                    <rect key="frame" x="120" y="8" width="392" height="424"/>
                     <subviews>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="IpK-KE-Mg5" userLabel="Settings-Tab-Group-Location HStack View">
-                            <rect key="frame" x="0.0" y="351" width="392" height="20"/>
+                            <rect key="frame" x="0.0" y="404" width="392" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="RnR-6d-fTg">
                                     <rect key="frame" x="-2" y="3" width="175" height="16"/>
@@ -1883,13 +1884,13 @@
                             </customSpacing>
                         </stackView>
                         <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="K6p-Ub-Maa" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="347" width="392" height="0.0"/>
+                            <rect key="frame" x="0.0" y="400" width="392" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="P6J-ea-txK"/>
                             </constraints>
                         </customView>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hfk-Oc-uMW" userLabel="Playlist-Tab-Group-Location HStack View">
-                            <rect key="frame" x="0.0" y="323" width="392" height="20"/>
+                            <rect key="frame" x="0.0" y="376" width="392" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="oaX-Ob-hdd">
                                     <rect key="frame" x="-2" y="0.0" width="175" height="19"/>
@@ -1934,13 +1935,13 @@
                             </customSpacing>
                         </stackView>
                         <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="WTr-fg-eDy" userLabel="4pt Spacer">
-                            <rect key="frame" x="0.0" y="315" width="392" height="4"/>
+                            <rect key="frame" x="0.0" y="368" width="392" height="4"/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="4" id="vwG-Ka-I1c"/>
                             </constraints>
                         </customView>
                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eh8-tf-wHU">
-                            <rect key="frame" x="-2" y="295" width="396" height="16"/>
+                            <rect key="frame" x="-2" y="348" width="396" height="16"/>
                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Left sidebar:" id="8Oi-ew-3cu">
                                 <font key="font" metaFont="system"/>
                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1948,7 +1949,7 @@
                             </textFieldCell>
                         </textField>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="IVX-y8-7oc" userLabel="Leading-Sidebar HStack View">
-                            <rect key="frame" x="0.0" y="203" width="392" height="88"/>
+                            <rect key="frame" x="0.0" y="256" width="392" height="88"/>
                             <subviews>
                                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="jiM-84-6ud" userLabel="Leading-Sidebar Box">
                                     <rect key="frame" x="-3" y="-4" width="364" height="94"/>
@@ -2033,7 +2034,7 @@
                             </customSpacing>
                         </stackView>
                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6mM-VC-jd0">
-                            <rect key="frame" x="-2" y="183" width="396" height="16"/>
+                            <rect key="frame" x="-2" y="236" width="396" height="16"/>
                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Right sidebar:" id="Msi-a9-5mJ">
                                 <font key="font" metaFont="system"/>
                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -2041,7 +2042,7 @@
                             </textFieldCell>
                         </textField>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6qZ-Gm-tgH" userLabel="Trailing-Sidebar HStack View">
-                            <rect key="frame" x="0.0" y="91" width="392" height="88"/>
+                            <rect key="frame" x="0.0" y="144" width="392" height="88"/>
                             <subviews>
                                 <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="4b0-vT-JOG" userLabel="Trailing-Sidebar Box">
                                     <rect key="frame" x="-3" y="-4" width="372" height="94"/>
@@ -2123,13 +2124,13 @@
                             </customSpacing>
                         </stackView>
                         <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="ZwL-8x-3OV" userLabel="4pt Spacer">
-                            <rect key="frame" x="0.0" y="83" width="392" height="4"/>
+                            <rect key="frame" x="0.0" y="136" width="392" height="4"/>
                             <constraints>
                                 <constraint firstAttribute="height" constant="4" id="lTw-9z-dz8"/>
                             </constraints>
                         </customView>
                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="HJz-q0-z9s">
-                            <rect key="frame" x="-2" y="63" width="396" height="16"/>
+                            <rect key="frame" x="-2" y="116" width="396" height="16"/>
                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Video settings tab:" id="Dd6-YT-Bhp">
                                 <font key="font" metaFont="system"/>
                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -2137,19 +2138,19 @@
                             </textFieldCell>
                         </textField>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="749" verticalStackHuggingPriority="749" verticalHuggingPriority="249" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xuk-tu-yGo" userLabel="Aspect HStack View">
-                            <rect key="frame" x="0.0" y="0.0" width="392" height="59"/>
+                            <rect key="frame" x="0.0" y="0.0" width="392" height="112"/>
                             <subviews>
                                 <box identifier="ContentCustomFullScreen" horizontalHuggingPriority="750" verticalHuggingPriority="750" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="gkn-iF-oiJ" userLabel="Video-Settings-Sidebar Box">
-                                    <rect key="frame" x="-3" y="-4" width="390" height="65"/>
+                                    <rect key="frame" x="-3" y="-4" width="390" height="118"/>
                                     <view key="contentView" id="Or9-ec-vBZ" userLabel="Video-Settings-Sidebar-Box Content View">
-                                        <rect key="frame" x="4" y="5" width="382" height="57"/>
+                                        <rect key="frame" x="4" y="5" width="382" height="110"/>
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                         <subviews>
                                             <stackView distribution="equalCentering" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6dd-Pj-ocr" userLabel="Video-Settings-Sidebar-Box Vertical Stack View">
-                                                <rect key="frame" x="0.0" y="0.0" width="382" height="57"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="382" height="110"/>
                                                 <subviews>
                                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="juv-F4-U4n">
-                                                        <rect key="frame" x="14" y="33" width="354" height="16"/>
+                                                        <rect key="frame" x="14" y="86" width="354" height="16"/>
                                                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Aspect ratio choices:" id="A2C-Qa-bBt">
                                                             <font key="font" metaFont="system"/>
                                                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -2157,7 +2158,7 @@
                                                         </textFieldCell>
                                                     </textField>
                                                     <tokenField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ujy-m2-hkj" customClass="AspectTokenField" customModule="IINA" customModuleProvider="target">
-                                                        <rect key="frame" x="16" y="8" width="350" height="21"/>
+                                                        <rect key="frame" x="16" y="61" width="350" height="21"/>
                                                         <constraints>
                                                             <constraint firstAttribute="width" constant="350" id="SGF-yh-K2z"/>
                                                         </constraints>
@@ -2170,13 +2171,47 @@
                                                             <action selector="aspectsAction:" target="-2" id="C6M-xs-LlA"/>
                                                         </connections>
                                                     </tokenField>
+                                                    <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="319-Ws-NfM" userLabel="4pt Spacer">
+                                                        <rect key="frame" x="16" y="53" width="350" height="4"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="4" id="BYA-1z-bg4"/>
+                                                        </constraints>
+                                                    </customView>
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="kK4-Gw-t7s">
+                                                        <rect key="frame" x="14" y="33" width="354" height="16"/>
+                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Crop choices:" id="QLh-RP-pHO">
+                                                            <font key="font" metaFont="system"/>
+                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                                        </textFieldCell>
+                                                    </textField>
+                                                    <tokenField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hg9-M3-Cff" userLabel="Crop Token Field" customClass="AspectTokenField" customModule="IINA" customModuleProvider="target">
+                                                        <rect key="frame" x="16" y="8" width="350" height="21"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="350" id="trI-Ii-ZG7"/>
+                                                        </constraints>
+                                                        <tokenFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="left" drawsBackground="YES" allowsEditingTextAttributes="YES" id="Neq-aF-GGO">
+                                                            <font key="font" metaFont="system"/>
+                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                        </tokenFieldCell>
+                                                        <connections>
+                                                            <action selector="cropsAction:" target="-2" id="Fvo-86-vc3"/>
+                                                        </connections>
+                                                    </tokenField>
                                                 </subviews>
                                                 <edgeInsets key="edgeInsets" left="16" right="16" top="8" bottom="8"/>
                                                 <visibilityPriorities>
                                                     <integer value="1000"/>
                                                     <integer value="1000"/>
+                                                    <integer value="1000"/>
+                                                    <integer value="1000"/>
+                                                    <integer value="1000"/>
                                                 </visibilityPriorities>
                                                 <customSpacing>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                    <real value="3.4028234663852886e+38"/>
                                                     <real value="3.4028234663852886e+38"/>
                                                     <real value="3.4028234663852886e+38"/>
                                                 </customSpacing>
@@ -2192,7 +2227,7 @@
                                     <font key="titleFont" metaFont="system"/>
                                 </box>
                                 <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1" translatesAutoresizingMaskIntoConstraints="NO" id="lX5-rN-e6d" userLabel="Spacer">
-                                    <rect key="frame" x="392" y="9" width="0.0" height="50"/>
+                                    <rect key="frame" x="392" y="62" width="0.0" height="50"/>
                                 </customView>
                             </subviews>
                             <visibilityPriorities>

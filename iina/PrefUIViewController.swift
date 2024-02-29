@@ -46,6 +46,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   private let toolbarSettingsSheetController = PrefOSCToolbarSettingsSheetController()
 
   @IBOutlet weak var aspectsTokenField: AspectTokenField!
+  @IBOutlet weak var cropTokenField: AspectTokenField!
 
   @IBOutlet var sectionAppearanceView: NSView!
   @IBOutlet var sectionFullScreenView: NSView!
@@ -140,6 +141,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     super.viewDidLoad()
 
     aspectsTokenField.commaSeparatedValues = Preference.string(for: .aspectsInPanel) ?? ""
+    cropTokenField.commaSeparatedValues = Preference.string(for: .cropsInPanel) ?? ""
 
     oscToolbarStackView.wantsLayer = true
 
@@ -170,6 +172,11 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       let newAspects = Preference.string(for: .aspectsInPanel) ?? ""
       if newAspects != aspectsTokenField.commaSeparatedValues {
         aspectsTokenField.commaSeparatedValues = newAspects
+      }
+    case PK.cropsInPanel.rawValue:
+      let newCropAspects = Preference.string(for: .cropsInPanel) ?? ""
+      if newCropAspects != cropTokenField.commaSeparatedValues {
+        cropTokenField.commaSeparatedValues = newCropAspects
       }
     case PK.showTopBarTrigger.rawValue,
       PK.enableOSC.rawValue,
@@ -280,6 +287,14 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     if Preference.string(for: .aspectsInPanel) != csv {
       Logger.log("Saving \(Preference.Key.aspectsInPanel.rawValue): \"\(csv)\"", level: .verbose)
       Preference.set(csv, for: .aspectsInPanel)
+    }
+  }
+
+  @IBAction func cropsAction(_ sender: AspectTokenField) {
+    let csv = sender.commaSeparatedValues
+    if Preference.string(for: .cropsInPanel) != csv {
+      Logger.log("Saving \(Preference.Key.cropsInPanel.rawValue): \"\(csv)\"", level: .verbose)
+      Preference.set(csv, for: .cropsInPanel)
     }
   }
 
