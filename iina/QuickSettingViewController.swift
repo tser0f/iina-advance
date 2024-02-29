@@ -269,7 +269,8 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   func updateSegmentLabels() {
     if let segmentLabels = Preference.csvStringArray(for: .aspectsInPanel) {
-      for segmentIndex in 1...5 {
+      aspectSegment.segmentCount = segmentLabels.count + 1
+      for segmentIndex in 1...cropSegment.segmentCount {
         if segmentIndex <= segmentLabels.count {
           let newLabel = segmentLabels[segmentIndex-1]
           aspectSegment.setLabel(newLabel, forSegment: segmentIndex)
@@ -279,12 +280,17 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     }
 
     if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
-      for segmentIndex in 1...5 {
+      // save custom label
+      let customLabel = cropSegment.label(forSegment: cropSegment.segmentCount - 1)!
+
+      cropSegment.segmentCount = segmentLabels.count + 2
+      for segmentIndex in 1..<cropSegment.segmentCount {
         if segmentIndex <= segmentLabels.count {
           let newLabel = segmentLabels[segmentIndex-1]
           cropSegment.setLabel(newLabel, forSegment: segmentIndex)
         }
       }
+      cropSegment.setLabel(customLabel, forSegment: cropSegment.segmentCount - 1)
       updateCropControls()
     }
   }

@@ -374,10 +374,7 @@
                                                             </textFieldCell>
                                                         </textField>
                                                         <segmentedControl horizontalHuggingPriority="100" verticalHuggingPriority="750" horizontalCompressionResistancePriority="500" translatesAutoresizingMaskIntoConstraints="NO" id="Ljl-w6-gIf" userLabel="AspectRatio Segmented Control">
-                                                            <rect key="frame" x="18" y="574" width="260" height="24"/>
-                                                            <constraints>
-                                                                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="240" id="43J-t3-UhR"/>
-                                                            </constraints>
+                                                            <rect key="frame" x="18" y="574" width="253" height="24"/>
                                                             <segmentedCell key="cell" refusesFirstResponder="YES" borderStyle="border" alignment="left" segmentDistribution="fillProportionally" style="rounded" trackingMode="selectOne" id="cMu-YF-riv">
                                                                 <font key="font" metaFont="system"/>
                                                                 <segments>
@@ -905,7 +902,7 @@
                                                         <constraint firstItem="5v4-Te-950" firstAttribute="trailing" secondItem="seu-WU-cTV" secondAttribute="trailing" id="eeP-VU-TPP"/>
                                                         <constraint firstItem="bza-SA-tXE" firstAttribute="leading" secondItem="seu-WU-cTV" secondAttribute="leading" id="fDz-nh-c5C"/>
                                                         <constraint firstItem="iAC-lz-PuL" firstAttribute="bottom" secondItem="pam-gJ-b3R" secondAttribute="bottom" id="keh-UM-dNZ"/>
-                                                        <constraint firstItem="XAI-y0-tcy" firstAttribute="leading" secondItem="Ljl-w6-gIf" secondAttribute="trailing" constant="8" id="kgN-Qb-S24"/>
+                                                        <constraint firstItem="XAI-y0-tcy" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Ljl-w6-gIf" secondAttribute="trailing" constant="8" id="kgN-Qb-S24"/>
                                                         <constraint firstItem="Ng5-FC-tts" firstAttribute="bottom" secondItem="ykw-rb-M9D" secondAttribute="top" constant="-8" id="lB5-5K-ADf"/>
                                                         <constraint firstItem="QqK-iZ-rFX" firstAttribute="leading" secondItem="seu-WU-cTV" secondAttribute="leading" id="raN-KU-S8w"/>
                                                         <constraint firstItem="XAI-y0-tcy" firstAttribute="firstBaseline" secondItem="Ljl-w6-gIf" secondAttribute="firstBaseline" id="sgV-3o-i04"/>

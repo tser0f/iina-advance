@@ -8,14 +8,20 @@
 
 import Foundation
 
-fileprivate let enableLookupLogging = true
+fileprivate let enableLookupLogging = false
+fileprivate let maxAspectCount: Int = 5
 
 // Data structure: AspectSet
 // A collection of unique aspects (usually the field's entire contents)
 fileprivate struct AspectSet {
   let tokens: [String]
 
+  /// Enforces `maxAspectCount`
   init(tokens: [String]) {
+    var tokens = tokens
+    while tokens.count > maxAspectCount {
+      tokens.removeLast()
+    }
     self.tokens = tokens
   }
 
