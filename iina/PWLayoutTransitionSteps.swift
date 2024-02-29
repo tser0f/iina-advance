@@ -198,6 +198,7 @@ extension PlayerWindowController {
         // Match behavior for custom title bar's copy:
         if let customTitleBar {
           customTitleBar.leadingSidebarToggleButton.alphaValue = 0
+          fadeableViewsTopBar.remove(customTitleBar.leadingSidebarToggleButton)
         }
       }
       if outputLayout.trailingSidebarToggleButton == .hidden {
@@ -206,6 +207,7 @@ extension PlayerWindowController {
 
         if let customTitleBar {
           customTitleBar.trailingSidebarToggleButton.alphaValue = 0
+          fadeableViewsTopBar.remove(customTitleBar.trailingSidebarToggleButton)
         }
       }
 

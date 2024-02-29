@@ -154,6 +154,7 @@ class CustomTitleBarViewController: NSViewController {
     button.imageScaling = .scaleNone
     button.font = NSFont.systemFont(ofSize: 17)
     button.widthAnchor.constraint(equalTo: button.heightAnchor, multiplier: 1).isActive = true
+    button.isHidden = true
     return button
   }
 
@@ -169,7 +170,9 @@ class CustomTitleBarViewController: NSViewController {
     titleText.alphaValue = drawAsMainWindow ? activeTitleTextOpacity : inactiveTitleTextOpacity
     let controlAlpha = drawAsMainWindow ? 1 : inactiveTitleControlOpacity
     for view in [leadingSidebarToggleButton, documentIconButton, trailingSidebarToggleButton, onTopButton] {
-      view?.alphaValue = controlAlpha
+      // Skip buttons which are not visible
+      guard let view, view.alphaValue > 0.0 else { continue }
+      view.alphaValue = controlAlpha
     }
 
     let title = windowController.player.info.currentURL?.lastPathComponent ?? ""

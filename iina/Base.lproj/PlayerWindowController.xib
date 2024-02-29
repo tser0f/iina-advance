@@ -634,7 +634,7 @@
                     <box identifier="customWindowBorderTopHighlightBox" boxType="custom" borderType="line" title="CustomWindowBorderTopHighlight Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="IeW-QK-xIO" userLabel="CustomWindowBorderTopHighlight Box" customClass="CustomWindowBorderBox" customModule="IINA" customModuleProvider="target">
                         <rect key="frame" x="0.0" y="400" width="640" height="1"/>
                         <view key="contentView" id="2sJ-m4-Y4B" userLabel="Box View" customClass="ClickThroughView" customModule="IINA" customModuleProvider="target">
-                            <rect key="frame" x="1" y="1" width="638" height="0.0"/>
+                            <rect key="frame" x="1" y="0.5" width="638" height="0.0"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         </view>
                         <constraints>
@@ -986,7 +986,7 @@
                                 <constraint firstAttribute="width" identifier="trailingTitleBarLeadingSpaceConstraint" id="c8g-qm-Vdc"/>
                             </constraints>
                         </customView>
-                        <button identifier="TrailoingSidebarToggleButton" translatesAutoresizingMaskIntoConstraints="NO" id="VTu-Ac-dgn" userLabel="ToggleTrailingSidebar Square Button">
+                        <button identifier="TrailingSidebarToggleButton" translatesAutoresizingMaskIntoConstraints="NO" id="VTu-Ac-dgn" userLabel="ToggleTrailingSidebar Square Button">
                             <rect key="frame" x="0.0" y="15" width="20" height="20"/>
                             <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" imagePosition="only" alignment="center" refusesFirstResponder="YES" state="on" inset="2" id="WJX-cV-vij">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
