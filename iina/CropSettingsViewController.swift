@@ -19,12 +19,41 @@ class CropSettingsViewController: CropBoxViewController {
 
   override func viewDidAppear() {
     predefinedAspectSegment.selectedSegment = -1
+    updateSegmentLabels()
+  }
+
+  func updateSegmentLabels() {
+    if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
+      predefinedAspectSegment.segmentCount = segmentLabels.count
+      for segmentIndex in 0..<predefinedAspectSegment.segmentCount {
+        if segmentIndex <= segmentLabels.count {
+          let newLabel = segmentLabels[segmentIndex]
+          predefinedAspectSegment.setLabel(newLabel, forSegment: segmentIndex)
+        }
+      }
+    }
   }
 
   override func selectedRectUpdated() {
     super.selectedRectUpdated()
     cropRectLabel.stringValue = readableCropString
-    // FIXME: update predefinedAspectSegment selection
+
+    let actualSize = cropBoxView.actualSize
+    // Try to match to segment:
+    for segmentIndex in 0..<predefinedAspectSegment.segmentCount {
+      guard let segmentLabel = predefinedAspectSegment.label(forSegment: segmentIndex) else { continue }
+      guard let aspect = Aspect(string: segmentLabel) else { continue }
+
+      let cropped = actualSize.getCropRect(withAspect: aspect)
+
+      if abs(Int(cropped.size.width) - cropw) <= 1,
+         abs(Int(cropped.size.height) - croph) <= 1,
+         abs(Int(cropped.origin.x) - cropx) <= 1,
+         abs(Int(cropped.origin.y) - cropy) <= 1 {
+        predefinedAspectSegment.selectedSegment = segmentIndex
+        break
+      }
+    }
   }
 
   private func animateHideCropSelection() {
@@ -97,12 +126,7 @@ class CropSettingsViewController: CropBoxViewController {
     guard let aspect = Aspect(string: str) else { return }
 
     let actualSize = cropBoxView.actualSize
-    let croppedSize = actualSize.crop(withAspect: aspect)
-    let cropped = NSMakeRect((actualSize.width - croppedSize.width) / 2,
-                             (actualSize.height - croppedSize.height) / 2,
-                             croppedSize.width,
-                             croppedSize.height)
-
+    let cropped = actualSize.getCropRect(withAspect: aspect)
     cropBoxView.setSelectedRect(to: cropped)
   }
 

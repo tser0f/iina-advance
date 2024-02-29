@@ -3256,7 +3256,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
       if currentLayout.isInteractiveMode {
         // If these params are present and valid, then need to apply a crop
-        if let uncroppedVideoSize, let cropbox, let cropController = cropSettingsView {
+        if let uncroppedVideoSize, let cropbox, let cropController = cropSettingsView, uncroppedVideoSize.width > 0, uncroppedVideoSize.height > 0 {
           // Do this very fast because at present the crop animation is not great
           animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.CropAnimationDuration * 0.2, { [self] in
             let screen = bestScreen

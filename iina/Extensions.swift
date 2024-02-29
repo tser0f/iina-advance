@@ -97,6 +97,15 @@ extension NSSize {
     }
   }
 
+  func getCropRect(withAspect aspect: Aspect) -> NSRect {
+    let croppedSize = crop(withAspect: aspect)
+    let cropped = NSMakeRect((width - croppedSize.width) / 2,
+                             (height - croppedSize.height) / 2,
+                             croppedSize.width,
+                             croppedSize.height)
+    return cropped
+  }
+
   func expand(withAspect aspectRect: Aspect) -> NSSize {
     let targetAspect = aspectRect.value
     if aspect < targetAspect {  // self is taller, expand width, use same height
