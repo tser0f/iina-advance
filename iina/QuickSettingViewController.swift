@@ -249,6 +249,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   override func viewDidAppear() {
     // image sub
     super.viewDidAppear()
+    updateSegmentLabels()
     updateControlsState()
   }
 
@@ -266,18 +267,47 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     updateAudioEqState()
   }
 
-  private func updateVideoTabControl() {
+  func updateSegmentLabels() {
+    if let segmentLabels = Preference.csvStringArray(for: .aspectsInPanel) {
+      for segmentIndex in 1...5 {
+        if segmentIndex <= segmentLabels.count {
+          let newLabel = segmentLabels[segmentIndex-1]
+          aspectSegment.setLabel(newLabel, forSegment: segmentIndex)
+        }
+      }
+      updateAspectControls()
+    }
+
+    if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
+      for segmentIndex in 1...5 {
+        if segmentIndex <= segmentLabels.count {
+          let newLabel = segmentLabels[segmentIndex-1]
+          cropSegment.setLabel(newLabel, forSegment: segmentIndex)
+        }
+      }
+      updateCropControls()
+    }
+  }
+
+  private func updateAspectControls() {
     let aspectLabel = player.info.selectedAspectRatioLabel
     aspectSegment.selectSegment(withLabel: aspectLabel)
     let isAspectInPanel = aspectSegment.selectedSegment >= 0
     customAspectTextField.stringValue = isAspectInPanel ? "" : aspectLabel
+  }
 
+  private func updateCropControls() {
     let selectedCropLabel = player.info.selectedCropLabel
     cropSegment.selectSegment(withLabel: selectedCropLabel)
     let isCropInPanel = cropSegment.selectedSegment >= 0
     if !isCropInPanel {
       cropSegment.selectSegment(withTag: cropSegment.segmentCount - 1)
     }
+  }
+
+  private func updateVideoTabControl() {
+    updateAspectControls()
+    updateCropControls()
 
     rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.selectedRotation) ?? -1)
 
@@ -569,7 +599,10 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   // MARK: Video tab
 
   @IBAction func aspectChangedAction(_ sender: NSSegmentedControl) {
-    let aspect = AppData.aspectsInPanel[sender.selectedSegment]
+    guard let aspect = sender.label(forSegment: sender.selectedSegment) else {
+      player.log.error("Bad aspect segment: \(sender.selectedSegment)")
+      return
+    }
     player.log.verbose("Setting aspect ratio from segmented control: \(aspect)")
     player.setVideoAspectOverride(aspect)
   }
@@ -579,11 +612,10 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       // User clicked on "Custom...": show custom crop UI
       windowController.enterInteractiveMode(.crop)
     } else {
-      guard sender.selectedSegment < AppData.cropsInPanel.count else {
+      guard let selectedCropString = sender.label(forSegment: sender.selectedSegment) else {
         player.log.error("Bad crop segment: \(sender.selectedSegment)")
         return
       }
-      let selectedCropString = AppData.cropsInPanel[sender.selectedSegment]
       player.setCrop(fromString: selectedCropString)
     }
   }

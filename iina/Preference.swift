@@ -48,7 +48,7 @@ struct Preference {
 
     static let actionAfterLaunch = Key("actionAfterLaunch")
     static let alwaysOpenInNewWindow = Key("alwaysOpenInNewWindow")
-    /// Secret pref which, if set to `true`, makes the menu item `File` > `New Window` visible:
+    /// If set to `true`, makes the menu item `File` > `New Window` visible:
     static let enableCmdN = Key("enableCmdN")
 
     static let animationDurationDefault = Key("animationDurationDefault")
@@ -436,6 +436,9 @@ struct Preference {
 
     /** Workaround for issue [#4688](https://github.com/iina/iina/issues/4688) */
     static let recentDocuments = Key("recentDocuments")
+
+    static let aspectsInPanel = Key("aspectsInPanel")
+    static let cropsInPanel = Key("cropsInPanel")
 
     // MARK: - Keys: Internal UI State
 
@@ -1273,6 +1276,8 @@ struct Preference {
 
     .suppressCannotPreventDisplaySleep: false,
 
+    .aspectsInPanel: "4:3,16:9,16:10,21:9,5:4",
+    .cropsInPanel: "4:3,16:9,16:10,21:9,5:4",
     .recentDocuments: [Any]()
   ]
 
@@ -1297,6 +1302,13 @@ struct Preference {
 
   static func string(for key: Key) -> String? {
     return ud.string(forKey: key.rawValue)
+  }
+
+  static func csvStringArray(for key: Key) -> [String]? {
+    if let csv = ud.string(forKey: key.rawValue) {
+      return csv.split(separator: ",").map{String($0).trimmingCharacters(in: .whitespacesAndNewlines)}
+    }
+    return nil
   }
 
   static func stringArray(for key: Key) -> [String]? {

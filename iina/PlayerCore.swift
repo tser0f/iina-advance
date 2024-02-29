@@ -2877,14 +2877,16 @@ class PlayerCore: NSObject {
         // Truncate to 2 decimal places precision for comparison.
         let selectedAspect = (w / h).roundedTo2()
         log.verbose("Determined aspect=\(selectedAspect) from filter \(filter.label?.quoted ?? "")")
-        for cropLabel in AppData.cropsInPanel {
-          let tokens = cropLabel.split(separator: ":")
-          if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
-            let aspectRatio = (width / height).roundedTo2()
-            if aspectRatio == selectedAspect {
-              log.verbose("Filter \(filter.label?.quoted ?? "") matches known crop \(cropLabel.quoted)")
-              updateCropUI(to: cropLabel)
-              return
+        if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
+          for cropLabel in segmentLabels {
+            let tokens = cropLabel.split(separator: ":")
+            if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
+              let aspectRatio = (width / height).roundedTo2()
+              if aspectRatio == selectedAspect {
+                log.verbose("Filter \(filter.label?.quoted ?? "") matches known crop \(cropLabel.quoted)")
+                updateCropUI(to: cropLabel)
+                return
+              }
             }
           }
         }
