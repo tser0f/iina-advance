@@ -324,6 +324,7 @@
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <color key="contentTintColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="20" id="XfO-xd-O4d"/>
                                     <constraint firstAttribute="width" secondItem="RY9-rr-eGr" secondAttribute="height" multiplier="1:1" id="zHQ-Qh-S3o"/>
@@ -343,6 +344,7 @@
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <color key="contentTintColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="EU2-5a-Lpj" secondAttribute="height" multiplier="1:1" id="Rtd-NO-VuP"/>
                                 </constraints>

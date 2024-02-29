@@ -26,7 +26,7 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Hz6-mo-xeY" userLabel="Prefs &gt; Key Bindings View" propertyAccessControl="all">
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="Hz6-mo-xeY" userLabel="Prefs &gt; Key Bindings View" propertyAccessControl="none">
             <rect key="frame" x="0.0" y="0.0" width="605" height="304"/>
             <subviews>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="LU9-QU-BFL">
@@ -183,6 +183,7 @@
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <color key="contentTintColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="iCp-ho-SlQ" secondAttribute="height" multiplier="1:1" id="VuG-8t-3rb"/>
                                 </constraints>
@@ -196,6 +197,7 @@
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <color key="contentTintColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="EpF-t6-PtC" secondAttribute="height" multiplier="1:1" id="BI6-fZ-9GC"/>
                                 </constraints>
@@ -212,6 +214,7 @@
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="label" size="9"/>
                                 </buttonCell>
+                                <color key="contentTintColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                 <connections>
                                     <action selector="duplicateConfFileAction:" target="-2" id="TJJ-4y-6g0"/>
                                 </connections>
@@ -409,6 +412,7 @@
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <color key="contentTintColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="f5l-5w-zmm" secondAttribute="height" multiplier="1:1" id="t7I-vx-VZI"/>
                                 </constraints>
@@ -422,6 +426,7 @@
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                     <font key="font" metaFont="system"/>
                                 </buttonCell>
+                                <color key="contentTintColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="uFG-OF-DJ5" secondAttribute="height" multiplier="1:1" id="KP5-c5-VcL"/>
                                 </constraints>
