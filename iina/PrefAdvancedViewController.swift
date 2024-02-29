@@ -62,7 +62,7 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
     optionsTableView.editableDelegate = self
     optionsTableView.sizeLastColumnToFit()
     optionsTableView.editableTextColumnIndexes = [0, 1]
-    removeButton.isHidden = true
+    refreshRemoveButton()
 
     enableAdvancedSettingsBtn.checked = Preference.bool(for: .enableAdvancedSettings)
     enableAdvancedSettingsBtn.action = { [self] enable in
@@ -71,6 +71,7 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
         optionsTableView.selectApprovedRowIndexes(IndexSet())  // deselect rows
       }
       optionsTableView.reloadData()
+      refreshRemoveButton()
     }
   }
 
@@ -100,6 +101,7 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
     if optionsTableView.selectedRow >= 0 {
       options.remove(at: optionsTableView.selectedRow)
       optionsTableView.reloadData()
+      refreshRemoveButton()
       saveToUserDefaults()
     }
   }
@@ -162,6 +164,10 @@ extension PrefAdvancedViewController: NSTableViewDelegate, NSTableViewDataSource
     if optionsTableView.selectedRowIndexes.count == 0 {
       optionsTableView.reloadData()
     }
+    refreshRemoveButton()
+  }
+
+  private func refreshRemoveButton() {
     removeButton.isHidden = optionsTableView.selectedRowIndexes.isEmpty
   }
 

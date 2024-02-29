@@ -330,7 +330,11 @@
                                 </constraints>
                                 <connections>
                                     <action selector="addOptionBtnAction:" target="-2" id="NIn-fH-EeK"/>
-                                    <binding destination="nyg-fH-Pug" name="enabled" keyPath="values.enableAdvancedSettings" id="xWE-hY-lvV"/>
+                                    <binding destination="nyg-fH-Pug" name="hidden" keyPath="values.enableAdvancedSettings" id="wAJ-TN-CS7">
+                                        <dictionary key="options">
+                                            <string key="NSValueTransformerName">NSNegateBoolean</string>
+                                        </dictionary>
+                                    </binding>
                                 </connections>
                             </button>
                             <button translatesAutoresizingMaskIntoConstraints="NO" id="EU2-5a-Lpj">

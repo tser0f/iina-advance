@@ -66,6 +66,7 @@ class PrefKeyBindingViewController: NSViewController, PreferenceWindowEmbeddable
 
   override func viewWillAppear() {
     Logger.log("Key Bindings pref pane will appear", level: .verbose)
+    BindingTableState.manager.applyStateUpdate(AppInputConfig.current)  // bring up to date
     BindingTableState.manager.enableObservers()
   }
 

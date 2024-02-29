@@ -195,8 +195,8 @@ class BindingTableStateManager: NSObject {
    order to get more accurate animations.
    • Expected to be run on the main thread.
    */
-  private func applyStateUpdate(_ appInputConfigNew: AppInputConfig, desiredTableUIChange: TableUIChange? = nil,
-                                newFilterString: String? = nil, newInputConfFile: InputConfFile? = nil) {
+  func applyStateUpdate(_ appInputConfigNew: AppInputConfig, desiredTableUIChange: TableUIChange? = nil,
+                        newFilterString: String? = nil, newInputConfFile: InputConfFile? = nil) {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
 
     let showAllBindings = Preference.bool(for: .showKeyBindingsFromAllSources)
