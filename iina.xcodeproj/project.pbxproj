@@ -170,6 +170,7 @@
 		D1049C892872CAD6003D47C1 /* ConfTableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1049C882872CAD6003D47C1 /* ConfTableState.swift */; };
 		D11AB83628EEE72A00673A90 /* EditableTableViewDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11AB83528EEE72A00673A90 /* EditableTableViewDelegate.swift */; };
 		D12C074028EAEA4400FA9958 /* AppInputConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12C073F28EAEA4400FA9958 /* AppInputConfigBuilder.swift */; };
+		D13209BB2B90596000069C94 /* AspectTokenField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13209BA2B90596000069C94 /* AspectTokenField.swift */; };
 		D1347A2D2B04879C00B37B0E /* MPVVideoParams.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1347A2C2B04879C00B37B0E /* MPVVideoParams.swift */; };
 		D140E81C285A0BEF00067094 /* LinkedList.swift in Sources */ = {isa = PBXBuildFile; fileRef = D140E81B285A0BEF00067094 /* LinkedList.swift */; };
 		D15CABE62B1EECFD004A8985 /* SingleMediaThumbnailsLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15CABE52B1EECFD004A8985 /* SingleMediaThumbnailsLoader.swift */; };
@@ -1560,6 +1561,7 @@
 		D1049C882872CAD6003D47C1 /* ConfTableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfTableState.swift; sourceTree = "<group>"; };
 		D11AB83528EEE72A00673A90 /* EditableTableViewDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableTableViewDelegate.swift; sourceTree = "<group>"; };
 		D12C073F28EAEA4400FA9958 /* AppInputConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInputConfigBuilder.swift; sourceTree = "<group>"; };
+		D13209BA2B90596000069C94 /* AspectTokenField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AspectTokenField.swift; sourceTree = "<group>"; };
 		D1347A2C2B04879C00B37B0E /* MPVVideoParams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVVideoParams.swift; sourceTree = "<group>"; };
 		D140E81B285A0BEF00067094 /* LinkedList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedList.swift; sourceTree = "<group>"; };
 		D15CABE52B1EECFD004A8985 /* SingleMediaThumbnailsLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleMediaThumbnailsLoader.swift; sourceTree = "<group>"; };
@@ -2467,6 +2469,7 @@
 				E322A4F720A8442E00C67D32 /* PlaylistPlaybackProgressView.swift */,
 				845E70B1210CB59D00D06C42 /* ScrollingTextField.swift */,
 				E38372912443634500F57718 /* LanguageTokenField.swift */,
+				D13209BA2B90596000069C94 /* AspectTokenField.swift */,
 				E34C0C3024934D7B0065A0C6 /* Switch.swift */,
 				E32712AE24EAA14500359DAB /* ScreenshootOSDView.swift */,
 				E32712B424F2B8CA00359DAB /* ScreenshootOSDView.xib */,
@@ -3149,6 +3152,7 @@
 				E3CB258F222799B800A62C47 /* MPVHook.swift in Sources */,
 				E30D2EBD21F5FD2600E1FF0D /* PluginOverlayView.swift in Sources */,
 				E3FEC1332A30400F00CFD845 /* PluginInputManager.swift in Sources */,
+				D13209BB2B90596000069C94 /* AspectTokenField.swift in Sources */,
 				8407D1401E3A684C0043895D /* GLVideoLayer.swift in Sources */,
 				D19F9DAA28645C860054CC45 /* EditableTableView.swift in Sources */,
 				84A0BA9B1D2FAB4100BC8DA1 /* Parameter.swift in Sources */,

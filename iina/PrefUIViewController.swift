@@ -45,6 +45,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   private let toolbarSettingsSheetController = PrefOSCToolbarSettingsSheetController()
 
+  @IBOutlet weak var aspectsTokenField: AspectTokenField!
+
   @IBOutlet var sectionAppearanceView: NSView!
   @IBOutlet var sectionFullScreenView: NSView!
   @IBOutlet var sectionWindowView: NSView!
@@ -107,6 +109,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .oscBarToolbarIconSize,
     .oscBarToolbarIconSpacing,
     .useLegacyWindowedMode,
+    .aspectsInPanel,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -136,6 +139,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   override func viewDidLoad() {
     super.viewDidLoad()
 
+    aspectsTokenField.commaSeparatedValues = Preference.string(for: .aspectsInPanel) ?? ""
+
     oscToolbarStackView.wantsLayer = true
 
     refreshSidebarSection()
@@ -161,6 +166,11 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
+    case PK.aspectsInPanel.rawValue:
+      let newAspects = Preference.string(for: .aspectsInPanel) ?? ""
+      if newAspects != aspectsTokenField.commaSeparatedValues {
+        aspectsTokenField.commaSeparatedValues = newAspects
+      }
     case PK.showTopBarTrigger.rawValue,
       PK.enableOSC.rawValue,
       PK.topBarPlacement.rawValue,
@@ -263,6 +273,14 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       }, completionHandler: {
       })
     })
+  }
+
+  @IBAction func aspectsAction(_ sender: AspectTokenField) {
+    let csv = sender.commaSeparatedValues
+    if Preference.string(for: .aspectsInPanel) != csv {
+      Logger.log("Saving \(Preference.Key.aspectsInPanel.rawValue): \"\(csv)\"", level: .verbose)
+      Preference.set(csv, for: .aspectsInPanel)
+    }
   }
 
   @IBAction func setupPipBehaviorRelatedControls(_ sender: NSButton) {

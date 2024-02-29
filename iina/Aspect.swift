@@ -13,6 +13,16 @@ class Aspect: NSObject {
     return CGFloat(round(aspectRatio * 100.0)) * 0.01
   }
 
+  static func isValid(_ string: String) -> Bool {
+    if Aspect(string: string) != nil {
+      // Aspect is in colon notation (X:Y)
+      return true
+    } else if let aspectDouble = Double(string), aspectDouble > 0 {
+      return true
+    }
+    return false
+  }
+
   private var size: NSSize!
 
   var width: CGFloat {
