@@ -1818,13 +1818,13 @@
                 <constraint firstItem="Ttu-Y8-S4Y" firstAttribute="firstBaseline" secondItem="AuL-MP-Wlj" secondAttribute="firstBaseline" id="v0N-nd-a8d"/>
                 <constraint firstItem="63o-gu-DxA" firstAttribute="leading" secondItem="bGH-kO-7Rd" secondAttribute="leading" id="yem-Xi-Hum"/>
             </constraints>
-            <point key="canvasLocation" x="7" y="471.5"/>
+            <point key="canvasLocation" x="5" y="471"/>
         </customView>
-        <customView translatesAutoresizingMaskIntoConstraints="NO" id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="none">
-            <rect key="frame" x="0.0" y="0.0" width="486" height="357"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="iZa-Jl-fXs" userLabel="Prefs &gt; UI &gt; Sidebars" propertyAccessControl="all">
+            <rect key="frame" x="0.0" y="0.0" width="520" height="386"/>
             <subviews>
                 <textField identifier="SectionTitleSidebars" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="E6K-jW-Lzn">
-                    <rect key="frame" x="-2" y="333" width="124" height="16"/>
+                    <rect key="frame" x="-2" y="362" width="124" height="16"/>
                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="left" title="Sidebars:" id="b6k-dZ-1ha">
                         <font key="font" metaFont="systemBold"/>
                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -1832,54 +1832,10 @@
                     </textFieldCell>
                 </textField>
                 <stackView distribution="fill" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="kog-j2-kGH" userLabel="RightColumn Stack View">
-                    <rect key="frame" x="120" y="248" width="358" height="101"/>
+                    <rect key="frame" x="120" y="8" width="392" height="371"/>
                     <subviews>
-                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="juv-F4-U4n">
-                            <rect key="frame" x="-2" y="85" width="362" height="16"/>
-                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Aspect ratio choices:" id="A2C-Qa-bBt">
-                                <font key="font" metaFont="system"/>
-                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                            </textFieldCell>
-                        </textField>
-                        <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="749" verticalStackHuggingPriority="749" verticalHuggingPriority="249" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xuk-tu-yGo" userLabel="Aspect HStack View">
-                            <rect key="frame" x="0.0" y="60" width="358" height="21"/>
-                            <subviews>
-                                <tokenField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ujy-m2-hkj" customClass="AspectTokenField" customModule="IINA" customModuleProvider="target">
-                                    <rect key="frame" x="0.0" y="0.0" width="350" height="21"/>
-                                    <constraints>
-                                        <constraint firstAttribute="width" constant="350" id="SGF-yh-K2z"/>
-                                    </constraints>
-                                    <tokenFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="left" drawsBackground="YES" allowsEditingTextAttributes="YES" id="l1a-BP-FYX">
-                                        <font key="font" metaFont="system"/>
-                                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                    </tokenFieldCell>
-                                    <connections>
-                                        <action selector="aspectsAction:" target="-2" id="C6M-xs-LlA"/>
-                                    </connections>
-                                </tokenField>
-                                <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1" translatesAutoresizingMaskIntoConstraints="NO" id="lX5-rN-e6d" userLabel="Spacer">
-                                    <rect key="frame" x="358" y="0.0" width="0.0" height="21"/>
-                                </customView>
-                            </subviews>
-                            <visibilityPriorities>
-                                <integer value="1000"/>
-                                <integer value="1000"/>
-                            </visibilityPriorities>
-                            <customSpacing>
-                                <real value="3.4028234663852886e+38"/>
-                                <real value="3.4028234663852886e+38"/>
-                            </customSpacing>
-                        </stackView>
-                        <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="ZwL-8x-3OV" userLabel="4pt Spacer">
-                            <rect key="frame" x="0.0" y="52" width="358" height="4"/>
-                            <constraints>
-                                <constraint firstAttribute="height" constant="4" id="lTw-9z-dz8"/>
-                            </constraints>
-                        </customView>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="IpK-KE-Mg5" userLabel="Settings-Tab-Group-Location HStack View">
-                            <rect key="frame" x="0.0" y="28" width="358" height="20"/>
+                            <rect key="frame" x="0.0" y="351" width="392" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="RnR-6d-fTg">
                                     <rect key="frame" x="-2" y="3" width="175" height="16"/>
@@ -1909,7 +1865,7 @@
                                     </connections>
                                 </popUpButton>
                                 <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1" translatesAutoresizingMaskIntoConstraints="NO" id="eyn-fV-ZNr" userLabel="Spacer">
-                                    <rect key="frame" x="301" y="0.0" width="57" height="6"/>
+                                    <rect key="frame" x="301" y="0.0" width="91" height="6"/>
                                 </customView>
                             </subviews>
                             <constraints>
@@ -1927,13 +1883,13 @@
                             </customSpacing>
                         </stackView>
                         <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="K6p-Ub-Maa" userLabel="0pt Spacer">
-                            <rect key="frame" x="0.0" y="24" width="358" height="0.0"/>
+                            <rect key="frame" x="0.0" y="347" width="392" height="0.0"/>
                             <constraints>
                                 <constraint firstAttribute="height" id="P6J-ea-txK"/>
                             </constraints>
                         </customView>
                         <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="250" verticalStackHuggingPriority="250" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hfk-Oc-uMW" userLabel="Playlist-Tab-Group-Location HStack View">
-                            <rect key="frame" x="0.0" y="0.0" width="358" height="20"/>
+                            <rect key="frame" x="0.0" y="323" width="392" height="20"/>
                             <subviews>
                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="oaX-Ob-hdd">
                                     <rect key="frame" x="-2" y="0.0" width="175" height="19"/>
@@ -1960,7 +1916,7 @@
                                     </connections>
                                 </popUpButton>
                                 <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1" translatesAutoresizingMaskIntoConstraints="NO" id="rvG-rs-6cl" userLabel="Spacer">
-                                    <rect key="frame" x="301" y="0.0" width="57" height="6"/>
+                                    <rect key="frame" x="301" y="0.0" width="91" height="6"/>
                                 </customView>
                             </subviews>
                             <constraints>
@@ -1977,12 +1933,288 @@
                                 <real value="3.4028234663852886e+38"/>
                             </customSpacing>
                         </stackView>
+                        <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="WTr-fg-eDy" userLabel="4pt Spacer">
+                            <rect key="frame" x="0.0" y="315" width="392" height="4"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="4" id="vwG-Ka-I1c"/>
+                            </constraints>
+                        </customView>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eh8-tf-wHU">
+                            <rect key="frame" x="-2" y="295" width="396" height="16"/>
+                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Left sidebar:" id="8Oi-ew-3cu">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="IVX-y8-7oc" userLabel="Leading-Sidebar HStack View">
+                            <rect key="frame" x="0.0" y="203" width="392" height="88"/>
+                            <subviews>
+                                <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="jiM-84-6ud" userLabel="Leading-Sidebar Box">
+                                    <rect key="frame" x="-3" y="-4" width="364" height="94"/>
+                                    <view key="contentView" id="aFh-mF-xhE" userLabel="Leading-Sidebar-Box View">
+                                        <rect key="frame" x="4" y="5" width="356" height="86"/>
+                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                        <subviews>
+                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hz5-Bh-Bzv">
+                                                <rect key="frame" x="14" y="60" width="200" height="16"/>
+                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Placement vs. video:" id="zDV-q2-wOg">
+                                                    <font key="font" metaFont="system"/>
+                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                                </textFieldCell>
+                                            </textField>
+                                            <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KIu-aG-mHw" userLabel="Leading-Sidebar-Placement Segmented Control">
+                                                <rect key="frame" x="218" y="55" width="124" height="24"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" constant="120" id="2D4-bp-E7M"/>
+                                                </constraints>
+                                                <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="sME-na-jHH">
+                                                    <font key="font" metaFont="system"/>
+                                                    <segments>
+                                                        <segment label="Inside" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                                        <segment label="Outside" tag="2"/>
+                                                    </segments>
+                                                </segmentedCell>
+                                                <connections>
+                                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.leadingSidebarPlacement" id="lAt-Gy-ZPZ"/>
+                                                </connections>
+                                            </segmentedControl>
+                                            <button translatesAutoresizingMaskIntoConstraints="NO" id="H5W-Uo-D64" userLabel="Show open/close button in title bar">
+                                                <rect key="frame" x="14" y="31" width="237" height="18"/>
+                                                <buttonCell key="cell" type="check" title="Show open/close button in title bar" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="HRJ-kL-GUh" userLabel="Show open/close button in title bar">
+                                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                </buttonCell>
+                                                <connections>
+                                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showLeadingSidebarToggleButton" id="Csg-6V-fmS"/>
+                                                </connections>
+                                            </button>
+                                            <button translatesAutoresizingMaskIntoConstraints="NO" id="ogu-q9-cqE" userLabel="Close when video area is clicked">
+                                                <rect key="frame" x="14" y="7" width="223" height="18"/>
+                                                <buttonCell key="cell" type="check" title="Close when video area is clicked" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Da2-Ew-ibb">
+                                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                </buttonCell>
+                                                <connections>
+                                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.hideLeadingSidebarOnClick" id="HMw-gK-Grc"/>
+                                                </connections>
+                                            </button>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="H5W-Uo-D64" firstAttribute="height" secondItem="hz5-Bh-Bzv" secondAttribute="height" id="ABX-KQ-5cn"/>
+                                            <constraint firstItem="hz5-Bh-Bzv" firstAttribute="leading" secondItem="aFh-mF-xhE" secondAttribute="leading" constant="16" id="EJR-Yk-bAo"/>
+                                            <constraint firstItem="KIu-aG-mHw" firstAttribute="top" secondItem="aFh-mF-xhE" secondAttribute="top" constant="8" id="KKk-ci-PoQ"/>
+                                            <constraint firstItem="ogu-q9-cqE" firstAttribute="leading" secondItem="hz5-Bh-Bzv" secondAttribute="leading" id="Omh-Sj-3Xm"/>
+                                            <constraint firstItem="KIu-aG-mHw" firstAttribute="leading" secondItem="hz5-Bh-Bzv" secondAttribute="trailing" constant="8" id="SHe-iA-L64"/>
+                                            <constraint firstItem="ogu-q9-cqE" firstAttribute="height" secondItem="H5W-Uo-D64" secondAttribute="height" id="Tit-x6-jyX"/>
+                                            <constraint firstItem="KIu-aG-mHw" firstAttribute="firstBaseline" secondItem="hz5-Bh-Bzv" secondAttribute="firstBaseline" id="Xed-kr-4Bm"/>
+                                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="H5W-Uo-D64" secondAttribute="trailing" constant="16" id="cfW-Xg-9mM"/>
+                                            <constraint firstAttribute="bottom" secondItem="ogu-q9-cqE" secondAttribute="bottom" constant="8" id="dJq-ji-G2z"/>
+                                            <constraint firstAttribute="trailing" secondItem="KIu-aG-mHw" secondAttribute="trailing" constant="16" id="eIP-JO-Hz0"/>
+                                            <constraint firstItem="H5W-Uo-D64" firstAttribute="top" secondItem="KIu-aG-mHw" secondAttribute="bottom" constant="8" id="mQh-Q0-cux"/>
+                                            <constraint firstItem="ogu-q9-cqE" firstAttribute="top" secondItem="H5W-Uo-D64" secondAttribute="bottom" constant="8" id="nrr-28-A3d"/>
+                                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ogu-q9-cqE" secondAttribute="trailing" constant="16" id="pFp-MY-y0z"/>
+                                            <constraint firstItem="H5W-Uo-D64" firstAttribute="leading" secondItem="hz5-Bh-Bzv" secondAttribute="leading" id="s1T-Dx-QpV"/>
+                                        </constraints>
+                                    </view>
+                                </box>
+                                <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1" translatesAutoresizingMaskIntoConstraints="NO" id="Bd1-Nt-0jm" userLabel="Spacer">
+                                    <rect key="frame" x="366" y="38" width="26" height="50"/>
+                                </customView>
+                            </subviews>
+                            <visibilityPriorities>
+                                <integer value="1000"/>
+                                <integer value="1000"/>
+                            </visibilityPriorities>
+                            <customSpacing>
+                                <real value="3.4028234663852886e+38"/>
+                                <real value="3.4028234663852886e+38"/>
+                            </customSpacing>
+                        </stackView>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6mM-VC-jd0">
+                            <rect key="frame" x="-2" y="183" width="396" height="16"/>
+                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Right sidebar:" id="Msi-a9-5mJ">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="500" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6qZ-Gm-tgH" userLabel="Trailing-Sidebar HStack View">
+                            <rect key="frame" x="0.0" y="91" width="392" height="88"/>
+                            <subviews>
+                                <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="4b0-vT-JOG" userLabel="Trailing-Sidebar Box">
+                                    <rect key="frame" x="-3" y="-4" width="372" height="94"/>
+                                    <view key="contentView" id="bxF-0O-DOu" userLabel="Trailing-Sidebar-Box View">
+                                        <rect key="frame" x="4" y="5" width="364" height="86"/>
+                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                        <subviews>
+                                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qi3-uT-vzk">
+                                                <rect key="frame" x="14" y="60" width="129" height="16"/>
+                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Placement vs. video:" id="GKL-kF-sEJ">
+                                                    <font key="font" metaFont="system"/>
+                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                                </textFieldCell>
+                                            </textField>
+                                            <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9fG-Qe-ZAx" userLabel="Trailing-Sidebar-Placement Segmented Control">
+                                                <rect key="frame" x="147" y="55" width="203" height="24"/>
+                                                <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="0MZ-00-6fG">
+                                                    <font key="font" metaFont="system"/>
+                                                    <segments>
+                                                        <segment label="Inside" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
+                                                        <segment label="Outside" tag="2"/>
+                                                    </segments>
+                                                </segmentedCell>
+                                                <connections>
+                                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.trailingSidebarPlacement" id="m0P-rQ-YDm"/>
+                                                </connections>
+                                            </segmentedControl>
+                                            <button translatesAutoresizingMaskIntoConstraints="NO" id="esN-qM-PXI" userLabel="Show open/close button in title bar">
+                                                <rect key="frame" x="14" y="31" width="237" height="18"/>
+                                                <buttonCell key="cell" type="check" title="Show open/close button in title bar" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9lH-Oi-1Xp" userLabel="Show open/close button in title bar">
+                                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                </buttonCell>
+                                                <connections>
+                                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showTrailingSidebarToggleButton" id="7Wx-Ee-Ex2"/>
+                                                </connections>
+                                            </button>
+                                            <button translatesAutoresizingMaskIntoConstraints="NO" id="zke-Iv-K9m" userLabel="Close when video area is clicked">
+                                                <rect key="frame" x="14" y="7" width="223" height="18"/>
+                                                <buttonCell key="cell" type="check" title="Close when video area is clicked" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="icA-2b-l8k">
+                                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                </buttonCell>
+                                                <connections>
+                                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.hideTrailingSidebarOnClick" id="Q7D-no-ttL"/>
+                                                </connections>
+                                            </button>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="zke-Iv-K9m" firstAttribute="height" secondItem="esN-qM-PXI" secondAttribute="height" id="71c-fR-OAo"/>
+                                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="zke-Iv-K9m" secondAttribute="trailing" constant="16" id="8Pv-lY-FRB"/>
+                                            <constraint firstItem="zke-Iv-K9m" firstAttribute="top" secondItem="esN-qM-PXI" secondAttribute="bottom" constant="8" id="HdE-Qz-Jq0"/>
+                                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="esN-qM-PXI" secondAttribute="trailing" constant="16" id="Jbu-bR-Jot"/>
+                                            <constraint firstAttribute="bottom" secondItem="zke-Iv-K9m" secondAttribute="bottom" constant="8" id="LBv-zS-aOe"/>
+                                            <constraint firstItem="9fG-Qe-ZAx" firstAttribute="top" secondItem="bxF-0O-DOu" secondAttribute="top" constant="8" id="RKB-eT-oKK"/>
+                                            <constraint firstItem="esN-qM-PXI" firstAttribute="leading" secondItem="qi3-uT-vzk" secondAttribute="leading" id="bM8-cn-2bV"/>
+                                            <constraint firstItem="esN-qM-PXI" firstAttribute="top" secondItem="9fG-Qe-ZAx" secondAttribute="bottom" constant="8" id="dVI-Za-jUJ"/>
+                                            <constraint firstItem="qi3-uT-vzk" firstAttribute="leading" secondItem="bxF-0O-DOu" secondAttribute="leading" constant="16" id="ldl-PH-h39"/>
+                                            <constraint firstItem="zke-Iv-K9m" firstAttribute="leading" secondItem="qi3-uT-vzk" secondAttribute="leading" id="lkx-LS-tSt"/>
+                                            <constraint firstItem="9fG-Qe-ZAx" firstAttribute="leading" secondItem="qi3-uT-vzk" secondAttribute="trailing" constant="8" id="nXf-AF-BVs"/>
+                                            <constraint firstAttribute="trailing" secondItem="9fG-Qe-ZAx" secondAttribute="trailing" constant="16" id="opG-KE-6Kf"/>
+                                            <constraint firstItem="esN-qM-PXI" firstAttribute="height" secondItem="qi3-uT-vzk" secondAttribute="height" id="u8l-bB-XX4"/>
+                                            <constraint firstItem="9fG-Qe-ZAx" firstAttribute="firstBaseline" secondItem="qi3-uT-vzk" secondAttribute="firstBaseline" id="z7t-wy-rCc"/>
+                                        </constraints>
+                                    </view>
+                                </box>
+                                <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1" translatesAutoresizingMaskIntoConstraints="NO" id="rNp-Qm-Tqr" userLabel="Spacer">
+                                    <rect key="frame" x="374" y="38" width="18" height="50"/>
+                                </customView>
+                            </subviews>
+                            <visibilityPriorities>
+                                <integer value="1000"/>
+                                <integer value="1000"/>
+                            </visibilityPriorities>
+                            <customSpacing>
+                                <real value="3.4028234663852886e+38"/>
+                                <real value="3.4028234663852886e+38"/>
+                            </customSpacing>
+                        </stackView>
+                        <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="ZwL-8x-3OV" userLabel="4pt Spacer">
+                            <rect key="frame" x="0.0" y="83" width="392" height="4"/>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="4" id="lTw-9z-dz8"/>
+                            </constraints>
+                        </customView>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="HJz-q0-z9s">
+                            <rect key="frame" x="-2" y="63" width="396" height="16"/>
+                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Video settings tab:" id="Dd6-YT-Bhp">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <stackView clipsToBounds="YES" distribution="fill" orientation="horizontal" alignment="firstBaseline" horizontalStackHuggingPriority="749" verticalStackHuggingPriority="749" verticalHuggingPriority="249" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xuk-tu-yGo" userLabel="Aspect HStack View">
+                            <rect key="frame" x="0.0" y="0.0" width="392" height="59"/>
+                            <subviews>
+                                <box identifier="ContentCustomFullScreen" horizontalHuggingPriority="750" verticalHuggingPriority="750" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="gkn-iF-oiJ" userLabel="Video-Settings-Sidebar Box">
+                                    <rect key="frame" x="-3" y="-4" width="390" height="65"/>
+                                    <view key="contentView" id="Or9-ec-vBZ" userLabel="Video-Settings-Sidebar-Box Content View">
+                                        <rect key="frame" x="4" y="5" width="382" height="57"/>
+                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                        <subviews>
+                                            <stackView distribution="equalCentering" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6dd-Pj-ocr" userLabel="Video-Settings-Sidebar-Box Vertical Stack View">
+                                                <rect key="frame" x="0.0" y="0.0" width="382" height="57"/>
+                                                <subviews>
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="juv-F4-U4n">
+                                                        <rect key="frame" x="14" y="33" width="354" height="16"/>
+                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Aspect ratio choices:" id="A2C-Qa-bBt">
+                                                            <font key="font" metaFont="system"/>
+                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                                        </textFieldCell>
+                                                    </textField>
+                                                    <tokenField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ujy-m2-hkj" customClass="AspectTokenField" customModule="IINA" customModuleProvider="target">
+                                                        <rect key="frame" x="16" y="8" width="350" height="21"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="350" id="SGF-yh-K2z"/>
+                                                        </constraints>
+                                                        <tokenFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="left" drawsBackground="YES" allowsEditingTextAttributes="YES" id="l1a-BP-FYX">
+                                                            <font key="font" metaFont="system"/>
+                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                        </tokenFieldCell>
+                                                        <connections>
+                                                            <action selector="aspectsAction:" target="-2" id="C6M-xs-LlA"/>
+                                                        </connections>
+                                                    </tokenField>
+                                                </subviews>
+                                                <edgeInsets key="edgeInsets" left="16" right="16" top="8" bottom="8"/>
+                                                <visibilityPriorities>
+                                                    <integer value="1000"/>
+                                                    <integer value="1000"/>
+                                                </visibilityPriorities>
+                                                <customSpacing>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                </customSpacing>
+                                            </stackView>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstAttribute="trailing" secondItem="6dd-Pj-ocr" secondAttribute="trailing" id="ACM-4Z-q7f"/>
+                                            <constraint firstAttribute="bottom" secondItem="6dd-Pj-ocr" secondAttribute="bottom" id="J6Q-jv-FDK"/>
+                                            <constraint firstItem="6dd-Pj-ocr" firstAttribute="leading" secondItem="Or9-ec-vBZ" secondAttribute="leading" id="OML-vn-p6i"/>
+                                            <constraint firstItem="6dd-Pj-ocr" firstAttribute="top" secondItem="Or9-ec-vBZ" secondAttribute="top" id="QXY-vg-NB9"/>
+                                        </constraints>
+                                    </view>
+                                    <font key="titleFont" metaFont="system"/>
+                                </box>
+                                <customView horizontalHuggingPriority="1" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1" translatesAutoresizingMaskIntoConstraints="NO" id="lX5-rN-e6d" userLabel="Spacer">
+                                    <rect key="frame" x="392" y="9" width="0.0" height="50"/>
+                                </customView>
+                            </subviews>
+                            <visibilityPriorities>
+                                <integer value="1000"/>
+                                <integer value="1000"/>
+                            </visibilityPriorities>
+                            <customSpacing>
+                                <real value="3.4028234663852886e+38"/>
+                                <real value="3.4028234663852886e+38"/>
+                            </customSpacing>
+                        </stackView>
                     </subviews>
                     <constraints>
                         <constraint firstItem="ouj-w5-wOb" firstAttribute="leading" secondItem="Olt-EL-hAU" secondAttribute="leading" id="30R-8I-FIt"/>
                         <constraint firstItem="ouj-w5-wOb" firstAttribute="trailing" secondItem="Olt-EL-hAU" secondAttribute="trailing" id="BVQ-LS-irF"/>
                     </constraints>
                     <visibilityPriorities>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
+                        <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
                         <integer value="1000"/>
@@ -1997,185 +2229,24 @@
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
                         <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
+                        <real value="3.4028234663852886e+38"/>
                     </customSpacing>
                 </stackView>
-                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="eh8-tf-wHU">
-                    <rect key="frame" x="118" y="220" width="80" height="16"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Left sidebar:" id="8Oi-ew-3cu">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
-                <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="jiM-84-6ud" userLabel="Leading-Sidebar Box">
-                    <rect key="frame" x="117" y="124" width="293" height="94"/>
-                    <view key="contentView" id="aFh-mF-xhE" userLabel="Leading-Sidebar-Box View">
-                        <rect key="frame" x="4" y="5" width="285" height="86"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hz5-Bh-Bzv">
-                                <rect key="frame" x="14" y="60" width="129" height="16"/>
-                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Placement vs. video:" id="zDV-q2-wOg">
-                                    <font key="font" metaFont="system"/>
-                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KIu-aG-mHw" userLabel="Leading-Sidebar-Placement Segmented Control">
-                                <rect key="frame" x="147" y="55" width="124" height="24"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="120" id="2D4-bp-E7M"/>
-                                </constraints>
-                                <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="sME-na-jHH">
-                                    <font key="font" metaFont="system"/>
-                                    <segments>
-                                        <segment label="Inside" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
-                                        <segment label="Outside" tag="2"/>
-                                    </segments>
-                                </segmentedCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.leadingSidebarPlacement" id="lAt-Gy-ZPZ"/>
-                                </connections>
-                            </segmentedControl>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="H5W-Uo-D64" userLabel="Show open/close button in title bar">
-                                <rect key="frame" x="14" y="31" width="237" height="18"/>
-                                <buttonCell key="cell" type="check" title="Show open/close button in title bar" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="HRJ-kL-GUh" userLabel="Show open/close button in title bar">
-                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showLeadingSidebarToggleButton" id="Csg-6V-fmS"/>
-                                </connections>
-                            </button>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="ogu-q9-cqE" userLabel="Close when video area is clicked">
-                                <rect key="frame" x="14" y="7" width="223" height="18"/>
-                                <buttonCell key="cell" type="check" title="Close when video area is clicked" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="Da2-Ew-ibb">
-                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.hideLeadingSidebarOnClick" id="HMw-gK-Grc"/>
-                                </connections>
-                            </button>
-                        </subviews>
-                        <constraints>
-                            <constraint firstItem="H5W-Uo-D64" firstAttribute="height" secondItem="hz5-Bh-Bzv" secondAttribute="height" id="ABX-KQ-5cn"/>
-                            <constraint firstItem="hz5-Bh-Bzv" firstAttribute="leading" secondItem="aFh-mF-xhE" secondAttribute="leading" constant="16" id="EJR-Yk-bAo"/>
-                            <constraint firstItem="KIu-aG-mHw" firstAttribute="top" secondItem="aFh-mF-xhE" secondAttribute="top" constant="8" id="KKk-ci-PoQ"/>
-                            <constraint firstItem="ogu-q9-cqE" firstAttribute="leading" secondItem="hz5-Bh-Bzv" secondAttribute="leading" id="Omh-Sj-3Xm"/>
-                            <constraint firstItem="KIu-aG-mHw" firstAttribute="leading" secondItem="hz5-Bh-Bzv" secondAttribute="trailing" constant="8" id="SHe-iA-L64"/>
-                            <constraint firstItem="ogu-q9-cqE" firstAttribute="height" secondItem="H5W-Uo-D64" secondAttribute="height" id="Tit-x6-jyX"/>
-                            <constraint firstItem="KIu-aG-mHw" firstAttribute="firstBaseline" secondItem="hz5-Bh-Bzv" secondAttribute="firstBaseline" id="Xed-kr-4Bm"/>
-                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="H5W-Uo-D64" secondAttribute="trailing" constant="16" id="cfW-Xg-9mM"/>
-                            <constraint firstAttribute="bottom" secondItem="ogu-q9-cqE" secondAttribute="bottom" constant="8" id="dJq-ji-G2z"/>
-                            <constraint firstAttribute="trailing" secondItem="KIu-aG-mHw" secondAttribute="trailing" constant="16" id="eIP-JO-Hz0"/>
-                            <constraint firstItem="H5W-Uo-D64" firstAttribute="top" secondItem="KIu-aG-mHw" secondAttribute="bottom" constant="8" id="mQh-Q0-cux"/>
-                            <constraint firstItem="ogu-q9-cqE" firstAttribute="top" secondItem="H5W-Uo-D64" secondAttribute="bottom" constant="8" id="nrr-28-A3d"/>
-                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ogu-q9-cqE" secondAttribute="trailing" constant="16" id="pFp-MY-y0z"/>
-                            <constraint firstItem="H5W-Uo-D64" firstAttribute="leading" secondItem="hz5-Bh-Bzv" secondAttribute="leading" id="s1T-Dx-QpV"/>
-                        </constraints>
-                    </view>
-                </box>
-                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6mM-VC-jd0">
-                    <rect key="frame" x="118" y="100" width="88" height="16"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Right sidebar:" id="Msi-a9-5mJ">
-                        <font key="font" metaFont="system"/>
-                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
-                <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="4b0-vT-JOG" userLabel="Trailing-Sidebar Box">
-                    <rect key="frame" x="117" y="4" width="293" height="94"/>
-                    <view key="contentView" id="bxF-0O-DOu" userLabel="Trailing-Sidebar-Box View">
-                        <rect key="frame" x="4" y="5" width="285" height="86"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qi3-uT-vzk">
-                                <rect key="frame" x="14" y="60" width="129" height="16"/>
-                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Placement vs. video:" id="GKL-kF-sEJ">
-                                    <font key="font" metaFont="system"/>
-                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                </textFieldCell>
-                            </textField>
-                            <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9fG-Qe-ZAx" userLabel="Trailing-Sidebar-Placement Segmented Control">
-                                <rect key="frame" x="147" y="55" width="124" height="24"/>
-                                <segmentedCell key="cell" borderStyle="border" alignment="left" segmentDistribution="fillEqually" style="rounded" trackingMode="selectOne" id="0MZ-00-6fG">
-                                    <font key="font" metaFont="system"/>
-                                    <segments>
-                                        <segment label="Inside" imageScaling="proportionallyUpOrDown" selected="YES" tag="1"/>
-                                        <segment label="Outside" tag="2"/>
-                                    </segments>
-                                </segmentedCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="selectedTag" keyPath="values.trailingSidebarPlacement" id="m0P-rQ-YDm"/>
-                                </connections>
-                            </segmentedControl>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="esN-qM-PXI" userLabel="Show open/close button in title bar">
-                                <rect key="frame" x="14" y="31" width="237" height="18"/>
-                                <buttonCell key="cell" type="check" title="Show open/close button in title bar" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="9lH-Oi-1Xp" userLabel="Show open/close button in title bar">
-                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.showTrailingSidebarToggleButton" id="7Wx-Ee-Ex2"/>
-                                </connections>
-                            </button>
-                            <button translatesAutoresizingMaskIntoConstraints="NO" id="zke-Iv-K9m" userLabel="Close when video area is clicked">
-                                <rect key="frame" x="14" y="7" width="223" height="18"/>
-                                <buttonCell key="cell" type="check" title="Close when video area is clicked" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="icA-2b-l8k">
-                                    <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <binding destination="lH7-Vv-0M1" name="value" keyPath="values.hideTrailingSidebarOnClick" id="Q7D-no-ttL"/>
-                                </connections>
-                            </button>
-                        </subviews>
-                        <constraints>
-                            <constraint firstItem="zke-Iv-K9m" firstAttribute="height" secondItem="esN-qM-PXI" secondAttribute="height" id="71c-fR-OAo"/>
-                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="zke-Iv-K9m" secondAttribute="trailing" constant="16" id="8Pv-lY-FRB"/>
-                            <constraint firstItem="zke-Iv-K9m" firstAttribute="top" secondItem="esN-qM-PXI" secondAttribute="bottom" constant="8" id="HdE-Qz-Jq0"/>
-                            <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="esN-qM-PXI" secondAttribute="trailing" constant="16" id="Jbu-bR-Jot"/>
-                            <constraint firstAttribute="bottom" secondItem="zke-Iv-K9m" secondAttribute="bottom" constant="8" id="LBv-zS-aOe"/>
-                            <constraint firstItem="9fG-Qe-ZAx" firstAttribute="top" secondItem="bxF-0O-DOu" secondAttribute="top" constant="8" id="RKB-eT-oKK"/>
-                            <constraint firstItem="esN-qM-PXI" firstAttribute="leading" secondItem="qi3-uT-vzk" secondAttribute="leading" id="bM8-cn-2bV"/>
-                            <constraint firstItem="esN-qM-PXI" firstAttribute="top" secondItem="9fG-Qe-ZAx" secondAttribute="bottom" constant="8" id="dVI-Za-jUJ"/>
-                            <constraint firstItem="qi3-uT-vzk" firstAttribute="leading" secondItem="bxF-0O-DOu" secondAttribute="leading" constant="16" id="ldl-PH-h39"/>
-                            <constraint firstItem="zke-Iv-K9m" firstAttribute="leading" secondItem="qi3-uT-vzk" secondAttribute="leading" id="lkx-LS-tSt"/>
-                            <constraint firstItem="9fG-Qe-ZAx" firstAttribute="leading" secondItem="qi3-uT-vzk" secondAttribute="trailing" constant="8" id="nXf-AF-BVs"/>
-                            <constraint firstAttribute="trailing" secondItem="9fG-Qe-ZAx" secondAttribute="trailing" constant="16" id="opG-KE-6Kf"/>
-                            <constraint firstItem="esN-qM-PXI" firstAttribute="height" secondItem="qi3-uT-vzk" secondAttribute="height" id="u8l-bB-XX4"/>
-                            <constraint firstItem="9fG-Qe-ZAx" firstAttribute="firstBaseline" secondItem="qi3-uT-vzk" secondAttribute="firstBaseline" id="z7t-wy-rCc"/>
-                        </constraints>
-                    </view>
-                </box>
             </subviews>
             <constraints>
-                <constraint firstItem="6mM-VC-jd0" firstAttribute="leading" secondItem="eh8-tf-wHU" secondAttribute="leading" id="AK8-QY-H9h"/>
-                <constraint firstItem="6mM-VC-jd0" firstAttribute="leading" secondItem="4b0-vT-JOG" secondAttribute="leading" id="DHb-jN-boF"/>
                 <constraint firstAttribute="trailing" secondItem="kog-j2-kGH" secondAttribute="trailing" constant="8" id="Dl0-GF-pDe"/>
-                <constraint firstItem="4b0-vT-JOG" firstAttribute="trailing" secondItem="jiM-84-6ud" secondAttribute="trailing" id="E2Y-bt-Ogl"/>
-                <constraint firstItem="eh8-tf-wHU" firstAttribute="leading" secondItem="kog-j2-kGH" secondAttribute="leading" id="E6p-WU-3ih"/>
-                <constraint firstAttribute="bottom" secondItem="4b0-vT-JOG" secondAttribute="bottom" constant="8" id="HZB-d4-cyU"/>
-                <constraint firstItem="4b0-vT-JOG" firstAttribute="leading" secondItem="jiM-84-6ud" secondAttribute="leading" id="IB2-nV-SDr"/>
+                <constraint firstItem="kog-j2-kGH" firstAttribute="firstBaseline" secondItem="E6K-jW-Lzn" secondAttribute="firstBaseline" id="E4C-ar-MSF"/>
                 <constraint firstItem="E6K-jW-Lzn" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="iZa-Jl-fXs" secondAttribute="leading" constant="120" id="Imb-YN-akQ"/>
-                <constraint firstItem="qi3-uT-vzk" firstAttribute="height" secondItem="hz5-Bh-Bzv" secondAttribute="height" id="Rp9-AO-oKh"/>
-                <constraint firstItem="juv-F4-U4n" firstAttribute="firstBaseline" secondItem="E6K-jW-Lzn" secondAttribute="firstBaseline" id="SM6-Au-yBM"/>
-                <constraint firstItem="9fG-Qe-ZAx" firstAttribute="width" secondItem="KIu-aG-mHw" secondAttribute="width" id="SbD-hC-bbk"/>
+                <constraint firstAttribute="bottom" secondItem="kog-j2-kGH" secondAttribute="bottom" constant="8" id="T5x-i2-gUA"/>
                 <constraint firstItem="E6K-jW-Lzn" firstAttribute="leading" secondItem="iZa-Jl-fXs" secondAttribute="leading" id="Tj4-o9-IqL"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="4b0-vT-JOG" secondAttribute="trailing" id="Wnp-in-f8x"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="eh8-tf-wHU" secondAttribute="trailing" id="b2W-mI-r3P"/>
-                <constraint firstItem="4b0-vT-JOG" firstAttribute="top" secondItem="6mM-VC-jd0" secondAttribute="bottom" constant="4" id="bqB-qn-nGk"/>
                 <constraint firstItem="E6K-jW-Lzn" firstAttribute="top" secondItem="iZa-Jl-fXs" secondAttribute="top" constant="8" id="gKH-FL-rHR"/>
-                <constraint firstItem="6mM-VC-jd0" firstAttribute="top" secondItem="jiM-84-6ud" secondAttribute="bottom" constant="12" id="gfv-5B-BIt"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="6mM-VC-jd0" secondAttribute="trailing" id="k8K-iZ-Wfa"/>
                 <constraint firstItem="kog-j2-kGH" firstAttribute="leading" secondItem="iZa-Jl-fXs" secondAttribute="leading" constant="120" id="l2c-o1-o6t"/>
-                <constraint firstItem="eh8-tf-wHU" firstAttribute="top" secondItem="kog-j2-kGH" secondAttribute="bottom" constant="12" id="muE-HA-cZT"/>
-                <constraint firstItem="jiM-84-6ud" firstAttribute="top" secondItem="eh8-tf-wHU" secondAttribute="bottom" constant="4" id="zaI-jN-t74"/>
-                <constraint firstItem="jiM-84-6ud" firstAttribute="leading" secondItem="eh8-tf-wHU" secondAttribute="leading" id="zg8-d2-Y1I"/>
             </constraints>
-            <point key="canvasLocation" x="5" y="732"/>
+            <point key="canvasLocation" x="-10" y="776"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="3uJ-UU-1zw" userLabel="Prefs &gt; UI &gt; Thumbnail Preview" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="500" height="274"/>
@@ -2695,7 +2766,7 @@
                 <constraint firstAttribute="bottom" secondItem="47i-yB-uyE" secondAttribute="bottom" constant="8" id="f1R-1U-HFp"/>
                 <constraint firstItem="maZ-e8-1vw" firstAttribute="top" secondItem="3uJ-UU-1zw" secondAttribute="top" constant="8" id="tNX-yo-ggt"/>
             </constraints>
-            <point key="canvasLocation" x="-20" y="1068"/>
+            <point key="canvasLocation" x="-20" y="1157"/>
         </customView>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="1fz-oP-RhZ" userLabel="Prefs &gt; UI &gt; PIP" propertyAccessControl="all">
             <rect key="frame" x="0.0" y="0.0" width="480" height="138"/>
@@ -2816,7 +2887,7 @@ Picture:</string>
                 <constraint firstItem="ghC-br-cK9" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="1fz-oP-RhZ" secondAttribute="leading" constant="120" id="pTG-PR-Adh"/>
                 <constraint firstItem="eTQ-fy-fNJ" firstAttribute="leading" secondItem="l21-mq-zWd" secondAttribute="leading" id="xog-r6-yIL"/>
             </constraints>
-            <point key="canvasLocation" x="-30" y="1313"/>
+            <point key="canvasLocation" x="-30" y="1404"/>
         </customView>
     </objects>
     <resources>
