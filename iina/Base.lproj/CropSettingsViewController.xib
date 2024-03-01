@@ -31,19 +31,21 @@
                     </textFieldCell>
                 </textField>
                 <segmentedControl focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="yrf-Aq-Gy6">
-                    <rect key="frame" x="22" y="15" width="264" height="23"/>
+                    <rect key="frame" x="22" y="15" width="274" height="23"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="21" id="daU-3D-oN9"/>
+                        <constraint firstAttribute="width" constant="270" id="qav-yS-38r"/>
                     </constraints>
-                    <segmentedCell key="cell" refusesFirstResponder="YES" borderStyle="border" focusRingType="none" alignment="left" style="rounded" trackingMode="selectOne" id="bQc-2s-1MS">
+                    <segmentedCell key="cell" refusesFirstResponder="YES" borderStyle="border" focusRingType="none" alignment="left" segmentDistribution="fillProportionally" style="rounded" trackingMode="selectOne" id="bQc-2s-1MS">
                         <font key="font" metaFont="system"/>
                         <segments>
-                            <segment label="4:3" width="49"/>
-                            <segment label="16:9" width="49" selected="YES" tag="1"/>
-                            <segment label="16:10" width="48" tag="2"/>
-                            <segment label="5:4" tag="3"/>
-                            <segment label="3:2" tag="4"/>
-                            <segment label="21:9" tag="5"/>
+                            <segment label="None" selected="YES"/>
+                            <segment label="4:3" tag="1"/>
+                            <segment label="16:9" tag="2"/>
+                            <segment label="16:10" width="48" tag="3"/>
+                            <segment label="5:4" tag="4"/>
+                            <segment label="3:2" tag="5"/>
+                            <segment label="21:9" tag="6"/>
                         </segments>
                     </segmentedCell>
                     <connections>
@@ -62,7 +64,7 @@
                     </textFieldCell>
                 </textField>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sHe-JW-Elk">
-                    <rect key="frame" x="467" y="11" width="66" height="30"/>
+                    <rect key="frame" x="467" y="10" width="66" height="30"/>
                     <buttonCell key="cell" type="push" title="Done" bezelStyle="rounded" alignment="center" refusesFirstResponder="YES" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="eu5-yH-hHg">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -75,7 +77,7 @@
                     </connections>
                 </button>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="99r-Th-YSz">
-                    <rect key="frame" x="400" y="11" width="76" height="30"/>
+                    <rect key="frame" x="397" y="9" width="76" height="32"/>
                     <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" refusesFirstResponder="YES" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="BtO-vw-tiy">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -83,15 +85,12 @@
 Gw
 </string>
                     </buttonCell>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="18" id="IaY-oN-WAf"/>
-                    </constraints>
                     <connections>
                         <action selector="cancelBtnAction:" target="-2" id="L9R-GV-vYv"/>
                     </connections>
                 </button>
                 <textField focusRingType="none" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7a4-Wz-kzd" userLabel="CustomCropEntry Text Field">
-                    <rect key="frame" x="292" y="16" width="58" height="22"/>
+                    <rect key="frame" x="298" y="17" width="58" height="21"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="58" id="pNn-1d-GJj"/>
                     </constraints>
@@ -106,17 +105,18 @@ Gw
                 </textField>
             </subviews>
             <constraints>
-                <constraint firstItem="7a4-Wz-kzd" firstAttribute="leading" secondItem="yrf-Aq-Gy6" secondAttribute="trailing" constant="8" id="Aza-sO-BYU"/>
+                <constraint firstItem="7a4-Wz-kzd" firstAttribute="leading" secondItem="yrf-Aq-Gy6" secondAttribute="trailing" constant="4" id="Aza-sO-BYU"/>
                 <constraint firstItem="hsz-Wv-zHe" firstAttribute="leading" secondItem="EC9-NQ-gwl" secondAttribute="trailing" constant="10" id="C2y-Zz-xI5"/>
                 <constraint firstItem="99r-Th-YSz" firstAttribute="centerY" secondItem="sHe-JW-Elk" secondAttribute="centerY" id="CYO-k8-qKy"/>
                 <constraint firstItem="99r-Th-YSz" firstAttribute="firstBaseline" secondItem="yrf-Aq-Gy6" secondAttribute="firstBaseline" id="FSv-Cr-xkP"/>
                 <constraint firstItem="yrf-Aq-Gy6" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" constant="24" id="Gnw-C5-HOK"/>
-                <constraint firstItem="sHe-JW-Elk" firstAttribute="leading" secondItem="99r-Th-YSz" secondAttribute="trailing" constant="5" id="KrU-2L-Jcb"/>
+                <constraint firstItem="sHe-JW-Elk" firstAttribute="leading" secondItem="99r-Th-YSz" secondAttribute="trailing" constant="8" id="KrU-2L-Jcb"/>
                 <constraint firstItem="yrf-Aq-Gy6" firstAttribute="leading" secondItem="EC9-NQ-gwl" secondAttribute="leading" id="XDZ-cH-ha3"/>
                 <constraint firstAttribute="top" secondItem="EC9-NQ-gwl" secondAttribute="top" priority="499" id="a0X-o8-wnM"/>
                 <constraint firstAttribute="trailing" secondItem="sHe-JW-Elk" secondAttribute="trailing" constant="24" id="b0k-Ij-6vn"/>
                 <constraint firstItem="hsz-Wv-zHe" firstAttribute="firstBaseline" secondItem="EC9-NQ-gwl" secondAttribute="firstBaseline" id="bwy-R7-vsC"/>
-                <constraint firstItem="99r-Th-YSz" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="yrf-Aq-Gy6" secondAttribute="trailing" constant="16" id="cQK-Sp-AJP"/>
+                <constraint firstItem="99r-Th-YSz" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="7a4-Wz-kzd" secondAttribute="trailing" constant="8" id="cQK-Sp-AJP"/>
+                <constraint firstItem="7a4-Wz-kzd" firstAttribute="height" secondItem="yrf-Aq-Gy6" secondAttribute="height" id="crU-o8-WvB"/>
                 <constraint firstItem="7a4-Wz-kzd" firstAttribute="firstBaseline" secondItem="yrf-Aq-Gy6" secondAttribute="firstBaseline" id="kMf-8L-TjQ"/>
                 <constraint firstItem="yrf-Aq-Gy6" firstAttribute="top" secondItem="EC9-NQ-gwl" secondAttribute="bottom" constant="8" id="mlq-e2-7zd"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="hsz-Wv-zHe" secondAttribute="trailing" id="t4W-lu-EHv"/>

@@ -25,10 +25,10 @@ class CropSettingsViewController: CropBoxViewController {
 
   func updateSegmentLabels() {
     if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
-      predefinedAspectSegment.segmentCount = segmentLabels.count
-      for segmentIndex in 0..<predefinedAspectSegment.segmentCount {
+      predefinedAspectSegment.segmentCount = segmentLabels.count + 1
+      for segmentIndex in 1..<predefinedAspectSegment.segmentCount {
         if segmentIndex <= segmentLabels.count {
-          let newLabel = segmentLabels[segmentIndex]
+          let newLabel = segmentLabels[segmentIndex - 1]
           predefinedAspectSegment.setLabel(newLabel, forSegment: segmentIndex)
         }
       }
@@ -40,8 +40,15 @@ class CropSettingsViewController: CropBoxViewController {
     cropRectLabel.stringValue = readableCropString
 
     let actualSize = cropBoxView.actualSize
+    if cropx == 0, cropy == 0, cropw == Int(actualSize.width), croph == Int(actualSize.height) {
+      // no crop
+      predefinedAspectSegment.selectedSegment = 0
+      customCropEntryTextField.stringValue = ""
+      return
+    }
+
     // Try to match to segment:
-    for segmentIndex in 0..<predefinedAspectSegment.segmentCount {
+    for segmentIndex in 1..<predefinedAspectSegment.segmentCount {
       guard let segmentLabel = predefinedAspectSegment.label(forSegment: segmentIndex) else { continue }
       guard let aspect = Aspect(string: segmentLabel) else { continue }
 
@@ -134,7 +141,10 @@ class CropSettingsViewController: CropBoxViewController {
   }
 
   private func adjustCropBoxView(ratio: String) {
-    guard let aspect = Aspect(string: ratio) else { return }
+    guard let aspect = Aspect(string: ratio) else {
+      cropBoxView.setSelectedRect(to: NSRect(origin: CGPointZero, size: cropBoxView.actualSize))
+      return
+    }
 
     let actualSize = cropBoxView.actualSize
     let cropped = actualSize.getCropRect(withAspect: aspect)
