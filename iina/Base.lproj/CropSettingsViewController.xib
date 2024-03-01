@@ -8,7 +8,8 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="CropSettingsViewController" customModule="IINA" customModuleProvider="target">
             <connections>
-                <outlet property="cropRectLabel" destination="hsz-Wv-zHe" id="zIf-Sm-Rqc"/>
+                <outlet property="cropRectLabel" destination="hsz-Wv-zHe" id="rxx-8d-Up2"/>
+                <outlet property="customCropEntryTextField" destination="7a4-Wz-kzd" id="fuJ-Ve-pEl"/>
                 <outlet property="predefinedAspectSegment" destination="yrf-Aq-Gy6" id="qfe-5F-cIv"/>
                 <outlet property="view" destination="Hz6-mo-xeY" id="0bl-1N-x8E"/>
             </connections>
@@ -18,7 +19,7 @@
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Hz6-mo-xeY" userLabel="CropBoxSettings View">
             <rect key="frame" x="0.0" y="0.0" width="550" height="62"/>
             <subviews>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="EC9-NQ-gwl">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="EC9-NQ-gwl">
                     <rect key="frame" x="22" y="45" width="34" height="17"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="17" id="Pp5-qS-eKN"/>
@@ -49,7 +50,7 @@
                         <action selector="predefinedAspectValueAction:" target="-2" id="Fzw-EP-cyv"/>
                     </connections>
                 </segmentedControl>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hsz-Wv-zHe">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hsz-Wv-zHe">
                     <rect key="frame" x="62" y="46" width="33" height="14"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="14" id="8Hk-sR-8dp"/>
@@ -62,7 +63,7 @@
                 </textField>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sHe-JW-Elk">
                     <rect key="frame" x="467" y="11" width="66" height="30"/>
-                    <buttonCell key="cell" type="push" title="Done" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="eu5-yH-hHg">
+                    <buttonCell key="cell" type="push" title="Done" bezelStyle="rounded" alignment="center" refusesFirstResponder="YES" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="eu5-yH-hHg">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -75,7 +76,7 @@
                 </button>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="99r-Th-YSz">
                     <rect key="frame" x="400" y="11" width="76" height="30"/>
-                    <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="BtO-vw-tiy">
+                    <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" refusesFirstResponder="YES" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="BtO-vw-tiy">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
                         <string key="keyEquivalent" base64-UTF8="YES">
@@ -89,12 +90,12 @@ Gw
                         <action selector="cancelBtnAction:" target="-2" id="L9R-GV-vYv"/>
                     </connections>
                 </button>
-                <textField verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7a4-Wz-kzd">
-                    <rect key="frame" x="292" y="16" width="58" height="21"/>
+                <textField focusRingType="none" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7a4-Wz-kzd" userLabel="CustomCropEntry Text Field">
+                    <rect key="frame" x="292" y="16" width="58" height="22"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="58" id="pNn-1d-GJj"/>
                     </constraints>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" usesSingleLineMode="YES" id="fmj-Zk-xbC" customClass="RoundedTextFieldCell" customModule="IINA" customModuleProvider="target">
+                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" refusesFirstResponder="YES" allowsUndo="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" usesSingleLineMode="YES" bezelStyle="round" id="fmj-Zk-xbC">
                         <font key="font" metaFont="system"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>

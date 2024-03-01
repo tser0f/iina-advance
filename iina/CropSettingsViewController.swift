@@ -12,6 +12,7 @@ class CropSettingsViewController: CropBoxViewController {
 
   @IBOutlet weak var cropRectLabel: NSTextField!
   @IBOutlet weak var predefinedAspectSegment: NSSegmentedControl!
+  @IBOutlet weak var customCropEntryTextField: NSTextField!
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -51,9 +52,11 @@ class CropSettingsViewController: CropBoxViewController {
          abs(Int(cropped.origin.x) - cropx) <= 1,
          abs(Int(cropped.origin.y) - cropy) <= 1 {
         predefinedAspectSegment.selectedSegment = segmentIndex
-        break
+        customCropEntryTextField.stringValue = ""
+        return
       }
     }
+    predefinedAspectSegment.selectedSegment = -1
   }
 
   private func animateHideCropSelection() {

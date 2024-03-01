@@ -48,6 +48,7 @@ class PlayerWindow: NSWindow {
   }
 
   override func keyDown(with event: NSEvent) {
+    guard !(playerWinController?.isInInteractiveMode ?? false) else { return }
     playerWinController?.syncUIComponents()  // Call explicitly to make sure it gets attention
 
     if menu?.performKeyEquivalent(with: event) == true {

@@ -14,13 +14,7 @@ class Aspect: NSObject {
   }
 
   static func isValid(_ string: String) -> Bool {
-    if Aspect(string: string) != nil {
-      // Aspect is in colon notation (X:Y)
-      return true
-    } else if let aspectDouble = Double(string), aspectDouble > 0 {
-      return true
-    }
-    return false
+    return Aspect(string: string) != nil
   }
 
   private var size: NSSize!
@@ -63,6 +57,8 @@ class Aspect: NSObject {
       if let cropW = Float(wh[0]), let cropH = Float(wh[1]) {
         self.size = NSMakeSize(CGFloat(cropW), CGFloat(cropH))
       }
+    } else if let ratio = Float(string), ratio > 0.0 {
+      self.size = NSMakeSize(CGFloat(ratio), CGFloat(1))
     } else {
       return nil
     }

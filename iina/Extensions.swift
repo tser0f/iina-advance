@@ -29,15 +29,17 @@ extension NSSlider {
 }
 
 extension NSSegmentedControl {
-  func selectSegment(withLabel label: String) {
+  @discardableResult
+  func selectSegment(withLabel label: String) -> Bool {
     for i in 0..<segmentCount {
       if self.label(forSegment: i) == label {
         self.selectedSegment = i
-        return
+        return true
       }
     }
     Logger.log("Could not find segment with label \(label.quoted). Setting selection to -1", level: .verbose)
     self.selectedSegment = -1
+    return false
   }
 }
 

@@ -963,7 +963,7 @@ class PlayerCore: NSObject {
     guard let videoParams = mpv.queryForVideoParams() else { return }
 
     let aspectDisplay: String
-    if Aspect(string: aspect) != nil {
+    if aspect.contains(":"), Aspect(string: aspect) != nil {
       // Aspect is in colon notation (X:Y)
       aspectDisplay = aspect
     } else if let aspectDouble = Double(aspect), aspectDouble > 0 {
