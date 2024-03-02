@@ -434,8 +434,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     .trailingSidebarPlacement,
     .settingsTabGroupLocation,
     .playlistTabGroupLocation,
-    .aspectsInPanel,
-    .cropsInPanel,
+    .aspectRatioPanelPresets,
+    .cropPanelPresets,
     .showLeadingSidebarToggleButton,
     .showTrailingSidebarToggleButton,
     .useLegacyWindowedMode,
@@ -594,7 +594,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       animationPipeline.submit(IINAAnimation.zeroDurationTask { [self] in
         updateOSDTextSize()
       })
-    case PK.aspectsInPanel.rawValue, PK.cropsInPanel.rawValue:
+    case PK.aspectRatioPanelPresets.rawValue, PK.cropPanelPresets.rawValue:
       quickSettingView.updateSegmentLabels()
     default:
       return

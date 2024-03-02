@@ -101,10 +101,10 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   @IBOutlet weak var rotateSegment: NSSegmentedControl!
 
-  @IBOutlet weak var aspectSegment: NSSegmentedControl!
+  @IBOutlet weak var aspectPresetsSegment: NSSegmentedControl!
   @IBOutlet weak var customAspectTextField: NSTextField!
 
-  @IBOutlet weak var cropSegment: NSSegmentedControl!
+  @IBOutlet weak var cropPresetsSegment: NSSegmentedControl!
 
   @IBOutlet weak var speedSlider: NSSlider!
   @IBOutlet weak var speedSliderIndicator: NSTextField!
@@ -268,46 +268,46 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   }
 
   func updateSegmentLabels() {
-    if let segmentLabels = Preference.csvStringArray(for: .aspectsInPanel) {
-      aspectSegment.segmentCount = segmentLabels.count + 1
-      for segmentIndex in 1...cropSegment.segmentCount {
+    if let segmentLabels = Preference.csvStringArray(for: .aspectRatioPanelPresets) {
+      aspectPresetsSegment.segmentCount = segmentLabels.count + 1
+      for segmentIndex in 1...cropPresetsSegment.segmentCount {
         if segmentIndex <= segmentLabels.count {
           let newLabel = segmentLabels[segmentIndex-1]
-          aspectSegment.setLabel(newLabel, forSegment: segmentIndex)
+          aspectPresetsSegment.setLabel(newLabel, forSegment: segmentIndex)
         }
       }
       updateAspectControls()
     }
 
-    if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
+    if let segmentLabels = Preference.csvStringArray(for: .cropPanelPresets) {
       // save custom label
-      let customLabel = cropSegment.label(forSegment: cropSegment.segmentCount - 1)!
+      let customLabel = cropPresetsSegment.label(forSegment: cropPresetsSegment.segmentCount - 1)!
 
-      cropSegment.segmentCount = segmentLabels.count + 2
-      for segmentIndex in 1..<cropSegment.segmentCount {
+      cropPresetsSegment.segmentCount = segmentLabels.count + 2
+      for segmentIndex in 1..<cropPresetsSegment.segmentCount {
         if segmentIndex <= segmentLabels.count {
           let newLabel = segmentLabels[segmentIndex-1]
-          cropSegment.setLabel(newLabel, forSegment: segmentIndex)
+          cropPresetsSegment.setLabel(newLabel, forSegment: segmentIndex)
         }
       }
-      cropSegment.setLabel(customLabel, forSegment: cropSegment.segmentCount - 1)
+      cropPresetsSegment.setLabel(customLabel, forSegment: cropPresetsSegment.segmentCount - 1)
       updateCropControls()
     }
   }
 
   private func updateAspectControls() {
     let aspectLabel = player.info.selectedAspectRatioLabel
-    aspectSegment.selectSegment(withLabel: aspectLabel)
-    let isAspectInPanel = aspectSegment.selectedSegment >= 0
+    aspectPresetsSegment.selectSegment(withLabel: aspectLabel)
+    let isAspectInPanel = aspectPresetsSegment.selectedSegment >= 0
     customAspectTextField.stringValue = isAspectInPanel ? "" : aspectLabel
   }
 
   private func updateCropControls() {
     let selectedCropLabel = player.info.selectedCropLabel
-    cropSegment.selectSegment(withLabel: selectedCropLabel)
-    let isCropInPanel = cropSegment.selectedSegment >= 0
+    cropPresetsSegment.selectSegment(withLabel: selectedCropLabel)
+    let isCropInPanel = cropPresetsSegment.selectedSegment >= 0
     if !isCropInPanel {
-      cropSegment.selectSegment(withTag: cropSegment.segmentCount - 1)
+      cropPresetsSegment.selectSegment(withTag: cropPresetsSegment.segmentCount - 1)
     }
   }
 

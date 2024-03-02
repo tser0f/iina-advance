@@ -9,7 +9,7 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="QuickSettingViewController" customModule="IINA" customModuleProvider="target">
             <connections>
-                <outlet property="aspectSegment" destination="Ljl-w6-gIf" id="X3Q-8g-q0e"/>
+                <outlet property="aspectPresetsSegment" destination="Ljl-w6-gIf" id="X3Q-8g-q0e"/>
                 <outlet property="audioDelaySlider" destination="gJr-l6-WQ2" id="in4-Ig-0sm"/>
                 <outlet property="audioDelaySliderConstraint" destination="5oB-ve-G3c" id="0lC-5Q-tyI"/>
                 <outlet property="audioDelaySliderIndicator" destination="giU-Mo-tN9" id="ZWu-U8-86x"/>
@@ -28,7 +28,7 @@
                 <outlet property="brightnessSlider" destination="eFW-a3-kWx" id="BTl-mg-ShV"/>
                 <outlet property="buttonTopConstraint" destination="qd3-0i-qbr" id="uh3-P6-1jm"/>
                 <outlet property="contrastSlider" destination="mTb-L6-55O" id="8A5-dO-dID"/>
-                <outlet property="cropSegment" destination="sPT-jd-T7a" id="WM1-4v-Pfm"/>
+                <outlet property="cropPresetsSegment" destination="sPT-jd-T7a" id="WM1-4v-Pfm"/>
                 <outlet property="customAspectTextField" destination="XAI-y0-tcy" id="j96-rd-E5w"/>
                 <outlet property="customAudioDelayTextField" destination="Qiz-tS-aWT" id="QQg-ZP-uPz"/>
                 <outlet property="customSpeedTextField" destination="sIs-a1-rGR" id="kRd-3q-zab"/>

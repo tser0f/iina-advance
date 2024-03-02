@@ -2149,12 +2149,12 @@
                                             <stackView distribution="equalCentering" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6dd-Pj-ocr" userLabel="Video-Settings-Sidebar-Box Vertical Stack View">
                                                 <rect key="frame" x="0.0" y="0.0" width="382" height="110"/>
                                                 <subviews>
-                                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="ruR-OU-I1I" userLabel="AspectRatioChoices-Container View">
+                                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="ruR-OU-I1I" userLabel="AspectRatioPresets-Container View">
                                                         <rect key="frame" x="16" y="86" width="350" height="16"/>
                                                         <subviews>
                                                             <textField focusRingType="none" horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="juv-F4-U4n">
                                                                 <rect key="frame" x="-2" y="0.0" width="331" height="16"/>
-                                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Aspect ratio choices:" id="A2C-Qa-bBt">
+                                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Aspect ratio presets:" id="A2C-Qa-bBt">
                                                                     <font key="font" metaFont="system"/>
                                                                     <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
@@ -2200,12 +2200,12 @@
                                                             <constraint firstAttribute="height" constant="4" id="BYA-1z-bg4"/>
                                                         </constraints>
                                                     </customView>
-                                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="bNG-9Y-1ws" userLabel="CropChoices-Container View">
+                                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="bNG-9Y-1ws" userLabel="CropPresets-Container View">
                                                         <rect key="frame" x="16" y="33" width="350" height="16"/>
                                                         <subviews>
                                                             <textField focusRingType="none" horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1NQ-lx-OBs">
                                                                 <rect key="frame" x="-2" y="0.0" width="331" height="16"/>
-                                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Crop choices:" id="3xP-95-ASy">
+                                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Crop presets:" id="3xP-95-ASy">
                                                                     <font key="font" metaFont="system"/>
                                                                     <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>

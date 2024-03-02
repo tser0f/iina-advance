@@ -2877,7 +2877,7 @@ class PlayerCore: NSObject {
         // Truncate to 2 decimal places precision for comparison.
         let selectedAspect = (w / h).roundedTo2()
         log.verbose("Determined aspect=\(selectedAspect) from filter \(filter.label?.quoted ?? "")")
-        if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
+        if let segmentLabels = Preference.csvStringArray(for: .cropPanelPresets) {
           for cropLabel in segmentLabels {
             let tokens = cropLabel.split(separator: ":")
             if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {

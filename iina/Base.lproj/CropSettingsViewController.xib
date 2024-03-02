@@ -8,9 +8,9 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="CropSettingsViewController" customModule="IINA" customModuleProvider="target">
             <connections>
+                <outlet property="aspectEntryTextField" destination="7a4-Wz-kzd" id="fuJ-Ve-pEl"/>
+                <outlet property="aspectPresetsSegment" destination="yrf-Aq-Gy6" id="qfe-5F-cIv"/>
                 <outlet property="cropRectLabel" destination="hsz-Wv-zHe" id="rxx-8d-Up2"/>
-                <outlet property="customCropEntryTextField" destination="7a4-Wz-kzd" id="fuJ-Ve-pEl"/>
-                <outlet property="predefinedAspectSegment" destination="yrf-Aq-Gy6" id="qfe-5F-cIv"/>
                 <outlet property="view" destination="Hz6-mo-xeY" id="0bl-1N-x8E"/>
             </connections>
         </customObject>

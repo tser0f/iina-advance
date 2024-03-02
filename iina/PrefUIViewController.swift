@@ -110,8 +110,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .oscBarToolbarIconSize,
     .oscBarToolbarIconSpacing,
     .useLegacyWindowedMode,
-    .aspectsInPanel,
-    .cropsInPanel,
+    .aspectRatioPanelPresets,
+    .cropPanelPresets,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -141,8 +141,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    aspectsTokenField.commaSeparatedValues = Preference.string(for: .aspectsInPanel) ?? ""
-    cropTokenField.commaSeparatedValues = Preference.string(for: .cropsInPanel) ?? ""
+    aspectsTokenField.commaSeparatedValues = Preference.string(for: .aspectRatioPanelPresets) ?? ""
+    cropTokenField.commaSeparatedValues = Preference.string(for: .cropPanelPresets) ?? ""
 
     oscToolbarStackView.wantsLayer = true
 
@@ -169,13 +169,13 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
-    case PK.aspectsInPanel.rawValue:
-      let newAspects = Preference.string(for: .aspectsInPanel) ?? ""
+    case PK.aspectRatioPanelPresets.rawValue:
+      let newAspects = Preference.string(for: .aspectRatioPanelPresets) ?? ""
       if newAspects != aspectsTokenField.commaSeparatedValues {
         aspectsTokenField.commaSeparatedValues = newAspects
       }
-    case PK.cropsInPanel.rawValue:
-      let newCropAspects = Preference.string(for: .cropsInPanel) ?? ""
+    case PK.cropPanelPresets.rawValue:
+      let newCropAspects = Preference.string(for: .cropPanelPresets) ?? ""
       if newCropAspects != cropTokenField.commaSeparatedValues {
         cropTokenField.commaSeparatedValues = newCropAspects
       }
@@ -285,28 +285,28 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
 
   @IBAction func aspectsAction(_ sender: AspectTokenField) {
     let csv = sender.commaSeparatedValues
-    if Preference.string(for: .aspectsInPanel) != csv {
-      Logger.log("Saving \(Preference.Key.aspectsInPanel.rawValue): \"\(csv)\"", level: .verbose)
-      Preference.set(csv, for: .aspectsInPanel)
+    if Preference.string(for: .aspectRatioPanelPresets) != csv {
+      Logger.log("Saving \(Preference.Key.aspectRatioPanelPresets.rawValue): \"\(csv)\"", level: .verbose)
+      Preference.set(csv, for: .aspectRatioPanelPresets)
     }
   }
 
   @IBAction func cropsAction(_ sender: AspectTokenField) {
     let csv = sender.commaSeparatedValues
-    if Preference.string(for: .cropsInPanel) != csv {
-      Logger.log("Saving \(Preference.Key.cropsInPanel.rawValue): \"\(csv)\"", level: .verbose)
-      Preference.set(csv, for: .cropsInPanel)
+    if Preference.string(for: .cropPanelPresets) != csv {
+      Logger.log("Saving \(Preference.Key.cropPanelPresets.rawValue): \"\(csv)\"", level: .verbose)
+      Preference.set(csv, for: .cropPanelPresets)
     }
   }
 
   @IBAction func resetAspects(_ sender: NSButton) {
-    let defaultValue = Preference.defaultPreference[.aspectsInPanel]
-    Preference.set(defaultValue, for: .aspectsInPanel)
+    let defaultValue = Preference.defaultPreference[.aspectRatioPanelPresets]
+    Preference.set(defaultValue, for: .aspectRatioPanelPresets)
   }
 
   @IBAction func resetCrops(_ sender: NSButton) {
-    let defaultValue = Preference.defaultPreference[.cropsInPanel]
-    Preference.set(defaultValue, for: .cropsInPanel)
+    let defaultValue = Preference.defaultPreference[.cropPanelPresets]
+    Preference.set(defaultValue, for: .cropPanelPresets)
   }
 
   @IBAction func setupPipBehaviorRelatedControls(_ sender: NSButton) {

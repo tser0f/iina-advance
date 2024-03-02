@@ -11,25 +11,25 @@ import Cocoa
 class CropSettingsViewController: CropBoxViewController {
 
   @IBOutlet weak var cropRectLabel: NSTextField!
-  @IBOutlet weak var predefinedAspectSegment: NSSegmentedControl!
-  @IBOutlet weak var customCropEntryTextField: NSTextField!
+  @IBOutlet weak var aspectPresetsSegment: NSSegmentedControl!
+  @IBOutlet weak var aspectEntryTextField: NSTextField!
 
   override func viewDidLoad() {
     super.viewDidLoad()
   }
 
   override func viewDidAppear() {
-    predefinedAspectSegment.selectedSegment = -1
+    aspectPresetsSegment.selectedSegment = -1
     updateSegmentLabels()
   }
 
   func updateSegmentLabels() {
-    if let segmentLabels = Preference.csvStringArray(for: .cropsInPanel) {
-      predefinedAspectSegment.segmentCount = segmentLabels.count + 1
-      for segmentIndex in 1..<predefinedAspectSegment.segmentCount {
+    if let segmentLabels = Preference.csvStringArray(for: .cropPanelPresets) {
+      aspectPresetsSegment.segmentCount = segmentLabels.count + 1
+      for segmentIndex in 1..<aspectPresetsSegment.segmentCount {
         if segmentIndex <= segmentLabels.count {
           let newLabel = segmentLabels[segmentIndex - 1]
-          predefinedAspectSegment.setLabel(newLabel, forSegment: segmentIndex)
+          aspectPresetsSegment.setLabel(newLabel, forSegment: segmentIndex)
         }
       }
     }
@@ -42,29 +42,29 @@ class CropSettingsViewController: CropBoxViewController {
     let actualSize = cropBoxView.actualSize
     if cropx == 0, cropy == 0, cropw == Int(actualSize.width), croph == Int(actualSize.height) {
       // no crop
-      predefinedAspectSegment.selectedSegment = 0
-      customCropEntryTextField.stringValue = ""
+      aspectPresetsSegment.selectedSegment = 0
+      aspectEntryTextField.stringValue = ""
       return
     }
 
     // Try to match to segment:
-    for segmentIndex in 1..<predefinedAspectSegment.segmentCount {
-      guard let segmentLabel = predefinedAspectSegment.label(forSegment: segmentIndex) else { continue }
+    for segmentIndex in 1..<aspectPresetsSegment.segmentCount {
+      guard let segmentLabel = aspectPresetsSegment.label(forSegment: segmentIndex) else { continue }
       guard let aspect = Aspect(string: segmentLabel) else { continue }
 
       if isCropRectMatchedWithAsepct(aspect) {
-        predefinedAspectSegment.selectedSegment = segmentIndex
-        customCropEntryTextField.stringValue = ""
+        aspectPresetsSegment.selectedSegment = segmentIndex
+        aspectEntryTextField.stringValue = ""
         return
       }
     }
     // Freeform selection or text entry
-    predefinedAspectSegment.selectedSegment = -1
+    aspectPresetsSegment.selectedSegment = -1
 
-    let textEntryString = customCropEntryTextField.stringValue
+    let textEntryString = aspectEntryTextField.stringValue
     if !textEntryString.isEmpty {
       if let aspect = Aspect(string: textEntryString), !isCropRectMatchedWithAsepct(aspect) {
-        customCropEntryTextField.stringValue = ""
+        aspectEntryTextField.stringValue = ""
       }
     }
   }

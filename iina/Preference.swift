@@ -437,8 +437,8 @@ struct Preference {
     /** Workaround for issue [#4688](https://github.com/iina/iina/issues/4688) */
     static let recentDocuments = Key("recentDocuments")
 
-    static let aspectsInPanel = Key("aspectsInPanel")
-    static let cropsInPanel = Key("cropsInPanel")
+    static let aspectRatioPanelPresets = Key("aspectRatioPanelPresets")
+    static let cropPanelPresets = Key("cropPanelPresets")
 
     // MARK: - Keys: Internal UI State
 
@@ -1276,8 +1276,8 @@ struct Preference {
 
     .suppressCannotPreventDisplaySleep: false,
 
-    .aspectsInPanel: "4:3,16:9,16:10,21:9,5:4",
-    .cropsInPanel: "4:3,16:9,16:10,21:9,5:4",
+    .aspectRatioPanelPresets: "4:3,16:9,16:10,21:9,5:4",
+    .cropPanelPresets: "4:3,16:9,16:10,21:9,5:4",
     .recentDocuments: [Any]()
   ]
 
