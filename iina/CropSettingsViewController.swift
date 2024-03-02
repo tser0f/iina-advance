@@ -52,18 +52,29 @@ class CropSettingsViewController: CropBoxViewController {
       guard let segmentLabel = predefinedAspectSegment.label(forSegment: segmentIndex) else { continue }
       guard let aspect = Aspect(string: segmentLabel) else { continue }
 
-      let cropped = actualSize.getCropRect(withAspect: aspect)
-
-      if abs(Int(cropped.size.width) - cropw) <= 1,
-         abs(Int(cropped.size.height) - croph) <= 1,
-         abs(Int(cropped.origin.x) - cropx) <= 1,
-         abs(Int(cropped.origin.y) - cropy) <= 1 {
+      if isCropRectMatchedWithAsepct(aspect) {
         predefinedAspectSegment.selectedSegment = segmentIndex
         customCropEntryTextField.stringValue = ""
         return
       }
     }
+    // Freeform selection or text entry
     predefinedAspectSegment.selectedSegment = -1
+
+    let textEntryString = customCropEntryTextField.stringValue
+    if !textEntryString.isEmpty {
+      if let aspect = Aspect(string: textEntryString), !isCropRectMatchedWithAsepct(aspect) {
+        customCropEntryTextField.stringValue = ""
+      }
+    }
+  }
+
+  private func isCropRectMatchedWithAsepct(_ aspect: Aspect) -> Bool {
+    let cropped = cropBoxView.actualSize.getCropRect(withAspect: aspect)
+    return abs(Int(cropped.size.width) - cropw) <= 1 &&
+    abs(Int(cropped.size.height) - croph) <= 1 &&
+    abs(Int(cropped.origin.x) - cropx) <= 1 &&
+    abs(Int(cropped.origin.y) - cropy) <= 1
   }
 
   private func animateHideCropSelection() {
@@ -72,6 +83,17 @@ class CropSettingsViewController: CropBoxViewController {
       cropBoxView.isHidden = true
       cropBoxView.alphaValue = 0
     }))
+  }
+
+  override func handleKeyDown(keySeq: String) {
+    switch keySeq {
+    case "ESC":
+      cancelBtnAction(self)
+    case "ENTER":
+      doneBtnAction(self)
+    default:
+      break
+    }
   }
 
   @IBAction func doneBtnAction(_ sender: AnyObject) {
@@ -142,6 +164,7 @@ class CropSettingsViewController: CropBoxViewController {
 
   private func adjustCropBoxView(ratio: String) {
     guard let aspect = Aspect(string: ratio) else {
+      // Fall back to selecting all
       cropBoxView.setSelectedRect(to: NSRect(origin: CGPointZero, size: cropBoxView.actualSize))
       return
     }

@@ -48,8 +48,16 @@ class PlayerWindow: NSWindow {
   }
 
   override func keyDown(with event: NSEvent) {
-    guard !(playerWinController?.isInInteractiveMode ?? false) else { return }
-    playerWinController?.syncUIComponents()  // Call explicitly to make sure it gets attention
+    if let playerWinController {
+      if playerWinController.isInInteractiveMode, let cropController = playerWinController.cropSettingsView {
+        let keySequence: String = KeyCodeHelper.mpvKeyCode(from: event)
+        if keySequence == "ESC" || keySequence == "ENTER" {
+          cropController.handleKeyDown(keySeq: keySequence)
+          return
+        }
+      }
+      playerWinController.syncUIComponents()  // Call explicitly to make sure it gets attention
+    }
 
     if menu?.performKeyEquivalent(with: event) == true {
       return
@@ -65,6 +73,14 @@ class PlayerWindow: NSWindow {
   }
 
   override func performKeyEquivalent(with event: NSEvent) -> Bool {
+    if let playerWinController, playerWinController.isInInteractiveMode, let cropController = playerWinController.cropSettingsView {
+      let keySequence: String = KeyCodeHelper.mpvKeyCode(from: event)
+      if keySequence == "ESC" || keySequence == "ENTER" {
+        cropController.handleKeyDown(keySeq: keySequence)
+        return true
+      }
+    }
+
     /// AppKit by default will prioritize menu item key equivalents over arrow key navigation
     /// (although for some reason it is the opposite for `ESC`, `TAB`, `ENTER` or `RETURN`).
     /// Need to add an explicit check here for arrow keys to ensure that they always work when desired.
