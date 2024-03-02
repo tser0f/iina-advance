@@ -762,8 +762,13 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
 
   @IBAction func loadExternalAudioAction(_ sender: NSButton) {
     let currentDir = player.info.currentURL?.deletingLastPathComponent()
-    Utility.quickOpenPanel(title: "Load external audio file", chooseDir: false, dir: currentDir,
-                           sheetWindow: player.window, allowedFileTypes: Utility.supportedFileExt[.audio]) { url in
+    Utility.quickOpenPanel(
+      title: "Load external audio file",
+      chooseDir: false,
+      dir: currentDir,
+      sheetWindow: player.window,
+      allowedFileTypes: Utility.playableFileExt
+    ) { url in
       self.player.loadExternalAudioFile(url)
       self.audioTableView.reloadData()
     }
