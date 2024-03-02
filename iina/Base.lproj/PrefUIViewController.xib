@@ -2149,14 +2149,37 @@
                                             <stackView distribution="equalCentering" orientation="vertical" alignment="leading" spacing="4" horizontalStackHuggingPriority="1000" verticalStackHuggingPriority="1000" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6dd-Pj-ocr" userLabel="Video-Settings-Sidebar-Box Vertical Stack View">
                                                 <rect key="frame" x="0.0" y="0.0" width="382" height="110"/>
                                                 <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="juv-F4-U4n">
-                                                        <rect key="frame" x="14" y="86" width="354" height="16"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Aspect ratio choices:" id="A2C-Qa-bBt">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
+                                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="ruR-OU-I1I" userLabel="AspectRatioChoices-Container View">
+                                                        <rect key="frame" x="16" y="86" width="350" height="16"/>
+                                                        <subviews>
+                                                            <textField focusRingType="none" horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="juv-F4-U4n">
+                                                                <rect key="frame" x="-2" y="0.0" width="331" height="16"/>
+                                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Aspect ratio choices:" id="A2C-Qa-bBt">
+                                                                    <font key="font" metaFont="system"/>
+                                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                                                </textFieldCell>
+                                                            </textField>
+                                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sUa-JE-D3L" userLabel="Reset-Aspects Button">
+                                                                <rect key="frame" x="335" y="0.0" width="15" height="15"/>
+                                                                <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSRefreshFreestandingTemplate" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" inset="2" id="nuC-NG-kma">
+                                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                                    <font key="font" metaFont="system"/>
+                                                                </buttonCell>
+                                                                <connections>
+                                                                    <action selector="resetAspects:" target="-2" id="OSQ-Dp-DeO"/>
+                                                                </connections>
+                                                            </button>
+                                                        </subviews>
+                                                        <constraints>
+                                                            <constraint firstItem="sUa-JE-D3L" firstAttribute="firstBaseline" secondItem="juv-F4-U4n" secondAttribute="firstBaseline" id="E4S-rw-7SB"/>
+                                                            <constraint firstItem="juv-F4-U4n" firstAttribute="top" secondItem="ruR-OU-I1I" secondAttribute="top" id="Hcd-IV-UqW"/>
+                                                            <constraint firstItem="sUa-JE-D3L" firstAttribute="leading" secondItem="juv-F4-U4n" secondAttribute="trailing" constant="8" id="Hju-Er-aBP"/>
+                                                            <constraint firstAttribute="trailing" secondItem="sUa-JE-D3L" secondAttribute="trailing" id="dbZ-KB-S5k"/>
+                                                            <constraint firstItem="juv-F4-U4n" firstAttribute="leading" secondItem="ruR-OU-I1I" secondAttribute="leading" id="rS1-Lz-YHN"/>
+                                                            <constraint firstAttribute="bottom" secondItem="juv-F4-U4n" secondAttribute="bottom" id="z7o-7Y-pqO"/>
+                                                        </constraints>
+                                                    </customView>
                                                     <tokenField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ujy-m2-hkj" customClass="AspectTokenField" customModule="IINA" customModuleProvider="target">
                                                         <rect key="frame" x="16" y="61" width="350" height="21"/>
                                                         <constraints>
@@ -2177,14 +2200,37 @@
                                                             <constraint firstAttribute="height" constant="4" id="BYA-1z-bg4"/>
                                                         </constraints>
                                                     </customView>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="kK4-Gw-t7s">
-                                                        <rect key="frame" x="14" y="33" width="354" height="16"/>
-                                                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Crop choices:" id="QLh-RP-pHO">
-                                                            <font key="font" metaFont="system"/>
-                                                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                                        </textFieldCell>
-                                                    </textField>
+                                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="bNG-9Y-1ws" userLabel="CropChoices-Container View">
+                                                        <rect key="frame" x="16" y="33" width="350" height="16"/>
+                                                        <subviews>
+                                                            <textField focusRingType="none" horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1NQ-lx-OBs">
+                                                                <rect key="frame" x="-2" y="0.0" width="331" height="16"/>
+                                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Crop choices:" id="3xP-95-ASy">
+                                                                    <font key="font" metaFont="system"/>
+                                                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                                    <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                                                                </textFieldCell>
+                                                            </textField>
+                                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="U4e-Vm-2gO" userLabel="Reset-Crops Button">
+                                                                <rect key="frame" x="335" y="0.0" width="15" height="15"/>
+                                                                <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSRefreshFreestandingTemplate" imagePosition="overlaps" alignment="center" refusesFirstResponder="YES" inset="2" id="EDu-zw-mIu">
+                                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                                    <font key="font" metaFont="system"/>
+                                                                </buttonCell>
+                                                                <connections>
+                                                                    <action selector="resetCrops:" target="-2" id="YbK-Xg-JCR"/>
+                                                                </connections>
+                                                            </button>
+                                                        </subviews>
+                                                        <constraints>
+                                                            <constraint firstAttribute="trailing" secondItem="U4e-Vm-2gO" secondAttribute="trailing" id="LQi-mg-168"/>
+                                                            <constraint firstItem="1NQ-lx-OBs" firstAttribute="top" secondItem="bNG-9Y-1ws" secondAttribute="top" id="ZW5-MW-wq0"/>
+                                                            <constraint firstItem="U4e-Vm-2gO" firstAttribute="leading" secondItem="1NQ-lx-OBs" secondAttribute="trailing" constant="8" id="e4T-bP-CTz"/>
+                                                            <constraint firstItem="U4e-Vm-2gO" firstAttribute="firstBaseline" secondItem="1NQ-lx-OBs" secondAttribute="firstBaseline" id="fBZ-jy-3eB"/>
+                                                            <constraint firstItem="1NQ-lx-OBs" firstAttribute="leading" secondItem="bNG-9Y-1ws" secondAttribute="leading" id="mvd-zV-40n"/>
+                                                            <constraint firstAttribute="bottom" secondItem="1NQ-lx-OBs" secondAttribute="bottom" id="pWH-kz-zgV"/>
+                                                        </constraints>
+                                                    </customView>
                                                     <tokenField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="hg9-M3-Cff" userLabel="Crop Token Field" customClass="AspectTokenField" customModule="IINA" customModuleProvider="target">
                                                         <rect key="frame" x="16" y="8" width="350" height="21"/>
                                                         <constraints>
@@ -2926,6 +2972,7 @@ Picture:</string>
         </customView>
     </objects>
     <resources>
+        <image name="NSRefreshFreestandingTemplate" width="20" height="20"/>
         <image name="speed" width="24" height="24"/>
         <image name="speedl" width="24" height="24"/>
     </resources>

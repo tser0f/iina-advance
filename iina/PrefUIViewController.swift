@@ -111,6 +111,7 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     .oscBarToolbarIconSpacing,
     .useLegacyWindowedMode,
     .aspectsInPanel,
+    .cropsInPanel,
   ]
 
   override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -296,6 +297,16 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
       Logger.log("Saving \(Preference.Key.cropsInPanel.rawValue): \"\(csv)\"", level: .verbose)
       Preference.set(csv, for: .cropsInPanel)
     }
+  }
+
+  @IBAction func resetAspects(_ sender: NSButton) {
+    let defaultValue = Preference.defaultPreference[.aspectsInPanel]
+    Preference.set(defaultValue, for: .aspectsInPanel)
+  }
+
+  @IBAction func resetCrops(_ sender: NSButton) {
+    let defaultValue = Preference.defaultPreference[.cropsInPanel]
+    Preference.set(defaultValue, for: .cropsInPanel)
   }
 
   @IBAction func setupPipBehaviorRelatedControls(_ sender: NSButton) {
