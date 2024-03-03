@@ -43,16 +43,14 @@ class PlaybackInfo {
     return priorState != nil
   }
 
-  /// Opened or started file, but still waiting for `fileLoaded`
-  // TODO: investigate combining this with `!fileLoaded` and `fileLoading`
+  /// Opened or started file, but still waiting for `fileLoaded` event
   var justOpenedFile: Bool = true
   var timeLastFileOpenFinished: TimeInterval = 0
   var timeSinceLastFileOpenFinished: TimeInterval {
     Date().timeIntervalSince1970 - timeLastFileOpenFinished
   }
 
-  var fileLoading: Bool = false
-  var fileLoaded: Bool = false
+  var isFileLoaded: Bool = false
 
   var shouldAutoLoadFiles: Bool = false
   var isMatchingSubtitles = false

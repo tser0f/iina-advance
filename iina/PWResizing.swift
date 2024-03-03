@@ -606,7 +606,7 @@ extension PlayerWindowController {
       ticket = $0
     }
 
-    animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
+    animationPipeline.submit(IINAAnimation.Task(duration: duration, timing: .easeInEaseOut, { [self] in
       guard ticket == geoUpdateTicketCounter else {
         return
       }

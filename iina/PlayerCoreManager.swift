@@ -87,15 +87,7 @@ class PlayerCoreManager {
   }
 
   private func _findIdlePlayerCore() -> PlayerCore? {
-    return playerCores.first { $0.info.isIdle && !$0.info.fileLoading }
-  }
-
-  func findIdlePlayerCore() -> PlayerCore? {
-    var idleCore: PlayerCore?
-    lock.withLock {
-      idleCore = _findIdlePlayerCore()
-    }
-    return idleCore
+    return playerCores.first { $0.info.isIdle && !$0.info.isFileLoaded }
   }
 
   func getNonIdle() -> [PlayerCore] {
@@ -109,6 +101,7 @@ class PlayerCoreManager {
   private func _getIdleOrCreateNew() -> PlayerCore {
     var core: PlayerCore
     if let idleCore = _findIdlePlayerCore() {
+      Logger.log("Found idle player: #\(idleCore.label)")
       core = idleCore
     } else {
       core = _createNewPlayerCore()

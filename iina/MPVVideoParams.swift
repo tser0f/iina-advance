@@ -49,6 +49,7 @@ struct MPVVideoParams: CustomStringConvertible {
     }
     let aspectRatioDouble = Aspect.mpvPrecision(of: aspectRatioNumber)
     guard aspectRatioDouble != rawAspectDouble else {
+      // No aspect override
       return videoRawSize
     }
     if rawAspectDouble > aspectRatioDouble {

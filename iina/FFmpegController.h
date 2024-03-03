@@ -43,4 +43,5 @@
 
 + (nullable NSDictionary *)probeVideoInfoForFile:(nonnull NSString *)file;
 
++ (nullable int *)readVideoSizeForFile:(nonnull NSString *)file;
 @end

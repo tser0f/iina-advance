@@ -1144,10 +1144,10 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Don't show art if currently loading
     // FIXME: should not be reading `player.info` vars from this thread
     if isVideoTrackSelected || player.info.justOpenedFile || player.isStopped {
-      log.verbose("Hiding defaultAlbumArt because justOpenedFile=\(player.info.justOpenedFile.yn) fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
+      log.verbose("Hiding defaultAlbumArt because justOpenedFile=\(player.info.justOpenedFile.yn) fileLoaded=\(player.info.isFileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = false
     } else {
-      log.verbose("Showing defaultAlbumArt because fileLoaded=\(player.info.fileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
+      log.verbose("Showing defaultAlbumArt because fileLoaded=\(player.info.isFileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = true
     }
 
@@ -3646,7 +3646,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func updateVolumeUI() {
     dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
     guard loaded, !isClosing, !player.isShuttingDown else { return }
-    guard player.info.fileLoaded || player.info.isRestoring else { return }
+    guard player.info.isFileLoaded || player.info.isRestoring else { return }
 
     let volume = player.info.volume
     let isMuted = player.info.isMuted
@@ -3669,7 +3669,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // resulting in this function being called before mpv has set its position and duration
     // properties. Confirm the window and file have been loaded.
     guard loaded else { return }
-    guard player.info.fileLoaded || player.info.isRestoring else { return }
+    guard player.info.isFileLoaded || player.info.isRestoring else { return }
 
     /// Need to call this to update `videoPosition`, `videoDuration`
     player.syncUITime()
@@ -3723,6 +3723,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     let isPaused = player.info.isPaused
     let state: NSControl.StateValue = isPaused ? .off : .on
     if isInMiniPlayer {
+      player.windowController.miniPlayer.loadIfNeeded()
       player.windowController.miniPlayer.playButton.state = state
     }
     playButton.state = state
@@ -3946,7 +3947,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /** When slider changes */
   @IBAction func playSliderDidChange(_ sender: NSSlider) {
-    guard player.info.fileLoaded else { return }
+    guard player.info.isFileLoaded else { return }
 
     let percentage = 100 * sender.doubleValue / sender.maxValue
     player.seek(percent: percentage, forceExact: !followGlobalSeekTypeWhenAdjustSlider)

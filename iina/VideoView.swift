@@ -500,7 +500,7 @@ class VideoView: NSView {
 extension VideoView {
   func refreshEdrMode() {
     guard player.windowController.loaded else { return }
-    guard player.info.fileLoaded else { return }
+    guard player.info.isFileLoaded else { return }
     guard let displayId = currentDisplay else { return }
     if let screen = self.window?.screen {
       screen.log("Refreshing HDR for \(player.subsystem.rawValue) @ screen\(displayId): ")

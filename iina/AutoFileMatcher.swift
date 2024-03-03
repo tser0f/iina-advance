@@ -23,7 +23,11 @@ class AutoFileMatcher {
   private let searchOptions: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles, .skipsPackageDescendants, .skipsSubdirectoryDescendants]
 
   private var currentFolder: URL!
-  private var filesGroupedByMediaType: [MPVTrack.TrackType: [FileInfo]] = [.video: [], .audio: [], .sub: []]
+
+  private var videoFiles: [FileInfo] = []
+  private var audioFiles: [FileInfo] = []
+  private var subFiles: [FileInfo] = []
+
   private var videosGroupedBySeries: [String: [FileInfo]] = [:]
   private var subtitles: [FileInfo] = []
   private var subsGroupedBySeries: [String: [FileInfo]] = [:]
@@ -50,15 +54,32 @@ class AutoFileMatcher {
     for file in files {
       let fileInfo = FileInfo(file)
       if let mediaType = Utility.mediaType(forExtension: fileInfo.ext) {
-        filesGroupedByMediaType[mediaType]!.append(fileInfo)
+        switch mediaType {
+        case .video:
+          videoFiles.append(fileInfo)
+        case .audio:
+          audioFiles.append(fileInfo)
+        case .sub, .secondSub:
+          subFiles.append(fileInfo)
+        }
       }
     }
 
-    Logger.log("Got all media files, video=\(filesGroupedByMediaType[.video]!.count), audio=\(filesGroupedByMediaType[.audio]!.count)", subsystem: subsystem)
+    Logger.log("Got all media files, video=\(videoFiles.count), audio=\(audioFiles.count)", subsystem: subsystem)
 
     // natural sort
-    filesGroupedByMediaType[.video]!.sort { $0.filename.localizedStandardCompare($1.filename) == .orderedAscending }
-    filesGroupedByMediaType[.audio]!.sort { $0.filename.localizedStandardCompare($1.filename) == .orderedAscending }
+    videoFiles.sort { $0.filename.localizedStandardCompare($1.filename) == .orderedAscending }
+    audioFiles.sort { $0.filename.localizedStandardCompare($1.filename) == .orderedAscending }
+  }
+
+  static func fillInVideoSizes(_ videoFiles: [FileInfo]) {
+    for fileInfo in videoFiles {
+      if fileInfo.videoSize == nil {
+        if let sizeArray = FFmpegController.readVideoSize(forFile: fileInfo.path) {
+          fileInfo.videoSize = (Int(sizeArray[0]), Int(sizeArray[1]))
+        }
+      }
+    }
   }
 
   private func getAllPossibleSubs() -> [FileInfo] {
@@ -97,7 +118,7 @@ class AutoFileMatcher {
     Logger.log("Searching subtitles from \(subDirs.count) directories...", subsystem: subsystem)
     Logger.log("\(subDirs)", level: .verbose, subsystem: subsystem)
     // get all possible sub files
-    var subtitles = filesGroupedByMediaType[.sub]!
+    var subtitles = subFiles
     for subDir in subDirs {
       if let contents = try? fm.contentsOfDirectory(at: subDir, includingPropertiesForKeys: nil, options: searchOptions) {
         subtitles.append(contentsOf: contents.compactMap { subExts.contains($0.pathExtension.lowercased()) ? FileInfo($0) : nil })
@@ -114,7 +135,7 @@ class AutoFileMatcher {
 
     Logger.log("Adding files to playlist", subsystem: subsystem)
     // add videos
-    for video in filesGroupedByMediaType[.video]! + filesGroupedByMediaType[.audio]! {
+    for video in videoFiles + audioFiles {
       // add to playlist
       if video.url.path == player.info.currentURL?.path {
         addedCurrentVideo = true
@@ -194,7 +215,7 @@ class AutoFileMatcher {
     let subAutoLoadOption: Preference.IINAAutoLoadAction = Preference.enum(for: .subAutoLoadIINA)
     guard subAutoLoadOption != .disabled else { return }
 
-    for video in filesGroupedByMediaType[.video]! {
+    for video in videoFiles {
       var matchedSubs = Set<FileInfo>()
       Logger.log("Matching for \(video.filename.pii)", subsystem: subsystem)
 
@@ -282,7 +303,7 @@ class AutoFileMatcher {
     }
 
     try checkTicket()
-    player.info.currentVideosInfo = filesGroupedByMediaType[.video]!
+    player.info.currentVideosInfo = videoFiles
   }
 
   private func forceMatchUnmatchedVideos() throws {
@@ -309,7 +330,7 @@ class AutoFileMatcher {
           if dist < minDistToVideo { minDistToVideo = dist }
         }
         guard minDistToVideo != .max else { continue }
-        sub.minDist = filesGroupedByMediaType[.video]!.filter { sub.dist[$0] == minDistToVideo }
+        sub.minDist = videoFiles.filter { sub.dist[$0] == minDistToVideo }
       }
 
       // match them
@@ -338,6 +359,8 @@ class AutoFileMatcher {
       player.info.isMatchingSubtitles = true
       getAllMediaFiles()
 
+      AutoFileMatcher.fillInVideoSizes(videoFiles)
+
       // get all possible subtitles
       subtitles = getAllPossibleSubs()
       player.info.currentSubsInfo = subtitles
@@ -349,7 +372,7 @@ class AutoFileMatcher {
 
       // group video and sub files
       Logger.log("Grouping video files...", subsystem: subsystem)
-      videosGroupedBySeries = FileGroup.group(files: filesGroupedByMediaType[.video]!).flatten()
+      videosGroupedBySeries = FileGroup.group(files: videoFiles).flatten()
       Logger.log("Finished with \(videosGroupedBySeries.count) groups", subsystem: subsystem)
 
       Logger.log("Grouping sub files...", subsystem: subsystem)

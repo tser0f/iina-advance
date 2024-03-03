@@ -526,6 +526,9 @@ struct PlayerSaveState {
     // Open the window!
     player.openURLs([url], shouldAutoLoad: false)
 
+    // Launch task to fill in video sizes because they are not saved
+    player.loadVideoSizes()
+
     let isOnTop = bool(for: .isOnTop) ?? false
     windowController.setWindowFloatingOnTop(isOnTop, updateOnTopStatus: true)
 

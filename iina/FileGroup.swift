@@ -23,6 +23,7 @@ class FileInfo: Hashable {
   var relatedSubs: [FileInfo] = []
   var priorityStringOccurrences = 0
   var isMatched = false
+  var videoSize: (Int, Int)? = nil
 
   var prefix: String {  // prefix detected by FileGroup
     didSet {

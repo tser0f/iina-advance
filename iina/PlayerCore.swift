@@ -379,8 +379,7 @@ class PlayerCore: NSObject {
       info.currentFolder = nil
 
       // Reset state flags
-      info.fileLoading = true
-      info.fileLoaded = false
+      info.isFileLoaded = false
       info.justOpenedFile = true
       isStopping = false
 
@@ -447,6 +446,13 @@ class PlayerCore: NSObject {
     videoView.videoLayer.display()
     mpv.mpvInitRendering()
     videoView.startDisplayLink()
+  }
+
+  /// Launches background task which scans video files and collects video size metadata using ffmpeg
+  func loadVideoSizes() {
+    PlayerCore.backgroundQueue.async { [self] in
+      AutoFileMatcher.fillInVideoSizes(info.currentVideosInfo)
+    }
   }
 
   func saveState() {
@@ -1915,13 +1921,49 @@ class PlayerCore: NSObject {
 
   // MARK: - Listeners
 
+  func resizeVideo(forPath path: String) {
+    let url = path.contains("://") ?
+    URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
+    URL(fileURLWithPath: path)
+
+    if let videoInfo = info.currentVideosInfo.first(where: { $0.url == url }),
+       let videoSize = videoInfo.videoSize {
+      let rawWidth = videoSize.0
+      let rawHeight = videoSize.1
+
+      // If no override.
+      // TODO: figure out aspect & crop override
+      let aspectRatio = NSSize(width: CGFloat(rawWidth), height: CGFloat(rawHeight)).mpvAspect.aspectNormalDecimalString
+
+      let params: MPVVideoParams
+      if let prev = info.videoParams {
+        params = MPVVideoParams(videoRawWidth: rawWidth, videoRawHeight: rawHeight, aspectRatio: aspectRatio,
+                                videoDisplayWidth: rawWidth, videoDisplayHeight: rawHeight,
+                                totalRotation: prev.totalRotation, userRotation: prev.userRotation, videoScale: prev.videoScale)
+      } else {
+        params = MPVVideoParams(videoRawWidth: rawWidth, videoRawHeight: rawHeight, aspectRatio: aspectRatio,
+                                videoDisplayWidth: rawWidth, videoDisplayHeight: rawHeight,
+                                totalRotation: 0, userRotation: 0, videoScale: 1.0)
+      }
+
+      DispatchQueue.main.async { [self] in
+        windowController.mpvVideoDidReconfig(params, justOpenedFile: true)
+      }
+    } else {
+      // Either not a video file, or info not loaded.
+      // Clear previously cached value and wait for mpv to provide new stuff
+      info.videoParams = nil
+    }
+  }
+
   func fileStarted(path: String) {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard !isStopping, !isShuttingDown else { return }
 
     log.debug("File started")
     info.justOpenedFile = true
-    info.videoParams = nil
+
+    resizeVideo(forPath: path)
 
     info.currentURL = path.contains("://") ?
     URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
@@ -2000,10 +2042,8 @@ class PlayerCore: NSObject {
     // note: player may be "stopped" here
     guard !isStopping, !isShuttingDown else { return }
 
-    log.debug("File loaded: \(info.currentURL?.absoluteString.pii.quoted ?? "nil")")
     triedUsingExactSeekForCurrentFile = false
-    info.fileLoading = false
-    info.fileLoaded = true
+    info.isFileLoaded = true
     // Playback will move directly from stopped to loading when transitioning to the next file in
     // the playlist.
     isStopping = false
@@ -2277,7 +2317,7 @@ class PlayerCore: NSObject {
     let currentMediaAudioStatus = info.currentMediaAudioStatus
 
     DispatchQueue.main.async{ [self] in
-      guard info.fileLoaded else {
+      guard info.isFileLoaded else {
         log.verbose("After video track changed to: \(vid): file is not loaded!")
         return
       }
