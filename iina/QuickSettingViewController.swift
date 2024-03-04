@@ -110,6 +110,8 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBOutlet weak var speedSliderIndicator: NSTextField!
   @IBOutlet weak var speedSliderConstraint: NSLayoutConstraint!
   @IBOutlet weak var customSpeedTextField: NSTextField!
+  @IBOutlet weak var speedResetBtn: NSButton!
+
   @IBOutlet weak var switchHorizontalLine: NSBox!
   @IBOutlet weak var switchHorizontalLine2: NSBox!
   @IBOutlet weak var hardwareDecodingSwitch: Switch!
@@ -132,13 +134,14 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBOutlet weak var audioDelaySliderIndicator: NSTextField!
   @IBOutlet weak var audioDelaySliderConstraint: NSLayoutConstraint!
   @IBOutlet weak var customAudioDelayTextField: NSTextField!
-
+  @IBOutlet weak var audioDelayResetBtn: NSButton!
 
   @IBOutlet weak var subLoadSementedControl: NSSegmentedControl!
   @IBOutlet weak var subDelaySlider: NSSlider!
   @IBOutlet weak var subDelaySliderIndicator: NSTextField!
   @IBOutlet weak var subDelaySliderConstraint: NSLayoutConstraint!
   @IBOutlet weak var customSubDelayTextField: NSTextField!
+  @IBOutlet weak var subDelayResetBtn: NSButton!
 
   @IBOutlet weak var audioEqSlider1: NSSlider!
   @IBOutlet weak var audioEqSlider2: NSSlider!
@@ -346,6 +349,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     customSpeedTextField.doubleValue = speed
     let sliderValue = log(speed / AppData.minSpeed) / log(AppData.maxSpeed / AppData.minSpeed) * sliderSteps
     speedSlider.doubleValue = sliderValue
+    speedResetBtn.isHidden = speed == 1.0
     redraw(indicator: speedSliderIndicator, constraint: speedSliderConstraint, slider: speedSlider, value: "\(customSpeedTextField.stringValue)x")
   }
 
@@ -353,6 +357,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let audioDelay = player.mpv.getDouble(MPVOption.Audio.audioDelay)
     audioDelaySlider.doubleValue = audioDelay
     customAudioDelayTextField.doubleValue = audioDelay
+    audioDelayResetBtn.isHidden = audioDelay == 0.0
     redraw(indicator: audioDelaySliderIndicator, constraint: audioDelaySliderConstraint, slider: audioDelaySlider, value: "\(customAudioDelayTextField.stringValue)s")
   }
 
@@ -370,6 +375,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let subDelay = player.mpv.getDouble(MPVOption.Subtitles.subDelay)
     subDelaySlider.doubleValue = subDelay
     customSubDelayTextField.doubleValue = subDelay
+    subDelayResetBtn.isHidden = subDelay == 0.0
     redraw(indicator: subDelaySliderIndicator, constraint: subDelaySliderConstraint, slider: subDelaySlider, value: "\(customSubDelayTextField.stringValue)s")
 
     let currSubPos = player.mpv.getInt(MPVOption.Subtitles.subPos)
@@ -385,6 +391,11 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
         subTextBorderWidthPopUp.select(item)
       }
     }
+  }
+
+
+  @IBAction func resetSpeedction(_ sender: AnyObject) {
+    player.setSpeed(1.0)
   }
 
   private func updateVideoEqState() {
@@ -680,6 +691,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let newSpeed = AppData.minSpeed * pow(AppData.maxSpeed / AppData.minSpeed, sliderValue / sliderSteps).roundedTo3()
     player.log.verbose("Speed slider changed to \(sliderValue) → newSpeed = \(newSpeed)")
     customSpeedTextField.doubleValue = newSpeed
+    speedResetBtn.isHidden = newSpeed == 1.0
     player.setSpeed(newSpeed)
     redraw(indicator: speedSliderIndicator, constraint: speedSliderConstraint, slider: speedSlider, value: "\(customSpeedTextField.stringValue)x")
   }
@@ -767,12 +779,17 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     }
     let sliderValue = sender.doubleValue
     customAudioDelayTextField.doubleValue = sliderValue
+    audioDelayResetBtn.isHidden = sliderValue == 0.0
     redraw(indicator: audioDelaySliderIndicator, constraint: audioDelaySliderConstraint, slider: audioDelaySlider, value: "\(customAudioDelayTextField.stringValue)s")
     if let event = NSApp.currentEvent {
       if event.type == .leftMouseUp {
         player.setAudioDelay(sliderValue)
       }
     }
+  }
+
+  @IBAction func resetAudioDelayAction(_ sender: AnyObject) {
+    player.setAudioDelay(0.0)
   }
 
   @IBAction func customAudioDelayEditFinishedAction(_ sender: NSTextField) {
@@ -910,11 +927,16 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let sliderValue = sender.doubleValue
     customSubDelayTextField.doubleValue = sliderValue
     redraw(indicator: subDelaySliderIndicator, constraint: subDelaySliderConstraint, slider: subDelaySlider, value: "\(customSubDelayTextField.stringValue)s")
+    subDelayResetBtn.isHidden = sliderValue == 0.0
     if let event = NSApp.currentEvent {
       if event.type == .leftMouseUp {
         player.setSubDelay(sliderValue)
       }
     }
+  }
+
+  @IBAction func resetSubDelayAction(_ sender: AnyObject) {
+    player.setSubDelay(0.0)
   }
 
   @IBAction func customSubDelayEditFinishedAction(_ sender: NSTextField) {

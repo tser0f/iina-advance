@@ -10,6 +10,7 @@
         <customObject id="-2" userLabel="File's Owner" customClass="QuickSettingViewController" customModule="IINA" customModuleProvider="target">
             <connections>
                 <outlet property="aspectPresetsSegment" destination="Ljl-w6-gIf" id="X3Q-8g-q0e"/>
+                <outlet property="audioDelayResetBtn" destination="vl8-xk-OxH" id="XSg-0g-s15"/>
                 <outlet property="audioDelaySlider" destination="gJr-l6-WQ2" id="in4-Ig-0sm"/>
                 <outlet property="audioDelaySliderConstraint" destination="5oB-ve-G3c" id="0lC-5Q-tyI"/>
                 <outlet property="audioDelaySliderIndicator" destination="giU-Mo-tN9" id="ZWu-U8-86x"/>
@@ -51,9 +52,11 @@
                 <outlet property="saturationResetBtn" destination="lgg-zH-OLr" id="CeN-2F-jXp"/>
                 <outlet property="saturationSlider" destination="VlS-Jo-4C0" id="rJV-p9-OVz"/>
                 <outlet property="secSubTableView" destination="Jve-qX-Agy" id="0ia-bh-sbu"/>
+                <outlet property="speedResetBtn" destination="705-dt-Zwl" id="9IK-Q7-fza"/>
                 <outlet property="speedSlider" destination="UWh-M9-5Nw" id="UXr-dD-8K1"/>
                 <outlet property="speedSliderConstraint" destination="qTf-o6-Mef" id="mB3-5X-SOE"/>
                 <outlet property="speedSliderIndicator" destination="3EN-WD-QNI" id="vDD-eE-x6w"/>
+                <outlet property="subDelayResetBtn" destination="jIX-Yi-A9J" id="J2f-vR-zxT"/>
                 <outlet property="subDelaySlider" destination="dXz-x4-sm5" id="VX5-8O-mf4"/>
                 <outlet property="subDelaySliderConstraint" destination="7t1-v0-J55" id="ypG-K0-i1x"/>
                 <outlet property="subDelaySliderIndicator" destination="VdJ-nq-zaM" id="0uy-Jw-eKf"/>
@@ -81,13 +84,13 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="Hz6-mo-xeY" customClass="QuickSettingView" customModule="IINA" customModuleProvider="target">
-            <rect key="frame" x="0.0" y="0.0" width="360" height="912"/>
+            <rect key="frame" x="0.0" y="0.0" width="367" height="912"/>
             <subviews>
                 <stackView distribution="fillEqually" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="200" verticalStackHuggingPriority="250" horizontalHuggingPriority="200" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="dNi-Ib-2vd" userLabel="TabButtons Stack View">
-                    <rect key="frame" x="20" y="864" width="320" height="48"/>
+                    <rect key="frame" x="20" y="864" width="327" height="48"/>
                     <subviews>
                         <button imageHugsTitle="YES" horizontalHuggingPriority="252" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ma8-6g-tVw" userLabel="VideoTab Button">
-                            <rect key="frame" x="0.0" y="0.0" width="101" height="48"/>
+                            <rect key="frame" x="0.0" y="0.0" width="104" height="48"/>
                             <buttonCell key="cell" type="square" title="VIDEO" bezelStyle="shadowlessSquare" image="tab_video" imagePosition="leading" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyDown" inset="2" id="lQt-I0-jHO">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="systemBold"/>
@@ -97,7 +100,7 @@
                             </connections>
                         </button>
                         <button tag="1" imageHugsTitle="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3Fk-ey-FhK" userLabel="AudioTab Buttom">
-                            <rect key="frame" x="109" y="0.0" width="102" height="48"/>
+                            <rect key="frame" x="112" y="0.0" width="103" height="48"/>
                             <buttonCell key="cell" type="square" title="AUDIO" bezelStyle="shadowlessSquare" image="tab_audio" imagePosition="leading" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyDown" inset="2" id="cpm-5o-a2c">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="systemBold"/>
@@ -107,7 +110,7 @@
                             </connections>
                         </button>
                         <button tag="2" imageHugsTitle="YES" horizontalHuggingPriority="253" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rH3-pU-mFc" userLabel="SubtitlesTab Button">
-                            <rect key="frame" x="219" y="0.0" width="101" height="48"/>
+                            <rect key="frame" x="223" y="0.0" width="104" height="48"/>
                             <buttonCell key="cell" type="square" title="SUBTITLES" bezelStyle="shadowlessSquare" image="tab_sub" imagePosition="leading" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyDown" inset="2" id="NxO-to-jcI">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="systemBold"/>
@@ -138,22 +141,22 @@
                     </customSpacing>
                 </stackView>
                 <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="L78-cf-BxB" userLabel="BelowTabButtons Horizontal Line">
-                    <rect key="frame" x="0.0" y="862" width="360" height="5"/>
+                    <rect key="frame" x="0.0" y="862" width="367" height="5"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="1" id="hXd-Oh-PRY"/>
                     </constraints>
                 </box>
                 <customView translatesAutoresizingMaskIntoConstraints="NO" id="iNg-R1-bXw" userLabel="PluginTabs View">
-                    <rect key="frame" x="0.0" y="829" width="360" height="36"/>
+                    <rect key="frame" x="0.0" y="829" width="367" height="36"/>
                     <subviews>
                         <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" hasVerticalScroller="NO" usesPredominantAxisScrolling="NO" verticalScrollElasticity="none" translatesAutoresizingMaskIntoConstraints="NO" id="dfw-cq-GHm" userLabel="PluginsTabs Scroll View">
-                            <rect key="frame" x="0.0" y="1" width="360" height="35"/>
+                            <rect key="frame" x="0.0" y="1" width="367" height="35"/>
                             <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="Q9c-dH-CRI" userLabel="PluginsTabs Clip View">
-                                <rect key="frame" x="0.0" y="0.0" width="360" height="35"/>
+                                <rect key="frame" x="0.0" y="0.0" width="367" height="35"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <view id="PF8-CN-LtV">
-                                        <rect key="frame" x="0.0" y="0.0" width="345" height="20"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="352" height="20"/>
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     </view>
                                 </subviews>
@@ -169,7 +172,7 @@
                             </scroller>
                         </scrollView>
                         <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="Uvg-kn-ZiM" userLabel="BelowPluginsTabs Horizontal Line">
-                            <rect key="frame" x="0.0" y="-2" width="360" height="5"/>
+                            <rect key="frame" x="0.0" y="-2" width="367" height="5"/>
                         </box>
                     </subviews>
                     <constraints>
@@ -184,7 +187,7 @@
                     </constraints>
                 </customView>
                 <tabView drawsBackground="NO" type="noTabsNoBorder" translatesAutoresizingMaskIntoConstraints="NO" id="udA-m2-eJb" userLabel="AllTabs Tab View">
-                    <rect key="frame" x="0.0" y="0.0" width="360" height="829"/>
+                    <rect key="frame" x="0.0" y="0.0" width="367" height="829"/>
                     <font key="font" metaFont="system"/>
                     <tabViewItems>
                         <tabViewItem label="Video" identifier="1" id="CYP-el-A6A" userLabel="VideoTab Tab View Item">
@@ -464,13 +467,27 @@
                                                             </connections>
                                                         </segmentedControl>
                                                         <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d4r-sL-0Vo" userLabel="SpeedLabel Text Field">
-                                                            <rect key="frame" x="18" y="407" width="331" height="16"/>
+                                                            <rect key="frame" x="18" y="407" width="307" height="16"/>
                                                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Speed:" id="1KQ-oZ-A2x">
                                                                 <font key="font" metaFont="systemBold"/>
                                                                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                             </textFieldCell>
                                                         </textField>
+                                                        <button translatesAutoresizingMaskIntoConstraints="NO" id="705-dt-Zwl" userLabel="SpeedReset Button">
+                                                            <rect key="frame" x="331" y="404.5" width="16" height="21"/>
+                                                            <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSRefreshFreestandingTemplate" imagePosition="only" alignment="center" controlSize="small" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="e2B-Ie-9hS">
+                                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                                <font key="font" metaFont="message" size="11"/>
+                                                            </buttonCell>
+                                                            <constraints>
+                                                                <constraint firstAttribute="height" constant="16" id="EC5-Kq-oB4"/>
+                                                                <constraint firstAttribute="width" constant="16" id="Gst-Sh-NwE"/>
+                                                            </constraints>
+                                                            <connections>
+                                                                <action selector="resetSpeedction:" target="-2" id="2Ms-5F-wpA"/>
+                                                            </connections>
+                                                        </button>
                                                         <customView autoresizesSubviews="NO" horizontalHuggingPriority="200" horizontalCompressionResistancePriority="700" translatesAutoresizingMaskIntoConstraints="NO" id="5v4-Te-950" userLabel="SpeedSlider Container View">
                                                             <rect key="frame" x="20" y="361" width="327" height="42"/>
                                                             <subviews>
@@ -886,6 +903,7 @@
                                                         <constraint firstAttribute="trailing" secondItem="7PK-hh-Xx5" secondAttribute="trailing" id="CS1-Ac-ZtH"/>
                                                         <constraint firstItem="oAm-jJ-3kE" firstAttribute="leading" secondItem="seu-WU-cTV" secondAttribute="leading" id="EfX-U0-EIF"/>
                                                         <constraint firstItem="7vv-En-VYY" firstAttribute="trailing" secondItem="seu-WU-cTV" secondAttribute="trailing" id="HEy-h1-lqH"/>
+                                                        <constraint firstItem="705-dt-Zwl" firstAttribute="centerY" secondItem="d4r-sL-0Vo" secondAttribute="centerY" id="HTc-um-WE3"/>
                                                         <constraint firstItem="seu-WU-cTV" firstAttribute="leading" secondItem="ZGz-La-n9c" secondAttribute="leading" constant="20" id="HfL-vM-J77"/>
                                                         <constraint firstAttribute="trailing" secondItem="ykw-rb-M9D" secondAttribute="trailing" id="IBg-Q4-5QO"/>
                                                         <constraint firstItem="QqK-iZ-rFX" firstAttribute="trailing" secondItem="seu-WU-cTV" secondAttribute="trailing" id="JJs-e3-UKh"/>
@@ -903,7 +921,7 @@
                                                         <constraint firstItem="iAC-lz-PuL" firstAttribute="top" secondItem="pam-gJ-b3R" secondAttribute="top" id="WDy-ol-Zpc"/>
                                                         <constraint firstItem="7PK-hh-Xx5" firstAttribute="top" secondItem="2ye-g4-fz5" secondAttribute="bottom" constant="20" id="WHx-2i-Qb8"/>
                                                         <constraint firstItem="sPT-jd-T7a" firstAttribute="leading" secondItem="seu-WU-cTV" secondAttribute="leading" id="WhF-R9-ItL"/>
-                                                        <constraint firstItem="d4r-sL-0Vo" firstAttribute="trailing" secondItem="seu-WU-cTV" secondAttribute="trailing" id="aI1-cp-e3U"/>
+                                                        <constraint firstItem="705-dt-Zwl" firstAttribute="leading" secondItem="d4r-sL-0Vo" secondAttribute="trailing" constant="8" id="aI1-cp-e3U"/>
                                                         <constraint firstItem="seu-WU-cTV" firstAttribute="top" secondItem="ZGz-La-n9c" secondAttribute="top" constant="20" id="aal-Nb-2Z5"/>
                                                         <constraint firstItem="QqK-iZ-rFX" firstAttribute="top" secondItem="7PK-hh-Xx5" secondAttribute="bottom" constant="20" id="agN-ia-1uy"/>
                                                         <constraint firstAttribute="bottom" secondItem="BdF-A5-VPG" secondAttribute="bottom" constant="20" id="arL-JQ-GVl"/>
@@ -912,6 +930,7 @@
                                                         <constraint firstItem="9Ua-jA-xuA" firstAttribute="top" secondItem="pam-gJ-b3R" secondAttribute="top" id="dTe-2U-dda"/>
                                                         <constraint firstItem="7vv-En-VYY" firstAttribute="leading" secondItem="seu-WU-cTV" secondAttribute="leading" id="dkC-Ih-pd9"/>
                                                         <constraint firstItem="XAI-y0-tcy" firstAttribute="trailing" secondItem="seu-WU-cTV" secondAttribute="trailing" id="eDi-7P-BEj"/>
+                                                        <constraint firstItem="705-dt-Zwl" firstAttribute="trailing" secondItem="seu-WU-cTV" secondAttribute="trailing" id="eE6-KK-fQw"/>
                                                         <constraint firstItem="5v4-Te-950" firstAttribute="trailing" secondItem="seu-WU-cTV" secondAttribute="trailing" id="eeP-VU-TPP"/>
                                                         <constraint firstItem="bza-SA-tXE" firstAttribute="leading" secondItem="seu-WU-cTV" secondAttribute="leading" id="fDz-nh-c5C"/>
                                                         <constraint firstItem="iAC-lz-PuL" firstAttribute="bottom" secondItem="pam-gJ-b3R" secondAttribute="bottom" id="keh-UM-dNZ"/>
@@ -1159,13 +1178,27 @@
                                                                     </connections>
                                                                 </button>
                                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ZPW-fz-5Oi">
-                                                                    <rect key="frame" x="18" y="278" width="324" height="16"/>
+                                                                    <rect key="frame" x="18" y="278" width="300" height="16"/>
                                                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Audio delay:" id="AKs-VQ-fKF">
                                                                         <font key="font" metaFont="systemBold"/>
                                                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                     </textFieldCell>
                                                                 </textField>
+                                                                <button translatesAutoresizingMaskIntoConstraints="NO" id="vl8-xk-OxH" userLabel="AudioDelayReset Button">
+                                                                    <rect key="frame" x="324" y="275.5" width="16" height="21"/>
+                                                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSRefreshFreestandingTemplate" imagePosition="only" alignment="center" controlSize="small" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="K9E-Uh-zQ7">
+                                                                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                    </buttonCell>
+                                                                    <constraints>
+                                                                        <constraint firstAttribute="width" constant="16" id="3PZ-YJ-LEH"/>
+                                                                        <constraint firstAttribute="height" constant="16" id="D2H-Sl-Led"/>
+                                                                    </constraints>
+                                                                    <connections>
+                                                                        <action selector="resetAudioDelayAction:" target="-2" id="BbZ-bn-O65"/>
+                                                                    </connections>
+                                                                </button>
                                                                 <customView autoresizesSubviews="NO" horizontalHuggingPriority="200" horizontalCompressionResistancePriority="700" translatesAutoresizingMaskIntoConstraints="NO" id="j85-rj-toQ" userLabel="AudioDelaySlider Container View">
                                                                     <rect key="frame" x="20" y="224" width="320" height="50"/>
                                                                     <subviews>
@@ -1502,6 +1535,7 @@
                                                                 <constraint firstItem="XdF-fV-DCz" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="TA9-9G-tIE" secondAttribute="trailing" id="8OK-le-NFN"/>
                                                                 <constraint firstItem="TA9-9G-tIE" firstAttribute="leading" secondItem="E4v-kh-61H" secondAttribute="leading" id="9So-jf-b5w"/>
                                                                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="E4v-kh-61H" secondAttribute="trailing" id="9ol-Ih-xQV"/>
+                                                                <constraint firstItem="vl8-xk-OxH" firstAttribute="centerY" secondItem="ZPW-fz-5Oi" secondAttribute="centerY" id="ADQ-C3-RLj"/>
                                                                 <constraint firstItem="KKr-0Y-831" firstAttribute="leading" secondItem="my2-5o-bNb" secondAttribute="leading" id="AXq-h3-TVD"/>
                                                                 <constraint firstItem="j85-rj-toQ" firstAttribute="top" secondItem="ZPW-fz-5Oi" secondAttribute="bottom" constant="4" id="Cv3-B2-U9b"/>
                                                                 <constraint firstItem="wvc-3m-7dA" firstAttribute="top" secondItem="EDx-YH-ofM" secondAttribute="top" id="Ebj-KB-Fia"/>
@@ -1530,10 +1564,11 @@
                                                                 <constraint firstItem="Wkv-a4-uiD" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="xtT-Or-HjR" secondAttribute="trailing" id="Zgg-St-FzR"/>
                                                                 <constraint firstItem="TA9-9G-tIE" firstAttribute="top" secondItem="my2-5o-bNb" secondAttribute="top" constant="20" id="aLW-0J-VPR"/>
                                                                 <constraint firstItem="TA9-9G-tIE" firstAttribute="leading" secondItem="ZPW-fz-5Oi" secondAttribute="leading" id="alo-ld-qH9"/>
+                                                                <constraint firstItem="vl8-xk-OxH" firstAttribute="trailing" secondItem="TA9-9G-tIE" secondAttribute="trailing" id="bCs-st-6Hk"/>
                                                                 <constraint firstItem="ImH-jg-Agp" firstAttribute="trailing" secondItem="TA9-9G-tIE" secondAttribute="trailing" id="bO7-1x-a1O"/>
                                                                 <constraint firstItem="Wkv-a4-uiD" firstAttribute="trailing" secondItem="TA9-9G-tIE" secondAttribute="trailing" priority="900" id="dYP-Us-6bj"/>
                                                                 <constraint firstItem="dKk-CE-yY0" firstAttribute="top" secondItem="EDx-YH-ofM" secondAttribute="top" id="dw4-5m-LIU"/>
-                                                                <constraint firstItem="ZPW-fz-5Oi" firstAttribute="trailing" secondItem="TA9-9G-tIE" secondAttribute="trailing" id="e0g-tm-BF8"/>
+                                                                <constraint firstItem="vl8-xk-OxH" firstAttribute="leading" secondItem="ZPW-fz-5Oi" secondAttribute="trailing" constant="8" id="e0g-tm-BF8"/>
                                                                 <constraint firstItem="jUH-hL-3U3" firstAttribute="trailing" secondItem="TA9-9G-tIE" secondAttribute="trailing" priority="900" id="f4B-e4-9IW"/>
                                                                 <constraint firstItem="eOZ-KM-xLa" firstAttribute="top" secondItem="EDx-YH-ofM" secondAttribute="top" id="fUd-pm-IiH"/>
                                                                 <constraint firstItem="aOD-Qz-oE3" firstAttribute="top" secondItem="EDx-YH-ofM" secondAttribute="top" id="gOd-gW-hDD"/>
@@ -2002,13 +2037,27 @@
                                                                     </textFieldCell>
                                                                 </textField>
                                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cOv-Yl-KdH">
-                                                                    <rect key="frame" x="18" y="66" width="324" height="16"/>
+                                                                    <rect key="frame" x="18" y="66" width="300" height="16"/>
                                                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Subtitle delay:" id="Wkz-wW-sOM">
                                                                         <font key="font" metaFont="systemBold"/>
                                                                         <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                                                                         <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                                                     </textFieldCell>
                                                                 </textField>
+                                                                <button translatesAutoresizingMaskIntoConstraints="NO" id="jIX-Yi-A9J" userLabel="SubDelayReset Button">
+                                                                    <rect key="frame" x="324" y="63.5" width="16" height="21"/>
+                                                                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSRefreshFreestandingTemplate" imagePosition="only" alignment="center" controlSize="small" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="MMl-Ic-IVC">
+                                                                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                                        <font key="font" metaFont="message" size="11"/>
+                                                                    </buttonCell>
+                                                                    <constraints>
+                                                                        <constraint firstAttribute="width" constant="16" id="0vU-wh-nRb"/>
+                                                                        <constraint firstAttribute="height" constant="16" id="a4p-iN-ZNj"/>
+                                                                    </constraints>
+                                                                    <connections>
+                                                                        <action selector="resetSubDelayAction:" target="-2" id="rqO-aY-Yub"/>
+                                                                    </connections>
+                                                                </button>
                                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VbE-TV-lb5">
                                                                     <rect key="frame" x="18" y="20" width="20" height="11"/>
                                                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="-5s" id="uCX-EC-jXM">
@@ -2086,6 +2135,7 @@
                                                                 <constraint firstItem="r77-VA-Z1b" firstAttribute="trailing" secondItem="dXz-x4-sm5" secondAttribute="trailing" id="kSN-80-IMR"/>
                                                                 <constraint firstItem="YIE-pv-gCK" firstAttribute="centerY" secondItem="zQu-u6-goi" secondAttribute="centerY" id="lUf-kQ-zMz"/>
                                                                 <constraint firstItem="kzp-GR-Sy4" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="VbE-TV-lb5" secondAttribute="trailing" id="llG-p4-ckS"/>
+                                                                <constraint firstItem="jIX-Yi-A9J" firstAttribute="centerY" secondItem="cOv-Yl-KdH" secondAttribute="centerY" id="qlA-Gr-8Zu"/>
                                                                 <constraint firstItem="eOz-bB-vzM" firstAttribute="centerY" secondItem="dXz-x4-sm5" secondAttribute="centerY" id="rgl-9k-oY7"/>
                                                                 <constraint firstItem="4U2-kT-76O" firstAttribute="leading" secondItem="eOz-bB-vzM" secondAttribute="trailing" id="rnJ-T0-g1e"/>
                                                                 <constraint firstItem="LMp-7Y-Rxg" firstAttribute="top" secondItem="3xe-mv-ORw" secondAttribute="bottom" constant="8" id="uj7-Lc-oLk"/>
@@ -2407,9 +2457,10 @@
                                                         <constraint firstItem="jRc-VZ-Vv2" firstAttribute="leading" secondItem="pm4-x9-WJ5" secondAttribute="leading" id="XLU-g4-EAb"/>
                                                         <constraint firstItem="mYH-DV-e4F" firstAttribute="leading" secondItem="PJb-5N-8QM" secondAttribute="leading" id="aMT-hN-hi6"/>
                                                         <constraint firstItem="dXz-x4-sm5" firstAttribute="leading" secondItem="PJb-5N-8QM" secondAttribute="leading" id="ant-fM-6lp"/>
+                                                        <constraint firstItem="jIX-Yi-A9J" firstAttribute="trailing" secondItem="PJb-5N-8QM" secondAttribute="trailing" id="bhJ-Qy-Sjs"/>
                                                         <constraint firstItem="8ZC-Wx-nt7" firstAttribute="trailing" secondItem="PJb-5N-8QM" secondAttribute="trailing" id="bzu-IK-uIu"/>
                                                         <constraint firstItem="M2U-rq-X2L" firstAttribute="leading" secondItem="PJb-5N-8QM" secondAttribute="leading" id="cph-Mm-h9J"/>
-                                                        <constraint firstItem="cOv-Yl-KdH" firstAttribute="trailing" secondItem="PJb-5N-8QM" secondAttribute="trailing" id="fPr-gV-64i"/>
+                                                        <constraint firstItem="jIX-Yi-A9J" firstAttribute="leading" secondItem="cOv-Yl-KdH" secondAttribute="trailing" constant="8" id="fPr-gV-64i"/>
                                                         <constraint firstItem="OEX-Gn-xCa" firstAttribute="leading" secondItem="PJb-5N-8QM" secondAttribute="leading" id="gAG-3A-N0t"/>
                                                         <constraint firstItem="B8f-KH-BaO" firstAttribute="trailing" secondItem="PJb-5N-8QM" secondAttribute="trailing" id="ktB-Vi-i3u"/>
                                                         <constraint firstItem="OEX-Gn-xCa" firstAttribute="trailing" secondItem="PJb-5N-8QM" secondAttribute="trailing" id="lWH-MN-mSd"/>
