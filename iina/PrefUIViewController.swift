@@ -48,6 +48,9 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   @IBOutlet weak var aspectsTokenField: AspectTokenField!
   @IBOutlet weak var cropTokenField: AspectTokenField!
 
+  @IBOutlet weak var resetAspectsButton: NSButton!
+  @IBOutlet weak var resetCropsButton: NSButton!
+
   @IBOutlet var sectionAppearanceView: NSView!
   @IBOutlet var sectionFullScreenView: NSView!
   @IBOutlet var sectionWindowView: NSView!
@@ -141,8 +144,8 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    aspectsTokenField.commaSeparatedValues = Preference.string(for: .aspectRatioPanelPresets) ?? ""
-    cropTokenField.commaSeparatedValues = Preference.string(for: .cropPanelPresets) ?? ""
+    updateAspectControlsFromPrefs()
+    updateCropControlsFromPrefs()
 
     oscToolbarStackView.wantsLayer = true
 
@@ -165,20 +168,28 @@ class PrefUIViewController: PreferenceViewController, PreferenceWindowEmbeddable
     }
   }
 
+  private func updateAspectControlsFromPrefs() {
+    let newAspects = Preference.string(for: .aspectRatioPanelPresets) ?? ""
+    aspectsTokenField.commaSeparatedValues = newAspects
+    let defaultAspects = Preference.defaultPreference[.aspectRatioPanelPresets] as? String
+    resetAspectsButton.isHidden = (defaultAspects == newAspects)
+  }
+
+  private func updateCropControlsFromPrefs() {
+    let newCropAspects = Preference.string(for: .cropPanelPresets) ?? ""
+    cropTokenField.commaSeparatedValues = newCropAspects
+    let defaultCrops = Preference.defaultPreference[.cropPanelPresets] as? String
+    resetCropsButton.isHidden = defaultCrops == newCropAspects
+  }
+
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
     guard let keyPath = keyPath, let _ = change else { return }
 
     switch keyPath {
     case PK.aspectRatioPanelPresets.rawValue:
-      let newAspects = Preference.string(for: .aspectRatioPanelPresets) ?? ""
-      if newAspects != aspectsTokenField.commaSeparatedValues {
-        aspectsTokenField.commaSeparatedValues = newAspects
-      }
-    case PK.cropPanelPresets.rawValue:
-      let newCropAspects = Preference.string(for: .cropPanelPresets) ?? ""
-      if newCropAspects != cropTokenField.commaSeparatedValues {
-        cropTokenField.commaSeparatedValues = newCropAspects
-      }
+      updateAspectControlsFromPrefs()
+  case PK.cropPanelPresets.rawValue:
+      updateCropControlsFromPrefs()
     case PK.showTopBarTrigger.rawValue,
       PK.enableOSC.rawValue,
       PK.topBarPlacement.rawValue,

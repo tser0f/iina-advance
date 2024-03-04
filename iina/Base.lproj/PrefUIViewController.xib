@@ -22,6 +22,8 @@
                 <outlet property="pipDoNothing" destination="o7N-Tm-Aly" id="xg5-HZ-Usj"/>
                 <outlet property="pipHideWindow" destination="BMA-ed-2gf" id="UJv-H3-HDi"/>
                 <outlet property="pipMinimizeWindow" destination="YWw-1J-3Gr" id="5eN-rl-utd"/>
+                <outlet property="resetAspectsButton" destination="sUa-JE-D3L" id="4Zk-lk-klu"/>
+                <outlet property="resetCropsButton" destination="U4e-Vm-2gO" id="Zup-nM-5C4"/>
                 <outlet property="resizeWindowTimingPopUpButton" destination="HBJ-ip-LD2" id="l4w-Bz-faM"/>
                 <outlet property="resizeWindowWhenOpeningFileCheckbox" destination="MY4-AB-Orx" id="qVn-d6-4yM"/>
                 <outlet property="sectionAppearanceView" destination="M9c-Ak-HmK" id="96r-w6-H5K"/>
