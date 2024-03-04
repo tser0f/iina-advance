@@ -122,6 +122,12 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBOutlet weak var gammaSlider: NSSlider!
   @IBOutlet weak var hueSlider: NSSlider!
 
+  @IBOutlet weak var brightnessResetBtn: NSButton!
+  @IBOutlet weak var contrastResetBtn: NSButton!
+  @IBOutlet weak var saturationResetBtn: NSButton!
+  @IBOutlet weak var gammaResetBtn: NSButton!
+  @IBOutlet weak var hueResetBtn: NSButton!
+
   @IBOutlet weak var audioDelaySlider: NSSlider!
   @IBOutlet weak var audioDelaySliderIndicator: NSTextField!
   @IBOutlet weak var audioDelaySliderConstraint: NSLayoutConstraint!
@@ -144,6 +150,8 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   @IBOutlet weak var audioEqSlider8: NSSlider!
   @IBOutlet weak var audioEqSlider9: NSSlider!
   @IBOutlet weak var audioEqSlider10: NSSlider!
+
+  @IBOutlet weak var audioEQResetBtn: NSButton!
 
   @IBOutlet weak var subScaleSlider: NSSlider!
   @IBOutlet weak var subScaleResetBtn: NSButton!
@@ -358,6 +366,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     let currSubScale = player.mpv.getDouble(MPVOption.Subtitles.subScale).clamped(to: 0.1...10)
     let displaySubScale = Utility.toDisplaySubScale(fromRealSubScale: currSubScale)
     subScaleSlider.doubleValue = displaySubScale + (displaySubScale > 0 ? -1 : 1)
+    subScaleResetBtn.isHidden = displaySubScale == 1.0
     let subDelay = player.mpv.getDouble(MPVOption.Subtitles.subDelay)
     subDelaySlider.doubleValue = subDelay
     customSubDelayTextField.doubleValue = subDelay
@@ -384,6 +393,12 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     saturationSlider.intValue = Int32(player.info.saturation)
     gammaSlider.intValue = Int32(player.info.gamma)
     hueSlider.intValue = Int32(player.info.hue)
+
+    brightnessResetBtn.isHidden = player.info.brightness == 0
+    contrastResetBtn.isHidden = player.info.contrast == 0
+    saturationResetBtn.isHidden = player.info.saturation == 0
+    gammaResetBtn.isHidden = player.info.gamma == 0
+    hueResetBtn.isHidden = player.info.hue == 0
   }
 
   private func updateAudioEqState() {
@@ -398,6 +413,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     } else {
       withAllAudioEqSliders { $0.doubleValue = 0 }
     }
+    refreshAudioEqResetButton()
   }
 
   func setupPluginTabs() {
@@ -769,6 +785,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     redraw(indicator: audioDelaySliderIndicator, constraint: audioDelaySliderConstraint, slider: audioDelaySlider, value: "\(sender.stringValue)s")
   }
 
+  /// Sets mpv audio EQ from control values
   @IBAction func audioEqSliderAction(_ sender: NSSlider) {
     player.setAudioEq(fromGains: [
       audioEqSlider1.doubleValue,
@@ -782,6 +799,18 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       audioEqSlider9.doubleValue,
       audioEqSlider10.doubleValue,
       ])
+
+    refreshAudioEqResetButton()
+  }
+
+  private func refreshAudioEqResetButton() {
+    var isAllDefault = true
+    withAllAudioEqSliders({ audioEqSlider in
+      if audioEqSlider.doubleValue != 0.0 {
+        isAllDefault = false
+      }
+    })
+    audioEQResetBtn.isHidden = isAllDefault
   }
 
   @IBAction func resetAudioEqAction(_ sender: AnyObject) {
