@@ -25,7 +25,7 @@ class MagnificationGestureHandler: NSMagnificationGestureRecognizer {
     switch pinchAction {
     case .none:
       return
-    case .fullscreen:
+    case .fullScreen:
       // enter/exit fullscreen
       if recognizer.state == .began {
         let isEnlarge = recognizer.magnification > 0
@@ -35,44 +35,68 @@ class MagnificationGestureHandler: NSMagnificationGestureRecognizer {
         }
       }
     case .windowSize:
-      guard !windowController.isFullScreen else { return }
+      changeWindowSize(recognizer: recognizer)
+    case .windowSizeOrFullScreen:
+      guard let window = windowController.window else { return }
 
-      var finalGeometry: WinGeometry? = nil
-      // adjust window size
-      switch recognizer.state {
-      case .began:
-        guard let window = windowController.window else { return }
-        windowController.isMagnifying = true
-        if windowController.currentLayout.isMusicMode {
-          windowController.musicModeGeo = windowController.musicModeGeo.clone(windowFrame: window.frame)
-        } else {
-          windowController.windowedModeGeo = windowController.windowedModeGeo.clone(windowFrame: window.frame)
+      // Check for full screen toggle conditions first
+      if recognizer.state == .began, pinchAction == .windowSizeOrFullScreen {
+        if windowController.isFullScreen, recognizer.magnification < 0 {
+          windowController.toggleWindowFullScreen()
+          return
+        } else if let screenFrame = window.screen?.visibleFrame,
+                  window.frame.height >= screenFrame.height && recognizer.magnification > 0 {
+          windowController.toggleWindowFullScreen()
+          return
         }
-        scaleVideoFromPinchGesture(to: recognizer.magnification)
-      case .changed:
-        scaleVideoFromPinchGesture(to: recognizer.magnification)
-      case .ended:
-        finalGeometry = scaleVideoFromPinchGesture(to: recognizer.magnification)
-        windowController.isMagnifying = false
-      case .cancelled, .failed:
-        finalGeometry = scaleVideoFromPinchGesture(to: 1.0)
-        windowController.isMagnifying = false
-      default:
-        return
       }
+      // If full screen wasn't toggled, try window size:
+      changeWindowSize(recognizer: recognizer)
+    }  // end switch
+  }
 
-      if let finalGeometry {
-        if windowController.currentLayout.isMusicMode {
-          windowController.log.verbose("Updating musicModeGeo from magnification gesture state \(recognizer.state.rawValue)")
-          let musicModeGeo = windowController.musicModeGeo.clone(windowFrame: finalGeometry.windowFrame)
-          windowController.applyMusicModeGeometry(musicModeGeo, setFrame: false, updateCache: true)
-        } else {
-          windowController.log.verbose("Updating windowedModeGeo from magnification gesture state \(recognizer.state.rawValue)")
-          windowController.windowedModeGeo = finalGeometry
-          windowController.player.updateMPVWindowScale(using: finalGeometry)
-          windowController.player.info.intendedViewportSize = finalGeometry.viewportSize
-          windowController.player.saveState()
-        }
+  private func changeWindowSize(recognizer: NSMagnificationGestureRecognizer) {
+    guard !windowController.isFullScreen else { return }
+
+    var finalGeometry: WinGeometry? = nil
+    // adjust window size
+    switch recognizer.state {
+    case .began:
+      guard let window = windowController.window else { return }
+
+      windowController.isMagnifying = true
+      if windowController.currentLayout.isMusicMode {
+        windowController.musicModeGeo = windowController.musicModeGeo.clone(windowFrame: window.frame)
+      } else {
+        windowController.windowedModeGeo = windowController.windowedModeGeo.clone(windowFrame: window.frame)
+      }
+      scaleVideoFromPinchGesture(to: recognizer.magnification)
+    case .changed:
+      guard windowController.isMagnifying else { return }
+      scaleVideoFromPinchGesture(to: recognizer.magnification)
+    case .ended:
+      guard windowController.isMagnifying else { return }
+      finalGeometry = scaleVideoFromPinchGesture(to: recognizer.magnification)
+      windowController.isMagnifying = false
+    case .cancelled, .failed:
+      guard windowController.isMagnifying else { return }
+      finalGeometry = scaleVideoFromPinchGesture(to: 1.0)
+      windowController.isMagnifying = false
+    default:
+      return
+    }
+
+    if let finalGeometry {
+      if windowController.currentLayout.isMusicMode {
+        windowController.log.verbose("Updating musicModeGeo from magnification gesture state \(recognizer.state.rawValue)")
+        let musicModeGeo = windowController.musicModeGeo.clone(windowFrame: finalGeometry.windowFrame)
+        windowController.applyMusicModeGeometry(musicModeGeo, setFrame: false, updateCache: true)
+      } else {
+        windowController.log.verbose("Updating windowedModeGeo from magnification gesture state \(recognizer.state.rawValue)")
+        windowController.windowedModeGeo = finalGeometry
+        windowController.player.updateMPVWindowScale(using: finalGeometry)
+        windowController.player.info.intendedViewportSize = finalGeometry.viewportSize
+        windowController.player.saveState()
       }
     }
   }

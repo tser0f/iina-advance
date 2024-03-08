@@ -666,6 +666,7 @@ struct Preference {
   }
 
   enum ScrollAction: Int, InitializingFromKey {
+    /// Ideally, `none` would be `0`, but we need to support legacy behavior
     case volume = 0
     case seek
     case none
@@ -679,11 +680,13 @@ struct Preference {
   }
 
   enum PinchAction: Int, InitializingFromKey {
+    /// Ideally, `none` would be `0`, but we need to support legacy behavior
     case windowSize = 0
-    case fullscreen
+    case fullScreen
     case none
+    case windowSizeOrFullScreen
 
-    static var defaultValue = PinchAction.windowSize
+    static var defaultValue = PinchAction.windowSizeOrFullScreen
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1258,7 +1261,7 @@ struct Preference {
     .doubleClickAction: MouseClickAction.fullscreen.rawValue,
     .rightClickAction: MouseClickAction.pause.rawValue,
     .middleClickAction: MouseClickAction.none.rawValue,
-    .pinchAction: PinchAction.windowSize.rawValue,
+    .pinchAction: PinchAction.windowSizeOrFullScreen.rawValue,
     .rotateAction: RotateAction.defaultValue.rawValue,
     .forceTouchAction: MouseClickAction.none.rawValue,
 
