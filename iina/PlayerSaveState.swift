@@ -261,7 +261,8 @@ struct PlayerSaveState {
       ticket = $0
     }
 
-    // Run in background queue to avoid blocking UI. Cut down on duplicate work via delay and ticket check
+    /// Runs asyncronously in background queue to avoid blocking UI.
+    /// Cuts down on duplicate work via delay and ticket check.
     PlayerCore.backgroundQueue.asyncAfter(deadline: DispatchTime.now() + AppData.playerStateSaveDelay) {
       guard ticket == player.saveTicketCounter else {
         return
@@ -299,6 +300,14 @@ struct PlayerSaveState {
         Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
       }
     }
+  }
+
+  static func saveSynchronously(_ player: PlayerCore) {
+    let properties = generatePropDict(from: player)
+    if player.log.isTraceEnabled {
+      player.log.trace("Saving player state: \(properties)")
+    }
+    Preference.UIState.savePlayerState(forPlayerID: player.label, properties: properties)
   }
 
   // MARK: - Restore State / Deserialize from prefs

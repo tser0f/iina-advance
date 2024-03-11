@@ -424,14 +424,14 @@
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="nio-Fb-YPK">
                     <rect key="frame" x="231" y="49" width="237" height="25"/>
-                    <popUpButtonCell key="cell" type="push" title="Adjust window size" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="Ols-Lr-fiH" id="FbW-ce-yAK">
+                    <popUpButtonCell key="cell" type="push" title="Adjust window size" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="Ols-Lr-fiH" id="FbW-ce-yAK">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
                         <menu key="menu" id="B7Y-mP-CKn">
                             <items>
-                                <menuItem title="Adjust window size" id="Ols-Lr-fiH"/>
+                                <menuItem title="Adjust window size" state="on" id="Ols-Lr-fiH"/>
                                 <menuItem title="Enter / exit full screen" tag="1" id="Hm3-dh-jgb"/>
-                                <menuItem title="Window size, then full screen" state="on" tag="3" id="Inx-8D-mxb"/>
+                                <menuItem title="Window size, then full screen" tag="3" id="Inx-8D-mxb"/>
                                 <menuItem title="Do nothing" tag="2" id="chS-d2-TG1"/>
                             </items>
                         </menu>

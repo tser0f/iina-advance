@@ -865,6 +865,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     Logger.log("App should terminate")
+
+    // Save UI state first:
+    for window in NSApp.windows {
+      if let playerWindowController = window.windowController as? PlayerWindowController {
+        PlayerSaveState.saveSynchronously(playerWindowController.player)
+      }
+    }
+    Preference.UIState.saveCurrentOpenWindowList()
+
     isTerminating = true
 
     // Remove observers for IINA preferences.
