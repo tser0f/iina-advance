@@ -169,8 +169,8 @@
 /* Class = "NSTextFieldCell"; title = "Size:"; ObjectID = "s9l-Hb-SCk"; */
 "s9l-Hb-SCk.title" = "Size:";
 
-/* Class = "NSTextFieldCell"; title = "Position:"; ObjectID = "t03-36-Zge"; */
-"t03-36-Zge.title" = "Position:";
+/* Class = "NSTextFieldCell"; title = "Vertical position:"; ObjectID = "t03-36-Zge"; */
+"t03-36-Zge.title" = "Vertical position:";
 
 /* Class = "NSTextFieldCell"; title = "Rotation:"; ObjectID = "to3-rc-Agv"; */
 "to3-rc-Agv.title" = "Rotation:";

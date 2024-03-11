@@ -966,8 +966,6 @@ class PlayerCore: NSObject {
     log.verbose("Got request to set videoAspectOverride to: \(aspect.quoted)")
     dispatchPrecondition(condition: .onQueue(mpv.queue))
 
-    guard let videoParams = mpv.queryForVideoParams() else { return }
-
     let aspectDisplay: String
     if aspect.contains(":"), Aspect(string: aspect) != nil {
       // Aspect is in colon notation (X:Y)
@@ -997,12 +995,16 @@ class PlayerCore: NSObject {
 
       sendOSD(.aspect(aspectDisplay))
     }
+    /// Call this after setting `info.selectedAspectRatioLabel`, to make sure it is included
+    guard let videoParams = mpv.queryForVideoParams() else { return }
+
     // Get this in the mpv thread to avoid race condition
     let justOpenedFile = info.justOpenedFile
 
     DispatchQueue.main.async { [self] in
       if videoParams.hasValidSize {
         // Make sure window geometry is up to date
+        log.verbose("Calling mpvVideoDidReconfig from video-aspect-override")
         windowController.mpvVideoDidReconfig(videoParams, justOpenedFile: justOpenedFile)
       }
 
@@ -1048,7 +1050,7 @@ class PlayerCore: NSObject {
     let videoWidthScaled = windowGeometry.videoSize.width
 
     // This should take into account aspect override and/or crop already
-    guard let videoWidthUnscaled = mpv.queryForVideoParams()?.videoDisplayRotatedSize?.width else {
+    guard let videoWidthUnscaled = mpv.queryForVideoParams()?.videoSizeACR?.width else {
       return nil
     }
 
@@ -1432,14 +1434,14 @@ class PlayerCore: NSObject {
     return chapter
   }
 
-  func getCurrentCropRect(videoRawSize: NSSize, normalized: Bool = false, flipY: Bool = false) -> NSRect? {
-    guard videoRawSize.width > 0 && videoRawSize.height > 0 else { return nil }
+  func getCurrentCropRect(videoSizeRaw: NSSize, normalized: Bool = false, flipY: Bool = false) -> NSRect? {
+    guard videoSizeRaw.width > 0 && videoSizeRaw.height > 0 else { return nil }
 
     let cropRect: NSRect
     if let cropFilter = info.cropFilter {
-      cropRect = cropFilter.cropRect(origVideoSize: videoRawSize, flipY: flipY)
+      cropRect = cropFilter.cropRect(origVideoSize: videoSizeRaw, flipY: flipY)
     } else if let prevCropFilter = info.videoFiltersDisabled[Constants.FilterLabel.crop] {
-      cropRect = prevCropFilter.cropRect(origVideoSize: videoRawSize, flipY: flipY)
+      cropRect = prevCropFilter.cropRect(origVideoSize: videoSizeRaw, flipY: flipY)
     } else {
       return nil
     }
@@ -1448,10 +1450,10 @@ class PlayerCore: NSObject {
       return cropRect
     }
 
-    let xNorm = cropRect.origin.x / videoRawSize.width
-    let yNorm = cropRect.origin.y / videoRawSize.height
-    let widthNorm = cropRect.width / videoRawSize.width
-    let heightNorm = cropRect.height / videoRawSize.height
+    let xNorm = cropRect.origin.x / videoSizeRaw.width
+    let yNorm = cropRect.origin.y / videoSizeRaw.height
+    let widthNorm = cropRect.width / videoSizeRaw.width
+    let heightNorm = cropRect.height / videoSizeRaw.height
     let normRect = NSRect(x: xNorm, y: yNorm, width: widthNorm, height: heightNorm)
     if log.isTraceEnabled {
       log.trace("Normalized cropRect \(cropRect) → \(normRect)")
@@ -1771,55 +1773,67 @@ class PlayerCore: NSObject {
     }
   }
 
-  /** Scale is a double value in [-100, -1] + [1, 100] */
+  /** Scale is a double value in (0, 100] */
   func setSubScale(_ scale: Double) {
+    assert(scale > 0.0, "Invalid sub scale: \(scale)")
     mpv.queue.async { [self] in
-      if scale > 0 {
-        mpv.setDouble(MPVOption.Subtitles.subScale, scale)
-      } else {
-        mpv.setDouble(MPVOption.Subtitles.subScale, -scale)
-      }
+      Preference.set(scale, for: .subScale)
+      mpv.setDouble(MPVOption.Subtitles.subScale, scale)
     }
   }
 
   func setSubPos(_ pos: Int) {
     mpv.queue.async { [self] in
+      Preference.set(pos, for: .subPos)
       mpv.setInt(MPVOption.Subtitles.subPos, pos)
     }
   }
 
   func setSubTextColor(_ colorString: String) {
     mpv.queue.async { [self] in
+      Preference.set(colorString, for: .subTextColorString)
       mpv.setString("options/" + MPVOption.Subtitles.subColor, colorString)
     }
   }
 
-  func setSubTextSize(_ size: Double) {
+  func setSubFont(_ font: String) {
     mpv.queue.async { [self] in
-      mpv.setDouble("options/" + MPVOption.Subtitles.subFontSize, size)
+      Preference.set(font, for: .subTextFont)
+      mpv.setString(MPVOption.Subtitles.subFont, font)
     }
   }
 
-  func setSubTextBold(_ bold: Bool) {
+  func setSubTextSize(_ fontSize: Double) {
     mpv.queue.async { [self] in
-      mpv.setFlag("options/" + MPVOption.Subtitles.subBold, bold)
+      Preference.set(fontSize, for: .subTextSize)
+      mpv.setDouble("options/" + MPVOption.Subtitles.subFontSize, fontSize)
+    }
+  }
+
+  func setSubTextBold(_ isBold: Bool) {
+    mpv.queue.async { [self] in
+      Preference.set(isBold, for: .subBold)
+      mpv.setFlag("options/" + MPVOption.Subtitles.subBold, isBold)
     }
   }
 
   func setSubTextBorderColor(_ colorString: String) {
     mpv.queue.async { [self] in
+      Preference.set(colorString, for: .subBorderColorString)
       mpv.setString("options/" + MPVOption.Subtitles.subBorderColor, colorString)
     }
   }
 
   func setSubTextBorderSize(_ size: Double) {
     mpv.queue.async { [self] in
+      Preference.set(size, for: .subBorderSize)
       mpv.setDouble("options/" + MPVOption.Subtitles.subBorderSize, size)
     }
   }
 
   func setSubTextBgColor(_ colorString: String) {
     mpv.queue.async { [self] in
+      Preference.set(colorString, for: .subBgColorString)
       mpv.setString("options/" + MPVOption.Subtitles.subBackColor, colorString)
     }
   }
@@ -1828,21 +1842,6 @@ class PlayerCore: NSObject {
     mpv.queue.async { [self] in
       mpv.setString(MPVOption.Subtitles.subCodepage, encoding)
       info.subEncoding = encoding
-    }
-  }
-
-  func setSubFont(_ font: String) {
-    mpv.queue.async { [self] in
-      mpv.setString(MPVOption.Subtitles.subFont, font)
-    }
-  }
-
-  func execKeyCode(_ code: String) {
-    mpv.queue.async { [self] in
-      let errCode = mpv.command(.keypress, args: [code], checkError: false)
-      if errCode < 0 {
-        log.error("Error when executing key code (\(errCode))")
-      }
     }
   }
 
@@ -1932,21 +1931,39 @@ class PlayerCore: NSObject {
       let rawHeight = videoSize.1
 
       // If no override.
-      // TODO: figure out aspect & crop override
-      let aspectRatio = NSSize(width: CGFloat(rawWidth), height: CGFloat(rawHeight)).mpvAspect.aspectNormalDecimalString
 
-      let params: MPVVideoParams
-      if let prev = info.videoParams {
-        params = MPVVideoParams(videoRawWidth: rawWidth, videoRawHeight: rawHeight, aspectRatio: aspectRatio,
-                                videoDisplayWidth: rawWidth, videoDisplayHeight: rawHeight,
-                                totalRotation: prev.totalRotation, userRotation: prev.userRotation, videoScale: prev.videoScale)
+      // TODO: figure out aspect & crop override
+
+      var aspectRatioOverride: String = "-1"
+      if !info.selectedAspectRatioLabel.isEmpty, let aspectOverride = Aspect(string: info.selectedAspectRatioLabel) {
+        aspectRatioOverride = aspectOverride.value.aspectNormalDecimalString
       } else {
-        params = MPVVideoParams(videoRawWidth: rawWidth, videoRawHeight: rawHeight, aspectRatio: aspectRatio,
-                                videoDisplayWidth: rawWidth, videoDisplayHeight: rawHeight,
-                                totalRotation: 0, userRotation: 0, videoScale: 1.0)
+        // default to aspect ratio of new video
+        aspectRatioOverride = NSSize(width: CGFloat(rawWidth), height: CGFloat(rawHeight)).mpvAspect.aspectNormalDecimalString
       }
 
+      var totalRotation = 0
+      var userRotation = 0
+      var videoScale = 0.0
+
+      if let prev = info.videoParams {
+        if let prevAspectOverride = prev.aspectRatioOverride {
+          aspectRatioOverride = prevAspectOverride.aspectNormalDecimalString
+        }
+        totalRotation = prev.totalRotation
+        userRotation = prev.userRotation
+        videoScale = prev.videoScale
+      }
+      
+      let params = MPVVideoParams(videoRawWidth: rawWidth,
+                                  videoRawHeight: rawHeight, 
+                                  selectedAspectRatioLabel: info.selectedAspectRatioLabel,
+                                  aspectRatioOverride: aspectRatioOverride,
+                                  totalRotation: totalRotation, userRotation: userRotation, 
+                                  cropBox: nil, videoScale: videoScale)
+
       DispatchQueue.main.async { [self] in
+        log.verbose("Calling mpvVideoDidReconfig from resizeVideo with videoParams \(params)")
         windowController.mpvVideoDidReconfig(params, justOpenedFile: true)
       }
     } else {
@@ -2700,14 +2717,14 @@ class PlayerCore: NSObject {
           log.debug("Cannot generate thumbnails: could not get video params")
           return
         }
-        let videoRawSize = videoParams.videoRawSize
-        guard videoRawSize.height > 0, videoRawSize.width > 0  else {
+        let videoSizeRaw = videoParams.videoSizeRaw
+        guard videoSizeRaw.height > 0, videoSizeRaw.width > 0  else {
           log.debug("Cannot generate thumbnails: video height and/or width is zero")
           clearExistingThumbnails()
           return
         }
 
-        let thumbnailWidth = SingleMediaThumbnailsLoader.determineWidthOfThumbnail(from: videoRawSize, log: log)
+        let thumbnailWidth = SingleMediaThumbnailsLoader.determineWidthOfThumbnail(from: videoSizeRaw, log: log)
 
         if let oldThumbs = info.currentMediaThumbnails {
           if !oldThumbs.isCancelled, oldThumbs.mediaFilePath == url.path,

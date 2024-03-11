@@ -120,6 +120,13 @@ class MPVController: NSObject {
     MPVOption.Subtitles.subDelay: MPV_FORMAT_DOUBLE,
     MPVOption.Subtitles.subScale: MPV_FORMAT_DOUBLE,
     MPVOption.Subtitles.subPos: MPV_FORMAT_DOUBLE,
+    MPVOption.Subtitles.subColor: MPV_FORMAT_STRING,
+    MPVOption.Subtitles.subFont: MPV_FORMAT_STRING,
+    MPVOption.Subtitles.subFontSize: MPV_FORMAT_INT64,
+    MPVOption.Subtitles.subBold: MPV_FORMAT_FLAG,
+    MPVOption.Subtitles.subBorderColor: MPV_FORMAT_STRING,
+    MPVOption.Subtitles.subBorderSize: MPV_FORMAT_INT64,
+    MPVOption.Subtitles.subBackColor: MPV_FORMAT_STRING,
     MPVOption.Equalizer.contrast: MPV_FORMAT_INT64,
     MPVOption.Equalizer.brightness: MPV_FORMAT_INT64,
     MPVOption.Equalizer.gamma: MPV_FORMAT_INT64,
@@ -889,23 +896,33 @@ not applying FFmpeg 9599 workaround
 
     let videoRawWidth = getInt(MPVProperty.width)
     let videoRawHeight = getInt(MPVProperty.height)
-    let aspectRatio = getString(MPVProperty.videoParamsAspect)
-    let videoDisplayWidth = getInt(MPVProperty.dwidth)
-    let videoDisplayHeight = getInt(MPVProperty.dheight)
+    let aspectRatioOverride: String
+    if !player.info.selectedAspectRatioLabel.isEmpty, let aspectOverride = Aspect(string: player.info.selectedAspectRatioLabel) {
+      aspectRatioOverride = aspectOverride.value.aspectNormalDecimalString
+    } else {
+      aspectRatioOverride = getString(MPVOption.Video.videoAspectOverride) ?? "-1"
+    }
+
+    let videoWidthAC = getInt(MPVProperty.dwidth)
+    let videoHeightAC = getInt(MPVProperty.dheight)
     let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
     let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
     let windowScale = getDouble(MPVOption.Window.windowScale)
 
-    let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight, aspectRatio: aspectRatio, 
-                                videoDisplayWidth: videoDisplayWidth, videoDisplayHeight: videoDisplayHeight,
-                                totalRotation: mpvParamRotate, userRotation: mpvVideoRotate, videoScale: windowScale)
-
     // filter the last video-reconfig event before quit
-    if params.videoDisplayRotatedWidth == 0 && params.videoDisplayRotatedHeight == 0 && getFlag(MPVProperty.coreIdle) {
+    if videoWidthAC == 0 && videoHeightAC == 0 && getFlag(MPVProperty.coreIdle) {
       player.log.verbose("Cannot get videoParams: core idle & dheight or dwidth is 0")
       return nil
     }
 
+    let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight,
+                                selectedAspectRatioLabel: player.info.selectedAspectRatioLabel,
+                                aspectRatioOverride: aspectRatioOverride,
+                                totalRotation: mpvParamRotate, userRotation: mpvVideoRotate,
+                                cropBox: nil, // TODO
+                                videoScale: windowScale)
+
+    player.log.verbose("Latest videoParams: \(params)")
     return params
   }
 
@@ -1350,6 +1367,41 @@ not applying FFmpeg 9599 workaround
       if let data = UnsafePointer<Double>(OpaquePointer(property.data))?.pointee {
         player.sendOSD(.subPos(data))
       }
+
+    case MPVOption.Subtitles.subColor:
+      needReloadQuickSettingsView = true
+      // TODO: OSD
+
+    case MPVOption.Subtitles.subFont:
+      needReloadQuickSettingsView = true
+      // TODO: OSD
+
+    case MPVOption.Subtitles.subFontSize:
+      needReloadQuickSettingsView = true
+//      if let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee {
+//        let fontSize = Int(data)
+//        // TODO: OSD
+//      }
+
+    case MPVOption.Subtitles.subBold:
+      needReloadQuickSettingsView = true
+//      if let isBold = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee {
+//        // TODO: OSD
+//      }
+
+    case MPVOption.Subtitles.subBorderColor:
+      needReloadQuickSettingsView = true
+      // TODO: OSD
+
+    case MPVOption.Subtitles.subBorderSize:
+      needReloadQuickSettingsView = true
+//      if let borderSize = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee {
+//        // TODO: OSD
+//      }
+
+    case MPVOption.Subtitles.subBackColor:
+      needReloadQuickSettingsView = true
+      // TODO: OSD
 
     case MPVOption.Equalizer.contrast:
       needReloadQuickSettingsView = true

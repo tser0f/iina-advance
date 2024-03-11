@@ -116,6 +116,23 @@ class PlaybackInfo {
     }
   }
 
+  /// If displaying album art, will be `1` (square). Otherwise should match `videoParams.videoAspectACR`, which should match the aspect of
+  /// the currently displayed `videoView`.
+  var videoAspect: CGFloat {
+    if isShowingAlbumArt {
+      return 1.0  // album art is always square
+    }
+    if let videoAspectACR = videoParams?.videoAspectACR {
+      return videoAspectACR
+    }
+    // TODO: handle this situation better
+    log.warn("No videoAspect found in videoParams! Falling back to default 16:9 aspect")
+    return 16.0/9.0
+  }
+
+  /// If `true`, then `videoView` is used to display album art, or default album art, which is always square
+  var isShowingAlbumArt: Bool = false
+
   var videoParams: MPVVideoParams? = nil
 
   var videoRawWidth: Int? {
@@ -131,29 +148,16 @@ class PlaybackInfo {
     return videoParams?.userRotation ?? 0
   }
 
+
   // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
   // IINA only supports one of [0, 90, 180, 270]
   var totalRotation: Int? {
     return videoParams?.totalRotation
   }
 
-  var cachedWindowScale: Double = 1.0
+  var cachedWindowScale: Double = 1.0  // TODO: put in video params
 
   // MARK: - Filters & Equalizers
-
-  /// The most up-to-date aspect ratio of the video (width/height), after `totalRotation` applied.
-  /// Should match `videoParams.videoDisplayRotatedAspect`
-  var videoAspect: CGFloat {
-    set {
-      videoAspectNormalized = Aspect.mpvPrecision(of: newValue)
-      log.verbose("Updated videoAspect to \(videoAspectNormalized.stringMaxFrac6)")
-    }
-    get {
-      return videoAspectNormalized
-    }
-  }
-
-  private var videoAspectNormalized: CGFloat = 1.0
 
   /// The currently applied aspect, used for finding current aspect in menu & sidebar segmented control. Does not include rotation(s)
   var selectedAspectRatioLabel: String = AppData.defaultAspectName

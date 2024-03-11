@@ -46,32 +46,32 @@ class SingleMediaThumbnailsLoader: NSObject, FFmpegControllerDelegate {
 
   /// We want the requested length of thumbnail to correspond to whichever video dimension is longer, and then get the corresponding width.
   /// Example: if video's native size is 600 W x 800 H and requested thumbnail size is 100, then `thumbWidth` should be 75.
-  static func determineWidthOfThumbnail(from videoRawSize: NSSize, log: Logger.Subsystem) -> Int {
+  static func determineWidthOfThumbnail(from videoSizeRaw: NSSize, log: Logger.Subsystem) -> Int {
     let sizeOption: Preference.ThumbnailSizeOption = Preference.enum(for: .thumbnailSizeOption)
     switch sizeOption {
     case .scaleWithViewport:
       let rawSizePercentage = CGFloat(min(max(0, Preference.integer(for: .thumbnailRawSizePercentage)), 100))
-      let thumbWidth = Int(round(videoRawSize.width * rawSizePercentage / 100))
-      log.verbose("Thumbnail native width based on settings: \(thumbWidth)px (\(Int(rawSizePercentage))% of video's \(Int(videoRawSize.width))px)")
+      let thumbWidth = Int(round(videoSizeRaw.width * rawSizePercentage / 100))
+      log.verbose("Thumbnail native width based on settings: \(thumbWidth)px (\(Int(rawSizePercentage))% of video's \(Int(videoSizeRaw.width))px)")
       return thumbWidth
     case .fixedSize:
       let requestedLength = CGFloat(Preference.integer(for: .thumbnailFixedLength))
       let thumbWidth: CGFloat
-      if videoRawSize.height > videoRawSize.width {
+      if videoSizeRaw.height > videoSizeRaw.width {
         // Match requested size to video height
-        if requestedLength > videoRawSize.height {
+        if requestedLength > videoSizeRaw.height {
           // Do not go bigger than video's native width
-          thumbWidth = videoRawSize.width
-          log.debug("Video's height is longer than its width, and thumbLength (\(requestedLength)) is larger than video's native height (\(videoRawSize.height)); clamping thumbWidth to \(videoRawSize.width)")
+          thumbWidth = videoSizeRaw.width
+          log.debug("Video's height is longer than its width, and thumbLength (\(requestedLength)) is larger than video's native height (\(videoSizeRaw.height)); clamping thumbWidth to \(videoSizeRaw.width)")
         } else {
-          thumbWidth = round(requestedLength * videoRawSize.aspect)
-          log.debug("Video's height (\(videoRawSize.height)) is longer than its width (\(videoRawSize.width)); scaling down thumbWidth to \(thumbWidth)")
+          thumbWidth = round(requestedLength * videoSizeRaw.aspect)
+          log.debug("Video's height (\(videoSizeRaw.height)) is longer than its width (\(videoSizeRaw.width)); scaling down thumbWidth to \(thumbWidth)")
         }
       } else {
         // Match requested size to video width
-        if requestedLength > videoRawSize.width {
-          log.debug("Requested thumblLength (\(requestedLength)) is larger than video's native width; clamping thumbWidth to \(videoRawSize.width)")
-          thumbWidth = videoRawSize.width
+        if requestedLength > videoSizeRaw.width {
+          log.debug("Requested thumblLength (\(requestedLength)) is larger than video's native width; clamping thumbWidth to \(videoSizeRaw.width)")
+          thumbWidth = videoSizeRaw.width
         } else {
           thumbWidth = requestedLength
         }

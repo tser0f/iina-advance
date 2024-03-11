@@ -1021,15 +1021,15 @@ struct WinGeometry: Equatable, CustomStringConvertible {
     return self.clone(windowFrame: newWindowFrame, fitOption: newFitOption, videoAspect: newVideoAspect)
   }
 
-  func uncropVideo(videoDisplayRotatedSize: NSSize, cropbox: NSRect, videoScale: CGFloat) -> WinGeometry {
+  func uncropVideo(videoSizeACR: NSSize, cropbox: NSRect, videoScale: CGFloat) -> WinGeometry {
     let cropboxScaled = NSRect(x: cropbox.origin.x * videoScale,
                                y: cropbox.origin.y * videoScale,
                                width: cropbox.width * videoScale,
                                height: cropbox.height * videoScale)
     // Figure out part which wasn't cropped:
-    let antiCropboxSizeScaled = NSSize(width: (videoDisplayRotatedSize.width - cropbox.width) * videoScale,
-                                       height: (videoDisplayRotatedSize.height - cropbox.height) * videoScale)
-    let newVideoAspect = videoDisplayRotatedSize.mpvAspect
+    let antiCropboxSizeScaled = NSSize(width: (videoSizeACR.width - cropbox.width) * videoScale,
+                                       height: (videoSizeACR.height - cropbox.height) * videoScale)
+    let newVideoAspect = videoSizeACR.mpvAspect
     let newWindowFrame = NSRect(x: windowFrame.origin.x - cropboxScaled.origin.x,
                                 y: windowFrame.origin.y - cropboxScaled.origin.y,
                                 width: windowFrame.width + antiCropboxSizeScaled.width,

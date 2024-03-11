@@ -368,6 +368,15 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       [subTextColorWell, subTextSizePopUp, subTextBgColorWell, subTextBorderColorWell, subTextBorderWidthPopUp, subTextFontBtn].forEach { $0.isEnabled = enableTextSettings }
     }
 
+    if let subTextColorString = Preference.string(for: .subTextColorString), let subTextColor = NSColor(mpvColorString: subTextColorString) {
+      subTextColorWell.color = subTextColor
+    }
+    if let subBorderColorString = Preference.string(for: .subBorderColorString), let subBorderColor = NSColor(mpvColorString: subBorderColorString) {
+      subTextBorderColorWell.color = subBorderColor
+    }
+    if let subBgColorString = Preference.string(for: .subBgColorString), let subBgColor = NSColor(mpvColorString: subBgColorString) {
+      subTextBgColorWell.color = subBgColor
+    }
     let currSubScale = player.mpv.getDouble(MPVOption.Subtitles.subScale).clamped(to: 0.1...10)
     let displaySubScale = Utility.toDisplaySubScale(fromRealSubScale: currSubScale)
     subScaleSlider.doubleValue = displaySubScale + (displaySubScale > 0 ? -1 : 1)
@@ -972,7 +981,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
       realValue = mappedValue
     } else {
       mappedValue = round((value - 1) * 20) / 20
-      realValue = 1 / mappedValue
+      realValue = 1 / abs(mappedValue)
     }
     player.setSubScale(realValue)
   }

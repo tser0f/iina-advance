@@ -1158,16 +1158,13 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Make sure these are up-to-date. In some cases (e.g. changing the video track while paused) mpv does not notify
     guard let videoParams else { return }
 
-    let showAlbumArt = currentMediaAudioStatus == .isAudio
     let oldAspectRatio = player.info.videoAspect
-    let newAspectRatio: CGFloat
-    if showDefaultArt || showAlbumArt {
-      newAspectRatio = 1.0
-    } else {
-      // This can also equal 1 if not found
-      newAspectRatio = videoParams.videoDisplayRotatedAspect
-    }
+    let showAlbumArt = currentMediaAudioStatus == .isAudio
+    /// This can change `player.info.videoAspect`
+    player.info.isShowingAlbumArt = showDefaultArt || showAlbumArt
+    let newAspectRatio = player.info.videoAspect
 
+    // TODO: can maybe replace all the code below with a call to refresh video params
     guard newAspectRatio != oldAspectRatio else {
       log.verbose("After updating defaultAlbumArt: no change to videoAspect (\(oldAspectRatio)); no more work needed")
       return
@@ -1195,7 +1192,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       applyWindowGeometryInAnimationPipeline(newGeo)
     case .fullScreen:
       animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
-        player.info.videoAspect = newAspectRatio
         guard let screen = window.screen else { return }
         let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
         if layout.isLegacyFullScreen {
@@ -3210,7 +3206,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   func enterInteractiveMode(_ mode: InteractiveMode) {
     animationPipeline.submitZeroDuration({ [self] in
       guard let videoParams = player.mpv.queryForVideoParams() else { return }
-      guard videoParams.videoDisplayRotatedSize != nil else {
+      guard videoParams.videoSizeACR != nil else {
         Utility.showAlert("no_video_track")
         return
       }
@@ -3236,6 +3232,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           log.error("Failed to remove prev crop filter: (\(vf.stringFormat.quoted)) for some reason. Will ignore and try to proceed anyway")
         }
       }
+      // Save disabled crop video filter
+      player.saveState()
+
       let newMode: PlayerWindowMode = currentLayout.mode == .fullScreen ? .fullScreenInteractive : .windowedInteractive
       let interactiveModeLayout = currentLayout.spec.clone(mode: newMode, interactiveMode: mode)
       let startDuration = IINAAnimation.CropAnimationDuration
@@ -3265,7 +3264,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             /// Updated `windowedModeGeo` even if in full screen - we are not prepared to look for changes later
             let croppedGeometry = windowedModeGeo.cropVideo(from: uncroppedVideoSize, to: cropbox)
             windowedModeGeo = croppedGeometry
-            player.info.videoAspect = croppedGeometry.videoAspect
+            // FIXME: 
+//            player.info.videoAspect = croppedGeometry.videoAspect
             player.info.intendedViewportSize = croppedGeometry.viewportSize
 
             // fade out all this stuff before crop
@@ -3353,7 +3353,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     guard let currentMediaThumbnails = player.info.currentMediaThumbnails,
           let ffThumbnail = currentMediaThumbnails.getThumbnail(forSecond: previewTime.second),
-          let videoParams = player.info.videoParams, let currentControlBar else {
+          let videoParams = player.info.videoParams, let videoAspectACR = videoParams.videoAspectACR, let currentControlBar else {
       thumbnailPeekView.isHidden = true
       return
     }
@@ -3372,12 +3372,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
     var thumbAspect = thumbWidth / thumbHeight
 
-    let drAspect = videoParams.videoDisplayRotatedAspect
     // The aspect ratio of some videos is different at display time. May need to resize these videos
     // once the actual aspect ratio is known. (Should they be resized before being stored on disk? Doing so
     // would increase the file size without improving the quality, whereas resizing on the fly seems fast enough).
-    if thumbAspect != drAspect {
-      thumbHeight = (thumbWidth / drAspect).rounded()
+    if thumbAspect != videoAspectACR {
+      thumbHeight = (thumbWidth / videoAspectACR).rounded()
       /// Recalculate this for later use (will use it and `thumbHeight`, and derive width)
       thumbAspect = thumbWidth / thumbHeight
     }
@@ -3466,9 +3465,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if currentMediaThumbnails.currentDisplayedThumbFFTimestamp != ffThumbnail.timestamp {
       currentMediaThumbnails.currentDisplayedThumbFFTimestamp = ffThumbnail.timestamp
       // Apply crop first. Then aspect
-      let videoRawSize = videoParams.videoRawSize
+      let videoSizeRaw = videoParams.videoSizeRaw
       let croppedImage: NSImage
-      if let normalizedCropRect = player.getCurrentCropRect(videoRawSize: videoRawSize, normalized: true, flipY: false) {
+      if let normalizedCropRect = player.getCurrentCropRect(videoSizeRaw: videoSizeRaw, normalized: true, flipY: false) {
         croppedImage = rotatedImage.cropped(normalizedCropRect: normalizedCropRect)
       } else {
         croppedImage = rotatedImage

@@ -31,12 +31,9 @@ extension PlayerWindowController {
 
       // Restore saved geometries
       if let priorWindowedModeGeometry = priorState.windowedModeGeo {
-        log.verbose("Setting windowedModeGeo from prior state")
+        log.verbose("Setting windowedModeGeo from prior state: \(priorWindowedModeGeometry)")
         windowedModeGeo = priorWindowedModeGeometry
-        // Restore primary videoAspect
         if priorLayoutSpec.mode != .musicMode {
-          log.verbose("Setting videoAspect from prior windowedModeGeo (\(windowedModeGeo.videoAspect))")
-          player.info.videoAspect = windowedModeGeo.videoAspect
           videoView.apply(windowedModeGeo)
         }
       } else {
@@ -44,11 +41,11 @@ extension PlayerWindowController {
       }
 
       if let priorMusicModeGeometry = priorState.musicModeGeo {
+        log.verbose("Setting musicModeGeo from prior state: \(priorMusicModeGeometry)")
         musicModeGeo = priorMusicModeGeometry
         // Restore primary videoAspect
         if priorLayoutSpec.mode == .musicMode {
-          log.verbose("Setting videoAspect from prior musicModeGeo (\(musicModeGeo.videoAspect))")
-          player.info.videoAspect = musicModeGeo.videoAspect
+          videoView.apply(priorMusicModeGeometry.toWinGeometry())
         }
       } else {
         log.error("Failed to get player window layout and/or geometry from prefs")
