@@ -1132,17 +1132,19 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   // Check whether to show album art, which may require changing videoView aspect ratio to 1:1.
   // Also show or hide default album art if needed.
-  func refreshAlbumArtDisplay(_ videoParams: MPVVideoParams?, isVideoTrackSelected: Bool,
-                              _ currentMediaAudioStatus: PlaybackInfo.CurrentMediaAudioStatus) {
-    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-    guard loaded, let window else { return }
+  func refreshAlbumArtDisplay() {
+    dispatchPrecondition(condition: .onQueue(player.mpv.queue))
+    guard loaded else { return }
+
+    // Get these while in mpv queue
+    let isVideoTrackSelected = player.info.isVideoTrackSelected
+    let currentMediaAudioStatus = player.info.currentMediaAudioStatus
 
     // Part 1: default album art
 
     let showDefaultArt: Bool
     // if received video size before switching to music mode, hide default album art
     // Don't show art if currently loading
-    // FIXME: should not be reading `player.info` vars from this thread
     if isVideoTrackSelected || player.info.justOpenedFile || player.isStopped {
       log.verbose("Hiding defaultAlbumArt because justOpenedFile=\(player.info.justOpenedFile.yn) fileLoaded=\(player.info.isFileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = false
@@ -1150,8 +1152,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       log.verbose("Showing defaultAlbumArt because fileLoaded=\(player.info.isFileLoaded.yn) stopped=\(player.isStopped.yn) vidSelected=\(isVideoTrackSelected.yn)")
       showDefaultArt = true
     }
-
-    defaultAlbumArtView.isHidden = !showDefaultArt
 
     // Part 2: default audio aspect ratio
 
@@ -1161,45 +1161,52 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     player.info.isShowingAlbumArt = showDefaultArt || showAlbumArt
     let newAspectRatio = player.info.videoAspect
 
-    // TODO: can maybe replace all the code below with a call to refresh video params
-    guard newAspectRatio != oldAspectRatio else {
-      log.verbose("After updating defaultAlbumArt: no change to videoAspect (\(oldAspectRatio)); no more work needed")
-      return
-    }
-    log.verbose("Updating videoAspect from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")
+    DispatchQueue.main.async { [self] in
+      guard let window else { return }
+      // 1. Apply default album art visibility:
+      defaultAlbumArtView.isHidden = !showDefaultArt
 
-    let layout = currentLayout
-    switch layout.mode {
-    case .musicMode:
-      let newMusicModeGeometry = musicModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
-      /// If `isMiniPlayerWaitingToShowVideo` is true, need to update the cached geometry & other state vars,
-      /// but do not update frame because that will be handled right after
-      applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry, setFrame: !player.isMiniPlayerWaitingToShowVideo)
-    case .windowed:
-      var newGeo = windowedModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
-
-      let viewportSize: NSSize
-      if Preference.bool(for: .lockViewportToVideoSize),
-         let intendedViewportSize = player.info.intendedViewportSize {
-        viewportSize = intendedViewportSize
-      } else {
-        viewportSize = newGeo.viewportSize
+      // 2. Apply aspect ratio:
+      guard newAspectRatio != oldAspectRatio else {
+        log.verbose("After updating defaultAlbumArt: no change to videoAspect (\(oldAspectRatio)); no more work needed")
+        return
       }
-      newGeo = newGeo.scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
-      applyWindowGeometryInAnimationPipeline(newGeo)
-    case .fullScreen:
-      animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
-        guard let screen = window.screen else { return }
-        let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
-        if layout.isLegacyFullScreen {
-          applyLegacyFullScreenGeometry(fsGeo)
-        } else if layout.mode != .fullScreenInteractive {
-          videoView.apply(fsGeo)
+      log.verbose("Updating videoAspect from: \(oldAspectRatio.aspectNormalDecimalString) to: \(newAspectRatio.aspectNormalDecimalString)")
+
+      // TODO: can maybe replace all the following code with a call to refresh video params
+      let layout = currentLayout
+      switch layout.mode {
+      case .musicMode:
+        let newMusicModeGeometry = musicModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
+        /// If `isMiniPlayerWaitingToShowVideo` is true, need to update the cached geometry & other state vars,
+        /// but do not update frame because that will be handled right after
+        applyMusicModeGeometryInAnimationPipeline(newMusicModeGeometry, setFrame: !player.isMiniPlayerWaitingToShowVideo)
+      case .windowed:
+        var newGeo = windowedModeGeo.clone(windowFrame: window.frame, videoAspect: newAspectRatio)
+
+        let viewportSize: NSSize
+        if Preference.bool(for: .lockViewportToVideoSize),
+           let intendedViewportSize = player.info.intendedViewportSize {
+          viewportSize = intendedViewportSize
+        } else {
+          viewportSize = newGeo.viewportSize
         }
-      }))
-      break
-    case .fullScreenInteractive, .windowedInteractive:
-      break
+        newGeo = newGeo.scaleViewport(to: viewportSize, fitOption: .keepInVisibleScreen)
+        applyWindowGeometryInAnimationPipeline(newGeo)
+      case .fullScreen:
+        animationPipeline.submit(IINAAnimation.Task(timing: .easeInEaseOut, { [self] in
+          guard let screen = window.screen else { return }
+          let fsGeo = layout.buildFullScreenGeometry(inside: screen, videoAspect: newAspectRatio)
+          if layout.isLegacyFullScreen {
+            applyLegacyFullScreenGeometry(fsGeo)
+          } else if layout.mode != .fullScreenInteractive {
+            videoView.apply(fsGeo)
+          }
+        }))
+        break
+      case .fullScreenInteractive, .windowedInteractive:
+        break
+      }
     }
   }
 

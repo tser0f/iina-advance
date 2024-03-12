@@ -2144,17 +2144,11 @@ class PlayerCore: NSObject {
       log.debug("Done with restore")
     }
 
-    // Grab these while still in mpv queue
-    let videoParams = mpv.queryForVideoParams()
-    let isVideoTrackSelected = info.isVideoTrackSelected
+    // Update art & aspect *before* switching to/from music mode for more pleasant animation
+    windowController.refreshAlbumArtDisplay()
     let currentMediaAudioStatus = info.currentMediaAudioStatus
 
     DispatchQueue.main.async { [self] in
-      // Update art & aspect *before* switching to/from music mode for more pleasant animation
-      if currentMediaAudioStatus == .isAudio || !isVideoTrackSelected {
-        log.verbose("Media has no video track or no video track is selected. Refreshing album art display")
-        windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
-      }
 
       // if need to switch to music mode
       if Preference.bool(for: .autoSwitchToMusicMode) {
@@ -2328,10 +2322,9 @@ class PlayerCore: NSObject {
     info.vid = vid
 
     log.verbose("Video track changed to: \(vid)")
-    // Get these while in mpv queue
-    let videoParams = mpv.queryForVideoParams()
-    let isVideoTrackSelected = info.isVideoTrackSelected
-    let currentMediaAudioStatus = info.currentMediaAudioStatus
+
+    /// Do this first, before `applyVideoViewVisibility`, for a nicer animation`
+    windowController.refreshAlbumArtDisplay()
 
     DispatchQueue.main.async{ [self] in
       guard info.isFileLoaded else {
@@ -2339,8 +2332,6 @@ class PlayerCore: NSObject {
         return
       }
       windowController.forceDraw()
-      /// Do this first, before `applyVideoViewVisibility`, for a nicer animation`
-      windowController.refreshAlbumArtDisplay(videoParams, isVideoTrackSelected: isVideoTrackSelected, currentMediaAudioStatus)
 
       if isMiniPlayerWaitingToShowVideo {
         isMiniPlayerWaitingToShowVideo = false
