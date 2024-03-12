@@ -52,6 +52,7 @@ class CustomTitleBarViewController: NSViewController {
     leadingStackView.wantsLayer = true
     leadingStackView.layer?.backgroundColor = .clear
     leadingStackView.orientation = .horizontal
+    leadingStackView.distribution = .fill
     leadingStackView.detachesHiddenViews = true
     leadingStackView.spacing = iconSpacingH
     leadingStackView.alignment = .centerY
@@ -60,6 +61,12 @@ class CustomTitleBarViewController: NSViewController {
     for btn in trafficLightButtons {
       btn.alphaValue = 1
       btn.isHidden = false
+      // Never expand in size, even if there is extra space:
+      btn.setContentHuggingPriority(.required, for: .horizontal)
+      btn.setContentHuggingPriority(.required, for: .vertical)
+      // Never collapse in size:
+      btn.setContentCompressionResistancePriority(.required, for: .horizontal)
+      btn.setContentCompressionResistancePriority(.required, for: .vertical)
     }
     view.addSubview(leadingStackView)
     leadingStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
@@ -71,7 +78,6 @@ class CustomTitleBarViewController: NSViewController {
       for btn in trafficLightButtons {
         /// This solution works better than using `window` as owner, because with that the green button would get stuck with highlight
         /// when menu was shown.
-        // FIXME: zoom button context menu items are grayed out
         btn.addTrackingArea(NSTrackingArea(rect: btn.bounds, options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited], owner: leadingStackView, userInfo: [PlayerWindowController.TrackingArea.key: PlayerWindowController.TrackingArea.customTitleBar]))
       }
     }
@@ -79,7 +85,8 @@ class CustomTitleBarViewController: NSViewController {
     // - Center views
 
     // See https://github.com/indragiek/INAppStoreWindow/blob/master/INAppStoreWindow/INAppStoreWindow.m
-    documentIconButton = NSWindow.standardWindowButton(.documentIconButton, for: .titled)
+    windowController.window!.representedURL = windowController.player.info.currentURL
+
     titleText = TitleTextView()
     titleText.isEditable = false
     titleText.isSelectable = false
@@ -90,21 +97,30 @@ class CustomTitleBarViewController: NSViewController {
     titleText.defaultParagraphStyle = pStyle
     titleText.alignment = .center
     titleText.heightAnchor.constraint(equalToConstant: 16).isActive = true
+    titleText.setContentHuggingPriority(.required, for: .horizontal)
 
+    if #available(macOS 11.0, *) {
+      documentIconButton = NSWindow.standardWindowButton(.documentIconButton, for: .titled)
+      let suffix = windowController.player.info.currentURL?.pathExtension ?? ""
+      documentIconButton.image = NSImage.documentIcon(forSuffix: suffix, height: documentIconButton.frame.height)
+    }
     centerTitleBarView = NSStackView(views: [titleText])
+    centerTitleBarView.translatesAutoresizingMaskIntoConstraints = false
     centerTitleBarView.wantsLayer = true
     centerTitleBarView.layer?.backgroundColor = .clear
     centerTitleBarView.orientation = .horizontal
     centerTitleBarView.detachesHiddenViews = true
     centerTitleBarView.alignment = .centerY
-    centerTitleBarView.spacing = 0
-    centerTitleBarView.setHuggingPriority(.defaultHigh, for: .horizontal)
-    centerTitleBarView.setHuggingPriority(.defaultHigh, for: .vertical)
+    centerTitleBarView.spacing = 4
 
     view.addSubview(centerTitleBarView)
     centerTitleBarView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
     centerTitleBarView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-    centerTitleBarView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+    centerTitleBarView.setHuggingPriority(.defaultLow, for: .horizontal)  // 250
+    centerTitleBarView.setHuggingPriority(.defaultHigh, for: .vertical)
+    let c0 = centerTitleBarView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+    c0.priority = .defaultHigh
+    c0.isActive = true
 
     // - Trailing views
 
@@ -123,6 +139,8 @@ class CustomTitleBarViewController: NSViewController {
     trailingStackView.alignment = .centerY
     trailingStackView.spacing = iconSpacingH
     trailingStackView.edgeInsets = NSEdgeInsets(top: 0, left: iconSpacingH, bottom: 0, right: iconSpacingH)
+    trailingStackView.distribution = .fill
+    trailingStackView.setHuggingPriority(.required, for: .horizontal)  // 1000
 
     view.addSubview(trailingStackView)
     trailingStackView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
@@ -132,13 +150,11 @@ class CustomTitleBarViewController: NSViewController {
     trailingTitleBarView = trailingStackView
 
     // make it expand to fill all available space
-    centerTitleBarView.leadingAnchor.constraint(greaterThanOrEqualTo: leadingTitleBarView.trailingAnchor).isActive = true
-    let c1 = centerTitleBarView.leadingAnchor.constraint(lessThanOrEqualTo: leadingTitleBarView.trailingAnchor)
-    c1.priority = .defaultHigh
-    c1.isActive = true
-    let c2 = centerTitleBarView.trailingAnchor.constraint(greaterThanOrEqualTo: trailingTitleBarView.leadingAnchor)
-    c2.priority = .defaultHigh
-    c2.isActive = true
+    centerTitleBarView.leadingAnchor.constraint(equalTo: leadingTitleBarView.trailingAnchor).isActive = true
+//    let c1 = centerTitleBarView.leadingAnchor.constraint(lessThanOrEqualTo: leadingTitleBarView.trailingAnchor)
+//    c1.priority = .defaultHigh
+//    c1.isActive = true
+    trailingTitleBarView.leadingAnchor.constraint(equalTo: titleText.trailingAnchor).isActive = true
 
     view.heightAnchor.constraint(equalToConstant: PlayerWindowController.standardTitleBarHeight).isActive = true
   }
@@ -153,8 +169,12 @@ class CustomTitleBarViewController: NSViewController {
     button.refusesFirstResponder = true
     button.imageScaling = .scaleNone
     button.font = NSFont.systemFont(ofSize: 17)
-    button.widthAnchor.constraint(equalTo: button.heightAnchor, multiplier: 1).isActive = true
     button.isHidden = true
+    // Never expand in size, even if there is extra space:
+    button.setContentHuggingPriority(.required, for: .horizontal)
+    button.setContentHuggingPriority(.required, for: .vertical)
+    button.setContentCompressionResistancePriority(.required, for: .horizontal)
+    button.setContentCompressionResistancePriority(.required, for: .vertical)
     return button
   }
 

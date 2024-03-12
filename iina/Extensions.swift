@@ -7,6 +7,7 @@
 //
 
 import Cocoa
+import UniformTypeIdentifiers
 
 infix operator %%
 
@@ -796,6 +797,34 @@ extension CGImage {
 }
 
 extension NSImage {
+  @available(macOS 11.0, *)
+  static func documentIcon(forSuffix fileSuffix: String, height: CGFloat) -> NSImage {
+    var baseIcon: NSImage
+    if fileSuffix == "" {
+      baseIcon = NSWorkspace.shared.icon(for: .data)
+    } else {
+      if let uttype = UTType.types(tag: fileSuffix, tagClass: .filenameExtension, conformingTo: nil).first {
+        baseIcon = NSWorkspace.shared.icon(for: uttype)
+      } else {
+        baseIcon = NSWorkspace.shared.icon(for: .data)
+      }
+    }
+    return baseIcon.getBestRepresentation(height: height)
+  }
+
+  /// Assuming this image is a file icon, gets the appropriate size with given height
+  /// Thanks to "Sweeper" at https://stackoverflow.com/questions/62525921/how-to-get-a-high-resolution-app-icon-for-any-application-on-a-mac
+  func getBestRepresentation(height: CGFloat) -> NSImage {
+    var bestRep: NSImage = self
+    if let imageRep = self.bestRepresentation(for: NSRect(x: 0, y: 0, width: height, height: height), context: nil, hints: nil) {
+      bestRep = NSImage(size: imageRep.size)
+      bestRep.addRepresentation(imageRep)
+    }
+
+    bestRep.size = NSSize(width: height, height: height)
+    return bestRep
+  }
+
   func tinted(_ tintColor: NSColor) -> NSImage {
     guard self.isTemplate else { return self }
 
