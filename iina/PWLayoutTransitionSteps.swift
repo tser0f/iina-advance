@@ -794,7 +794,7 @@ extension PlayerWindowController {
       }
 
       if let videoSizeACR = player.info.videoParams?.videoSizeACR, let cropController = cropSettingsView {
-        addOrReplaceCropBoxSelection(origVideoSize: videoSizeACR, videoSize: transition.outputGeometry.videoSize)
+        addOrReplaceCropBoxSelection(origVideoSize: videoSizeACR, croppedVideoSize: transition.outputGeometry.videoSize)
         // Hide for now, to prepare for a nice fade-in animation
         cropController.cropBoxView.isHidden = true
         cropController.cropBoxView.alphaValue = 0
@@ -1331,7 +1331,7 @@ extension PlayerWindowController {
 
   /// Call this when `origVideoSize` is known.
   /// `videoRect` should be `videoView.frame`
-  func addOrReplaceCropBoxSelection(origVideoSize: NSSize, videoSize: NSSize) {
+  func addOrReplaceCropBoxSelection(origVideoSize: NSSize, croppedVideoSize: NSSize) {
     guard let cropController = self.cropSettingsView else { return }
 
     if !videoView.subviews.contains(cropController.cropBoxView) {
@@ -1356,7 +1356,7 @@ extension PlayerWindowController {
 
     cropController.cropBoxView.actualSize = origVideoSize
     cropController.cropBoxView.selectedRect = selectedRect
-    cropController.cropBoxView.resized(with: NSRect(origin: .zero, size: videoSize))
+    cropController.cropBoxView.resized(with: NSRect(origin: .zero, size: croppedVideoSize))
   }
 
   // Either legacy FS or windowed

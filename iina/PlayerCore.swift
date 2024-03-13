@@ -998,20 +998,15 @@ class PlayerCore: NSObject {
     /// Call this after setting `info.selectedAspectRatioLabel`, to make sure it is included
     guard let videoParams = mpv.queryForVideoParams() else { return }
 
-    // Get this in the mpv thread to avoid race condition
-    let justOpenedFile = info.justOpenedFile
-
-    DispatchQueue.main.async { [self] in
-      if videoParams.hasValidSize {
-        // Make sure window geometry is up to date
-        log.verbose("Calling mpvVideoDidReconfig from video-aspect-override")
-        windowController.mpvVideoDidReconfig(videoParams, justOpenedFile: justOpenedFile)
-      }
-
-      // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
-      // immediately changes the selection to "Default".
-      reloadQuickSettingsView()
+    if videoParams.hasValidSize {
+      // Make sure window geometry is up to date
+      log.verbose("Calling applyVidParams from video-aspect-override")
+      windowController.applyVidParams(newParams: videoParams)
     }
+
+    // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
+    // immediately changes the selection to "Default".
+    reloadQuickSettingsView()
   }
 
   private func findLabelForAspectRatio(_ aspectRatioNumber: Double) -> String? {
@@ -1962,10 +1957,9 @@ class PlayerCore: NSObject {
                                   totalRotation: totalRotation, userRotation: userRotation, 
                                   cropBox: nil, videoScale: videoScale)
 
-      DispatchQueue.main.async { [self] in
-        log.verbose("Calling mpvVideoDidReconfig from resizeVideo with videoParams \(params)")
-        windowController.mpvVideoDidReconfig(params, justOpenedFile: true)
-      }
+      log.verbose("Calling applyVidParams from resizeVideo with videoParams \(params)")
+      assert(info.justOpenedFile)
+      windowController.applyVidParams(newParams: params)
     } else {
       // Either not a video file, or info not loaded.
       // Clear previously cached value and wait for mpv to provide new stuff
@@ -2135,6 +2129,10 @@ class PlayerCore: NSObject {
     info.timeLastFileOpenFinished = Date().timeIntervalSince1970
 
     if let priorState = info.priorState {
+      // Make sure to call this because mpv does not always trigger it.
+      // This is especially important when restoring into interactive mode because this call is needed to restore cropbox selection.
+      onVideoReconfig()
+
       if priorState.string(for: .playPosition) != nil {
         /// Need to manually clear this, because mpv will try to seek to this time when any item in playlist is started
         log.verbose("Clearing mpv 'start' option now that restore is complete")
@@ -2142,6 +2140,7 @@ class PlayerCore: NSObject {
       }
       info.priorState = nil
       log.debug("Done with restore")
+      return
     }
 
     // Update art & aspect *before* switching to/from music mode for more pleasant animation
@@ -2290,17 +2289,13 @@ class PlayerCore: NSObject {
     dispatchPrecondition(condition: .onQueue(mpv.queue))
     guard let videoParams = mpv.queryForVideoParams() else { return }
 
-    // Get this in the mpv thread to avoid race condition
-    let justOpenedFile = info.justOpenedFile
-    log.verbose("Got mpv `video-reconfig`; \(videoParams), justOpenedFile:\(justOpenedFile.yn)")
+    log.verbose("Got mpv `video-reconfig`; \(videoParams), isRestoring:\(info.isRestoring) justOpenedFile:\(info.justOpenedFile.yn)")
 
     // Always send this to window controller. It should be smart enough to resize only when needed:
-    DispatchQueue.main.async { [self] in
-      windowController.mpvVideoDidReconfig(videoParams, justOpenedFile: justOpenedFile)
+    windowController.applyVidParams(newParams: videoParams)
 
-      if videoParams.totalRotation != info.currentMediaThumbnails?.rotationDegrees {
-        reloadThumbnails()
-      }
+    if videoParams.totalRotation != info.currentMediaThumbnails?.rotationDegrees {
+      reloadThumbnails()
     }
   }
 

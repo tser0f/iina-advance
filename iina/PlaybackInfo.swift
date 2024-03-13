@@ -133,6 +133,7 @@ class PlaybackInfo {
   /// If `true`, then `videoView` is used to display album art, or default album art, which is always square
   var isShowingAlbumArt: Bool = false
 
+  /// Should be used on main thread only
   var videoParams: MPVVideoParams? = nil
 
   var videoRawWidth: Int? {
@@ -169,7 +170,7 @@ class PlaybackInfo {
   var audioEqFilters: [MPVFilter?]?
   var delogoFilter: MPVFilter?
 
-  // [filter.name ->  filter]
+  /// `[filter.name -> filter]`. Should be used on main thread only
   var videoFiltersDisabled: [String: MPVFilter] = [:]
 
   var deinterlace: Bool = false

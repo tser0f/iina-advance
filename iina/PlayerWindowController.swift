@@ -3263,7 +3263,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
           // Do this very fast because at present the crop animation is not great
           animationTasks.append(IINAAnimation.Task(duration: IINAAnimation.CropAnimationDuration * 0.2, { [self] in
             let screen = bestScreen
-            log.verbose("[mpvVidReconfig E4] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
+            log.verbose("[applyVidParams E4] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
 
             /// Updated `windowedModeGeo` even if in full screen - we are not prepared to look for changes later
             let croppedGeometry = windowedModeGeo.cropVideo(from: uncroppedVideoSize, to: cropbox)
@@ -3296,7 +3296,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
         let newMode: PlayerWindowMode = currentLayout.mode == .fullScreenInteractive ? .fullScreen : .windowed
         let lastSpec = currentLayout.mode == .fullScreenInteractive ? currentLayout.spec : lastWindowedLayoutSpec
-        log.verbose("[mpvVidReconfig E5] Exiting interactive mode, newMode: \(newMode)")
+        log.verbose("[applyVidParams E5] Exiting interactive mode, newMode: \(newMode)")
         let newLayoutSpec = LayoutSpec.fromPreferences(andMode: newMode, fillingInFrom: lastSpec)
         let halfDuration = immediately ? 0 : IINAAnimation.CropAnimationDuration * 0.5
         let transition = buildLayoutTransition(named: "ExitInteractiveMode", from: currentLayout, to: newLayoutSpec,
