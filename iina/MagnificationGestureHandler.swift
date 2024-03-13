@@ -41,11 +41,13 @@ class MagnificationGestureHandler: NSMagnificationGestureRecognizer {
 
       // Check for full screen toggle conditions first
       if recognizer.state == .began, pinchAction == .windowSizeOrFullScreen {
-        if windowController.isFullScreen, recognizer.magnification < 0 {
+        let scale = recognizer.magnification + 1.0
+        if windowController.isFullScreen, scale < 1.0 {
           windowController.toggleWindowFullScreen()
           return
-        } else if let screenFrame = window.screen?.visibleFrame,
-                  window.frame.height >= screenFrame.height && recognizer.magnification > 0 {
+        } else if !windowController.isFullScreen, scale > 1.0,
+                  let screenFrame = window.screen?.visibleFrame,
+                  (window.frame.height >= screenFrame.height || window.frame.width >= screenFrame.width) {
           windowController.toggleWindowFullScreen()
           return
         }
