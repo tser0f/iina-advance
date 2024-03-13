@@ -907,7 +907,8 @@ not applying FFmpeg 9599 workaround
     let videoHeightAC = getInt(MPVProperty.dheight)
     let mpvParamRotate = getInt(MPVProperty.videoParamsRotate)
     let mpvVideoRotate = getInt(MPVOption.Video.videoRotate)
-    let windowScale = getDouble(MPVOption.Window.windowScale)
+    // For mpv, window size is always the same as video size, although this is not always true with IINA.
+    let videoScale = getDouble(MPVOption.Window.windowScale)
 
     // filter the last video-reconfig event before quit
     if videoWidthAC == 0 && videoHeightAC == 0 && getFlag(MPVProperty.coreIdle) {
@@ -920,7 +921,7 @@ not applying FFmpeg 9599 workaround
                                 aspectRatioOverride: aspectRatioOverride,
                                 totalRotation: mpvParamRotate, userRotation: mpvVideoRotate,
                                 cropBox: nil, // TODO
-                                videoScale: windowScale)
+                                videoScale: videoScale)
 
     player.log.verbose("Latest videoParams: \(params)")
     return params
@@ -1194,10 +1195,10 @@ not applying FFmpeg 9599 workaround
       guard player.windowController.loaded else { break }
       guard let data = UnsafePointer<Int64>(OpaquePointer(property.data))?.pointee else { break }
       let userRotation = Int(data)
-      guard userRotation != player.info.selectedRotation else { break }
+      guard userRotation != player.info.videoParams.userRotation else { break }
 
       player.log.verbose("Received mpv prop: 'video-rotate' ≔ \(userRotation)")
-      player.info.selectedRotation = userRotation
+      player.info.videoParams = player.info.videoParams.clone(userRotation: userRotation)
       needReloadQuickSettingsView = true
 
       player.sendOSD(.rotation(userRotation))
@@ -1490,17 +1491,17 @@ not applying FFmpeg 9599 workaround
       guard player.windowController.loaded else { break }
       // Ignore if magnifying - will mess up our animation. Will submit window-scale anyway at end of magnify
       guard !player.windowController.isMagnifying else { break }
-      guard let videoParams = queryForVideoParams() else { break }
-      let videoScale = videoParams.videoScale
-      let needsUpdate = fabs(videoScale - player.info.cachedWindowScale) > 10e-10
+      let newVideoScale = getDouble(MPVOption.Window.windowScale)
+      let cachedVideoScale = player.info.videoParams.videoScale
+      let needsUpdate = abs(newVideoScale - cachedVideoScale) > 10e-10
       if needsUpdate {
-        player.log.verbose("Received mpv prop: 'window-scale' ≔ \(videoScale) → changed from cached (\(player.info.cachedWindowScale))")
+        player.log.verbose("Received mpv prop: 'window-scale' ≔ \(newVideoScale) → changed from cached (\(cachedVideoScale))")
+        player.info.videoParams = player.info.videoParams.clone(videoScale: newVideoScale)
         DispatchQueue.main.async {
-          self.player.windowController.setVideoScale(CGFloat(videoScale))
-          self.player.info.cachedWindowScale = videoScale
+          self.player.windowController.setVideoScale(CGFloat(newVideoScale))
         }
       } else {
-        player.log.verbose("Received mpv prop: 'window-scale' ≔ \(videoScale), but no change from cache")
+        player.log.verbose("Received mpv prop: 'window-scale' ≔ \(newVideoScale), but no change from cache")
       }
 
     case MPVProperty.mediaTitle:

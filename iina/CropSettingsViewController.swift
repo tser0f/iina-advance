@@ -101,7 +101,9 @@ class CropSettingsViewController: CropBoxViewController {
 
     // Remove saved crop (if any)
     player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
-    guard let totalWidth = player.info.videoRawWidth, let totalHeight = player.info.videoRawHeight else {
+    let totalWidth = player.info.videoParams.videoRawWidth
+    let totalHeight = player.info.videoParams.videoRawHeight
+    guard totalWidth > 0, totalHeight > 0 else {
       player.log.error("User chose Done button from interactive mode, but could not original video size!")
       return
     }

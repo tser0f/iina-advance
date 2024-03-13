@@ -601,9 +601,9 @@ class PlayerCore: NSObject {
       savePlaybackPosition() // Save state to mpv watch-later (if enabled)
 
       // Reset playback state
+      info.videoParams = MPVVideoParams.nullParams
       info.currentURL = nil
       info.currentFolder = nil
-      info.videoParams = nil
       info.currentMediaThumbnails = nil
       info.videoPosition = nil
       info.videoDuration = nil
@@ -1027,13 +1027,12 @@ class PlayerCore: NSObject {
         log.verbose("Skipping update to mpv window-scale: could not get size info")
         return
       }
-      let prevVideoScale = info.cachedWindowScale
+      let prevVideoScale: CGFloat = info.videoParams.videoScale
 
       if actualVideoScale != prevVideoScale {
         // Setting the window-scale property seems to result in a small hiccup during playback.
         // Not sure if this is an mpv limitation
         log.verbose("Updating mpv window-scale from videoSize \(windowGeo.videoSize), changing scale: \(prevVideoScale) → \(actualVideoScale)")
-        info.cachedWindowScale = actualVideoScale
         mpv.setDouble(MPVProperty.windowScale, actualVideoScale)
       } else {
         log.verbose("Skipping update to mpv window-scale: no change from prev (\(prevVideoScale))")
@@ -1461,8 +1460,8 @@ class PlayerCore: NSObject {
   }
 
   func setCrop(fromString str: String) {
-    let vwidth = info.videoRawWidth!
-    let vheight = info.videoRawHeight!
+    let vwidth = info.videoParams.videoRawWidth
+    let vheight = info.videoParams.videoRawHeight
     if let aspect = Aspect(string: str) {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
       log.verbose("Setting crop from requested string \(str.quoted) to: \(cropped.width)x\(cropped.height) (origSize: \(vwidth)x\(vheight))")
@@ -1937,25 +1936,17 @@ class PlayerCore: NSObject {
         aspectRatioOverride = NSSize(width: CGFloat(rawWidth), height: CGFloat(rawHeight)).mpvAspect.aspectNormalDecimalString
       }
 
-      var totalRotation = 0
-      var userRotation = 0
-      var videoScale = 0.0
-
-      if let prev = info.videoParams {
-        if let prevAspectOverride = prev.aspectRatioOverride {
-          aspectRatioOverride = prevAspectOverride.aspectNormalDecimalString
-        }
-        totalRotation = prev.totalRotation
-        userRotation = prev.userRotation
-        videoScale = prev.videoScale
+      let prev = info.videoParams
+      if let prevAspectOverride = prev.aspectRatioOverride {
+        aspectRatioOverride = prevAspectOverride
       }
-      
+
       let params = MPVVideoParams(videoRawWidth: rawWidth,
                                   videoRawHeight: rawHeight, 
                                   selectedAspectRatioLabel: info.selectedAspectRatioLabel,
                                   aspectRatioOverride: aspectRatioOverride,
-                                  totalRotation: totalRotation, userRotation: userRotation, 
-                                  cropBox: nil, videoScale: videoScale)
+                                  totalRotation: prev.totalRotation, userRotation: prev.userRotation,
+                                  cropBox: nil, videoScale: prev.videoScale)
 
       log.verbose("Calling applyVidParams from resizeVideo with videoParams \(params)")
       assert(info.justOpenedFile)
@@ -1963,7 +1954,7 @@ class PlayerCore: NSObject {
     } else {
       // Either not a video file, or info not loaded.
       // Clear previously cached value and wait for mpv to provide new stuff
-      info.videoParams = nil
+      info.videoParams = MPVVideoParams.nullParams
     }
   }
 

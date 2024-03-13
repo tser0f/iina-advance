@@ -122,7 +122,7 @@ class PlaybackInfo {
     if isShowingAlbumArt {
       return 1.0  // album art is always square
     }
-    if let videoAspectACR = videoParams?.videoAspectACR {
+    if let videoAspectACR = videoParams.videoAspectACR {
       return videoAspectACR
     }
     // TODO: handle this situation better
@@ -133,37 +133,25 @@ class PlaybackInfo {
   /// If `true`, then `videoView` is used to display album art, or default album art, which is always square
   var isShowingAlbumArt: Bool = false
 
-  /// Should be used on main thread only
-  var videoParams: MPVVideoParams? = nil
+  /// Should be read/written on main thread only
+  var videoParams = MPVVideoParams.nullParams
 
   var videoRawWidth: Int? {
-    return videoParams?.videoRawWidth
+    let width = videoParams.videoRawWidth
+    guard width > 0 else { return nil }
+    return width
   }
   var videoRawHeight: Int? {
-    return videoParams?.videoRawHeight
+    let height = videoParams.videoRawHeight
+    guard height > 0 else { return nil }
+    return height
   }
-
-  // Is refreshed as property change events arrive for `MPVOption.Video.videoRotate` ("video-rotate").
-  // Not to be confused with the `MPVProperty.videoParamsRotate` ("video-params/rotate")
-  var userRotation: Int {
-    return videoParams?.userRotation ?? 0
-  }
-
-
-  // Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
-  // IINA only supports one of [0, 90, 180, 270]
-  var totalRotation: Int? {
-    return videoParams?.totalRotation
-  }
-
-  var cachedWindowScale: Double = 1.0  // TODO: put in video params
 
   // MARK: - Filters & Equalizers
 
   /// The currently applied aspect, used for finding current aspect in menu & sidebar segmented control. Does not include rotation(s)
   var selectedAspectRatioLabel: String = AppData.defaultAspectName
   var selectedCropLabel: String = AppData.cropNone
-  var selectedRotation: Int = 0
   var cropFilter: MPVFilter?
   var flipFilter: MPVFilter?
   var mirrorFilter: MPVFilter?

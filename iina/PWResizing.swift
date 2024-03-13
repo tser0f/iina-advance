@@ -15,26 +15,25 @@ extension PlayerWindowController {
   func applyVidParams(newParams videoParams: MPVVideoParams) {
     dispatchPrecondition(condition: .onQueue(player.mpv.queue))
 
-    if !videoParams.hasValidSize && (player.isMiniPlayerWaitingToShowVideo || (!musicModeGeo.isVideoVisible && !player.info.isVideoTrackSelected)) {
-      log.verbose("[applyVidParams] Ignoring reconfig because music mode is enabled and video is off")
-      return
-    }
+    guard videoParams.hasValidSize else { return }
+
+    let oldVideoParams = player.info.videoParams
+    // Update cached values for use elsewhere:
+    player.info.videoParams = videoParams
 
     // Get this in the mpv thread to avoid race condition
     let justOpenedFile = player.info.justOpenedFile
     let isRestoring = player.info.isRestoring
 
     DispatchQueue.main.async { [self] in
-      guard videoParams.hasValidSize else { return }
-
       animationPipeline.submitZeroDuration({ [self] in
-        _applyVidParams(videoParams, isRestoring: isRestoring, justOpenedFile: justOpenedFile)
+        _applyVidParams(videoParams, oldVideoParams: oldVideoParams, isRestoring: isRestoring, justOpenedFile: justOpenedFile)
       })
     }
   }
 
   /// Only `applyVidParams` should call this.
-  private func _applyVidParams(_ videoParams: MPVVideoParams, isRestoring: Bool, justOpenedFile: Bool) {
+  private func _applyVidParams(_ videoParams: MPVVideoParams, oldVideoParams: MPVVideoParams, isRestoring: Bool, justOpenedFile: Bool) {
     guard let videoSizeACR = videoParams.videoSizeACR else {
       log.error("[applyVidParams] Could not get videoSizeACR from mpv! Cancelling adjustment")
       return
@@ -42,10 +41,6 @@ extension PlayerWindowController {
 
     let newVideoAspect = videoSizeACR.mpvAspect
     log.verbose("[applyVidParams Start] VideoRaw:\(videoParams.videoSizeRaw) VideoDR:\(videoSizeACR) AspectDR:\(newVideoAspect) Rotation:\(videoParams.totalRotation) Scale:\(videoParams.videoScale)")
-
-    let oldVideoParams = player.info.videoParams
-    // Update cached values for use elsewhere:
-    player.info.videoParams = videoParams
 
     if #available(macOS 10.12, *) {
       pip.aspectRatio = videoSizeACR
@@ -123,7 +118,7 @@ extension PlayerWindowController {
       applyMusicModeGeometryInAnimationPipeline(newGeometry)
 
     } else { // Windowed or full screen
-      if let oldVideoParams, oldVideoParams.videoSizeRaw.equalTo(videoParams.videoSizeRaw),
+      if oldVideoParams.hasValidSize, oldVideoParams.videoSizeRaw.equalTo(videoParams.videoSizeRaw),
          let oldVideoDR = oldVideoParams.videoSizeACR, oldVideoDR.equalTo(videoSizeACR) {
         log.debug("[applyVidParams F Done] No change to prev video params. Taking no action")
         return

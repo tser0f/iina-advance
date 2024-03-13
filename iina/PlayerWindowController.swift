@@ -3355,9 +3355,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     // - 2. Thumbnail Preview
 
+    let videoParams = player.info.videoParams
+
     guard let currentMediaThumbnails = player.info.currentMediaThumbnails,
           let ffThumbnail = currentMediaThumbnails.getThumbnail(forSecond: previewTime.second),
-          let videoParams = player.info.videoParams, let videoAspectACR = videoParams.videoAspectACR, let currentControlBar else {
+          let videoAspectACR = videoParams.videoAspectACR, let currentControlBar else {
       thumbnailPeekView.isHidden = true
       return
     }

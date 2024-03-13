@@ -21,7 +21,10 @@ import Foundation
 ///               ➤ apply `videoScale`
 ///                 ➤ `videoSize` (`WinGeometry`)
 struct MPVVideoParams: CustomStringConvertible {
-  init(videoRawWidth: Int, videoRawHeight: Int, selectedAspectRatioLabel: String, aspectRatioOverride: String?, totalRotation: Int, userRotation: Int, cropBox: CGRect?, videoScale: CGFloat) {
+  static let nullParams = MPVVideoParams(videoRawWidth: 0, videoRawHeight: 0, selectedAspectRatioLabel: "", aspectRatioOverride: nil, totalRotation: 0, userRotation: 0, cropBox: nil, videoScale: 0)
+
+  init(videoRawWidth: Int, videoRawHeight: Int, selectedAspectRatioLabel: String, aspectRatioOverride: String?, 
+       totalRotation: Int, userRotation: Int, cropBox: CGRect?, videoScale: CGFloat) {
     self.videoRawWidth = videoRawWidth
     self.videoRawHeight = videoRawHeight
     if selectedAspectRatioLabel.isEmpty {
@@ -30,7 +33,7 @@ struct MPVVideoParams: CustomStringConvertible {
       self.selectedAspectRatioLabel = selectedAspectRatioLabel
     }
     if let aspectRatioOverride, let aspectOverrideObj = Aspect(string: aspectRatioOverride), aspectOverrideObj.value > 0 {
-      self.aspectRatioOverride = Aspect.mpvPrecision(of: aspectOverrideObj.value)
+      self.aspectRatioOverride = Aspect.mpvPrecision(of: aspectOverrideObj.value).aspectNormalDecimalString
     } else {
       self.aspectRatioOverride = nil
     }
@@ -38,6 +41,17 @@ struct MPVVideoParams: CustomStringConvertible {
     self.userRotation = userRotation
     self.cropBox = cropBox
     self.videoScale = videoScale
+  }
+
+  func clone(videoRawWidth: Int? = nil, videoRawHeight: Int? = nil,
+             selectedAspectRatioLabel: String? = nil, aspectRatioOverride: String? = nil,
+             totalRotation: Int? = nil, userRotation: Int? = nil, cropBox: CGRect? = nil, videoScale: CGFloat? = nil) -> MPVVideoParams {
+    return MPVVideoParams(videoRawWidth: videoRawWidth ?? self.videoRawWidth, videoRawHeight: videoRawHeight ?? self.videoRawHeight,
+                          selectedAspectRatioLabel: selectedAspectRatioLabel ?? self.selectedAspectRatioLabel, 
+                          aspectRatioOverride: aspectRatioOverride ?? self.aspectRatioOverride, 
+                          totalRotation: totalRotation ?? self.totalRotation, userRotation: userRotation ?? self.userRotation,
+                          cropBox: cropBox ?? self.cropBox, videoScale: videoScale ?? self.videoScale)
+
   }
 
   /// Current video's native stored dimensions, before aspect correction applied.
@@ -61,11 +75,11 @@ struct MPVVideoParams: CustomStringConvertible {
   let selectedAspectRatioLabel: String
 
   /// Truncates aspect to the first 2 digits after decimal.
-  let aspectRatioOverride: Double?
+  let aspectRatioOverride: String?
 
   /// Same as `videoSizeRaw` but with aspect ratio override applied. If no aspect ratio override, then identical to `videoSizeRaw`.
   var videoSizeA: CGSize {
-    guard let aspectRatioOverride else {
+    guard let aspectRatioOverride, let aspectRatioOverride = Double(aspectRatioOverride) else {
       // No aspect override
       return videoSizeRaw
     }
@@ -103,10 +117,16 @@ struct MPVVideoParams: CustomStringConvertible {
     return Int(videoSizeAC.height)
   }
 
-  /// `MPVProperty.videoParamsRotate`:
+  /// `MPVProperty.videoParamsRotate`.
+  /// 
+  /// Is refreshed as property change events arrive for `MPVProperty.videoParamsRotate` ("video-params/rotate")
+  /// IINA only supports one of [0, 90, 180, 270]
   let totalRotation: Int
 
-  /// `MPVProperty.videoRotate`:
+  /// `MPVProperty.videoRotate`.
+  ///
+  /// Is refreshed as property change events arrive for `MPVOption.Video.videoRotate` ("video-rotate").
+  /// Not to be confused with the `MPVProperty.videoParamsRotate` ("video-params/rotate")
   let userRotation: Int
 
   var isWidthSwappedWithHeightByRotation: Bool {

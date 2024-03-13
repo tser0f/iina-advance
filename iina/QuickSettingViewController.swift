@@ -326,7 +326,7 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
     updateAspectControls()
     updateCropControls()
 
-    rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.selectedRotation) ?? -1)
+    rotateSegment.selectSegment(withTag: AppData.rotations.firstIndex(of: player.info.videoParams.userRotation) ?? -1)
 
     deinterlaceSwitch.checked = player.info.deinterlace
     deinterlaceSwitch.action = {

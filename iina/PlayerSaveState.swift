@@ -139,7 +139,7 @@ struct PlayerSaveState {
       props[PropName.isOnTop.rawValue] = true.yn
     }
 
-    props[PropName.windowScale.rawValue] = player.info.cachedWindowScale.stringMaxFrac6
+    props[PropName.windowScale.rawValue] = info.videoParams.videoScale.stringMaxFrac6
 
     if Preference.bool(for: .autoSwitchToMusicMode) {
       var overrideAutoMusicMode = player.overrideAutoMusicMode
@@ -230,7 +230,7 @@ struct PlayerSaveState {
       props[PropName.abLoopB.rawValue] = abLoopB.stringMaxFrac6
     }
 
-    props[PropName.videoRotation.rawValue] = String(info.userRotation)
+    props[PropName.videoRotation.rawValue] = String(info.videoParams.userRotation)
 
     props[PropName.videoAspect.rawValue] = info.selectedAspectRatioLabel
 
@@ -689,10 +689,11 @@ struct PlayerSaveState {
       mpv.setDouble(MPVOption.PlaybackControl.abLoopA, abLoopA)
     }
     if let windowScale = double(for: .windowScale) {
-      info.cachedWindowScale = windowScale
+      info.videoParams = info.videoParams.clone(videoScale: windowScale)
       mpv.setDouble(MPVProperty.windowScale, windowScale)
     }
     if let videoRotation = int(for: .videoRotation) {
+      info.videoParams = info.videoParams.clone(userRotation: videoRotation)
       mpv.setInt(MPVOption.Video.videoRotate, videoRotation)
     }
 
