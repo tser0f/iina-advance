@@ -307,14 +307,14 @@ class QuickSettingViewController: NSViewController, NSTableViewDataSource, NSTab
   }
 
   private func updateAspectControls() {
-    let aspectLabel = player.info.selectedAspectRatioLabel
+    let aspectLabel = player.info.videoParams.selectedAspectRatioLabel
     aspectPresetsSegment.selectSegment(withLabel: aspectLabel)
     let isAspectInPanel = aspectPresetsSegment.selectedSegment >= 0
     customAspectTextField.stringValue = isAspectInPanel ? "" : aspectLabel
   }
 
   private func updateCropControls() {
-    let selectedCropLabel = player.info.selectedCropLabel
+    let selectedCropLabel = player.info.videoParams.selectedCropLabel
     cropPresetsSegment.selectSegment(withLabel: selectedCropLabel)
     let isCropInPanel = cropPresetsSegment.selectedSegment >= 0
     if !isCropInPanel {

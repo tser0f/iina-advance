@@ -298,7 +298,7 @@ class MenuController: NSObject, NSMenuDelegate {
     bind(menu: aspectMenu, withOptions: aspectRatioMenuItemTitles, objects: aspectRatioIdentifiers, objectMap: nil,
          action: #selector(PlayerWindowController.menuChangeAspect(_:))) {
       /// return `true` if menu item should be checked (i.e. if current aspect matches menu item)
-      return PlayerCore.active.info.selectedAspectRatioLabel == $0.representedObject as? String
+      return PlayerCore.active.info.videoParams.selectedAspectRatioLabel == $0.representedObject as? String
     }
 
     // -- crop
@@ -306,7 +306,7 @@ class MenuController: NSObject, NSMenuDelegate {
     // same as aspectList above.
     let cropIdentifiers = [AppData.cropNone] + AppData.aspects + ["Custom"]
     bind(menu: cropMenu, withOptions: cropMenuItemTitles, objects: cropIdentifiers, objectMap: nil, action: #selector(PlayerWindowController.menuChangeCrop(_:))) {
-      return PlayerCore.active.info.selectedCropLabel == $0.representedObject as? String
+      return PlayerCore.active.info.videoParams.selectedCropLabel == $0.representedObject as? String
     }
     // Separate "Custom..." from other crop sizes.
     cropMenu.insertItem(NSMenuItem.separator(), at: 1 + AppData.aspects.count)

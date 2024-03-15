@@ -232,7 +232,7 @@ struct PlayerSaveState {
 
     props[PropName.videoRotation.rawValue] = String(info.videoParams.userRotation)
 
-    props[PropName.videoAspect.rawValue] = info.selectedAspectRatioLabel
+    props[PropName.videoAspect.rawValue] = info.videoParams.selectedAspectRatioLabel
 
     let maxVolume = player.mpv.getInt(MPVOption.Audio.volumeMax)
     if maxVolume != 100 {

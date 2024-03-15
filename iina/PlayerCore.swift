@@ -985,8 +985,8 @@ class PlayerCore: NSObject {
       log.verbose("Setting selectedAspect to: \(AppData.defaultAspectName.quoted) for aspect \(aspect.quoted)")
     }
 
-    if info.selectedAspectRatioLabel != aspectDisplay {
-      info.selectedAspectRatioLabel = aspectDisplay
+    if info.videoParams.selectedAspectRatioLabel != aspectDisplay {
+      let newVideoParams = info.videoParams.clone(selectedAspectRatioLabel: aspectDisplay)
 
       // Send update to mpv
       let mpvValue = aspectDisplay == AppData.defaultAspectName ? "no" : aspectDisplay
@@ -994,14 +994,12 @@ class PlayerCore: NSObject {
       mpv.setString(MPVOption.Video.videoAspectOverride, mpvValue)
 
       sendOSD(.aspect(aspectDisplay))
-    }
-    /// Call this after setting `info.selectedAspectRatioLabel`, to make sure it is included
-    guard let videoParams = mpv.queryForVideoParams() else { return }
 
-    if videoParams.hasValidSize {
-      // Make sure window geometry is up to date
-      log.verbose("Calling applyVidParams from video-aspect-override")
-      windowController.applyVidParams(newParams: videoParams)
+      if newVideoParams.hasValidSize {
+        // Change video size:
+        log.verbose("Calling applyVidParams from video-aspect-override")
+        windowController.applyVidParams(newParams: newVideoParams)
+      }
     }
 
     // Update controls in UI. Need to always execute this, so that clicking on the video default aspect
@@ -1493,8 +1491,9 @@ class PlayerCore: NSObject {
   }
 
   private func updateCropUI(to newCropLabel: String) {
-    if info.selectedCropLabel != newCropLabel {
-      info.selectedCropLabel = newCropLabel
+    // FIXME: this is not correct. Just needed to get this building again. FIX
+    if info.videoParams.selectedCropLabel != newCropLabel {
+      info.videoParams = info.videoParams.clone(selectedCropLabel: newCropLabel)
 
       let osdLabel = newCropLabel.isEmpty ? "Custom" : newCropLabel
       sendOSD(.crop(osdLabel))
@@ -1928,29 +1927,17 @@ class PlayerCore: NSObject {
 
       // TODO: figure out aspect & crop override
 
-      var aspectRatioOverride: String = "-1"
-      if !info.selectedAspectRatioLabel.isEmpty, let aspectOverride = Aspect(string: info.selectedAspectRatioLabel) {
-        aspectRatioOverride = aspectOverride.value.aspectNormalDecimalString
-      } else {
-        // default to aspect ratio of new video
-        aspectRatioOverride = NSSize(width: CGFloat(rawWidth), height: CGFloat(rawHeight)).mpvAspect.aspectNormalDecimalString
-      }
+      let prevParams = info.videoParams
+      let newParams = MPVVideoParams(videoRawWidth: rawWidth,
+                                     videoRawHeight: rawHeight,
+                                     selectedAspectRatioLabel: prevParams.selectedAspectRatioLabel,
+                                     totalRotation: prevParams.totalRotation, userRotation: prevParams.userRotation,
+                                     selectedCropLabel: prevParams.selectedCropLabel, cropBox: prevParams.cropBox,
+                                     videoScale: prevParams.videoScale)
 
-      let prev = info.videoParams
-      if let prevAspectOverride = prev.aspectRatioOverride {
-        aspectRatioOverride = prevAspectOverride
-      }
-
-      let params = MPVVideoParams(videoRawWidth: rawWidth,
-                                  videoRawHeight: rawHeight, 
-                                  selectedAspectRatioLabel: info.selectedAspectRatioLabel,
-                                  aspectRatioOverride: aspectRatioOverride,
-                                  totalRotation: prev.totalRotation, userRotation: prev.userRotation,
-                                  cropBox: nil, videoScale: prev.videoScale)
-
-      log.verbose("Calling applyVidParams from resizeVideo with videoParams \(params)")
+      log.verbose("Calling applyVidParams from resizeVideo with videoParams \(newParams)")
       assert(info.justOpenedFile)
-      windowController.applyVidParams(newParams: params)
+      windowController.applyVidParams(newParams: newParams)
     } else {
       // Either not a video file, or info not loaded.
       // Clear previously cached value and wait for mpv to provide new stuff

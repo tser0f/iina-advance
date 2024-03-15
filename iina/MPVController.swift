@@ -896,12 +896,6 @@ not applying FFmpeg 9599 workaround
 
     let videoRawWidth = getInt(MPVProperty.width)
     let videoRawHeight = getInt(MPVProperty.height)
-    let aspectRatioOverride: String
-    if !player.info.selectedAspectRatioLabel.isEmpty, let aspectOverride = Aspect(string: player.info.selectedAspectRatioLabel) {
-      aspectRatioOverride = aspectOverride.value.aspectNormalDecimalString
-    } else {
-      aspectRatioOverride = getString(MPVOption.Video.videoAspectOverride) ?? "-1"
-    }
 
     let videoWidthAC = getInt(MPVProperty.dwidth)
     let videoHeightAC = getInt(MPVProperty.dheight)
@@ -917,9 +911,8 @@ not applying FFmpeg 9599 workaround
     }
 
     let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight,
-                                selectedAspectRatioLabel: player.info.selectedAspectRatioLabel,
-                                aspectRatioOverride: aspectRatioOverride,
-                                totalRotation: mpvParamRotate, userRotation: mpvVideoRotate,
+                                selectedAspectRatioLabel: player.info.videoParams.selectedAspectRatioLabel,
+                                totalRotation: mpvParamRotate, userRotation: mpvVideoRotate, selectedCropLabel: player.info.videoParams.selectedCropLabel,
                                 cropBox: nil, // TODO
                                 videoScale: videoScale)
 

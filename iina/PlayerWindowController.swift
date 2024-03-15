@@ -3265,11 +3265,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             let screen = bestScreen
             log.verbose("[applyVidParams E4] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
 
+            player.info.videoParams = player.info.videoParams.clone(cropBox: cropbox)
+
             /// Updated `windowedModeGeo` even if in full screen - we are not prepared to look for changes later
             let croppedGeometry = windowedModeGeo.cropVideo(from: uncroppedVideoSize, to: cropbox)
             windowedModeGeo = croppedGeometry
-            // FIXME: 
-//            player.info.videoAspect = croppedGeometry.videoAspect
             player.info.intendedViewportSize = croppedGeometry.viewportSize
 
             // fade out all this stuff before crop

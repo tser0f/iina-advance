@@ -21,36 +21,43 @@ import Foundation
 ///               ➤ apply `videoScale`
 ///                 ➤ `videoSize` (`WinGeometry`)
 struct MPVVideoParams: CustomStringConvertible {
-  static let nullParams = MPVVideoParams(videoRawWidth: 0, videoRawHeight: 0, selectedAspectRatioLabel: "", aspectRatioOverride: nil, totalRotation: 0, userRotation: 0, cropBox: nil, videoScale: 0)
+  static let nullParams = MPVVideoParams(videoRawWidth: 0, videoRawHeight: 0, 
+                                         selectedAspectRatioLabel: "",
+                                         totalRotation: 0, userRotation: 0,
+                                         selectedCropLabel: AppData.cropNone, cropBox: nil,
+                                         videoScale: 0)
 
-  init(videoRawWidth: Int, videoRawHeight: Int, selectedAspectRatioLabel: String, aspectRatioOverride: String?, 
-       totalRotation: Int, userRotation: Int, cropBox: CGRect?, videoScale: CGFloat) {
+  init(videoRawWidth: Int, videoRawHeight: Int, 
+       selectedAspectRatioLabel: String,
+       totalRotation: Int, userRotation: Int,
+       selectedCropLabel: String, cropBox: CGRect?, 
+       videoScale: CGFloat) {
     self.videoRawWidth = videoRawWidth
     self.videoRawHeight = videoRawHeight
-    if selectedAspectRatioLabel.isEmpty {
-      self.selectedAspectRatioLabel = AppData.defaultAspectName
-    } else {
+    if let aspectRatioOverride = Aspect(string: selectedAspectRatioLabel) {
       self.selectedAspectRatioLabel = selectedAspectRatioLabel
-    }
-    if let aspectRatioOverride, let aspectOverrideObj = Aspect(string: aspectRatioOverride), aspectOverrideObj.value > 0 {
-      self.aspectRatioOverride = Aspect.mpvPrecision(of: aspectOverrideObj.value).aspectNormalDecimalString
+      self.aspectRatioOverride = Aspect.mpvPrecision(of: aspectRatioOverride.value)
     } else {
+      self.selectedAspectRatioLabel = AppData.defaultAspectName
       self.aspectRatioOverride = nil
     }
     self.totalRotation = totalRotation
     self.userRotation = userRotation
+    self.selectedCropLabel = selectedCropLabel
     self.cropBox = cropBox
     self.videoScale = videoScale
   }
 
   func clone(videoRawWidth: Int? = nil, videoRawHeight: Int? = nil,
-             selectedAspectRatioLabel: String? = nil, aspectRatioOverride: String? = nil,
-             totalRotation: Int? = nil, userRotation: Int? = nil, cropBox: CGRect? = nil, videoScale: CGFloat? = nil) -> MPVVideoParams {
+             selectedAspectRatioLabel: String? = nil,
+             totalRotation: Int? = nil, userRotation: Int? = nil,
+             selectedCropLabel: String? = nil, cropBox: CGRect? = nil,
+             videoScale: CGFloat? = nil) -> MPVVideoParams {
     return MPVVideoParams(videoRawWidth: videoRawWidth ?? self.videoRawWidth, videoRawHeight: videoRawHeight ?? self.videoRawHeight,
-                          selectedAspectRatioLabel: selectedAspectRatioLabel ?? self.selectedAspectRatioLabel, 
-                          aspectRatioOverride: aspectRatioOverride ?? self.aspectRatioOverride, 
+                          selectedAspectRatioLabel: selectedAspectRatioLabel ?? self.selectedAspectRatioLabel,
                           totalRotation: totalRotation ?? self.totalRotation, userRotation: userRotation ?? self.userRotation,
-                          cropBox: cropBox ?? self.cropBox, videoScale: videoScale ?? self.videoScale)
+                          selectedCropLabel: selectedCropLabel ?? self.selectedCropLabel, cropBox: cropBox ?? self.cropBox,
+                          videoScale: videoScale ?? self.videoScale)
 
   }
 
@@ -71,15 +78,15 @@ struct MPVVideoParams: CustomStringConvertible {
 
   // Aspect
 
-  /// Default if no override
+  /// The currently applied aspect, used for finding current aspect in menu & sidebar segmented control. Does not include rotation(s)
   let selectedAspectRatioLabel: String
 
   /// Truncates aspect to the first 2 digits after decimal.
-  let aspectRatioOverride: String?
+  let aspectRatioOverride: CGFloat?
 
   /// Same as `videoSizeRaw` but with aspect ratio override applied. If no aspect ratio override, then identical to `videoSizeRaw`.
   var videoSizeA: CGSize {
-    guard let aspectRatioOverride, let aspectRatioOverride = Double(aspectRatioOverride) else {
+    guard let aspectRatioOverride else {
       // No aspect override
       return videoSizeRaw
     }
@@ -92,6 +99,8 @@ struct MPVVideoParams: CustomStringConvertible {
   }
 
   // Aspect + Crop
+
+  let selectedCropLabel: String
 
   let cropBox: CGRect?
 
@@ -192,6 +201,6 @@ struct MPVVideoParams: CustomStringConvertible {
   // Etc
 
   var description: String {
-    return "MPVVideoParams:{vidSizeRaw=\(videoRawWidth)x\(videoRawHeight), vidSizeAC=\(videoWidthAC)x\(videoHeightAC) selectedAspectLabel=\(selectedAspectRatioLabel.quoted) aspectOverride=\(aspectRatioOverride?.debugDescription.quoted ?? "nil") rotTotal=\(totalRotation) rotUser=\(userRotation) crop=\(cropBox?.debugDescription ?? "nil") scale=\(videoScale), aspectACR=\(videoAspectACR?.description ?? "nil") vidSizeACR=\(videoSizeACR?.debugDescription ?? "nil")}"
+    return "MPVVideoParams:{vidSizeRaw=\(videoRawWidth)x\(videoRawHeight), vidSizeAC=\(videoWidthAC)x\(videoHeightAC) selectedAspectLabel=\(selectedAspectRatioLabel.quoted) aspectOverride=\(aspectRatioOverride?.description.quoted ?? "nil") rotTotal=\(totalRotation) rotUser=\(userRotation) crop=\(cropBox?.debugDescription ?? "nil") scale=\(videoScale), aspectACR=\(videoAspectACR?.description ?? "nil") vidSizeACR=\(videoSizeACR?.debugDescription ?? "nil")}"
   }
 }
