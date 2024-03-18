@@ -1310,13 +1310,26 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     } else {
       // - mpv command
-      player.mpv.queue.async { [self] in
-        // execute the command
-        let returnValue: Int32 = player.mpv.command(rawString: keyBinding.rawAction)
-        log.error("Return value \(returnValue) from mpv key command \(keyBinding.rawAction.quoted)")
-      }
+      let returnValue: Int32
+      // execute the command
+      switch keyBinding.action.first! {
 
-      return true  // Was handled (even if not successful)
+      case MPVCommand.abLoop.rawValue:
+        abLoop()
+        returnValue = 0
+
+      case MPVCommand.screenshot.rawValue:
+        return player.screenshot(fromKeyBinding: keyBinding)
+        
+      default:
+        returnValue = player.mpv.command(rawString: keyBinding.rawAction)
+      }
+      if returnValue == 0 {
+        return true
+      } else {
+        Logger.log("Return value \(returnValue) when executing key command \(keyBinding.rawAction)", level: .error)
+        return false
+      }
     }
   }
 
