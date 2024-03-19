@@ -2554,22 +2554,24 @@ class PlayerCore: NSObject {
 
     // Timer will start
 
-    if !wasTimerRunning {
-      // Do not wait for first redraw
-      syncUITime()
-    }
+    mpv.queue.async { [self] in
+      if !wasTimerRunning {
+        // Do not wait for first redraw
+        syncUITime()
+      }
 
-    log.verbose("Scheduling SyncUITimer")
-    syncUITimer = Timer.scheduledTimer(
-      timeInterval: timerConfig.interval,
-      target: self,
-      selector: #selector(self.syncUITime),
-      userInfo: nil,
-      repeats: true
-    )
-    /// This defaults to 0 ("no tolerance"). But after profiling, it was found that granting a tolerance of `timeInterval * 0.1` (10%)
-    /// resulted in an ~8% redunction in CPU time used by UI sync.
-    syncUITimer?.tolerance = timerConfig.tolerance
+      log.verbose("Scheduling SyncUITimer")
+      syncUITimer = Timer.scheduledTimer(
+        timeInterval: timerConfig.interval,
+        target: self,
+        selector: #selector(self.syncUITime),
+        userInfo: nil,
+        repeats: true
+      )
+      /// This defaults to 0 ("no tolerance"). But after profiling, it was found that granting a tolerance of `timeInterval * 0.1` (10%)
+      /// resulted in an ~8% redunction in CPU time used by UI sync.
+      syncUITimer?.tolerance = timerConfig.tolerance
+    }
   }
 
   private var lastSaveTime = Date().timeIntervalSince1970

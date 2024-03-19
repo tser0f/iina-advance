@@ -208,6 +208,7 @@ class GLVideoLayer: CAOpenGLLayer {
   func resume() {
     $blocked.withLock() { isBlocked in
       guard isBlocked else { return }
+      videoView.player.log.verbose("Resuming mpvGLQueue")
       isBlocked = false
       mpvGLQueue.resume()
     }

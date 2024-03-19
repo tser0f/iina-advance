@@ -274,8 +274,6 @@ class VideoView: NSView {
       canProceed = !isUninited
     }
     guard canProceed else { return }
-
-    log.verbose("Starting DisplayLink")
     videoLayer.resume()
     guard !CVDisplayLinkIsRunning(link) else { return }
     updateDisplayLink()

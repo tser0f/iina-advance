@@ -3643,6 +3643,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // MARK: - Sync UI with playback
 
   func syncUIComponents() {
+    dispatchPrecondition(condition: .onQueue(.main))
     processQueuedOSDs()
 
     // don't let play/pause icon fall out of sync
