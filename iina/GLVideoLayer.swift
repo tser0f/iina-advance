@@ -25,6 +25,9 @@ class GLVideoLayer: CAOpenGLLayer {
   private let asychronousModeLock = Lock()
   private var asychronousModeTimer: Timer?
 
+  /// To enable `LOG_VIDEO_LAYER`:
+  /// 1. In Xcode, go to `iina` project > select `iina` target > Build Settings > search for `Custom Flags` (under `Swift Compiler`)
+  /// 2. Set flag using -D prefix (without white spaces), for Debug, Release, etc. So this is: `-DLOG_VIDEO_LAYER`
 #if LOG_VIDEO_LAYER
   // For measuring frames per second
   var lastPrintTime = Date().timeIntervalSince1970
@@ -54,8 +57,7 @@ class GLVideoLayer: CAOpenGLLayer {
       canDrawCountLastPrint = canDrawCountTotal
       drawCountLastPrint = drawCountTotal
       forcedCountLastPrint = forcedCountTotal
-      let viewConstraints = videoView.widthConstraint.isActive ? "\(videoView.widthConstraint.constant.stringMaxFrac2)x\(videoView.heightConstraint.constant.stringMaxFrac2)" : "NA"
-      NSLog("FPS: \(fpsDraws.stringMaxFrac2) (\(drawsSinceLastPrint)/\(canDrawCallsSinceLastPrint) requests drawn, \(forcedSinceLastPrint) forced, \(displaysSinceLastPrint) displays over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale.stringMaxFrac6), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight), ViewConstraints: \(viewConstraints)")
+      NSLog("FPS: \(fpsDraws.stringMaxFrac2) (\(drawsSinceLastPrint)/\(canDrawCallsSinceLastPrint) requests drawn, \(forcedSinceLastPrint) forced, \(displaysSinceLastPrint) displays over \(secsSinceLastPrint.twoDecimalPlaces)s) Scale: \(contentsScale.stringMaxFrac6), LayerSize: \(Int(frame.size.width))x\(Int(frame.size.height)), LastDrawSize: \(lastWidth)x\(lastHeight)")
     }
   }
 #endif
@@ -131,11 +133,11 @@ class GLVideoLayer: CAOpenGLLayer {
 #if LOG_VIDEO_LAYER
     canDrawCountTotal += 1
 
-//    if let ts = ts?.pointee {
-//      NSLog("CAN_DRAW vidTS: \(ts.videoTime), hostTS: \(ts.hostTime), layerTime: \(t), queue: \(DispatchQueue.currentQueueLabel ?? "nil")")
-//    } else {
-//      NSLog("CAN_DRAW")
-//    }
+    if let ts = ts?.pointee {
+      NSLog("CAN_DRAW vidTS: \(ts.videoTime), hostTS: \(ts.hostTime), layerTime: \(t), queue: \(DispatchQueue.currentQueueLabel ?? "nil")")
+    } else {
+      NSLog("CAN_DRAW")
+    }
 //    printStats()
 #endif
     if forceRender {
@@ -280,15 +282,17 @@ class GLVideoLayer: CAOpenGLLayer {
 
       if let renderContext = videoView.player.mpv.mpvRenderContext,
          let openGLContext = videoView.player.mpv.openGLContext {
-        CGLLockContext(openGLContext)
-        defer { CGLUnlockContext(openGLContext) }
-        var skip: CInt = 1
-        withUnsafeMutablePointer(to: &skip) { skip in
-          var params: [mpv_render_param] = [
-            mpv_render_param(type: MPV_RENDER_PARAM_SKIP_RENDERING, data: .init(skip)),
-            mpv_render_param()
-          ]
-          mpv_render_context_render(renderContext, &params);
+        if videoView.player.mpv.shouldRenderUpdateFrame() {
+          CGLLockContext(openGLContext)
+          defer { CGLUnlockContext(openGLContext) }
+          var skip: CInt = 1
+          withUnsafeMutablePointer(to: &skip) { skip in
+            var params: [mpv_render_param] = [
+              mpv_render_param(type: MPV_RENDER_PARAM_SKIP_RENDERING, data: .init(skip)),
+              mpv_render_param()
+            ]
+            mpv_render_context_render(renderContext, &params);
+          }
         }
       }
       needsMPVRender = false
