@@ -274,7 +274,6 @@ class VideoView: NSView {
       canProceed = !isUninited
     }
     guard canProceed else { return }
-    videoLayer.resume()
     guard !CVDisplayLinkIsRunning(link) else { return }
     updateDisplayLink()
 
@@ -283,10 +282,8 @@ class VideoView: NSView {
     checkResult(CVDisplayLinkStart(link), "CVDisplayLinkStart")
   }
 
-  @objc func stopDisplayLink() {
+  func stopDisplayLink() {
     guard let link = link, CVDisplayLinkIsRunning(link) else { return }
-
-    videoLayer.suspend()
     checkResult(CVDisplayLinkStop(link), "CVDisplayLinkStop")
     log.verbose("DisplayLink stopped")
   }
@@ -369,10 +366,15 @@ class VideoView: NSView {
     // The time of 6 seconds was picked to match up with the time QuickTime delays once playback is
     // paused before stopping audio. As mpv does not provide an event indicating a frame step has
     // completed the time used must not be too short or will catch mpv still drawing when stepping.
-    displayIdleTimer = Timer(timeInterval: 6.0, target: self, selector: #selector(stopDisplayLink), userInfo: nil, repeats: false)
+    displayIdleTimer = Timer(timeInterval: 6.0, target: self, selector: #selector(makeDisplayIdle), userInfo: nil, repeats: false)
     // Not super picky about timeout; favor efficiency
     displayIdleTimer?.tolerance = 0.5
     RunLoop.current.add(displayIdleTimer!, forMode: .default)
+  }
+
+  @objc func makeDisplayIdle() {
+    videoLayer.videoView.stopDisplayLink()
+    videoLayer.exitAsynchronousMode()
   }
 
   // MARK: - Color

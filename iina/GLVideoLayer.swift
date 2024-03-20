@@ -15,7 +15,6 @@ class GLVideoLayer: CAOpenGLLayer {
   unowned var videoView: VideoView!
 
   private let mpvGLQueue = DispatchQueue(label: "com.colliderli.iina.mpvgl", qos: .userInteractive)
-  @Atomic private var blocked = false
 
   private var fbo: GLint = 1
 
@@ -194,28 +193,6 @@ class GLVideoLayer: CAOpenGLLayer {
     glFlush()
   }
 
-  func suspend() {
-    asychronousModeTimer?.invalidate()
-    /// If this is set to `true` while the video is paused, there is some degree of busy-waiting as the
-    /// layer is polled at a high rate about whether it needs to draw. Disable this to save CPU while idle.
-    isAsynchronous = false
-
-    $blocked.withLock() { isBlocked in
-      guard !isBlocked else { return }
-      isBlocked = true
-      mpvGLQueue.suspend()
-    }
-  }
-
-  func resume() {
-    $blocked.withLock() { isBlocked in
-      guard isBlocked else { return }
-      videoView.player.log.verbose("Resuming mpvGLQueue")
-      isBlocked = false
-      mpvGLQueue.resume()
-    }
-  }
-
   /// We want `isAsynchronous = true` while executing any animation which causes the layer to resize.
   /// But we don't want to leave this on full-time, because it will result in extra draw requests and may
   /// throw off the timing of each draw.
@@ -245,15 +222,14 @@ class GLVideoLayer: CAOpenGLLayer {
   @objc func exitAsynchronousMode() {
     asychronousModeLock.withLock{
       videoView.player.log.trace("Exiting asynchronous mode")
+      asychronousModeTimer?.invalidate()
+      /// If this is set to `true` while the video is paused, there is some degree of busy-waiting as the
+      /// layer is polled at a high rate about whether it needs to draw. Disable this to save CPU while idle.
       isAsynchronous = false
     }
   }
 
   func drawAsync() {
-    guard !blocked else {
-      return
-    }
-
     mpvGLQueue.async { [self] in
       draw()
     }
