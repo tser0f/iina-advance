@@ -127,9 +127,8 @@ extension PlayerWindowController {
       let windowGeo = windowedModeGeo.clone(videoAspect: videoSizeACR.mpvAspect)
 
       let newWindowGeo: WinGeometry
-      if shouldResizeWindowAfterVideoReconfig(justOpenedFile: justOpenedFile) {
-        newWindowGeo = resizeAfterFileOpen(windowGeo: windowGeo, videoSizeACR: videoSizeACR)
-
+      if let resizedGeo = resizeAfterFileOpen(justOpenedFile: justOpenedFile, windowGeo: windowGeo, videoSizeACR: videoSizeACR) {
+        newWindowGeo = resizedGeo
       } else {
         let justOpenedFileManually = justOpenedFile && !isInitialSizeDone
         if justOpenedFileManually {
@@ -167,11 +166,11 @@ extension PlayerWindowController {
     }
   }
 
-  func shouldResizeWindowAfterVideoReconfig(justOpenedFile: Bool) -> Bool {
+  private func resizeAfterFileOpen(justOpenedFile: Bool, windowGeo: WinGeometry, videoSizeACR: NSSize) -> WinGeometry? {
     guard justOpenedFile else {
       // video size changed during playback
       log.verbose("[applyVidParams C] justOpenedFile=NO → returning NO for shouldResize")
-      return false
+      return nil
     }
 
     // resize option applies
@@ -179,17 +178,16 @@ extension PlayerWindowController {
     switch resizeTiming {
     case .always:
       log.verbose("[applyVidParams C] justOpenedFile & resizeTiming='Always' → returning YES for shouldResize")
-      return true
     case .onlyWhenOpen:
       log.verbose("[applyVidParams C] justOpenedFile & resizeTiming='OnlyWhenOpen' → returning justOpenedFile (\(justOpenedFile.yesno)) for shouldResize")
-      return justOpenedFile
+      guard justOpenedFile else {
+        return nil
+      }
     case .never:
       log.verbose("[applyVidParams C] justOpenedFile & resizeTiming='Never' → returning NO for shouldResize")
-      return false
+      return nil
     }
-  }
 
-  private func resizeAfterFileOpen(windowGeo: WinGeometry, videoSizeACR: NSSize) -> WinGeometry {
     let screenID = player.isInMiniPlayer ? musicModeGeo.screenID : windowedModeGeo.screenID
     let screenVisibleFrame = NSScreen.getScreenOrDefault(screenID: screenID).visibleFrame
     var newVideoSize = windowGeo.videoSize
@@ -207,8 +205,8 @@ extension PlayerWindowController {
         log.verbose("[applyVidParams C-3] Applying mpv \(mpvGeometry) within screen \(screenVisibleFrame)")
         return windowGeo.apply(mpvGeometry: mpvGeometry, desiredWindowSize: preferredGeo.windowFrame.size)
       } else {
-        log.warn("[applyVidParams C-5] No mpv geometry found")
-        return windowGeo.scaleVideo(to: newVideoSize)  // do not center
+        log.debug("[applyVidParams C-5] No mpv geometry found. Will fall back to default scheme")
+        return nil
       }
     case .simpleVideoSizeMultiple:
       let resizeWindowStrategy: Preference.ResizeWindowOption = Preference.enum(for: .resizeWindowOption)

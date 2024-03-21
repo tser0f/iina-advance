@@ -258,17 +258,15 @@ class GLVideoLayer: CAOpenGLLayer {
 
       if let renderContext = videoView.player.mpv.mpvRenderContext,
          let openGLContext = videoView.player.mpv.openGLContext {
-        if videoView.player.mpv.shouldRenderUpdateFrame() {
-          CGLLockContext(openGLContext)
-          defer { CGLUnlockContext(openGLContext) }
-          var skip: CInt = 1
-          withUnsafeMutablePointer(to: &skip) { skip in
-            var params: [mpv_render_param] = [
-              mpv_render_param(type: MPV_RENDER_PARAM_SKIP_RENDERING, data: .init(skip)),
-              mpv_render_param()
-            ]
-            mpv_render_context_render(renderContext, &params);
-          }
+        CGLLockContext(openGLContext)
+        defer { CGLUnlockContext(openGLContext) }
+        var skip: CInt = 1
+        withUnsafeMutablePointer(to: &skip) { skip in
+          var params: [mpv_render_param] = [
+            mpv_render_param(type: MPV_RENDER_PARAM_SKIP_RENDERING, data: .init(skip)),
+            mpv_render_param()
+          ]
+          mpv_render_context_render(renderContext, &params);
         }
       }
       needsMPVRender = false

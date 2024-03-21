@@ -83,7 +83,8 @@ extension PlayerWindowController {
       assert(!isInitialSizeDone)
       let initialLayout = LayoutState.buildFrom(initialLayoutSpec)
 
-      if shouldResizeWindowAfterVideoReconfig(justOpenedFile: true) {
+      let resizeTimingPref = Preference.enum(for: .resizeWindowTiming) as Preference.ResizeWindowTiming
+      if resizeTimingPref == .always || resizeTimingPref == .onlyWhenOpen {
         /// Use `minVideoSize` at first when a new window is opened, so that when `resizeWindowAfterVideoReconfig()` is called shortly after,
         /// it expands and creates a nice zooming effect.
         let videoSize = AppData.minVideoSize
