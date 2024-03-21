@@ -100,7 +100,7 @@ class PlayerCore: NSObject {
   @Atomic var backgroundQueueTicket = 0
 
   // Ticket for sync UI update request
-  @Atomic private var syncUITicketCount: Int = 0
+  @Atomic private var syncUITicketCounter: Int = 0
 
   // Windows
 
@@ -2131,7 +2131,6 @@ class PlayerCore: NSObject {
     // main thread stuff
     DispatchQueue.main.async { [self] in
       refreshSyncUITimer()
-      windowController.syncUIComponents()
 
       if #available(macOS 10.12.2, *) {
         touchBarSupport.setupTouchBarUI()
@@ -2255,9 +2254,9 @@ class PlayerCore: NSObject {
     info.isIdle = false
     info.isSeeking = false
 
-    syncUITime()
-
     DispatchQueue.main.async { [self] in
+      windowController.syncUIComponents()
+
       // When playback is paused the display link may be shutdown in order to not waste energy.
       // The display link will be restarted while seeking. If playback is paused shut it down
       // again.
@@ -2522,6 +2521,7 @@ class PlayerCore: NSObject {
       }
 
       if !useTimer || timerRestartNeeded {
+        log.verbose("Invalidating SyncUITimer")
         existingTimer.invalidate()
         self.syncUITimer = nil
       }
@@ -2554,29 +2554,41 @@ class PlayerCore: NSObject {
 
     // Timer will start
 
-    mpv.queue.async { [self] in
-      if !wasTimerRunning {
-        // Do not wait for first redraw
-        syncUITime()
-      }
+    if !wasTimerRunning {
+      // Do not wait for first redraw
+      windowController.syncUIComponents()
+    }
 
-      log.verbose("Scheduling SyncUITimer")
-      syncUITimer = Timer.scheduledTimer(
-        timeInterval: timerConfig.interval,
-        target: self,
-        selector: #selector(self.syncUITime),
-        userInfo: nil,
-        repeats: true
-      )
-      /// This defaults to 0 ("no tolerance"). But after profiling, it was found that granting a tolerance of `timeInterval * 0.1` (10%)
-      /// resulted in an ~8% redunction in CPU time used by UI sync.
-      syncUITimer?.tolerance = timerConfig.tolerance
+    log.verbose("Scheduling SyncUITimer")
+    syncUITimer = Timer.scheduledTimer(
+      timeInterval: timerConfig.interval,
+      target: self,
+      selector: #selector(fireSyncUITimer),
+      userInfo: nil,
+      repeats: true
+    )
+    /// This defaults to 0 ("no tolerance"). But after profiling, it was found that granting a tolerance of `timeInterval * 0.1` (10%)
+    /// resulted in an ~8% redunction in CPU time used by UI sync.
+    syncUITimer?.tolerance = timerConfig.tolerance
+  }
+
+  @objc func fireSyncUITimer() {
+    syncUITicketCounter += 1
+    let syncUITicket = syncUITicketCounter
+
+    DispatchQueue.main.async { [self] in
+      windowController.animationPipeline.submitZeroDuration { [self] in
+        guard syncUITicket == syncUITicketCounter else {
+          return
+        }
+        windowController.syncUIComponents()
+      }
     }
   }
 
   private var lastSaveTime = Date().timeIntervalSince1970
 
-  @objc func syncUITime() {
+  func updatePlaybackTimeInfo() {
     guard didInitVideo, !isStopping, !isShuttingDown else {
       log.verbose("syncUITime: not syncing")
       return
@@ -2615,18 +2627,6 @@ class PlayerCore: NSObject {
       }
       saveState()
       lastSaveTime = now
-    }
-
-    syncUITicketCount += 1
-    let syncUITicket = syncUITicketCount
-
-    DispatchQueue.main.async { [self] in
-      windowController.animationPipeline.submitZeroDuration { [self] in
-        guard syncUITicket == syncUITicketCount else {
-          return
-        }
-        windowController.syncUIComponents()
-      }
     }
   }
 

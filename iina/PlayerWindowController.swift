@@ -261,7 +261,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// For throttling `windowDidChangeScreenParameters` notifications. MacOS 14 often sends hundreds in short bursts
   @Atomic var screenParamsChangedTicketCounter: Int = 0
   @Atomic var updateCachedGeometryTicketCounter: Int = 0
-  @Atomic var thumbDisplayCounter: Int = 0
+  @Atomic var thumbDisplayTicketCounter: Int = 0
 
   // MARK: - Window geometry vars
 
@@ -3009,7 +3009,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         if case .frameStep = osdLastDisplayedMsg { return }
         if case .frameStepBack = osdLastDisplayedMsg { return }
       }
-      player.syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
+      player.updatePlaybackTimeInfo()  // need to call this to update info.videoPosition, info.videoDuration
       guard compareAndSetIfNewPlaybackTime(position: player.info.videoPosition?.second, duration: player.info.videoDuration?.second) else {
         // Is redundant msg; discard
         return
@@ -3020,7 +3020,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         if case .frameStep = osdLastDisplayedMsg { return }
         if case .frameStepBack = osdLastDisplayedMsg { return }
       }
-      player.syncUITime()  // need to call this to update info.videoPosition, info.videoDuration
+      player.updatePlaybackTimeInfo()  // need to call this to update info.videoPosition, info.videoDuration
       osdLastPlaybackPosition = player.info.videoPosition?.second
       osdLastPlaybackDuration = player.info.videoDuration?.second
     case .crop(let newCropLabel):
@@ -3081,7 +3081,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     hideOSDTimer?.invalidate()
     if osdAnimationState != .shown {
       osdAnimationState = .shown  /// set this before calling `refreshSyncUITimer()`
-      player.refreshSyncUITimer()
+      DispatchQueue.main.async { [self] in  /// launch async task to avoid recursion, which `osdQueueLock` doesn't like
+        player.refreshSyncUITimer()
+      }
     } else {
       osdAnimationState = .shown
     }
@@ -3331,11 +3333,11 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   /// Display time label & thumbnail when mouse over slider
   private func refreshSeekTimeAndThumbnail(from event: NSEvent) {
-    thumbDisplayCounter += 1
-    let currentTicket = thumbDisplayCounter
+    thumbDisplayTicketCounter += 1
+    let currentTicket = thumbDisplayTicketCounter
 
     DispatchQueue.main.async { [self] in
-      guard currentTicket == thumbDisplayCounter else { return }
+      guard currentTicket == thumbDisplayTicketCounter else { return }
       refreshSeekTimeAndThumbnailInternal(from: event)
     }
   }
@@ -3644,22 +3646,64 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   func syncUIComponents() {
     dispatchPrecondition(condition: .onQueue(.main))
+    player.updatePlaybackTimeInfo()
+
     processQueuedOSDs()
 
-    // don't let play/pause icon fall out of sync
-    let isNetworkStream = player.info.isNetworkResource
     updatePlayButtonAndSpeedUI()
     updatePlaybackTimeUI()
     updateAdditionalInfo()
+
     if isInMiniPlayer {
       miniPlayer.loadIfNeeded()
       miniPlayer.updateScrollingLabels()
     }
-    if isNetworkStream {
+    if player.info.isNetworkResource {
       updateNetworkState()
     }
     // Need to also sync volume slider here, because this is called in response to repeated key presses
     updateVolumeUI()
+  }
+
+  private func updatePlaybackTimeUI() {
+    // IINA listens for changes to mpv properties such as chapter that can occur during file loading
+    // resulting in this function being called before mpv has set its position and duration
+    // properties. Confirm the window and file have been loaded.
+
+    guard loaded, player.info.isFileLoaded || player.info.isRestoring else { return }
+    // The mpv documentation for the duration property indicates mpv is not always able to determine
+    // the video duration in which case the property is not available.
+    guard let duration = player.info.videoDuration, let pos = player.info.videoPosition else { return }
+
+    // If the OSD is visible and is showing playback position, keep its displayed time up to date:
+    if osdAnimationState == .shown, let osdLastDisplayedMsg {
+      let message: OSDMessage?
+      switch osdLastDisplayedMsg {
+      case .pause:
+        message = .pause(videoPosition: pos, videoDuration: duration)
+      case .resume:
+        message = .resume(videoPosition: pos, videoDuration: duration)
+      case .seek(_, _):
+        message = .seek(videoPosition: pos, videoDuration: duration)
+      default:
+        message = nil
+      }
+
+      if let message = message {
+        setOSDViews(fromMessage: message)
+      }
+    }
+
+    // Update playback position slider in OSC:
+    let percentage = (pos.second / duration.second) * 100
+    [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
+    playSlider.updateTo(percentage: percentage)
+
+    // Touch bar
+    if #available(macOS 10.12.2, *) {
+      player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
+      player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
+    }
   }
 
   func updateVolumeUI() {
@@ -3680,58 +3724,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     if isInMiniPlayer {
       miniPlayer.loadIfNeeded()
       miniPlayer.updateVolumeUI(volume: volume, isMuted: isMuted, hasAudio: hasAudio)
-    }
-  }
-
-  func updatePlaybackTimeUI() {
-    // IINA listens for changes to mpv properties such as chapter that can occur during file loading
-    // resulting in this function being called before mpv has set its position and duration
-    // properties. Confirm the window and file have been loaded.
-    guard loaded else { return }
-    guard player.info.isFileLoaded || player.info.isRestoring else { return }
-
-    /// Need to call this to update `videoPosition`, `videoDuration`
-    player.syncUITime()
-
-    // The mpv documentation for the duration property indicates mpv is not always able to determine
-    // the video duration in which case the property is not available.
-    guard let duration = player.info.videoDuration else {
-      log.debug("Cannot update playback UI: video duration not available")
-      return
-    }
-    guard let pos = player.info.videoPosition else {
-      log.debug("Cannot update playback UI: video position not available")
-      return
-    }
-
-    // OSD, if it is visible and is showing playback position
-    if osdAnimationState == .shown, let osdLastDisplayedMsg {
-      let message: OSDMessage?
-      switch osdLastDisplayedMsg {
-      case .pause:
-        message = .pause(videoPosition: pos, videoDuration: duration)
-      case .resume:
-        message = .resume(videoPosition: pos, videoDuration: duration)
-      case .seek(_, _):
-        message = .seek(videoPosition: pos, videoDuration: duration)
-      default:
-        message = nil
-      }
-
-      if let message = message {
-        setOSDViews(fromMessage: message)
-      }
-    }
-
-    // OSC
-    let percentage = (pos.second / duration.second) * 100
-    [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos) }
-    playSlider.updateTo(percentage: percentage)
-
-    // Touch bar
-    if #available(macOS 10.12.2, *) {
-      player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)
-      player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos) }
     }
   }
 
