@@ -2922,17 +2922,6 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
   }
 
-  // Runs all tasks in the OSD queue until it is depleted.
-  func processQueuedOSDs() {
-    dispatchPrecondition(condition: .onQueue(DispatchQueue.main))
-
-    osdQueueLock.withLock {
-      while !osdQueue.isEmpty {
-        osdQueue.removeFirst()?()
-      }
-    }
-  }
-
   /// If `position` and `duration` are different than their previously cached values, overwrites the cached values and
   /// returns `true`. Returns `false` if the same or one of the values is `nil`.
   ///
@@ -2964,7 +2953,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   /// which should result in an OSD being displayed for each keypress. But for some reason, the task to update the OSD,
   /// which is enqueued via `DispatchQueue.main.async` (or even `sync`), does not run at all while the key events continue to come in.
   /// To work around this issue, we instead enqueue the tasks to display OSD using a simple LinkedList and Lock. Then we call
-  /// `processQueuedOSDs()` both from here (as before), and inside the key event callbacks in `PlayerWindow` so that that the key events
+  /// `syncUIComponents()` both from here (as before), and inside the key event callbacks in `PlayerWindow` so that that the key events
   /// themselves process the display of any enqueued OSD messages.
   func displayOSD(_ msg: OSDMessage, autoHide: Bool = true, forcedTimeout: Double? = nil,
                   accessoryViewController: NSViewController? = nil, isExternal: Bool = false) {
@@ -2981,6 +2970,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     }
 
+    // Enqueue first, in case main queue is blocked
     osdQueueLock.withLock {
       osdQueue.append({ [self] in
         animationPipeline.submitZeroDuration{ [self] in
@@ -2988,8 +2978,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         }
       })
     }
+    // Need to do the UI sync in the main queue
     DispatchQueue.main.async { [self] in
-      processQueuedOSDs()
+      syncUIComponents()
     }
   }
 
@@ -3648,7 +3639,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     dispatchPrecondition(condition: .onQueue(.main))
     player.updatePlaybackTimeInfo()
 
-    processQueuedOSDs()
+    // Run all tasks in the OSD queue until it is depleted
+    osdQueueLock.withLock {
+      while !osdQueue.isEmpty {
+        osdQueue.removeFirst()?()
+      }
+    }
 
     updatePlayButtonAndSpeedUI()
     updatePlaybackTimeUI()
