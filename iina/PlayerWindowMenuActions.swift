@@ -69,7 +69,10 @@ extension PlayerWindowController {
   @objc func menuStep(_ sender: NSMenuItem) {
     if let args = sender.representedObject as? (Double, Preference.SeekOption) {
       player.seek(relativeSecond: args.0, option: args.1)
-    } else {
+    } else if let args = sender.representedObject as? Double {
+      player.seek(relativeSecond: args, option: Preference.SeekOption.defaultValue)
+    }
+    else {
       player.seek(relativeSecond: 5, option: Preference.SeekOption.defaultValue)
     }
   }
