@@ -71,7 +71,7 @@ class PlayerCoreManager {
 
   func getActiveOrCreateNew() -> PlayerCore {
     var core: PlayerCore? = nil
-    lock.withLock {
+    //lock.withLock {
       if playerCores.isEmpty {
         core = _createNewPlayerCore()
       } else {
@@ -81,7 +81,7 @@ class PlayerCoreManager {
           core = getActive()
         }
       }
-    }
+    //}
     core!.start()
     return core!
   }
