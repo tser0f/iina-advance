@@ -35,13 +35,13 @@ private func all(_ string: String) -> NSRange {
  "debug" - very noisy technical information
  "trace" - extremely noisy
  */
-fileprivate let logLevelMap: [String: Logger.Level] = ["fatal": .error,
-                                                       "error": .error,
-                                                       "warn": .warning,
-                                                       "info": .debug,
-                                                       "v": .verbose,
-                                                       "debug": .debug,
-                                                       "trace": .verbose]
+fileprivate let mpvIINALogLevelMap: [MPVLogLevel: Logger.Level] = [.fatal: .error,
+                                                                   .error: .error,
+                                                                   .warn: .warning,
+                                                                   .info: .debug,
+                                                                   .verbose: .verbose,
+                                                                   .debug: .debug,
+                                                                   .trace: .verbose]
 
 class MPVLogScanner {
   private unowned let player: PlayerCore
@@ -51,9 +51,18 @@ class MPVLogScanner {
    */
   let mpvLogSubsystem: Logger.Subsystem
 
+  let fileLogLevel: Int
+
   init(player: PlayerCore) {
     self.player = player
     mpvLogSubsystem = Logger.Subsystem(rawValue: "mpv-\(player.label)")
+    if let logLevelString = Preference.string(for: .iinaMpvLogLevel), let mpvLogLevel = MPVLogLevel.fromString(logLevelString) {
+      fileLogLevel = mpvLogLevel.rawValue
+    } else {
+      mpvLogSubsystem.error("Invalid value for pref: \(Preference.Key.iinaMpvLogLevel.rawValue). Will disable mpv log printing in the IINA log file")
+      fileLogLevel = MPVLogLevel.no.rawValue
+    }
+    mpvLogSubsystem.debug("Log level for mpv events: \(fileLogLevel)")
   }
 
   // Remove newline from msg if there is one
@@ -66,11 +75,12 @@ class MPVLogScanner {
    Expected to return `true` if parsed & handled, `false` otherwise
    */
   func processLogLine(prefix: String, level: String, msg: String) {
-    let mpvIINALevel = logLevelMap[level] ?? .verbose
+    let mpvLevel = MPVLogLevel.fromString(level) ?? MPVLogLevel.no
 
     // Log mpv msg to IINA log if configured
-    if mpvIINALevel.rawValue >= Preference.integer(for: .iinaMpvLogLevel) {
-      Logger.log("[\(prefix)|\(level.first ?? "?")] \(removeNewline(from: msg))", level: mpvIINALevel, subsystem: mpvLogSubsystem)
+    if fileLogLevel >= mpvLevel.rawValue {
+      let iinaLevel = mpvIINALogLevelMap[mpvLevel]!
+      Logger.log("[\(prefix)|\(level.first ?? "?")] \(removeNewline(from: msg))", level: iinaLevel, subsystem: mpvLogSubsystem)
     }
 
     if msg.hasPrefix("Disabling filter \(Constants.FilterLabel.crop)") {

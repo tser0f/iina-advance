@@ -375,7 +375,8 @@ struct Preference {
     /** Log to log folder (bool) */
     static let enableLogging = Key("enableLogging")
     static let logLevel = Key("logLevel")
-    /// [advanced] The highest mpv log level for which IINA will include mpv log events in its own logfile (mutually exclusive of mpv's logfile)
+    /// [advanced] The highest mpv log level for which IINA will include mpv log events in its own logfile (this is separate from mpv's logfile)
+    /// This should be a string which matches the name of an mpv log level.
     static let iinaMpvLogLevel = Key("iinaMpvLogLevel")
 
     static let enablePiiMaskingInLog = Key("enablePiiMaskingInLog")
@@ -1213,7 +1214,7 @@ struct Preference {
     .useMpvOsd: false,
     .enableLogging: false,
     .logLevel: Logger.Level.debug.rawValue,
-    .iinaMpvLogLevel: Logger.Level.warning.rawValue,
+    .iinaMpvLogLevel: "warn",
     .enablePiiMaskingInLog: true,
     .logKeyBindingsRebuild: false,
     .displayKeyBindingRawValues: false,
