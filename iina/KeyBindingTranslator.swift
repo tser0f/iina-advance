@@ -125,7 +125,7 @@ class KeyBindingTranslator {
     let firstCriterion = criteria[0] as! TextCriterion
 
     if firstCriterion.isIINACommand {
-      mapped.insert("@iina", at: 0)
+      mapped.insert(KeyMapping.IINA_PREFIX, at: 0)
     }
 
     // special cases
@@ -164,7 +164,7 @@ class KeyBindingTranslator {
     else if firstCriterion.name == "cycle" {
       if let name = (criteria[1] as? TextCriterion)?.name,
         KeyBindingDataLoader.toggleableIINAProperties.contains(name) {
-        return "@iina toggle-\(name)"
+        return "\(KeyMapping.IINA_PREFIX) toggle-\(name)"
       }
     }
 
