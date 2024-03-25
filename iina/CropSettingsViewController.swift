@@ -98,23 +98,22 @@ class CropSettingsViewController: CropBoxViewController {
 
   @IBAction func doneBtnAction(_ sender: AnyObject) {
     let player = windowController.player
+    player.log.verbose("Interactive mode: user activated Done")
 
     // Remove saved crop (if any)
     player.info.videoFiltersDisabled.removeValue(forKey: Constants.FilterLabel.crop)
-    let totalWidth = player.info.videoParams.videoRawWidth
-    let totalHeight = player.info.videoParams.videoRawHeight
-    guard totalWidth > 0, totalHeight > 0 else {
-      player.log.error("User chose Done button from interactive mode, but could not original video size!")
+    guard let videoSizeRaw = player.info.videoParams.videoSizeRaw else {
+      player.log.error("Interactive mode submit failed: could videoRawSize is invalid!")
       return
     }
     animateHideCropSelection()
 
     // Use <=, >= to account for imprecision
-    let isAllSelected = cropx <= 0 && cropy <= 0 && cropw >= totalWidth && croph >= totalHeight
+    let isAllSelected = cropx <= 0 && cropy <= 0 && cropw >= Int(videoSizeRaw.width) && croph >= Int(videoSizeRaw.height)
     let isNoSelection = cropw <= 0 || croph <= 0
 
     if isAllSelected || isNoSelection {
-      player.log.verbose("User chose Done button from interactive mode, but isAllSelected=\(isAllSelected.yn) isNoSelection=\(isNoSelection.yn). Setting crop to none")
+      player.log.verbose("Interactive mode submit: isAllSelected=\(isAllSelected.yn) isNoSelection=\(isNoSelection.yn) → setting crop to none")
       // if no crop, remove the crop filter
       player.removeCrop()
       windowController.exitInteractiveMode()

@@ -793,7 +793,7 @@ extension PlayerWindowController {
         videoView.apply(transition.outputGeometry)
       }
 
-      if let videoSizeACR = player.info.videoParams.videoSizeACR, let cropController = cropSettingsView {
+      if let videoSizeACR = player.info.videoParams.videoSizeRaw, let cropController = cropSettingsView {
         addOrReplaceCropBoxSelection(origVideoSize: videoSizeACR, croppedVideoSize: transition.outputGeometry.videoSize)
         // Hide for now, to prepare for a nice fade-in animation
         cropController.cropBoxView.isHidden = true
