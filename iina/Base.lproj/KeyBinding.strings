@@ -46,6 +46,7 @@
 "iina.sub-panel" = "Subtitle panel";
 "iina.playlist-panel" = "Playlist panel";
 "iina.chapter-panel" = "Chapter panel";
+"iina.toggle-ui" = "Toggle UI Visibility";
 "iina.bigger-window" = "Bigger Window";
 "iina.smaller-window" = "Smaller Window";
 "iina.fit-to-screen" = "Fit to Screen";

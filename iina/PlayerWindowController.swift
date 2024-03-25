@@ -3334,7 +3334,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func refreshSeekTimeAndThumbnailInternal(from event: NSEvent) {
-    guard !currentLayout.isInteractiveMode else { return }
+    guard !player.disableUI && !currentLayout.isInteractiveMode else { return }
     let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
     let isCoveredBySidebar = isMouseEvent(event, inAnyOf: [leadingSidebarView, trailingSidebarView])
     let isMouseInPlaySlider = isMouseEvent(event, inAnyOf: [playSlider])
@@ -4032,6 +4032,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       menuShowPlaylistPanel(.dummy)
     case .chapterPanel:
       menuShowChaptersPanel(.dummy)
+    case .toggleUI:
+      menuToggleUI(.dummy)
     case .deleteCurrentFileHard:
       menuDeleteCurrentFileHard(.dummy)
     case .biggerWindow:
