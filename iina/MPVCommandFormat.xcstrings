@@ -1,0 +1,95 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command property value#+1"
+          }
+        }
+      }
+    },
+    "cycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command property dir:up|down"
+          }
+        }
+      }
+    },
+    "cycle-values" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command property values…"
+          }
+        }
+      }
+    },
+    "multiply" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command property factor"
+          }
+        }
+      }
+    },
+    "quit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command value"
+          }
+        }
+      }
+    },
+    "seek" : {
+      "comment" : "*\n Only for internal use. `KeyBindingTranslator` will use formats in this file to generate a data dict\n for Mustache rendering.\n\n Examples:\n\n <key>\n will add a key and corresponding value in outputted data, value will be `nil` if not exist\n e.g. \"set pause yes\" =>\n      [\"command\": \"set\", \"property\": \"pause\", \"value\": \"yes\"]\n\n\n <Key>#<default>\n instead of outputting nil, set a default value for the key.\n e.g. \"add volume\" =>\n [\"command\": \"add\", \"property\": \"volume\", \"value\": \"+1\"]\n\n\n <key>:<choice(default)>|<choice>\n set value to the first choice if it doesn't exist. at the same time, add an extra entry \"<key>_<choice>\"=\"true\"\n e.g. \"sub-seek 1\" =>\n [\"command\": \"sub-seek\", \"skip\": \"1\", \"skip_1\": \"true\"]\n \n \n <key>…\n variadic arguments.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command value opt:relative|absolute|absolute-percent|relative-percent|exact|keyframes"
+          }
+        }
+      }
+    },
+    "set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command property value"
+          }
+        }
+      }
+    },
+    "sub-seek" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "command skip:1|-1"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
