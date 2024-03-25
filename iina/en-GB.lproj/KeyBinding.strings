@@ -42,6 +42,7 @@
 "iina.open-file" = "Open file";
 "iina.open-url" = "Open URL";
 "iina.video-panel" = "Video panel";
+"iina.toggle-ui" = "Toggle UI Visibility";
 "iina.audio-panel" = "Audio panel";
 "iina.sub-panel" = "Subtitle panel";
 "iina.playlist-panel" = "Playlist panel";
