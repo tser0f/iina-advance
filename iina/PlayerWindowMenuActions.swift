@@ -437,6 +437,15 @@ extension PlayerWindowController {
     showSidebar(tab: .chapters)
   }
 
+  @objc func menuToggleUI(_ sender: NSMenuItem) {
+    
+    player.disableUI = !player.disableUI
+    if player.disableUI {
+      player.windowController.hideFadeableViewsAndCursor()
+    }
+    
+  }
+  
   @objc func menuShowVideoQuickSettings(_ sender: NSMenuItem) {
     showSidebar(tab: .video)
   }

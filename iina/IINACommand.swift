@@ -19,6 +19,7 @@ enum IINACommand: String {
   case subPanel = "sub-panel"
   case playlistPanel = "playlist-panel"
   case chapterPanel = "chapter-panel"
+  case toggleUI = "toggle-ui"
 
   case toggleMusicMode = "toggle-music-mode"
 
