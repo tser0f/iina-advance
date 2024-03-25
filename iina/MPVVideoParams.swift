@@ -24,13 +24,13 @@ struct MPVVideoParams: CustomStringConvertible {
   static let nullParams = MPVVideoParams(videoRawWidth: 0, videoRawHeight: 0, 
                                          selectedAspectRatioLabel: "",
                                          totalRotation: 0, userRotation: 0,
-                                         selectedCropLabel: AppData.cropNone, cropBox: nil,
+                                         selectedCropLabel: AppData.noneCropIdentifier,
                                          videoScale: 0)
 
   init(videoRawWidth: Int, videoRawHeight: Int, 
        selectedAspectRatioLabel: String,
        totalRotation: Int, userRotation: Int,
-       selectedCropLabel: String, cropBox: CGRect?, 
+       selectedCropLabel: String,
        videoScale: CGFloat) {
     self.videoRawWidth = videoRawWidth
     self.videoRawHeight = videoRawHeight
@@ -38,25 +38,25 @@ struct MPVVideoParams: CustomStringConvertible {
       self.selectedAspectRatioLabel = selectedAspectRatioLabel
       self.aspectRatioOverride = Aspect.mpvPrecision(of: aspectRatioOverride.value)
     } else {
-      self.selectedAspectRatioLabel = AppData.defaultAspectName
+      self.selectedAspectRatioLabel = AppData.defaultAspectIdentifier
       self.aspectRatioOverride = nil
     }
     self.totalRotation = totalRotation
     self.userRotation = userRotation
     self.selectedCropLabel = selectedCropLabel
-    self.cropBox = cropBox
+    self.cropBox = MPVVideoParams.makeCropBox(fromCropLabel: selectedCropLabel, videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight)
     self.videoScale = videoScale
   }
 
   func clone(videoRawWidth: Int? = nil, videoRawHeight: Int? = nil,
              selectedAspectRatioLabel: String? = nil,
              totalRotation: Int? = nil, userRotation: Int? = nil,
-             selectedCropLabel: String? = nil, cropBox: CGRect? = nil,
+             selectedCropLabel: String? = nil,
              videoScale: CGFloat? = nil) -> MPVVideoParams {
     return MPVVideoParams(videoRawWidth: videoRawWidth ?? self.videoRawWidth, videoRawHeight: videoRawHeight ?? self.videoRawHeight,
                           selectedAspectRatioLabel: selectedAspectRatioLabel ?? self.selectedAspectRatioLabel,
                           totalRotation: totalRotation ?? self.totalRotation, userRotation: userRotation ?? self.userRotation,
-                          selectedCropLabel: selectedCropLabel ?? self.selectedCropLabel, cropBox: cropBox ?? self.cropBox,
+                          selectedCropLabel: selectedCropLabel ?? self.selectedCropLabel,
                           videoScale: videoScale ?? self.videoScale)
 
   }
@@ -71,8 +71,10 @@ struct MPVVideoParams: CustomStringConvertible {
   let videoRawWidth: Int
   let videoRawHeight: Int
 
-  /// The native size of the current video, before any filters, rotations, or other transformations applied
-  var videoSizeRaw: CGSize {
+  /// The native size of the current video, before any filters, rotations, or other transformations applied.
+  /// Returns `nil` if its width or height is considered missing or invalid (i.e., not positive)
+  var videoSizeRaw: CGSize? {
+    guard videoRawWidth > 0, videoRawHeight > 0 else { return nil}
     return CGSize(width: videoRawWidth, height: videoRawHeight)
   }
 
@@ -85,11 +87,12 @@ struct MPVVideoParams: CustomStringConvertible {
   let aspectRatioOverride: CGFloat?
 
   /// Same as `videoSizeRaw` but with aspect ratio override applied. If no aspect ratio override, then identical to `videoSizeRaw`.
-  var videoSizeA: CGSize {
+  var videoSizeA: CGSize? {
     guard let aspectRatioOverride else {
       // No aspect override
       return videoSizeRaw
     }
+    guard let videoSizeRaw else { return nil }
 
     let aspectRatioDefault = videoSizeRaw.mpvAspect
     if aspectRatioDefault > aspectRatioOverride {
@@ -104,6 +107,27 @@ struct MPVVideoParams: CustomStringConvertible {
 
   let cropBox: CGRect?
 
+  static func makeCropBox(fromCropLabel cropLabel: String, videoRawWidth: Int, videoRawHeight: Int) -> CGRect? {
+    if let aspect = Aspect(string: cropLabel) {
+      let videoRawSize = CGSize(width: videoRawWidth, height: videoRawHeight)
+      return videoRawSize.getCropRect(withAspect: aspect)
+    } else if cropLabel == AppData.noneCropIdentifier {
+      return nil
+    } else {
+      let split1 = cropLabel.split(separator: "x")
+      if split1.count == 2 {
+        let split2 = split1[1].split(separator: "+")
+        if split2.count == 3 {
+          if let width = Int(String(split1[0])), let height = Int(String(split2[0])), let x = Int(String(split2[1])), let y = Int(String(split2[2])) {
+            return CGRect(x: x, y: y, width: width, height: height)
+          }
+        }
+      }
+      Logger.log("Could not parse crop from label: \(cropLabel.quoted)", level: .error)
+      return nil
+    }
+  }
+
   /// The video size, after aspect override and crop filter applied, but before rotation or final scaling.
   ///
   /// From the mpv manual:
@@ -113,16 +137,18 @@ struct MPVVideoParams: CustomStringConvertible {
   /// video window size can still be different from this, e.g. if the user resized the video window manually.
   /// These have the same values as video-out-params/dw and video-out-params/dh.
   /// ```
-  var videoSizeAC: CGSize {
+  var videoSizeAC: CGSize? {
     return cropBox?.size ?? videoSizeA
   }
 
   /// Same as mpv `dwidth`. See docs for `videoSizeAC`.
-  var videoWidthAC: Int {
+  var videoWidthAC: Int? {
+    guard let videoSizeAC else { return nil }
     return Int(videoSizeAC.width)
   }
   /// Same as mpv `dheight`. See docs for `videoSizeAC`.
-  var videoHeightAC: Int {
+  var videoHeightAC: Int? {
+    guard let videoSizeAC else { return nil }
     return Int(videoSizeAC.height)
   }
 
@@ -146,7 +172,7 @@ struct MPVVideoParams: CustomStringConvertible {
   // Aspect + Crop + Rotation
 
   /// Like `dwidth`, but after applying `totalRotation`.
-  var videoWidthACR: Int {
+  var videoWidthACR: Int? {
     if isWidthSwappedWithHeightByRotation {
       return videoHeightAC
     } else {
@@ -155,7 +181,7 @@ struct MPVVideoParams: CustomStringConvertible {
   }
 
   /// Like `dheight`, but after applying `totalRotation`.
-  var videoHeightACR: Int {
+  var videoHeightACR: Int? {
     if isWidthSwappedWithHeightByRotation {
       return videoWidthAC
     } else {
@@ -165,17 +191,12 @@ struct MPVVideoParams: CustomStringConvertible {
 
   /// Like `videoSizeAC`, but after applying `totalRotation`.
   var videoSizeACR: CGSize? {
-    let drW = videoWidthACR
-    let drH = videoHeightACR
-    if drW == 0 || drH == 0 {
-      Logger.log("Failed to generate videoSizeACR: dwidth or dheight not present!", level: .error)
-      return nil
-    }
-    return CGSize(width: drW, height: drH)
+    guard let videoWidthACR, let videoHeightACR else { return nil }
+    return CGSize(width: videoWidthACR, height: videoHeightACR)
   }
 
   var hasValidSize: Bool {
-    return videoWidthACR > 0 && videoHeightACR > 0
+    return videoWidthACR != nil && videoHeightACR != nil
   }
 
   var videoAspectACR: CGFloat? {
@@ -201,6 +222,6 @@ struct MPVVideoParams: CustomStringConvertible {
   // Etc
 
   var description: String {
-    return "MPVVideoParams:{vidSizeRaw=\(videoRawWidth)x\(videoRawHeight), vidSizeAC=\(videoWidthAC)x\(videoHeightAC) selectedAspectLabel=\(selectedAspectRatioLabel.quoted) aspectOverride=\(aspectRatioOverride?.description.quoted ?? "nil") rotTotal=\(totalRotation) rotUser=\(userRotation) crop=\(cropBox?.debugDescription ?? "nil") scale=\(videoScale), aspectACR=\(videoAspectACR?.description ?? "nil") vidSizeACR=\(videoSizeACR?.debugDescription ?? "nil")}"
+    return "MPVVideoParams:{vidSizeRaw=\(videoRawWidth)x\(videoRawHeight), vidSizeAC=\(videoWidthAC?.description ?? "nil")x\(videoHeightAC?.description ?? "nil") selectedAspectLabel=\(selectedAspectRatioLabel.quoted) aspectOverride=\(aspectRatioOverride?.description.quoted ?? "nil") rotTotal=\(totalRotation) rotUser=\(userRotation) cropLabel=\(selectedCropLabel) cropBox=\(cropBox?.debugDescription ?? "nil") scale=\(videoScale), aspectACR=\(videoAspectACR?.description ?? "nil") vidSizeACR=\(videoSizeACR?.debugDescription ?? "nil")}"
   }
 }

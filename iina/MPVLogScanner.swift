@@ -39,8 +39,8 @@ fileprivate let mpvIINALogLevelMap: [MPVLogLevel: Logger.Level] = [.fatal: .erro
                                                                    .error: .error,
                                                                    .warn: .warning,
                                                                    .info: .debug,
-                                                                   .verbose: .verbose,
-                                                                   .debug: .debug,
+                                                                   .verbose: .debug,
+                                                                   .debug: .verbose,
                                                                    .trace: .verbose]
 
 class MPVLogScanner {

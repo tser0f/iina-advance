@@ -185,7 +185,7 @@ extension AspectTokenField: NSTokenFieldDelegate {
   func tokenField(_ tokenField: NSTokenField, completionsForSubstring substring: String,
                   indexOfToken tokenIndex: Int, indexOfSelectedItem selectedIndex: UnsafeMutablePointer<Int>?) -> [Any]? {
     let currentTokens = Set(savedSet.tokens)
-    let matches = AppData.aspects.filter { aspect in
+    let matches = AppData.aspectsInMenu.filter { aspect in
       return !currentTokens.contains(aspect) && aspect.contains { $0.lowercased().hasPrefix(substring) }
     }
     if enableLookupLogging {
