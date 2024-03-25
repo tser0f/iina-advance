@@ -102,8 +102,8 @@ extension NSSize {
 
   func getCropRect(withAspect aspect: Aspect) -> NSRect {
     let croppedSize = crop(withAspect: aspect)
-    let cropped = NSMakeRect((width - croppedSize.width) / 2,
-                             (height - croppedSize.height) / 2,
+    let cropped = NSMakeRect(round((width - croppedSize.width) / 2),
+                             round((height - croppedSize.height) / 2),
                              croppedSize.width,
                              croppedSize.height)
     return cropped

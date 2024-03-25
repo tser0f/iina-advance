@@ -190,7 +190,7 @@ class MPVFilter: NSObject {
   ]
 
   /// Names of filters without parameters or whose parameters do not need to be parsed.
-  private static let doNotParse = ["crop", "flip", "hflip", "lavfi"]
+  private static let doNotParse = ["flip", "hflip", "lavfi"]
 
   /// Parse the given string containing filter parameters.
   ///
@@ -209,32 +209,36 @@ class MPVFilter: NSObject {
   /// - Returns: A `Dictionary` containing the filter parameters or `nil` if the parameters were not parsed.
   private static func parseRawParamString(_ name: String, _ rawParamString: String?) -> [String: String]? {
     guard let rawParamString = rawParamString  else { return nil }
+
     if doNotParse.contains(name) {
-      if name == FilterType.crop.rawValue {
-        let pairs = rawParamString.split(separator: ":", omittingEmptySubsequences: false)
-        if pairs.count == 4 {
-          var paramDict: [String: String] = [:]
-          let w = String(pairs[0])
-          let h = String(pairs[1])
-          let x = String(pairs[2])
-          let y = String(pairs[3])
-          if !w.isEmpty {
-            paramDict["w"] = w
-          }
-          if !h.isEmpty {
-            paramDict["h"] = h
-          }
-          if !x.isEmpty {
-            paramDict["x"] = x
-          }
-          if !y.isEmpty {
-            paramDict["y"] = y
-          }
-          return paramDict
+      return nil
+    }
+
+    if name == FilterType.crop.rawValue {
+      let pairs = rawParamString.split(separator: ":", omittingEmptySubsequences: false)
+      if pairs.count == 4 {
+        var paramDict: [String: String] = [:]
+        let w = String(pairs[0])
+        let h = String(pairs[1])
+        let x = String(pairs[2])
+        let y = String(pairs[3])
+        if !w.isEmpty {
+          paramDict["w"] = w
         }
+        if !h.isEmpty {
+          paramDict["h"] = h
+        }
+        if !x.isEmpty {
+          paramDict["x"] = x
+        }
+        if !y.isEmpty {
+          paramDict["y"] = y
+        }
+        return paramDict
       }
       return nil
     }
+
     let pairs = rawParamString.split(separator: ":")
     // If there is only one parameter then parameter order is not an issue.
     guard pairs.count > 1 else { return nil }
@@ -283,6 +287,10 @@ class MPVFilter: NSObject {
       y = origVideoSize.height - (y + h)
     }
     return NSRect(x: x, y: y, width: w, height: h)
+  }
+
+  static func makeCropBoxParamString(from cropbox: NSRect) -> String {
+    return "\(Int(cropbox.width))x\(Int(cropbox.height))+\(Int(cropbox.origin.x))+\(Int(cropbox.origin.y))"
   }
 
   /// Returns `true` if this filter is equal to the given filter `false` otherwise.

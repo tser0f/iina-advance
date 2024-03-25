@@ -297,7 +297,7 @@ class PlayerCore: NSObject {
   @discardableResult
   func openURLs(_ urls: [URL], shouldAutoLoad autoLoad: Bool = true) -> Int? {
     guard !urls.isEmpty else { return 0 }
-    Logger.log("OpenURLs: \(urls.map{$0.absoluteString.pii})")
+    Logger.log("OpenURLs (autoLoad=\(autoLoad.yn)): \(urls.map{$0.absoluteString.pii})")
     let urls = Utility.resolveURLs(urls)
 
     // Handle folder URL (to support mpv shuffle, etc), BD folders and m3u / m3u8 files first.
@@ -1027,38 +1027,39 @@ class PlayerCore: NSObject {
     }
   }
 
-  func _setVideoAspectOverride(_ aspect: String) {
-    log.verbose("Got request to set videoAspectOverride to: \(aspect.quoted)")
+  func _setVideoAspectOverride(_ aspectString: String) {
+    log.verbose("Got request to set videoAspectOverride to: \(aspectString.quoted)")
     dispatchPrecondition(condition: .onQueue(mpv.queue))
 
-    let aspectDisplay: String
-    if aspect.contains(":"), Aspect(string: aspect) != nil {
+    let aspectLabel: String
+    if aspectString.contains(":"), Aspect(string: aspectString) != nil {
       // Aspect is in colon notation (X:Y)
-      aspectDisplay = aspect
-    } else if let aspectDouble = Double(aspect), aspectDouble > 0 {
+      aspectLabel = aspectString
+    } else if let aspectDouble = Double(aspectString), aspectDouble > 0 {
       /// Aspect is a decimal number, but is not default (`-1` or video default)
       /// Try to match to known aspect by comparing their decimal values to the new aspect.
       /// Note that mpv seems to do its calculations to only 2 decimal places of precision, so use that for comparison.
       if let knownAspectRatio = findLabelForAspectRatio(aspectDouble) {
-        aspectDisplay = knownAspectRatio
+        aspectLabel = knownAspectRatio
       } else {
-        aspectDisplay = aspectDouble.aspectNormalDecimalString
+        aspectLabel = aspectDouble.aspectNormalDecimalString
       }
     } else {
-      aspectDisplay = AppData.defaultAspectName
+      aspectLabel = AppData.defaultAspectIdentifier
       // -1, default, or unrecognized
-      log.verbose("Setting selectedAspect to: \(AppData.defaultAspectName.quoted) for aspect \(aspect.quoted)")
+      log.verbose("Setting selectedAspect to: \(AppData.defaultAspectIdentifier.quoted) for aspect \(aspectString.quoted)")
     }
 
-    if info.videoParams.selectedAspectRatioLabel != aspectDisplay {
-      let newVideoParams = info.videoParams.clone(selectedAspectRatioLabel: aspectDisplay)
+    if info.videoParams.selectedAspectRatioLabel != aspectLabel {
+      let newVideoParams = info.videoParams.clone(selectedAspectRatioLabel: aspectLabel)
 
       // Send update to mpv
-      let mpvValue = aspectDisplay == AppData.defaultAspectName ? "no" : aspectDisplay
+      let mpvValue = aspectLabel == AppData.defaultAspectIdentifier ? "no" : aspectLabel
       log.verbose("Setting mpv video-aspect-override to: \(mpvValue.quoted)")
       mpv.setString(MPVOption.Video.videoAspectOverride, mpvValue)
 
-      sendOSD(.aspect(aspectDisplay))
+      // FIXME: Default aspect needs i18n
+      sendOSD(.aspect(aspectLabel))
 
       if newVideoParams.hasValidSize {
         // Change video size:
@@ -1074,7 +1075,7 @@ class PlayerCore: NSObject {
 
   private func findLabelForAspectRatio(_ aspectRatioNumber: Double) -> String? {
     let mpvAspect = Aspect.mpvPrecision(of: aspectRatioNumber)
-    for knownAspectRatio in AppData.aspects {
+    for knownAspectRatio in AppData.aspectsInMenu {
       if let parsedAspect = Aspect(string: knownAspectRatio), parsedAspect.value == mpvAspect {
         // Matches a known aspect. Use its colon notation (X:Y) instead of decimal value
         return knownAspectRatio
@@ -1522,45 +1523,46 @@ class PlayerCore: NSObject {
     return normRect
   }
 
-  func setCrop(fromString str: String) {
+  func setCrop(fromAspectString aspectString: String) {
     let vwidth = info.videoParams.videoRawWidth
     let vheight = info.videoParams.videoRawHeight
-    if let aspect = Aspect(string: str) {
+    if let aspect = Aspect(string: aspectString) {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
-      log.verbose("Setting crop from requested string \(str.quoted) to: \(cropped.width)x\(cropped.height) (origSize: \(vwidth)x\(vheight))")
+      log.verbose("Setting crop from requested string \(aspectString.quoted) to: \(cropped.width)x\(cropped.height) (origSize: \(vwidth)x\(vheight))")
       if cropped.width <= 0 || cropped.height <= 0 {
         log.error("Cannot set crop to \(cropped); width or height is <= 0")
-        updateCropUI(to: AppData.cropNone)
+        updateSelectedCrop(to: AppData.noneCropIdentifier)
         return
       }
       let vf = MPVFilter.crop(w: Int(cropped.width), h: Int(cropped.height), x: nil, y: nil)
       vf.label = Constants.FilterLabel.crop
-      if setCrop(fromFilter: vf) {
-        updateCropUI(to: str)
-        return
-      }
+      // No need to call updateSelectedCrop - it will be called by setCrop
+      setCrop(fromFilter: vf)
+      return
     } else {
-      if str != AppData.cropNone {
-        log.error("Requested crop string is invalid: \(str.quoted)")
-        updateCropUI(to: AppData.cropNone)
+      if aspectString != AppData.noneCropIdentifier {
+        log.error("Requested crop string is invalid: \(aspectString.quoted)")
       }
-      removeCrop()
+      updateSelectedCrop(to: AppData.noneCropIdentifier)
     }
   }
 
   func removeCrop() {
-    guard let cropFilter = info.cropFilter else { return }
-    log.verbose("Setting crop to \(AppData.cropNone.quoted) and removing crop filter")
-    removeVideoFilter(cropFilter)
-    updateCropUI(to: AppData.cropNone)
+    updateSelectedCrop(to: AppData.noneCropIdentifier)
   }
 
-  private func updateCropUI(to newCropLabel: String) {
-    // FIXME: this is not correct. Just needed to get this building again. FIX
+  private func updateSelectedCrop(to newCropLabel: String) {
+    if newCropLabel == AppData.noneCropIdentifier, let cropFilter = info.cropFilter {
+      log.verbose("Setting crop to \(AppData.noneCropIdentifier.quoted) and removing crop filter")
+      removeVideoFilter(cropFilter)
+      // removeVideoFilter will actually call updateSelectedCrop again, so just return here to avoid doing work twice
+      return
+    }
     if info.videoParams.selectedCropLabel != newCropLabel {
+      log.verbose("Setting selectedCropLabel to \(newCropLabel.quoted)")
       info.videoParams = info.videoParams.clone(selectedCropLabel: newCropLabel)
 
-      let osdLabel = newCropLabel.isEmpty ? "Custom" : newCropLabel
+      let osdLabel = newCropLabel.isEmpty ? AppData.customCropIdentifier : newCropLabel
       sendOSD(.crop(osdLabel))
     }
     reloadQuickSettingsView()
@@ -1715,8 +1717,9 @@ class PlayerCore: NSObject {
       log.debug("Success: removed video filter \(label.quoted)")
       switch filter.label {
       case Constants.FilterLabel.crop:
+        // Set this to nil first, or it will recurse
         info.cropFilter = nil
-        updateCropUI(to: AppData.cropNone)
+        updateSelectedCrop(to: AppData.noneCropIdentifier)
       case Constants.FilterLabel.flip:
         info.flipFilter = nil
       case Constants.FilterLabel.delogo:
@@ -1988,16 +1991,12 @@ class PlayerCore: NSObject {
       let rawWidth = videoSize.0
       let rawHeight = videoSize.1
 
-      // If no override.
-
-      // TODO: figure out aspect & crop override
-
       let prevParams = info.videoParams
       let newParams = MPVVideoParams(videoRawWidth: rawWidth,
                                      videoRawHeight: rawHeight,
                                      selectedAspectRatioLabel: prevParams.selectedAspectRatioLabel,
                                      totalRotation: prevParams.totalRotation, userRotation: prevParams.userRotation,
-                                     selectedCropLabel: prevParams.selectedCropLabel, cropBox: prevParams.cropBox,
+                                     selectedCropLabel: prevParams.selectedCropLabel,
                                      videoScale: prevParams.videoScale)
 
       log.verbose("Calling applyVidParams from resizeVideo with videoParams \(newParams)")
@@ -2748,8 +2747,7 @@ class PlayerCore: NSObject {
           log.debug("Cannot generate thumbnails: could not get video params")
           return
         }
-        let videoSizeRaw = videoParams.videoSizeRaw
-        guard videoSizeRaw.height > 0, videoSizeRaw.width > 0  else {
+        guard let videoSizeRaw = videoParams.videoSizeRaw else {
           log.debug("Cannot generate thumbnails: video height and/or width is zero")
           clearExistingThumbnails()
           return
@@ -2966,28 +2964,33 @@ class PlayerCore: NSObject {
         let selectedAspect = (w / h).roundedTo2()
         log.verbose("Determined aspect=\(selectedAspect) from filter \(filter.label?.quoted ?? "")")
         if let segmentLabels = Preference.csvStringArray(for: .cropPanelPresets) {
-          for cropLabel in segmentLabels {
-            let tokens = cropLabel.split(separator: ":")
+          for aspectCropLabel in segmentLabels {
+            let tokens = aspectCropLabel.split(separator: ":")
             if tokens.count == 2, let width = Double(tokens[0]), let height = Double(tokens[1]) {
               let aspectRatio = (width / height).roundedTo2()
               if aspectRatio == selectedAspect {
-                log.verbose("Filter \(filter.label?.quoted ?? "") matches known crop \(cropLabel.quoted)")
-                updateCropUI(to: cropLabel)
+                log.verbose("Filter \(filter.label?.quoted ?? "") matches known crop \(aspectCropLabel.quoted)")
+                updateSelectedCrop(to: aspectCropLabel)  // aspect crop
                 return
               }
             }
           }
         }
-      } else if let p = filter.params, let x = p["x"], let y = p["y"], let w = p["w"], let h = p["h"] {
-        // Probably a custom crop
-        let customCropLabel = "(\(x), \(y)) (\(w)\u{d7}\(h))"
-        log.verbose("Filter \(filter.label?.quoted ?? "") looks like custom crop. Sending to UI label \(customCropLabel.quoted)")
-        updateCropUI(to: customCropLabel)
+      } else if let p = filter.params,
+                  let xStr = p["x"], let x = Int(xStr),
+                let yStr = p["y"], let y = Int(yStr),
+                let wStr = p["w"], let w = Int(wStr),
+                let hStr = p["h"], let h = Int(hStr) {
+        // Probably a custom crop. Use mpv formatting
+        let cropboxRect = NSRect(x: x, y: y, width: w, height: h)
+        let customCropBoxLabel = MPVFilter.makeCropBoxParamString(from: cropboxRect)
+        log.verbose("Filter \(filter.label?.quoted ?? "") looks like custom crop. Sending selected crop to \(customCropBoxLabel.quoted)")
+        updateSelectedCrop(to: customCropBoxLabel)  // rect crop
         return
       }
-      // Default to "Custom" crop in Quick Settings panel
-      log.verbose("Could not determine crop from filter \(filter.label?.quoted ?? "")")
-      updateCropUI(to: "")
+      // Default to removing crop
+      log.error("Could not determine crop from filter \(Constants.FilterLabel.crop.quoted). Removing filter")
+      updateSelectedCrop(to: AppData.noneCropIdentifier)
     case Constants.FilterLabel.flip:
       info.flipFilter = filter
     case Constants.FilterLabel.mirror:

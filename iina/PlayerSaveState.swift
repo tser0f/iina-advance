@@ -63,6 +63,7 @@ struct PlayerSaveState {
     case abLoopB = "abLoopB"          /// `MPVOption.PlaybackControl.abLoopB`
     case videoAspect = "aspect"       /// `MPVOption.Video.videoAspectOverride`
     case videoRotation = "videoRotate"/// `MPVOption.Video.videoRotate`
+    case cropLabel = "cropLabel"
 
     case isSubVisible = "subVisible"  /// `MPVOption.Subtitles.subVisibility`
     case isSub2Visible = "sub2Visible"/// `MPVOption.Subtitles.secondarySubVisibility`
@@ -233,6 +234,8 @@ struct PlayerSaveState {
     props[PropName.videoRotation.rawValue] = String(info.videoParams.userRotation)
 
     props[PropName.videoAspect.rawValue] = info.videoParams.selectedAspectRatioLabel
+
+    props[PropName.cropLabel.rawValue] = info.videoParams.selectedCropLabel
 
     let maxVolume = player.mpv.getInt(MPVOption.Audio.volumeMax)
     if maxVolume != 100 {
@@ -699,6 +702,10 @@ struct PlayerSaveState {
 
     if let videoAspect = string(for: .videoAspect) {
       player.setVideoAspectOverride(videoAspect)
+    }
+
+    if let selectedCropLabel = string(for: .cropLabel) {
+      player.setCrop(fromAspectString: selectedCropLabel)
     }
 
     if let audioFilters = string(for: .audioFilters) {

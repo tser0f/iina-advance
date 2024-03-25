@@ -183,11 +183,11 @@ extension PlayerWindowController {
 
   @objc func menuChangeCrop(_ sender: NSMenuItem) {
     if let cropStr = sender.representedObject as? String {
-      if cropStr == "Custom" {
+      if cropStr == AppData.customCropIdentifier {
         player.windowController.enterInteractiveMode(.crop)
         return
       }
-      player.setCrop(fromString: cropStr)
+      player.setCrop(fromAspectString: cropStr)
     } else {
       Logger.log("sender.representedObject is not a string in menuChangeCrop()", level: .error)
     }

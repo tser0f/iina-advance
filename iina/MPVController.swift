@@ -912,8 +912,8 @@ not applying FFmpeg 9599 workaround
 
     let params = MPVVideoParams(videoRawWidth: videoRawWidth, videoRawHeight: videoRawHeight,
                                 selectedAspectRatioLabel: player.info.videoParams.selectedAspectRatioLabel,
-                                totalRotation: mpvParamRotate, userRotation: mpvVideoRotate, selectedCropLabel: player.info.videoParams.selectedCropLabel,
-                                cropBox: nil, // TODO
+                                totalRotation: mpvParamRotate, userRotation: mpvVideoRotate, 
+                                selectedCropLabel: player.info.videoParams.selectedCropLabel,
                                 videoScale: videoScale)
 
     player.log.verbose("Latest videoParams: \(params)")

@@ -3015,7 +3015,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       osdLastPlaybackPosition = player.info.videoPosition?.second
       osdLastPlaybackDuration = player.info.videoDuration?.second
     case .crop(let newCropLabel):
-      if newCropLabel == AppData.cropNone && !isInInteractiveMode && player.info.videoFiltersDisabled[Constants.FilterLabel.crop] != nil {
+      if newCropLabel == AppData.noneCropIdentifier && !isInInteractiveMode && player.info.videoFiltersDisabled[Constants.FilterLabel.crop] != nil {
         log.verbose("Ignoring request to show OSD crop 'None': looks like user starting to edit an existing crop")
         return
       }
@@ -3235,8 +3235,9 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         assert(vf.label == Constants.FilterLabel.crop, "Unexpected label for crop filter: \(vf.name.quoted)")
         player.info.videoFiltersDisabled[filterLabel] = vf
         if player.removeVideoFilter(vf) {
-          // We can expect to receive a new video-params from mpv asynchronously. Pick it up there.
-          // Will check whether there is a disabled crop filter there
+          let videoParams = videoParams.clone(selectedCropLabel: AppData.noneCropIdentifier)
+          // This will check whether there is a disabled crop filter, and pick up work from there:
+          applyVidParams(newParams: videoParams)
           return
         } else {
           log.error("Failed to remove prev crop filter: (\(vf.stringFormat.quoted)) for some reason. Will ignore and try to proceed anyway")
@@ -3271,7 +3272,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
             let screen = bestScreen
             log.verbose("[applyVidParams E4] Cropping video from uncroppedVideoSize: \(uncroppedVideoSize), currentVideoSize: \(cropController.cropBoxView.videoRect), cropbox: \(cropbox)")
 
-            player.info.videoParams = player.info.videoParams.clone(cropBox: cropbox)
+            let customCropBoxLabel = MPVFilter.makeCropBoxParamString(from: cropbox)
+            player.info.videoParams = player.info.videoParams.clone(selectedCropLabel: customCropBoxLabel)
 
             /// Updated `windowedModeGeo` even if in full screen - we are not prepared to look for changes later
             let croppedGeometry = windowedModeGeo.cropVideo(from: uncroppedVideoSize, to: cropbox)
@@ -3476,15 +3478,17 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     // Scaling is a potentially expensive operation, so reuse the last image if no change is needed
     if currentMediaThumbnails.currentDisplayedThumbFFTimestamp != ffThumbnail.timestamp {
       currentMediaThumbnails.currentDisplayedThumbFFTimestamp = ffThumbnail.timestamp
+
+      let finalImage: NSImage
       // Apply crop first. Then aspect
-      let videoSizeRaw = videoParams.videoSizeRaw
       let croppedImage: NSImage
-      if let normalizedCropRect = player.getCurrentCropRect(videoSizeRaw: videoSizeRaw, normalized: true, flipY: false) {
+      if let videoSizeRaw = videoParams.videoSizeRaw, 
+          let normalizedCropRect = player.getCurrentCropRect(videoSizeRaw: videoSizeRaw, normalized: true, flipY: false) {
         croppedImage = rotatedImage.cropped(normalizedCropRect: normalizedCropRect)
       } else {
         croppedImage = rotatedImage
       }
-      let finalImage = croppedImage.resized(newWidth: Int(thumbWidth), newHeight: Int(thumbHeight))
+      finalImage = croppedImage.resized(newWidth: Int(thumbWidth), newHeight: Int(thumbHeight))
       thumbnailPeekView.imageView.image = finalImage
       thumbnailPeekView.frame.size = finalImage.size
     }

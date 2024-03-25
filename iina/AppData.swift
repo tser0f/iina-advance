@@ -46,11 +46,14 @@ struct AppData {
   static let osdSeekSubSecPrecisionComparison: Double = 1000000
 
   static let mpvArgNone = "none"
-  static let defaultAspectName = "Default"
-  static let cropNone = "None"
-  /** generate aspect and crop options in menu */
-  static let aspects: [String] = ["4:3", "5:4", "16:9", "16:10", "1:1", "3:2", "2.21:1", "2.35:1", "2.39:1",
-                                  "3:4", "4:5", "9:16", "10:16", "2:3", "1:2.35", "1:2.39", "21:9"]
+
+  // These are used internally to identify UI elements. They should not be displayed because they are not localized:
+  static let defaultAspectIdentifier = "Default"
+  static let noneCropIdentifier = "None"
+  static let customCropIdentifier = "Custom"
+  /// Used to generate aspect and crop options in menu. Does not include `Default`, `None`, or `Custom`
+  static let aspectsInMenu: [String] = ["4:3", "5:4", "16:9", "16:10", "1:1", "3:2", "2.21:1", "2.35:1", "2.39:1",
+                                        "3:4", "4:5", "9:16", "10:16", "2:3", "1:2.35", "1:2.39", "21:9"]
 
   static let rotations: [Int] = [0, 90, 180, 270]
   static let scaleStep: CGFloat = 25
